@@ -92,13 +92,16 @@ pub fn match_shortcut(parsed: &ParsedShortcut, stroke: &KeyStroke, opts: Shortcu
     {
         return false;
     }
-    // Only declared shift is enforced for printable keys; an undeclared
-    // shift rejects a long key name.
+    // Shift changes what `key` is for printable characters ('=' vs '+'), so
+    // only declared shift is enforced; an undeclared shift is rejected for
+    // long key names, and for letters, where it only changes the case:
+    // 'Mod+Z' isn't 'Shift+Mod+Z'.
     let long = js::utf16_len(&parsed.key) > 1;
     if parsed.shift && !stroke.shift_key {
         return false;
     }
-    if !parsed.shift && stroke.shift_key && long {
+    let has_case = parsed.key.to_uppercase() != parsed.key;
+    if !parsed.shift && stroke.shift_key && (long || has_case) {
         return false;
     }
     if stroke.key.to_lowercase() == parsed.key {
@@ -107,13 +110,51 @@ pub fn match_shortcut(parsed: &ParsedShortcut, stroke: &KeyStroke, opts: Shortcu
     long && stroke.code.as_ref().is_some_and(|code| code.to_lowercase() == parsed.key)
 }
 
-/// Display form for menu rows: `⌘K` on mac, `Ctrl+K` elsewhere.
+/// Whether two shortcuts are pressed with the same keys on this platform:
+/// `Mod+S` and `Ctrl+s` are where `Mod` is Ctrl, and not on a Mac.
+pub fn same_shortcut(left: &str, right: &str, opts: ShortcutOptions) -> Result<bool, Error> {
+    let keys_of = |shortcut: &str| -> Result<_, Error> {
+        let p = parse_shortcut(shortcut)?;
+        Ok((
+            p.key,
+            p.ctrl || (p.mod_ && !opts.is_mac),
+            p.meta || (p.mod_ && opts.is_mac),
+            p.alt,
+            p.shift,
+        ))
+    };
+    Ok(keys_of(left)? == keys_of(right)?)
+}
+
+/// How a key shows, by its lowercase name, where that isn't the name itself:
+/// on a Mac, then elsewhere. Matches what each platform's own menus show.
+const KEY_NAMES: [(&str, &str, &str); 15] = [
+    ("arrowleft", "←", "←"),
+    ("arrowright", "→", "→"),
+    ("arrowup", "↑", "↑"),
+    ("arrowdown", "↓", "↓"),
+    ("backspace", "⌫", "Backspace"),
+    ("delete", "⌦", "Delete"),
+    ("enter", "↩", "Enter"),
+    ("escape", "Esc", "Esc"),
+    ("tab", "⇥", "Tab"),
+    (" ", "Space", "Space"),
+    ("space", "Space", "Space"),
+    ("pageup", "Page Up", "Page Up"),
+    ("pagedown", "Page Down", "Page Down"),
+    ("numpadadd", "Num +", "Num +"),
+    ("numpadsubtract", "Num -", "Num -"),
+];
+
+/// A shortcut as a menu or a tooltip shows it: `⌘K` on a Mac, `Ctrl+K`
+/// elsewhere.
 pub fn format_shortcut(shortcut: &str, opts: ShortcutOptions) -> Result<String, Error> {
     let parsed = parse_shortcut(shortcut)?;
-    let key = if js::utf16_len(&parsed.key) == 1 {
-        parsed.key.to_uppercase()
-    } else {
-        js::capitalize(&parsed.key)
+    let named = KEY_NAMES.iter().find(|(name, _, _)| *name == parsed.key);
+    let key = match named {
+        Some((_, mac, other)) => (if opts.is_mac { *mac } else { *other }).to_string(),
+        None if js::utf16_len(&parsed.key) == 1 => parsed.key.to_uppercase(),
+        None => js::capitalize(&parsed.key),
     };
     if opts.is_mac {
         let mut out = String::new();

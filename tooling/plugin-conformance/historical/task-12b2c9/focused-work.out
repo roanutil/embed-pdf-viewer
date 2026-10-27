@@ -1,0 +1,52 @@
+(node:69534) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ every i18n occurrence has a unique name including repeated plural tag sources (0.419708ms)
+✔ all pure cases invoke current source arguments without accidental throws (229.627708ms)
+✔ Arabic direction uses the current Locale direction field (588.132583ms)
+✖ translation lookup independently resolves app, bundled, fallback key, fallback language and plural branches (1.504ms)
+✔ interpolation keeps unknown placeholders, grammar and replacement dollars literal (0.082083ms)
+✔ merge and dotted nesting preserve siblings and insertion precedence without modifying their inputs (0.083209ms)
+✔ transitions preserve identity for ignored calls and expose exact waiting, seeded and removal state (0.096375ms)
+✔ plural rows preserve all counts and independently known Arabic, Russian, English and invalid-tag results (218.0205ms)
+✔ capability translation, bundle precedence, warn-once and runtime removal use actual results (7.917ms)
+✔ lazy dedup replaces only the waiter and applies the loaded pack at the exact settle turn (2.233ms)
+✔ startup fallback, immediate loads, mismatch codes and unregister replacements have successful witnesses (6.740458ms)
+✔ locale change and failure events have exact payloads, loader order and unsubscribe silence (2.327625ms)
+✔ every intentional negative channel is exact and all other diagnostics are absent (19.111666ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1477.6205
+
+✖ failing tests:
+
+test at test/i18n-current.test.ts:1:1503
+✖ translation lookup independently resolves app, bundled, fallback key, fallback language and plural branches (1.504ms)
+  AssertionError [ERR_ASSERTION]: translate-unregistered-both
+  + actual - expected
+  
+    {
+  +   found: false,
+  +   text: 'commands.save'
+  -   found: true,
+  -   text: 'Save'
+    }
+  
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/i18n-current.test.ts:61:72)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { text: 'commands.save', found: false },
+    expected: { text: 'Save', found: true },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

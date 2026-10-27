@@ -5,16 +5,29 @@
 //!
 //! A read over the session, not a mutation. Pages are copied into a scratch
 //! document that is closed before this returns, so the source is untouched:
-//! no revision bump, no registry refresh, no layer artifact.
+//! no revision bump, no registry refresh, no layer artifact. A plain copy is
+//! `FPDF_ImportPagesByIndex`; a flattened one `EPDFDoc_ExportPagesFlattened`,
+//! which copies the pages as they draw. Either keeps the document's title.
 
-use pdfium::Library;
+use serde::{Deserialize, Serialize};
 
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::identity::PageObjectNumber;
 use crate::session::document::DocumentSession;
 
-/// Copy the given pages, in the caller's order, into a new document.
+/// What a flattened copy paints, resolved against what the caller may read
+/// before it reaches the engine (`PageExtractFlatten`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageExtractFlatten {
+    pub usage: crate::features::pages_write::FlattenUsage,
+    pub include_annotations: bool,
+    pub include_form_fields: bool,
+}
+
+/// Copy the given pages, in the caller's order, into a new document: as
+/// they are, or with `flatten`, as they draw.
 ///
 /// Addressed by object number rather than index, like everything else that
 /// crosses a boundary, and resolved against the session's registry so a page
@@ -26,6 +39,7 @@ use crate::session::document::DocumentSession;
 pub fn extract_pages(
     session: &mut DocumentSession,
     page_object_numbers: &[PageObjectNumber],
+    flatten: Option<&PageExtractFlatten>,
     cancel: &CancelToken,
 ) -> Result<Vec<u8>, EngineError> {
     cancel.check()?;
@@ -60,7 +74,15 @@ pub fn extract_pages(
     }
 
     cancel.check()?;
-    session.document()?.document().extract_pages(Library::acquire(), &indices).map_err(|e| {
+    let copy = match flatten {
+        None => pdfium::ExtractCopy::Plain,
+        Some(flatten) => pdfium::ExtractCopy::Flattened {
+            usage: flatten.usage.native(),
+            annotations: flatten.include_annotations,
+            form_fields: flatten.include_form_fields,
+        },
+    };
+    session.document()?.document().extract_pages(&indices, copy).map_err(|e| {
         EngineError::with_message(
             EngineErrorCode::DocOpenFailed,
             format!("failed to extract pages: {e}"),

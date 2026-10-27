@@ -1,9 +1,11 @@
 //! `services/`: the plugin-private services every area is built on (the
-//! event hooks, the live policy, the registration ports, the serial queue,
-//! the catalog read, session authority and the print latch). The queue,
-//! the script-node aggregate and the print latch are fields of
-//! [`crate::controller::Inner`]; the rest have modules here.
+//! settings, the events, the policy decision, the registration ports, the
+//! serial queue, the catalog read, the form, session authority, the
+//! kernel's print and the print latch). The queue, the script-node
+//! aggregate and the print latch are fields of
+//! [`crate::controller::Inner`]; the rest have modules or helpers here.
 
+pub mod annotation_rows;
 pub mod catalog;
 pub mod policy;
 pub mod ports;
@@ -11,74 +13,61 @@ pub mod ports;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use epdf_acrojs::{ScriptDiagnostic, ScriptExecutionError};
+use epdf_acrojs::ScriptDiagnostic;
+use epdf_kernel::Error;
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::{Controller, DOCUMENTS, Error};
+use epdf_kernel::geometry::PageRef;
+use epdf_kernel::rt::Promise;
+use epdf_kernel::signal::AbortSignal;
 use serde_json::Value;
 
 use crate::ActionsCapability;
 use crate::contract::{
-    ActionDiagnostic, ActionDispatchEvent, ActionsConfig, OpenSequenceCompletedEvent,
+    ActionDiagnostic, ActionDiagnosticReportedEvent, ActionExecutedEvent, ActionSource,
+    ActionsSettings, FormSnapshot, OpenSequenceCompletedEvent, PdfActionType, ScriptFailedEvent,
 };
-use crate::model::{ActionsAction, ActionsState};
+use crate::controller::ActionsController;
 
-/// A `diagnose` callback: collect, emit, or both.
+/// A `diagnose` callback: collect, report, or both.
 pub(crate) type Diagnose = Rc<dyn Fn(ActionDiagnostic)>;
 
-/// `services/events.ts`: the five observability hooks, disposed with the
-/// plugin. A throwing listener goes to the host's `observer_error` sink,
-/// where the TypeScript writes it to `console.error`.
+/// `services/events.ts`: the plugin's events, disposed with it. A throwing
+/// listener is reported through the kernel, as `ctx.events.source` does.
 pub(crate) struct Events {
-    pub(crate) action_hook: EventHookSource<ActionDispatchEvent>,
-    pub(crate) open_sequence_hook: EventHookSource<OpenSequenceCompletedEvent>,
-    pub(crate) diagnostic_hook: EventHookSource<ActionDiagnostic>,
-    pub(crate) script_diagnostic_hook: EventHookSource<ScriptDiagnostic>,
-    pub(crate) script_error_hook: EventHookSource<ScriptExecutionError>,
-}
-
-fn observer_hook<T: 'static>(config: &ActionsConfig, message: &'static str) -> EventHookSource<T> {
-    let sink = config.observer_error.clone();
-    EventHookSource::new(Some(Rc::new(move |error: &Error| {
-        if let Some(sink) = &sink {
-            sink(message, error);
-        }
-    })))
+    pub(crate) executed: EventHookSource<ActionExecutedEvent>,
+    pub(crate) diagnostic_reported: EventHookSource<ActionDiagnosticReportedEvent>,
+    pub(crate) script_diagnostic_reported: EventHookSource<ScriptDiagnostic>,
+    pub(crate) script_failed: EventHookSource<ScriptFailedEvent>,
+    pub(crate) open_sequence_completed: EventHookSource<OpenSequenceCompletedEvent>,
 }
 
 impl Events {
-    pub(crate) fn new(
-        cx: &Controller<ActionsState, ActionsAction>,
-        config: &ActionsConfig,
-    ) -> Self {
-        let events = Events {
-            action_hook: observer_hook(config, "[actions] onExecuted observer failed:"),
-            open_sequence_hook: observer_hook(
-                config,
-                "[actions] onOpenSequenceCompleted listener threw",
-            ),
-            diagnostic_hook: observer_hook(config, "[actions] onDiagnostic observer failed:"),
-            script_diagnostic_hook: observer_hook(
-                config,
-                "[actions] onScriptDiagnostic observer failed:",
-            ),
-            script_error_hook: observer_hook(config, "[actions] onScriptError observer failed:"),
-        };
-        let hooks = (
-            events.action_hook.clone(),
-            events.diagnostic_hook.clone(),
-            events.script_diagnostic_hook.clone(),
-            events.script_error_hook.clone(),
-            events.open_sequence_hook.clone(),
-        );
-        cx.defer(Box::new(move || {
-            hooks.0.dispose();
-            hooks.1.dispose();
-            hooks.2.dispose();
-            hooks.3.dispose();
-            hooks.4.dispose();
-            Ok(None)
-        }));
-        events
+    pub(crate) fn new(cx: &ActionsController) -> Self {
+        Events {
+            executed: cx.event_source(),
+            diagnostic_reported: cx.event_source(),
+            script_diagnostic_reported: cx.event_source(),
+            script_failed: cx.event_source(),
+            open_sequence_completed: cx.event_source(),
+        }
+    }
+}
+
+/// `DiagnosticPlace`: which action a diagnostic is about, and what started
+/// it, when one is concerned.
+#[derive(Clone, Default)]
+pub(crate) struct DiagnosticPlace {
+    pub(crate) action: Option<PdfActionType>,
+    pub(crate) source: Option<ActionSource>,
+}
+
+impl DiagnosticPlace {
+    pub(crate) fn source(source: ActionSource) -> Self {
+        DiagnosticPlace { action: None, source: Some(source) }
+    }
+
+    pub(crate) fn of(action: Option<PdfActionType>, source: ActionSource) -> Self {
+        DiagnosticPlace { action, source: Some(source) }
     }
 }
 
@@ -112,33 +101,126 @@ pub(crate) fn same_number(a: Option<&Value>, b: Option<&Value>) -> bool {
     }
 }
 
+/// `String(value)` for a template literal: `undefined` for an absent member.
+fn js_text(value: Option<&Value>) -> String {
+    match value {
+        None => "undefined".into(),
+        Some(value) => epdf_acrojs::js::string_of(value),
+    }
+}
+
+/// `annotationKey(ref)`: `obj:<n>` or `base:<page>:<index>`, `None` (the
+/// TypeScript's `undefined`) for a ref of another kind.
+pub fn annotation_key(reference: &Value) -> Option<String> {
+    match str_of(reference, "kind") {
+        "objectNumber" => Some(format!("obj:{}", js_text(get(reference, "objectNumber")))),
+        "baseIndex" => Some(format!(
+            "base:{}:{}",
+            js_text(get(reference, "page").and_then(|p| get(p, "objectNumber"))),
+            js_text(get(reference, "baseIndex"))
+        )),
+        _ => None,
+    }
+}
+
+/// `Promise.all([a, b])` for two promises, with its turns: each element
+/// reacts one turn after it settles (an `AbortablePromise` is adopted
+/// first), and the aggregate settles at the last reaction, or at the first
+/// rejection's.
+pub(crate) fn all2<A: Clone + 'static, B: Clone + 'static>(
+    a: Promise<A>,
+    b: Promise<B>,
+) -> Promise<(A, B)> {
+    let (all, resolver) = Promise::<(A, B)>::pending();
+    let slots: Rc<RefCell<(Option<A>, Option<B>)>> = Rc::default();
+    let finish = {
+        let (slots, resolver) = (slots.clone(), resolver.clone());
+        Rc::new(move || {
+            let mut slots = slots.borrow_mut();
+            if slots.0.is_some() && slots.1.is_some() {
+                resolver.resolve((slots.0.take().unwrap(), slots.1.take().unwrap()));
+            }
+        })
+    };
+    {
+        let (react, slots, finish, resolver) =
+            (react_to(a), slots.clone(), finish.clone(), resolver.clone());
+        epdf_kernel::rt::spawn(async move {
+            match react.await {
+                Ok(value) => {
+                    slots.borrow_mut().0 = Some(value);
+                    finish();
+                }
+                Err(error) => resolver.reject(error),
+            }
+        });
+    }
+    {
+        let react = react_to(b);
+        epdf_kernel::rt::spawn(async move {
+            match react.await {
+                Ok(value) => {
+                    slots.borrow_mut().1 = Some(value);
+                    finish();
+                }
+                Err(error) => resolver.reject(error),
+            }
+        });
+    }
+    all
+}
+
+/// `Promise.resolve(x).then(...)`'s reaction: one turn after `x` settles,
+/// after the adoption of an `AbortablePromise`; what `.await` on a promise
+/// does.
+fn react_to<T: Clone + 'static>(promise: Promise<T>) -> epdf_kernel::rt::PromiseFuture<T> {
+    std::future::IntoFuture::into_future(promise)
+}
+
 impl ActionsCapability {
-    pub(crate) fn emit_diagnostic(&self, diagnostic: ActionDiagnostic) {
-        self.0.events.diagnostic_hook.emit(&diagnostic);
+    /// `ctx.settings().get()`, decoded: read where a setting is used, so a
+    /// change applies at once.
+    pub(crate) fn settings_now(&self) -> ActionsSettings {
+        self.0.table.decode(&self.0.settings.get())
     }
 
-    /// A `diagnose` that only emits.
-    pub(crate) fn emitter(&self) -> Diagnose {
+    /// `reportDiagnostic(diagnostic, place)`: fire `onDiagnosticReported`
+    /// with the action and source it concerns (`null` for none).
+    pub(crate) fn report_diagnostic(&self, diagnostic: &ActionDiagnostic, place: &DiagnosticPlace) {
+        self.0.events.diagnostic_reported.emit(&ActionDiagnosticReportedEvent {
+            code: diagnostic.code,
+            action: place.action.clone(),
+            source: place.source.clone(),
+        });
+    }
+
+    /// A `diagnose` that only reports.
+    pub(crate) fn reporter(&self, place: DiagnosticPlace) -> Diagnose {
         let this = self.clone();
-        Rc::new(move |d| this.emit_diagnostic(d))
+        Rc::new(move |d| this.report_diagnostic(&d, &place))
     }
 
-    /// A `diagnose` that collects into `into` and emits.
-    pub(crate) fn collector(&self, into: &Rc<RefCell<Vec<ActionDiagnostic>>>) -> Diagnose {
+    /// A `diagnose` that collects into `into` and reports.
+    pub(crate) fn collector(
+        &self,
+        into: &Rc<RefCell<Vec<ActionDiagnostic>>>,
+        place: DiagnosticPlace,
+    ) -> Diagnose {
         let (this, into) = (self.clone(), into.clone());
         Rc::new(move |d: ActionDiagnostic| {
             into.borrow_mut().push(d.clone());
-            this.emit_diagnostic(d);
+            this.report_diagnostic(&d, &place);
         })
     }
 
     /// `services/authority.ts`: session authority the action plane enforces
-    /// itself.
+    /// itself (permission, not preference).
     pub(crate) fn allows_print(&self) -> bool {
-        match self.0.cx.try_get(&DOCUMENTS) {
-            Ok(Some(documents)) => documents.allows("doc.print", self.0.cx.document_id()),
-            _ => true,
-        }
+        self.0.cx.allows("doc.print")
+    }
+
+    pub(crate) fn allows(&self, permission: &str) -> bool {
+        self.0.cx.allows(permission)
     }
 
     /// The guarded handle. A document plugin always has one once built.
@@ -146,27 +228,68 @@ impl ActionsCapability {
         self.0.cx.doc()
     }
 
-    /// The document's `PageLayout[]`.
-    pub(crate) fn pages(&self) -> Vec<Value> {
-        self.0.cx.document().and_then(|meta| meta.pages.as_array().cloned()).unwrap_or_default()
+    /// `services/form.ts`: the form now, the form plugin's view when it
+    /// registered one, else the engine's. `signal` stops the engine read.
+    pub(crate) fn read_form(&self, signal: Option<&AbortSignal>) -> Promise<Rc<FormSnapshot>> {
+        let reader = self.0.ports.form_reader.borrow().clone();
+        if let Some(shown) = reader.and_then(|reader| reader()) {
+            return Promise::resolved(shown);
+        }
+        let task = match self.doc() {
+            Ok(doc) => doc.call("forms.list", None, Vec::new()).convert(|v| Ok(Rc::new(v.clone()))),
+            Err(error) => Promise::rejected(error),
+        };
+        self.read(signal, task)
     }
 
-    /// `ctx.document()?.pages[0]?.ref.pageObjectNumber`.
-    pub(crate) fn first_pon(&self) -> Option<u32> {
-        self.pages()
-            .first()
-            .and_then(|p| get(p, "ref"))
-            .and_then(epdf_kernel::geometry::PageRef::from_json)
-            .map(|r| r.page_object_number)
+    /// `ctx.cancellable(signal, task)`: the read a caller's signal can stop.
+    pub(crate) fn read<T: Clone + 'static>(
+        &self,
+        signal: Option<&AbortSignal>,
+        task: Promise<T>,
+    ) -> Promise<T> {
+        epdf_kernel::cancellable::cancellable("actions", signal.cloned(), task)
     }
 
-    /// The layout of the page with this object number.
+    /// `ctx.getPage(ref)`: the page's `PageLayout`, or `None`.
     pub(crate) fn layout_of(&self, pon: u32) -> Option<Value> {
-        self.pages().into_iter().find(|p| {
-            get(p, "ref")
-                .and_then(epdf_kernel::geometry::PageRef::from_json)
-                .map(|r| r.page_object_number)
-                == Some(pon)
-        })
+        self.0.cx.get_page(PageRef::new(pon))
+    }
+
+    /// `ctx.document()?.pages[0]?.ref.objectNumber`.
+    pub(crate) fn first_pon(&self) -> Option<u32> {
+        let meta = self.0.cx.document()?;
+        let first = meta.pages.as_array()?.first()?.clone();
+        get(&first, "ref").and_then(PageRef::from_json).map(|r| r.page_object_number)
+    }
+}
+
+/// `services/document-print.ts`: the kernel's print, where the document's
+/// own print requests go (the Named Print verb, a script's `print()`) when
+/// the host gave the kernel a printer. The kernel prints the document's
+/// pages and runs /WP and /DP around the dialog through this plugin's
+/// `around_print` wrap. Without a printer, requests fall back to the UI
+/// adapter's `print`. The documents capability is read through the
+/// document's scope, so both default to this plugin's document.
+#[derive(Clone)]
+pub(crate) struct DocumentPrint {
+    pub(crate) available: Rc<dyn Fn() -> bool>,
+    pub(crate) start: Rc<dyn Fn() -> Promise<()>>,
+}
+
+impl DocumentPrint {
+    /// `createDocumentPrint(ctx)`: `documents().canPrint()` and
+    /// `documents().print()`, with `documents = () => ctx.get(DocumentsToken)`.
+    pub(crate) fn new(cx: &ActionsController) -> Self {
+        let (ask, print) = (cx.clone(), cx.clone());
+        DocumentPrint {
+            available: Rc::new(move || {
+                ask.get(&epdf_kernel::DOCUMENTS).is_ok_and(|documents| documents.can_print(None))
+            }),
+            start: Rc::new(move || match print.get(&epdf_kernel::DOCUMENTS) {
+                Ok(documents) => documents.print(None, Default::default()),
+                Err(error) => Promise::rejected(error),
+            }),
+        }
     }
 }

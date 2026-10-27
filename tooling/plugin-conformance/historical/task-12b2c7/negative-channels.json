@@ -1,0 +1,176 @@
+[
+  {
+    "name": "a-failed-seed-read-is-ignored",
+    "step": 2,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "closed",
+        "code": "operation-failed",
+        "capability": "metadata",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "closed",
+            "code": "DocClosed"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "update-refused",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "permission denied (local): doc.metadata.modify",
+        "code": "permission-denied",
+        "capability": "metadata",
+        "permission": "doc.metadata.modify",
+        "details": {
+          "required": "doc.metadata.modify",
+          "context": "local"
+        },
+        "cause": {
+          "$error": {
+            "name": "PermissionDenied",
+            "message": "permission denied (local): doc.metadata.modify",
+            "required": "doc.metadata.modify",
+            "context": "local",
+            "code": "Forbidden",
+            "details": {
+              "required": "doc.metadata.modify",
+              "context": "local"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "reload",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "gone",
+        "code": "operation-failed",
+        "capability": "metadata",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "gone",
+            "code": "DocClosed"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "update-without-the-capability-is-refused-locally",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "metadata.update requires doc.metadata.modify",
+        "code": "permission-denied",
+        "capability": "metadata",
+        "permission": "doc.metadata.modify"
+      }
+    }
+  },
+  {
+    "name": "update-without-the-capability-is-refused-locally",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "metadata.custom.update requires doc.metadata.modify",
+        "code": "permission-denied",
+        "capability": "metadata",
+        "permission": "doc.metadata.modify"
+      }
+    }
+  },
+  {
+    "name": "a-forbidden-seed-read",
+    "step": 2,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "permission denied (local): doc.metadata.read",
+        "code": "permission-denied",
+        "capability": "metadata",
+        "permission": "doc.metadata.read",
+        "details": {
+          "required": "doc.metadata.read",
+          "context": "local"
+        },
+        "cause": {
+          "$error": {
+            "name": "PermissionDenied",
+            "message": "permission denied (local): doc.metadata.read",
+            "required": "doc.metadata.read",
+            "context": "local",
+            "code": "Forbidden",
+            "details": {
+              "required": "doc.metadata.read",
+              "context": "local"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "a-forbidden-seed-read",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "gone",
+        "code": "operation-failed",
+        "capability": "metadata",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "gone",
+            "code": "Unknown"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "custom-refresh-and-refusal",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "gone",
+        "code": "operation-failed",
+        "capability": "metadata",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "gone",
+            "code": "Unknown"
+          }
+        }
+      }
+    }
+  }
+]

@@ -1,4 +1,4 @@
-//! `write/`: scale writes, the calibration flow, and measurement creation.
+//! `write/`: the capability's verbs.
 
 pub mod calibration;
 pub mod create;

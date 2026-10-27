@@ -1,0 +1,49 @@
+{
+  "base": "fcf0350e067e257b46a2b7d7e826886bd5ff0031",
+  "commits": {
+    "namedTransitions": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411",
+    "focusMoments": "d6dd4f2833ee22c39f0e55eccf9a9cada0e9d1f6"
+  },
+  "owners": [
+    {
+      "path": "packages/plugin/shell/src/model.ts",
+      "sha256": "1941e6339ca5c6bf95e0c8a089192294019c3fdf90bd6d5674e186a4e552da7f"
+    },
+    {
+      "path": "packages/plugin/shell/src/controller.ts",
+      "sha256": "472d0b423bca484f16f0aadd5ff39fa1d768cf095a442f24e7235ef83f84c7c9"
+    },
+    {
+      "path": "packages/plugin/shell/src/contract.ts",
+      "sha256": "0faa9f210bfa7431932dacd9a444ce487d4f4b16a80c3d614eb71dd1c8ca123d"
+    },
+    {
+      "path": "packages/plugin/shell/src/shell.plugin.ts",
+      "sha256": "f2f50047d4489e931d8a3bad68214943025285caba44ae8163c8eeb819f245a5"
+    },
+    {
+      "path": "packages/plugin/shell/src/state.ts",
+      "sha256": "089bd6f38429b6ce24a9f4229a647b657092cb2f172869afbb0684c1d0ed1004"
+    },
+    {
+      "path": "packages/plugin/shell/src/token.ts",
+      "sha256": "def155bcff18b6af8b248ffc4bf18daa051db4907add1e141a3f63b3c84081f4"
+    },
+    {
+      "path": "packages/plugin/shell/src/index.ts",
+      "sha256": "12d04e1028e1938537e4f9cfbf5ba0f64e5a0b570415ff60b2955eb8d92310ab"
+    },
+    {
+      "path": "packages/plugin/shell/test/shell.test.ts",
+      "sha256": "751dd67986a6283c7e3de0c50586bdeb3997d2de8879a20ec08cdc3cf3f77a43"
+    }
+  ],
+  "contracts": {
+    "model": "mandatory focusRequest; open increments only on focus=true, retains count on unfocused open; close/exclusive/toggle/closeAll clear to0; snapshotOf omits counts; applySnapshot resets to0",
+    "construction": "shellPlugin defines document scope, token, state initialShellState and createShellController; current existing factory already constructs it",
+    "events": "controller state change diff; opens have id/props, closes id only; menu closes before opens; repeated focus and prop changes produce no opening event",
+    "prototype": "Current plain object access observes inherited toString/valueOf. Preserve named existing adversarial input and exact current output; do not normalize or copy shell rules locally.",
+    "identity": "Ignored model operations return identical state; memoByKey preserves unrelated public record; repeated focused open produces new record/list; snapshot memoized until state changes",
+    "retirement": "Original action-envelope adapter is private old lens, not a shipping parity target. Full inputs and outcomes archived with replacement explicitly distinguished."
+  }
+}

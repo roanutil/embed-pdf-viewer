@@ -1,32 +1,37 @@
 //! The conformance adapter: how `crates/plugin-conformance` builds this
 //! plugin from a vector and calls its capability by name, plus the function
-//! table.
-//!
-//! It mirrors the generator's one shim in
-//! `tooling/plugin-conformance/src/suites/measurement.ts`: a `console.error`
-//! whose message starts `[measurement]` logs as the callback
-//! `console.error`, which comes in here as `MeasurementConfig::host`.
+//! table. The generator is
+//! `tooling/plugin-conformance/src/suites/measurement.ts`, whose
+//! `measurement-current` factory is `measurementPlugin(config)` with no shim.
 
 use std::any::Any;
 use std::rc::Rc;
 
-use epdf_annotation_core::measure::PdfMeasurement;
-use epdf_annotation_core::{AnnotationRef, PageRef, PdfRect, Point};
-use epdf_kernel::rt::Promise;
+use epdf_kernel::geometry::Point;
+use epdf_kernel::mirror::ResourceStatus;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe, is_undefined, undefined};
 use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
-use serde::Serialize;
 use serde_json::{Value, json};
 
+use crate::model::{
+    MeasurementState, PageScaleInputs, PageSize, begin_scale_change, clear_load_error,
+    end_scale_change, set_calibration, set_local_viewports, set_reports,
+};
+use crate::write::scale::reports_json;
 use crate::*;
 
 /// The adapter.
 pub struct MeasurementAdapter;
 
 /// The capability object literal's member order: the areas' slices as
-/// `composeApi` spreads them, then the service-owned members.
+/// `composeApi` spreads them (settings, reads, scale writes, calibration,
+/// measuring), then the service-owned members.
 pub const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "canMeasure",
     "getPageScale",
     "isBusy",
@@ -56,30 +61,50 @@ pub const MEMBERS: &[&str] = &[
     "onCalibrationDismissed",
 ];
 
+fn arg(args: &[Value], index: usize) -> Value {
+    args.get(index).cloned().unwrap_or_else(undefined)
+}
+
 fn present(args: &[Value], index: usize) -> Option<&Value> {
     args.get(index).filter(|v| !is_undefined(v) && !v.is_null())
 }
 
-fn arg<T: serde::de::DeserializeOwned>(args: &[Value], index: usize) -> Result<T, Error> {
-    from_value(args.get(index).unwrap_or(&undefined()))
+fn page_arg(args: &[Value], index: usize) -> PageInput {
+    PageInput::from_json(&arg(args, index))
 }
 
-/// An optional options object.
-fn opts<T: serde::de::DeserializeOwned + Default>(
-    args: &[Value],
-    index: usize,
-) -> Result<T, Error> {
-    present(args, index).map_or_else(|| Ok(T::default()), from_value)
+fn point_arg(args: &[Value], index: usize) -> Result<Point, Error> {
+    from_value(&arg(args, index))
+}
+
+/// `ScaleChangeOptions`: only `recalculate` can travel in a vector.
+fn change_options(options: Option<&Value>) -> ScaleChangeOptions {
+    ScaleChangeOptions {
+        signal: None,
+        recalculate: options.and_then(|o| o.get("recalculate")).and_then(Value::as_bool),
+    }
+}
+
+fn str_arg(args: &[Value], index: usize) -> String {
+    match arg(args, index) {
+        Value::String(s) => s,
+        other => epdf_annotation_core::json::stringify(&other),
+    }
+}
+
+fn reports(promise: epdf_kernel::Promise<Rc<Vec<ScaleChangeReport>>>) -> Outcome {
+    Outcome::Promise(promise.map(|reports| Ok(reports_json(&reports))))
 }
 
 /// Subscribe a scripted listener; the outcome is the unsubscribe, as a ref.
-fn hook<E: Serialize + 'static>(
+fn hook<E: 'static>(
     h: &Harness,
     spec: Option<&Value>,
+    print: fn(&E) -> Value,
     subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
 ) -> Outcome {
     let callback = h.callback(spec.unwrap_or(&Value::Null));
-    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![to_value(event)]) {
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![print(event)]) {
         Answer::Throws(error) => Err(error),
         _ => Ok(()),
     }));
@@ -89,8 +114,29 @@ fn hook<E: Serialize + 'static>(
     })))
 }
 
-fn reports(promise: Promise<Vec<ScaleChangeReport>>) -> Outcome {
-    Outcome::promise(promise)
+fn calibrate_input(value: &Value) -> Result<CalibrateInput, Error> {
+    let distance = value.get("distance").unwrap_or(&Value::Null);
+    Ok(CalibrateInput {
+        page: PageInput::from_json(value.get("page").unwrap_or(&Value::Null)),
+        from: from_value(value.get("from").unwrap_or(&Value::Null))?,
+        to: from_value(value.get("to").unwrap_or(&Value::Null))?,
+        distance: KnownLength {
+            value: distance.get("value").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            unit: distance.get("unit").and_then(Value::as_str).unwrap_or("undefined").into(),
+        },
+    })
+}
+
+fn create_input(value: &Value) -> Result<CreateMeasurementInput, Error> {
+    let kind = value.get("kind").and_then(Value::as_str).unwrap_or_default();
+    Ok(CreateMeasurementInput {
+        kind: MeasurementKind::parse(kind).ok_or_else(|| {
+            Error::named("TypeError", format!("unknown measurement kind {kind:?}"))
+        })?,
+        page: PageInput::from_json(value.get("page").unwrap_or(&Value::Null)),
+        points: from_value(value.get("points").unwrap_or(&json!([])))?,
+        tool: value.get("tool").and_then(Value::as_str).map(str::to_string),
+    })
 }
 
 fn call_capability(
@@ -99,46 +145,86 @@ fn call_capability(
     args: &[Value],
     h: &Harness,
 ) -> Result<Outcome, Error> {
-    let returned = |value: Value| Outcome::Returned(value);
     Ok(match method {
-        "canMeasure" => returned(json!(cap.can_measure(&arg(args, 0)?))),
-        "getPageScale" => returned(to_value(&cap.get_page_scale(&arg(args, 0)?))),
-        "isBusy" => returned(json!(cap.is_busy())),
-        "listLastReports" => returned(to_value(&cap.list_last_reports())),
-        "listPresets" => returned(to_value(&cap.list_presets())),
-        "listUnits" => returned(to_value(&cap.list_units())),
-        "listAreaUnits" => returned(to_value(&cap.list_area_units())),
-        "getReadout" => returned(to_value(&cap.get_readout(&arg::<AnnotationRef>(args, 0)?))),
-        "measureDistance" => {
-            let page: PageRef = arg(args, 0)?;
-            returned(to_value(&cap.measure_distance(&page, arg(args, 1)?, arg(args, 2)?)?))
+        "getSettings" => Outcome::Returned((*cap.settings_json()).clone()),
+        "updateSettings" => {
+            cap.update_settings_json(&arg(args, 0));
+            Outcome::undefined()
         }
+        "resetSettings" => {
+            cap.reset_settings();
+            Outcome::undefined()
+        }
+        "onSettingsChanged" => {
+            let callback = h.callback(args.first().unwrap_or(&Value::Null));
+            let off = cap.on_settings_changed_json(move |settings, changed| {
+                match callback.call(vec![json!({ "settings": settings, "changed": changed })]) {
+                    Answer::Throws(error) => Err(error),
+                    _ => Ok(()),
+                }
+            });
+            Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                off.call();
+                Outcome::undefined()
+            })))
+        }
+        "canMeasure" => Outcome::Returned(json!(cap.can_measure(page_arg(args, 0))?)),
+        "getPageScale" => Outcome::Returned(cap.get_page_scale(page_arg(args, 0))?.to_json()),
+        "isBusy" => Outcome::Returned(json!(cap.is_busy())),
+        "listLastReports" => Outcome::Returned(reports_json(&cap.list_last_reports())),
+        "listPresets" => Outcome::Returned(cap.list_presets_json()),
+        "listUnits" => Outcome::Returned(json!(cap.list_units())),
+        "listAreaUnits" => Outcome::Returned(json!(cap.list_area_units())),
+        "getReadout" => Outcome::Returned(cap.get_readout(&arg(args, 0))),
+        "measureDistance" => Outcome::Returned(cap.measure_distance(
+            page_arg(args, 0),
+            point_arg(args, 1)?,
+            point_arg(args, 2)?,
+        )?),
         "measureArea" => {
-            let page: PageRef = arg(args, 0)?;
-            let vertices: Vec<Point> = arg(args, 1)?;
-            returned(to_value(&cap.measure_area(&page, &vertices)?))
+            let vertices: Vec<Point> = from_value(&arg(args, 1))?;
+            Outcome::Returned(cap.measure_area(page_arg(args, 0), &vertices)?)
         }
-        "getCalibrationRequest" => returned(to_value(&cap.get_calibration_request())),
+        "getCalibrationRequest" => Outcome::Returned(to_value(&cap.get_calibration_request())),
         "setScale" => reports(cap.set_scale(
-            arg(args, 0)?,
-            args.get(1).cloned().unwrap_or(Value::Null),
-            opts(args, 2)?,
+            PageTarget::from_json(&arg(args, 0)),
+            arg(args, 1),
+            change_options(present(args, 2)),
         )),
-        "calibrate" => reports(cap.calibrate(arg(args, 0)?, opts(args, 1)?)),
-        "setUnit" => {
-            let unit: String = arg(args, 1)?;
-            reports(cap.set_unit(arg(args, 0)?, &unit, opts(args, 2)?))
+        "calibrate" => {
+            let options = present(args, 1);
+            let apply_to = options
+                .and_then(|o| o.get("applyTo"))
+                .filter(|v| !is_undefined(v))
+                .map(PageTarget::from_json);
+            reports(cap.calibrate(
+                calibrate_input(&arg(args, 0))?,
+                CalibrateOptions { change: change_options(options), apply_to },
+            ))
         }
-        "setAreaUnit" => {
-            let unit: String = arg(args, 1)?;
-            reports(cap.set_area_unit(arg(args, 0)?, &unit, opts(args, 2)?))
-        }
-        "setPrecision" => reports(cap.set_precision(arg(args, 0)?, arg(args, 1)?, opts(args, 2)?)),
-        "setPreset" => {
-            let id: String = arg(args, 1)?;
-            reports(cap.set_preset(arg(args, 0)?, &id, opts(args, 2)?))
-        }
-        "clearScale" => reports(cap.clear_scale(arg(args, 0)?, opts(args, 1)?)),
+        "setUnit" => reports(cap.set_unit(
+            PageTarget::from_json(&arg(args, 0)),
+            &str_arg(args, 1),
+            change_options(present(args, 2)),
+        )),
+        "setAreaUnit" => reports(cap.set_area_unit(
+            PageTarget::from_json(&arg(args, 0)),
+            &str_arg(args, 1),
+            change_options(present(args, 2)),
+        )),
+        "setPrecision" => reports(cap.set_precision(
+            PageTarget::from_json(&arg(args, 0)),
+            arg(args, 1).as_f64().unwrap_or(f64::NAN),
+            change_options(present(args, 2)),
+        )),
+        "setPreset" => reports(cap.set_preset(
+            PageTarget::from_json(&arg(args, 0)),
+            &str_arg(args, 1),
+            change_options(present(args, 2)),
+        )),
+        "clearScale" => reports(
+            cap.clear_scale(PageTarget::from_json(&arg(args, 0)), change_options(present(args, 1))),
+        ),
         "startCalibration" => {
             cap.start_calibration()?;
             Outcome::undefined()
@@ -147,35 +233,43 @@ fn call_capability(
             cap.dismiss_calibration();
             Outcome::undefined()
         }
-        "createMeasurement" => Outcome::promise(cap.create_measurement(arg(args, 0)?)),
-        "canCalibrate" => returned(json!(cap.can_calibrate())),
-        "ensureLoaded" => Outcome::promise_unit(cap.ensure_loaded(&arg(args, 0)?)?),
-        "onScaleChanged" => hook(h, args.first(), |l| cap.on_scale_changed(l)),
-        "onCalibrationRequested" => hook(h, args.first(), |l| cap.on_calibration_requested(l)),
-        "onCalibrationCompleted" => hook(h, args.first(), |l| cap.on_calibration_completed(l)),
-        "onCalibrationDismissed" => hook(h, args.first(), |l| cap.on_calibration_dismissed(l)),
+        "createMeasurement" => Outcome::Promise(
+            cap.create_measurement(create_input(&arg(args, 0))?, OperationOptions::default()),
+        ),
+        "canCalibrate" => Outcome::Returned(json!(cap.can_calibrate())),
+        "ensureLoaded" => {
+            Outcome::promise_unit(cap.ensure_loaded(page_arg(args, 0), OperationOptions::default()))
+        }
+        "onScaleChanged" => hook(h, args.first(), MeasurementScaleChangedEvent::to_json, |l| {
+            cap.on_scale_changed(l)
+        }),
+        "onCalibrationRequested" => {
+            hook(h, args.first(), CalibrationRequestedEvent::to_json, |l| {
+                cap.on_calibration_requested(l)
+            })
+        }
+        "onCalibrationCompleted" => {
+            hook(h, args.first(), CalibrationCompletedEvent::to_json, |l| {
+                cap.on_calibration_completed(l)
+            })
+        }
+        "onCalibrationDismissed" => {
+            hook(h, args.first(), CalibrationDismissedEvent::to_json, |l| {
+                cap.on_calibration_dismissed(l)
+            })
+        }
         other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
     })
 }
 
 impl HarnessPlugin for MeasurementAdapter {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["measurement"]
+        vec!["measurement-current"]
     }
 
-    fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        let mut config: MeasurementConfig = if config.is_object() && !is_undefined(config) {
-            from_value(config)?
-        } else {
-            MeasurementConfig::default()
-        };
-        let log = h.clone();
-        config.host = MeasurementHost {
-            console_error: Some(Rc::new(move |message: &str, error: &Error| {
-                log.log("console.error", vec![json!(message), error.to_canonical()]);
-            })),
-        };
-        Ok(build_measurement_plugin(config))
+    fn build(&self, _factory: &str, config: &Value, _h: &Harness) -> Result<AnyPlugin, Error> {
+        let registered = Some(config.clone()).filter(|c| !c.is_null() && !is_undefined(c));
+        Ok(measurement_plugin_json(registered))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -201,122 +295,137 @@ impl HarnessPlugin for MeasurementAdapter {
 
 // ── functions ─────────────────────────────────────────────────────────────────
 
-fn ok<T: Serialize>(value: &T) -> Result<Value, Error> {
-    Ok(to_value(value))
+fn state_arg(args: &[Value], index: usize) -> Result<Rc<MeasurementState>, Error> {
+    from_value(&arg(args, index)).map(Rc::new)
+}
+
+fn state_out(state: Rc<MeasurementState>) -> Result<Value, Error> {
+    Ok(to_value(&*state))
+}
+
+fn number_arg(args: &[Value], index: usize) -> f64 {
+    match arg(args, index) {
+        v if is_undefined(&v) => f64::NAN,
+        v => v.as_f64().unwrap_or(f64::NAN),
+    }
+}
+
+fn pon_arg(args: &[Value], index: usize) -> Result<u32, Error> {
+    let n = number_arg(args, index);
+    if n >= 0.0 && n.fract() == 0.0 && n <= u32::MAX as f64 {
+        Ok(n as u32)
+    } else {
+        Err(Error::named("TypeError", "a page object number is not a whole number"))
+    }
 }
 
 fn initial_measurement_state_fn(_: &[Value]) -> Result<Value, Error> {
-    ok(&initial_measurement_state())
+    state_out(Rc::new(initial_measurement_state()))
 }
 
-/// `{changed: next !== state, state: next}`.
-fn measurement_reducer_fn(a: &[Value]) -> Result<Value, Error> {
-    let state: MeasurementState = arg(a, 0)?;
-    let action: MeasurementAction = arg(a, 1)?;
-    let next = measurement_reducer(&state, &action);
-    Ok(json!({ "changed": next.is_some(), "state": to_value(next.as_ref().unwrap_or(&state)) }))
+fn begin_scale_change_fn(args: &[Value]) -> Result<Value, Error> {
+    state_out(begin_scale_change(&state_arg(args, 0)?))
+}
+
+fn end_scale_change_fn(args: &[Value]) -> Result<Value, Error> {
+    state_out(end_scale_change(&state_arg(args, 0)?))
+}
+
+fn set_calibration_fn(args: &[Value]) -> Result<Value, Error> {
+    let request = present(args, 1).map(from_value).transpose()?;
+    state_out(set_calibration(&state_arg(args, 0)?, request))
+}
+
+fn set_reports_fn(args: &[Value]) -> Result<Value, Error> {
+    let reports: Vec<ScaleChangeReport> = from_value(&arg(args, 1))?;
+    state_out(set_reports(&state_arg(args, 0)?, Rc::new(reports)))
+}
+
+fn set_local_viewports_fn(args: &[Value]) -> Result<Value, Error> {
+    state_out(set_local_viewports(&state_arg(args, 0)?, pon_arg(args, 1)?, arg(args, 2)))
+}
+
+fn clear_load_error_fn(args: &[Value]) -> Result<Value, Error> {
+    state_out(clear_load_error(&state_arg(args, 0)?, pon_arg(args, 1)?))
 }
 
 fn default_presets_fn(_: &[Value]) -> Result<Value, Error> {
-    ok(&default_presets())
+    Ok(to_value(&default_presets()))
 }
 
-fn default_measure_fn(a: &[Value]) -> Result<Value, Error> {
-    let config: MeasurementConfig = arg(a, 0)?;
-    // `userUnit = 1`: absence reads the default.
-    let user_unit = present(a, 1).map_or(Ok(1.0), from_value::<f64>)?;
-    ok(&default_measure(&config, user_unit)?)
+/// `defaultMeasure(defaultScale, userUnit = 1)`.
+fn default_measure_fn(args: &[Value]) -> Result<Value, Error> {
+    let user_unit = match present(args, 1) {
+        None => 1.0,
+        Some(_) => number_arg(args, 1),
+    };
+    default_measure(&arg(args, 0), user_unit)
 }
 
-fn select_page_scale_fn(a: &[Value]) -> Result<Value, Error> {
-    let viewports: Vec<MeasurementViewport> = arg(a, 0)?;
-    let crop: PdfRect = arg(a, 1)?;
-    let fallback: PdfMeasurement = arg(a, 2)?;
-    let persistent: bool = arg(a, 3)?;
-    ok(&select_page_scale(&viewports, crop, &fallback, persistent))
+fn size_of(value: &Value) -> Option<PageSize> {
+    (!is_undefined(value) && !value.is_null()).then(|| PageSize::of(value))
 }
 
-fn with_unit_fn(a: &[Value]) -> Result<Value, Error> {
-    let m: PdfMeasurement = arg(a, 0)?;
-    let unit: String = arg(a, 1)?;
-    let area: Option<String> = present(a, 2).map(from_value).transpose()?;
-    let mut out = ok(&scale::with_unit(&m, &unit, area.as_deref())?)?;
-    order_formats(&mut out, "distance", |_| NEW_FORMAT.to_vec());
-    order_formats(&mut out, "area", |_| NEW_FORMAT.to_vec());
-    Ok(out)
+fn select_page_scale_fn(args: &[Value]) -> Result<Value, Error> {
+    let viewports = arg(args, 0);
+    let list = viewports.as_array().map(Vec::as_slice).unwrap_or(&[]);
+    let size = size_of(&arg(args, 1)).unwrap_or(PageSize { width: f64::NAN, height: f64::NAN });
+    let persistent = epdf_annotation_core::json::truthy(Some(&arg(args, 3)));
+    Ok(select_page_scale(list, size, &arg(args, 2), persistent).to_json())
 }
 
-fn with_area_unit_fn(a: &[Value]) -> Result<Value, Error> {
-    let m: PdfMeasurement = arg(a, 0)?;
-    let unit: String = arg(a, 1)?;
-    let mut out = ok(&scale::with_area_unit(&m, &unit)?)?;
-    order_formats(&mut out, "area", |_| NEW_FORMAT.to_vec());
-    Ok(out)
-}
-
-fn with_precision_fn(a: &[Value]) -> Result<Value, Error> {
-    let m: PdfMeasurement = arg(a, 0)?;
-    let mut out = ok(&scale::with_precision(&m, arg(a, 1)?)?)?;
-    // `{ ...f, precision, fraction }` on the last format: the input's order,
-    // with either key it lacked added at the end.
-    for key in ["distance", "area"] {
-        let input: Vec<Vec<String>> = a
-            .first()
-            .and_then(|m| m.get(key))
-            .and_then(Value::as_array)
-            .map(|formats| {
-                formats
-                    .iter()
-                    .map(|f| f.as_object().map(|o| o.keys().cloned().collect()).unwrap_or_default())
-                    .collect()
-            })
-            .unwrap_or_default();
-        order_formats(&mut out, key, |i| {
-            let mut keys: Vec<&str> =
-                input.get(i).map(|k| k.iter().map(String::as_str).collect()).unwrap_or_default();
-            if i + 1 == input.len() {
-                for added in ["precision", "fraction"] {
-                    if !keys.contains(&added) {
-                        keys.push(added);
-                    }
-                }
-            }
-            keys
-        });
+fn status_of(value: Option<&Value>) -> ResourceStatus {
+    match value.and_then(Value::as_str) {
+        Some("loading") => ResourceStatus::Loading,
+        Some("ready") => ResourceStatus::Ready,
+        Some("forbidden") => ResourceStatus::Forbidden,
+        Some("error") => ResourceStatus::Error,
+        _ => ResourceStatus::Idle,
     }
-    Ok(out)
 }
 
-/// The member order of a number format `withUnit` and `withAreaUnit` build:
-/// `{ unit, conversion, precision, fraction }`. A calibrated or read
-/// `PdfNumberFormat` keeps the DTO's `fraction` before `precision`.
-const NEW_FORMAT: [&str; 4] = ["unit", "conversion", "precision", "fraction"];
+fn page_scale_of_fn(args: &[Value]) -> Result<Value, Error> {
+    let inputs = arg(args, 0);
+    let member = |key: &str| inputs.get(key).filter(|v| !is_undefined(v));
+    let fallback = member("fallback").cloned().unwrap_or_else(undefined);
+    Ok(page_scale_of(&PageScaleInputs {
+        viewports: member("viewports"),
+        status: status_of(member("status")),
+        error: member("error"),
+        size: member("size").and_then(size_of),
+        fallback: &fallback,
+        persistent: epdf_annotation_core::json::truthy(member("persistent")),
+    })
+    .to_json())
+}
 
-/// Reorder each format in `out[key]` to `order(index)`; members it doesn't
-/// name keep their place after the ones it does.
-fn order_formats<'a>(out: &mut Value, key: &str, order: impl Fn(usize) -> Vec<&'a str>) {
-    let Some(Value::Array(formats)) = out.get_mut(key) else { return };
-    for (i, format) in formats.iter_mut().enumerate() {
-        let Value::Object(members) = format else { continue };
-        let mut ordered = serde_json::Map::new();
-        for name in order(i) {
-            if let Some(value) = members.remove(name) {
-                ordered.insert(name.to_string(), value);
-            }
-        }
-        ordered.append(members);
-        *members = ordered;
-    }
+fn with_unit_fn(args: &[Value]) -> Result<Value, Error> {
+    let area = present(args, 2).and_then(Value::as_str);
+    with_unit(&arg(args, 0), &str_arg(args, 1), area)
+}
+
+fn with_area_unit_fn(args: &[Value]) -> Result<Value, Error> {
+    with_area_unit(&arg(args, 0), &str_arg(args, 1))
+}
+
+fn with_precision_fn(args: &[Value]) -> Result<Value, Error> {
+    with_precision(&arg(args, 0), number_arg(args, 1))
 }
 
 /// The pure functions, by the names the vectors use.
 pub fn functions() -> FunctionTable {
     vec![
         ("initialMeasurementState", initial_measurement_state_fn),
-        ("measurementReducer", measurement_reducer_fn),
-        ("defaultPresets", default_presets_fn),
+        ("beginScaleChange", begin_scale_change_fn),
+        ("endScaleChange", end_scale_change_fn),
+        ("setCalibration", set_calibration_fn),
+        ("setReports", set_reports_fn),
+        ("setLocalViewports", set_local_viewports_fn),
+        ("clearLoadError", clear_load_error_fn),
+        ("DEFAULT_PRESETS", default_presets_fn),
         ("defaultMeasure", default_measure_fn),
         ("selectPageScale", select_page_scale_fn),
+        ("pageScaleOf", page_scale_of_fn),
         ("withUnit", with_unit_fn),
         ("withAreaUnit", with_area_unit_fn),
         ("withPrecision", with_precision_fn),

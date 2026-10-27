@@ -1,0 +1,431 @@
+commit cdf4586c7115f64d7ec80f362149c6b5bc6cc719
+Author: Bob Singor <bob@singor.com>
+Date:   Thu Oct 1 12:37:25 2026 +0300
+
+    Every plugin follows the shared contract, with live examples on every page
+    
+    The headless docs work: each plugin went through the shared
+    contract with its React binding, until the code does what its docs page
+    says. Names now match the pages, and nothing keeps an old name (pre-3.0,
+    no compat aliases). Details per package are in the changesets.
+    
+    The contract, plugin by plugin:
+    - Settings live in definePlugin({ settings }): getSettings, updateSettings,
+      resetSettings and onSettingsChanged on every plugin that has them (render,
+      selection, actions, commands, i18n, measurement, redaction, signature, ...).
+    - State is declared once (stageState, shellState, metadataState, ...) and
+      each framework turns it into its hooks.
+    - Permissions are can* reads, events carry their origin, pages are PageRefs.
+    
+    Notable changes:
+    - Documents: open() and retry() resolve { document }; a download runs the
+      document's save actions itself; a split pane opens beside the focused one.
+    - Viewing: the current page is a PageRef; links open websites in the user's
+      gesture; navigation called before the stage has a size waits for the first
+      placement instead of being lost (so a PDF's open action to a page works).
+    - Text: goToHit() takes a hit; selection colors follow the viewer accent.
+    - Annotations: the capability has nouns (selection, draft, text, tools,
+      stamps); the record type is Annotation (was AnnotationDTO); create() copies
+      a read of another annotation; a kind's style schema is its properties.
+    - Stamps, measurements, redaction, signatures: a free placement uses
+      `center` (was `at`); their settings are live.
+    - Forms: list/get/validate and the other names the forms pages use.
+    - Your app's UI: commands and i18n are settings; useCommandShortcuts takes a
+      target; registerTool() for your own tools; epdfThemeVariables() and
+      fitAnchoredRect() in @embedpdf/web.
+    
+    Docs:
+    - 150 React live examples: plain elements and one ordinary CSS file each,
+      shown as a tab next to the code. Every example shows its feature working
+      on load.
+    - A samples check compiles them; the sync mounts every sample area.
+    - The reference check has 0 pending names except print. 38 of 39 pages are
+      live for React; Saving waits on printing.
+    
+    Verified: about 3,800 tests, 0 type errors, API snapshots, docs:check on both
+    sites, the architecture and comments checks, and a browser pass over all 39
+    pages.
+
+diff --git a/packages/plugin/view-manager/src/contract.ts b/packages/plugin/view-manager/src/contract.ts
+index ebade1327..113dc9053 100644
+--- a/packages/plugin/view-manager/src/contract.ts
++++ b/packages/plugin/view-manager/src/contract.ts
+@@ -22,48 +22,89 @@ export interface PaneInfo {
+ }
+ 
+ // ── events ──
+-export interface PaneEvent {
++export interface PaneCreatedEvent {
++  readonly paneId: PaneId;
++}
++export interface PaneRemovedEvent {
+   readonly paneId: PaneId;
+ }
+ export interface PaneFocusChangedEvent {
++  /** The focused pane, or null when none has the focus. */
+   readonly paneId: PaneId | null;
+ }
+ export interface DocumentMovedEvent {
+   readonly documentId: string;
++  /** The pane it left, or null when it had none (it just opened). */
+   readonly fromPaneId: PaneId | null;
++  /** The pane it went to, or null when it left every pane (it closed). */
+   readonly toPaneId: PaneId | null;
+ }
+ 
++/** Options for `splitPane()`. */
++export interface SplitPaneOptions {
++  /** The pane the new one goes beside; the focused pane when left out. */
++  readonly from?: PaneId;
++}
++
++/** Options for `createPane()`. */
++export interface CreatePaneOptions {
++  /** Documents to move into the new pane, in tab order. */
++  readonly documentIds?: readonly string[];
++}
++
++/** Options for `removePane()`. */
++export interface RemovePaneOptions {
++  /** The pane that takes the removed pane's documents; the focused or the last pane when left out. */
++  readonly moveDocumentsTo?: PaneId;
++}
++
+ export interface ViewManagerCapability {
+   // ── reading ──
+-  /** Panes in display order. Reference-stable while unchanged. */
++  /** Every pane, in order. The same array until a pane changes. */
+   listPanes(): readonly PaneInfo[];
++  /** One pane, or null when there is none with that id. */
+   getPane(id: PaneId): PaneInfo | null;
++  /** The panes' ids, in order. */
+   getPaneOrder(): readonly PaneId[];
++  /** The pane new documents open in, or null. */
+   getFocusedPaneId(): PaneId | null;
+-  /** Which pane holds this document, if any. */
++  /** Which pane holds this document, or null. */
+   getPaneOfDocument(documentId: string): PaneId | null;
+ 
+   // ── panes ──
+-  /** A new pane, optionally populated (documents move from wherever they were). */
+-  createPane(options?: { documentIds?: readonly string[] }): PaneId;
+-  /** Remove a pane; its documents go to `moveDocumentsTo` (default: the focused or last remaining pane). */
+-  removePane(id: PaneId, options?: { moveDocumentsTo?: PaneId }): void;
+-  /** Move a pane to a new position in the order (drag-reorder panes). */
++  /**
++   * Add a pane at the end, empty or with these documents moved into it, and focus it. Returns
++   * its id. Fires `onPaneCreated`, `onFocusChanged` and `onDocumentMoved` for each document.
++   */
++  createPane(options?: CreatePaneOptions): PaneId;
++  /**
++   * Close a pane. Its documents move to `moveDocumentsTo`, or else to the focused or the last
++   * pane. Fires `onPaneRemoved`.
++   */
++  removePane(id: PaneId, options?: RemovePaneOptions): void;
++  /** Move a pane to another place in the order, for reordering panes by dragging. */
+   movePane(id: PaneId, toIndex: number): void;
++  /** Make a pane the focused one, where new documents open; `null` focuses none. Fires `onFocusChanged`. */
+   setFocusedPane(id: PaneId | null): void;
+-  /** A new pane showing the document, in one call. */
+-  splitPane(documentId: string, options?: { from?: PaneId }): PaneId;
++  /**
++   * Move an open document into a new pane beside the focused one (or beside `from`), and focus
++   * it. Returns the new pane's id. Fires as `createPane()` does.
++   */
++  splitPane(documentId: string, options?: SplitPaneOptions): PaneId;
+ 
+   // ── tabs ──
+-  /** The tab the pane shows. */
++  /** Show another of the pane's documents. */
+   setActiveDocument(paneId: PaneId, documentId: string | null): void;
+-  /** Add a document to a pane; a document another pane holds moves (one pane per document). */
++  /**
++   * Add a document to a pane's tabs. A document is in one pane at a time, so it leaves the pane
++   * it was in. Fires `onDocumentMoved`.
++   */
+   addDocument(paneId: PaneId, documentId: string, index?: number): void;
++  /** Take a document out of a pane, without closing it. Fires `onDocumentMoved`. */
+   removeDocument(paneId: PaneId, documentId: string): void;
+-  /** Reorder a tab inside its pane. */
++  /** Move a tab to another place inside its pane. */
+   moveDocumentWithin(paneId: PaneId, documentId: string, toIndex: number): void;
+-  /** Drag a tab from one pane into another. */
++  /** Move a tab from one pane to another, for dragging tabs between panes. Fires `onDocumentMoved`. */
+   moveDocumentBetween(
+     fromPaneId: PaneId,
+     toPaneId: PaneId,
+@@ -72,8 +113,12 @@ export interface ViewManagerCapability {
+   ): void;
+ 
+   // ── events ──
+-  readonly onPaneCreated: EventHook<PaneEvent>;
+-  readonly onPaneRemoved: EventHook<PaneEvent>;
++  /** A pane was added. */
++  readonly onPaneCreated: EventHook<PaneCreatedEvent>;
++  /** A pane was closed. */
++  readonly onPaneRemoved: EventHook<PaneRemovedEvent>;
++  /** Another pane got the focus, or none has it. */
+   readonly onFocusChanged: EventHook<PaneFocusChangedEvent>;
++  /** A document moved between panes, or into or out of every pane. */
+   readonly onDocumentMoved: EventHook<DocumentMovedEvent>;
+ }
+diff --git a/packages/plugin/view-manager/src/controller.ts b/packages/plugin/view-manager/src/controller.ts
+index 0130872ab..db44c4172 100644
+--- a/packages/plugin/view-manager/src/controller.ts
++++ b/packages/plugin/view-manager/src/controller.ts
+@@ -8,9 +8,10 @@ import { DocumentsToken, memo, memoByKey, type PluginContext } from '@embedpdf/c
+ 
+ import type {
+   DocumentMovedEvent,
+-  PaneEvent,
++  PaneCreatedEvent,
+   PaneFocusChangedEvent,
+   PaneInfo,
++  PaneRemovedEvent,
+   ViewManagerCapability,
+ } from './contract';
+ import {
+@@ -23,6 +24,7 @@ import {
+   paneOfDocument,
+   reconcile,
+   removeDocument,
++  renameDocument,
+   removePane,
+   setActiveDocument,
+   setFocusedPane,
+@@ -33,8 +35,8 @@ const sameIds = (left: readonly string[], right: readonly string[]): boolean =>
+   left.length === right.length && left.every((id, index) => id === right[index]);
+ 
+ export function createViewManagerController(ctx: PluginContext<ViewManagerState>) {
+-  const paneCreated = ctx.events.source<PaneEvent>();
+-  const paneRemoved = ctx.events.source<PaneEvent>();
++  const paneCreated = ctx.events.source<PaneCreatedEvent>();
++  const paneRemoved = ctx.events.source<PaneRemovedEvent>();
+   const focusChanged = ctx.events.source<PaneFocusChangedEvent>();
+   const documentMoved = ctx.events.source<DocumentMovedEvent>();
+ 
+@@ -71,9 +73,10 @@ export function createViewManagerController(ctx: PluginContext<ViewManagerState>
+     (_panes, order) => order.map((id) => paneInfoOf(id)!),
+   );
+ 
+-  const createPaneWith = (documentIds: readonly string[] = []): string => {
++  /** A new pane at `index` (the end when left out), focused, with these documents moved into it. */
++  const createPaneWith = (documentIds: readonly string[] = [], index?: number): string => {
+     const id = nextPaneId(state());
+-    ctx.state.update(createPane);
++    ctx.state.update(createPane, index);
+     for (const documentId of documentIds) ctx.state.update(addDocument, id, documentId);
+     return id;
+   };
+@@ -104,7 +107,11 @@ export function createViewManagerController(ctx: PluginContext<ViewManagerState>
+     },
+     movePane: (id, toIndex) => ctx.state.update(movePane, id, toIndex),
+     setFocusedPane: (id) => ctx.state.update(setFocusedPane, id),
+-    splitPane: (documentId) => createPaneWith([documentId]),
++    splitPane: (documentId, options) => {
++      // Beside `from`, or the focused pane; at the end when neither is a pane.
++      const beside = state().order.indexOf(options?.from ?? state().focusedPaneId ?? '');
++      return createPaneWith([documentId], beside < 0 ? undefined : beside + 1);
++    },
+     setActiveDocument: (paneId, documentId) =>
+       ctx.state.update(setActiveDocument, paneId, documentId),
+     addDocument: (paneId, documentId, index) =>
+@@ -129,8 +136,18 @@ export function createViewManagerController(ctx: PluginContext<ViewManagerState>
+      */
+     connect() {
+       const documents = ctx.get(DocumentsToken);
+-      const sync = (open: readonly string[]) =>
++      const sync = (open: readonly string[], previous: readonly string[] = []) => {
++        // A document that got its real id while opening is in the same place in the order.
++        if (open.length === previous.length) {
++          open.forEach((id, index) => {
++            const previousId = previous[index];
++            if (id !== previousId && !open.includes(previousId) && !previous.includes(id)) {
++              ctx.state.update(renameDocument, previousId, id);
++            }
++          });
++        }
+         ctx.state.update(reconcile, open, state().focusedPaneId);
++      };
+       sync(documents.getOrder());
+       ctx.watch(() => documents.getOrder(), sync, sameIds);
+     },
+diff --git a/packages/plugin/view-manager/src/index.ts b/packages/plugin/view-manager/src/index.ts
+index 4783887a8..4dae39def 100644
+--- a/packages/plugin/view-manager/src/index.ts
++++ b/packages/plugin/view-manager/src/index.ts
+@@ -1,2 +1,3 @@
+ export { viewManagerPlugin } from './view-manager.plugin';
++export { viewManagerState } from './state';
+ export * from './contract';
+diff --git a/packages/plugin/view-manager/src/model.ts b/packages/plugin/view-manager/src/model.ts
+index 4c4e246e8..60c3170a2 100644
+--- a/packages/plugin/view-manager/src/model.ts
++++ b/packages/plugin/view-manager/src/model.ts
+@@ -73,13 +73,13 @@ const withPane = (state: ViewManagerState, pane: Pane): ViewManagerState => ({
+ 
+ // ── transitions ────────────────────────────────────────────────────────────
+ 
+-/** Append an empty pane with the next id and focus it. */
+-export function createPane(state: ViewManagerState): ViewManagerState {
++/** Add an empty pane with the next id at `index` (the end when left out), and focus it. */
++export function createPane(state: ViewManagerState, index?: number): ViewManagerState {
+   const id = nextPaneId(state);
+   return {
+     ...state,
+     panes: { ...state.panes, [id]: { id, documentIds: [], activeDocumentId: null } },
+-    order: [...state.order, id],
++    order: insertAt(state.order, id, index),
+     focusedPaneId: id,
+     seq: state.seq + 1,
+   };
+@@ -126,7 +126,9 @@ export function addDocument(
+   const pane = state.panes[paneId];
+   if (!pane || pane.documentIds.includes(documentId)) return state;
+   const holderId = paneOfDocument(state, documentId);
+-  const base = holderId ? withPane(state, withoutDocument(state.panes[holderId], documentId)) : state;
++  const base = holderId
++    ? withPane(state, withoutDocument(state.panes[holderId], documentId))
++    : state;
+   const target = base.panes[paneId];
+   return withPane(base, {
+     ...target,
+@@ -184,6 +186,25 @@ export function moveDocumentBetween(
+   };
+ }
+ 
++/**
++ * A document's id changed where it is (a document still opening gets its real id): it keeps
++ * its pane, its place in the tabs, and whether it's shown.
++ */
++export function renameDocument(
++  state: ViewManagerState,
++  previousId: string,
++  nextId: string,
++): ViewManagerState {
++  const paneId = paneOfDocument(state, previousId);
++  if (!paneId) return state;
++  const pane = state.panes[paneId];
++  return withPane(state, {
++    ...pane,
++    documentIds: pane.documentIds.map((id) => (id === previousId ? nextId : id)),
++    activeDocumentId: pane.activeDocumentId === previousId ? nextId : pane.activeDocumentId,
++  });
++}
++
+ /**
+  * Make the panes match the open documents: drop closed documents from every
+  * pane, then put each unassigned open document into the preferred pane (the
+diff --git a/packages/plugin/view-manager/src/state.ts b/packages/plugin/view-manager/src/state.ts
+new file mode 100644
+index 000000000..2ef8e8e25
+--- /dev/null
++++ b/packages/plugin/view-manager/src/state.ts
+@@ -0,0 +1,15 @@
++/**
++ * The Several documents page's view-manager State table as code: what
++ * `useViewManagerState()` returns, and the same fields in every other framework.
++ */
++import { defineState } from '@embedpdf/core';
++
++import { ViewManagerToken } from './contract';
++
++export const viewManagerState = defineState(ViewManagerToken, {
++  read: (viewManager) => ({
++    panes: viewManager.listPanes(),
++    focusedPaneId: viewManager.getFocusedPaneId(),
++  }),
++  empty: { panes: [], focusedPaneId: null },
++});
+diff --git a/packages/plugin/view-manager/test/controller.test.ts b/packages/plugin/view-manager/test/controller.test.ts
+index b0e8d1b03..b1145d410 100644
+--- a/packages/plugin/view-manager/test/controller.test.ts
++++ b/packages/plugin/view-manager/test/controller.test.ts
+@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
+ 
+ import { createViewManagerController } from '../src/controller';
+ import { initialViewManagerState } from '../src/model';
++import { viewManagerState } from '../src/state';
+ 
+ function harness(open: string[] = []) {
+   const documents = { getOrder: () => open } as unknown as DocumentsCapability;
+@@ -24,7 +25,9 @@ describe('view-manager', () => {
+     const log: string[] = [];
+     api.onPaneCreated((event) => log.push(`+pane:${event.paneId}`));
+     api.onFocusChanged((event) => log.push(`focus:${event.paneId}`));
+-    api.onDocumentMoved((event) => log.push(`doc:${event.documentId}:${event.fromPaneId}->${event.toPaneId}`));
++    api.onDocumentMoved((event) =>
++      log.push(`doc:${event.documentId}:${event.fromPaneId}->${event.toPaneId}`),
++    );
+     connect();
+     expect(api.listPanes().map((pane) => pane.id)).toEqual(['pane-1']);
+     expect(api.getPane('pane-1')?.documentIds).toEqual(['a', 'b']);
+@@ -44,7 +47,9 @@ describe('view-manager', () => {
+     const { api, connect } = harness(['a', 'b']);
+     connect();
+     const log: string[] = [];
+-    api.onDocumentMoved((event) => log.push(`${event.documentId}:${event.fromPaneId}->${event.toPaneId}`));
++    api.onDocumentMoved((event) =>
++      log.push(`${event.documentId}:${event.fromPaneId}->${event.toPaneId}`),
++    );
+     api.onPaneRemoved((event) => log.push(`-pane:${event.paneId}`));
+     const split = api.splitPane('b');
+     expect(split).toBe('pane-2');
+@@ -69,3 +74,57 @@ describe('view-manager', () => {
+     ]);
+   });
+ });
++
++describe('splitting', () => {
++  it('puts the new pane beside the focused pane, or beside `from`', () => {
++    const { api, connect } = harness(['a', 'b', 'c', 'd']);
++    connect();
++    api.createPane(); // pane-2, at the end, focused
++    api.setFocusedPane('pane-1');
++    expect(api.splitPane('b')).toBe('pane-3');
++    expect(api.getPaneOrder()).toEqual(['pane-1', 'pane-3', 'pane-2']);
++    expect(api.getFocusedPaneId()).toBe('pane-3');
++
++    expect(api.splitPane('c', { from: 'pane-2' })).toBe('pane-4');
++    expect(api.getPaneOrder()).toEqual(['pane-1', 'pane-3', 'pane-2', 'pane-4']);
++    expect(api.getPane('pane-4')?.documentIds).toEqual(['c']);
++    expect(api.getPaneOfDocument('c')).toBe('pane-4');
++
++    api.setFocusedPane(null);
++    expect(api.splitPane('d')).toBe('pane-5'); // no pane to go beside: the end
++    expect(api.getPaneOrder().at(-1)).toBe('pane-5');
++  });
++});
++
++describe('the State table', () => {
++  it('reads the panes and the focused pane, and is empty with no capability', () => {
++    const { api, connect } = harness(['a']);
++    connect();
++    expect(viewManagerState.read(api)).toEqual({
++      panes: api.listPanes(),
++      focusedPaneId: 'pane-1',
++    });
++    expect(viewManagerState.read(api).panes).toBe(api.listPanes());
++    expect(viewManagerState.empty).toEqual({ panes: [], focusedPaneId: null });
++  });
++});
++
++describe('a document that gets its real id while opening', () => {
++  it('keeps its pane and its place in the tabs', () => {
++    let order = ['a', 'pending:1'];
++    const documents = { getOrder: () => order } as unknown as DocumentsCapability;
++    const ctx = createTestContext({
++      id: 'view-manager',
++      state: initialViewManagerState(),
++      capabilities: [[DocumentsToken, documents]],
++      doc: null,
++    });
++    const api = ctx.connect(createViewManagerController(ctx));
++    api.splitPane('pending:1');
++    order = ['a', 'real-id']; // the kernel gives it its real id, in the same place
++    ctx.notify();
++    expect(api.getPane('pane-1')?.documentIds).toEqual(['a']);
++    expect(api.getPane('pane-2')?.documentIds).toEqual(['real-id']);
++    expect(api.getPane('pane-2')?.activeDocumentId).toBe('real-id');
++  });
++});

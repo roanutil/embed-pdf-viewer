@@ -34,7 +34,8 @@ use serde_json::Value;
 
 use crate::RenderCapability;
 use crate::contract::{
-    InvalidateOptions, InvalidateScope, RenderPagesOptions, RenderThumbnailOptions,
+    InvalidateOptions, InvalidateScope, PageArg, PageLayerOptions, RenderPagesOptions,
+    RenderThumbnailOptions,
 };
 use crate::paint_plan::{FullPageOptions, Quantize};
 use crate::paint_plan::{PageViewDemand, TilePaintPlan, Velocity};
@@ -80,9 +81,21 @@ pub struct RenderPageOptions {
     /// is 1.
     #[uniffi(default = None)]
     pub scale: Option<f64>,
-    /// Bake annotations into the bitmap; `None` is true.
+    /// Draw the annotations; `None` draws them when the session may read
+    /// them (`doc.annotate.read`).
     #[uniffi(default = None)]
     pub include_annotations: Option<bool>,
+    /// Draw the form fields; `None` draws them when the session may read
+    /// them (`doc.forms.read`) and annotations are not turned off.
+    #[uniffi(default = None)]
+    pub include_form_fields: Option<bool>,
+}
+
+fn layers(
+    include_annotations: Option<bool>,
+    include_form_fields: Option<bool>,
+) -> PageLayerOptions {
+    PageLayerOptions { include_annotations, include_form_fields }
 }
 
 /// The base plane's render points: the exact demand, or a ladder of widths.
@@ -155,11 +168,13 @@ pub struct RenderBatch {
 }
 
 /// `InvalidateScope`: `Content` (the page itself changed, every raster of
-/// it is stale) or `Annotations` (only baked appearances changed).
+/// it is stale), `Annotations` (only pictures that draw annotations) or
+/// `Fields` (only pictures that draw form fields).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
 pub enum RenderInvalidateScope {
     Content,
     Annotations,
+    Fields,
 }
 
 impl From<InvalidateScope> for RenderInvalidateScope {
@@ -167,6 +182,7 @@ impl From<InvalidateScope> for RenderInvalidateScope {
         match scope {
             InvalidateScope::Content => RenderInvalidateScope::Content,
             InvalidateScope::Annotations => RenderInvalidateScope::Annotations,
+            InvalidateScope::Fields => RenderInvalidateScope::Fields,
         }
     }
 }
@@ -176,13 +192,14 @@ impl From<RenderInvalidateScope> for InvalidateScope {
         match scope {
             RenderInvalidateScope::Content => InvalidateScope::Content,
             RenderInvalidateScope::Annotations => InvalidateScope::Annotations,
+            RenderInvalidateScope::Fields => InvalidateScope::Fields,
         }
     }
 }
 
 /// What the plugin announces. `Invalidated` is the plugin's
-/// `RenderInvalidatedEvent` without its `ChangeOrigin`, which no foreign
-/// caller can act on. `Completed` and `Failed` are a raster resolving or
+/// `RenderInvalidatedEvent` without its `origin`, which no foreign caller
+/// can act on. `Completed` and `Failed` are a raster resolving or
 /// failing (not an abort, not a close); `key` is its raster-store key.
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum RenderEvent {
@@ -257,8 +274,6 @@ impl From<PageRenderViewport> for RenderViewport {
 
 #[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
 pub struct RenderPaintSettings {
-    /// Tile arrival cross-fade in ms; 0 is a hard pop.
-    pub fade_ms: f64,
     /// Whether the tile plane is on.
     pub tiles: bool,
 }
@@ -338,7 +353,7 @@ fn invalid_input(message: String) -> Error {
 }
 
 fn error_info(info: epdf_kernel::types::PluginErrorInfo) -> PluginErrorInfo {
-    PluginErrorInfo { code: info.code, message: info.message, capability: info.capability }
+    info.into()
 }
 
 /// A finite, positive size or scale, or `invalid-input`.
@@ -356,7 +371,7 @@ impl RenderPageOptions {
         Ok(crate::RenderPageOptions {
             width: positive(self.width, "width")?,
             scale: positive(self.scale, "scale")?,
-            include_annotations: self.include_annotations,
+            layers: layers(self.include_annotations, self.include_form_fields),
             ..crate::RenderPageOptions::default()
         })
     }
@@ -500,7 +515,7 @@ pub fn start_render_page(
     let mut options = options.validated()?;
     let (signal, abort) = abortable();
     options.signal = Some(signal);
-    let image = cap.render_page(page.into(), options);
+    let image = cap.render_page(epdf_kernel::geometry::PageRef::from(page), options);
     Ok(rendered(cap, pixels, page, image)?.with_abort(abort))
 }
 
@@ -553,6 +568,7 @@ impl RenderHandle {
         page: PageRef,
         max_width: f64,
         include_annotations: Option<bool>,
+        include_form_fields: Option<bool>,
         cancel: Arc<CancelToken>,
     ) -> Result<RenderedImage, ViewerError> {
         self.bound
@@ -564,10 +580,11 @@ impl RenderHandle {
                     let (signal, abort) = abortable();
                     let options = RenderThumbnailOptions {
                         max_width,
-                        include_annotations,
+                        layers: layers(include_annotations, include_form_fields),
                         signal: Some(signal),
                     };
-                    let image = cap.render_thumbnail(page.into(), options);
+                    let image =
+                        cap.render_thumbnail(epdf_kernel::geometry::PageRef::from(page), options);
                     Ok(rendered(cap, &b.pixels, page, image)?.with_abort(abort))
                 },
                 Raster::owned,
@@ -594,7 +611,7 @@ impl RenderHandle {
                     let (signal, abort) = abortable();
                     page.signal = Some(signal.clone());
                     let batch = cap.render_pages(
-                        pages.into_iter().map(Into::into).collect(),
+                        pages.into_iter().map(|page| PageArg::Ref(page.into())).collect(),
                         RenderPagesOptions { page, concurrency: concurrency.map(f64::from) },
                     );
                     let (cap, pixels) = (cap.clone(), b.pixels.clone());
@@ -618,9 +635,13 @@ impl RenderHandle {
                         let failed = batch
                             .failed
                             .into_iter()
-                            .map(|failure| RenderBatchFailure {
-                                page: failure.page.into(),
-                                error: error_info(failure.error),
+                            .filter_map(|failure| match failure.page {
+                                // Every page went in as a ref.
+                                PageArg::Ref(page) => Some(RenderBatchFailure {
+                                    page: page.into(),
+                                    error: error_info(failure.error),
+                                }),
+                                PageArg::Index(_) => None,
                             })
                             .collect::<Vec<_>>();
                         Ok((applied, failed))
@@ -642,16 +663,20 @@ impl RenderHandle {
 
     /// The version of the raster these options would produce. It goes up
     /// when the page's pixels change (see `invalidate` and
-    /// `RenderEvent::Invalidated`). `include_annotations: None` is true.
+    /// `RenderEvent::Invalidated`). A layer option left out draws what the
+    /// session may read.
     pub async fn render_epoch(
         &self,
         page: PageRef,
         include_annotations: Option<bool>,
+        include_form_fields: Option<bool>,
     ) -> Result<u64, ViewerError> {
         self.bound
             .call(move |b| {
-                let epoch =
-                    open(b)?.get_render_epoch(page.into(), include_annotations.unwrap_or(true));
+                let epoch = open(b)?.get_render_epoch(
+                    epdf_kernel::geometry::PageRef::from(page),
+                    layers(include_annotations, include_form_fields),
+                );
                 if !(epoch.is_finite() && epoch >= 0.0 && epoch.fract() == 0.0) {
                     return Err(invalid_state(format!("an epoch that is not a count: {epoch}")));
                 }
@@ -670,9 +695,12 @@ impl RenderHandle {
         self.bound
             .call(move |b| {
                 open(b)?.invalidate(InvalidateOptions {
-                    pages: pages.map(|pages| pages.into_iter().map(Into::into).collect()),
+                    pages: pages.map(|pages| {
+                        pages.into_iter().map(|page| PageArg::Ref(page.into())).collect()
+                    }),
                     scope: scope.map(Into::into),
-                })
+                });
+                Ok(())
             })
             .await
     }
@@ -688,6 +716,7 @@ impl RenderHandle {
         page: PageRef,
         scale: f64,
         include_annotations: Option<bool>,
+        include_form_fields: Option<bool>,
         cancel: Arc<CancelToken>,
     ) -> Result<RenderedImage, ViewerError> {
         self.bound
@@ -698,7 +727,12 @@ impl RenderHandle {
                     let (signal, abort) = abortable();
                     let image = cap.render_source(
                         page.into(),
-                        RenderSourceOptions { scale, include_annotations, signal: Some(signal) },
+                        RenderSourceOptions {
+                            scale,
+                            view: None,
+                            layers: layers(include_annotations, include_form_fields),
+                            signal: Some(signal),
+                        },
                     );
                     Ok(rendered(cap, &b.pixels, page, image)?.with_abort(abort))
                 },
@@ -713,9 +747,16 @@ impl RenderHandle {
         page: PageRef,
         scale: f64,
         include_annotations: Option<bool>,
+        include_form_fields: Option<bool>,
     ) -> Result<String, ViewerError> {
         self.bound
-            .call(move |b| open(b)?.get_source_key(page.into(), scale, include_annotations))
+            .call(move |b| {
+                open(b)?.get_source_key(
+                    page.into(),
+                    scale,
+                    layers(include_annotations, include_form_fields),
+                )
+            })
             .await
     }
 
@@ -731,7 +772,7 @@ impl RenderHandle {
         self.bound
             .call(|b| {
                 let p = open(b)?.get_paint_settings();
-                Ok(RenderPaintSettings { fade_ms: p.fade_ms, tiles: p.tiles })
+                Ok(RenderPaintSettings { tiles: p.tiles })
             })
             .await
     }
@@ -834,9 +875,17 @@ impl RenderViewDemandHandle {
         page: PageRef,
         demand: RenderPageViewDemand,
         include_annotations: Option<bool>,
+        include_form_fields: Option<bool>,
     ) -> Result<(), ViewerError> {
         self.bound
-            .call(move |b| b.open()?.set_demand(page.into(), demand.into(), include_annotations))
+            .call(move |b| {
+                b.open()?.set_demand(
+                    page.into(),
+                    demand.into(),
+                    layers(include_annotations, include_form_fields),
+                );
+                Ok(())
+            })
             .await
     }
 

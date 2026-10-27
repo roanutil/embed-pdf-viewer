@@ -1,0 +1,53 @@
+{
+  "base": "2f9e038a248a8667e8ce679b238904230a5d4a89",
+  "sourceHashes": {
+    "packages/plugin/actions/src/actions.plugin.ts": "bfe51e7c7ea20997d523a3a011a8f9eefd8c9c95718cdbe352bc22bcf9662204",
+    "packages/plugin/actions/src/contract.ts": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69",
+    "packages/plugin/actions/src/host-contract.ts": "b6f97b8b9e93ac2e9629f3c1de088202d1fea97bac20edf480990cc3ba507745",
+    "packages/plugin/actions/src/hover-pump.ts": "ef57af99f14cc7bf382d6176156f4bd08a13432e3b75243224b8dab94c69ad67",
+    "packages/plugin/actions/src/scripting/world.ts": "c47fc3d625a99bb2fc5c6880197b4c89f2e518cdae8fc9f69282b6b24fb2410b",
+    "packages/plugin/actions/src/scripting/executor.ts": "8a106ae9a7588630c503a480710eeb246fb35a231409d726a2c16b42cb41267e",
+    "packages/plugin/actions/src/scripting/environment.ts": "f429c645dfa877788406b35c2018f1724e2c4fa7a97ef718d518fad00aed843e",
+    "packages/plugin/actions/src/scripting/surface.ts": "0c27786f72554030e329f3632745d9e2ddb7a80c3944764759b9d61dbb2e477f",
+    "packages/plugin/actions/src/scripting/realm.ts": "51463817e3dc391037a8c4e0c5980e331f4dc376231e1b19d63ab1e2cfc9af8d",
+    "packages/engine/core/src/identity/AnnotationRef.ts": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b",
+    "packages/engine/core/src/identity/annotationKey.ts": "708684e13d2c6fb5b5aa1e0f4ae7c2e79251c69ce1aa1651cd6c2d43d2d4b45a",
+    "packages/engine/core/src/forms/effects.ts": "6c3b5fde1d926bbb6c802f42ca54277e944e2c9faec34f92d48a37030fceb83c",
+    "packages/engine/core/src/forms/value.ts": "1e017d08eeb716c13c66fff30f9b2472493bacbcda4860dd631829f5bb53b8a7",
+    "packages/engine/core/src/auth/scope/types.ts": "cc23b81bf7bbab1490ccb1982edbbec9e789c8c1cfccb69f051c6b205bd2cdd1",
+    "tooling/plugin-conformance/src/suites/actions.ts": "c0813c310dd4f315d22a34eaa7eda8ad2cfce48a9d24dec46758d135d8940fbd",
+    "tooling/plugin-conformance/src/suites/actions-current-fixtures.ts": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0",
+    "tooling/plugin-conformance/src/suites/acrojs.ts": "c579ef2e705f4a5c1e27ff17cbcda612b29b5ef946dc473f809cfe5490c9137a"
+  },
+  "archiveHashes": {
+    "original-actions.ts.txt": "859be9c7a47199490194841575c1753384aa793c7a6b85527a9cf5ee3319d3b3",
+    "original-inputs.json": "4ba34e8d969162da429dd1fd0fdb7cb18790ad7828fd1d8debc75f791f1f7f99",
+    "original-runtime.json": "8250f07725770b74695f5465275ec8f44827505f5cdabc5c8597afa54cb58733",
+    "current-inputs-runtime.json": "956229e96a321b6d8411aded7da3bd50e7f62d5914a891e45f0a8ef03ce6952e",
+    "accounting.json": "0a4357be842115808e706d83e8a177be90b4921bf9a78824ff0724b96fa1298d",
+    "negative-channels.json": "31a135ebd5a1e307267b8606e1f2f0b071a30ef613472b28fd7f8695d70c9a74",
+    "default-vm-pending-reproduction.json": "15d58f42b616aa32d90a7a06ddd178d16fc3f0be2e653ea32deb0129dd5f1343",
+    "actions-aggregate160.json": "dc523c54b456c499b2bdc89b0bed5d1ab82f6d362895f4fca302d78efd87c271"
+  },
+  "upstream": {
+    "getRefs": "83f6598d22d86e454e7f9110b078d8e0124cbba1",
+    "settingsCreate": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719",
+    "diffAuthorities": [
+      "../task-12b2c2/upstream-actions-get.out",
+      "../task-12b2c2/upstream-actions-settings.out",
+      "../task-12b2c2/upstream-form-sink.out"
+    ]
+  },
+  "immutableAuthorities": {
+    "../task-12b2c2/deferred-runtime.json": "c877b94482b0093398e712a08fab37c831b41fbd59e1cd1f82490458f89c8145",
+    "../task-12b2c2/current-inputs-runtime.json": "f152c54c86e34ab21be7c56abc6d03adfefcd7c4860616a6e1b5fc5bad1f169b",
+    "../task-12b2c3/current-inputs-runtime.json": "cefb5e7d3685a6f424c684d9b723a2e00e55a8c510ecc9e4c8813cf901332b51",
+    "../task-12b2c2/link-runtime.json": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7"
+  },
+  "rulings": {
+    "guardProgression": "Only script/hover active-vector paths and deferred exclusions, exact observer-to-interface and builders-to-dispatcher guards; historical snapshots immutable",
+    "defaultVm": "Root approved enabled/default realm/settings/close/refusal active occurrence; execution deferred requiring D/12c/13 loader validation",
+    "nativeApply": "Original C4 owns scripted effect/entry sink ports only; native apply stays reviewed B2/B3 owner boundary",
+    "unknownRef": "Root approved truthful renamed current occurrence with exact original mapping"
+  }
+}

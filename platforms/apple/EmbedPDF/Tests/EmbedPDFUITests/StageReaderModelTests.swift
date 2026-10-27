@@ -8,7 +8,7 @@ import Testing
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct StageReaderModelTests {
   func model() async throws -> (StageReaderModel, Task<Void, Never>) {
-    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig(frames: false)))
+    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig()))
     try await viewer.start()
     let url = try #require(Bundle.module.url(forResource: "report", withExtension: "pdf", subdirectory: "Fixtures"))
     let document = try await viewer.open(try Data(contentsOf: url))
@@ -64,6 +64,13 @@ struct StageReaderModelTests {
       let end = Task { await model.dragEnded(velocity: .zero) }
       await change.value
       await end.value
+    }
+    // The host clock runs frames, so the spring-back after the last end
+    // animates. Wait for the motion to stop, bounded so a bracket that never
+    // closes still fails.
+    let deadline = ContinuousClock.now + .seconds(20)
+    while try await model.stage.isMoving(), ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(50))
     }
     let camera = try await model.stage.camera()
     expectNoDifference(camera, resting)

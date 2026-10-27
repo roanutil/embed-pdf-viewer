@@ -28,19 +28,18 @@ impl ActionsCapability {
         if let Some(memo) = self.0.catalog.borrow().clone() {
             return memo;
         }
-        // `Promise.resolve(doc.actions.read())` is the guarded call itself.
-        let read: Option<Promise<Value>> = match self.doc() {
-            Ok(doc) if doc.has("actions") => Some(doc.call("actions.read", None, Vec::new())),
-            _ => None,
+        // `Promise.resolve(doc.actions.get())` is the guarded call itself.
+        // `doc.actions` is a required service of the engine contract.
+        let read: Promise<Value> = match self.doc() {
+            Ok(doc) => doc.call("actions.get", None, Vec::new()),
+            Err(error) => Promise::rejected(error),
         };
         // `read.catch(...)`: one turn after the read settles.
         let (memo, resolver) = Promise::pending();
         let (weak, own) = (self.weak(), memo.clone());
         rt::spawn(async move {
-            let result = match read {
-                Some(call) => call.await.map(Some),
-                None => Promise::<Option<Value>>::resolved(None).await,
-            };
+            // An engine that answers no snapshot reads as none.
+            let result = read.await.map(|snapshot| Some(snapshot).filter(|s| !s.is_null()));
             if result.is_err()
                 && let Some(this) = ActionsCapability::upgrade(&weak)
             {

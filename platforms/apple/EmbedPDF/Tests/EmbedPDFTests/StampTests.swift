@@ -7,7 +7,7 @@ extension BaseSuite {
   @Suite struct StampTests {
     func started() async throws -> (PDFViewer, StampCapability) {
       let viewer = try PDFViewer(
-        ViewerConfig(interaction: true, annotation: AnnotationConfig(), stamp: StampConfig()))
+        ViewerConfig(interaction: true, annotation: "", stamp: StampConfig()))
       try await viewer.start()
       return (viewer, try await viewer.stamps())
     }
@@ -68,7 +68,7 @@ extension BaseSuite {
       let (viewer, stamps, _, asset) = try await imported()
       let document = try await viewer.open(Fixture.data("report"))
       let page = try await viewer.pages(of: document)[0].page
-      let ref = try await stamps.place(asset.id, in: document, on: page, at: Point(x: 100, y: 100))
+      let ref = try await stamps.place(asset.id, in: document, on: page, center: Point(x: 100, y: 100))
       let annotations = try await viewer.annotations(for: document)
       let placed = try await annotations.get(ref)
       #expect(placed != nil)
@@ -83,11 +83,12 @@ extension BaseSuite {
       expectNoDifference(armedBefore?.id, asset.id)
       try await viewer.close(document)
       await #expect {
-        _ = try await stamps.place(asset.id, in: document, on: page, at: Point(x: 10, y: 10))
+        _ = try await stamps.place(asset.id, in: document, on: page, center: Point(x: 10, y: 10))
       } throws: { error in
-        // The kernel's error for a document it no longer has: no code.
-        guard let error = error as? PDFError else { return false }
-        return error.name == "Error" && error.detail.contains("no document")
+        // A closed document grants nothing: the placement's
+        // `annotations:create` check refuses it first, as the TypeScript
+        // does (`stamp-placement.json`, `arming-what-is-not-there`).
+        (error as? PDFError)?.code == "permission-denied"
       }
       let armed = try await stamps.armedAsset(in: document)
       expectNoDifference(armed, nil)
@@ -99,9 +100,9 @@ extension BaseSuite {
       let events = stamps.events
       try await stamps.arm(asset.id, in: document)
       for await event in events {
-        guard case let .armChanged(documentId, assetId) = event else { continue }
+        guard case let .armChanged(documentId, armedAsset) = event else { continue }
         expectNoDifference(documentId, document.id)
-        expectNoDifference(assetId, asset.id)
+        expectNoDifference(armedAsset?.id, asset.id)
         break
       }
       let armed = try await stamps.armedAsset(in: document)
@@ -111,15 +112,22 @@ extension BaseSuite {
       expectNoDifference(disarmed, nil)
     }
 
-    @Test func createAssetFromAnnotationsIsUnsupported() async throws {
+    @Test func createAssetFromAnnotationsExportsThroughTheNativeEngine() async throws {
       let (viewer, stamps) = try await started()
       let document = try await viewer.open(Fixture.data("report"))
       let page = try await viewer.pages(of: document)[0].page
+      // The native engine maps `page.annotations.exportAppearance` now (it
+      // answered `unsupported` before); an empty list is still refused.
       await #expect {
         _ = try await stamps.createAsset(from: [], in: document, on: page)
       } throws: { error in
-        (error as? PDFError)?.code == "unsupported"
+        (error as? PDFError)?.code == "invalid-input"
       }
+      let square = try await viewer.annotations(for: document).create(
+        #"{"subtype": "square", "box": {"x": 72, "y": 72, "width": 40, "height": 40}}"#, on: page)
+      let asset = try await stamps.createAsset(from: [square], in: document, on: page)
+      let bytes = try #require(try await stamps.assetBytes(asset))
+      #expect(bytes.starts(with: Data("%PDF".utf8)))
     }
 
     @Test func aLibraryPersistsThroughAFileStore() async throws {
@@ -128,7 +136,7 @@ extension BaseSuite {
       let store = try FileStampLibraryStore(directory: directory)
       do {
         let (_, stamps) = try await started()
-        let persistence = try await stamps.persist(to: store, debounce: .zero)
+        let persistence = try await stamps.persist(to: store)
         _ = try await stamps.importLibrary(Fixture.data("stamps"))
         try await Task.sleep(for: .milliseconds(200))
         persistence.unregister()
@@ -145,7 +153,7 @@ extension BaseSuite {
       defer { try? FileManager.default.removeItem(at: directory) }
       let store = try FileStampLibraryStore(directory: directory)
       let (_, stamps) = try await started()
-      _ = try await stamps.persist(to: store, debounce: .zero)
+      _ = try await stamps.persist(to: store)
       _ = try await stamps.importLibrary(Fixture.data("stamps"))
       var written: [StoredStampLibrary] = []
       for _ in 0..<50 where written.isEmpty {
@@ -290,14 +298,14 @@ extension BaseSuite {
       let (viewer, stamps, _, asset) = try await imported()
       let document = try await viewer.open(Fixture.data("report"))
       let page = try await viewer.pages(of: document)[0].page
-      await expectCancelled { try await stamps.place(asset.id, in: document, on: page, at: Point(x: 10, y: 10)) }
+      await expectCancelled { try await stamps.place(asset.id, in: document, on: page, center: Point(x: 10, y: 10)) }
     }
 
     @Test func placeOnPagesCancelsWhenTheTaskIsCancelled() async throws {
       let (viewer, stamps, _, asset) = try await imported()
       let document = try await viewer.open(Fixture.data("report"))
       await expectCancelled {
-        try await stamps.place(asset.id, in: document, onPages: nil, at: Point(x: 10, y: 10))
+        try await stamps.place(asset.id, in: document, onPages: nil, center: Point(x: 10, y: 10))
       }
     }
 

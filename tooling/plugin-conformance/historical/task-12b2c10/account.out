@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "original": 38,
+    "originalPure": 32,
+    "originalLive": 6,
+    "current": 47,
+    "currentPure": 40,
+    "currentLive": 7,
+    "mapped": 38,
+    "wholeRetirements": 1,
+    "survivingOriginals": 37,
+    "replacementRows": 1,
+    "totalNewRows": 10,
+    "partialRetirements": 30,
+    "additions": 9,
+    "changedInputs": 33
+  },
+  "runtime": {
+    "scenarios": 7,
+    "steps": 151,
+    "callbacks": 23,
+    "settlements": 17,
+    "stepThrows": 4,
+    "pure": 40,
+    "pureThrows": 0,
+    "runnerExceptions": 0,
+    "unmatched": 0,
+    "rejections": 0,
+    "reports": 0
+  },
+  "diagnostics": {
+    "total": 32,
+    "allocation": {
+      "src/suites/annotation-fixtures.ts": 3,
+      "src/suites/form-fixtures.ts": 12,
+      "src/suites/render-pure.ts": 2,
+      "src/suites/render.ts": 2,
+      "src/suites/signature-core.ts": 2,
+      "src/suites/signature-plugin.ts": 1,
+      "src/suites/stamp-fixtures.ts": 10
+    },
+    "owned": 0
+  },
+  "preserved": 699
+}

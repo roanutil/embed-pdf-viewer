@@ -7,7 +7,7 @@
 //! the bytes a save would write, writes the signature there, saves and
 //! seals it, and parks it on the session. `complete` writes the CMS in,
 //! proves the sealed bytes carry the signature, and installs them as the
-//! session's document. `abort` discards the candidate.
+//! session's document. `cancel` discards the candidate.
 //!
 //! The TypeScript's candidate is a fresh layer over a memory base; a plain
 //! document over the same bytes is what the fork's candidate calls are
@@ -19,21 +19,24 @@
 use pdfium::{Document, Library, PdfSaveMode, SavedCandidate, SignaturePrepareOptions};
 use serde::{Deserialize, Serialize};
 
-use crate::cancel::CancelToken;
+use crate::auth::scope::FieldWriteAction;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::forms::snapshot::{FormFieldDto, FormFieldFamily, FormFieldRef};
-use crate::features::forms::write::read_writable_field;
-use crate::identity::PageObjectNumber;
-use crate::revision::PageState;
-use crate::session::document::DocumentSession;
+use crate::features::changes::applier::ChangeAuthority;
+use crate::features::changes::op::ResourceBytes;
+use crate::features::forms::snapshot::{FormFieldFamily, FormFieldRef};
+use crate::features::forms::write::{load_model, read_at, resolve};
+use crate::identity::PageRef;
+use crate::mutation::MutationMeta;
+use crate::session::document::{DocumentSession, WriteStamp};
 
 use super::reader::{
     loaded_bytes, read_contents_at, read_revisions, read_signatures_from_model, read_snapshot,
-    resolve_field, version, widget_refs, with_signature_model,
+    resolve_field, version, with_signature_model,
 };
 use super::types::{
     BaseVersionInfo, DigestAlgorithm, DocumentProtection, DocumentVersionRef, FieldLockAction,
     FieldLockSpec, FormWidget, SignatureCoverage, SignatureDto, SignatureKind,
+    SignatureSignerInput,
 };
 
 const DEFAULT_CONTENTS_SIZE: u64 = 8192;
@@ -63,28 +66,17 @@ fn refused(message: impl Into<String>) -> EngineError {
     EngineError::with_message(EngineErrorCode::SignatureRefused, message)
 }
 
-/// `SignaturePrepareInput['attribution']`.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Attribution {
-    pub name: Option<String>,
-    pub reason: Option<String>,
-    pub location: Option<String>,
-    pub contact_info: Option<String>,
-}
-
 /// `{ permission }` of a certification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct Certify {
     pub permission: u8,
 }
 
-/// `SignatureAppearanceInput` on the wire: the PDF travels as payload 0.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// `SignatureAppearanceInput` on the wire: the one-page PDF is a request
+/// payload, named `{ "pdf": { "payload": n } }` as a resource is.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct AppearanceInput {
-    #[serde(default)]
-    pub page_index: Option<i32>,
+    pub pdf: ResourceBytes,
 }
 
 /// `SignaturePrepareInput`.
@@ -100,13 +92,9 @@ pub struct SignaturePrepareInput {
     pub digest: Option<DigestAlgorithm>,
     #[serde(default)]
     pub contents_size: Option<f64>,
+    /// `/Name`, `/Reason`, `/Location`, `/ContactInfo` and `/M`.
     #[serde(default)]
-    pub attribution: Option<Attribution>,
-    /// The pre-rename spelling of `attribution`, which older clients send.
-    #[serde(default)]
-    pub signer: Option<Attribution>,
-    #[serde(default)]
-    pub signing_time: Option<String>,
+    pub signer: Option<SignatureSignerInput>,
     #[serde(default)]
     pub certify: Option<Certify>,
     #[serde(default)]
@@ -143,14 +131,6 @@ pub enum CompletionStatus {
     AlreadyCompleted,
 }
 
-/// `MutationMeta`.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MutationMeta {
-    pub affected_pages: Vec<PageState>,
-    pub cache_delta: Option<()>,
-}
-
 /// `SignatureCompleteResult`.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -165,16 +145,16 @@ pub struct SignatureCompleteResult {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum AbortStatus {
-    Aborted,
+pub enum CancelStatus {
+    Cancelled,
     AlreadyCompleted,
     Unknown,
 }
 
-/// `SignatureAbortResult`.
+/// `SignatureCancelResult`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub struct SignatureAbortResult {
-    pub status: AbortStatus,
+pub struct SignatureCancelResult {
+    pub status: CancelStatus,
 }
 
 /// `PendingSigning`: the parked candidate.
@@ -216,7 +196,7 @@ pub fn assert_no_pending_signing(session: &DocumentSession) -> Result<(), Engine
         Some(id) => Err(EngineError::with_message(
             EngineErrorCode::SigningPending,
             format!(
-                "a signing is pending ({id}); complete or abort it before mutating the document"
+                "a signing is pending ({id}); complete or cancel it before mutating the document"
             ),
         )),
         None => Ok(()),
@@ -253,12 +233,12 @@ fn open_bytes(session: &DocumentSession, bytes: &[u8]) -> Result<Document, Engin
     Ok(document)
 }
 
-/// `bakeWidgetAppearance`.
-fn bake_widget_appearance(
+/// `bakeWidgetAppearance`: draw a one-page PDF into the widget's normal
+/// appearance. A PDF of any other page count is `InvalidArg`.
+pub(crate) fn bake_widget_appearance(
     doc: &Document,
     widget: &FormWidget,
     pdf: &[u8],
-    page_index: i32,
 ) -> Result<(), EngineError> {
     let Some(page) = widget.page else {
         return Err(EngineError::with_message(
@@ -272,47 +252,103 @@ fn bake_widget_appearance(
             "the appearance PDF could not be opened",
         )
     })?;
-    doc.bake_widget_appearance(
-        page.object_number().get(),
-        widget.annot_object_number,
-        &artwork,
-        page_index,
-    )
-    .map_err(|step| match step {
-        "page" => EngineError::with_message(
-            EngineErrorCode::NotFound,
-            "the widget page could not be loaded",
-        ),
-        "widget" => EngineError::with_message(
-            EngineErrorCode::NotFound,
-            "the signature widget could not be loaded",
-        ),
-        "draw" => EngineError::with_message(
+    let pages = artwork.page_count();
+    if pages != 1 {
+        return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
-            "the appearance page could not be drawn into the widget",
-        ),
-        _ => EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "the appearance page could not be fitted into the widget",
-        ),
-    })
+            format!(
+                "the appearance PDF has {pages} pages; a signature appearance takes a one-page PDF"
+            ),
+        ));
+    }
+    doc.bake_widget_appearance(page.object_number().get(), widget.annot_object_number, &artwork, 0)
+        .map_err(|step| match step {
+            "page" => EngineError::with_message(
+                EngineErrorCode::NotFound,
+                "the widget page could not be loaded",
+            ),
+            "widget" => EngineError::with_message(
+                EngineErrorCode::NotFound,
+                "the signature widget could not be loaded",
+            ),
+            "draw" => EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "the appearance page could not be drawn into the widget",
+            ),
+            _ => EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "the appearance page could not be fitted into the widget",
+            ),
+        })
+}
+
+/// `groupOfField`: the group of the field `field_object_number`; `None` in
+/// none, or when the form has no such field.
+fn group_of_field(
+    session: &DocumentSession,
+    field_object_number: u32,
+) -> Result<Option<String>, EngineError> {
+    let model = load_model(session.document()?.document())?;
+    let Ok(resolved) = resolve(&model, &FormFieldRef::ObjectNumber { field: field_object_number })
+    else {
+        return Ok(None);
+    };
+    Ok(read_at(&model, resolved.index)?.base.group_id)
+}
+
+/// `groupLockFields`: what signing a field of `group_id` locks when the
+/// signing names no lock, the full names of the group's fields, read now.
+/// Its signature fields are left out: their signers still sign them.
+fn group_lock_fields(
+    session: &DocumentSession,
+    group_id: &str,
+) -> Result<Vec<String>, EngineError> {
+    let model = load_model(session.document()?.document())?;
+    let mut names = Vec::new();
+    for index in 0..model.field_count() {
+        let field = read_at(&model, index)?;
+        if field.base.group_id.as_deref() != Some(group_id)
+            || field.base.family == FormFieldFamily::Signature
+        {
+            continue;
+        }
+        if !field.base.name.is_empty() {
+            names.push(field.base.name);
+        }
+    }
+    Ok(names)
 }
 
 /// `SignatureMutator.prepare`. Answers the prepared record and its digest.
+///
+/// `authority` must be allowed to sign the field (its group, `fields:sign`).
+/// A field in a group, signed without a `lock`, locks the rest of its group.
 pub fn prepare(
     session: &DocumentSession,
     input: &SignaturePrepareInput,
     appearance_pdf: Option<&[u8]>,
     signing_id: String,
+    authority: &ChangeAuthority,
 ) -> Result<(SignaturePrepared, Vec<u8>), EngineError> {
     if let Some(id) = session.signing().borrow().pending_id() {
         return Err(EngineError::with_message(
             EngineErrorCode::SigningPending,
-            format!("a signing is pending ({id}); complete or abort it first"),
+            format!("a signing is pending ({id}); complete or cancel it first"),
         ));
     }
     let loaded = session.document()?.document();
     let field = resolve_field(loaded, &input.field)?;
+    let group_id = group_of_field(session, field.field_object_number)?;
+    authority.require_field_write(group_id.as_deref(), FieldWriteAction::Sign)?;
+    let lock = match (&input.lock, &group_id) {
+        (Some(lock), _) => Some(lock.clone()),
+        (None, Some(group_id)) => Some(FieldLockSpec {
+            action: FieldLockAction::Include,
+            fields: group_lock_fields(session, group_id)?,
+            permission: None,
+        }),
+        (None, None) => None,
+    };
     if field.signed {
         return Err(refused("the signature field is already signed"));
     }
@@ -345,9 +381,13 @@ pub fn prepare(
     let expected_version = version_ref(session, version(session)?.sha256);
 
     let candidate = open_bytes(session, &snapshot_bytes(session)?)?;
-    let attribution =
-        input.attribution.clone().or_else(|| input.signer.clone()).unwrap_or_default();
-    let lock = input.lock.as_ref();
+    let signer = input.signer.clone().unwrap_or_default();
+    let signing_time = signer
+        .signed_at
+        .as_ref()
+        .map(|at| crate::clock::format_pdf_date(at.as_str()))
+        .transpose()?;
+    let lock = lock.as_ref();
     let value_obj_num = candidate
         .prepare_signature(
             field.field_object_number,
@@ -355,11 +395,11 @@ pub fn prepare(
                 subfilter,
                 digest: algorithm.native() as i32,
                 contents_size,
-                name: attribution.name,
-                reason: attribution.reason,
-                location: attribution.location,
-                contact_info: attribution.contact_info,
-                signing_time: input.signing_time.clone(),
+                name: signer.name,
+                reason: signer.reason,
+                location: signer.location,
+                contact_info: signer.contact_info,
+                signing_time,
                 docmdp_permission: input.certify.map_or(0, |c| i32::from(c.permission)),
                 fieldmdp_action: lock.map_or(0, |l| field_action_code(l.action)),
                 fieldmdp_fields: match lock {
@@ -375,14 +415,14 @@ pub fn prepare(
             "the engine refused to author the signature (the field is signed, read-only or locked, a certification is not allowed here, the seed value requires what is not implemented, or the request is inconsistent)",
         ));
     }
-    if let (Some(appearance), Some(widget)) = (input.appearance, field.widget.as_ref()) {
+    if let (Some(_), Some(widget)) = (&input.appearance, field.widget.as_ref()) {
         let pdf = appearance_pdf.ok_or_else(|| {
             EngineError::with_message(
                 EngineErrorCode::WireFormat,
-                "an appearance carries its PDF as payload 0",
+                "an appearance carries its PDF as a request payload",
             )
         })?;
-        bake_widget_appearance(&candidate, widget, pdf, appearance.page_index.unwrap_or(0))?;
+        bake_widget_appearance(&candidate, widget, pdf)?;
     }
 
     let mut saved = candidate.save_signature_candidate(value_obj_num).map_err(|_| {
@@ -415,11 +455,15 @@ pub fn prepare(
     Ok((prepared, sealed.digest))
 }
 
-/// `SignatureMutator.complete`.
+/// `SignatureMutator.complete`: `authority` must still be allowed to sign
+/// the field. `op_id` names the write; a signing replaces the document's
+/// bytes, outside a layer transaction, and is final: never undoable.
 pub fn complete(
     session: &mut DocumentSession,
     input: &SignatureCompleteInput,
     cms: &[u8],
+    op_id: &str,
+    authority: &ChangeAuthority,
 ) -> Result<SignatureCompleteResult, EngineError> {
     let pending = session.signing().borrow().pending.clone();
     let Some(pending) = pending.filter(|p| p.prepared.signing_id == input.signing_id) else {
@@ -438,6 +482,8 @@ pub fn complete(
             format!("no pending signing '{}'", input.signing_id),
         ));
     };
+    let group_id = group_of_field(session, pending.field_object_number)?;
+    authority.require_field_write(group_id.as_deref(), FieldWriteAction::Sign)?;
     if pending.prepared.expected_version != input.expected_version {
         return Err(EngineError::with_message(
             EngineErrorCode::SigningVersionMismatch,
@@ -491,17 +537,18 @@ pub fn complete(
             )
         })?;
     let version = version(session)?;
-    let pages: Vec<PageObjectNumber> =
-        session.all_records()?.iter().map(|r| r.page_object_number).collect();
-    let affected_pages =
-        pages.into_iter().map(|pon| session.page_state(pon)).collect::<Result<Vec<_>, _>>()?;
+    let affected_pages: Vec<PageRef> =
+        session.all_records()?.iter().map(|r| PageRef::new(r.page_object_number)).collect();
     let result = SignatureCompleteResult {
         status: CompletionStatus::Completed,
         signature,
         version,
         previous: pending.prepared.expected_version.clone(),
         protection: snapshot.protection,
-        meta: MutationMeta { affected_pages, cache_delta: None },
+        meta: MutationMeta::local(
+            affected_pages,
+            &WriteStamp { op_id: op_id.to_owned(), undoable: false },
+        ),
     };
     session.signing().borrow_mut().last_completion = Some(SigningCompletion {
         signing_id: input.signing_id.clone(),
@@ -511,17 +558,17 @@ pub fn complete(
     Ok(result)
 }
 
-/// `SignatureMutator.abort`.
-pub fn abort(session: &DocumentSession, signing_id: &str) -> SignatureAbortResult {
+/// `SignatureMutator.cancel`.
+pub fn cancel(session: &DocumentSession, signing_id: &str) -> SignatureCancelResult {
     let mut signing = session.signing().borrow_mut();
     if signing.pending_id() == Some(signing_id) {
         signing.pending = None;
-        return SignatureAbortResult { status: AbortStatus::Aborted };
+        return SignatureCancelResult { status: CancelStatus::Cancelled };
     }
     if signing.last_completion.as_ref().is_some_and(|l| l.signing_id == signing_id) {
-        return SignatureAbortResult { status: AbortStatus::AlreadyCompleted };
+        return SignatureCancelResult { status: CancelStatus::AlreadyCompleted };
     }
-    SignatureAbortResult { status: AbortStatus::Unknown }
+    SignatureCancelResult { status: CancelStatus::Unknown }
 }
 
 /// `FinalizeCandidateInput`, less the CMS, which travels as a payload.
@@ -548,6 +595,9 @@ pub struct FinalizedCandidate {
     pub protection: DocumentProtection,
     /// The version the sealed file IS: hash and length of the whole file.
     pub version: BaseVersionInfo,
+    /// The sealed file's last object number: every object it has is at or
+    /// below it.
+    pub last_object_number: u32,
 }
 
 /// `CandidateFinalizer.finalize`: the session-less half of a durable
@@ -653,11 +703,36 @@ pub fn finalize_candidate(
         [0, byte_length, byte_length, 0],
         DigestAlgorithm::Sha256,
     )?;
+    drop(document);
     Ok(FinalizedCandidate {
         signature,
         protection: snapshot.protection,
         version: BaseVersionInfo { sha256: super::reader::to_hex(&digest), byte_length },
+        last_object_number: last_object_number_of(path, input.password.as_deref())?,
     })
+}
+
+/// `session.lastObjectNumber()` of the layer `CandidateFinalizer` reads
+/// the sealed file through. The checks above read it as a plain document
+/// (the kept divergence of `dd2e1c290`), which has no last object number,
+/// so a fresh layer over the file as a base answers it: the base's own.
+fn last_object_number_of(
+    path: &std::path::Path,
+    password: Option<&str>,
+) -> Result<u32, EngineError> {
+    let unopened = |e: String| {
+        EngineError::with_message(
+            EngineErrorCode::DocOpenFailed,
+            format!("the sealed candidate could not be opened as a base: {e}"),
+        )
+    };
+    let access = pdfium::FileAccess::from_file(path).map_err(|e| unopened(e.to_string()))?;
+    let base = std::rc::Rc::new(
+        pdfium::BaseDocument::from_file_access(Library::acquire(), access, password)
+            .map_err(|e| unopened(e.to_string()))?,
+    );
+    let layer = base.open_layer().map_err(|e| unopened(format!("{e:?}")))?;
+    Ok(layer.document().layer_last_object_number())
 }
 
 /// `sealCheck.ts` `assertSealedSignature`: the sealed bytes carry a
@@ -700,87 +775,5 @@ fn assert_sealed_signature(
             return Err(refuse("carry /Contents that are not the CMS installed"));
         }
         Ok(())
-    })
-}
-
-/// What `forms.setSignatureAppearance` answers: the field read back, and
-/// the pages its widgets sit on.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SignatureAppearanceResult {
-    pub field: FormFieldDto,
-    pub meta: MutationMeta,
-}
-
-/// `FormMutator.setSignatureAppearance`: draw page `page_index` of `pdf`
-/// into every widget of an unsigned signature field.
-pub fn set_signature_appearance(
-    session: &mut DocumentSession,
-    reference: &FormFieldRef,
-    pdf: &[u8],
-    page_index: i32,
-    cancel: &CancelToken,
-) -> Result<SignatureAppearanceResult, EngineError> {
-    cancel.check()?;
-    let (field_object_number, pages) = {
-        let doc = session.document()?.document();
-        let before = read_writable_field(doc, reference, cancel)?;
-        let name = &before.base.name;
-        if before.base.family != FormFieldFamily::Signature {
-            let family = serde_json::to_value(before.base.family).unwrap_or_default();
-            return Err(EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                format!(
-                    "'{name}' is a {} field, not a signature field",
-                    family.as_str().unwrap_or("unknown")
-                ),
-            ));
-        }
-        let field_object_number = before.base.field_object_number;
-        let signed = with_signature_model(doc, |model| {
-            Ok(read_signatures_from_model(model)?
-                .iter()
-                .any(|s| s.signed && s.field_object_number() == field_object_number))
-        })?;
-        if signed {
-            return Err(EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                format!("'{name}' is signed; its appearance is sealed with the signature"),
-            ));
-        }
-        let widgets = widget_refs(&before.kind);
-        if widgets.is_empty() {
-            return Err(EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                format!("'{name}' has no widget to draw into"),
-            ));
-        }
-        for (annot, page) in &widgets {
-            bake_widget_appearance(doc, &FormWidget::new(*annot, *page), pdf, page_index)?;
-        }
-        let mut pages: Vec<PageObjectNumber> = Vec::new();
-        for (_, page) in widgets {
-            if let Ok(page) = PageObjectNumber::new(page)
-                && !pages.contains(&page)
-            {
-                pages.push(page);
-            }
-        }
-        (field_object_number, pages)
-    };
-    session.note_mutation();
-    for pon in &pages {
-        session.bump_revision(*pon)?;
-    }
-    let field = read_writable_field(
-        session.document()?.document(),
-        &FormFieldRef::ObjectNumber { field: field_object_number },
-        cancel,
-    )?;
-    let affected_pages =
-        pages.into_iter().map(|pon| session.page_state(pon)).collect::<Result<Vec<_>, _>>()?;
-    Ok(SignatureAppearanceResult {
-        field,
-        meta: MutationMeta { affected_pages, cache_delta: None },
     })
 }

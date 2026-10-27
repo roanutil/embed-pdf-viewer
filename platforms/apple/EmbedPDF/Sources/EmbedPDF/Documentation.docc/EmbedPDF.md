@@ -40,7 +40,7 @@ The Swift facade delegates to a Rust workspace kernel and a native PDFium engine
 - ``PageRef``
 - ``Point``
 - ``Rect``
-- ``TextQuad``
+- ``Quad``
 
 ### Rendering and navigation
 

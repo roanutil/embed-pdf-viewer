@@ -2,6 +2,10 @@
 //! and `epdf-signature-core`'s verdicts, as typed records. The plugin keeps
 //! them as JSON; each record here decodes from that JSON through a private
 //! serde twin, and a value that doesn't decode is `invalid-state`.
+//!
+//! Migrated by hand to the Task 13.25 plugin; compiled and tested since
+//! Task 13.33. Refs are written in the engine's current spelling
+//! (`objectNumber`).
 
 use epdf_ffi::{AnnotationRef, FormFieldRef, PageRef};
 use epdf_kernel::Error;
@@ -19,30 +23,47 @@ pub(crate) fn decode<T: DeserializeOwned>(what: &str, value: &Value) -> Result<T
     serde_json::from_value(value.clone()).map_err(|e| invalid_state(what, e))
 }
 
-/// A field ref the plugin's way.
+/// A field ref the engine's way: `{ kind: 'objectNumber', objectNumber }`
+/// or `{ kind: 'fqn', name }`.
 pub(crate) fn field_json(field: &FormFieldRef) -> Value {
-    field.to_json()
+    match field {
+        FormFieldRef::ObjectNumber { field_object_number } => {
+            json!({ "kind": "objectNumber", "objectNumber": field_object_number })
+        }
+        FormFieldRef::Fqn { name } => json!({ "kind": "fqn", "name": name }),
+    }
 }
 
-/// A field ref from the plugin's JSON.
+/// A field ref from the engine's JSON.
 pub(crate) fn field_from_json(value: &Value) -> Result<FormFieldRef, Error> {
-    FormFieldRef::from_json(value).map_err(|_| invalid_state("a field ref", value))
+    match value.get("kind").and_then(Value::as_str) {
+        Some("objectNumber") => value
+            .get("objectNumber")
+            .and_then(Value::as_u64)
+            .and_then(|n| u32::try_from(n).ok())
+            .map(|field_object_number| FormFieldRef::ObjectNumber { field_object_number })
+            .ok_or_else(|| invalid_state("a field ref", value)),
+        Some("fqn") => value
+            .get("name")
+            .and_then(Value::as_str)
+            .map(|name| FormFieldRef::Fqn { name: name.to_string() })
+            .ok_or_else(|| invalid_state("a field ref", value)),
+        _ => Err(invalid_state("a field ref", value)),
+    }
 }
 
 fn page_from_json(value: &Value) -> Result<Option<PageRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    let core: epdf_annotation_core::PageRef = decode("a page ref", value)?;
-    Ok(Some(core.into()))
+    Ok(Some(PageRef::from_json(value)?))
 }
 
 fn annotation_from_json(value: &Value) -> Result<Option<AnnotationRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    let core: epdf_annotation_core::AnnotationRef = decode("an annotation ref", value)?;
-    Ok(Some(AnnotationRef::try_from(&core)?))
+    Ok(Some(AnnotationRef::from_json(value)?))
 }
 
 // ── enums ────────────────────────────────────────────────────────────────────
@@ -172,8 +193,9 @@ pub struct SignatureSignerClaims {
     pub reason: Option<String>,
     pub location: Option<String>,
     pub contact_info: Option<String>,
-    /// `/M` as written, a PDF date string. A claim, not verified.
-    pub claimed_time: Option<String>,
+    /// `/M`, when the signer says they signed (`signedAt`, an ISO date
+    /// time). A claim, not verified.
+    pub signed_at: Option<String>,
 }
 
 /// The field's `/SV` seed value.
@@ -207,6 +229,8 @@ pub struct SignatureWidget {
 struct SignatureWidgetJson {
     #[serde(rename = "ref", default)]
     reference: Value,
+    /// `FormWidget.objectNumber`: the widget annotation's object number.
+    #[serde(rename = "objectNumber")]
     annot_object_number: u32,
     #[serde(default)]
     page: Value,
@@ -569,11 +593,16 @@ pub struct SignatureValidateRequest {
     pub until: Option<SignatureModificationsBasis>,
 }
 
-impl From<SignatureValidateRequest> for crate::sync::hydration::ValidateRequest {
-    fn from(r: SignatureValidateRequest) -> Self {
-        crate::sync::hydration::ValidateRequest {
-            at: r.at.map(Into::into),
-            until: r.until.map(|u| u.as_str().to_string()),
+impl SignatureValidateRequest {
+    /// `SignatureValidateOptions`, with the call's signal.
+    pub(crate) fn into_core(
+        self,
+        signal: Option<epdf_kernel::signal::AbortSignal>,
+    ) -> crate::SignatureValidateOptions {
+        crate::SignatureValidateOptions {
+            at: self.at.map(Into::into),
+            until: self.until.map(|u| u.as_str().to_string()),
+            signal,
         }
     }
 }
@@ -769,7 +798,7 @@ pub enum SignatureEvent {
     },
     /// An unsaved edit just turned a held signature into one a save would
     /// invalidate. Once per edge.
-    Invalidating {
+    InvalidationPredicted {
         field: FormFieldRef,
         detail: String,
     },
@@ -832,8 +861,8 @@ pub(crate) fn register_hooks(
         Ok(())
     });
     let l = listener.clone();
-    let invalidating = c.on_invalidating(move |e| {
-        l.on_event(SignatureEvent::Invalidating {
+    let invalidating = c.on_invalidation_predicted(move |e| {
+        l.on_event(SignatureEvent::InvalidationPredicted {
             field: field_from_json(&e.field)?,
             detail: e.detail.clone(),
         });
@@ -874,10 +903,11 @@ pub(crate) fn register_hooks(
 
 // ── signing inputs ───────────────────────────────────────────────────────────
 
-/// What the signature dictionary says about the signer. Every member
-/// optional; the certificate's common name is the default `name`.
+/// What the signature dictionary says about the signer
+/// (`SignatureSignerInput`, the input's `signer`). Every member optional;
+/// the certificate's common name is the default `name`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, uniffi::Record)]
-pub struct SignatureAttribution {
+pub struct SignatureSignerInput {
     #[uniffi(default = None)]
     pub name: Option<String>,
     #[uniffi(default = None)]
@@ -888,7 +918,7 @@ pub struct SignatureAttribution {
     pub contact_info: Option<String>,
 }
 
-impl SignatureAttribution {
+impl SignatureSignerInput {
     /// The members that are set, in the engine's spelling.
     pub(crate) fn to_json(&self) -> Value {
         let mut out = serde_json::Map::new();
@@ -914,7 +944,7 @@ pub struct SignatureSignInput {
     #[uniffi(default = None)]
     pub mark: Option<SignatureMark>,
     #[uniffi(default = None)]
-    pub attribution: Option<SignatureAttribution>,
+    pub signer: Option<SignatureSignerInput>,
     /// The DocMDP permission (1, 2 or 3) to certify with. Needs
     /// `allow_certify` and `doc.sign.certify`, and no earlier signature.
     #[uniffi(default = None)]
@@ -925,12 +955,13 @@ pub struct SignatureSignInput {
 }
 
 impl SignatureSignInput {
-    pub(crate) fn into_core(self, signer: Option<crate::SignerSource>) -> crate::SignFieldInput {
+    /// `SignFieldInput`, with a per-call key.
+    pub(crate) fn into_core(self, key: Option<crate::SignatureKey>) -> crate::SignFieldInput {
         crate::SignFieldInput {
             field: field_json(&self.field),
             mark: self.mark.map(Into::into),
-            signer,
-            attribution: self.attribution.map(|a| a.to_json()),
+            key,
+            signer: self.signer.map(|s| s.to_json()),
             appearance: None,
             certify: self.certify.map(|p| json!({ "permission": p })),
             lock: self.lock.map(|l| l.to_json()),
@@ -946,7 +977,7 @@ pub struct SignaturePrepareInput {
     #[uniffi(default = None)]
     pub mark: Option<SignatureMark>,
     #[uniffi(default = None)]
-    pub attribution: Option<SignatureAttribution>,
+    pub signer: Option<SignatureSignerInput>,
     #[uniffi(default = None)]
     pub certify: Option<u8>,
     #[uniffi(default = None)]
@@ -964,7 +995,7 @@ impl SignaturePrepareInput {
             field: field_json(&self.field),
             mark: self.mark.map(Into::into),
             appearance: None,
-            attribution: self.attribution.map(|a| a.to_json()),
+            signer: self.signer.map(|s| s.to_json()),
             certify: self.certify.map(|p| json!({ "permission": p })),
             lock: self.lock.map(|l| l.to_json()),
             sub_filter: self.sub_filter.map(Value::String),
@@ -1036,13 +1067,19 @@ impl TryFrom<SignaturePlaceTarget> for crate::PlaceTarget {
                 Ok(crate::PlaceTarget::Field(field_json(&field)))
             }
             SignaturePlaceTarget::Free { page, at, target_width, rotation } => {
-                let placement = json!({
-                    "page": { "kind": "objectNumber", "pageObjectNumber": page.page_object_number },
-                    "at": { "x": at.x, "y": at.y },
-                    "targetWidth": target_width,
-                    "rotation": rotation,
+                // A `StampPlacement`: the page, the centre, and the width
+                // and rotation when given.
+                let mut placement = json!({
+                    "page": { "kind": "objectNumber", "objectNumber": page.page_object_number },
+                    "center": { "x": at.x, "y": at.y },
                 });
-                Ok(crate::PlaceTarget::Free(decode("a placement", &placement)?))
+                if let Some(width) = target_width {
+                    placement["targetWidth"] = json!(width);
+                }
+                if let Some(rotation) = rotation {
+                    placement["rotation"] = json!(rotation);
+                }
+                Ok(crate::PlaceTarget::Free(placement))
             }
         }
     }

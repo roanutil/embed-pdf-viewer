@@ -1,0 +1,83 @@
+(node:63224) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ relative rotation uses current refs and stages an actual apply transaction (578.062792ms)
+✔ permission selectors keep assemble/download independent and wildcard grants both (1.757667ms)
+✔ relative turns see confirmed rotations and remote layouts (2.76425ms)
+✔ absolute rotate, reorder and delete expose actual successful order/count and void results (1.161833ms)
+✔ deferred changes send in staging order and deliver confirmed document event before promise settlement (0.967583ms)
+✔ blank defaults use actual neighbour size, preserve explicit count/size and return new refs (1.573417ms)
+✔ bytes stay byte-exact; insert positions name current refs and public result names pages (1.099083ms)
+✔ empty registry inserts Letter; missing refs never become implicit zero rotation (0.826166ms)
+✔ mixed rotations group in first-seen order within one transaction and return void (1.454542ms)
+✔ reorder retains neighbour positions and final order (0.949333ms)
+✔ subset insertion uses scratch full scope, selected order, extraction bytes and guaranteed close (1.839792ms)
+✔ clock-named scratch sources close for each malformed source index (2.040917ms)
+✔ cross-document refs resolve in source registry, bytes insert in destination and only source extracts (1.39175ms)
+✔ duplicate copies selected order after last page and extraction returns original bytes (1.189916ms)
+✔ scope absence and captured authority after close are distinct; selection resolves indexes and deduplicates (1.551333ms)
+✖ two quick turns see pending rotation, retain undo predictions and label one history step each (1.159833ms)
+✖ extract waits for earlier changes to settle; labels/counts distinguish all write verbs (1.787792ms)
+✖ blank positions choose each anchor or edge size and explicit count/size wins (0.373416ms)
+✖ pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download (0.457125ms)
+✖ cancelling staged write rejects caller while the change still confirms; deleting all pages is refused (0.653292ms)
+✖ closing rejects pending writes, removes subscribers and leaves late confirmation silent (0.415208ms)
+✖ selection drops deleted pages by registry read and remains stable for identical resolved selections (0.239833ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 15
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 906.206791
+
+✖ failing tests:
+
+test at test/page-edit-current.test.ts:1:10493
+✖ two quick turns see pending rotation, retain undo predictions and label one history step each (1.159833ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:158:26)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:12027
+✖ extract waits for earlier changes to settle; labels/counts distinguish all write verbs (1.787792ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:170:26)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:13170
+✖ blank positions choose each anchor or edge size and explicit count/size wins (0.373416ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:183:440)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:14370
+✖ pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download (0.457125ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:193:26)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:15841
+✖ cancelling staged write rejects caller while the change still confirms; deleting all pages is refused (0.653292ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:203:26)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:16760
+✖ closing rejects pending writes, removes subscribers and leaves late confirmation silent (0.415208ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:207:485)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at test/page-edit-current.test.ts:1:17493
+✖ selection drops deleted pages by registry read and remains stable for identical resolved selections (0.239833ms)
+  TypeError [Error]: h.kernel.dispose is not a function
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:211:286)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)

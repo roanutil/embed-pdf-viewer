@@ -2,68 +2,76 @@
 //! captured distance draft into a request (page space), and dismiss it.
 
 use epdf_kernel::Error;
+use epdf_kernel::geometry::{PageRef, Point};
+use serde_json::Value;
 
-use crate::contract::*;
+use crate::contract::{
+    CalibrationDismissedEvent, CalibrationRequest, CalibrationRequestedEvent, SCALE_PERMISSION,
+};
 use crate::controller::MeasurementCapability;
-use crate::model::MeasurementAction;
+use crate::model::set_calibration;
 use crate::units::measurement_point;
+
+/// A draft's `from` or `to`; a missing coordinate reads `NaN`.
+fn point_of(value: Option<&Value>) -> Point {
+    let read = |key: &str| {
+        value
+            .and_then(|p| p.get(key))
+            .and_then(epdf_annotation_core::json::number)
+            .unwrap_or(f64::NAN)
+    };
+    Point { x: read("x"), y: read("y") }
+}
 
 impl MeasurementCapability {
     /// Arm the calibrate tool (two points, then `on_calibration_requested`).
-    /// Nothing without authority. `Err` is the hub refusing the tool.
+    /// `permission-denied` without `doc.annotate.modify`.
     pub fn start_calibration(&self) -> Result<(), Error> {
-        let s = self.s();
-        if !s.can_calibrate() {
-            return Ok(());
-        }
-        s.cx.dispatch(MeasurementAction::Calibration { request: None });
-        s.interaction.activate_tool("calibrate", None)
+        let core = self.core();
+        core.cx.assert_allowed(SCALE_PERMISSION, "measurement.startCalibration")?;
+        core.cx.update_state(|s| set_calibration(&s, None));
+        core.interaction.activate_tool("calibrate")
     }
 
-    /// Drop the pending request.
+    /// Drop the pending request. Fires `on_calibration_dismissed` when there
+    /// was one.
     pub fn dismiss_calibration(&self) {
-        let s = self.s();
-        if s.state().calibration.is_none() {
+        let core = self.core();
+        if core.cx.state().calibration.is_none() {
             return;
         }
-        s.cx.dispatch(MeasurementAction::Calibration { request: None });
-        s.events.calibration_dismissed.emit(&CalibrationDismissedEvent {});
+        core.cx.update_state(|s| set_calibration(&s, None));
+        core.events.calibration_dismissed.emit(&CalibrationDismissedEvent);
     }
 
-    /// A distance draft from the calibrate tool becomes the pending request.
+    /// `connect()` of the calibrate flow: a distance draft from the
+    /// calibrate tool becomes the pending request.
     pub(crate) fn connect_calibration(&self) {
-        let s = self.s();
-        let Ok(doc) = s.cx.doc() else { return };
-        let this = self.clone();
-        let off = s.annotation.on_draft_captured(move |draft| {
-            let s = this.s();
-            if draft.tool != "calibrate" || !doc.security().allows("doc.annotate.modify") {
+        let core = self.core();
+        let this = std::rc::Rc::downgrade(&self.0);
+        let off = core.annotation.on_draft_captured(move |draft: &Value| {
+            let Some(core) = this.upgrade() else { return Ok(()) };
+            if draft.get("tool").and_then(Value::as_str) != Some("calibrate")
+                || !core.registry.can_calibrate()
+            {
                 return Ok(());
             }
-            let a = measurement_point(epdf_annotation_core::PdfPoint {
-                x: draft.from.x,
-                y: draft.from.y,
-            });
-            let b =
-                measurement_point(epdf_annotation_core::PdfPoint { x: draft.to.x, y: draft.to.y });
-            let user_space_length = epdf_geometry::js::hypot(b.x - a.x, b.y - a.y);
-            // `!(userSpaceLength > 0)`: NaN makes no request either.
+            let from = measurement_point(point_of(draft.get("from")));
+            let to = measurement_point(point_of(draft.get("to")));
+            let user_space_length = epdf_geometry::js::hypot(to.x - from.x, to.y - from.y);
+            // `!(userSpaceLength > 0)`: zero, negative and NaN make no request.
             if user_space_length.is_nan() || user_space_length <= 0.0 {
                 return Ok(());
             }
-            // The page left the registry mid-drag.
-            let (Ok(from), Ok(to)) = (s.to_page(&draft.page, a), s.to_page(&draft.page, b)) else {
+            let Some(page) = draft.get("page").and_then(PageRef::from_json) else {
                 return Ok(());
             };
-            let request = CalibrationRequest { page: draft.page, from, to, user_space_length };
-            s.interaction.activate_tool("pointer", None)?;
-            s.cx.dispatch(MeasurementAction::Calibration { request: Some(request.clone()) });
-            s.events.calibration_requested.emit(&CalibrationRequestedEvent { request });
+            let request = CalibrationRequest { page, from, to, user_space_length };
+            core.interaction.activate_tool("pointer")?;
+            core.cx.update_state(|s| set_calibration(&s, Some(request.clone())));
+            core.events.calibration_requested.emit(&CalibrationRequestedEvent { request });
             Ok(())
         });
-        s.cx.defer(Box::new(move || {
-            off.call();
-            Ok(None)
-        }));
+        core.cx.listen(off);
     }
 }

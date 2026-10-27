@@ -1,0 +1,1396 @@
+{
+  "base": "c85d40a5a15d75c87f9be8ee0e75bf9038fec812",
+  "originalWholeForms": 220,
+  "originalOwned": 59,
+  "currentOwned": 59,
+  "originalScripting": 46,
+  "originalActions": 13,
+  "currentScripting": 46,
+  "currentActions": 13,
+  "mapped": 59,
+  "renamed": 0,
+  "retired": [],
+  "added": [],
+  "task11": {
+    "source": ".superpowers/sdd/multiplatform-upstream-catchup/task-11-cases.out:43-47",
+    "scriptingInputDiff": 0,
+    "actionsInputDiff": 0
+  },
+  "removalEvidence": [
+    "98e5c270c: applyEffects removed",
+    "5da4ca52a: one held fill and pure controller transaction over current snapshot",
+    "1233d1349: widgets/action rows owned and mirrored by form",
+    "cdf4586c7: current public names and refs"
+  ],
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-configured-environment",
+        "canonicalInputSha256": "870bd780f352dafad8444ef28f38722a8ed03e357c7c966ce6751bc51e931923",
+        "intent": "The standalone host reads the name-tree scripts once, boots once per realm with the configured file name, identity, clock, offset and seed, and commits the value; a second commit does not boot again."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-configured-environment",
+        "canonicalInputSha256": "f386d47c88d57e8a11364dbda4aa0c44be62c91b9ec691031f248c1cf942f32b",
+        "intent": "The standalone host reads the name-tree scripts once, boots once per realm with the configured file name, identity, clock, offset and seed, and returns the value effect; a second commit does not boot again."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-default-environment",
+        "canonicalInputSha256": "56c0aa157ead16bb472a863e09f7c76f7a02debd3ed3d79ce8a07523365b0340",
+        "intent": "Without configuration the clock is the host's, the offset the host zone's, the seed seedFrom(document id, run), the file name the document's, the identity the engine's claims; a document without catalog actions boots nothing but still builds the realm."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-default-environment",
+        "canonicalInputSha256": "ef6959128c34abcbad34eef8c5e98340bb5ffc253516492717090843ef3c7c69",
+        "intent": "Without configuration the clock is the host's, the offset the host zone's, the seed seedFrom(document id, run), the file name the document's, the identity the engine's claims; a document without catalog actions boots nothing but still builds the realm."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-identity-callback",
+        "canonicalInputSha256": "b49043205a816f1840eda31cfed47354c3fc3e417c8cb9d3bfecf4135962ceb0",
+        "intent": "An identity callback is called per run and layered over the engine claims."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-identity-callback",
+        "canonicalInputSha256": "a8adffa7b2ad0c63743f47391ef6fa64eb56ede5bd72a5b74cbb3f7fab3698b0",
+        "intent": "An identity callback is called per run and layered over the engine claims."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-dispose",
+        "canonicalInputSha256": "f32608e8795783c722929a00677471cf8117d06e07504dcb77bf6405f864396c",
+        "intent": "dispose() releases the owned realm; a later transaction rejects."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "standalone-dispose",
+        "canonicalInputSha256": "eeb009ba4e6f828012be435110ccd8d7fe1b9cae2bac77396be6b64f15591898",
+        "intent": "dispose() releases the owned realm; a later transaction rejects."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "form-values-cross-into-the-overlay",
+        "canonicalInputSha256": "f52849b5a18516266a7f0ef42a699e8a9ab681868dfc8e71c27dca6181d21e54",
+        "intent": "A toggle proposes its state (null as 'Off'), a combobox its first choice ('' for none), a listbox every choice; a value whose type does not match the family fails the transaction before any run."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "form-values-cross-into-the-overlay",
+        "canonicalInputSha256": "50417f8d4605f874061efb687e79a5871341473431f3acab1cc91fdcaa271c22",
+        "intent": "A toggle proposes its state (null as 'Off'), a combobox its scalar choice (null for none), a listbox every choice; a value whose type does not match the family fails the transaction before any run."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-cleared-toggle-proposes-off",
+        "canonicalInputSha256": "f9b97e56124f0260cd14146a01a8181e7e2e7497ebce3e918ea3c850872f1ea9",
+        "intent": "A toggle to null reaches the validator as 'Off'."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-cleared-toggle-proposes-off",
+        "canonicalInputSha256": "c6d42b739b74020e93e8ee2ee3d0adb47f4cd396fe7bc308338d00dfd09534d1",
+        "intent": "A toggle to null reaches the validator as 'Off'."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "validated-values-cross-back",
+        "canonicalInputSha256": "d7c32d77e1505eeb6f53314cf1d1c5d5d616402af9e23e59759d66dc64205efc",
+        "intent": "A validator's event.value becomes the committed value in the family's form: text String()s it (null as ''), a toggle maps null and 'Off' to a cleared state and stringifies the rest, a combobox keeps the first of a list, a listbox wraps a scalar."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "validated-values-cross-back",
+        "canonicalInputSha256": "2b8b6b8d44fa32c12ad8ddcfbd38148d126073d1b008bdca38ec2028cdd54895",
+        "intent": "A validator's event.value becomes the committed value in the family's form: text String()s it (null as ''), a toggle maps null and 'Off' to a cleared state and stringifies the rest, a combobox keeps the first of a list, a listbox wraps a scalar."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "boot-effects-land-with-the-commit",
+        "canonicalInputSha256": "bb32b23d58ea0ae04e8891bad9103658ff4096fad731d43aff4d38e5521492cb",
+        "intent": "A boot's form effects and UI requests join the first transaction, tagged 'boot', ahead of the user's value; later transactions see no boot."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "boot-effects-land-with-the-commit",
+        "canonicalInputSha256": "51428867891310517dda6f97d289a24904931cda151005939a6f7ed090658e20",
+        "intent": "A boot's form effects and UI requests join the first transaction, tagged 'boot', ahead of the user's value; later transactions see no boot."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-failed-boot-degrades",
+        "canonicalInputSha256": "3fb045d2e542b7b5ea0dbed98f235750f59e9852921bf742b72c8dc0b63ff485",
+        "intent": "A boot that throws, or answers with an error, is a script-error diagnostic and the transaction goes on without its effects; its UI requests still surface."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-failed-boot-degrades",
+        "canonicalInputSha256": "6e5463468e06cd1d015d8b9eca028661b4a3e9577eb2b7fda9b85093f38f1381",
+        "intent": "A boot that throws, or answers with an error, is a script-error diagnostic and the transaction goes on without its effects; its UI requests still surface."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-boot-error-output-degrades",
+        "canonicalInputSha256": "f4873a2f2f0e636c1642b0cd02448d2ad7f4fff93d3b9561ee4ceff29e4bcbf5",
+        "intent": "A boot output carrying an error keeps its UI requests and diagnostics, drops its form effects, and adds the degrade diagnostic."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-boot-error-output-degrades",
+        "canonicalInputSha256": "d595fe4200b065c907db1388a304027288ce8a3328ac0fd379602d909fa6c388",
+        "intent": "A boot output carrying an error keeps its UI requests and diagnostics, drops its form effects, and adds the degrade diagnostic."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-failed-catalog-read-degrades",
+        "canonicalInputSha256": "9457c2f26a50d77bba113e681dfa2eedf084dd3749c0dfd123268c49114b4a0b",
+        "intent": "A name-tree read that rejects degrades to the host diagnostic; the value still commits."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-failed-catalog-read-degrades",
+        "canonicalInputSha256": "5ba17a74491ecfbed9a877358eaf061186291eca82e30b1f1598e9295e25e36c",
+        "intent": "A name-tree read that rejects degrades to the host diagnostic; the value effect still returns."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "rejection-keeps-boot-effects",
+        "canonicalInputSha256": "b6b95d425bf34c190d54791661511db4503e8a4cfd7258e1fc3c2a698881da16",
+        "intent": "A rejected value still commits the boot effects alone and resolves rejected with their result; a boot batch that fails turns the rejection into a failure; with no batch door it fails before the engine."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "rejection-keeps-boot-effects",
+        "canonicalInputSha256": "365160d3ee13cedb5e0c748006c8b9e35110773025cdfda404699bccf0b4274e",
+        "intent": "Every rejected controller transaction returns only its boot effects for the caller to write. Native atomic refusal is covered through the form capability."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "5da4ca52a makes the controller pure over an explicit snapshot; it returns bootEffects instead of owning a native batch. All three detached realms preserve rejected/boot effects. Native refusals are covered by native-effect-statuses and reset actions.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-runs-in-the-transaction",
+        "canonicalInputSha256": "1f4ce2fffc3b69c6703f50adf09b2adc96d0cb3b6a63c25e0ca33402e0e6e8b8",
+        "intent": "activate(ref, tree) runs the tree's JavaScript as widget-activate against the overlay and commits its effects with its UI requests; no calculation follows."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-runs-in-the-transaction",
+        "canonicalInputSha256": "6b11e6824d15cee2da95590fdbed874a2dd8be1f5959cc5c8c458ccd0b71804e",
+        "intent": "activate(ref, tree) runs the tree's JavaScript as widget-activate against the overlay and returns its effects with its UI requests; no calculation follows."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-edits-its-own-field",
+        "canonicalInputSha256": "c90b5bbb681815f0b130b814f7ab0b350c12fd8c5174631b9bf1091c41158605",
+        "intent": "An activation that sets its own field's value commits it; the activated field is not formatted, since no value was proposed."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-edits-its-own-field",
+        "canonicalInputSha256": "b031742d513477bf1c255139d303a061abb6061d9166dc59e9d829b033598706",
+        "intent": "An activation that sets its own field's value returns that effect; the activated field is not formatted, since no value was proposed."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "recalculate-keeps-a-boot-reset",
+        "canonicalInputSha256": "41c7eacd2853bc27d47063a9c76be0d941c1380dd716f179acd8a36cbf908930",
+        "intent": "recalculate() proposes nothing, so a boot script's reset of the anchor field survives as a reset effect."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "recalculate-keeps-a-boot-reset",
+        "canonicalInputSha256": "21205b104b5334ff2b49467e07fc63bea287b60b1bfe353e38789aeb61817195",
+        "intent": "recalculate() proposes nothing, so a boot script's reset of the anchor field survives as a reset effect."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-refusals",
+        "canonicalInputSha256": "f9d6db7e62473f83d71542d15e10a9f22fd68c1f569a552c98109d6edf45f86a",
+        "intent": "An incomplete tree fails before any run; a tree with no JavaScript commits nothing; a run error fails the transaction."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "activation-refusals",
+        "canonicalInputSha256": "eefee61198505941245c6c6d08d815275831ac00096d0dd57476ad81b975606a",
+        "intent": "An incomplete tree fails before any run; a tree with no JavaScript returns no effects; a run error fails the transaction."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-two-passes",
+        "canonicalInputSha256": "77fe08e45a8e4874e47b71a21caaefd606c590eff24ace6f42c0a02eb9430e18",
+        "intent": "A text commit runs the keystroke script twice: once paste-shaped (the whole value in change, the old value selected, willCommit false), whose selection splice becomes the proposal, then willCommit with the spliced value, whose event.value is committed."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-two-passes",
+        "canonicalInputSha256": "c12fb65e748d2f8dd82c485d9917ddbd0113b29c11ffc0e05a3f27657d778cb5",
+        "intent": "A text commit runs the keystroke script twice: once paste-shaped (the whole value in change, the old value selected, willCommit false), whose selection splice becomes the proposal, then willCommit with the spliced value, whose event.value is committed."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-splices-in-utf-16",
+        "canonicalInputSha256": "05e1c747c76019299d0545a6e7cc2f592fa996b35664a9f9e8f2f1d184264a30",
+        "intent": "The splice counts UTF-16 code units (an astral character is two), clamps a selection end before its start, and reads negative and fractional offsets the way String#slice does."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-splices-in-utf-16",
+        "canonicalInputSha256": "fe052cd3c3878d5b261a0cfb54aabb160d4d1372744a1a4f489a97dcd14cdefa",
+        "intent": "The splice counts UTF-16 code units (an astral character is two), clamps a selection end before its start, and reads negative and fractional offsets the way String#slice does."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-empty-values",
+        "canonicalInputSha256": "fa0f85811db26ddfb11648be02bf633855cbbed78945d58678172dde7f734efa",
+        "intent": "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown; a direct widget before it is passed over."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-empty-values",
+        "canonicalInputSha256": "5d11b644fd79b80a6b286f13c6ba8075ee671e7621774f13692d3e2e3d5791b1",
+        "intent": "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown; a direct widget before it is passed over."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-fault-ladder",
+        "canonicalInputSha256": "12ce72e208703513c5b43014691f5fb28dacc2b48bda2bd426c9c57ec6163efc",
+        "intent": "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value, keeping the diagnostics so far."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-fault-ladder",
+        "canonicalInputSha256": "b2ed5bcdd06c6cc101b54f417e66ca91189931758f52fd742eb062fcc7b7114e",
+        "intent": "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value, keeping the diagnostics so far."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-trees",
+        "canonicalInputSha256": "32331173f617642b397040e71fb7a0e02e3667a951a49c38c9fcca9f0e4f8810",
+        "intent": "An incomplete keystroke tree fails the transaction; one with no JavaScript is skipped; a keystroke on a non-text field never runs."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "keystroke-trees",
+        "canonicalInputSha256": "7b675c33d7f8a13ef158512dd20289ca0653cf4a1ccc4e52316ce2b290f3deac",
+        "intent": "An incomplete keystroke tree fails the transaction; one with no JavaScript is skipped; a keystroke on a non-text field never runs."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "validate-fault-ladder",
+        "canonicalInputSha256": "5dcc364a77929cb0322c4c85ec3c1c1e47c42fada597bb529795361a048240c4",
+        "intent": "A validator's false rc rejects the value with its alert; an exception accepts it with a diagnostic; any other error fails; success commits the validator's value and effects."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "validate-fault-ladder",
+        "canonicalInputSha256": "b0def5546349687039a16411605cfbf8ca85e332e2468a6071feeb86d154e7be",
+        "intent": "A validator's false rc rejects the value with its alert; an exception accepts it with a diagnostic; any other error fails; success returns the validator's value and effects."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "validate-trees",
+        "canonicalInputSha256": "30fe5a9e9ae9999b2d36b462d884eff5c3809ccf2fe7c95c4eb72e016f99a56a",
+        "intent": "An incomplete validate tree fails; one with no JavaScript is skipped and the value commits."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "validate-trees",
+        "canonicalInputSha256": "99c42c64278384a8982a95bb82ad90ed397fe518d84a4543765510cecb60a102",
+        "intent": "An incomplete validate tree fails; one with no JavaScript is skipped and the value effect returns."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "calculation-order",
+        "canonicalInputSha256": "2aab37583b70b928445c80ab2575f927cb2adfc016e78816a98e04ba2219e4c6",
+        "intent": "The /CO chain runs in order after the user's value, skipping null and dead entries and fields without a calculate tree; an exception skips that field with a diagnostic; the target and each calculated field are formatted once, in that order."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "calculation-order",
+        "canonicalInputSha256": "8d66d7cb05d4428c0a121a9b37a7b8bb6a43cb2355d51752a76a948b8a325440",
+        "intent": "The /CO chain runs in order after the user's value, skipping null and dead entries and fields without a calculate tree; an exception skips that field with a diagnostic; the target and each calculated field are formatted once, in that order."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "calculation-refusals",
+        "canonicalInputSha256": "f35becb821c3bbed5f5d01be757dd3c799fd69f5a073d29092616fccc378f686",
+        "intent": "A calculate error that is not an exception fails the transaction, as does an incomplete calculate tree."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "calculation-refusals",
+        "canonicalInputSha256": "93685216452a1a191354b809edcaeef0488ee946b5ed57d5601a10ee931605cc",
+        "intent": "A calculate error that is not an exception fails the transaction, as does an incomplete calculate tree."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "recalculate-anchors",
+        "canonicalInputSha256": "192bc158802d34b547114aaa8b4e008276d582805ad6579abbd016eba65fdc90",
+        "intent": "recalculate() anchors on the first live /CO field (here not the first field, and on page 2, which the world's pageNumber shows), else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "recalculate-anchors",
+        "canonicalInputSha256": "c6b27373c833f2a6406ed1dacaa139c82740dae03273151b7831261701c8fde1",
+        "intent": "recalculate() anchors on the first live /CO field (here not the first field, and on page 2, which the world's pageNumber shows), else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "format-fault-ladder",
+        "canonicalInputSha256": "174194f255295b233ecfb97ee0c984ba0e37a7969ad5fa66291dbf565bfb7f8e",
+        "intent": "A format exception keeps the raw value with a diagnostic; any other format error fails; an incomplete format tree fails; one with no JavaScript is skipped."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "format-fault-ladder",
+        "canonicalInputSha256": "ab2435302cf6e88d910e6c20710edb1a189be74414ee6c58cb023cbefba8094c",
+        "intent": "A format exception keeps the raw value with a diagnostic; any other format error fails; an incomplete format tree fails; one with no JavaScript is skipped."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "effects-canonicalise",
+        "canonicalInputSha256": "c1995662dec322560be228e7c3f3be8e0ecac90ff37658ab297f5f924a4f5239",
+        "intent": "Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets (even back to the default), display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "effects-canonicalise",
+        "canonicalInputSha256": "f83e51d1a6c88cd412de0dc6be91e3bdb8f4870120f132de3acb97819553d17f",
+        "intent": "Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets (even back to the default), display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "native-effect-statuses",
+        "canonicalInputSha256": "57464cd60808fb3e08dc813f3df973ca139f49cfc7c5928d933bfb85caf955d5",
+        "intent": "The engine's per-effect statuses decide the result: any failed or skipped entry fails it with 'One or more native form effects failed', a rejected one fails it too, all unchanged is unchanged; an engine without a batch door fails before the call."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "native-effect-statuses",
+        "canonicalInputSha256": "f727c898d02efef300836e4f2e30246dffca599cda6a5dd650fca1d828e1a164",
+        "intent": "Native form writes use atomic ChangeResult instead of per-effect batch statuses. A no-op confirms unchanged; a successful write folds before return; each engine refusal rolls back to the confirmed value."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "98e5c270c removes applyEffects and its per-entry failed/skipped/rejected statuses. Current native atomic success/unchanged and whole-change refusal replace them through setValue.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "no-change-is-unchanged",
+        "canonicalInputSha256": "048467ddf883635f72f80f673283bed94bb975c827e06faf208941bdc149b527",
+        "intent": "A commit of the current value produces no effects: unchanged, no engine write. A field the snapshot no longer has fails."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "no-change-is-unchanged",
+        "canonicalInputSha256": "3f25dc235c0b7e9ecc97b33fb31da09c3fa1c19388583e04b94cb79738ce75d1",
+        "intent": "A controller commit of the current value is accepted with no effects; no engine write belongs to the controller. A field the snapshot no longer has fails."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-throwing-run-fails",
+        "canonicalInputSha256": "73eef5a669c1a601dd4ff97ff60ac686d7cc0d2c922054358340dd2e091a2f4a",
+        "intent": "A sandbox run that throws fails the transaction with an invalid-output error carrying its message; a script setValue on a pushbutton rejects the transaction."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-throwing-run-fails",
+        "canonicalInputSha256": "84ad5be2d99d7fb3ba7e6444782a05a8e27b10a30fa0c808c419808bac608a79",
+        "intent": "A sandbox run that throws fails the transaction with an invalid-output error carrying its message; a script setValue on a pushbutton rejects the transaction."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-effects-budget",
+        "canonicalInputSha256": "394a00220a7f06e8e000137d9778d4f09cbcb4467dfa4971d0f378c3d31537a8",
+        "intent": "More form effects plus UI requests than maxEffects fails the transaction before the engine; exactly maxEffects passes."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-effects-budget",
+        "canonicalInputSha256": "239fc5e4c8b96d173057230c0db86f2a37e3f2f81e252df6b154793c3452cabf",
+        "intent": "More form effects plus UI requests than maxEffects fails the transaction before the engine; exactly maxEffects passes."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-output-budget-at-the-boundary",
+        "canonicalInputSha256": "c21c7944ac4f9c179323e97c9fed5e26dcaabeac066cad1a511b23d486bfff8e",
+        "intent": "Output bytes are the UTF-8 length of each output's JSON (192 here, with 2-, 3- and 4-byte characters): exactly the budget passes."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-output-budget-at-the-boundary",
+        "canonicalInputSha256": "2b53f2aaee7c0433cb0de8f5a1d4c6f91281da1406c06fdaaf256cd45c456914",
+        "intent": "Output bytes are the UTF-8 length of each output's JSON (192 here, with 2-, 3- and 4-byte characters): exactly the budget passes."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-output-budget-exceeded",
+        "canonicalInputSha256": "5ae926d8dbd876b9609e7e9ad8340e6b7e3dee086c16167391898ea10c225cda",
+        "intent": "One byte over, a boot output degrades with the budget message, and a run output that crosses the aggregate fails the transaction."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-output-budget-exceeded",
+        "canonicalInputSha256": "85a9bb7deeb17bf4ba6511fc54f266c98d77e6b315568f6054699b79b0f752cb",
+        "intent": "One byte over, a boot output degrades with the budget message, and a run output that crosses the aggregate fails the transaction."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-time-budget",
+        "canonicalInputSha256": "715355fd77617123d3832a3b543789decef417bcef760798059a6b0c5225ff5a",
+        "intent": "Each run receives what is left of the transaction's execution budget; once a run has taken all of it (a realm rebuilt behind a slow factory), the next run times out without reaching the sandbox, and the rebuilt realm's boot surfaces in the next transaction."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-time-budget",
+        "canonicalInputSha256": "e59901aa45d1dbca5dbfc3da9e54748473534cbaea2b1dbd81e1f326d2fff46a",
+        "intent": "Each run receives what is left of the transaction's execution budget; once a run has taken all of it (a realm rebuilt behind a slow factory), the next run times out without reaching the sandbox, and the rebuilt realm's boot surfaces in the next transaction."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-time-budget-shrinks",
+        "canonicalInputSha256": "bd185932f6c4a9c0c08da8fc8e72403fbfc8eaa574fa04922496db4cd2094d34",
+        "intent": "A run that took 20 of the 50 budgeted milliseconds leaves the next run 30."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "the-time-budget-shrinks",
+        "canonicalInputSha256": "ecc1b05b0e0107e4df7fc2f22460a5495a4a9d56682542c360d08ca0a86b3566",
+        "intent": "A run that took 20 of the 50 budgeted milliseconds leaves the next run 30."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Complete current snapshot and native FormFieldValue are explicit serialized controller arguments; returned effects, script stages, phase-tagged UI, fault ladder and budgets follow the current shipping transaction.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/scripting/controller.ts#FormScriptingController",
+        "packages/plugin/form/src/scripting/overlay.ts#canonicalEffects",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/core/acrojs/src/host.ts#createScriptHost"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "commit-through-the-shared-realm",
+        "canonicalInputSha256": "19b02081e78d861bd4fc51d02309e51668fd104fec29c011283f8280f3a14e71",
+        "intent": "With scripting on, commitValue runs the K/V/C/F pipeline in the actions plugin's realm, surfaces boot UI requests, then user ones with diagnostics and the error, through the actions port, and re-reads after a batch."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "commit-through-the-shared-realm",
+        "canonicalInputSha256": "12af7e0604d4ec63434734776fdc23cdd680c043fc86ea7dbf545b03bd3ad1f6",
+        "intent": "One held fill runs K/V/C/F in the actions realm and sends complete current ops. Confirmed fields and widget rows fold before setValue resolves."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-writes-clear-the-spinner",
+        "canonicalInputSha256": "2edfe324c021ed05ec4137cccf432168e3bd3548e351d0da7af150ee98073d8f",
+        "intent": "A scripted write that commits nothing, is rejected, or fails clears the writing mark itself; one that commits leaves it to the re-read."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-writes-clear-the-spinner",
+        "canonicalInputSha256": "b27611fa2153e2516c3a20d0205d54598af7ebc389b915eef22eb4c35c48a9bd",
+        "intent": "Unchanged, rejected, failed and accepted scripts release held writes; confirmed public values survive refusal."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "batch-writes-count-rejections",
+        "canonicalInputSha256": "b89d68f471d5c86c7e1c132d7a48b790d0de97bd3aa124572ec3fdfa9c6a4a6d",
+        "intent": "setValues and importValues report a rejected write as failed 'invalid-input' with the first diagnostic's message (or the status), and a failed one as 'operation-failed' with the error's message; a rejection is also announced on onValidationRejected with its diagnostics."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "batch-writes-count-rejections",
+        "canonicalInputSha256": "bbc784f2d9c5ba707dfe34e5280b3d04874f26d33fc97471248b2862560ca96e",
+        "intent": "Current batches validate plain values individually and recalculate once. A single-field validation refusal emits its exact event; batches report malformed family values separately."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "5da4ca52a current batches validate native values individually and run one recalculation, rather than invoking each field validator. A direct single-field validation refusal plus invalid-family batch failure preserve both meaningful refusal channels.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/write/values.ts#fillPlain",
+        "packages/plugin/form/src/write/values.ts#importValues",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "reset-recalculates",
+        "canonicalInputSha256": "9432f63cd0c899cc09938fd69bc9bb10a3125ad42fe6a28c40208ce84a78430a",
+        "intent": "With scripting on, a reset recalculates the /CO chain after its batch and folds the recalculation's UI, diagnostics and error into its result, surfaced with the caller's origin."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "reset-recalculates",
+        "canonicalInputSha256": "3d5c42833df80f24c9ff73f7a59c97a431b68d36f689468daaedff3e474340ce",
+        "intent": "A reset and calculation share one atomic change, with the action origin carried to surfaced UI. Script failure cancels every requested reset."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "5da4ca52a combines reset and calculations in one held change. A budget refusal sends neither reset nor calculated values. Current lifecycle form-pipeline print reaches the adapter under a blocked print row; action-executor printing separately respects M14.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/reset.ts#resetSelection",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill",
+        "packages/plugin/actions/src/scripting/surface.ts#createScriptSurface",
+        "packages/plugin/actions/src/lifecycle/document-events.ts#firePrintThroughAdapter"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation",
+        "canonicalInputSha256": "83793a2a1f573b836ccebbb3ee3749a3c963762fb51790712d5c3390e62d9310",
+        "intent": "When the dispatcher finds no /A tree, the form path reads the widget's activation from the page (loaded annotations first when the annotation plugin has them) and runs it as a scripted transaction; a widget without one is a scripted no-op."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation",
+        "canonicalInputSha256": "fe11895ef79fa7b42f015a4c6e6c4a86950666bc929cb7ca6ee4d728ea70038d",
+        "intent": "Widget actions resolve from the form snapshot and dispatch JavaScript through the registered form commit sink. Missing widgets reject; tree-less widgets fall back without a page reread."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation-matches-refs",
+        "canonicalInputSha256": "6babf5e8d7a46b24a6ce4487be75bcab23f06cf38d30d9962e8fc35ca7da3712",
+        "intent": "activateWidget resolves only object-number widget refs in v3: an /NM or index ref, and another page's object number, each reject not-found, so the sameAnnotationRef nm and index arms are unreachable from here."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation-matches-refs",
+        "canonicalInputSha256": "8cc55b9a7ce6285552d5e19b06e3e93e78ac8f27e7201090198669c7c65a1d2c",
+        "intent": "Current baseIndex refs and unknown widget numbers are refused before dispatch. An object number with another page has no matching action row on that page and falls back to the form owner."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "1233d1349 moves widget action lookup and hover flags into FormSnapshot.widgets; current objectNumber/baseIndex refs replace removed nm/index refs and revision strings.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-kindless-address-matches-no-candidate",
+        "canonicalInputSha256": "344ab5892818bb6fd56cc35ac5604caea844c95df159339c1ebd706d25c71439",
+        "intent": "An off-contract address without a kind ({ page, annotObjectNumber }) finds its field, but sameAnnotationRef matches no candidate for it, not even one whose ref has no kind, index or revision either: its last arm holds only for two index refs. The form path is a scripted no-op."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "a-kindless-address-matches-no-candidate",
+        "canonicalInputSha256": "c303a28612da509b226a22f7aa4c93d64c4d4454bb4d30dcaa7660bc1186e8dc",
+        "intent": "The surviving no-candidate refusal uses a current baseIndex widget address; malformed removed nm/index addresses remain archived."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "1233d1349 and cdf4586c7 replace removed nm/index and annotObjectNumber convenience addresses with current objectNumber/baseIndex refs. The no-candidate refusal uses a typed baseIndex; the exact malformed original remains archived, not a shipping API target.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation-reads-the-folded-annotation",
+        "canonicalInputSha256": "28a0a4d6159d32890cb103fca7b1f7794f28f85cf70e9c2d6aee53d992ac4ad2",
+        "intent": "With the annotation plugin a loaded widget answers its activation tree without a page read; one without an activation tree is a scripted no-op, and a hover tree with no root counts as none."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "scripted-activation-reads-the-folded-annotation",
+        "canonicalInputSha256": "0274283054441abf497cebffb56b1c168363f73ede831f8fcbad1ddfd3ea63f9",
+        "intent": "Widget actions and hover flags are owned by the current form rows even while widgets are lent to annotation. Rootless actions and missing event trees remain inert."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/activation.ts#widgetHoverFlags",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "script-nodes-commit-through-the-form",
+        "canonicalInputSha256": "a12d5d35258cb65aaf16e09987b54367f7c0a34556f3c5bee9de40da850dd1d1",
+        "intent": "A JavaScript node's form effects reach the engine through the form plugin's commit sink, which re-reads."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "script-nodes-commit-through-the-form",
+        "canonicalInputSha256": "27c9ab036ecd25a0ebac797538ca11200f55811dd0c0ef3ade948c3657cdc012",
+        "intent": "A JavaScript action sends effects to the real form sink, confirms one change and exposes its public value without forced rereads."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-scripting.json",
+        "name": "no-sandbox-host",
+        "canonicalInputSha256": "4b8a76e2fa2544126c3823dbc4610520b737cf7afad9e3cc7405c6de2b474211",
+        "intent": "A host with scripting enabled but no sandbox has no transaction port, so the form commits without scripts, exactly as with scripting disabled."
+      },
+      "after": {
+        "file": "plugins/form-scripting.json",
+        "name": "no-sandbox-host",
+        "canonicalInputSha256": "8ed489ace753b7c140f40147421902496439131c99c7553ff1b38f925fd89a25",
+        "intent": "Enabled configuration with no injected factory creates the current lazy default realm. Explicit validation:none keeps this native fill outside scripts; this case observes the enabled realm without constructing its default VM."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "actions scripting/realm.ts and environment.ts create a lazy default realm when enabled:true and sandboxFactory is omitted; services/scripting.ts independently obeys the explicitly authored validation:none setting. Actual settings/normal and detached realm ports/no-run transactions and native confirmation are asserted with empty diagnostics. The removed no-host/no-realm assumption remains archived. Default VM execution is not claimed: the tsx loader injects __name into PRELUDE_SOURCE and the real factory fails installing it. D/12c/13 retain this explicit coverage gap; no factory or prelude is substituted.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/fill.ts#createFill",
+        "packages/plugin/actions/src/scripting/realm.ts#createRealm",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/plugin/form/src/services/scripting.ts#createScriptingSeam",
+        "packages/core/acrojs/src/host.ts#createScriptHost",
+        "packages/core/acrojs/src/prelude.ts#PRELUDE_SOURCE",
+        "packages/core/js-sandbox/src/QuickJsSandbox.ts#QuickJsSandbox.create"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "the-reset-form-executor",
+        "canonicalInputSha256": "2ab24afd51ac0fba14aad993e04b9c1b7e16bc095fe4e526fdab126d3305f127",
+        "intent": "A ResetForm node resets through the form: a parent name selects its descendants, exclude takes the complement without buttons or signatures, null takes every resettable field, and the batch is one engine call followed by a re-read."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "the-reset-form-executor",
+        "canonicalInputSha256": "7f25b83b9c81145df6a7e9d0f2c770a0c10117df7a32cc8f64281c6190d36c4d",
+        "intent": "The real reset executor selects a name subtree, an exclusion complement, all resettable fields and an object-number field. Each reset is one current atomic op."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "an-inert-reset",
+        "canonicalInputSha256": "56644940ca4d363c9314f9f929a23853aac6ecc7f6a581cfcbcb64265c3d1e4d",
+        "intent": "A selection with nothing resettable never reaches the engine and the node is inert with 'reset-form resolved no fields'; an engine with no batch door surfaces an unsupported-api diagnostic and the node is inert with its message."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "an-inert-reset",
+        "canonicalInputSha256": "e8cdc8400689191489d34f89772564167d419df875f525438af64158a32e86bc",
+        "intent": "Empty or valueless selections are inert. A real atomic engine refusal fails a selected reset and leaves every public value unchanged."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/read/fields.ts#plainValueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "a-failed-reset-fails-the-node",
+        "canonicalInputSha256": "88a24626e6cd62d2cd0acfc6f2fcc41af93e8d393824ab55ea356f576fac9173",
+        "intent": "A batch whose reset entry failed or was rejected fails the node with 'reset failed'; a thrown batch fails it with the engine error."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "a-failed-reset-fails-the-node",
+        "canonicalInputSha256": "566638a5fec8991aaa1fcae94f4b0a85bfb5f039ef343596ce905736e70ee32b",
+        "intent": "Atomic reset refusal fails the action node with the engine message; no selected field changes and a later refused reset remains observable."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/read/fields.ts#plainValueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "reset-form-action-door",
+        "canonicalInputSha256": "5f5817d49b2756c60d432d0c8f503f0f0524897f5b39a9c10a65cfc532c47229",
+        "intent": "resetFormAction reads the snapshot fresh, resets the selection as one batch and resolves the commit result; the origin defaults to 'user'. A failed list rejects."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "reset-form-action-door",
+        "canonicalInputSha256": "06f08c65d98cac18dfcf7e922750500163a5f416509404f726e4f0047eff54a2",
+        "intent": "The host reset uses the current mirrored form, defaults origin to user and does not force engine reads. Failed atomic reset rejects and preserves confirmed fields."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#resetSelection",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#plainValueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "the-submit-resolver",
+        "canonicalInputSha256": "4e63bcfc9a4c0debe56fc51db5a0601e456b029d23dc4a13d80455a8f51d6665",
+        "intent": "A SubmitForm node resolves its dataset through the form: a fresh read, the ISO selection and value rules, and the explicit-listing diagnostics; charSet rides along only when the intent has one."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "the-submit-resolver",
+        "canonicalInputSha256": "c7b0374856d9e56bd80a8f67e492994ad55a514e6e7a3993831eee3a7d1a4877",
+        "intent": "SubmitForm resolves its post-fill dataset through the registered form reader. Unsupported explicit buttons and NoExport fields are diagnosed; charSet is forwarded."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "resolve-submit-dataset-door",
+        "canonicalInputSha256": "68869fb05977547d415cca5f12cefdcb6505e72e2d1c4048a611a29c44300d8b",
+        "intent": "resolveSubmitDataset builds the request from the intent and the action context's origin and event; diagnostics go to the given sink; a failed read rejects."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "resolve-submit-dataset-door",
+        "canonicalInputSha256": "291f73c4140b95953f1625c5587aa2b7025253cc21c71ab83c3fa9f4e81ea21f",
+        "intent": "The host dataset uses current values and provenance, forwards charSet and explicit diagnostics, and reads no new engine snapshot after hydration."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/script-effects.ts#resolveSubmitDataset",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "commit-script-form-effects",
+        "canonicalInputSha256": "91c45866f014d37cedbb4cc4d0d2b05674ae08bceb45163c2a833f7673526040",
+        "intent": "The script commit sink applies the batch, re-reads, and reloads each annotation page a changed widget is on (once, direct widgets skipped); a refused batch and an engine with no batch door both resolve as all-failed, never a throw."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "commit-script-form-effects",
+        "canonicalInputSha256": "40fcc9b44973b7bb7cefef53babd9e26d2a8c6d32cdb0e0852193cccaa1aeb02",
+        "intent": "The script sink stages current ops immediately. Native refusal is reported by the queue; per-field authority refuses staging synchronously with a failed sink result."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "5da4ca52a stages script effects immediately; the sink acknowledges staging before native confirmation. A later atomic refusal rolls back the mirror, while denied fill authority returns failed without staging. Forced snapshot/page rereads and removed batch-door failures no longer exist.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/script-effects.ts#createScriptEffects",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "commit-sink-without-annotation",
+        "canonicalInputSha256": "20b3a71156a7a3f8f837f95a23ac369bf1c733c677b97d8b70bec9bfc1ea87fc",
+        "intent": "Without the annotation plugin the sink re-reads and has no plane to reload."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "commit-sink-without-annotation",
+        "canonicalInputSha256": "51d335526a614497656f4222ea6db5629152434f0eb231185a172936fa95d20a",
+        "intent": "The same native sink confirms through form events without annotation and never reloads annotation pages."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/script-effects.ts#createScriptEffects",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "activation-without-actions",
+        "canonicalInputSha256": "98f9dc3dd5f25b3fdef567ce063a6368cda7864e5d2de2165187155a0016af99",
+        "intent": "Without the actions plugin activateWidget takes the form path, which is an unscripted no-op: kind 'form', status unchanged."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "activation-without-actions",
+        "canonicalInputSha256": "313a976561d7a1d51315c84aef274687a07f0be5c01475e3d91cc27e1f04f4f6",
+        "intent": "Without actions the current activateWidget door resolves its field from the object-number relationship and returns an unscripted unchanged form result; DOM events are inert."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/activation.ts#widgetHoverFlags",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "activation-is-delegated",
+        "canonicalInputSha256": "bf8900915cd858781b11416f912f59b9099c542cb78d29b12211f6ee90895ef7",
+        "intent": "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs, and a rootless tree counts as none."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "activation-is-delegated",
+        "canonicalInputSha256": "278b4eeb3471fa706fbb47c47aff2ccf5707cbd5d23a3f2398f1ece8b85d2ad9",
+        "intent": "Activation dispatches the current form row action; absent or rootless actions fall back to the form owner, without extra page reads."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "a-refused-activation-is-dispatched",
+        "canonicalInputSha256": "66dd64ad6a919fec1eea252464358cbda42967ac58844b97c739d5dd73d30d41",
+        "intent": "A tree the dispatcher refuses (an incomplete one) still counts as dispatched: only a tree-less inert result falls back."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "a-refused-activation-is-dispatched",
+        "canonicalInputSha256": "6b519093204931343169a4390db57dad7eb01115846c15a136bc2ec2cb7cafd0",
+        "intent": "An incomplete current widget action is refused by the dispatcher and still returns kind dispatched; the form fallback never runs."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/activation.ts#createActivation",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "the-widget-event-feed",
+        "canonicalInputSha256": "0cda1868707c0d85421833155d633eca8bac75df0e429929705476b9d9fec4f8",
+        "intent": "Without the annotation plugin a cursor enter hovers with unknown flags and the dispatcher resolves the tree; cursor exit hovers nothing; down, up, focus and blur dispatch directly with a widget source."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "the-widget-event-feed",
+        "canonicalInputSha256": "00610cc25ccd9afceb444cfcbc766fabc4d4776b3b28b969c782e46787731739",
+        "intent": "Current form rows supply hover flags and action trees. Enter, exit, down, up, focus and blur carry the real widget source through the actions queue."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/activation.ts#widgetHoverFlags",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-actions.json",
+        "name": "hover-pre-checks-the-folded-annotation",
+        "canonicalInputSha256": "af6e9b4585cd08b7f41a44a94381064bafde5776c535c7c69af36000157cab29",
+        "intent": "With the annotation plugin a cursor enter on a loaded widget without enter or exit trees costs no dispatch; one with a tree hovers with its flags; an annotation that isn't a widget, or isn't loaded, hovers with unknown flags."
+      },
+      "after": {
+        "file": "plugins/form-actions.json",
+        "name": "hover-pre-checks-the-folded-annotation",
+        "canonicalInputSha256": "171b16913effa89565e12a6bdb67dad31efdfc46a4a88cdbec85804a25a81ceb",
+        "intent": "The current form-row mirror owns hover flags even with annotation lending. Rows without trees skip dispatch; an exit tree dispatches on hover exit; unknown rows read the page."
+      },
+      "disposition": "current-shipping-replacement",
+      "reason": "Actual current form capability over complete fields/widget rows, actual atomic ChangeOps/results/facts and current action/event ports; successful readbacks and exact refused channels are asserted independently.",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
+        "packages/plugin/form/src/write/activation.ts#widgetHoverFlags",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/write/fill.ts#createFill"
+      ]
+    }
+  ]
+}

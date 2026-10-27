@@ -17,7 +17,8 @@
 
 use std::collections::BTreeMap;
 
-use epdf_engine::features::search::{SearchMatchRange, match_regex, validate_search_regex};
+use epdf_engine::features::search::{match_regex, validate_search_regex};
+use epdf_engine::features::text::TextRange;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -48,15 +49,16 @@ struct DialectCase {
     results: Option<Vec<Vec<Range>>>,
 }
 
+/// A match range as the vectors spell it (`TextRange`).
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
 struct Range {
-    start: usize,
-    length: usize,
+    start: u32,
+    count: u32,
 }
 
-impl From<SearchMatchRange> for Range {
-    fn from(value: SearchMatchRange) -> Self {
-        Self { start: value.start, length: value.length }
+impl From<TextRange> for Range {
+    fn from(value: TextRange) -> Self {
+        Self { start: value.start, count: value.count }
     }
 }
 
@@ -275,7 +277,7 @@ struct FoldRange {
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 struct OriginalRangeVector {
     start: u32,
-    length: u32,
+    count: u32,
 }
 
 fn load_folds() -> FoldFile {
@@ -431,16 +433,16 @@ fn folded_ranges_translate_back_the_same_way() {
                 continue;
             };
             let expected = &probe.original;
-            if actual.start != expected.start || actual.length != expected.length {
+            if actual.start != expected.start || actual.count != expected.count {
                 failures.push(format!(
                     "{}: folded [{}, +{}) became [{}, +{}), TypeScript said [{}, +{})",
                     case.name,
                     probe.start,
                     probe.length,
                     actual.start,
-                    actual.length,
+                    actual.count,
                     expected.start,
-                    expected.length,
+                    expected.count,
                 ));
             }
             probes += 1;
@@ -500,10 +502,8 @@ fn literal_search_agrees_with_typescript() {
             ..Default::default()
         };
         let haystack = fold_text(&case.haystack, query.fold_options());
-        let actual: Vec<Range> = match_literal(&haystack, &query)
-            .into_iter()
-            .map(|r| Range { start: r.start as usize, length: r.length as usize })
-            .collect();
+        let actual: Vec<Range> =
+            match_literal(&haystack, &query).into_iter().map(Range::from).collect();
         if actual != case.matches {
             failures.push(format!(
                 "{}: matched {:?}, TypeScript said {:?} ({})",
@@ -524,6 +524,8 @@ struct SnippetFile {
     cases: Vec<SnippetCase>,
 }
 
+/// A case: the match the snippet is built around (`matchStart` and
+/// `matchLength` in the original text), and the snippet the TypeScript built.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SnippetCase {
@@ -537,18 +539,14 @@ struct SnippetCase {
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 struct SnippetVector {
-    text: String,
-    match_start: u32,
-    match_length: u32,
+    before: String,
+    #[serde(rename = "match")]
+    matched: String,
+    after: String,
 }
 
-#[test]
-fn snippets_agree_with_typescript() {
-    use epdf_engine::features::search::fold::OriginalRange;
-    use epdf_engine::features::search::snippet::build_snippet;
-
+fn load_snippets() -> SnippetFile {
     let path = test_support::workspace_root()
         .join("tooling/engine-conformance/vectors/search/snippet.json");
     let text =
@@ -557,19 +555,22 @@ fn snippets_agree_with_typescript() {
     assert_eq!(file.schema_version, 1, "vector envelope moved");
     assert_eq!(file.kind, "search.snippet");
     assert!(file.cases.len() >= 8, "the corpus shrank");
+    file
+}
+
+#[test]
+fn snippets_agree_with_typescript() {
+    use epdf_engine::features::search::snippet::build_snippet;
 
     let mut failures: Vec<String> = Vec::new();
-    for case in &file.cases {
+    for case in &load_snippets().cases {
         let actual = build_snippet(
             &case.text,
-            OriginalRange { start: case.match_start, length: case.match_length },
+            TextRange { start: case.match_start, count: case.match_length },
             case.context,
         );
-        let actual = SnippetVector {
-            text: actual.text,
-            match_start: actual.match_start,
-            match_length: actual.match_length,
-        };
+        let actual =
+            SnippetVector { before: actual.before, matched: actual.matched, after: actual.after };
         if actual != case.snippet {
             failures.push(format!(
                 "{}: produced {:?}, TypeScript said {:?} ({})",
@@ -583,44 +584,47 @@ fn snippets_agree_with_typescript() {
 #[test]
 fn a_snippet_locates_its_match_inside_itself() {
     // The property a highlighter depends on, checked as a property rather
-    // than through the vectors: the reported offset must address the match
-    // within the text returned, or the highlight lands somewhere else.
-    use epdf_engine::features::search::fold::OriginalRange;
+    // than through the vectors: the `match` part is the matched text,
+    // flattened the way the snippet flattens it, and the three parts read
+    // as one stretch of the page.
     use epdf_engine::features::search::snippet::build_snippet;
 
-    let path = test_support::workspace_root()
-        .join("tooling/engine-conformance/vectors/search/snippet.json");
-    let file: SnippetFile =
-        serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("parse");
-
-    for case in &file.cases {
+    let flat = |units: &[u16]| -> String {
+        String::from_utf16_lossy(units)
+            .chars()
+            .map(|c| if c.is_whitespace() { ' ' } else { c })
+            .collect()
+    };
+    for case in &load_snippets().cases {
         let snippet = build_snippet(
             &case.text,
-            OriginalRange { start: case.match_start, length: case.match_length },
+            TextRange { start: case.match_start, count: case.match_length },
             case.context,
         );
-        let units: Vec<u16> = snippet.text.encode_utf16().collect();
-        let end = snippet.match_start + snippet.match_length;
-        assert!(
-            end as usize <= units.len(),
-            "{}: match [{}, +{}) runs past a {}-unit snippet",
-            case.name,
-            snippet.match_start,
-            snippet.match_length,
-            units.len(),
-        );
-
-        // And the characters there are the matched ones, with whitespace
-        // flattened the same way the snippet flattened them.
         let page: Vec<u16> = case.text.encode_utf16().collect();
-        let matched: String = String::from_utf16_lossy(
-            &page[case.match_start as usize..(case.match_start + case.match_length) as usize],
-        )
-        .chars()
-        .map(|c| if c.is_whitespace() { ' ' } else { c })
-        .collect();
-        let in_snippet =
-            String::from_utf16_lossy(&units[snippet.match_start as usize..end as usize]);
-        assert_eq!(in_snippet, matched, "{}: the offset does not address the match", case.name);
+        let (start, end) =
+            (case.match_start as usize, (case.match_start + case.match_length) as usize);
+        assert_eq!(
+            snippet.matched,
+            flat(&page[start..end]),
+            "{}: the match part is not the matched text",
+            case.name
+        );
+        let whole = format!("{}{}{}", snippet.before, snippet.matched, snippet.after);
+        assert!(
+            flat(&page).contains(&whole),
+            "{}: the parts {whole:?} are not one stretch of the page",
+            case.name
+        );
+        assert!(
+            flat(&page[..start]).ends_with(&snippet.before),
+            "{}: the text before does not end at the match",
+            case.name
+        );
+        assert!(
+            flat(&page[end..]).starts_with(&snippet.after),
+            "{}: the text after does not start at the match",
+            case.name
+        );
     }
 }

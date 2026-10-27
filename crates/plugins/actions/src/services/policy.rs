@@ -1,6 +1,7 @@
 //! `services/policy.ts`: the policy matrix (type × origin → decision), the
-//! defaults, the fixed `never` and unsupported sets, the row-wise merge, and
-//! the live policy with its one decision function.
+//! fixed `never` and unsupported sets, and the one decision function over
+//! the `policy` setting. The setting itself (its defaults and its merge) is
+//! the plugin's settings.
 
 use serde_json::Value;
 
@@ -9,7 +10,6 @@ use crate::ActionsCapability;
 use crate::contract::{
     ActionOrigin, ActionPolicy, ActionPolicyDecision, ActionPolicyPatch, ActionPolicyRow,
 };
-use crate::model::ActionsAction;
 
 const ALLOW_ALL: ActionPolicyRow = ActionPolicyRow {
     user: ActionPolicyDecision::Allow,
@@ -31,7 +31,7 @@ const UNSUPPORTED_TYPES: &[&str] =
 /// Document-lifetime node types: engine mutations, committed in walk order.
 pub(crate) const DOCUMENT_TYPES: &[&str] = &["reset-form", "javascript"];
 
-/// `DEFAULT_POLICY`.
+/// `ACTIONS_DEFAULTS.policy`.
 pub fn default_policy() -> ActionPolicy {
     ActionPolicy {
         goto: ALLOW_ALL,
@@ -96,7 +96,7 @@ impl ActionsCapability {
         if UNSUPPORTED_TYPES.contains(&kind) {
             return Decision::Unsupported;
         }
-        let policy = self.0.policy.borrow();
+        let policy = self.current_policy();
         if is_print_verb(node) {
             return Decision::Policy(policy.print.get(origin));
         }
@@ -106,17 +106,8 @@ impl ActionsCapability {
         }
     }
 
-    /// The effective policy. A snapshot: [`update_policy`](Self::update_policy)
-    /// replaces it.
-    pub fn get_policy(&self) -> ActionPolicy {
-        self.0.policy.borrow().clone()
-    }
-
-    /// Live policy change: rows merge over the current policy, and later
-    /// dispatches decide with the new one.
-    pub fn update_policy(&self, patch: &ActionPolicyPatch) {
-        let next = merge_policy(&self.0.policy.borrow(), Some(patch));
-        *self.0.policy.borrow_mut() = next;
-        self.0.cx.dispatch(ActionsAction::ActionsPolicyChanged);
+    /// The live policy: read at decision time, never captured.
+    pub(crate) fn current_policy(&self) -> ActionPolicy {
+        self.settings_now().policy
     }
 }

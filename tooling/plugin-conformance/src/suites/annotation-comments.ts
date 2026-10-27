@@ -1,511 +1,544 @@
-/**
- * `packages/plugin/annotation`: the conversation plane (`comments`), the
- * attached-link lens (`links`), the actions plane's script commit door, the
- * attachment download and the baked appearances. Replayed by
- * `crates/plugins/annotation/tests/conformance.rs`.
- */
-import type { ScenarioCase } from '../scenario';
+import { LIVE_ANSWERS } from './annotation-live-answers';
+/** Current comments, attached links, script commits, resources and appearance ownership. */
 import type { Suite } from '../vectors';
-
 import {
-  FLAGS,
-  PAGES,
-  PLUGINS,
-  SNAP,
-  WITH_LENS,
-  boot,
+  scenario,
   call,
-  circle,
-  created,
-  doc,
-  fail,
-  hydrate,
-  lens,
-  line,
-  link,
-  markup,
-  objRef,
-  settle,
   square,
+  circle,
   textNote,
-  updated,
-  widget,
-  layout,
-  base,
+  markup,
+  line,
+  fileAttachment,
+  unsupported,
+  objRef,
   pr,
-} from './annotation-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const at = (d: number) => `2024-01-${String(d).padStart(2, '0')}T00:00:00Z`;
-const me = { identity: { user_id: 'me' } };
-
-/** A root with a reply, a grouped part and two review states, and a second
- *  root higher on the page, and one on page 2. */
+  hydrate,
+  doc,
+  write,
+  materialize,
+  settle,
+  emit,
+  createdFact,
+  layout,
+  PLUGINS,
+} from './annotation-live-fixtures';
+import './annotation-live-inputs';
+const at = (day: number) => `2024-01-${String(day).padStart(2, '0')}T00:00:00Z`;
 const thread = () => [
-  square(1, { contents: 'root', created: at(1), rect: { left: 100, bottom: 500, right: 200, top: 600 } }),
-  square(2, { contents: 'higher', created: at(2), rect: { left: 100, bottom: 650, right: 200, top: 750 } }),
-  square(3, { contents: 'same top, later', created: at(3), rect: { left: 300, bottom: 650, right: 400, top: 750 } }),
-  textNote(4, { inReplyTo: objRef(1), replyType: 'reply', contents: 'a reply', created: at(4) }),
-  markup('strikeout', 5, { inReplyTo: objRef(1), replyType: 'group' }),
-  textNote(6, { inReplyTo: objRef(1), state: 'accepted', stateModel: 'review', userId: 'me', modified: at(5), flags: FLAGS({ hidden: true }) }),
-  textNote(7, { inReplyTo: objRef(1), state: 'rejected', stateModel: 'review', userId: 'them', modified: at(6), flags: FLAGS({ hidden: true }) }),
+  square(1, {
+    contents: 'root',
+    createdAt: at(1),
+    rect: { x: 100, y: 200, width: 100, height: 100 },
+    box: { x: 100, y: 200, width: 100, height: 100 },
+  }),
+  square(2, {
+    contents: 'higher',
+    createdAt: at(2),
+    rect: { x: 100, y: 50, width: 100, height: 100 },
+    box: { x: 100, y: 50, width: 100, height: 100 },
+  }),
+  square(3, {
+    contents: 'same top, later',
+    createdAt: at(3),
+    rect: { x: 300, y: 50, width: 100, height: 100 },
+    box: { x: 300, y: 50, width: 100, height: 100 },
+  }),
+  textNote(4, { reply: { to: objRef(1), type: 'reply' }, contents: 'a reply', createdAt: at(4) }),
+  markup('strikeout', 5, { reply: { to: objRef(1), type: 'group' } }),
+  textNote(6, {
+    reply: { to: objRef(1), type: 'reply' },
+    state: 'accepted',
+    stateModel: 'review',
+    userId: 'me',
+    modifiedAt: at(5),
+    hidden: true,
+  }),
+  textNote(7, {
+    reply: { to: objRef(1), type: 'reply' },
+    state: 'rejected',
+    stateModel: 'review',
+    userId: 'them',
+    modifiedAt: at(6),
+    hidden: true,
+  }),
 ];
-const page2 = () => [circle(8, { pageObjectNumber: 2, contents: 'page two', rect: { left: 20, bottom: 30, right: 60, top: 70 } })];
-
-const cases: ScenarioCase[] = [
-  {
-    name: 'threads-and-members',
-    covers:
-      'threads() are display-ordered (page order, then top of page, then creation); thread(ref) finds the thread of any member (root, reply, grouped part, status) and null for none. The lens reads hydration too.',
-    plugins: WITH_LENS,
-    engine: { documents: { a: doc([hydrate({ 2: page2(), 1: thread() })], { security: { allows: '*', ...me } }) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      lens('threads'),
-      lens('thread', [objRef(4)]),
-      lens('thread', [objRef(5)]),
-      lens('thread', [objRef(7)]),
-      lens('thread', [objRef(99)]),
-      lens('hydration'),
-    ],
-  },
-  {
-    name: 'threads-nan-top',
-    covers:
-      "A root whose top is NaN makes the order comparator answer NaN, which the sort reads as a tie: the threads land where V8's sort leaves them, and the port neither panics nor reorders them its own way.",
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({
-            // The spec is plain JSON, so the NaN goes in tagged; the fake
-            // engine decodes it.
-            1: [10, 20, { $number: 'NaN' }, 30].map((top, i) =>
-              square(i + 1, {
-                contents: `top ${typeof top === 'number' ? top : 'NaN'}`,
-                rect: { left: 100, bottom: 0, right: 200, top: top as number },
-              }),
-            ),
-          }),
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, lens('threads')],
-  },
-  {
-    name: 'threads-off-the-layout',
-    covers: 'A thread on a page the layout does not list sorts last.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            {
-              path: 'annotations.listRawAll',
-              value: {
-                pages: [
-                  {
-                    pageState: { page: pr(1) },
-                    annotations: [
-                      square(1, { contents: 'a' }),
-                      square(2, { contents: 'tie one' }),
-                      square(3, { contents: 'tie two' }),
-                      square(4, { contents: 'lost page', pageObjectNumber: 9, ref: objRef(4, 9) }),
-                      square(5, { contents: 'lost page too', pageObjectNumber: 8, ref: objRef(5, 8) }),
-                    ],
-                  },
-                  { pageState: { page: pr(2) }, annotations: page2() },
-                ],
-              },
-            },
-          ],
-          { pages: [layout(0, 1), layout(1, 2)] },
-        ),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.moved', pageObjectNumber: 1, origin: { kind: 'remote', serverId: 1 }, moved: [square(9, { pageObjectNumber: 1, contents: 'z' })] }]),
-      call('rehydrate'),
-      lens('threads'),
-    ],
-  },
-  {
-    name: 'reply-edit-status-marked',
-    covers:
-      'reply writes a flat /IRT to the root whatever member was passed, with the reply flags; edit patches contents through the one update path; setStatus chains to the caller’s previous status (else the root); setMarked writes the Marked model; onThreadChanged hears each verb. A measurement dimension’s contents are derived, so edit rejects. Each create syncs baked and resolves after the engine confirms. An unknown ref rejects.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            hydrate({ 1: [...thread(), line(9, { intent: 'LineDimension' })] }),
-            { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(20, { inReplyTo: objRef(1), contents: 'thanks' })) },
-            { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(21, { inReplyTo: objRef(6), state: 'completed', stateModel: 'review', userId: 'me' })) },
-            { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(22, { inReplyTo: objRef(1), state: 'marked', stateModel: 'marked' })) },
-            { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(23, { inReplyTo: objRef(1), state: 'unmarked', stateModel: 'marked' })) },
-            { path: 'page.annotations.update', pon: 1, value: updated(textNote(4, { inReplyTo: objRef(1), contents: 'edited' })) },
-          ],
-          { security: { allows: '*', ...me } },
-        ),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      lens('onThreadChanged', [{ $fn: 'threadChanged' }]),
-      lens('reply', [objRef(5), 'thanks']),
-      lens('edit', [objRef(4), 'edited']),
-      lens('edit', [objRef(99), 'nope']),
-      lens('edit', [objRef(9), 'derived']),
-      lens('setStatus', [objRef(4), 'completed']),
-      lens('setMarked', [objRef(1), true]),
-      lens('setMarked', [objRef(1), false]),
-      lens('reply', [objRef(99), 'lost']),
-      lens('thread', [objRef(1)]),
-    ],
-  },
-  {
-    name: 'status-without-a-previous-one',
-    covers: 'Without a session identity, or without a previous status of the caller’s, setStatus replies to the root.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: thread() }),
-          { path: 'page.annotations.create', pon: 1, value: created(textNote(30, { inReplyTo: objRef(1), state: 'none', stateModel: 'review' })) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, lens('setStatus', [objRef(1), 'none'])],
-  },
-  {
-    name: 'remove-and-remove-thread',
-    covers:
-      'remove deletes one annotation. removeThread deletes children first, root last, one at a time; a member failing the delete gate blocks the whole thread up front (every blocked ref listed, nothing deleted); a mid-flight refusal stops the cascade before the root.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({
-            1: [
-              ...thread(),
-              square(10, { contents: 'locked root' }),
-              textNote(11, { inReplyTo: objRef(10), flags: FLAGS({ locked: true }) }),
-              square(12, { contents: 'racy' }),
-              textNote(13, { inReplyTo: objRef(12), contents: 'r1' }),
-              textNote(14, { inReplyTo: objRef(12), contents: 'r2' }),
-            ],
-          }),
-          { path: 'page.annotations.delete', pon: 1, args: [objRef(14)], error: { name: 'EngineError', message: 'already gone', code: 'NotFound' } },
-          { path: 'page.annotations.delete', pon: 1, value: {} },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      lens('remove', [objRef(3)]),
-      lens('removeThread', [objRef(11)]),
-      lens('removeThread', [objRef(4)]),
-      lens('removeThread', [objRef(12)]),
-      lens('removeThread', [objRef(99)]),
-      lens('threads'),
-    ],
-  },
-  {
-    name: 'comment-permissions',
-    covers:
-      'permissionsFor: reply and status are create authority; text edits are gated by lockedContents and refused on a measurement dimension, deletes by locked; the thread gate covers every member. Without create authority neither verb is offered; an unknown ref can do nothing but reply.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            hydrate({
-              1: [
-                square(1, { flags: FLAGS({ lockedContents: true }) }),
-                textNote(2, { inReplyTo: objRef(1), flags: FLAGS({ locked: true }) }),
-                square(3),
-                line(4, { intent: 'LineDimension' }),
-              ],
-            }),
-          ],
-          { security: { allows: ['doc.annotate.read', 'doc.annotate.modify'] } },
-        ),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      lens('permissionsFor', [objRef(1)]),
-      lens('permissionsFor', [objRef(2)]),
-      lens('permissionsFor', [objRef(3)]),
-      lens('permissionsFor', [objRef(4)]),
-      lens('permissionsFor', [objRef(99)]),
-    ],
-  },
-  {
-    name: 'attached-links',
-    covers:
-      'links.set on a committed parent creates the /RT /Group link child over its footprint and resolves once it is committed, after which links.of reads it; a second set retargets the child in place; links.clear deletes it. A read-only target is carried, never written. of on a link reads its own target, on an unknown ref null.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), link(9, { target: { kind: 'uri', uri: 'https://own' } }), link(10, { target: null })] }),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://a' } })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://b' } })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://b' } })) },
-          { path: 'page.annotations.delete', pon: 1, value: {} },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      lens('linksOf', [objRef(1)]),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://a' }]),
-      lens('linksOf', [objRef(1)]),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://b' }]),
-      lens('linksSet', [objRef(1), { kind: 'javascript' }]),
-      lens('linksOf', [objRef(1)]),
-      lens('linksClear', [objRef(1)]),
-      lens('linksOf', [objRef(1)]),
-      lens('linksOf', [objRef(9)]),
-      lens('linksOf', [objRef(99)]),
-      lens('linksOf', [objRef(10)]),
-      lens('linksSet', [objRef(9), { kind: 'uri', uri: 'https://x' }]),
-      lens('linksSet', [objRef(99), { kind: 'uri', uri: 'https://x' }]),
-      call('linkItemsOn', [1]),
-    ],
-  },
-  {
-    name: 'links-follow-geometry-and-props',
-    covers:
-      'A committed geometry patch of a parent with children schedules a keep-sync that re-rects them toward whatever target the substrate holds. updateSelection({ link }) goes through the syncLink effect. A markup parent gets one child per quad. A failing reconcile reports to console.error.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({
-            1: [
-              square(1),
-              link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://a' } }),
-              markup('highlight', 2, { quadPoints: [markup('x', 0).quadPoints, markup('x', 0, { quadPoints: [] }).quadPoints].flat().concat([{ p1: { x: 50, y: 715 }, p2: { x: 120, y: 715 }, p3: { x: 50, y: 700 }, p4: { x: 120, y: 700 } }]) }),
-              circle(3),
-            ],
-          }),
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(square(1, { rect: { left: 110, bottom: 600, right: 210, top: 700 } })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group' })) },
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(link(21, { inReplyTo: objRef(2), replyType: 'group' })) },
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(link(22, { inReplyTo: objRef(2), replyType: 'group' })) },
-          { path: 'page.annotations.create', pon: 1, error: { name: 'EngineError', message: 'no links here', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('select', [objRef(1)]),
-      call('editPointer', ['down', 1, { x: 150, y: 150 }, false]),
-      call('editPointer', ['move', 1, { x: 160, y: 150 }, false]),
-      call('editPointer', ['up', 1, { x: 160, y: 150 }, false]),
-      call('select', [objRef(2)]),
-      call('updateSelection', [{ link: { kind: 'uri', uri: 'https://m' } }]),
-      call('select', [objRef(3)]),
-      call('updateSelection', [{ link: { kind: 'uri', uri: 'https://c' } }]),
-      call('list', [1]),
-    ],
-  },
-  {
-    name: 'rapid-link-sets-chain',
-    covers: 'Two sets on one parent chain: the second starts after the first settles, and each reads the model at run time.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1)] }),
-          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'child' },
-          { path: 'page.annotations.update', pon: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://2' } })) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://1' }]),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://2' }]),
-      settle('child', created(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://1' } }))),
-      lens('linksOf', [objRef(1)]),
-    ],
-  },
-  {
-    name: 'link-sync-chains-per-parent',
-    covers:
-      'Link syncs chain per parent: a third set on one parent waits for the second, not the first; a set after the first settles still waits for the latest; and when one parent’s chain drains, another parent’s pending chain is kept, so its next set still waits.',
-    plugins: WITH_LENS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), square(2, { rect: { left: 300, bottom: 600, right: 400, top: 700 } })] }),
-          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'a1' },
-          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'b1' },
-          { path: 'page.annotations.create', pon: 1, value: created(link(22, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b2' } })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, defer: 'a2' },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://3' } })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://4' } })) },
-          { path: 'page.annotations.update', pon: 1, value: updated(link(21, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b2' } })) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://1' }]),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://2' }]),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://3' }]),
-      lens('linksSet', [objRef(2), { kind: 'uri', uri: 'https://b1' }]),
-      settle('a1', created(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://1' } }))),
-      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://4' }]),
-      settle('a2', updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://2' } }))),
-      lens('linksSet', [objRef(2), { kind: 'uri', uri: 'https://b2' }]),
-      settle('b1', created(link(21, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b1' } }))),
-      lens('linksOf', [objRef(1)]),
-      lens('linksOf', [objRef(2)]),
-    ],
-  },
-  {
-    name: 'script-commits',
-    covers:
-      'commitScriptEffects: per entry, resolve the ref from the model (or the engine’s page list for an unloaded one), lower the Acrobat patch (RGB, gray and CMYK colours, a transparent fill as null, borderStyle, dash, rect, contents, flags, opacity, width), write it, stop on the first refusal (the rest skip), and reload each touched page once. Unresolvable entries (a loaded one without a subtype asks the page list first) and transparent strokes fail without writing; a listed page is searched for the entry’s own object number.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), circle(2), widget(3, 'text'), base(4, '')] }),
-          { path: 'page.annotations.list', pon: 2, times: 1, value: { annotations: [square(39, { pageObjectNumber: 2 }), square(40, { pageObjectNumber: 2 })] } },
-          { path: 'page.annotations.list', pon: 2, times: 1, error: { name: 'EngineError', message: 'no', code: 'NotFound' } },
-          { path: 'page.annotations.list', pon: 1, value: { annotations: [square(1), circle(2), widget(3, 'text')] } },
-          { path: 'page.annotations.list', pon: 2, value: { annotations: [] } },
-          { path: 'page.annotations.update', pon: 1, times: 3, value: updated(square(1)) },
-          { path: 'page.annotations.update', pon: 2, times: 1, value: updated(square(40, { pageObjectNumber: 2 })) },
-          { path: 'page.annotations.update', pon: 1, error: { name: 'PermissionDenied', message: 'permission denied: doc.annotate.modify', required: 'doc.annotate.modify' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('commitScriptEffects', [
-        [
-          { annotObjectNumber: 1, page: pr(1), patch: { strokeColor: ['RGB', 1, 0, 0.5], fillColor: ['T'], opacity: 0.5, width: 3, borderStyle: 'D', dash: [3, 1], rect: [10, 20, 30, 40], contents: 'x', flags: { hidden: true } } },
-          { annotObjectNumber: 2, patch: { strokeColor: ['G', 0.5], fillColor: ['CMYK', 0.1, 0.2, 0.3, 0.4], borderStyle: 'S' } },
-          { annotObjectNumber: 40, page: pr(2), patch: { contents: 'far' } },
-          { annotObjectNumber: 41, page: pr(2), patch: { contents: 'missing' } },
-          { annotObjectNumber: 42, patch: { contents: 'no page' } },
-          { annotObjectNumber: 4, patch: { contents: 'no kind' } },
-          { annotObjectNumber: 3, patch: { strokeColor: ['T'] } },
-          { annotObjectNumber: 3, patch: { width: 1 } },
-          { annotObjectNumber: 2, patch: { opacity: 1 } },
-          { annotObjectNumber: 1, patch: { opacity: 1 } },
-        ],
-      ]),
-      call('list', [1]),
-    ],
-  },
-  {
-    name: 'script-commits-through-actions',
-    covers: 'With the actions plugin present, init registers commitScriptEffects as its annotation commit sink and releases it on close.',
-    plugins: [{ factory: 'interaction' }, { factory: 'actions' }, { factory: 'annotation' }],
-    engine: { documents: { a: doc([hydrate({ 1: [square(1)] })]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
-  },
-  {
-    name: 'attachment-download',
-    covers: 'downloadAttachment asks the page service for the bytes and resolves with them; an unknown ref rejects.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1)] }),
-          { path: 'page.annotations.downloadFile', pon: 1, value: { data: { $bytes: 'AQID' }, name: 'a.bin', mimeType: 'application/octet-stream' } },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('downloadAttachment', [objRef(1)]), call('downloadAttachment', [objRef(7)])],
-  },
-  {
-    name: 'baked-appearances',
-    covers:
-      'appearances asks for the page’s /AP images at a scale and resolves their list; a failure resolves []. A signal already aborted aborts the request at once; one aborted later aborts it then. An unknown page throws synchronously.',
-    plugins: [...PLUGINS, { factory: 'annotation-signals' }],
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(),
-          { path: 'page.annotations.renderAppearanceImages', pon: 1, times: 1, value: { appearances: [{ ref: objRef(1), rect: { left: 0, bottom: 0, right: 1, top: 1 } }] } },
-          { path: 'page.annotations.renderAppearanceImages', pon: 1, times: 1, error: { name: 'EngineError', message: 'render failed', code: 'Internal' } },
-          { path: 'page.annotations.renderAppearanceImages', pon: 1, defer: 'ap' },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('appearances', [1, 2]),
-      call('appearances', [1, 2]),
-      { op: 'call', target: { token: 'annotation-test/signals' }, method: 'abort', args: ['early'] },
-      call('appearances', [1, 1, { $abortSignal: 'early' }]),
-      call('appearances', [1, 1, { $abortSignal: 'late' }]),
-      { op: 'call', target: { token: 'annotation-test/signals' }, method: 'abort', args: ['late'] },
-      call('appearances', [1, 3]),
-      settle('ap', { appearances: [] }),
-      call('appearances', [42, 1]),
-    ],
-  },
-  {
-    name: 'bake-scale-on-a-lattice',
-    covers: 'bakeScale snaps up the document’s appearance lattice and caps at its top rung.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            hydrate(),
-            {
-              path: 'render.policy',
-              value: { kind: 'lattice', fullPage: { widths: [512, 1024] }, appearances: { scales: [2, 1, 4] } },
-            },
-          ],
-          { services: ['render'], pages: PAGES },
-        ),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('bakeScale', [0.5]), call('bakeScale', [1.5]), call('bakeScale', [9])],
-  },
-];
-
-void fail;
-
+const page2 = () =>
+  circle(8, {
+    page: pr(2),
+    contents: 'page two',
+    rect: { x: 10, y: 450, width: 40, height: 40 },
+    box: { x: 10, y: 450, width: 40, height: 40 },
+  });
+const select = (n: number) => call('selection.set', [[objRef(n)]]);
+const uri = (suffix: string) => ({ kind: 'uri' as const, uri: `https://${suffix}` });
+const actions = [...PLUGINS, { factory: 'annotation-live-actions' }];
+const noSnapshot = {
+  snapshot: 'none' as const,
+  reason: 'Current outcomes, settlements, engine calls and callbacks carry the observable result.',
+};
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/annotation-comments.json',
-    describes:
-      'packages/plugin/annotation: comments, attached links, the script commit door, attachment download and baked appearances.',
-    cases,
+    describes: 'Current thread, link and script/resource/appearance boundaries.',
+    cases: [
+      scenario(
+        'threads-and-members',
+        'Threads sort by page, page-space y and creation date; every reply/group/status member resolves its root.',
+        [
+          call('comments.listThreads'),
+          ...[4, 5, 7, 99].map((n) => call('comments.getThread', [objRef(n)])),
+          call('getStatus'),
+        ],
+        [hydrate([...thread(), page2()]), ...LIVE_ANSWERS['threads-and-members']],
+        {
+          engine: {
+            documents: {
+              a: doc([hydrate([...thread(), page2()]), ...LIVE_ANSWERS['threads-and-members']], {
+                security: { allows: '*', identity: { userId: 'me' } },
+              }),
+            },
+          },
+        },
+      ),
+      scenario(
+        'threads-nan-top',
+        'An explicitly malformed NaN page-space y compares as a tie without panicking; engine protocol input is tagged.',
+        [call('comments.listThreads')],
+        [
+          hydrate(
+            [10, 20, { $number: 'NaN' }, 30].map((y, i) =>
+              square(i + 1, {
+                contents: `top ${typeof y === 'number' ? y : 'NaN'}`,
+                rect: { x: 100, y: y as number, width: 100, height: 10 },
+              }),
+            ),
+          ),
+          ...LIVE_ANSWERS['threads-nan-top'],
+        ],
+      ),
+      scenario(
+        'threads-off-the-layout',
+        'Off-layout pages sort last, including after a current remote creation and mirror refresh.',
+        [
+          emit(createdFact(square(9, { contents: 'z' }))),
+          call('refresh'),
+          call('comments.listThreads'),
+        ],
+        [
+          hydrate([
+            square(1, { contents: 'a' }),
+            square(2, { contents: 'tie one' }),
+            square(3, { contents: 'tie two' }),
+            square(4, { page: pr(9), contents: 'lost page' }),
+            square(5, { page: pr(8), contents: 'lost page too' }),
+            page2(),
+          ]),
+          ...LIVE_ANSWERS['threads-off-the-layout'],
+        ],
+      ),
+      scenario(
+        'reply-edit-status-marked',
+        'Replies target the root; text updates and derived measurement rejection are current; review states chain to the current reviewer and marked states target the root.',
+        [
+          call('comments.onThreadChanged', [{ $fn: 'threadChanged' }]),
+          call('comments.reply', [objRef(5), 'thanks']),
+          call('comments.setText', [objRef(4), 'edited']),
+          call('comments.setText', [objRef(99), 'nope']),
+          call('comments.setText', [objRef(9), 'derived']),
+          call('comments.setStatus', [objRef(4), 'completed']),
+          call('comments.setMarked', [objRef(1), true]),
+          call('comments.getThread', [objRef(1)]),
+          call('comments.setMarked', [objRef(1), false]),
+          call('comments.reply', [objRef(99), 'lost']),
+          call('comments.getThread', [objRef(1)]),
+        ],
+        [
+          hydrate([...thread(), line(9, { intent: 'line-dimension' })]),
+          ...LIVE_ANSWERS['reply-edit-status-marked'],
+        ],
+        {
+          engine: {
+            documents: {
+              a: doc(
+                [
+                  hydrate([...thread(), line(9, { intent: 'line-dimension' })]),
+                  ...LIVE_ANSWERS['reply-edit-status-marked'],
+                ],
+                { security: { allows: '*', identity: { userId: 'me' } } },
+              ),
+            },
+          },
+        },
+      ),
+      scenario(
+        'status-without-a-previous-one',
+        'Without caller identity, review status replies to the root.',
+        [call('comments.setStatus', [objRef(1), 'none']), call('comments.getThread', [objRef(1)])],
+        [hydrate(thread()), ...LIVE_ANSWERS['status-without-a-previous-one']],
+      ),
+      scenario(
+        'remove-and-remove-thread-atomically',
+        'Delete preflight blocks the whole thread; permitted root deletion is atomic, and an engine refusal preserves every member.',
+        [
+          call('comments.onThreadChanged', [{ $fn: 'threadChanged' }]),
+          call('comments.delete', [objRef(3)]),
+          call('comments.deleteThread', [objRef(11)]),
+          call('comments.deleteThread', [objRef(4)]),
+          call('comments.deleteThread', [objRef(15)]),
+          call('comments.deleteThread', [objRef(12)]),
+          call('comments.deleteThread', [objRef(99)]),
+          call('comments.listThreads'),
+          call('list'),
+        ],
+        [
+          hydrate([
+            ...thread(),
+            square(10, { contents: 'locked root' }),
+            textNote(11, { reply: { to: objRef(10), type: 'reply' }, locked: true }),
+            square(12, { contents: 'racy' }),
+            square(15, { contents: 'visible thread' }),
+            textNote(16, { reply: { to: objRef(15), type: 'reply' } }),
+            textNote(13, { reply: { to: objRef(12), type: 'reply' }, contents: 'r1' }),
+            textNote(14, { reply: { to: objRef(12), type: 'reply' }, contents: 'r2' }),
+          ]),
+          ...LIVE_ANSWERS['remove-and-remove-thread-atomically'],
+        ],
+      ),
+      scenario(
+        'comment-permissions',
+        'Named current can* members expose create, text and whole-thread delete authority, including locked contents, dimension and unknown refs.',
+        [
+          ...[1, 2, 3, 4, 99].flatMap((n) =>
+            [
+              'canReply',
+              'canSetText',
+              'canSetStatus',
+              'canSetMarked',
+              'canDelete',
+              'canDeleteThread',
+            ].map((method) => call(`comments.${method}`, [objRef(n)])),
+          ),
+        ],
+        [
+          hydrate([
+            square(1, { lockedContents: true }),
+            textNote(2, { reply: { to: objRef(1), type: 'reply' }, locked: true }),
+            square(3),
+            line(4, { intent: 'line-dimension' }),
+          ]),
+          ...LIVE_ANSWERS['comment-permissions'],
+        ],
+        {
+          engine: {
+            documents: {
+              a: doc(
+                [
+                  hydrate([
+                    square(1, { lockedContents: true }),
+                    textNote(2, { reply: { to: objRef(1), type: 'reply' }, locked: true }),
+                    square(3),
+                    line(4, { intent: 'line-dimension' }),
+                  ]),
+                  ...LIVE_ANSWERS['comment-permissions'],
+                ],
+                { security: { allows: ['doc.annotate.read', 'doc.annotate.modify'] } },
+              ),
+            },
+          },
+        },
+      ),
+      scenario(
+        'attached-links',
+        'Current links set/create, retarget, preserve read-only targets and clear the attached group child; a link annotation and missing parents are read without mutation.',
+        [
+          call('links.get', [objRef(1)]),
+          call('links.set', [objRef(1), uri('a')]),
+          call('links.get', [objRef(1)]),
+          call('links.set', [objRef(1), uri('b')]),
+          call('links.set', [objRef(1), { kind: 'javascript' }]),
+          call('links.get', [objRef(1)]),
+          call('links.clear', [objRef(1)]),
+          call('links.get', [objRef(1)]),
+          call('links.get', [objRef(9)]),
+          call('links.get', [objRef(99)]),
+          call('links.get', [objRef(10)]),
+          call('links.set', [objRef(9), uri('x')]),
+          call('links.set', [objRef(99), uri('x')]),
+          call('listLinkItems', [pr(1)]),
+          call('list'),
+        ],
+        [
+          hydrate([
+            square(1),
+            materialize(9, {
+              subtype: 'link',
+              rect: { x: 100, y: 100, width: 100, height: 100 },
+              target: uri('own'),
+            }),
+            materialize(10, {
+              subtype: 'link',
+              rect: { x: 100, y: 100, width: 100, height: 100 },
+              target: null,
+            }),
+          ]),
+          ...LIVE_ANSWERS['attached-links'],
+        ],
+      ),
+      scenario(
+        'links-follow-geometry-and-props',
+        'A parent move writes its link child in the same Change; selected markup creates one child per quad, and an intended child refusal rolls back the whole link change.',
+        [
+          select(1),
+          call('editPointer', ['down', pr(1), { x: 150, y: 150 }, false]),
+          call('editPointer', ['move', pr(1), { x: 160, y: 150 }, false]),
+          call('editPointer', ['up', pr(1), { x: 160, y: 150 }, false]),
+          select(2),
+          call('selection.updateLink', [uri('m')]),
+          select(3),
+          call('selection.updateLink', [uri('c')]),
+          call('list'),
+        ],
+        [
+          hydrate([
+            square(1),
+            materialize(20, {
+              subtype: 'link',
+              rect: { x: 100, y: 100, width: 100, height: 100 },
+              target: uri('a'),
+              reply: { to: objRef(1), type: 'group' },
+            }),
+            markup('highlight', 2, {
+              quadPoints: [
+                {
+                  upperLeft: { x: 50, y: 55 },
+                  upperRight: { x: 200, y: 55 },
+                  lowerLeft: { x: 50, y: 70 },
+                  lowerRight: { x: 200, y: 70 },
+                },
+                {
+                  upperLeft: { x: 50, y: 85 },
+                  upperRight: { x: 120, y: 85 },
+                  lowerLeft: { x: 50, y: 100 },
+                  lowerRight: { x: 120, y: 100 },
+                },
+              ],
+            }),
+            circle(3),
+          ]),
+          ...LIVE_ANSWERS['links-follow-geometry-and-props'],
+        ],
+      ),
+      scenario(
+        'rapid-link-sets-use-pending-identity',
+        'Two sets use the same stable-born pending child; both writes name the same child before ordered confirmations.',
+        [
+          call('links.set', [objRef(1), uri('1')]),
+          call('links.set', [objRef(1), uri('2')]),
+          settle('child'),
+          settle('retarget'),
+          call('links.get', [objRef(1)]),
+          call('list'),
+        ],
+        [hydrate([square(1)]), ...LIVE_ANSWERS['rapid-link-sets-use-pending-identity']],
+      ),
+      scenario(
+        'link-updates-queue-across-parents',
+        'Rapid link changes preserve each parent target and stable child identity while every pending write retains its stated target and ordered confirmations settle them.',
+        [
+          call('links.set', [objRef(1), uri('1')]),
+          call('links.set', [objRef(1), uri('2')]),
+          call('links.set', [objRef(1), uri('3')]),
+          call('links.set', [objRef(2), uri('b1')]),
+          settle('a1'),
+          call('links.set', [objRef(1), uri('4')]),
+          settle('a2'),
+          call('links.set', [objRef(2), uri('b2')]),
+          settle('a3'),
+          settle('b1'),
+          settle('a4'),
+          settle('b2'),
+          call('links.get', [objRef(1)]),
+          call('links.get', [objRef(2)]),
+          call('list'),
+        ],
+        [
+          hydrate([
+            square(1),
+            square(2, {
+              box: { x: 300, y: 100, width: 100, height: 100 },
+              rect: { x: 300, y: 100, width: 100, height: 100 },
+            }),
+          ]),
+          ...LIVE_ANSWERS['link-updates-queue-across-parents'],
+        ],
+      ),
+      scenario(
+        'script-commits',
+        'The script sink lowers current loaded fields and colors; an unloaded resolved ref fails staging before apply, while a separate batch exercises unresolved/transparent inputs and stops on an explicit engine refusal.',
+        [
+          call('commitScriptEffects', [
+            [
+              {
+                annotObjectNumber: 1,
+                page: pr(1),
+                patch: {
+                  strokeColor: ['RGB', 1, 0, 0.5],
+                  fillColor: ['T'],
+                  opacity: 0.5,
+                  width: 3,
+                  borderStyle: 'D',
+                  dash: [3, 1],
+                  rect: [10, 20, 30, 40],
+                  contents: 'x',
+                  flags: { hidden: true },
+                },
+              },
+              {
+                annotObjectNumber: 2,
+                patch: {
+                  strokeColor: ['G', 0.5],
+                  fillColor: ['CMYK', 0.1, 0.2, 0.3, 0.4],
+                  borderStyle: 'S',
+                },
+              },
+              { annotObjectNumber: 40, page: pr(2), patch: { contents: 'far' } },
+              { annotObjectNumber: 1, patch: { opacity: 1 } },
+            ],
+          ]),
+          call('commitScriptEffects', [
+            [
+              { annotObjectNumber: 41, page: pr(2), patch: { contents: 'missing' } },
+              { annotObjectNumber: 42, patch: { contents: 'no page' } },
+              { annotObjectNumber: 44, patch: { contents: 'no loaded record' } },
+              { annotObjectNumber: 3, patch: { strokeColor: ['T'] } },
+              { annotObjectNumber: 3, patch: { width: 1 } },
+              { annotObjectNumber: 2, patch: { opacity: 1 } },
+              { annotObjectNumber: 1, patch: { opacity: 1 } },
+            ],
+          ]),
+          call('list'),
+        ],
+        [
+          hydrate([square(1), circle(2), square(3), unsupported(4)]),
+          {
+            path: 'page.annotations.list',
+            pon: 2,
+            value: { annotations: [square(39, { page: pr(2) }), square(40, { page: pr(2) })] },
+          },
+          ...LIVE_ANSWERS['script-commits'],
+        ],
+      ),
+      scenario(
+        'script-commits-through-actions',
+        'The real actions plugin and annotation plugin connect their current script sink and release it on close.',
+        [{ op: 'call', target: 'documents', method: 'close', args: ['a'] }],
+        [hydrate([square(1)]), ...LIVE_ANSWERS['script-commits-through-actions']],
+        { plugins: actions },
+      ),
+      scenario(
+        'attachment-download',
+        'The current resource door reads file bytes by role and rejects an unknown ref.',
+        [
+          call('downloadResource', [objRef(1), 'file']),
+          call('downloadResource', [objRef(7), 'file']),
+        ],
+        [
+          hydrate([fileAttachment(1)]),
+          { path: 'page.annotations.downloadResource', pon: 1, value: { $bytes: 'AQID' } },
+          ...LIVE_ANSWERS['attachment-download'],
+        ],
+      ),
+      scenario(
+        'baked-appearances-through-render',
+        'Engine appearances belong to the render plugin; the annotation projection preserves current image/version data and returns an empty list after a render refusal.',
+        [
+          call('renderAppearances', [pr(1), 2]),
+          call('renderAppearances', [pr(1), 3]),
+          call('renderAppearances', [pr(42), 1]),
+        ],
+        [
+          hydrate([square(1)]),
+          {
+            path: 'page.annotations.renderAppearances',
+            pon: 1,
+            times: 1,
+            value: {
+              page: pr(1),
+              appearances: [
+                {
+                  ref: objRef(1),
+                  mode: 'normal',
+                  state: null,
+                  rect: { x: 100, y: 100, width: 100, height: 100 },
+                  image: {
+                    width: 2,
+                    height: 2,
+                    format: 'png',
+                    contentType: 'image/png',
+                    source: { kind: 'bytes', bytes: { $bytes: 'AQID' } },
+                    blob: {
+                      $fn: 'appearance.blob',
+                      throws: { name: 'Error', message: 'projection does not request bytes' },
+                    },
+                    objectUrl: {
+                      $fn: 'appearance.url',
+                      throws: { name: 'Error', message: 'projection does not request a URL' },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          {
+            path: 'page.annotations.renderAppearances',
+            pon: 1,
+            error: {
+              name: 'EngineError',
+              message: 'intended appearance refusal',
+              code: 'Internal',
+            },
+          },
+          ...LIVE_ANSWERS['baked-appearances-through-render'],
+        ],
+        { plugins: [...PLUGINS, { factory: 'annotation-live-render' }] },
+      ),
+      scenario(
+        'appearance-scale-owned-by-render',
+        'The current render capability snaps appearance scale to the advertised engine lattice.',
+        [
+          ...[0.5, 1.5, 9].map((scale) => ({
+            op: 'call' as const,
+            target: { token: 'render', doc: 'a' },
+            method: 'getAppearanceScale',
+            args: [scale],
+          })),
+        ],
+        [hydrate(), ...LIVE_ANSWERS['appearance-scale-owned-by-render']],
+        {
+          plugins: [...PLUGINS, { factory: 'annotation-live-render' }],
+          engine: {
+            documents: {
+              a: doc(
+                [
+                  hydrate(),
+                  {
+                    path: 'render.getPolicy',
+                    value: {
+                      kind: 'lattice',
+                      fullPage: { widths: [512, 1024] },
+                      appearances: { scales: [2, 1, 4] },
+                    },
+                  },
+                  ...LIVE_ANSWERS['appearance-scale-owned-by-render'],
+                ],
+                { services: ['render'] },
+              ),
+            },
+          },
+        },
+      ),
+    ],
   },
 ];

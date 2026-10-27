@@ -25,12 +25,11 @@
 //! next outermost entry: nothing else runs the sweep.
 //!
 //! A command function's context arrives with markers where the TypeScript
-//! has functions and a live object: `ctx.core`, `ctx.get` and `ctx.tryGet`
-//! are each `{"$kernel": "core" | "get" | "tryGet", "doc": <documentId or
-//! null>}` (`epdf_plugin_commands::harness`, `ctx_json`). The host resolves
-//! `get` to [`WasmKernel::capability`], `tryGet` to
-//! [`WasmKernel::try_capability`] and `core` to `state_json().core`, each
-//! with that `doc`.
+//! has functions: `ctx.get` and `ctx.tryGet` are each `{"$kernel": "get" |
+//! "tryGet", "doc": <documentId or null>}` (`epdf_plugin_commands::harness`,
+//! `ctx_json`). The current `CommandContext` has no `core`. The host
+//! resolves `get` to [`WasmKernel::capability`] and `tryGet` to
+//! [`WasmKernel::try_capability`], each with that `doc`.
 //!
 //! The same capability object always describes to the same text, with the
 //! same refs: [`WasmKernel`] memoizes each description by the capability's
@@ -360,6 +359,7 @@ impl WasmKernel {
             })),
             on_dispatch: None,
             release_closed_sessions: true,
+            printer: None,
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;

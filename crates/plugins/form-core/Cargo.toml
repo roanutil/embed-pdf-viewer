@@ -1,0 +1,31 @@
+[package]
+name = "epdf-form-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/core/form in Rust: the form widget painter, what a widget draws for its facts and its text's layout, as PDFium's appearance generator lays it out."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the library turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance", "dep:epdf-kernel"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+epdf-annotation-core = { path = "../annotation-core", default-features = false }
+epdf-fonts = { path = "../fonts", default-features = false }
+epdf-geometry = { path = "../geometry", default-features = false }
+epdf-kernel = { path = "../../epdf-kernel", optional = true }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }
+
+[dev-dependencies]
+serde_json = "1"

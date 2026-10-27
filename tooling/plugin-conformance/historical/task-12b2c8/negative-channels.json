@@ -1,0 +1,668 @@
+[
+  {
+    "name": "rotate-by",
+    "step": 8,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 99 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "rotate-by",
+    "step": 9,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 99 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "passthroughs",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "no pages given",
+        "code": "invalid-input",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.rotateBy requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.setRotation requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.reorder requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.delete requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.insertBlank requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 8,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.insertFromBytes requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 9,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.extract requires doc.download",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.download"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 10,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "pageEdit.duplicate requires doc.pages.assemble",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble"
+      }
+    }
+  },
+  {
+    "name": "refused-by-the-engine",
+    "step": 12,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "write refused",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.pages.assemble",
+        "details": {
+          "required": "doc.pages.assemble",
+          "context": "local"
+        },
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "write refused",
+            "code": "Forbidden",
+            "details": {
+              "required": "doc.pages.assemble",
+              "context": "local"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "add-blank",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 199 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "add-blank",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 199 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "add-blank-fractional-index",
+    "step": 2,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 1.5 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "add-blank-fractional-index",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page NaN is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "add-blank-fractional-index",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page Infinity is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "add-blank-fractional-index",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 1.5 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 5 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "a-captured-capability-outlives-its-document",
+    "step": 4,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"page-edit\" unavailable: no document \"a\"."
+      }
+    }
+  },
+  {
+    "name": "a-captured-capability-outlives-its-document",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the document closed",
+        "code": "instance-closed",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "a-captured-capability-outlives-its-document",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the document closed",
+        "code": "instance-closed",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "an-empty-registry",
+    "step": 2,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 10 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "an-empty-registry",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 10 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "rotate-by-groups-and-empty",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "no pages given",
+        "code": "invalid-input",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "move-to-the-end",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 99 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-of-another-pdf",
+    "step": 3,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "no pages given",
+        "code": "invalid-input",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-of-another-pdf",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page 3",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-of-another-pdf",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "source open refused",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.open",
+        "details": {
+          "required": "doc.open",
+          "context": "local"
+        },
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "source open refused",
+            "code": "Forbidden",
+            "details": {
+              "required": "doc.open",
+              "context": "local"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page -1",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page 1.5",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page -0.5",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page Infinity",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 8,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page -Infinity",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 9,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page NaN",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 10,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page 100000000000000000000",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 11,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page 1e+21",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-a-subset-names-the-missing-index",
+    "step": 12,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "the PDF has no page 1e-7",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-from-another-document",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "document 'zzz' is not open",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-from-another-document",
+    "step": 6,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "document 'b' has no such page",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "insert-from-another-document",
+    "step": 7,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "source download refused",
+        "code": "permission-denied",
+        "capability": "page-edit",
+        "permission": "doc.download",
+        "details": {
+          "required": "doc.download",
+          "context": "local"
+        },
+        "cause": {
+          "$error": {
+            "name": "PermissionDenied",
+            "message": "source download refused",
+            "code": "Forbidden",
+            "details": {
+              "required": "doc.download",
+              "context": "local"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "duplicate",
+    "step": 4,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 99 is not in this document",
+        "code": "not-found",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "duplicate",
+    "step": 5,
+    "channel": "settled.rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "no pages given",
+        "code": "invalid-input",
+        "capability": "page-edit",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "state-and-scope",
+    "step": 0,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"page-edit\" unavailable: no document \"a\"."
+      }
+    }
+  },
+  {
+    "name": "state-and-scope",
+    "step": 2,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"page-edit\" unavailable: no document \"a\"."
+      }
+    }
+  }
+]

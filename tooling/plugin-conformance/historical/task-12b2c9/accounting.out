@@ -1,0 +1,54 @@
+original-runtime.json 8be3da23c4f1e13d9b852dc8e60de4b6c0df09e6dc4f0004b6999ec0ee486d08
+original-i18n.ts.txt 9f9a3aeab41526783de77bdbd59b48356b9eaa63e515bd51aa1c22a2a021d8f0
+original-commands-current.test.ts.txt 19b3fa809b3d8e98b659a522c74c8dc9d3fb51a6dfb5eaae54d0fc0ee48c620f
+{
+  "accounting": {
+    "original": 635,
+    "originalPure": 611,
+    "originalLive": 24,
+    "current": 642,
+    "currentPure": 618,
+    "currentLive": 24,
+    "mapped": 635,
+    "pluralRows": 532,
+    "duplicateExtras": 4,
+    "wholeRetirements": 1,
+    "survivingOriginals": 634,
+    "replacementRows": 1,
+    "totalNewRows": 8,
+    "partialRetirements": 32,
+    "additions": 7,
+    "changedInputs": 83
+  },
+  "runtime": {
+    "scenarios": 24,
+    "steps": 308,
+    "callbacks": 34,
+    "settlements": 75,
+    "stepThrows": 12,
+    "warnings": 5,
+    "rejections": 15,
+    "reports": 2,
+    "failureCallbacks": 1,
+    "pure": 618,
+    "pluralRows": 532,
+    "unmatched": 0,
+    "runnerExceptions": 0,
+    "pureThrows": 0
+  },
+  "diagnostics": {
+    "total": 38,
+    "allocation": {
+      "src/suites/annotation-fixtures.ts": 3,
+      "src/suites/form-fixtures.ts": 12,
+      "src/suites/render-pure.ts": 2,
+      "src/suites/render.ts": 2,
+      "src/suites/shell.ts": 6,
+      "src/suites/signature-core.ts": 2,
+      "src/suites/signature-plugin.ts": 1,
+      "src/suites/stamp-fixtures.ts": 10
+    },
+    "owned": 0
+  },
+  "preserved": 653
+}

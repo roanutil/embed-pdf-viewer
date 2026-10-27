@@ -3,6 +3,7 @@
 use epdf_kernel::Error;
 use serde_json::{Value, json};
 
+use crate::asn1js;
 use crate::cert::{AlgId, Certificate, Name};
 use crate::der::{self, Node};
 use crate::oids::{self, Digest};
@@ -185,7 +186,9 @@ impl SignerInfo {
             signed_attrs_content = node.children.iter().flat_map(|c| c.raw.clone()).collect();
         }
         let signature_algorithm = AlgId::read(members.next()?)?;
-        let signature = members.next().filter(|n| n.is_octet_string())?.octets();
+        // pkijs's schema names a primitive OCTET STRING.
+        let signature =
+            members.next().filter(|n| n.is_octet_string() && !n.constructed)?.content.clone();
         let mut unsigned_attrs = None;
         if let Some(node) = members.next() {
             if !(node.is_context(1) && node.constructed) {
@@ -212,7 +215,10 @@ impl SignerInfo {
 }
 
 struct SignedData {
+    e_content_type: String,
     has_econtent: bool,
+    /// The element inside `[0]`, when it carries one.
+    e_content: Option<Node>,
     certificates: Vec<Certificate>,
     signer_infos: Vec<SignerInfo>,
 }
@@ -229,11 +235,11 @@ impl SignedData {
             AlgId::read(d)?;
         }
         let encap = members.next().filter(|n| n.is_sequence())?;
-        encap.children.first()?.oid()?;
-        let has_econtent = match encap.children.get(1) {
-            Some(n) if n.is_context(0) && n.constructed => true,
+        let e_content_type = encap.children.first()?.oid()?;
+        let (has_econtent, e_content) = match encap.children.get(1) {
+            Some(n) if n.is_context(0) && n.constructed => (true, n.children.first().cloned()),
             Some(_) => return None,
-            None => false,
+            None => (false, None),
         };
         let mut certificates = Vec::new();
         if members.peek().is_some_and(|n| n.is_context(0) && n.constructed) {
@@ -251,7 +257,7 @@ impl SignedData {
         let infos = members.next().filter(|n| n.is_set())?;
         let signer_infos =
             infos.children.iter().map(SignerInfo::read).collect::<Option<Vec<_>>>()?;
-        Some(SignedData { has_econtent, certificates, signer_infos })
+        Some(SignedData { e_content_type, has_econtent, e_content, certificates, signer_infos })
     }
 }
 
@@ -264,6 +270,19 @@ pub struct Internal {
     /// Signer first.
     pub certificates: Vec<Certificate>,
     pub ess_cert_hash: Option<Vec<u8>>,
+    /// A timestamp token's encapsulated TSTInfo (`CmsContent::TstInfo`);
+    /// `None` for a detached CMS.
+    pub e_content: Option<Vec<u8>>,
+}
+
+/// `CmsContent`: what the CMS carries. Nothing (a detached PDF signature
+/// over the `/ByteRange`), or an RFC 3161 TSTInfo (a document timestamp's
+/// token, whose message imprint is the `/ByteRange` digest).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CmsContent {
+    #[default]
+    Detached,
+    TstInfo,
 }
 
 /// `parseDetachedCms`.
@@ -271,12 +290,23 @@ pub fn parse_detached_cms(cms: &[u8]) -> Result<ParsedCms, ParseError> {
     parse_cms_internal(cms).map(|i| i.parsed)
 }
 
-/// `parseCmsInternal`.
+/// `parseCmsInternal(cms)`: a detached CMS.
 pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
+    parse_cms_content(cms, CmsContent::Detached)
+}
+
+/// `parseCmsInternal(cms, content)`.
+pub fn parse_cms_content(cms: &[u8], content_kind: CmsContent) -> Result<Internal, ParseError> {
     if cms.is_empty() {
         return Err(ParseError::malformed("empty CMS"));
     }
-    let root = der::from_ber(cms).ok_or_else(|| ParseError::malformed("CMS is not valid BER"))?;
+    let not_ber = || ParseError::malformed("CMS is not valid BER");
+    match asn1js::from_ber(cms) {
+        asn1js::Verdict::Accepted => {}
+        asn1js::Verdict::Refused => return Err(not_ber()),
+        asn1js::Verdict::Throws(error) => return Err(ParseError::Other(error)),
+    }
+    let root = der::from_ber(cms).ok_or_else(not_ber)?;
     let wrap = |target: &str| {
         ParseError::malformed(format!(
             "CMS does not parse as SignedData: {}",
@@ -299,10 +329,46 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
         )));
     }
     let signed_data = SignedData::read(content).ok_or_else(|| wrap("SignedData"))?;
-    if signed_data.has_econtent {
-        return Err(ParseError::unsupported(
-            "CMS carries encapsulated content; a PDF signature is detached",
-        ));
+    let (expected_content_type, expected_name) = match content_kind {
+        CmsContent::Detached => (oids::DATA, "id-data"),
+        CmsContent::TstInfo => (oids::TST_INFO, "id-ct-TSTInfo"),
+    };
+    let mut e_content = None;
+    match content_kind {
+        CmsContent::Detached => {
+            if signed_data.has_econtent {
+                return Err(ParseError::unsupported(
+                    "CMS carries encapsulated content; a PDF signature is detached",
+                ));
+            }
+        }
+        CmsContent::TstInfo => {
+            let Some(node) = signed_data
+                .e_content
+                .as_ref()
+                .filter(|_| signed_data.e_content_type == oids::TST_INFO)
+            else {
+                return Err(ParseError::malformed("a timestamp token must carry a TSTInfo"));
+            };
+            // pkijs keeps an OCTET STRING; any other element has no
+            // `getValue`. asn1js's `getValue()` joins a constructed one's
+            // primitive pieces only: a nested constructed piece adds nothing.
+            if !node.is_octet_string() {
+                return Err(ParseError::Other(Error::named(
+                    "TypeError",
+                    "encapsulated.eContent.getValue is not a function",
+                )));
+            }
+            e_content = Some(if node.constructed {
+                node.children
+                    .iter()
+                    .filter(|c| !c.constructed)
+                    .flat_map(|c| c.content.clone())
+                    .collect()
+            } else {
+                node.content.clone()
+            });
+        }
     }
     if signed_data.signer_infos.len() != 1 {
         return Err(ParseError::unsupported(format!(
@@ -319,7 +385,7 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
             ))
         })?;
     let certificates = signed_data.certificates;
-    let signer_index = find_signer_certificate(&signer_info.sid, &certificates)
+    let signer_index = find_signer_certificate(&signer_info.sid, &certificates)?
         .ok_or_else(|| ParseError::malformed("the signer certificate is not carried by the CMS"))?;
 
     let empty = Vec::new();
@@ -333,12 +399,14 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
 
     if let Some(content_type) = attr(oids::CONTENT_TYPE) {
         let first = content_type.first()?;
-        if first.and_then(Node::oid).as_deref() != Some(oids::DATA) {
-            return Err(ParseError::unsupported("CMS content-type attribute is not id-data"));
+        if first.and_then(Node::oid).as_deref() != Some(expected_content_type) {
+            return Err(ParseError::unsupported(format!(
+                "CMS content-type attribute is not {expected_name}"
+            )));
         }
     }
     let message_digest = match attr(oids::MESSAGE_DIGEST) {
-        Some(a) => a.first()?.filter(|n| n.is_octet_string()).map(Node::octets),
+        Some(a) => a.first()?.filter(|n| n.is_octet_string()).map(value_hex),
         None => None,
     }
     .ok_or_else(|| ParseError::malformed("CMS has no message-digest attribute"))?;
@@ -374,7 +442,7 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
             .get(cursor)
             .filter(|n| n.is_octet_string())
             .ok_or_else(|| ParseError::malformed("signing-certificate-v2 carries no certHash"))?;
-        ess_cert_hash = Some(hash.octets());
+        ess_cert_hash = Some(value_hex(hash));
     }
 
     let mut timestamp_token = None;
@@ -407,21 +475,53 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
         signer_certificate,
         certificates: ordered,
         ess_cert_hash,
+        e_content,
     })
 }
 
-fn find_signer_certificate(sid: &Sid, certificates: &[Certificate]) -> Option<usize> {
-    match sid {
+/// `findSignerCertificate`. Reading a subject key identifier is a fresh
+/// `asn1js.fromBER`, whose throw leaves the parse.
+fn find_signer_certificate(
+    sid: &Sid,
+    certificates: &[Certificate],
+) -> Result<Option<usize>, ParseError> {
+    let ski = match sid {
         Sid::IssuerAndSerial { issuer, serial } => {
-            certificates.iter().position(|c| c.issuer.is_equal(issuer) && &c.serial == serial)
+            return Ok(certificates
+                .iter()
+                .position(|c| c.issuer.is_equal(issuer) && &c.serial == serial));
         }
-        Sid::KeyId(None) => None,
-        Sid::KeyId(Some(ski)) => certificates.iter().position(|cert| {
-            let inner = cert
-                .extension(oids::SUBJECT_KEY_IDENTIFIER)
-                .and_then(|e| der::from_ber(&e.value))
-                .map(|n| if n.is_octet_string() { n.octets() } else { Vec::new() });
-            inner.is_some_and(|inner| &inner == ski)
-        }),
+        Sid::KeyId(None) => return Ok(None),
+        Sid::KeyId(Some(ski)) => ski,
+    };
+    for (index, cert) in certificates.iter().enumerate() {
+        let Some(extension) = cert.extension(oids::SUBJECT_KEY_IDENTIFIER) else { continue };
+        let inner = match asn1js::from_ber(&extension.value) {
+            asn1js::Verdict::Accepted => der::from_ber(&extension.value),
+            asn1js::Verdict::Refused => None,
+            asn1js::Verdict::Throws(error) => return Err(ParseError::Other(error)),
+        };
+        if inner.is_some_and(|inner| &value_hex(&inner) == ski) {
+            return Ok(Some(index));
+        }
+    }
+    Ok(None)
+}
+
+/// `new Uint8Array(element.valueBlock.valueHexView)`: the content of an
+/// element whose asn1js value block holds bytes, and nothing for one whose
+/// block holds members or arcs (`valueHexView` is undefined there). A
+/// constructed OCTET or BIT STRING keeps its pieces as members, so its
+/// `valueHexView` is empty too.
+fn value_hex(node: &Node) -> Vec<u8> {
+    match (node.class, node.tag, node.constructed) {
+        (der::UNIVERSAL, der::BIT_STRING, false) => node.bits(),
+        (der::UNIVERSAL, der::OCTET_STRING | der::BIT_STRING, true) => Vec::new(),
+        (der::UNIVERSAL, 0 | der::NULL | der::OID | 13 | der::SEQUENCE | der::SET, _) => Vec::new(),
+        // A constructed string's value block reads its content as bytes, as
+        // `der` keeps it (an indefinite one's: the rest of the input).
+        (der::UNIVERSAL, 10 | 12 | 18..=22 | 25..=30, true) => node.content.clone(),
+        (_, _, true) => Vec::new(),
+        (_, _, false) => node.content.clone(),
     }
 }

@@ -56,7 +56,7 @@ fn only_allowed_schemes_reach_open_uri() {
             "root": { "type": "uri", "subtype": "URI", "uri": uri, "isMap": false, "next": [] },
             "incomplete": false, "warningFlags": 0, "warnings": []
         });
-        let result = actions.execute(tree, ctx.clone());
+        let result = actions.execute(tree, ctx.clone(), None);
         rt::run_until_stalled();
         statuses.push(result.peek().expect("settled").expect("a result").nodes[0].status);
     }

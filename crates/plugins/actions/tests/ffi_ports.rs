@@ -33,7 +33,7 @@ pub fn named(name: &str) -> Value {
 pub fn page(pon: u32) -> Value {
     json!({
         "index": pon - 1,
-        "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+        "ref": { "kind": "objectNumber", "objectNumber": pon },
         "label": null,
         "size": { "width": 600, "height": 800 },
         "rotation": 0,
@@ -56,7 +56,7 @@ pub fn spec() -> TestSpec {
             }
         }
     }))
-    .respond("actions.read", |_| {
+    .respond("actions.get", |_| {
         Ok(Reply::value(json!({
             "nameTreeScripts": [], "openAction": named("OpenAction"),
             "openDestination": null, "willSave": named("WS")
@@ -64,7 +64,7 @@ pub fn spec() -> TestSpec {
     })
     .respond("forms.list", |_| {
         Ok(Reply::value(json!({
-            "formKind": "none", "needsAppearances": false, "fields": [], "calculationOrder": []
+            "formKind": "none", "needsAppearances": false, "fields": [], "widgets": [], "calculationOrder": []
         })))
     })
     .respond_page("page.annotations.list", |_, _| Ok(Reply::value(json!({ "annotations": [] }))))
@@ -125,7 +125,7 @@ impl ActionExecutor for Executor {
 fn goto() -> Arc<PdfActionTree> {
     tree(json!({
         "root": { "type": "goto", "subtype": "GoTo",
-                  "destination": { "kind": "fit", "page": { "kind": "objectNumber", "pageObjectNumber": 1 } },
+                  "destination": { "kind": "fit", "page": { "kind": "objectNumber", "objectNumber": 1 } },
                   "next": [] },
         "incomplete": false, "warningFlags": 0, "warnings": []
     }))

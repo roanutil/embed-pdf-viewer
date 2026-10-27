@@ -1,0 +1,16 @@
+c3b90c3a4c22c547d45fca2fe0b4de5936478241 Forms: flags are flat, like every other flag
+diff --git a/packages/core/acrojs/src/input.ts b/packages/core/acrojs/src/input.ts
+index 70cd00f7a..29609708a 100644
+--- a/packages/core/acrojs/src/input.ts
++++ b/packages/core/acrojs/src/input.ts
+@@ -36,8 +36,8 @@ export function scriptFieldsFromSnapshot(snapshot: FormSnapshot): ScriptFieldInp
+     // Form DTOs do not yet aggregate widget visibility; annotation joins may
+     // override this when the orchestrator has that plane loaded.
+     display: 'visible',
+-    readOnly: field.flags.readOnly,
+-    required: field.flags.required,
++    readOnly: field.readOnly,
++    required: field.required,
+     ...('options' in field
+       ? { options: field.options.map((option) => ({ label: option.label, value: option.value })) }
+       : {}),

@@ -5,13 +5,13 @@
 //! (26 files, 1,922), the flag and enum decoders (~560), and
 //! `core/src/annotation/{subtype,primitives,base,registry,
 //! AnnotationListSnapshot}.ts` (557) with `kinds/*/dto.ts` (337).
-//! Operations: `annotations.listRawAll`, `annotations.listRawPage`,
-//! `annotations.listFullPage`, `annotations.renderAppearances`.
+//! Operations: `annotations.list`, `annotations.readFile`,
+//! `annotations.renderAppearances`, `annotations.readAppearance`.
 //!
 //! Writes replace `AnnotationMutator.ts` (784), `internal/write/*` (22 files,
 //! 3,496), `computeMutationImpact.ts` (141) and the appearance, normalize,
 //! patch and draft bases (1,183). Operations: `annotations.create`,
-//! `annotations.update`, `annotations.delete`, `annotations.move`.
+//! `annotations.update`, `annotations.delete`, `annotations.reorder`.
 //!
 //! In Stage A, Rust neither creates nor retains the form model that
 //! `internal/read/joinWidgetField.ts:23` needs: TypeScript lends the pointer.
@@ -27,7 +27,7 @@
 //! and silently. They are pinned to the TypeScript by
 //! `vectors/annotation/vocabulary.json` rather than trusted to transcription.
 //!
-//! [`read`] holds the readers that walk PDFium: the base shell so far.
+//! [`read`] holds the readers that walk PDFium.
 
 pub mod appearance;
 pub mod flags;
@@ -36,5 +36,6 @@ pub mod read;
 pub mod rich_text;
 pub mod state;
 pub mod subtype;
+pub mod transfer;
 pub mod vocabulary;
 pub mod write;

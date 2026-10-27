@@ -96,7 +96,7 @@ Every phase inherits these.
    `EMBEDPDF_TLS_GLOBALS=true` and each engine owns one dedicated OS thread.
    `wasm32` targets leave it off because each instance has its own linear
    memory. Contract:
-   `.agents/skills/embedpdf-conventions/references/runtime-confinement.md`.
+   `docs/conventions/runtime-confinement.md`.
 6. Two text index spaces, both carried. CHARACTER space is PDFium's character
    list (geometry, hit-testing, selection, `PageTextSnapshot.charCount`). TEXT
    space is UTF-16 code-unit offsets into the extracted string (search,
@@ -333,7 +333,7 @@ success, partial failure. An `AbortError` is never evidence of rollback.
   `AutoCloseable` must not block the UI thread. Scoped helpers await document
   cleanup before engine cleanup on success, error and cancellation.
 - Capability twins from
-  `.agents/skills/embedpdf-conventions/references/permissions.md` exposed as
+  `docs/conventions/permissions.md` exposed as
   platform APIs. Native UI reads the answer; engine and server enforcement stay
   authoritative. Unsupported mobile features report unsupported, never a silent
   no-op.

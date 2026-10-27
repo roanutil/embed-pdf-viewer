@@ -1,7 +1,9 @@
 //! Reading the document Info dictionary.
 //!
-//! G6. Replaces `services/src/features/metadata/*`. Operation:
-//! `metadata.read`.
+//! G6. Replaces `services/src/features/metadata/MetadataReader.ts` and
+//! `internal/read*.ts`. Operations: `metadata.read` and
+//! `metadata.readCustom`, which upstream split apart in a4b8259f7: the
+//! standard fields are one answer and the dict's other keys another.
 //!
 //! The three-state distinction runs through everything here. A key that is
 //! absent is not the same as a key that is present and empty, and neither is
@@ -27,19 +29,21 @@ pub struct DocumentMetadata {
     pub keywords: Option<String>,
     pub producer: Option<String>,
     pub creator: Option<String>,
-    /// ISO 8601, converted from `/CreationDate`. Parsing a date is the
-    /// caller's job; what the engine owes is a shape that can be parsed.
-    pub created: Option<String>,
+    /// ISO 8601, converted from `/CreationDate` keeping the offset the file
+    /// wrote ([`pdf_date_to_iso`]).
+    pub created_at: Option<String>,
     /// ISO 8601, from `/ModDate`.
-    pub modified: Option<String>,
+    pub modified_at: Option<String>,
     pub trapped: DocumentMetadataTrapped,
-    /// Non-reserved Info keys.
-    ///
-    /// A `BTreeMap` rather than insertion order, because the wire is a JSON
-    /// object and two implementations must not disagree about key order in a
-    /// serialized snapshot.
-    pub custom: BTreeMap<String, String>,
 }
+
+/// The Info dict's other keys (`CustomMetadata`), as `metadata.readCustom`
+/// answers them.
+///
+/// A `BTreeMap` rather than insertion order, because the wire is a JSON
+/// object and two implementations must not disagree about key order in a
+/// serialized snapshot.
+pub type CustomMetadata = BTreeMap<String, String>;
 
 /// The reserved keys, read as fields rather than as custom data.
 const STANDARD_KEYS: [&str; 8] =
@@ -52,19 +56,10 @@ pub fn read_metadata(
 ) -> Result<DocumentMetadata, EngineError> {
     cancel.check()?;
 
-    let text = |key: &str| -> Result<Option<String>, EngineError> {
-        document.meta_text(key).map_err(|e| {
-            EngineError::with_message(
-                EngineErrorCode::RuntimeUnavailable,
-                format!("reading /{key} failed: {e}"),
-            )
-        })
-    };
-
     let mut values = Vec::with_capacity(STANDARD_KEYS.len());
     for key in STANDARD_KEYS {
         cancel.check()?;
-        values.push(text(key)?);
+        values.push(meta_text(document, key)?);
     }
     let mut values = values.into_iter();
     let title = values.next().flatten();
@@ -83,6 +78,28 @@ pub fn read_metadata(
         Trapped::Unknown => DocumentMetadataTrapped::Unknown,
     };
 
+    Ok(DocumentMetadata {
+        title,
+        author,
+        subject,
+        keywords,
+        producer,
+        creator,
+        // A date PDFium reports but cannot be parsed becomes `None` rather
+        // than an error. A malformed `/CreationDate` is a bad document, not a
+        // reason to refuse the other nine fields.
+        created_at: creation_raw.as_deref().and_then(pdf_date_to_iso),
+        modified_at: mod_raw.as_deref().and_then(pdf_date_to_iso),
+        trapped,
+    })
+}
+
+/// Read the Info dict's custom keys: every key but the standard ones
+/// (`MetadataReader.readCustom`).
+pub fn read_custom_metadata(
+    document: &Document,
+    cancel: &CancelToken,
+) -> Result<CustomMetadata, EngineError> {
     cancel.check()?;
     let mut custom = BTreeMap::new();
     let keys = document.custom_meta_keys().map_err(|e| {
@@ -96,24 +113,18 @@ pub fn read_metadata(
         // A key with no value is dropped rather than carried as null: the wire
         // type is a map of strings, and a null there would be a shape no
         // consumer expects.
-        if let Some(value) = text(&key)? {
+        if let Some(value) = meta_text(document, &key)? {
             custom.insert(key, value);
         }
     }
+    Ok(custom)
+}
 
-    Ok(DocumentMetadata {
-        title,
-        author,
-        subject,
-        keywords,
-        producer,
-        creator,
-        // A date PDFium reports but cannot be parsed becomes `None` rather
-        // than an error. A malformed `/CreationDate` is a bad document, not a
-        // reason to refuse the other nine fields.
-        created: creation_raw.as_deref().and_then(pdf_date_to_iso),
-        modified: mod_raw.as_deref().and_then(pdf_date_to_iso),
-        trapped,
-        custom,
+fn meta_text(document: &Document, key: &str) -> Result<Option<String>, EngineError> {
+    document.meta_text(key).map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("reading /{key} failed: {e}"),
+        )
     })
 }

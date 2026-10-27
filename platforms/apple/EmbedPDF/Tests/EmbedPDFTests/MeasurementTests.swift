@@ -1,5 +1,6 @@
 import CustomDump
 import EmbedPDF
+import Foundation
 import Testing
 
 extension BaseSuite {
@@ -8,7 +9,7 @@ extension BaseSuite {
       -> (PDFViewer, DocumentInfo, MeasurementCapability, PageRef)
     {
       let viewer = try PDFViewer(
-        ViewerConfig(interaction: true, annotation: AnnotationConfig(), measurement: MeasurementConfig()))
+        ViewerConfig(interaction: true, annotation: "", measurement: MeasurementConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data(fixture))
       let page = try await viewer.pages(of: document)[0].page
@@ -77,15 +78,24 @@ extension BaseSuite {
       try await measurement.ensureLoaded(page)
       let ref = try await measurement.createMeasurement(
         CreateMeasurementInput(kind: .distance, page: page, points: [Point(x: 10, y: 10), Point(x: 82, y: 10)]))
+      // `ref` is the engine's `AnnotationRef` record: its object number
+      // names the line the annotation plugin lists.
+      let record = try #require(try JSONSerialization.jsonObject(with: Data(ref.utf8)) as? [String: Any])
+      let objectNumber = try #require(record["objectNumber"] as? UInt32)
       let annotations = try await viewer.annotations(for: document)
-      let found = try #require(try await annotations.get(ref))
+      let found = try #require(
+        try await annotations.get(.objectNumber(page: page, annotObjectNumber: objectNumber)))
       expectNoDifference(found.subtype, "line")
-      // `epdf-engine`'s line create writes neither `/IT /LineDimension` nor
-      // `/Measure` yet, so the read-back line isn't a dimension and its
-      // readout is `.notDimension`. When the engine writes them, this reads
-      // a value.
-      let reading = try await measurement.readout(ref)
-      expectNoDifference(reading, .unavailable(reason: .notDimension))
+      // `epdf-engine`'s line create now writes `/IT /LineDimension` and
+      // `/Measure`, so the read-back line is a dimension: 72 points, one
+      // inch, in the page's default metric scale.
+      let reading = try await measurement.readout(annotationJSON: ref)
+      guard case let .value(readout) = reading else {
+        Issue.record("expected a readout, got \(reading)")
+        return
+      }
+      expectNoDifference(readout.kind, .distance)
+      #expect(abs(readout.value - 0.0254) < 1e-6)
     }
 
     @Test func aClosedDocumentsCapabilityThrows() async throws {

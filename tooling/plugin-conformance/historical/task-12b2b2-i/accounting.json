@@ -1,0 +1,1857 @@
+{
+  "base": "056b91b732957e4bbdcddcdf7649936f9f3d0a39",
+  "originalWholeForms": 220,
+  "originalOwned": 101,
+  "currentOwned": 102,
+  "currentPure": 99,
+  "currentLive": 3,
+  "mapped": 101,
+  "renamed": 0,
+  "retired": [],
+  "added": [
+    {
+      "file": "plugins/form-core-lifecycle.json",
+      "name": "current-form-confirmation-refusal-and-permission",
+      "canonicalInputSha256": "0a36e1f2fb86c69bbf13a731820f892d991ea953a23e0bdfc47e06882f2bc683",
+      "replacementFor": null,
+      "reason": "Without annotation, a fill is predicted, confirmed once before resolution, then a refused fill leaves the confirmed value. A second document denies fill locally."
+    }
+  ],
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/object-number",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "64e911aee0603c57642142c72cc2a96bbc933d712f9c6f83fb162231b6bcc291"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/object-number",
+        "kind": "function",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "3ad898dc757cba469f24b1bb599277861c6223c846a05b43a9368b68015a245d"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/fqn-when-direct",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "0ed91da06816020eb6dca526884486428391b5075a9fab285980e568b3091875"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/fqn-when-direct",
+        "kind": "function",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "05c7edafc95ae32b894e52ca00e3b8c057edd833f7e9dffda1c7b4c31f9f80e0"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/negative-object-number",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "740158a0a69a833c26b97a26660112cfc5e39d8c4f71a1d1e91733849f502758"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldKeyOf/negative-object-number",
+        "kind": "function",
+        "fn": "fieldKeyOf",
+        "canonicalInputSha256": "6aaf030d97fa28ace80afbfa5bc190c16c003afb4e627062d861a4732cacf42f"
+      },
+      "disposition": "current input migration",
+      "reason": "Non-durable numbers are represented by current fqn refs",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "initialModel/empty",
+        "fn": "initialModel",
+        "canonicalInputSha256": "376ad3499b368bf8b6c087de1cee7a76a32320c8cd2e701735333a58e2532a88"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "initialModel/empty",
+        "kind": "function",
+        "fn": "emptyFieldIndex",
+        "canonicalInputSha256": "92708c416d660d931527053419d48b2bea48922770e24c3f407cb34f59cb53ca"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "The field mirror index replaces the removed message model",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-indexes-keys-and-widgets",
+        "fn": "update",
+        "canonicalInputSha256": "7a02dbe7a0e7723b1dc9e557b2fd11f15223eeabe1955adafb7684bb5525c5fc"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-indexes-keys-and-widgets",
+        "kind": "function",
+        "fn": "indexFields",
+        "canonicalInputSha256": "4b087a68526506d2d1486d5532b2b29beb721e96b3c01b639f9d920ff54bdab1"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Indexes current field refs and complete widget rows",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-clears-writing-keeps-geom",
+        "fn": "update",
+        "canonicalInputSha256": "9193b045dcb092459bc4b252b0bb2a600de914348ec55e92c01719d628b834e5"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-clears-writing-keeps-geom",
+        "kind": "function",
+        "fn": "indexLoadedFields",
+        "canonicalInputSha256": "d65ccc9506559dd267fa1bd652b875ba30e16eadd921ee4587ce4e3b06a359cd"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A load replaces pending values with confirmed fields and rows, advancing picture versions",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-later-field-wins-a-shared-widget",
+        "fn": "update",
+        "canonicalInputSha256": "39d08118b9f0d6fbbbbb6167fe06edd34e03522f85030630c1afd114705e83ce"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/snapshot-later-field-wins-a-shared-widget",
+        "kind": "function",
+        "fn": "indexFields",
+        "canonicalInputSha256": "fce8634adeb16e660395a253571a53e05ca92e23139281d49efbdad7ce249168"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "The later field owns the shared widget index",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-start",
+        "fn": "update",
+        "canonicalInputSha256": "47dcc909d936ba6b309f5550d73d95075519b2f098b4c74246f316168bc2eadf"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-start",
+        "kind": "function",
+        "fn": "predictFormOp",
+        "canonicalInputSha256": "b4e808f797c4e030a0419fb45aa9bb7eeb319703542be737eff9b64313d8dc1a"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A held change predicts its value instead of setting a writing flag",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-start-twice",
+        "fn": "update",
+        "canonicalInputSha256": "66877ae3f7f6c01d68f71e13f6383c4119bc0cb911eb07f72ccf89e38976e5dc"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-start-twice",
+        "kind": "function",
+        "fn": "predictFormOp",
+        "canonicalInputSha256": "31b4896924f16101b297ccebbb26ae0d177ea91bcdd6f9bf6a1ab28d48352b1b"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Later fills see earlier pending values",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-patches-and-reindexes",
+        "fn": "update",
+        "canonicalInputSha256": "33defc63188231c235efa91c43c1e38747dcc90c1345178c33d2e7a788052070"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-patches-and-reindexes",
+        "kind": "function",
+        "fn": "upsertFields",
+        "canonicalInputSha256": "3d3fd43253eb840dd73d4780d1588316c02afd4669f043099e94c28e2c53a869"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current confirmation reindexes changed widget refs",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-without-snapshot",
+        "fn": "update",
+        "canonicalInputSha256": "266c65eaddb922e1d98aa66eaaa909c59a4025049aecbd4f4e355e05610bc224"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-without-snapshot",
+        "kind": "function",
+        "fn": "upsertFields",
+        "canonicalInputSha256": "37e644752961f708bc5304b375a9235910354c4acbc83f1b451722bf7a202c72"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "No snapshot means no field can be confirmed",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-unknown-key",
+        "fn": "update",
+        "canonicalInputSha256": "2a141d61d301052050e69c73cf2654923173ed72d3599f4affd8fa8210c6e694"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-unknown-key",
+        "kind": "function",
+        "fn": "predictFormOp",
+        "canonicalInputSha256": "3c8b50a4f4e60e2aba77e02da5406a4aee7db48b1002af15edc82569f6c53ad5"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A missing target leaves the current index unchanged; removed writeDone key messages are not rebuilt",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-past-the-end-pads-with-holes",
+        "fn": "update",
+        "canonicalInputSha256": "a86f5296f3eec7a4cde13f93e30c67e97a41f7275184538dc61c7f4eaf5248bd"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-done-past-the-end-pads-with-holes",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "9e8a04171485a3493b0f954076e68cee8690ab42b736febfa56632189cf49b5a"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Explicit inconsistent-index negative: current lookup returns null instead of producing sparse fields",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-failed",
+        "fn": "update",
+        "canonicalInputSha256": "dc081fc63a16138ccd2b23da8c1e6e0247751ae3cc717f015046084ec012a2b1"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-failed",
+        "kind": "function",
+        "fn": "undoLookOf",
+        "canonicalInputSha256": "7d54be42fe229ee249d94a851939df85984110fea08b70d40e232a178273e5bb"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current undo prediction restores field and rows; live refusal rollback is independently tested",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-failed-not-writing",
+        "fn": "update",
+        "canonicalInputSha256": "db8893f6b1bd5ed8576d87985a711fa40729c4295cc5a51bbcda677abc27846d"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/write-failed-not-writing",
+        "kind": "function",
+        "fn": "fieldsNamedBy",
+        "canonicalInputSha256": "779be94d0c1698df10bbf2837bf1995704a3b8299199292892671b43a5042330"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A missing field names no fill target",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/page-geom",
+        "fn": "update",
+        "canonicalInputSha256": "73c90fc42aaf375dfb6a5386290b1376ae42712e0504dddb6fa9280d899dc6d8"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/page-geom",
+        "kind": "function",
+        "fn": "upsertWidgets",
+        "canonicalInputSha256": "9abf153891e48b9f32dc9e54122658863159500c81e797771ebf341bacec7863"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Geometry is a complete widget row in the field mirror",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/page-geom-replaces-a-page",
+        "fn": "update",
+        "canonicalInputSha256": "78114c10049acad860f9db7d8531c862b6994fafca971b49c6c66ad66e341d27"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/page-geom-replaces-a-page",
+        "kind": "function",
+        "fn": "pageWidgetsOf",
+        "canonicalInputSha256": "fdb98955e6ef51443d7971f3342f544c88ea57f5006d594d0f1d1d803f45ce1d"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A fresh snapshot without rows replaces prior geometry",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-all",
+        "fn": "update",
+        "canonicalInputSha256": "fbce918c371bb71707408d3621a513653432e6792bf881f04f8785d47b25b7b6"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-all",
+        "kind": "function",
+        "fn": "pageWidgetsOf",
+        "canonicalInputSha256": "5d2faa093ea92e32000e303479a78a5e92a103aacd52f2ccb238eeee63bb3610"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "There is no independent geometry cache; rows own geometry",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-one-page",
+        "fn": "update",
+        "canonicalInputSha256": "90d6775ae65547ffed29d9b5955f78a7047a5f85640bdb9c025b76fcd9f79954"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-one-page",
+        "kind": "function",
+        "fn": "removeWidgets",
+        "canonicalInputSha256": "3ab06783ee932c7bc4d917ec93f1ae30599653db56f8991d68ea970557ca9b91"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Remove only named widget rows; another page remains",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-absent-page",
+        "fn": "update",
+        "canonicalInputSha256": "fcc890ff71a1ecc597ef111ee8e63ff212d26c2fb6e12f3dd031a9597b39ac3c"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "update/clear-geom-absent-page",
+        "kind": "function",
+        "fn": "removeWidgets",
+        "canonicalInputSha256": "2a73f655c985080f87b442ac95eb249e5d1e0ec06c1d1f48a4db9a7fc7fb89df"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Removing absent rows preserves identity",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/found",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "2355a237ce84593b9afe339198740d007f70f3adbe1b370385a916983415a5e8"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/found",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "0da41412233bf04fbc694b9ee0f9accb6afa85ed4d0cd8d85e8e8ecbf1daf310"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/fqn",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "ec300597de9ee9228ce879619ac2ebe55f79a88af7fd27af7486b6871d4cca46"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/fqn",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "2338d85fcfe5b47247642d596600b144e50a7c03c01da159cacb8a19c427fe60"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/unknown",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "60f6abe5d3d2eed3ee0d89cc884fce5e204e8688264e1b425314f691aee6beb7"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/unknown",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "f036043dcc380adaecc2a928232117c8331e370847117cccc4aa29f9b9e27aef"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/no-snapshot",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "1e566987357004413f40c0b0c3b7a92390beb657e64c2549e55a09c84c3bda38"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/no-snapshot",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "0a380fb81eaf3a70f214388c0dc49d30cd1a8687b2d957a5bfebddf49c526f7b"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/index-past-the-end",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "0bc6bae60ab18abd1fd62ea59dee838fdf2854fb1b3e84777246d838bbb4a91b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldByKey/index-past-the-end",
+        "kind": "function",
+        "fn": "fieldByKey",
+        "canonicalInputSha256": "467e07a9fdd615297af95086d7df3974fda3c4213f5a24894af31c9bd2ccf8ed"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/found",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "42cd80e0d1eec1545c6a0fb044309ff63ccf2521a4657d0e425f961ea8a22646"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/found",
+        "kind": "function",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "e3572e542eaefb60f5667c3745c14e7d5d5f577b0711be63eb30e25cacc9e3e1"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/direct-widget-is-not-indexed",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "d07e6e088c53f0546269a31d61f78db77b32ad302e555978f417cb722f9ab0c3"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/direct-widget-is-not-indexed",
+        "kind": "function",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "3343b736eab09a9319074a62094e50291495fb39c24c9fdc67de428facfde947"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/unknown",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "176355646a57848b57dd629826470289785851eae51141a727494344ee764627"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/unknown",
+        "kind": "function",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "f35af25868a820a902d1682bb6fed868ad150a0310eb4863ebb3c465e97a6c2b"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/index-past-the-end",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "060055dc6e8073617ed6f2340fe5aa27d95bad0c6258e69218a11c4b1b72701b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldForWidget/index-past-the-end",
+        "kind": "function",
+        "fn": "fieldForWidget",
+        "canonicalInputSha256": "c0d2004ac70672db2b2f73241c4f8a3ba812c462d101fa7e9b17584fe2990763"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "5a9eda6577cba96dc3e66ca1cff42297c22eb34508b780c9317559aa42429c7f"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "11d10182e5fb32c76cc8ec0b4a84d919e2831fa04a6a6058987f34380fc52a5a"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text-default-box",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "87eaad923a6331b6b7c26c82b186990bf1871a4b68979de55d649d776f78b5f3"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text-default-box",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "a1169c326fadcedd7cd41b33682198383641b0040b9de47af2c0b5423dbef516"
+      },
+      "disposition": "current input migration",
+      "reason": "PageWidget is now mandatory; explicit default page-space box is recorded",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text-flags",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "8fdbaffaf3ffc279e14af80efe5d1c910db4b325048472de53c14cbd8530c7e9"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/text-flags",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "5269a8c41efb4349640d63fd5c6e0a07ddc6572c973d2f0bf5bbc639661abc13"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/read-only-is-disabled",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "d8db4a5420f5d2f105e68d3778caa15cdf4b9ff7a93222dfb0464649626f1485"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/read-only-is-disabled",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "45fd2d0caeca480e14d536b892613fb3c4783507a2d937fc9e8e4ef8547ab820"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/writing-is-disabled",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "7e0d474b174790964b2ef242531826ae4e152434c9cf21ac9b0e398f82bdb26b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/writing-is-disabled",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "bcba9e493a68f0a0900162191a621562a47af75e0726990a3df2fc6879731132"
+      },
+      "disposition": "current input migration",
+      "reason": "Current disable input is explicit fill permission; a pending write alone stays fillable, independently tested live",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-on-state",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "ee64bf09f87df4d56383c2c7fb7f8ec272f9bed4c7ae26d9b6923d1baeb5c635"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-on-state",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "fd46080c06fe90fbc24af3bb468ec6b2c99120641e2a735bf6475d677022f1ea"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-default-on-state",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "a4f1494da5eaa3d997e87c17ccc2d378697136587709a6b47a51a30297386efd"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-default-on-state",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "98413fd6c70f163d21f6162b4a1b8a96d8f0fa64a3d83449acd1086216d033de"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-unknown-widget",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "a7be70123b31028eb4fb874847085097d76b384043b4359821b39214dcc6f25d"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/checkbox-unknown-widget",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "e5a148d7f5c77906dad233077f5898c483a6c16324f1d67a58cdca0cda77d716"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-checked",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "83ed6db161189f6d8401b9a4c8b19e52c6bb7666ccef15cee348ac12db0edc33"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-checked",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "7576a7762b9bcd78dfef39a66a62726db63dcd33cbed4bc46affe688ee298c2c"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-unchecked",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "c1a6bc43cc4f7d9e63814c0fd8326c5735470054b824e336a3f248e0a54b2dd3"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-unchecked",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "8b2450d564147d4c3f44009923bb22861938047dc0bf6683bc9fe2c2f631ec8a"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-bare-widget",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "caa06ccd4c9d82288757ba11d506e582977412159defe41102875e7966f126b4"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-bare-widget",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "a0261c67539b8c6b2a01d377a8d8346f6c7d300b8a2b206e4a709aa450ba2280"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-unknown-widget",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "6fe2204083ba11170fa7f749621abb7c9f8667c14e6e80a288f3db048a8b6f81"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/radio-unknown-widget",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "51062cfb296a81d79cc21f2389185a3c45fa4974a783731efd50d28ea89a1422"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/combobox",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "42d75c7090dd29f2d7e21886c01db5c5bcde0c4def57e41e469d3335e9b28505"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/combobox",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "42d9f71caa17818979853401d07a17da19c69d60ecfa44d6929ab274f7eb3cda"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/combobox-empty",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "4d23555f598ae2bba665dba179262e663a9f423fd82d9a5c961ac9da372c84d3"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/combobox-empty",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "7029143a04ed20c972cb15b5fd03b065a022cc43751d650496447b890d033d1b"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/listbox",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "f97c192658f59e24e02425d53ad349b0d49db9b0d5f9cb0774f3161410ae972c"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/listbox",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "766246419efe559ce21cb50690b978bd5d2b345dbd532728879a5c34b1ea4a17"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/listbox-single",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "f7e7807ff4464fa31ae12a9db4dad9ebd101853631f4bee6ecb1594a6fa9ed87"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/listbox-single",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "392aa741178f5c78286219443e061acf56fbfc48cf37ba4fc644cf71e650df9b"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/pushbutton",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "e9568c9406c39b46fe1479ff7aa0950ea196ddaf3ab510c5662faf14be061e93"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/pushbutton",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "fd830ead49fe4d6686cb3bb482cc2eb1a135bedd2eb708d559adaa26148ab0df"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-has-no-control",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "d3563b0fde3e82c2e84b9aeadbd6e393a904001ee37a31bb5a4f4e2177ab3e34"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-has-no-control",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "151547849cc3bc07e66a4093a74367c0bd2b5351011860ef260676344caf1870"
+      },
+      "disposition": "current input migration",
+      "reason": "Current signatures have an explicit signature control and signed state",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/unknown-has-no-control",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "310c01134391937c77f08a87197db06f67c2e81facb917fc0fd34d7b27344ce7"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/unknown-has-no-control",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "9747421cfc5ea2a00bacedcd9b053e33972e0210c480d0af6a09645a15624921"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/fqn-key",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "e124deee8074fbbf1abe1c26dee542013c6f1c031b4e342f9bf18171088ec937"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/fqn-key",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "576f59dd6bb262b18eb5b9d125dd60863e3a0e46ef23775cf7894a8ba335f5bb"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/page-with-geometry",
+        "fn": "fillItems",
+        "canonicalInputSha256": "b29d07b6dc8b5cdfed0ade056303ba87a084a3b578e5acf7cc018646fffeec04"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/page-with-geometry",
+        "kind": "function",
+        "fn": "fillItemsAllowed",
+        "canonicalInputSha256": "556e2315603ca1a4e301d997583dc4c3e12f70f427b0b80b20195824f69977c5"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/writing",
+        "fn": "fillItems",
+        "canonicalInputSha256": "7831b8b74b9325dfbbe40fbe6b044b9ddfb4c92623f3a04659415a3917f89f7c"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/writing",
+        "kind": "function",
+        "fn": "fillItemsAllowed",
+        "canonicalInputSha256": "bb515657f9a168eb87655702e7c5bf04b8c6738582380e060ec2015c0f468f04"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/page-without-geometry",
+        "fn": "fillItems",
+        "canonicalInputSha256": "ed93f2d41b52fb380d8739853c4cbc978c0cae7287a4359a4a116b77ddbb256e"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/page-without-geometry",
+        "kind": "function",
+        "fn": "fillItemsAllowed",
+        "canonicalInputSha256": "588db6f3cf98db9119c39873db5d1904d4a2653ac95e6a78af120e6252eecc51"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/no-snapshot",
+        "fn": "fillItems",
+        "canonicalInputSha256": "aae96a108521f4f766265e03b2a1a03be9583dd919d06be9cc413c12480344bc"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/no-snapshot",
+        "kind": "function",
+        "fn": "fillItemsAllowed",
+        "canonicalInputSha256": "57b1c703a77ca19c666df670584f47b577756cb650ddfccc79c7a777d9b28984"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/partial-geometry",
+        "fn": "fillItems",
+        "canonicalInputSha256": "110e7254d70538968b396bcfa545488def6bd6f1f9779db15e22626cb9758dca"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItems/partial-geometry",
+        "kind": "function",
+        "fn": "fillItemsAllowed",
+        "canonicalInputSha256": "d35629480583f2eb425d1dde656e37b0a98406eb5eb4ceb3df6029d2f47bf188"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/with-geometry",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "df2c96a01b234867d5d1257876eaa7ec32068011457439b541091fa30ae038d7"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/with-geometry",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "80e1ac26f1eb23c78c103bce619859c3f4a6c9b24feb0afd4aca4268b611ed4a"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/without-geometry",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "03997fa2f0a9e0f4e9f3b87e5f151bcaf6744daf6138dc050db1547d1ff60086"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/without-geometry",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "8d431e76588890aa5f02d5bfa583e423141e4bdd4772ca29c3cb6844f53e39d3"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/other-page-geometry",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "bc739692bc8ec137f21e7c245a191207b5be2dedbc5ca7e33f4af064bb3f247a"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/other-page-geometry",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "c52623d4a8f8f51edb7975f0fd26a8eeefaff327f42c363cd37192ba12d4ad71"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/unknown",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "fefc56b405059a0b0493ac425faf31d8a0a7dedaa8c95d2ee87c529ebe263f98"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/unknown",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "3a40dc9175f79059dd253ba64c49dac14380d7e64dffe4d3efe0b6b5bcdbdbe8"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/no-control",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "b585e20970dcbf9dc65cdfc96bb1e769ca3fa600bd7afc5ed1ab3b7ca3ad1214"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/no-control",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "59b268e5640d1464357f223008b76d513e8300e3f07fb44f35efddc5893c7e55"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Signatures now project an explicit signature control",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/index-without-the-widget",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "aabddea0df4bef4fbf08bfb550cfa42c7c5f2dad8080680e2bce8028c5b8e2b9"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/index-without-the-widget",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "86ecb84747795f19b2096d8e71272ca7644308486c0962abb7958eae18bb2b31"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/an-unplaced-widget-has-no-box",
+        "fn": "fillItemForWidget",
+        "canonicalInputSha256": "82e5a40a6fc5f0119ba9e7a5ed642d59b253998c4f5c0c8ff3e14a0f25c223d6"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fillItemForWidget/an-unplaced-widget-has-no-box",
+        "kind": "function",
+        "fn": "widgetRowOf",
+        "canonicalInputSha256": "aed9bdd583b83a889ff7fa26ce9abc65725eaa9331180dd0e80699bbb07e6a03"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-unsigned",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "bbaaec26291a529791937ebd814d19d862e78dbeab2f9a5122fe974d43cd1c93"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-unsigned",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "d59734698f05390b182080f46a1ee1779f308d41fa5fe6c93c40572feade49cb"
+      },
+      "disposition": "current input migration",
+      "reason": "Current signatures have an explicit signature control and signed state",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-signed",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "5794b23b11340c79f70dde8356e7129ac591abdaed74c4e6a763636feb126544"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "projectWidget/signature-signed",
+        "kind": "function",
+        "fn": "projectWidget",
+        "canonicalInputSha256": "7ef6c7133e79199249544c020af963680de82012124dbfcb45fe6ed75a31cf98"
+      },
+      "disposition": "current input migration",
+      "reason": "Current signatures have an explicit signature control and signed state",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/no-geometry-for-the-page",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "f94f701d3abfcf49eb28ec24df9ce65947dce88e53ff3139cf1af13163eb9824"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/no-geometry-for-the-page",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "8a13fa10a2fac715726e360024fc401f9d8b2921ca1f1e606301fd2124e4ef79"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/nothing-under-the-point",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "160c449373c125a0f0ee6008095e687edb597899cdc178b7f4e2b53f8e120bc5"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/nothing-under-the-point",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "5ad19d825302e9f40c6de5adea80dd672c4d2493f452b1df9422b5e7fc7f0db4"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/the-smallest-containing-box-wins",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "a503e114042c4d715bd5c6bf502c9be17a4d8fa809112e940d77b6d5997c3a0b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/the-smallest-containing-box-wins",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "eec48f5bd818b1bfb882435af817d964929247cdee0bb62ad66c818b91ae82f0"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/edges-are-inside",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "932961692b52be8cf35c51861631182ab7c88075d099e94ff21d6ebf304351b7"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/edges-are-inside",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "f96f4ff95e4ba26d02e1ffe9102a7bfd4149d717f2f6e538487033e42e773f27"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/a-box-without-a-field-is-skipped",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "4ad6f85e6a206d0fb604b7a38e39f71119bb71943fd42275ba23e005954743e9"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/a-box-without-a-field-is-skipped",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "6e918d2d49d8353f68efeb2d65de1c27d8ab68cc2eedf77d27fdb1f712129a08"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/equal-areas-keep-the-lower-object-number",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "3a01bc9df07b22c0d1448bbdc21bdabb5e2192e5582c9223db7aa0da718a1512"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/equal-areas-keep-the-lower-object-number",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "d77ae184b6c2035c02792717454c46250b59090b0b2a89fad09858210f9a1a7d"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/a-larger-box-later-loses",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "7fb1f013e2770536c34902ee96d60df5b686089553f04a4e04181d09b9d3446b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "widgetAt/a-larger-box-later-loses",
+        "kind": "function",
+        "fn": "widgetAt",
+        "canonicalInputSha256": "2195464daa7bbd0a71dc3acf889fcdb442591dee4ab05844c6356804a50015fe"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "initialFormState/empty",
+        "fn": "initialFormState",
+        "canonicalInputSha256": "45faf5fe8541c97808d63420d0a84a76445be61b33d1632000fce6beb0e02f2c"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "initialFormState/empty",
+        "kind": "function",
+        "fn": "initialFormState",
+        "canonicalInputSha256": "3ddabb96a6528cfcab568e5066468f1b628a3b6f6d77b1c700fb16f41f4aee45"
+      },
+      "disposition": "current input migration",
+      "reason": "Current session state is empty; fields and status live in the mirror",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/set-model",
+        "fn": "formReducer",
+        "canonicalInputSha256": "631e31b6160279cc67c993986d39ec7e513668e4b5dd59c1331253b01ed82b87"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/set-model",
+        "kind": "function",
+        "fn": "indexFields",
+        "canonicalInputSha256": "b19d86972a05e955dc065b3fd3c511ce67c943bd94edd78a0877b05b3dc6353a"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Mirror indexing replaces removed SET_MODEL dispatch",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/other-action-is-no-change",
+        "fn": "formReducer",
+        "canonicalInputSha256": "52e0f8c6018a3c405793da4ea34b5e062fa11441492fdf6fbd7b6b4451356cd8"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/other-action-is-no-change",
+        "kind": "function",
+        "fn": "foldFormEvent",
+        "canonicalInputSha256": "6ea5c690ca244c7f760cc05d9c52ed2215073015787304fd1251be36d7e7b3fe"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "An unrelated confirmed event leaves the index identity unchanged",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/set-status",
+        "fn": "formReducer",
+        "canonicalInputSha256": "59e387237307f03b6efd3cb7572c80b17cf9c286d07caa59ce10f281266dd73b"
+      },
+      "after": {
+        "file": "plugins/form-core-lifecycle.json",
+        "name": "formReducer/set-status",
+        "kind": "scenario",
+        "fn": null,
+        "canonicalInputSha256": "ae04686950e4c4bee5ffe70c7d1934a2df8a54e42e7b4eea51d8cfb09909af50"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "The real fields mirror is loading before its deferred list answers, then ready; no session SET_STATUS exists.",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formReducer/set-status-unchanged-is-no-change",
+        "fn": "formReducer",
+        "canonicalInputSha256": "9e78ede2eae30d87ad984556d68455036acfa317f34df8d98f98c3dbca36d317"
+      },
+      "after": {
+        "file": "plugins/form-core-lifecycle.json",
+        "name": "formReducer/set-status-unchanged-is-no-change",
+        "kind": "scenario",
+        "fn": null,
+        "canonicalInputSha256": "a248cc8ec667dff2c7cb4ddbd03d549850e68ab1afb81d0402803e666b9fabbf"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "A ready read stays ready across a refresh with identical fields; the empty session state emits no changes.",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldRefByName/fqn",
+        "fn": "fieldRefByName",
+        "canonicalInputSha256": "487ad46e4b9342c424f8c155b21d313f9b9ca0c43c59cc62c1cf909e6827da74"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldRefByName/fqn",
+        "kind": "function",
+        "fn": "toFieldRef",
+        "canonicalInputSha256": "6efc3287c362b7cf6bf5822e7a73280886d091d9a93451551e3aedb1f91cc82b"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "fieldRefByObjectNumber/object-number",
+        "fn": "fieldRefByObjectNumber",
+        "canonicalInputSha256": "c0da86c01f5d3870eacbda7d89cbbbe00f55ecb43824477dd8f569b71b84acda"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "fieldRefByObjectNumber/object-number",
+        "kind": "function",
+        "fn": "encodeFieldRefKey",
+        "canonicalInputSha256": "94a4df2a4d7d2c9ed76f0ec9de3755ea4aaa86b9bf5aff2d50284b23b1a712c7"
+      },
+      "disposition": "current shipping replacement",
+      "reason": "Removed numeric constructor becomes a direct ref input to the shipping durable-ref codec",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formTools/the-palette",
+        "fn": "formTools",
+        "canonicalInputSha256": "02bdfea493bdcff709e55c27cfdf015ec1b995ba7050cca37687d2cef4148b61"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formTools/the-palette",
+        "kind": "function",
+        "fn": "formTools",
+        "canonicalInputSha256": "99fa43df50febaf99783d22c92c5d0e1d8df17a3c52685966499eea2cc6a48f3"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/text",
+        "fn": "formToolById",
+        "canonicalInputSha256": "1f68ddf0fc384afb5b7630c3ea72b50cacf88d7c8b4a6f7c5616822bbae81e9f"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/text",
+        "kind": "function",
+        "fn": "formToolById",
+        "canonicalInputSha256": "7f109c86270f9733eae49779583e75e68801ccb5fb09d8150aaf6b23532c255d"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/listbox",
+        "fn": "formToolById",
+        "canonicalInputSha256": "24aa7dc1b4d498f94c1ef2a2508d2e5f6d41eb41196fe32f6fc81cefec00eb71"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/listbox",
+        "kind": "function",
+        "fn": "formToolById",
+        "canonicalInputSha256": "a757fc4f0d18a8e578a59047d2608b64c510e0df6d4a493d6fa0b1515c5aa0af"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/unknown",
+        "fn": "formToolById",
+        "canonicalInputSha256": "ed5ade68273e96c5e1506bc3660b86ca4041229d84985f865dfbb4168181f1e7"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "formToolById/unknown",
+        "kind": "function",
+        "fn": "formToolById",
+        "canonicalInputSha256": "1d9b863811b69b0cf3188609ab649e86af88743a518d682c3636884b7fd42b4c"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/null-selects-all",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "719073eb08ab8bd75617aeecf6002b54b99ac415db8d2d659b5d2f67754e05d5"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/null-selects-all",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "af470bd73fc3816abc33f34b94b08dfc027e17ad33adfdf2234b2d270ccbeb54"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/null-ignores-exclude",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "c7a4d8c37dbecd5bb3cfbf2dab03ee1302a9cd6822e10c262b7031545169db96"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/null-ignores-exclude",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "63ba0a43828fd5660dd0cf9340ea73842a55f296bd5a3aee3a040ae493195ff6"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/empty-include-selects-nothing",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "8b4e171b02c2f9b508d351f78be2e7f4f18dee9f1035e1a469717c15a221524f"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/empty-include-selects-nothing",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "33f115cbd367f9f8ef7a3deb359c4a6c827bc532acb0cae7514ec15c486eec98"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/empty-exclude-selects-all",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "6a59b3934cee9fbe1065846668d6ad6e30ec0c9df57fec3bb5744dd9e85ccbfc"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/empty-exclude-selects-all",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "73379f63d376c112a35ff9f25ae1a74f4bf713bd0294f77f381d1173066e2711"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/a-parent-name-selects-descendants",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "9a509411fd2fe4335082bf4127b3bc4837b8ec532c084105d8de7b1bc687cb81"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/a-parent-name-selects-descendants",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "3de1713441de9163e27c84fa2b693390c06641c7b997e6724e5d9aef49460b54"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/exact-name",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "4bb712bfa30390d07eeba78d101f5f8c3a93d491432daa729d689a3edbd12160"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/exact-name",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "450ee6d02d7bf220dcc487b979a7d83774caf8e82508ce56e1c4d91e5161e60d"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/exclude-a-subtree",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "2b6e4fa666323af96cf05d61d44b36f38dda9699694686fc6a401531864ae2dd"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/exclude-a-subtree",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "731bae18494a99a706da106df2b00fb0c01b3854dc687f8d8a117ab5f890a765"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/object-number",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "6bb8c2f308153965dadb2c262e553339661418875ada802938442c3c41e4b14e"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/object-number",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "610444dce32c71601f28fbdde90be40005411239885c2079c8eef4c950af01a5"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/object-number-never-matches-an-fqn-ref",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "6e5d2187a42cbea765e2af0ab461c4b35ebfbbb8b91a26f50e2db71ebcae65bb"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/object-number-never-matches-an-fqn-ref",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "929dac311b714054d35fe0131aa4cece870f7c07c3a2a30cbc2cff4190108552"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/a-numberless-target-finds-a-numberless-ref",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "7461c840bb990a463241694fdcbbd330adb6f8c1ca8670964cf62483f4db9c4b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/a-numberless-target-finds-a-numberless-ref",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "ae1ac5a7999064e6bfc3c01948ab1347173e484aebe95110ef2d693131b9be87"
+      },
+      "disposition": "current input migration",
+      "reason": "Deliberate missing objectNumber on both field ref and target: current predicate compares undefined; normal records remain valid",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/mixed-targets",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "d66828ee6e1727fe0db463a31c66986152f3c0446c3036f643aa4c6e2aa55f06"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "resolveFieldSelection/mixed-targets",
+        "kind": "function",
+        "fn": "resolveFieldSelection",
+        "canonicalInputSha256": "d8f8263cee1adf139f34262bc9e8018aa16735a6b5795abc21953122099db017"
+      },
+      "disposition": "current input migration",
+      "reason": "Deliberate unknown target discriminant is ignored; valid name and number still select",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/fields-absent-silently-drops-ineligible",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "7c1b170c82444b92d90ad8e5898f83ca4ba233504ca5d7a9bfdacfbe2504f12f"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/fields-absent-silently-drops-ineligible",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "4a8b831706c1bbdb790fe795bb068c727147c413a8f20c4275f75b595dab9d7e"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/explicit-no-export-is-diagnosed",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "cc2d7fcb89b82d3443352dd3916518aa3d98c10465c00aa86031bc2497185649"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/explicit-no-export-is-diagnosed",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "0ede5666022144fee7ecd62caaa6a803ae4b9b958975a5ad67e35b4f1e06c78e"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/explicit-button-and-signature-are-diagnosed",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "044e4c808d5bd5874a57dc6d2f171fd8046d5eaebe7850ea2d32bef2ef12e53b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/explicit-button-and-signature-are-diagnosed",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "57cd68fe0f7fcfc1e6d9cf8b4fbcee4453ecf962568202548f7ca288e5e114da"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/exclude-mode-is-never-explicit",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "c2328cdfc9e7dcc41ee983066633ff94cbd4b09a015854d055211a5483660d9c"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/exclude-mode-is-never-explicit",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "e91a745121ba5b5e8b20d0e557acaf38ab0861497b06d5db1ba12c0ab13e7016"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/unsupported-value-shape-is-always-diagnosed",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "53651cc756eae2f73c42fe252d2075f095bc6e31a4122947e747773eef7883b2"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/unsupported-value-shape-is-always-diagnosed",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "1281be4c2ec8cbd2a31fd7ac9e228dc97e428a0b6062b137b720ad82710d8b53"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/unknown-value-kind-is-diagnosed",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "9cbce68b0ef7900c8a28fd34450996341bd0e3b16eb2868492bede47820633a4"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/unknown-value-kind-is-diagnosed",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "5d5a169e86ae9ec6930c10381a7277f294b6201ab858c1f6bf5f2712281b59ee"
+      },
+      "disposition": "current input migration",
+      "reason": "Deliberate unknown /V discriminant is diagnosed and skipped without throwing",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/valueless-skipped-by-default",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "1ca1dc74eb48474fec684231a713d5e451cec9757fc1c555814700c4dd1b9a0d"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/valueless-skipped-by-default",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "8817e5b0ea9cc3dfa99134e6c0b1611d379dcc839a9dda3ff14033188d88b373"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/valueless-name-only-when-included",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "cc0dea1ad2be340c756b5dbd5ea124e65fb01d5f202dd6c559a9a84bba83cde2"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/valueless-name-only-when-included",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "25f564649e829cd54bf7e54e67621dd5c5fbf533221d659ae3874886fbe0aadd"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    },
+    {
+      "before": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/descendants-and-arrays",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "bf8f89ba6e3ce1593001ba4bfb9666591385272874160826c5d2c73efb9c712b"
+      },
+      "after": {
+        "file": "plugins/form-core.json",
+        "name": "buildSubmitEntries/descendants-and-arrays",
+        "kind": "function",
+        "fn": "buildSubmitEntries",
+        "canonicalInputSha256": "04444d79bfc725d8086e515fa8aaffbbec9c103b604635d7a3d72ec92f8940bb"
+      },
+      "disposition": "current input migration",
+      "reason": "Current typed input passed to the named shipping function",
+      "task11InputDrift": false
+    }
+  ],
+  "deferred": {
+    "forms119": [
+      "form-fill:31",
+      "form-design:29",
+      "form-scripting:46",
+      "form-actions:13"
+    ],
+    "legacyFormConsumers": [
+      "form-fill",
+      "form-design",
+      "form-scripting",
+      "form-actions",
+      "stamp-placement",
+      "stamp-api",
+      "signature-plugin"
+    ]
+  }
+}

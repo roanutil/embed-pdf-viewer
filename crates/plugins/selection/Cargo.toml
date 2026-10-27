@@ -21,7 +21,7 @@ uniffi = ["dep:uniffi", "dep:epdf-ffi"]
 epdf-kernel = { path = "../../epdf-kernel" }
 epdf-geometry = { path = "../geometry", default-features = false }
 epdf-plugin-interaction = { path = "../interaction", default-features = false }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
 epdf-ffi = { path = "../../epdf-ffi", optional = true }
@@ -30,3 +30,13 @@ uniffi = { version = "=0.32.0", optional = true }
 [dev-dependencies]
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 plugin-conformance = { path = "../../plugin-conformance" }
+
+# The cross-check of this crate's text layout against the engine's
+# (`tests/engine_cross_check.rs`, Ruling13.15). Native only: epdf-engine
+# links PDFium, which wasm32 does not have, and a dev-dependency never
+# reaches a dependent's build graph.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+epdf-engine = { path = "../../epdf-engine" }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

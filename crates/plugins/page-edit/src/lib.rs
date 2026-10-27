@@ -1,19 +1,17 @@
-//! `packages/plugin/page-edit` in Rust: document-scoped, stateless,
-//! ref-addressed page edits (rotate, move, delete, insert, duplicate,
-//! extract) over the engine handle's page service.
+//! `packages/plugin/page-edit` in Rust: document-scoped page edits (rotate,
+//! reorder, delete, insert, duplicate, extract) over the engine handle, each
+//! one change of the document's history, and the page selection.
 //!
-//! There is no client-side gate: `can_edit` is the one twin every verb
-//! shares (`doc.pages.assemble`), and a refused edit is the engine's
-//! `PermissionDenied`, mapped to `permission-denied`.
-//!
-//! The file split follows the TypeScript package: [`contract`],
-//! [`controller`], and the wiring in [`page_edit_plugin`].
+//! The file split follows the TypeScript package: [`contract`], [`model`],
+//! [`controller`], [`state`], and the wiring in [`page_edit_plugin`].
 
 use epdf_kernel::{AnyPlugin, define};
 use serde_json::Value;
 
 pub mod contract;
 pub mod controller;
+pub mod model;
+pub mod state;
 
 #[cfg(feature = "harness")]
 pub mod harness;
@@ -24,14 +22,17 @@ pub mod ffi;
 #[cfg(feature = "uniffi")]
 uniffi::setup_scaffolding!();
 
-pub use contract::{InsertBlankOptions, InsertFromBytesOptions, PAGE_EDIT, PagePlacement, PdfSize};
+pub use contract::*;
 pub use controller::{PageEditCapability, create_page_edit_controller};
+pub use model::{PageEditState, initial_page_edit_state};
+pub use state::{PageEditStateView, page_edit_state};
 
-/// `pageEditPlugin()`: document-scoped, with no state of its own (its
-/// slice is the kernel's default `{}`).
+/// `pageEditPlugin()`: document-scoped, the document's page edits, each one
+/// change of its history, and which of its pages are selected.
 pub fn page_edit_plugin() -> AnyPlugin {
-    define::<Value, Value>("page-edit")
+    define::<PageEditState, Value>("page-edit")
         .document_scoped()
+        .initial_state(initial_page_edit_state)
         .create(&PAGE_EDIT, |cx| Ok((create_page_edit_controller(cx), None)))
         .build()
 }

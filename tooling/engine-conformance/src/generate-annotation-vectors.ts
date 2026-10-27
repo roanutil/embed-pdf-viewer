@@ -68,10 +68,10 @@ import {
   borderStyleFromCode,
   borderStyleToCode,
 } from '../../../packages/engine/services/src/features/annotations/internal/shapeBorderStyle';
-import {
-  STANDARD_STAMP_NAMES,
-  isStandardStampName,
-} from '../../../packages/engine/services/src/features/annotations/internal/stampName';
+// `internal/stampName.ts` (STANDARD_STAMP_NAMES, isStandardStampName) was
+// deleted upstream as dead code in 0427e3dc9 ("Engine API round 1: ... no
+// dead handle fields"). Nothing in the engine reads or writes a standard
+// stamp set any more; `/Name` passes through verbatim.
 import {
   standardFontFromCode,
   standardFontToCode,
@@ -249,10 +249,39 @@ const CODECS: readonly CodecVector[] = [
  * the near misses: the wire's kebab-case words, a differing capital, a
  * trailing space, and a custom stamp identifier.
  */
+const STAMP_NAME_PROBES: readonly string[] = [
+  'Approved',
+  'Experimental',
+  'NotApproved',
+  'AsIs',
+  'Expired',
+  'NotForPublicRelease',
+  'Confidential',
+  'Final',
+  'Sold',
+  'Departmental',
+  'ForComment',
+  'TopSecret',
+  'Draft',
+  'ForPublicRelease',
+  'Completed',
+  'Void',
+  'PreliminaryResults',
+  'InformationOnly',
+  'Rejected',
+  'Witness',
+  'InitialHere',
+  'SignHere',
+  'Accepted',
+];
+
 const NAME_PROBES: readonly string[] = [
   ...Object.values(NOTE_ICON_TO_NAME),
   ...Object.values(FILE_ICON_TO_NAME),
-  ...STANDARD_STAMP_NAMES,
+  // The standard stamp labels, inlined in their old set order when
+  // `STANDARD_STAMP_NAMES` was deleted upstream (0427e3dc9). They stay as
+  // probes so the other maps' sweeps keep the same inputs.
+  ...STAMP_NAME_PROBES,
   '',
   'note',
   'NOTE',
@@ -291,12 +320,16 @@ const NAMES: readonly NameVector[] = [
     decoded: NAME_PROBES.map((probe) => FILE_NAME_TO_ICON[probe] ?? null),
     encoded: FILE_ICONS.map((i) => [i, FILE_ICON_TO_NAME[i]] as const),
   },
-  {
-    name: 'stampName',
-    of: '/Name of a stamp, standard labels only',
-    decoded: NAME_PROBES.map((probe) => (isStandardStampName(probe) ? probe : null)),
-    encoded: [...STANDARD_STAMP_NAMES].map((n) => [n, n] as const),
-  },
+  // Commented out: its subject no longer exists. Upstream deleted
+  // `internal/stampName.ts` in 0427e3dc9, so the engine has no standard stamp
+  // set to decode or encode against; `/Name` is written verbatim. Task 5
+  // decides whether the Rust `STAMP_NAMES` table and this vector go too.
+  // {
+  //   name: 'stampName',
+  //   of: '/Name of a stamp, standard labels only',
+  //   decoded: NAME_PROBES.map((probe) => (isStandardStampName(probe) ? probe : null)),
+  //   encoded: [...STANDARD_STAMP_NAMES].map((n) => [n, n] as const),
+  // },
 ];
 
 /**

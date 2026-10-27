@@ -1,8 +1,8 @@
 //! `/PieceInfo`: an application's private data on a page or the catalog.
 //!
-//! G8. Ports the read half of
-//! `services/src/features/pieceinfo/PieceInfoAccessor.ts`. Operations:
-//! `pieceInfo.read`, `pieceInfo.applications`.
+//! G8 and G14. Ports `services/src/features/pieceinfo/PieceInfoAccessor.ts`.
+//! Operations: `pieceInfo.read`, `pieceInfo.applications`,
+//! `pieceInfo.update`, `pieceInfo.delete`.
 //!
 //! §14.5 lets an application stash whatever it likes under its own name, and
 //! most of what is there was written by software nobody here controls. So the
@@ -55,8 +55,9 @@ pub struct PieceInfoSnapshot {
     /// map: `/Private` is a dictionary, dictionaries are unordered, and
     /// sorting makes two reads of one document compare equal.
     pub entries: std::collections::BTreeMap<String, PieceInfoEntry>,
-    /// The application dictionary's `/LastModified`, as ISO 8601.
-    pub last_modified: Option<String>,
+    /// The application dictionary's `/LastModified`, as ISO 8601 with the
+    /// offset it was written with and no fraction of a second (fd175ba50).
+    pub modified_at: Option<String>,
 }
 
 /// Every application the holder carries data for, in file order.
@@ -116,7 +117,7 @@ pub fn read_piece_info(
         // A `/LastModified` the date parser refuses reads as absent rather
         // than failing the whole snapshot. It is bookkeeping about the data,
         // not the data.
-        last_modified: last_modified.as_deref().and_then(pdf_date_to_iso),
+        modified_at: last_modified.as_deref().and_then(pdf_date_to_iso),
     }))
 }
 
@@ -221,6 +222,63 @@ pub enum PieceInfoPatchValue {
 /// A set of keys to write, under one application.
 pub type PieceInfoPatch = std::collections::BTreeMap<String, PieceInfoPatchValue>;
 
+/// A patch as the wire sent it, checked the way `requirePatch`,
+/// `validatePatch` and `validatePatchValue` check it
+/// (`PieceInfoAccessor.ts:376-427`): anything a caller can get wrong is
+/// `InvalidArg`, never a decode failure. An object with a `name` is a PDF
+/// name whatever else it holds, as upstream's `'name' in value` reads it.
+pub fn patch_from_wire(patch: &serde_json::Value) -> Result<PieceInfoPatch, EngineError> {
+    let invalid = |message: String| EngineError::with_message(EngineErrorCode::InvalidArg, message);
+    let object =
+        patch.as_object().ok_or_else(|| invalid("pieceInfo patch must be an object".into()))?;
+    let mut out = PieceInfoPatch::new();
+    for (key, value) in object {
+        if key.is_empty() {
+            return Err(invalid("pieceInfo keys must be non-empty".into()));
+        }
+        let value = match value {
+            serde_json::Value::Null => PieceInfoPatchValue::Clear,
+            serde_json::Value::String(text) => PieceInfoPatchValue::String(text.clone()),
+            serde_json::Value::Bool(flag) => PieceInfoPatchValue::Boolean(*flag),
+            serde_json::Value::Number(number) => match number.as_f64() {
+                Some(number) if number.is_finite() => PieceInfoPatchValue::Number(number),
+                _ => return Err(invalid(format!("pieceInfo number for '{key}' must be finite"))),
+            },
+            serde_json::Value::Array(items) => PieceInfoPatchValue::StringArray(
+                items
+                    .iter()
+                    .map(|item| item.as_str().map(str::to_owned))
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or_else(|| {
+                        invalid(format!(
+                            "pieceInfo string array for '{key}' must contain only strings"
+                        ))
+                    })?,
+            ),
+            serde_json::Value::Object(fields) if fields.contains_key("name") => {
+                match fields.get("name").and_then(serde_json::Value::as_str) {
+                    Some(name) if !name.is_empty() => {
+                        PieceInfoPatchValue::Name { name: name.to_owned() }
+                    }
+                    _ => {
+                        return Err(invalid(format!(
+                            "pieceInfo PDF name for '{key}' must be a non-empty string"
+                        )));
+                    }
+                }
+            }
+            serde_json::Value::Object(_) => {
+                return Err(invalid(format!(
+                    "unsupported pieceInfo value for '{key}': string | number | boolean | \
+                     string[] | {{ name }} | null"
+                )));
+            }
+        };
+        out.insert(key.clone(), value);
+    }
+    Ok(out)
+}
+
 /// Write a patch.
 ///
 /// # This is not a transaction
@@ -258,7 +316,7 @@ pub fn update_piece_info(
     // changed since it last wrote, and that check compares this date with
     // the document's; a batch stamped across two seconds would look like
     // two edits.
-    let last_modified = crate::clock::format_pdf_date(clock.now()).ok_or_else(|| {
+    let last_modified = crate::clock::format_pdf_timestamp(clock.now()).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
     })?;
 
@@ -291,8 +349,8 @@ pub fn update_piece_info(
     Ok(())
 }
 
-/// Remove an application's data entirely.
-pub fn clear_piece_info(
+/// Remove an application's data entirely (`PieceInfoAccessor.delete`).
+pub fn delete_piece_info(
     document: &Document,
     holder: PieceInfoHolder,
     application: &str,
@@ -314,7 +372,7 @@ pub fn clear_piece_info(
     if !cleared {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
-            format!("PDFium refused to clear the piece-info application '{application}'"),
+            format!("pieceInfo delete rejected for application '{application}'"),
         ));
     }
     Ok(())

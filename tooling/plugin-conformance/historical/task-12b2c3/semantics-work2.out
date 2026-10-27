@@ -1,0 +1,12 @@
+(node:27027) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (636.0875ms)
+✔ all 42 cases assert complete current results, exact callback order and named negative channels (32.282375ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1630.180916

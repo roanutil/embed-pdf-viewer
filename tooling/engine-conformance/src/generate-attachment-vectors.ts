@@ -83,22 +83,28 @@ async function readCase(entry: AttachmentCase): Promise<unknown> {
     try {
       const attachments = doc.attachments;
       if (!attachments) throw new Error(`${entry.name}: the engine exposes no attachments`);
-      const items = await attachments.list();
+      // `list()` is `{ attachments }`, each naming itself by `ref`, since
+      // a9434c0e2 ("Documents: v3 result shapes, attachments, redaction,
+      // security"), and `download(ref)` returns the bytes alone since
+      // c2d7a5194 ("Make attachment writes undoable change ops"): the name
+      // and type are what the listing says, so they come from there. An
+      // absent type is `null` in the listing.
+      const { attachments: items } = await attachments.list();
       const downloads: Downloaded[] = [];
       for (const item of items) {
         try {
-          const content = await attachments.download({ kind: 'key', key: item.key });
+          const content = await attachments.download(item.ref);
           downloads.push({
-            key: item.key,
-            name: content.name,
-            ...(content.mimeType !== undefined ? { mimeType: content.mimeType } : {}),
-            size: content.bytes.byteLength,
-            bytes: hex(content.bytes),
+            key: item.ref.key,
+            name: item.name,
+            ...(item.mimeType !== null ? { mimeType: item.mimeType } : {}),
+            size: content.byteLength,
+            bytes: hex(content),
           });
         } catch (error) {
           const code = (error as { code?: unknown }).code;
           downloads.push({
-            key: item.key,
+            key: item.ref.key,
             ...(typeof code === 'string' ? { errorCode: code } : {}),
             error: error instanceof Error ? error.message : String(error),
           });

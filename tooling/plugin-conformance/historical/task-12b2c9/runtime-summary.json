@@ -1,0 +1,16 @@
+{
+  "scenarios": 24,
+  "steps": 308,
+  "callbacks": 34,
+  "settlements": 75,
+  "stepThrows": 12,
+  "warnings": 5,
+  "rejections": 15,
+  "reports": 2,
+  "failureCallbacks": 1,
+  "pure": 618,
+  "pluralRows": 532,
+  "unmatched": 0,
+  "runnerExceptions": 0,
+  "pureThrows": 0
+}

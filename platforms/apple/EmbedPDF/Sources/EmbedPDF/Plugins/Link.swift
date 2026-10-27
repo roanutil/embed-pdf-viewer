@@ -4,11 +4,15 @@ public import EmbedPDFBindings
 public typealias PdfLinkTarget = EmbedPDFBindings.PdfLinkTarget
 /// A PDF navigation destination with its page and view parameters.
 public typealias PdfDestination = EmbedPDFBindings.PdfDestination
+/// A link target in page space: a destination, URI, named action, or other
+/// supported target, as the link plugin's `targetJson` decodes.
+public typealias PageLinkTarget = EmbedPDFBindings.PageLinkTarget
+/// A navigation destination in page space, measured from the top-left of the
+/// page's visible box with y pointing down.
+public typealias PageDestination = EmbedPDFBindings.PageDestination
 /// The durable identity of an annotation within a document.
 public typealias AnnotationRef = EmbedPDFBindings.AnnotationRef
-/// A token identifying an annotation revision for stale-state checks.
-public typealias AnnotationRevisionToken = EmbedPDFBindings.AnnotationRevisionToken
-/// A clickable page-space region, its target, and optional annotation identity.
+/// A clickable page-space region, its target as the engine's JSON, and optional annotation identity.
 public typealias LinkItem = EmbedPDFBindings.LinkItem
 /// The hover behaviors associated with link interaction.
 public typealias LinkHoverFlags = EmbedPDFBindings.LinkHoverFlags
@@ -33,6 +37,11 @@ public typealias LinkLoadedEvent = EmbedPDFBindings.LinkLoadedEvent
 ///
 /// The plugin never opens a URL. A `.uri` activation, returned or on
 /// `events`, is the app's to open.
+///
+/// Targets cross as the engine's JSON: `LinkItem.targetJson` is the page-space
+/// `PageLinkTarget` record (`{"kind": "uri", "uri": …}`), and a
+/// `.destination` resolution or activation carries the `PageDestination`
+/// record.
 public struct LinkCapability: Sendable {
   let handle: LinkHandle
   let viewer: PDFViewer
@@ -68,20 +77,25 @@ public struct LinkCapability: Sendable {
   }
 
   /// Describes how the target would activate without navigating or opening a URI.
-  public func resolve(_ target: PdfLinkTarget) async throws(PDFError) -> LinkResolution {
-    try await bridged { try await handle.resolve(target: target) }
+  ///
+  /// - Parameter targetJSON: The engine's page-space `PageLinkTarget` JSON, such as a
+  ///   ``LinkItem``'s `targetJson`.
+  public func resolve(targetJSON: String) async throws(PDFError) -> LinkResolution {
+    try await bridged { try await handle.resolve(targetJson: targetJSON) }
   }
 
-  /// Activates the supplied link or target and returns the outcome; URI outcomes must be
+  /// Activates the supplied page link and returns the outcome; URI outcomes must be
   /// handled by the application.
   public func activate(_ link: LinkItem) async throws(PDFError) -> LinkActivation {
     try await bridged { try await handle.activate(input: .link(page: link.page, id: link.id)) }
   }
 
-  /// Activates the supplied link or target and returns the outcome; URI outcomes must be
-  /// handled by the application.
-  public func activate(_ target: PdfLinkTarget) async throws(PDFError) -> LinkActivation {
-    try await bridged { try await handle.activate(input: .target(target: target)) }
+  /// Activates a target that isn't a link on a page and returns the outcome; URI outcomes
+  /// must be handled by the application.
+  ///
+  /// - Parameter targetJSON: The engine's page-space `PageLinkTarget` JSON.
+  public func activate(targetJSON: String) async throws(PDFError) -> LinkActivation {
+    try await bridged { try await handle.activate(input: .target(targetJson: targetJSON)) }
   }
 
   /// Activates the link at a point in intrinsic PDF page coordinates, or returns nil over no link.
@@ -96,8 +110,8 @@ public struct LinkCapability: Sendable {
 
   /// A label for a target that isn't a link on a page (an annotation's
   /// link, an outline entry): the URL, `Go to destination`, ...
-  public func label(for target: PdfLinkTarget) async throws(PDFError) -> String {
-    try await bridged { try await handle.label(input: .target(target: target)) }
+  public func label(forTargetJSON targetJSON: String) async throws(PDFError) -> String {
+    try await bridged { try await handle.label(input: .target(targetJson: targetJSON)) }
   }
 
   /// Returns whether the active interaction tool enables link navigation.

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/render/src/{reducer,effects}.ts: the epoch ledger and the event→pages map.",
   "cases": [
@@ -10,66 +10,60 @@
       "outcome": {
         "returned": {
           "contentEpochs": {},
-          "annotatedEpochs": {},
-          "paintVersions": {}
+          "annotationEpochs": {},
+          "fieldEpochs": {}
         }
       }
     },
     {
-      "name": "reduceRender/annotations-bump",
-      "fn": "reduceRender",
+      "name": "invalidatePages/annotations-bump",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {},
-          "annotatedEpochs": {},
-          "paintVersions": {}
+          "annotationEpochs": {},
+          "fieldEpochs": {}
         },
-        {
-          "type": "invalidate",
-          "scope": "annotations",
-          "pages": [
-            11
-          ]
-        }
+        [
+          11
+        ],
+        "annotations"
       ],
       "outcome": {
         "returned": {
           "changed": true,
           "state": {
             "contentEpochs": {},
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1
             },
-            "paintVersions": {}
+            "fieldEpochs": {}
           }
         }
       }
     },
     {
-      "name": "reduceRender/annotations-bump-seeded",
-      "fn": "reduceRender",
+      "name": "invalidatePages/annotations-bump-seeded",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "invalidate",
-          "scope": "annotations",
-          "pages": [
-            11,
-            22,
-            44
-          ]
-        }
+        [
+          11,
+          22,
+          44
+        ],
+        "annotations"
       ],
       "outcome": {
         "returned": {
@@ -78,12 +72,12 @@
             "contentEpochs": {
               "11": 2
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 2,
               "22": 5,
               "44": 1
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 7
             }
           }
@@ -91,29 +85,26 @@
       }
     },
     {
-      "name": "reduceRender/content-bump",
-      "fn": "reduceRender",
+      "name": "invalidatePages/content-bump",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "invalidate",
-          "scope": "content",
-          "pages": [
-            11,
-            33
-          ]
-        }
+        [
+          11,
+          33
+        ],
+        "content"
       ],
       "outcome": {
         "returned": {
@@ -123,11 +114,11 @@
               "11": 3,
               "33": 1
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 7
             }
           }
@@ -135,29 +126,26 @@
       }
     },
     {
-      "name": "reduceRender/duplicate-pons-bump-twice",
-      "fn": "reduceRender",
+      "name": "invalidatePages/duplicate-pons-bump-twice",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "invalidate",
-          "scope": "content",
-          "pages": [
-            11,
-            11
-          ]
-        }
+        [
+          11,
+          11
+        ],
+        "content"
       ],
       "outcome": {
         "returned": {
@@ -166,11 +154,11 @@
             "contentEpochs": {
               "11": 4
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 7
             }
           }
@@ -178,26 +166,23 @@
       }
     },
     {
-      "name": "reduceRender/empty-pons-is-a-no-op",
-      "fn": "reduceRender",
+      "name": "invalidatePages/empty-pons-is-a-no-op",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "invalidate",
-          "scope": "content",
-          "pages": []
-        }
+        [],
+        "content"
       ],
       "outcome": {
         "returned": {
@@ -206,11 +191,11 @@
             "contentEpochs": {
               "11": 2
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 7
             }
           }
@@ -218,26 +203,23 @@
       }
     },
     {
-      "name": "reduceRender/empty-pons-annotations-no-op",
-      "fn": "reduceRender",
+      "name": "invalidatePages/empty-pons-annotations-no-op",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "invalidate",
-          "scope": "annotations",
-          "pages": []
-        }
+        [],
+        "annotations"
       ],
       "outcome": {
         "returned": {
@@ -246,11 +228,11 @@
             "contentEpochs": {
               "11": 2
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 7
             }
           }
@@ -258,63 +240,25 @@
       }
     },
     {
-      "name": "reduceRender/unknown-action-no-op",
-      "fn": "reduceRender",
+      "name": "invalidatePages/fields-bump",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "OTHER"
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": false,
-          "state": {
-            "contentEpochs": {
-              "11": 2
-            },
-            "annotatedEpochs": {
-              "11": 1,
-              "22": 4
-            },
-            "paintVersions": {
-              "33": 7
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "reduceRender/paint-advanced",
-      "fn": "reduceRender",
-      "args": [
-        {
-          "contentEpochs": {
-            "11": 2
-          },
-          "annotatedEpochs": {
-            "11": 1,
-            "22": 4
-          },
-          "paintVersions": {
-            "33": 7
-          }
-        },
-        {
-          "type": "paintAdvanced",
-          "page": 33
-        }
+        [
+          33
+        ],
+        "fields"
       ],
       "outcome": {
         "returned": {
@@ -323,11 +267,11 @@
             "contentEpochs": {
               "11": 2
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "33": 8
             }
           }
@@ -335,25 +279,25 @@
       }
     },
     {
-      "name": "reduceRender/paint-advanced-new-pon",
-      "fn": "reduceRender",
+      "name": "invalidatePages/fields-bump-new-page",
+      "fn": "invalidatePages",
       "args": [
         {
           "contentEpochs": {
             "11": 2
           },
-          "annotatedEpochs": {
+          "annotationEpochs": {
             "11": 1,
             "22": 4
           },
-          "paintVersions": {
+          "fieldEpochs": {
             "33": 7
           }
         },
-        {
-          "type": "paintAdvanced",
-          "page": 5
-        }
+        [
+          5
+        ],
+        "fields"
       ],
       "outcome": {
         "returned": {
@@ -362,11 +306,11 @@
             "contentEpochs": {
               "11": 2
             },
-            "annotatedEpochs": {
+            "annotationEpochs": {
               "11": 1,
               "22": 4
             },
-            "paintVersions": {
+            "fieldEpochs": {
               "5": 1,
               "33": 7
             }
@@ -375,14 +319,14 @@
       }
     },
     {
-      "name": "annotatedPons/annotation.created",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/annotations.created",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "annotation.created",
+          "type": "annotations.created",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 22
+            "objectNumber": 22
           }
         },
         [
@@ -392,20 +336,23 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          22
-        ]
+        "returned": {
+          "pages": [
+            22
+          ],
+          "scope": "annotations"
+        }
       }
     },
     {
-      "name": "annotatedPons/annotation.updated",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/annotations.updated",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "annotation.updated",
+          "type": "annotations.updated",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 22
+            "objectNumber": 22
           }
         },
         [
@@ -415,20 +362,23 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          22
-        ]
+        "returned": {
+          "pages": [
+            22
+          ],
+          "scope": "annotations"
+        }
       }
     },
     {
-      "name": "annotatedPons/annotation.deleted",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/annotations.deleted",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "annotation.deleted",
+          "type": "annotations.deleted",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 22
+            "objectNumber": 22
           }
         },
         [
@@ -438,20 +388,23 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          22
-        ]
+        "returned": {
+          "pages": [
+            22
+          ],
+          "scope": "annotations"
+        }
       }
     },
     {
-      "name": "annotatedPons/annotation.moved",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/annotations.reordered",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "annotation.moved",
+          "type": "annotations.reordered",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 22
+            "objectNumber": 22
           }
         },
         [
@@ -461,240 +414,35 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          22
-        ]
+        "returned": {
+          "pages": [
+            22
+          ],
+          "scope": "annotations"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.valueChanged",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.valueSet",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.valueChanged",
-          "changedWidgets": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 11
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 11
-              }
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 33
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 33
-              }
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 11
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 11
-              }
-            }
-          ]
-        },
-        [
-          11,
-          22,
-          33
-        ]
-      ],
-      "outcome": {
-        "returned": [
-          11,
-          33,
-          11
-        ]
-      }
-    },
-    {
-      "name": "annotatedPons/form.valueChanged/none",
-      "fn": "annotatedPons",
-      "args": [
-        {
-          "type": "form.valueChanged",
-          "changedWidgets": []
-        },
-        [
-          11,
-          22,
-          33
-        ]
-      ],
-      "outcome": {
-        "returned": []
-      }
-    },
-    {
-      "name": "annotatedPons/form.effectsApplied",
-      "fn": "annotatedPons",
-      "args": [
-        {
-          "type": "form.effectsApplied",
-          "changedWidgets": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 11
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 11
-              }
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 33
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 33
-              }
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 11
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 11
-              }
-            }
-          ]
-        },
-        [
-          11,
-          22,
-          33
-        ]
-      ],
-      "outcome": {
-        "returned": [
-          11,
-          33,
-          11
-        ]
-      }
-    },
-    {
-      "name": "annotatedPons/form.effectsApplied/none",
-      "fn": "annotatedPons",
-      "args": [
-        {
-          "type": "form.effectsApplied",
-          "changedWidgets": []
-        },
-        [
-          11,
-          22,
-          33
-        ]
-      ],
-      "outcome": {
-        "returned": []
-      }
-    },
-    {
-      "name": "annotatedPons/form.fieldDeleted",
-      "fn": "annotatedPons",
-      "args": [
-        {
-          "type": "form.fieldDeleted",
-          "removedWidgets": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 22
-                },
-                "annotObjectNumber": 5
-              },
-              "annotObjectNumber": 5,
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 22
-              }
-            }
-          ]
-        },
-        [
-          11,
-          22,
-          33
-        ]
-      ],
-      "outcome": {
-        "returned": [
-          22
-        ]
-      }
-    },
-    {
-      "name": "annotatedPons/form.fieldCreated",
-      "fn": "annotatedPons",
-      "args": [
-        {
-          "type": "form.fieldCreated",
-          "field": {
-            "widgets": [
+          "type": "forms.valueSet",
+          "meta": {
+            "changedWidgets": [
               {
                 "ref": {
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 }
               },
               {
@@ -702,14 +450,29 @@
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 33
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 33
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
                 }
               }
             ]
@@ -722,33 +485,56 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          11,
-          22
-        ]
+        "returned": {
+          "pages": [
+            11,
+            33
+          ],
+          "scope": "fields"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.fieldUpdated",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.valueSet/none",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.fieldUpdated",
-          "field": {
-            "widgets": [
+          "type": "forms.valueSet",
+          "meta": {
+            "changedWidgets": []
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "pixelChangeOf/forms.updated",
+      "fn": "pixelChangeOf",
+      "args": [
+        {
+          "type": "forms.updated",
+          "meta": {
+            "changedWidgets": [
               {
                 "ref": {
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 }
               },
               {
@@ -756,14 +542,29 @@
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 33
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 33
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
                 }
               }
             ]
@@ -776,48 +577,56 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          11,
-          22
-        ]
+        "returned": {
+          "pages": [
+            11,
+            33
+          ],
+          "scope": "fields"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.widgetAttached",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.updated/none",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.widgetAttached",
-          "field": {
-            "widgets": [
+          "type": "forms.updated",
+          "meta": {
+            "changedWidgets": []
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "pixelChangeOf/forms.deleted",
+      "fn": "pixelChangeOf",
+      "args": [
+        {
+          "type": "forms.deleted",
+          "meta": {
+            "changedWidgets": [
               {
                 "ref": {
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 22
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
-                }
-              },
-              {
-                "ref": {
-                  "kind": "objectNumber",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 22
-                  },
-                  "annotObjectNumber": 5
-                },
-                "annotObjectNumber": 5,
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 }
               }
             ]
@@ -830,33 +639,35 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          11,
-          22
-        ]
+        "returned": {
+          "pages": [
+            22
+          ],
+          "scope": "fields"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.widgetDetached",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.created",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.widgetDetached",
-          "field": {
-            "widgets": [
+          "type": "forms.created",
+          "meta": {
+            "changedWidgets": [
               {
                 "ref": {
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 }
               },
               {
@@ -864,18 +675,19 @@
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 22
                   },
                   "annotObjectNumber": 5
                 },
                 "annotObjectNumber": 5,
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 }
               }
             ]
-          }
+          },
+          "widgets": []
         },
         [
           11,
@@ -884,18 +696,56 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          11,
-          22
-        ]
+        "returned": {
+          "pages": [
+            11,
+            22
+          ],
+          "scope": "fields"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.imported",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.updated",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.imported"
+          "type": "forms.updated",
+          "meta": {
+            "changedWidgets": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 22
+                }
+              }
+            ]
+          },
+          "widgets": []
         },
         [
           11,
@@ -904,32 +754,174 @@
         ]
       ],
       "outcome": {
-        "returned": [
+        "returned": {
+          "pages": [
+            11,
+            22
+          ],
+          "scope": "fields"
+        }
+      }
+    },
+    {
+      "name": "pixelChangeOf/forms.widgetAdded",
+      "fn": "pixelChangeOf",
+      "args": [
+        {
+          "type": "forms.widgetAdded",
+          "meta": {
+            "changedWidgets": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 22
+                }
+              }
+            ]
+          },
+          "widgets": []
+        },
+        [
           11,
           22,
           33
         ]
+      ],
+      "outcome": {
+        "returned": {
+          "pages": [
+            11,
+            22
+          ],
+          "scope": "fields"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.imported/no-pages",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/forms.widgetRemoved",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.imported"
+          "type": "forms.widgetRemoved",
+          "meta": {
+            "changedWidgets": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
+                "annotObjectNumber": 5,
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 22
+                }
+              }
+            ]
+          },
+          "widgets": []
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "pages": [
+            11,
+            22
+          ],
+          "scope": "fields"
+        }
+      }
+    },
+    {
+      "name": "pixelChangeOf/forms.repaired",
+      "fn": "pixelChangeOf",
+      "args": [
+        {
+          "type": "forms.repaired"
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "pages": [
+            11,
+            22,
+            33
+          ],
+          "scope": "fields"
+        }
+      }
+    },
+    {
+      "name": "pixelChangeOf/forms.repaired/no-pages",
+      "fn": "pixelChangeOf",
+      "args": [
+        {
+          "type": "forms.repaired"
         },
         []
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/form.repaired",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/stream.desynced",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.repaired"
+          "type": "stream.desynced"
         },
         [
           11,
@@ -938,36 +930,40 @@
         ]
       ],
       "outcome": {
-        "returned": [
-          11,
-          22,
-          33
-        ]
+        "returned": {
+          "pages": [
+            11,
+            22,
+            33
+          ],
+          "scope": "content"
+        }
       }
     },
     {
-      "name": "annotatedPons/form.repaired/no-pages",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/stream.desynced/no-pages",
+      "fn": "pixelChangeOf",
       "args": [
         {
-          "type": "form.repaired"
+          "type": "stream.desynced"
         },
         []
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/pages.rotated",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/pages.rotated",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "pages.rotated",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -976,19 +972,20 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/pages.moved",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/pages.moved",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "pages.moved",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -997,19 +994,20 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/pages.deleted",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/pages.deleted",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "pages.deleted",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -1018,19 +1016,20 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/metadata.updated",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/metadata.updated",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "metadata.updated",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -1039,19 +1038,20 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/redaction.applied",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/redaction.applied",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "redaction.applied",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -1060,19 +1060,20 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     },
     {
-      "name": "annotatedPons/unknown",
-      "fn": "annotatedPons",
+      "name": "pixelChangeOf/unknown",
+      "fn": "pixelChangeOf",
       "args": [
         {
           "type": "unknown",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 11
-          }
+            "objectNumber": 11
+          },
+          "results": []
         },
         [
           11,
@@ -1081,7 +1082,7 @@
         ]
       ],
       "outcome": {
-        "returned": []
+        "returned": null
       }
     }
   ]

@@ -7,9 +7,10 @@
 //! [`super::literal::match_literal`] on the cached text directly; everything
 //! else comes through here.
 
-use super::fold::{OriginalRange, fold_text};
+use super::fold::fold_text;
 use super::literal::{LiteralQuery, match_literal};
 use super::{SearchRegexIssue, match_regex};
+use crate::features::text::TextRange;
 
 /// A query in either mode.
 #[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
@@ -51,12 +52,9 @@ impl SearchQuery {
 pub fn match_page_text(
     text: &str,
     query: &SearchQuery,
-) -> Result<Vec<OriginalRange>, SearchRegexIssue> {
+) -> Result<Vec<TextRange>, SearchRegexIssue> {
     if query.regex {
-        return Ok(match_regex(text, &query.text, query.match_case, query.whole_word)?
-            .into_iter()
-            .map(|m| OriginalRange { start: m.start as u32, length: m.length as u32 })
-            .collect());
+        return match_regex(text, &query.text, query.match_case, query.whole_word);
     }
     let literal = query.literal();
     Ok(match_literal(&fold_text(text, literal.fold_options()), &literal))

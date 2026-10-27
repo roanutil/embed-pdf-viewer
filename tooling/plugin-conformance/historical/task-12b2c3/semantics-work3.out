@@ -1,0 +1,18 @@
+(node:27432) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (625.436ms)
+✔ all 42 cases assert complete current results, exact callback order and named negative channels (33.603875ms)
+✔ M14 executor print distinguishes kernel origin refusal, adapter policy and accepted user print (1.744084ms)
+✔ every case pins engine arguments, catalog/cache reads, diagnostic event payloads and all promise settlements (0.438666ms)
+✔ six annotation events and first-party hints preserve full origin/source/event and execution notifications (0.125292ms)
+✔ adapter installation coalesces reports and completion observers run once after both document steps (0.108ms)
+✔ slow page reads and save operations retain call order; held print observes adapter disposal before settlement (0.116333ms)
+✔ cache invalidation and close/reopen own current document subscriptions and drop all old registrations (0.074375ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1555.9305

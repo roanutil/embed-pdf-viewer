@@ -1,7 +1,7 @@
 //! The JavaScript semantics the TypeScript leans on without saying so: object
 //! key order, `Map` insertion order, numbers that may be `NaN` or infinite,
-//! `String.prototype.trim`, UTF-16 lengths, and `Array.prototype.splice`'s
-//! start index.
+//! `String.prototype.trim` and UTF-16 lengths. A whole JavaScript value, for
+//! the layout's plain data, is [`crate::value::JsValue`].
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -53,6 +53,17 @@ impl<V> Record<V> {
 
     pub fn get(&self, key: &str) -> Option<&V> {
         self.entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+    }
+
+    /// `key in object`, for an own member.
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.entries.iter().any(|(k, _)| k == key)
+    }
+
+    /// `delete object[key]`: the member and its value, if it had one.
+    pub fn remove(&mut self, key: &str) -> Option<V> {
+        let at = self.entries.iter().position(|(k, _)| k == key)?;
+        Some(self.entries.remove(at).1)
     }
 
     /// `object[key] = value`.
@@ -254,30 +265,6 @@ pub mod number {
     }
 }
 
-/// `#[serde(with = "js::opt_number")]` for an optional member.
-pub mod opt_number {
-    use super::*;
-
-    pub fn serialize<S: Serializer>(n: &Option<f64>, serializer: S) -> Result<S::Ok, S::Error> {
-        match n {
-            Some(n) => number_to_value(*n).serialize(serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(
-        deserializer: D,
-    ) -> Result<Option<f64>, D::Error> {
-        let value = Value::deserialize(deserializer)?;
-        if value.is_null() || epdf_kernel::is_undefined(&value) {
-            return Ok(None);
-        }
-        number_from_value(&value)
-            .map(Some)
-            .ok_or_else(|| serde::de::Error::custom("expected a number"))
-    }
-}
-
 /// ECMAScript WhiteSpace and LineTerminator: what `trim` removes. Unlike
 /// `char::is_whitespace` it includes U+FEFF and excludes U+0085.
 pub fn is_js_whitespace(c: char) -> bool {
@@ -325,14 +312,6 @@ pub fn capitalize(s: &str) -> String {
         }
         _ => s.to_string(),
     }
-}
-
-/// `Array.prototype.splice`'s start: ToIntegerOrInfinity, then relative to
-/// the end when negative, clamped to `0..=len`.
-pub fn splice_start(at: f64, len: usize) -> usize {
-    let relative = if at.is_nan() { 0.0 } else { at.trunc() };
-    let len_f = len as f64;
-    if relative < 0.0 { (len_f + relative).max(0.0) as usize } else { relative.min(len_f) as usize }
 }
 
 /// The JavaScript facts below are ones the vectors cannot carry: a vector
@@ -398,28 +377,19 @@ mod tests {
     struct Numbers {
         #[serde(with = "number")]
         n: f64,
-        #[serde(default, with = "opt_number")]
-        o: Option<f64>,
     }
 
     #[test]
     fn numbers_cross_in_canonical_form() {
-        let read = |v: Value| serde_json::from_value::<Numbers>(v).map(|n| (n.n, n.o));
-        assert_eq!(read(json!({"n": 2.5, "o": 7})).unwrap(), (2.5, Some(7.0)));
-        assert!(read(json!({"n": {"$number": "NaN"}})).unwrap().0.is_nan());
-        assert_eq!(
-            read(json!({"n": {"$number": "-Infinity"}, "o": null})).unwrap(),
-            (f64::NEG_INFINITY, None)
-        );
-        assert_eq!(read(json!({"n": 1, "o": {"$undefined": true}})).unwrap(), (1.0, None));
-        assert_eq!(
-            read(json!({"n": 1, "o": {"$number": "Infinity"}})).unwrap(),
-            (1.0, Some(f64::INFINITY))
-        );
+        let read = |v: Value| serde_json::from_value::<Numbers>(v).map(|n| n.n);
+        assert_eq!(read(json!({"n": 2.5})).unwrap(), 2.5);
+        assert!(read(json!({"n": {"$number": "NaN"}})).unwrap().is_nan());
+        assert_eq!(read(json!({"n": {"$number": "-Infinity"}})).unwrap(), f64::NEG_INFINITY);
         assert!(read(json!({"n": "1"})).is_err());
-        assert!(read(json!({"n": 1, "o": "1"})).is_err());
-        assert!(read(json!({"n": 1, "o": false})).is_err());
-        let out = serde_json::to_value(Numbers { n: f64::INFINITY, o: Some(-0.0) }).unwrap();
-        assert_eq!(out, json!({"n": {"$number": "Infinity"}, "o": 0.0}));
+        assert!(read(json!({"n": {"$number": "1"}})).is_err());
+        let out = serde_json::to_value(Numbers { n: f64::INFINITY }).unwrap();
+        assert_eq!(out, json!({"n": {"$number": "Infinity"}}));
+        let out = serde_json::to_value(Numbers { n: -0.0 }).unwrap();
+        assert_eq!(out, json!({"n": 0.0}));
     }
 }

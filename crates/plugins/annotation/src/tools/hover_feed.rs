@@ -1,55 +1,71 @@
-//! `tools/hover-feed.ts`: the annotation plane's cursor enter/exit trigger feed,
-//! a thin adapter from the one pointer-driven hover seam (`hoverAt`'s diff)
-//! onto the actions plugin's shared hover pump.
+//! `tools/hover-feed.ts`: the annotation plane's E/X trigger feed, a thin
+//! adapter from the one pointer-driven hover seam (the `hoverAt` diff) onto
+//! the shared hover pump. Reducer-side hover clears never pass through
+//! `hoverAt`, so an effect-induced hover loss can never fire a cursor exit.
 
-use epdf_annotation_core::Annot;
-use epdf_plugin_actions::{
-    ActionsCapability, HoverEvents, HoverPump, HoverTarget, create_hover_pump,
-};
+use epdf_annotation_core::record::kind_of;
+use epdf_plugin_actions::{ACTIONS, HoverEvents, HoverPump, HoverTarget, create_hover_pump};
+use serde_json::Value;
 
-use crate::value::{get, truthy};
+use crate::controller::Core;
 
-/// `AnnotationHoverFeed`.
-#[derive(Clone)]
-pub struct AnnotationHoverFeed {
+/// The feed: the pump the actions plugin's dispatch drives.
+pub struct HoverFeed {
     pump: HoverPump,
-    annot_of: std::rc::Rc<dyn Fn(&str) -> Option<Annot>>,
 }
 
-impl AnnotationHoverFeed {
-    /// `targetOf(id)`: drafts, widgets, links and tree-less annotations are
-    /// not hover targets here.
-    fn target_of(&self, id: Option<&str>) -> Option<HoverTarget> {
-        let annot = (self.annot_of)(id?)?;
-        let annotation_ref = serde_json::to_value(annot.ref_.as_ref()?).ok()?;
-        if annot.subtype.starts_with("widget") || annot.subtype == "link" {
+impl Core {
+    /// `createAnnotationHoverFeed(actions, annotOf)`, when an actions plugin is present.
+    pub(crate) fn create_hover_feed(&self) {
+        let Ok(Some(actions)) = self.cx.try_get(&ACTIONS) else { return };
+        let pump = create_hover_pump(move |trigger| actions.dispatch(trigger, None));
+        *self.hover_feed.borrow_mut() = Some(HoverFeed { pump });
+    }
+
+    /// `targetOf(id)`: who is hoverable here.
+    fn hover_target_of(&self, id: Option<&str>) -> Option<HoverTarget> {
+        let id = id?;
+        let model = self.model();
+        let record = model.by_id.get(id)?;
+        let reference = record.annotation.get("ref").filter(|r| !r.is_null())?.clone();
+        if record.unconfirmed == Some(true) {
             return None;
         }
-        let actions = annot.data.as_ref().and_then(|d| get(d, "actions"));
-        let root = |k: &str| truthy(actions.and_then(|a| get(a, k)).and_then(|t| get(t, "root")));
+        let kind = kind_of(&record.annotation).name;
+        if kind.starts_with("widget") || kind == "link" {
+            return None;
+        }
+        let root = |name: &str| {
+            record
+                .annotation
+                .get("actions")
+                .and_then(|a| a.get(name))
+                .and_then(|e| e.get("root"))
+                .is_some_and(|r| epdf_annotation_core::json::truthy(Some(r)))
+        };
         let (enter, exit) = (root("cursorEnter"), root("cursorExit"));
         if !enter && !exit {
             return None;
         }
+        let page = epdf_kernel::geometry::PageRef::from_json(
+            record.annotation.get("page").unwrap_or(&Value::Null),
+        )?;
         Some(HoverTarget {
-            annotation_ref,
-            page: epdf_kernel::geometry::PageRef::new(annot.page.page_object_number),
+            annotation_ref: reference,
+            page,
             source: None,
             events: Some(HoverEvents { enter: Some(enter), exit: Some(exit) }),
         })
     }
 
-    /// Report the pointer-driven hover target.
-    pub fn hover(&self, id: Option<&str>) {
-        self.pump.hover(self.target_of(id));
+    /// `hoverFeed?.hover(id)`.
+    pub(crate) fn hover_feed_hover(&self, id: Option<&str>) {
+        if self.hover_feed.borrow().is_none() {
+            return;
+        }
+        let target = self.hover_target_of(id);
+        if let Some(feed) = &*self.hover_feed.borrow() {
+            feed.pump.hover(target);
+        }
     }
-}
-
-/// `createAnnotationHoverFeed(actions, annotOf)`.
-pub fn create_annotation_hover_feed(
-    actions: ActionsCapability,
-    annot_of: impl Fn(&str) -> Option<Annot> + 'static,
-) -> AnnotationHoverFeed {
-    let pump = create_hover_pump(move |trigger| actions.dispatch(trigger));
-    AnnotationHoverFeed { pump, annot_of: std::rc::Rc::new(annot_of) }
 }

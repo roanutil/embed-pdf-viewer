@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/signature: the reducer, the blank page, markRoleOf, isTarget and sameRef.",
+  "describes": "packages/plugin/signature: session transitions, the blank page, markRoleOf, setTarget and sameFieldRef.",
   "cases": [
     {
       "name": "initial-state",
@@ -9,385 +9,71 @@
       "args": [],
       "outcome": {
         "returned": {
-          "snapshot": null,
-          "status": "idle",
           "verdicts": null,
           "target": null,
-          "pending": null,
           "busy": false
         }
       }
     },
     {
-      "name": "reduce-snapshot",
-      "fn": "signatureReducer",
+      "name": "set-verdicts",
+      "fn": "setVerdicts",
       "args": [
         {
-          "snapshot": null,
-          "status": "idle",
           "verdicts": null,
           "target": null,
-          "pending": null,
           "busy": false
         },
+        []
+      ],
+      "outcome": {
+        "returned": {
+          "verdicts": [],
+          "target": null,
+          "busy": false
+        }
+      }
+    },
+    {
+      "name": "set-target",
+      "fn": "setTarget",
+      "args": [
+        null,
         {
-          "type": "SNAPSHOT",
-          "snapshot": {
-            "chainValid": false,
-            "revisions": [
-              {
-                "index": 0
-              }
-            ],
-            "signatures": [
-              {
-                "index": 0,
-                "field": {
-                  "kind": "objectNumber",
-                  "fieldObjectNumber": 1
-                },
-                "fieldName": "Sig1",
-                "widget": {
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 101
-                  },
-                  "annotObjectNumber": 101,
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                },
-                "signed": true,
-                "kind": "signature",
-                "filter": "Adobe.PPKLite",
-                "subFilter": "ETSI.CAdES.detached",
-                "byteRange": [
-                  0,
-                  100,
-                  8292,
-                  50
-                ],
-                "contentsSize": 8192,
-                "coverage": "whole-revision",
-                "revisionIndex": 0,
-                "signer": {
-                  "name": "Conformance Signer"
-                },
-                "docMdp": null,
-                "catalogCertification": false,
-                "fieldMdp": null,
-                "lock": null,
-                "seedValue": null
-              }
-            ],
-            "protection": {}
-          }
+          "kind": "objectNumber",
+          "objectNumber": 2
         }
       ],
       "outcome": {
         "returned": {
           "changed": true,
           "state": {
-            "snapshot": {
-              "chainValid": false,
-              "revisions": [
-                {
-                  "index": 0
-                }
-              ],
-              "signatures": [
-                {
-                  "index": 0,
-                  "field": {
-                    "kind": "objectNumber",
-                    "fieldObjectNumber": 1
-                  },
-                  "fieldName": "Sig1",
-                  "widget": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "annotObjectNumber": 101
-                    },
-                    "annotObjectNumber": 101,
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    }
-                  },
-                  "signed": true,
-                  "kind": "signature",
-                  "filter": "Adobe.PPKLite",
-                  "subFilter": "ETSI.CAdES.detached",
-                  "byteRange": [
-                    0,
-                    100,
-                    8292,
-                    50
-                  ],
-                  "contentsSize": 8192,
-                  "coverage": "whole-revision",
-                  "revisionIndex": 0,
-                  "signer": {
-                    "name": "Conformance Signer"
-                  },
-                  "docMdp": null,
-                  "catalogCertification": false,
-                  "fieldMdp": null,
-                  "lock": null,
-                  "seedValue": null
-                }
-              ],
-              "protection": {}
-            },
-            "status": "idle",
-            "verdicts": null,
-            "target": null,
-            "pending": null,
-            "busy": false
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-status",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
-          "verdicts": null,
-          "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "STATUS",
-          "status": "loading"
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": true,
-          "state": {
-            "snapshot": null,
-            "status": "loading",
-            "verdicts": null,
-            "target": null,
-            "pending": null,
-            "busy": false
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-status-same",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
-          "verdicts": null,
-          "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "STATUS",
-          "status": "idle"
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": false,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
-            "verdicts": null,
-            "target": null,
-            "pending": null,
-            "busy": false
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-verdicts",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
-          "verdicts": null,
-          "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "VERDICTS",
-          "verdicts": []
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": true,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
-            "verdicts": [],
-            "target": null,
-            "pending": null,
-            "busy": false
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-target",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
-          "verdicts": null,
-          "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "TARGET",
-          "field": {
-            "kind": "objectNumber",
-            "fieldObjectNumber": 2
-          }
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": true,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
             "verdicts": null,
             "target": {
               "kind": "objectNumber",
-              "fieldObjectNumber": 2
+              "objectNumber": 2
             },
-            "pending": null,
             "busy": false
           }
         }
       }
     },
     {
-      "name": "reduce-pending",
-      "fn": "signatureReducer",
+      "name": "set-busy",
+      "fn": "setBusy",
       "args": [
         {
-          "snapshot": null,
-          "status": "idle",
           "verdicts": null,
           "target": null,
-          "pending": null,
           "busy": false
         },
-        {
-          "type": "PENDING",
-          "pending": {
-            "signingId": "s",
-            "field": {
-              "kind": "objectNumber",
-              "fieldObjectNumber": 2
-            }
-          }
-        }
+        true
       ],
       "outcome": {
         "returned": {
-          "changed": true,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
-            "verdicts": null,
-            "target": null,
-            "pending": {
-              "signingId": "s",
-              "field": {
-                "kind": "objectNumber",
-                "fieldObjectNumber": 2
-              }
-            },
-            "busy": false
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-busy",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
           "verdicts": null,
           "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "BUSY",
           "busy": true
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": true,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
-            "verdicts": null,
-            "target": null,
-            "pending": null,
-            "busy": true
-          }
-        }
-      }
-    },
-    {
-      "name": "reduce-unknown",
-      "fn": "signatureReducer",
-      "args": [
-        {
-          "snapshot": null,
-          "status": "idle",
-          "verdicts": null,
-          "target": null,
-          "pending": null,
-          "busy": false
-        },
-        {
-          "type": "NOPE"
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "changed": false,
-          "state": {
-            "snapshot": null,
-            "status": "idle",
-            "verdicts": null,
-            "target": null,
-            "pending": null,
-            "busy": false
-          }
         }
       }
     },
@@ -439,50 +125,80 @@
     },
     {
       "name": "is-target-none",
-      "fn": "isTarget",
+      "fn": "setTarget",
       "args": [
         null,
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         }
       ],
       "outcome": {
-        "returned": false
+        "returned": {
+          "changed": true,
+          "state": {
+            "verdicts": null,
+            "target": {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            "busy": false
+          }
+        }
       }
     },
     {
       "name": "is-target-same",
-      "fn": "isTarget",
+      "fn": "setTarget",
       "args": [
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         },
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         }
       ],
       "outcome": {
-        "returned": true
+        "returned": {
+          "changed": false,
+          "state": {
+            "verdicts": null,
+            "target": {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            "busy": false
+          }
+        }
       }
     },
     {
       "name": "is-target-other",
-      "fn": "isTarget",
+      "fn": "setTarget",
       "args": [
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         },
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 2
+          "objectNumber": 2
         }
       ],
       "outcome": {
-        "returned": false
+        "returned": {
+          "changed": true,
+          "state": {
+            "verdicts": null,
+            "target": {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            },
+            "busy": false
+          }
+        }
       }
     },
     {
@@ -491,11 +207,11 @@
       "args": [
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         },
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         }
       ],
       "outcome": {
@@ -529,7 +245,7 @@
         },
         {
           "kind": "objectNumber",
-          "fieldObjectNumber": 1
+          "objectNumber": 1
         }
       ],
       "outcome": {

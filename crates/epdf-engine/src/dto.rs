@@ -101,38 +101,61 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Patch<T> {
     }
 }
 
-/// Decodes a field that is optional but NOT nullable: absent is the only way
-/// to leave it alone, and an explicit `null` is an error.
+/// Reads and writes a field that is optional but NOT nullable: absent is the
+/// only way to leave it alone, and an explicit `null` is an error.
 ///
-/// `ts-rs` prints "failed to parse serde attribute: deserialize_with =" for
-/// every field that names this, and then ignores it. That is the right
-/// outcome: `deserialize_with` changes how Rust reads the field, not what the
-/// TypeScript type is, and the type is what `ts-rs` emits. The warning is
-/// noise, not a signal.
+/// This is a `#[serde(with = ...)]` module rather than a bare
+/// `deserialize_with`, because `ts-rs` prints "failed to parse serde
+/// attribute: deserialize_with =" for the latter and drops the whole
+/// attribute. It understands `with`, and the field's `#[ts(as = ...)]` names
+/// the TypeScript type, so the generated binding does not depend on either.
+/// `serialize` is the plain `Option<T>` one; the field's
+/// `skip_serializing_if` keeps `None` from reaching it.
 ///
 /// `Option<T>` alone would accept `null` and quietly read it as absent, which
 /// is the same flattening [`Patch`] exists to prevent, one field over. The zod
 /// schema spells these `.optional()` without `.nullable()`
 /// (`wire/schemas.ts:120-121`), so it refuses `null`, and the parity test
 /// requires that nothing zod refuses is silently accepted here.
-fn optional_not_nullable<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    // Only called when the key is present; an absent one takes `default`.
-    T::deserialize(deserializer).map(Some)
+mod optional_not_nullable {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        // Only called when the key is present; an absent one takes `default`.
+        T::deserialize(deserializer).map(Some)
+    }
+
+    pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        value.serialize(serializer)
+    }
 }
 
-/// An ISO 8601 instant in the exact form the wire carries: UTC, with a
-/// literal `Z`.
+/// A moment as an ISO 8601 string: `2017-07-12T21:44:38-07:00`.
+/// `core/src/dto/IsoDateTime.ts`.
 ///
-/// A newtype rather than `String` because `wire/schemas.ts` spells these
-/// fields `z.string().datetime()`, which refuses offsets, impossible calendar
-/// dates and anything that is not a timestamp. A `Patch<String>` here would
-/// accept all three, so the same request would be well formed on mobile and
-/// rejected on web. See [`crate::clock::is_iso_8601_utc`] for what exactly is
-/// accepted.
+/// Every date in the engine's data has this type. A date read from the PDF
+/// keeps the offset it was written with, and one without an offset reads
+/// without one ([`crate::clock::pdf_date_to_iso`]). A write takes the same
+/// forms and stores the offset it is given ([`crate::clock::format_pdf_date`]).
+///
+/// A newtype rather than `String` because `IsoDateTimeSchema` is
+/// `z.string().datetime({ offset: true, local: true })`, which refuses
+/// impossible calendar dates and anything that is not a date and time. A
+/// `Patch<String>` would accept both, so the same request would be well
+/// formed on one engine and rejected on the other. See
+/// [`crate::clock::is_iso_date_time`] for what exactly is accepted.
+///
+/// Upstream's `DateInput` also takes a `Date`, which only ever arrives
+/// in-process and becomes this string on the wire, so the wire type is this
+/// alone.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct IsoDateTime(String);
@@ -141,7 +164,7 @@ impl IsoDateTime {
     /// Validates and wraps, returning the offending string on rejection.
     pub fn new(value: impl Into<String>) -> Result<Self, String> {
         let value = value.into();
-        if crate::clock::is_iso_8601_utc(&value) { Ok(Self(value)) } else { Err(value) }
+        if crate::clock::is_iso_date_time(&value) { Ok(Self(value)) } else { Err(value) }
     }
 
     pub fn as_str(&self) -> &str {
@@ -160,7 +183,7 @@ impl<'de> Deserialize<'de> for IsoDateTime {
         let raw = String::deserialize(deserializer)?;
         Self::new(raw).map_err(|value| {
             serde::de::Error::custom(format!(
-                "expected an ISO 8601 UTC instant (YYYY-MM-DDTHH:MM:SS[.fff]Z), got `{value}`"
+                "expected an ISO 8601 date and time (YYYY-MM-DDTHH:MM[:SS[.fff]][Z|±HH:MM]), got `{value}`"
             ))
         })
     }
@@ -178,26 +201,22 @@ pub enum DocumentMetadataTrapped {
 }
 
 /// Three-state patch over the document Info dictionary, consistent with the
-/// annotation patches:
+/// annotation patches. `core/src/dto/MetadataPatch.ts`, held against
+/// `MetadataPatchSchema` (`wire/schemas.ts`) by `tests/schema_parity.rs`:
 ///
 /// - field absent: leave the stored value alone
 /// - `null`: clear the field
 /// - a value: set the field to it
 ///
-/// Standard fields map to PDF keys (`title` to `/Title`, `created` to
-/// `/CreationDate`). `created` and `modified` are ISO 8601 on the wire and the
-/// engine formats them into PDF date syntax on write
-/// (`crate::clock::format_pdf_date`).
+/// Standard fields map to PDF keys (`title` to `/Title`, `createdAt` to
+/// `/CreationDate`, `modifiedAt` to `/ModDate`). The dates are ISO 8601 on
+/// the wire, with or without an offset, and the engine writes them as PDF
+/// dates keeping that offset ([`crate::clock::format_pdf_date`]).
 ///
 /// `trapped` has no clear form, because it is a tri-valued enum that is always
-/// present. Omit it to leave it untouched.
-///
-/// `custom` is a per-key three-state map over non-standard Info entries: a
-/// string sets the key, `null` removes it, and an absent key leaves it. The
-/// map itself is two-state, absent or present, because there is no meaning for
-/// "clear the concept of custom entries" distinct from clearing each key.
-/// `BTreeMap` rather than `HashMap` so the serialized order is the same on
-/// every run, which the corpus needs.
+/// present. Omit it to leave it untouched. `''` is a value everywhere: it
+/// reads back `''`, not `null`. The dict's other keys change through
+/// [`CustomMetadataPatch`], and a `custom` field here is refused.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[ts(export, export_to = "../../../packages/engine/core/src/dto/generated/")]
@@ -220,32 +239,36 @@ pub struct MetadataPatch {
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
     #[ts(type = "string | null", optional)]
     pub creator: Patch<String>,
-    /// ISO 8601 for `/CreationDate`.
+    /// `/CreationDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
     #[ts(type = "string | null", optional)]
-    pub created: Patch<IsoDateTime>,
-    /// ISO 8601 for `/ModDate`.
+    pub created_at: Patch<IsoDateTime>,
+    /// `/ModDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
     #[ts(type = "string | null", optional)]
-    pub modified: Patch<IsoDateTime>,
+    pub modified_at: Patch<IsoDateTime>,
     /// Two-state: `/Trapped` has no clear form.
-    #[serde(
-        default,
-        deserialize_with = "optional_not_nullable",
-        skip_serializing_if = "Option::is_none"
-    )]
-    #[ts(optional)]
+    #[serde(default, with = "optional_not_nullable", skip_serializing_if = "Option::is_none")]
+    #[ts(optional, as = "Option<DocumentMetadataTrapped>")]
     pub trapped: Option<DocumentMetadataTrapped>,
-    /// Per-key three-state: `None` removes the key. The map itself is
-    /// two-state, so `"custom": null` is rejected rather than read as absent.
-    #[serde(
-        default,
-        deserialize_with = "optional_not_nullable",
-        skip_serializing_if = "Option::is_none"
-    )]
-    #[ts(type = "Record<string, string | null>", optional)]
-    pub custom: Option<BTreeMap<String, Option<String>>>,
 }
+
+/// A change to the Info dict's other keys, where every key is a field of its
+/// own. `core/src/dto/CustomMetadataPatch.ts`, held against
+/// `CustomMetadataPatchSchema` (`wire/schemas.ts`) by `tests/schema_parity.rs`:
+///
+/// - key left out: the key stays as it is
+/// - `null`: remove the key
+/// - a string: set the key to it (`''` is a value)
+///
+/// The map itself is not nullable: `null` in its place is refused. Which keys
+/// a PDF can hold is the engine's check at write time, not the type's, so a
+/// refusal names the key the same way on both engines. `BTreeMap` rather
+/// than `HashMap` so the serialized order is the same on every run, which the
+/// corpus needs. A newtype, which serde reads and writes as the map itself.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/engine/core/src/dto/generated/")]
+pub struct CustomMetadataPatch(pub BTreeMap<String, Option<String>>);
 
 /// Per-page cache-busting integers embedded in immutable cloud and CDN leaf
 /// URLs.
@@ -332,25 +355,58 @@ mod tests {
             serde_json::from_value::<MetadataPatch>(serde_json::json!({ "trapped": null }))
                 .is_err()
         );
-        assert!(
-            serde_json::from_value::<MetadataPatch>(serde_json::json!({ "custom": null })).is_err()
-        );
     }
 
     #[test]
     fn custom_entries_are_three_state_per_key() {
-        let patch: MetadataPatch = serde_json::from_value(serde_json::json!({
-            "custom": { "Department": "Legal", "Obsolete": null }
+        let patch: CustomMetadataPatch = serde_json::from_value(serde_json::json!({
+            "Department": "Legal", "Obsolete": null
         }))
         .unwrap();
-        let custom = patch.custom.as_ref().unwrap();
-        assert_eq!(custom.get("Department"), Some(&Some("Legal".to_string())));
-        assert_eq!(custom.get("Obsolete"), Some(&None));
+        assert_eq!(patch.0.get("Department"), Some(&Some("Legal".to_string())));
+        assert_eq!(patch.0.get("Obsolete"), Some(&None));
         // An absent key is absent, not a removal.
-        assert_eq!(custom.get("Untouched"), None);
+        assert_eq!(patch.0.get("Untouched"), None);
         assert_eq!(
             serde_json::to_value(&patch).unwrap(),
-            serde_json::json!({ "custom": { "Department": "Legal", "Obsolete": null } })
+            serde_json::json!({ "Department": "Legal", "Obsolete": null })
+        );
+        // The map itself is not nullable.
+        assert!(serde_json::from_value::<CustomMetadataPatch>(serde_json::Value::Null).is_err());
+    }
+
+    #[test]
+    fn custom_entries_are_their_own_patch() {
+        // `MetadataPatchSchema` is strict and has no `custom`.
+        assert!(
+            serde_json::from_value::<MetadataPatch>(
+                serde_json::json!({ "custom": { "Department": "Legal" } })
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn dates_take_the_create_and_modify_names_and_keep_their_offset() {
+        let patch: MetadataPatch = serde_json::from_value(serde_json::json!({
+            "createdAt": "2020-01-02T03:04:05+05:30",
+            "modifiedAt": "2017-07-12T21:44:38",
+        }))
+        .unwrap();
+        assert_eq!(
+            patch.created_at.as_set().map(IsoDateTime::as_str),
+            Some("2020-01-02T03:04:05+05:30")
+        );
+        assert_eq!(
+            patch.modified_at.as_set().map(IsoDateTime::as_str),
+            Some("2017-07-12T21:44:38")
+        );
+        // The pre-v3 spelling is an unknown field.
+        assert!(
+            serde_json::from_value::<MetadataPatch>(
+                serde_json::json!({ "created": "2020-01-02T03:04:05Z" })
+            )
+            .is_err()
         );
     }
 

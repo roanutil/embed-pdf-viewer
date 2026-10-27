@@ -1,0 +1,238 @@
+{
+  "base": "ccc6ea5601560ffcdf611fedd1d4220c190315f7",
+  "preservedPaths": [
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/account.py",
+      "sha256": "78c20a1b7d0dbd9197ace845648089e5b3e0e760fd2d9ecd5c2b7528a0adfaf5"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/accounting.json",
+      "sha256": "74682ab1e918a88acd493de56631bfb09f7654391786203448069376981d18b3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/accounting.out",
+      "sha256": "f95137d7cd598e487d4853ff394c7751cb19ab39ff1ad6df8da44b058f3733c2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/baseline-summary.json",
+      "sha256": "0f5aeca497eaf41b5a0b91d98cab992e69ceffeaeac91217289d1fd3c249cba6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/channels-work.out.gz",
+      "sha256": "0713e6fcd0b0002e5f81d838da95b6489523fcbaa12222a0cad7edf9cd29d001"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/current-inputs-runtime.json",
+      "sha256": "a3d66de1c9af0865c90c3eea69a2b54d6a637c1e7b61c237228f796e94c4a2d2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/diagnostics.json",
+      "sha256": "35cceabfc632eaa15238684e158b783ef3f8b237514da1625285935c746d10d5"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/direct-test-contracts.json",
+      "sha256": "8eb0ba8154011e801764f82f4e44cfb8fe2611cc3df511cb0e235821b188e843"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/direct-work.out",
+      "sha256": "af9019ee038a21d74d0f4861d9a97bd072123feaf14f6fa39d31eb39cbd81ecc"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/direct-work2.out",
+      "sha256": "11c0c42868459f377d8e058366555fbe8ec26bbfda28b6271e4e0806417a5716"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/focused-tests.out",
+      "sha256": "d7f0c60c1a34f842bb3d8eaead733d60c46017e7d2f273030171acd0325fe9a5"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/focused-work.out",
+      "sha256": "817eb1ad6ed1ef204c24209287d7a81a9fa4fb5a8a2cae6e42d74cbbab1472c6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/focused-work2.out",
+      "sha256": "e0b33cbeb44c02231b1e426efa20b41b6ca81637329379fd7be07eda0720e4d7"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/format-check.out",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/format-final.out",
+      "sha256": "9b3c0a2b3995f97d90dff75a2304b0b782db1fa159c59023e190c09f41e3331b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/format.out",
+      "sha256": "f0d339fff6a494402854f59a50c8d9ee3dd4a4e71692ac8eea651cbb443de99a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/full-typecheck.out",
+      "sha256": "d262e76de96ce5a7f1a69c0e8943907d12b5e4953045cf3bf106afbfbcbbdc11"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/generated-prelude.js.txt",
+      "sha256": "fd8bfaf3f4f213fd6b1d744a181636bff0256be1a929e8ccfbbc87f21f313b9e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/integrity.json",
+      "sha256": "7802d09cb856de65f03c521b2a0618bb70d757fa8ed1e2da840caa24672f9f60"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/negative-channels.json",
+      "sha256": "e0350c748495409c6ac8d1777c5f73c6eb88f56a937f8a38a825781306b03b23"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/objectNumber-parent-contract.ts.txt",
+      "sha256": "9364fc5d1b441747a54ba25014bcb244885b61413f0172235b8069cdc7ed66cd"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/objectNumber-parent-controller.ts.txt",
+      "sha256": "2fe86f302c4b678e6b22cfe641b40a70db076283b3d6858d8432b3426d8ea81b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/original-commands-current.test.ts.txt",
+      "sha256": "4ae13e5f77960d5134fccc2739a03b7f14c6cd85598cc0e86d34f5f7d2a85877"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/original-page-edit.ts.txt",
+      "sha256": "36ed23435b8c209296c44a5db67c5bad1c64591f086e405ac533540d383f91cc"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/original-runtime.json",
+      "sha256": "fc37efb7759a30f6119dc3a03d4d98a2cabfb6b18fcefe13803fc7fe7240cd81"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/owned-typecheck.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/owned-work.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/pageSpace-parent-contract.ts.txt",
+      "sha256": "c3920a7049d62b616acb14325946df1c643a4f7e34fc60111c80f4f829b9fab1"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/pageSpace-parent-controller.ts.txt",
+      "sha256": "cd4187f6b8ed8e9508a83b62d3b1d124268db2dfdc97abc19219fc90fd85edc3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/permissions-parent-contract.ts.txt",
+      "sha256": "259639e497e62143e68d8ec2dddee9cb89cf9bd0781ef1b53911b69224c5fa9a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/permissions-parent-controller.ts.txt",
+      "sha256": "434339705d6801a44b88529f422d4088218a772b98835bf6f9195a8c3dd8e59b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/prelude-inspected.diff",
+      "sha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/prelude-restoration.json",
+      "sha256": "1031da25a45da4bc8f4586f5e497060b9da6cde685d2990d6407702edd5431b3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/preservation-tests.out",
+      "sha256": "5d455e5f6da9fb5adf0ab44a52956240a4426586f0fde283d489395bd986e9a3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/preservation.json",
+      "sha256": "6050c324272b8caa63ee913e2d4c5234e35960f38f6a98c64bbc2f22951ea5c6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/red.out.gz",
+      "sha256": "79acdea84d370a2a8d50228351eb0471d38b9acb61cf244371220aa6f4776dcf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/runtime-render.out",
+      "sha256": "9f8f128a21f894e758038e32955b3290eedf8c7a3863daf459240790a5f584dc"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/runtime-summary.json",
+      "sha256": "d71cea546fb43247f7302acc9b79f5994bb05c6446bb8c14817a2ce78116fb41"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/runtime-work.out",
+      "sha256": "355b8c30c16f84837008c233f238fa552a032621eaa375865f48d3e59cd18f7d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/semantics-work.out.gz",
+      "sha256": "2c90fa6b08cc1a336a58ea9027ffc38f5b7cb9e0110cf7ba80c91e7c243be46b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/semantics-work2.out",
+      "sha256": "b62a248eb613c1f4e0d807b4f88c09d6caf14e90b0d97ad4b550f70b03432e3c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/source-evidence.json",
+      "sha256": "640e724604d92f71962c03080797b5b4139da19aace77c94f997921f803e339e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/stagedEdits-parent-contract.ts.txt",
+      "sha256": "259639e497e62143e68d8ec2dddee9cb89cf9bd0781ef1b53911b69224c5fa9a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/stagedEdits-parent-controller.ts.txt",
+      "sha256": "043c4c6d97c49c1f5740e15567d213c9aed93a097aed42a98443b8a43fba41cb"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/task11-current-drift.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c8/work.out.gz",
+      "sha256": "0217517272e1988f17a25601e1ca21c8afab0ed3444331699e1c55651996a07b"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/page-edit.ts",
+      "sha256": "d93d39d2c204d8b8f4c48e02bcb31377e85aca8cf84b70ae89d62a4a02328282"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/page-edit-current-fixtures.ts",
+      "sha256": "7be877f0b2fe9c687b8c1f4fb066491665da648729d6d9dfb6ee85d8037f6f7a"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/page-edit-evidence.ts",
+      "sha256": "b742aa87255f5623d7796b908fb653d3c772c888af60bfde188fa9afabd27452"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/commands-current.test.ts",
+      "sha256": "19b3fa809b3d8e98b659a522c74c8dc9d3fb51a6dfb5eaae54d0fc0ee48c620f"
+    }
+  ],
+  "preservedCount": 50,
+  "originalTestSha256": "2257e879dd252c497aead76b57218d5df30975eaa69c24b1867b5f1b5b2f0be2",
+  "currentOwners": [
+    {
+      "path": "packages/core/main/src/changes.ts",
+      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866"
+    },
+    {
+      "path": "packages/engine/core/src/events/EventHub.ts",
+      "sha256": "1862c104331aaf8c8eac3f21e6dc037b3dd323300d60de9e0f86799d2525c6b7"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/page-edit-current.test.ts",
+      "sha256": "8922338bcc209f9c62a9f25db8a60ad97950b2491602b163ac206160c853e4b3"
+    }
+  ],
+  "serializedCurrentInputsChanged": 0,
+  "serializedCurrentOutcomesChanged": 0,
+  "focusedTestCount": 32,
+  "targetedTestCount": 93,
+  "newPrivateTests": 4,
+  "currentCases": 19,
+  "originalOccurrences": 19,
+  "exactRejections": 42,
+  "exactScopeThrows": 3,
+  "priorCompleteReplays": 293,
+  "newTests": [
+    "All blank/byte/empty/reorder/duplicate placements: literal full objectNumber/index/rotation/width/height arrays + count before and after each success",
+    "Subset [2,0] after10 and valid-index [1] at end: full destination before/after plus unchanged state after refusals",
+    "Cross-document end/start: full destination before/after each placement and unchanged complete source throughout",
+    "Immediate two-item + deferred one-item confirmations: staged IDs equal actual request IDs, all delivered result/item/fact identities and local tx ordering"
+  ],
+  "strengthenedDirectWitnesses": "Every existing direct harness now binds actual staged UUID before send; verifies actual decoded delivery IDs against apply log at teardown. No entropy/API/shared fake changes. Deferred settlement goes through bound private wrapper. Result-only adversarial witness emits no facts."
+}

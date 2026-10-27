@@ -83,6 +83,11 @@ pub struct EpdfHits {
     pub owner: *mut c_void,
 }
 
+/// A snippet as one text: the context before, the match, the context after.
+fn snippet_text(snippet: &epdf_plugin_search::SearchSnippet) -> String {
+    format!("{}{}{}", snippet.before, snippet.matched, snippet.after)
+}
+
 /// The arrays an `EpdfHits` points into.
 struct HitsOwner {
     hits: Vec<EpdfSearchHit>,
@@ -97,7 +102,7 @@ impl HitsOwner {
         let mut text = Vec::new();
         for hit in hits.iter().map(H::borrow) {
             if let Some(snippet) = &hit.snippet {
-                text.extend_from_slice(snippet.text.as_bytes());
+                text.extend_from_slice(snippet_text(snippet).as_bytes());
             }
         }
         let base = text.as_ptr();
@@ -107,14 +112,16 @@ impl HitsOwner {
         for hit in hits.iter().map(H::borrow) {
             let segment_offset = whole(segments.len(), "a segment offset")?;
             segments.extend(hit.segments.iter().map(|s| {
-                let q = epdf_ffi::TextQuad::from(s.quad);
+                // The named corners (`Quad`), in the reading frame: left is
+                // the start of the line, right its end.
+                let q = epdf_ffi::Quad::from(s.quad);
                 let point = |p: epdf_ffi::Point| EpdfPoint { x: p.x, y: p.y };
                 EpdfSegment {
                     quad: EpdfQuad {
-                        upper_start: point(q.upper_start),
-                        upper_end: point(q.upper_end),
-                        lower_start: point(q.lower_start),
-                        lower_end: point(q.lower_end),
+                        upper_start: point(q.upper_left),
+                        upper_end: point(q.upper_right),
+                        lower_start: point(q.lower_left),
+                        lower_end: point(q.lower_right),
                     },
                     rect: rect(epdf_ffi::Rect::from(s.rect)),
                     advance: s.advance,
@@ -122,19 +129,23 @@ impl HitsOwner {
             }));
             let (snippet_text, snippet_len, match_start, match_length) = match &hit.snippet {
                 Some(snippet) => {
-                    let len = snippet.text.len();
+                    let len = snippet_text(snippet).len();
                     // `text` is complete and never grows again.
                     let ptr = unsafe { base.add(at) };
                     at += len;
-                    (ptr, len, snippet.match_start, snippet.match_length)
+                    // The match within the joined text, in UTF-16 units as
+                    // the snippet's JavaScript string counts them.
+                    let start = snippet.before.encode_utf16().count() as f64;
+                    let length = snippet.matched.encode_utf16().count() as f64;
+                    (ptr, len, start, length)
                 }
                 None => (std::ptr::null(), 0, 0.0, 0.0),
             };
             flat.push(EpdfSearchHit {
                 page_object_number: hit.page.page_object_number,
                 page_index: whole(hit.page_index, "a hit's page index")?,
-                char_start: hit.char_start,
-                char_count: hit.char_count,
+                char_start: hit.start,
+                char_count: hit.count,
                 bounds: hit.bounds.map(|b| rect(b.into())).unwrap_or_default(),
                 segment_offset,
                 segment_count: whole(hit.segments.len(), "a hit's segment count")?,
@@ -498,26 +509,28 @@ pub unsafe extern "C" fn epdf_search_subscribe(
                 }
                 let offs: Vec<Unsubscribe> = vec![
                     relay!(on_started, |l, e| {
-                        let (text, op) = (c(&e.query.text), c(&e.operation_id));
+                        // Upstream's events carry no operation id; the field
+                        // stays, empty.
+                        let (text, op) = (c(&e.query.text), c(""));
                         l.emit(
                             EPDF_SEARCH_EVENT_STARTED,
                             &EpdfSearchStarted { text: text.as_ptr(), operation_id: op.as_ptr() },
                         )
                     }),
-                    relay!(on_progress, |l, e| {
-                        let op = c(&e.operation_id);
+                    relay!(on_progress_changed, |l, e| {
+                        let op = c("");
                         l.emit(
                             EPDF_SEARCH_EVENT_PROGRESS,
                             &EpdfSearchProgress {
-                                scanned: e.scanned,
-                                total: e.total,
+                                scanned: e.pages_searched,
+                                total: e.page_count,
                                 hit_count: whole(e.hit_count, "a hit count")?,
                                 operation_id: op.as_ptr(),
                             },
                         )
                     }),
                     relay!(on_completed, |l, e| {
-                        let op = c(&e.operation_id);
+                        let op = c("");
                         l.emit(
                             EPDF_SEARCH_EVENT_COMPLETED,
                             &EpdfSearchCompleted {
@@ -527,7 +540,7 @@ pub unsafe extern "C" fn epdf_search_subscribe(
                         )
                     }),
                     relay!(on_cancelled, |l, e| {
-                        let op = c(&e.operation_id);
+                        let op = c("");
                         let reason = match e.reason {
                             SearchCancelReason::Superseded => 0,
                             SearchCancelReason::Cancelled => 1,
@@ -539,8 +552,7 @@ pub unsafe extern "C" fn epdf_search_subscribe(
                         )
                     }),
                     relay!(on_failed, |l, e| {
-                        let (code, message, op) =
-                            (c(&e.error.code), c(&e.error.message), c(&e.operation_id));
+                        let (code, message, op) = (c(&e.error.code), c(&e.error.message), c(""));
                         l.emit(
                             EPDF_SEARCH_EVENT_FAILED,
                             &EpdfSearchFailed {
@@ -551,7 +563,11 @@ pub unsafe extern "C" fn epdf_search_subscribe(
                         )
                     }),
                     relay!(on_active_hit_changed, |l, e| {
-                        let index = whole(e.index, "the active hit index")?;
+                        // `-1` (no active hit) is `u32::MAX`.
+                        let index = match usize::try_from(e.index) {
+                            Ok(index) => whole(index, "the active hit index")?,
+                            Err(_) => u32::MAX,
+                        };
                         let owner = match &e.hit {
                             Some(hit) => Some(HitsOwner::build(std::slice::from_ref(hit))?),
                             None => None,

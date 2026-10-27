@@ -12,8 +12,10 @@ extension BaseSuite {
   @Suite struct StageTests {
     let instant = StageGoToOptions(behavior: .instant)
 
-    func opened(frames: Bool = false) async throws -> (PDFViewer, DocumentInfo, StageCapability) {
-      let viewer = try PDFViewer(ViewerConfig(stage: StageConfig(frames: frames)))
+    // The native host's clock always has frames, so motion tweens; the
+    // tests that need a jump ask for `.instant`.
+    func opened() async throws -> (PDFViewer, DocumentInfo, StageCapability) {
+      let viewer = try PDFViewer(ViewerConfig(stage: StageConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
       let stage = try await viewer.stage(for: document)
@@ -74,7 +76,7 @@ extension BaseSuite {
     }
 
     @Test func aFlingMovesThenSettles() async throws {
-      let (_, _, stage) = try await opened(frames: true)
+      let (_, _, stage) = try await opened()
       let events = stage.events
       try await stage.fling(velocityX: 0, velocityY: -3000)
       #expect(try await stage.isMoving())

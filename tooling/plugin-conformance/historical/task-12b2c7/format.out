@@ -1,0 +1,5 @@
+tooling/plugin-conformance/src/suites/metadata.ts 102ms
+tooling/plugin-conformance/src/suites/metadata-current-fixtures.ts 10ms
+tooling/plugin-conformance/test/metadata-current.test.ts 37ms
+tooling/plugin-conformance/test/metadata-evidence.ts 5ms (unchanged)
+tooling/plugin-conformance/test/commands-current.test.ts 29ms (unchanged)

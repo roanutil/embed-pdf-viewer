@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "schema": "CustomMetadataPatch",
+  "cases": [
+  {"name":"custom-empty","covers":"An empty patch is a present map: it changes nothing and is still well formed.","input":{},"valid":true,"parsed":{}},
+  {"name":"custom-per-key-three-state","covers":"A key set, a key removed, and every other key left alone.","input":{"Department":"Legal","Obsolete":null},"valid":true,"parsed":{"Department":"Legal","Obsolete":null}},
+  {"name":"custom-null","covers":"The patch itself is a map: there is no \"clear the concept of custom entries\", so null is refused.","input":null,"valid":false},
+  {"name":"custom-empty-key","covers":"An empty key is a key. Whether the engine then rejects it is a different gate.","input":{"":"empty key"},"valid":true,"parsed":{"":"empty key"}}
+  ]
+}

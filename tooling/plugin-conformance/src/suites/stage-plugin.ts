@@ -6,12 +6,8 @@
  * Four harness shims live here, and `crates/plugins/stage/src/harness.rs`
  * mirrors each:
  *
- *   - The frame seam. The TypeScript binds `globalThis.requestAnimationFrame`
- *     when the host has one; Node has none, so with no `scheduler` the stage
- *     is frameless (navigation jumps, no rest detector). A config with
- *     `frames: true` injects a `Scheduler` whose frames are 16 ms timers on
- *     the fake clock, stamped with `Date.now()`, handles counting from 1.
- *     `advance` steps drive them.
+ *   - Scenarios with `clock: { frames: true }` use the current kernel host
+ *     clock: deterministic 16 ms frames. Instance clocks own cancellation.
  *   - `lens: name` registers the stage under plugin id `name` with a token of
  *     that name (`stagePlugin({id, token})`).
  *   - A responsive rule's `when` may be a `$fn` spec: a scripted predicate
@@ -22,27 +18,37 @@
  *     Angular stages do.
  */
 import { definePlugin, type AnyPlugin, type CapabilityToken } from '@embedpdf/core';
+import type { FormSnapshot, PageDestination, PdfDestination } from '@embedpdf/engine-core/runtime';
+import { pageDestinationOf } from '../../../../packages/engine/core/src/pageSpace/destinations';
 
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 import { createScrollHandler, stagePlugin } from '../../../../packages/plugin/stage/src/index';
-import { StageToken, type StageHostCapability } from '../../../../packages/plugin/stage/src/host-contract';
-import type { StagePluginOptions } from '../../../../packages/plugin/stage/src/stage.plugin';
-import type { ResponsiveRule, Scheduler, StageCapability } from '../../../../packages/plugin/stage/src/contract';
+import {
+  StageToken,
+  type StageHostCapability,
+} from '../../../../packages/plugin/stage/src/host-contract';
+import type { StagePluginOptions } from '../../../../packages/plugin/stage/src/contract';
+import type {
+  ResponsiveRule,
+  StageCapability,
+} from '../../../../packages/plugin/stage/src/contract';
 
 import type { FakeDocumentSpec, FakeEngineSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
+import { confirmedEvent } from './current-event-fixtures';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
   snapshot: 'none',
-  reason: "Pins double-tap ladders, the fits predicate, reveals and focal points, through the values the stage calls return. Its dispatched actions are compared; the state they build is not.",
+  reason:
+    'Pins double-tap ladders, the fits predicate, reveals and focal points, through the values the stage calls return. Its committed stateChanges are compared; full snapshots are omitted.',
 } as const;
 
 // ── the v3 surface ────────────────────────────────────────────────────────────
 
-const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
 
 /** v2 stage method → v3 name. */
 const RENAMED: Readonly<Record<string, string>> = {
@@ -67,8 +73,8 @@ const RENAMED: Readonly<Record<string, string>> = {
   setViewport: 'setViewportSize',
   cameraInMotion: 'isMoving',
   automatic: 'fitAutomatic',
-  goToPage: 'goToPageIndex',
-  reveal: 'revealIndex',
+  goToPage: 'goToPage',
+  reveal: 'reveal',
   next: 'nextPage',
   prev: 'previousPage',
   lensId: 'getLensId',
@@ -80,11 +86,28 @@ const RENAMED: Readonly<Record<string, string>> = {
 };
 /** v2 per-setting reads, which v3 folds into `getSettings`. */
 const SETTING_READS = new Set([
-  'flow', 'layout', 'spread', 'sizing', 'columns', 'bounded', 'padding', 'gap', 'pageFrame',
-  'fitAlign', 'arrivalAlign', 'zoomAlign', 'anchorAlign', 'direction', 'scrollBehavior',
+  'flow',
+  'layout',
+  'spread',
+  'sizing',
+  'columns',
+  'bounded',
+  'padding',
+  'gap',
+  'pageFrame',
+  'fitAlign',
+  'arrivalAlign',
+  'zoomAlign',
+  'anchorAlign',
+  'direction',
+  'scrollBehavior',
 ]);
 /** v2 per-setting writers without a v3 twin: `updateSettings({key})`. */
 const SETTING_WRITES: Readonly<Record<string, string>> = {
+  setLayout: 'layout',
+  setFlow: 'flow',
+  setSpread: 'spread',
+  setSizing: 'sizing',
   setColumns: 'columns',
   setBounded: 'bounded',
   setPadding: 'padding',
@@ -105,45 +128,33 @@ const PAGE_FIRST = new Set(['pageRect', 'pointOnPage', 'pageToWorld', 'pageRectT
  * authored in and emitted against the v3 surface. `pages` and `pageCount`
  * left the stage: they read the kernel's page registry for that document.
  */
-export function stageStep(lens: string, doc: string, method: string, args: readonly unknown[]): Step {
+export function stageStep(
+  lens: string,
+  doc: string,
+  method: string,
+  args: readonly unknown[],
+): Step {
   if (method === 'pages' || method === 'pageCount') {
     return { op: 'call', target: 'documents', method: 'listPages', args: [doc] };
   }
   const target = { token: lens, doc };
   if (SETTING_READS.has(method)) return { op: 'call', target, method: 'getSettings', args: [] };
   if (method in SETTING_WRITES) {
-    return { op: 'call', target, method: 'updateSettings', args: [{ [SETTING_WRITES[method]]: args[0] }] };
+    return {
+      op: 'call',
+      target,
+      method: 'updateSettings',
+      args: [{ [SETTING_WRITES[method]]: args[0] }],
+    };
   }
-  const out = PAGE_FIRST.has(method) && typeof args[0] === 'number'
-    ? [{ kind: 'objectNumber', pageObjectNumber: args[0] }, ...args.slice(1)]
-    : [...args];
+  const out =
+    PAGE_FIRST.has(method) && typeof args[0] === 'number'
+      ? [{ kind: 'objectNumber', objectNumber: args[0] }, ...args.slice(1)]
+      : [...args];
   return { op: 'call', target, method: RENAMED[method] ?? method, args: out };
 }
 
 // ── the factories ─────────────────────────────────────────────────────────────
-
-/** Frames as 16 ms timers on the fake clock. */
-function frames(): Scheduler {
-  let next = 0;
-  const timers = new Map<number, ReturnType<typeof setTimeout>>();
-  return {
-    raf: (cb) => {
-      const id = ++next;
-      timers.set(
-        id,
-        setTimeout(() => {
-          timers.delete(id);
-          cb(Date.now());
-        }, 16),
-      );
-      return id;
-    },
-    caf: (id) => {
-      clearTimeout(timers.get(id));
-      timers.delete(id);
-    },
-  };
-}
 
 type Scripted = AnswerSpec & { readonly $fn: string };
 interface HarnessRule {
@@ -151,13 +162,16 @@ interface HarnessRule {
   readonly when: Record<string, unknown> | Scripted;
   readonly settings?: Record<string, unknown>;
 }
-type HarnessConfig = Omit<StagePluginOptions, 'id' | 'token' | 'scheduler' | 'responsive'> & {
+type HarnessConfig = Omit<StagePluginOptions, 'id' | 'token' | 'responsive'> & {
   readonly lens?: string;
   readonly frames?: boolean;
   readonly responsive?: readonly HarnessRule[];
 };
 
-const lensToken = (env: PluginEnv, lens: string | undefined): CapabilityToken<StageHostCapability> =>
+const lensToken = (
+  env: PluginEnv,
+  lens: string | undefined,
+): CapabilityToken<StageHostCapability> =>
   (lens === undefined ? StageToken : env.token(lens)) as CapabilityToken<StageHostCapability>;
 
 function stageOptions(config: HarnessConfig | undefined, env: PluginEnv): StagePluginOptions {
@@ -165,7 +179,7 @@ function stageOptions(config: HarnessConfig | undefined, env: PluginEnv): StageP
   return {
     ...settings,
     ...(lens === undefined ? {} : { id: lens, token: lensToken(env, lens) }),
-    ...(wantsFrames ? { scheduler: frames() } : {}),
+
     ...(responsive === undefined
       ? {}
       : {
@@ -173,7 +187,10 @@ function stageOptions(config: HarnessConfig | undefined, env: PluginEnv): StageP
             (rule) =>
               ({
                 ...rule,
-                when: '$fn' in rule.when ? scriptedCallback((rule.when as Scripted).$fn, rule.when as Scripted, env) : rule.when,
+                when:
+                  '$fn' in rule.when
+                    ? scriptedCallback((rule.when as Scripted).$fn, rule.when as Scripted, env)
+                    : rule.when,
               }) as ResponsiveRule,
           ),
         }),
@@ -181,7 +198,8 @@ function stageOptions(config: HarnessConfig | undefined, env: PluginEnv): StageP
 }
 
 registerPlugin('stage', {
-  factory: (config, env) => stagePlugin(stageOptions(config as HarnessConfig | undefined, env)) as AnyPlugin,
+  factory: (config, env) =>
+    stagePlugin(stageOptions(config as HarnessConfig | undefined, env)) as AnyPlugin,
   tokens: [StageToken],
 });
 
@@ -198,12 +216,19 @@ registerPlugin('stage-scroll', {
       id: 'stage-scroll',
       scope: 'document',
       requires: [token, InteractionToken],
-      init: (ctx) => {
-        const stage = ctx.get(token);
-        const hub = ctx.get(InteractionToken);
-        const handler = createScrollHandler(stage, hub, panFallback === undefined ? {} : { panFallback });
-        ctx.cleanup(hub.registerHandler(handler, { source: stage.getLensId() }));
-      },
+      create: (ctx) => ({
+        api: {},
+        connect: () => {
+          const stage = ctx.get(token);
+          const hub = ctx.get(InteractionToken);
+          const handler = createScrollHandler(
+            stage,
+            hub,
+            panFallback === undefined ? {} : { panFallback },
+          );
+          ctx.cleanup(hub.registerHandler(handler, { source: stage.getLensId() }));
+        },
+      }),
     }) as AnyPlugin;
   },
 });
@@ -211,15 +236,32 @@ registerPlugin('stage-scroll', {
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 const crop = (w: number, h: number) => ({ left: 0, bottom: 0, right: w, top: h });
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
-const page = (pon: number, index: number, w = 600, h = 800, over: Record<string, unknown> = {}) => ({
+const pr = (pon: number): import('@embedpdf/engine-core/runtime').PageRef => ({
+  kind: 'objectNumber',
+  objectNumber: pon,
+});
+const page = (
+  pon: number,
+  index: number,
+  w = 600,
+  h = 800,
+  over: Record<string, unknown> = {},
+) => ({
   index,
   ref: pr(pon),
   label: null,
   size: { width: w, height: h },
-  rotation: 0,
+  rotation: 0 as const,
   userUnit: 1,
-  boxes: { media: crop(w, h), crop: crop(w, h) },
+  boxes: {
+    media: { x: 0, y: 0, width: w, height: h },
+    crop: { x: 0, y: 0, width: w, height: h },
+    bleed: { x: 0, y: 0, width: w, height: h },
+    trim: { x: 0, y: 0, width: w, height: h },
+    art: { x: 0, y: 0, width: w, height: h },
+  },
+  pdfCropBox: crop(w, h),
+  tabOrder: null,
   ...over,
 });
 const portrait = (n: number) => Array.from({ length: n }, (_, i) => page(i + 1, i));
@@ -236,12 +278,23 @@ const engine = (pages: unknown[] = FIVE, over: Partial<FakeDocumentSpec> = {}): 
 });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
-const open: Step = { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'a', bytes: { $bytes: '' } }] };
+const open: Step = {
+  op: 'call',
+  target: 'documents',
+  method: 'open',
+  args: [{ kind: 'bytes', id: 'a', bytes: { $bytes: '' } }],
+};
 const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };
 const st = (method: string, ...args: unknown[]): Step => stageStep('stage', 'a', method, args);
-const lensCall = (lens: string, method: string, ...args: unknown[]): Step => stageStep(lens, 'a', method, args);
+const lensCall = (lens: string, method: string, ...args: unknown[]): Step =>
+  stageStep(lens, 'a', method, args);
 /** A call by its v3 name, bypassing the v2 rename table. */
-const v3 = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'stage', doc: 'a' }, method, args });
+const v3 = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'stage', doc: 'a' },
+  method,
+  args,
+});
 const callRef = (ref: number): Step => ({ op: 'call', target: { ref } });
 const vp = (width: number, height: number): Step => st('setViewport', { width, height });
 const advance = (ms: number): Step => ({ op: 'advance', ms });
@@ -250,7 +303,9 @@ const boot = [start, open, vp(1000, 700)];
 const fnSpec = (name: string, answer: AnswerSpec = {}) => ({ $fn: name, ...answer });
 
 type StageConfigJson = Record<string, unknown>;
-const stage = (config: StageConfigJson = {}) => [{ factory: 'stage', config: { viewUnitsPerPoint: 1, ...config } }];
+const stage = (config: StageConfigJson = {}) => [
+  { factory: 'stage', config: { viewUnitsPerPoint: 1, ...config } },
+];
 const SNAP = ['stage::a'];
 const NAN = { $number: 'NaN' };
 
@@ -362,7 +417,7 @@ const placementCases: ScenarioCase[] = [
   {
     name: 'a-document-with-no-pages',
     covers:
-      'With no pages placement never starts from setViewport; an explicit placeInitial publishes PLACED over an empty scene, and every verb and selector is a harmless no-op on it.',
+      'Empty continuous-flow selectors and verbs succeed. Explicit placement followed by paged flow exposes the shipping empty-item camera refusal at steps 36-43 (scene.ts itemRect), rather than a harmless no-op.',
     plugins: stage(),
     engine: engine([]),
     steps: [
@@ -424,7 +479,11 @@ const placementCases: ScenarioCase[] = [
     steps: [
       start,
       open,
-      st('provideInitialView', 1, fnSpec('low', { returns: view({ cursor: 1, anchor: { pageIndex: 1, fx: 0, fy: 0 } }) })),
+      st(
+        'provideInitialView',
+        1,
+        fnSpec('low', { returns: view({ cursor: 1, anchor: { pageIndex: 1, fx: 0, fy: 0 } }) }),
+      ),
       st('provideInitialView', 5, fnSpec('high-null', { returns: null })),
       st('provideInitialView', 3, fnSpec('mid-a', { returns: view({ layout: 'horizontal' }) })),
       st('provideInitialView', 3, fnSpec('mid-b', { returns: view() })),
@@ -441,23 +500,44 @@ const placementCases: ScenarioCase[] = [
     covers: 'When every provider answers null placeInitial resets to page 0.',
     plugins: stage(),
     engine: engine(),
-    steps: [start, open, st('provideInitialView', 2, fnSpec('none', { returns: null })), vp(1000, 700), st('currentPage')],
+    steps: [
+      start,
+      open,
+      st('provideInitialView', 2, fnSpec('none', { returns: null })),
+      vp(1000, 700),
+      st('currentPage'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'restored-view-without-a-cursor',
-    covers: 'applyViewState with no cursor lands on page 0 (`view.cursor ?? 0`) and restores the anchor there.',
+    covers:
+      'applyViewState with no cursor lands on page 0 (`view.cursor ?? 0`) and restores the anchor there.',
     plugins: stage(),
     engine: engine(),
-    steps: [...boot, st('applyViewState', { ...view({ spread: 'odd' }), cursor: { $undefined: true } }), st('currentPage'), st('camera')],
+    steps: [
+      ...boot,
+      st('applyViewState', { ...view({ spread: 'odd' }), cursor: { $undefined: true } }),
+      st('currentPage'),
+      st('camera'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'selectors',
-    covers: 'Every read after the default placement, on the default web settings (96/72 view units per point).',
+    covers:
+      'Every read after the default placement, on the default web settings (96/72 view units per point).',
     plugins: [{ factory: 'stage' }],
     engine: engine(MIXED),
-    steps: [start, open, vp(1000, 700), ...readAll(), st('matches', 'compact'), st('matches', 'nope'), st('visiblePages')],
+    steps: [
+      start,
+      open,
+      vp(1000, 700),
+      ...readAll(),
+      st('matches', 'compact'),
+      st('matches', 'nope'),
+      st('visiblePages'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -528,7 +608,12 @@ const settingsCases: ScenarioCase[] = [
       st('setColumns', 3),
       st('setFlow', 'paged'),
       st('setFlow', 'continuous'),
-      st('update', { layout: 'grid', bounded: false, zoom: { mode: 'fit-page' }, padding: { $undefined: true } }),
+      st('update', {
+        layout: 'grid',
+        bounded: false,
+        zoom: { mode: 'fit-page' },
+        padding: { $undefined: true },
+      }),
       st('update', {}),
       st('update', { layout: 'grid' }),
       st('settings'),
@@ -576,7 +661,19 @@ const settingsCases: ScenarioCase[] = [
       'Under fit-all the subject is the whole scene: resize, refit and scene changes re-place it (centered even when unbounded), and next/prev always step by item.',
     plugins: stage({ scrollBehavior: 'instant', zoom: { mode: 'fit-all' } }),
     engine: engine(),
-    steps: [...boot, st('camera'), st('next'), st('next'), st('prev'), vp(1200, 900), st('setBounded', false), st('setGap', 50), st('refit'), st('goToPage', 4), st('currentPage')],
+    steps: [
+      ...boot,
+      st('camera'),
+      st('next'),
+      st('next'),
+      st('prev'),
+      vp(1200, 900),
+      st('setBounded', false),
+      st('setGap', 50),
+      st('refit'),
+      st('goToPage', 4),
+      st('currentPage'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -604,7 +701,14 @@ const settingsCases: ScenarioCase[] = [
     name: 'wrapped-grid',
     covers:
       'A grid with auto columns wraps to the padded viewport line at the effective zoom: a fixed level keys it exactly, resizes re-wrap and keep the page, zoomAround re-pins the focal point when the scene re-wraps, and fit-modes converge through stabilized.',
-    plugins: stage({ layout: 'grid', columns: 'auto', zoom: { level: 0.25 }, gap: { px: 8 }, pageFrame: { top: 0, right: 0, bottom: 18, left: 0 }, scrollBehavior: 'instant' }),
+    plugins: stage({
+      layout: 'grid',
+      columns: 'auto',
+      zoom: { level: 0.25 },
+      gap: { px: 8 },
+      pageFrame: { top: 0, right: 0, bottom: 18, left: 0 },
+      scrollBehavior: 'instant',
+    }),
     engine: engine(portrait(12)),
     steps: [
       ...boot,
@@ -629,10 +733,26 @@ const settingsCases: ScenarioCase[] = [
   },
   {
     name: 'screen-px-settings-under-a-fit-mode',
-    covers: 'A {px} gap and a pageFrame under a fit mode convert at the camera zoom and quantize the scene key; the reveal box includes the chrome bands.',
-    plugins: stage({ gap: { px: 12 }, pageFrame: { top: 20, right: 0, bottom: 30, left: 0 }, scrollBehavior: 'instant' }),
+    covers:
+      'A {px} gap and a pageFrame under a fit mode convert at the camera zoom and quantize the scene key; the reveal box includes the chrome bands.',
+    plugins: stage({
+      gap: { px: 12 },
+      pageFrame: { top: 20, right: 0, bottom: 30, left: 0 },
+      scrollBehavior: 'instant',
+    }),
     engine: engine(),
-    steps: [...boot, st('visiblePages'), st('reveal', 3), st('fitWidth'), st('reveal', 0), st('setGap', { px: 0 }), st('reveal', 4), st('setGap', { px: 12 }), st('zoomIn'), st('visiblePages')],
+    steps: [
+      ...boot,
+      st('visiblePages'),
+      st('reveal', 3),
+      st('fitWidth'),
+      st('reveal', 0),
+      st('setGap', { px: 0 }),
+      st('reveal', 4),
+      st('setGap', { px: 12 }),
+      st('zoomIn'),
+      st('visiblePages'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -693,10 +813,28 @@ const settingsCases: ScenarioCase[] = [
   },
   {
     name: 'rtl-horizontal',
-    covers: 'Horizontal RTL: items advance leftward, start/start lands top-right, spreads bind on the right, and the focal and anchor points are logical.',
-    plugins: stage({ layout: 'horizontal', direction: 'rtl', scrollBehavior: 'instant', spread: 'odd' }),
+    covers:
+      'Horizontal RTL: items advance leftward, start/start lands top-right, spreads bind on the right, and the focal and anchor points are logical.',
+    plugins: stage({
+      layout: 'horizontal',
+      direction: 'rtl',
+      scrollBehavior: 'instant',
+      spread: 'odd',
+    }),
     engine: engine(FIVE),
-    steps: [...boot, st('camera'), st('next'), st('camera'), st('currentPage'), st('zoomIn'), vp(800, 700), st('setAnchorAlign', { x: 'end', y: 'center' }), vp(900, 700), st('viewpoint'), st('visiblePages')],
+    steps: [
+      ...boot,
+      st('camera'),
+      st('next'),
+      st('camera'),
+      st('currentPage'),
+      st('zoomIn'),
+      vp(800, 700),
+      st('setAnchorAlign', { x: 'end', y: 'center' }),
+      vp(900, 700),
+      st('viewpoint'),
+      st('visiblePages'),
+    ],
     snapshot: SNAP,
   },
 ];
@@ -732,7 +870,8 @@ const navigationCases: ScenarioCase[] = [
   },
   {
     name: 'viewpoint-round-trip',
-    covers: 'viewpoint() captures the anchor at anchorAlign and the zoom intent; goToPage with a viewpoint restores it instead of placing fresh.',
+    covers:
+      'viewpoint() captures the anchor at anchorAlign and the zoom intent; goToPage with a viewpoint restores it instead of placing fresh.',
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
     steps: [
@@ -742,9 +881,14 @@ const navigationCases: ScenarioCase[] = [
       st('panBy', -40, -120),
       st('viewpoint'),
       st('goToPage', 0),
-      st('goToPage', 2, { viewpoint: { anchor: { pageIndex: 2, fx: 0.4, fy: 0.3 }, zoom: { level: 2.5 } } }),
+      st('goToPage', 2, {
+        viewpoint: { anchor: { pageIndex: 2, fx: 0.4, fy: 0.3 }, zoom: { level: 2.5 } },
+      }),
       st('camera'),
-      st('goToPage', 1, { viewpoint: { anchor: { pageIndex: 1, fx: 0.1, fy: 0.9 }, zoom: { mode: 'fit-width' } }, behavior: 'smooth' }),
+      st('goToPage', 1, {
+        viewpoint: { anchor: { pageIndex: 1, fx: 0.1, fy: 0.9 }, zoom: { mode: 'fit-width' } },
+        behavior: 'smooth',
+      }),
     ],
     snapshot: SNAP,
   },
@@ -754,7 +898,17 @@ const navigationCases: ScenarioCase[] = [
       'A bare reveal is minimal movement: a visible page leaves the camera alone, an off-screen one scrolls just enough (outer box, smooth or instant without frames), and the cursor never moves.',
     plugins: stage({ scrollBehavior: 'smooth' }),
     engine: engine(),
-    steps: [...boot, st('reveal', 0), st('reveal', 3), st('currentPage'), st('reveal', 3), st('reveal', 0, { behavior: 'instant' }), st('reveal', 7), st('reveal', -2), st('camera')],
+    steps: [
+      ...boot,
+      st('reveal', 0),
+      st('reveal', 3),
+      st('currentPage'),
+      st('reveal', 3),
+      st('reveal', 0, { behavior: 'instant' }),
+      st('reveal', 7),
+      st('reveal', -2),
+      st('camera'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -769,9 +923,21 @@ const navigationCases: ScenarioCase[] = [
       st('camera'),
       st('zoomMode'),
       st('reveal', 2, { rect: { x: 50, y: 60, width: 200, height: 100 }, zoom: 'fit' }),
-      st('reveal', 3, { rect: { x: 10, y: 10, width: 100, height: 0 }, zoom: 'fit-width', anchor: { y: 'start' } }),
-      st('reveal', 0, { rect: { x: 0, y: 300, width: 0, height: 200 }, zoom: 'fit-height', anchor: { x: 'start' } }),
-      st('reveal', 1, { rect: { x: 100, y: 100, width: 0, height: 0 }, zoom: { level: 1.5 }, anchor: { x: 'start', y: 'start' } }),
+      st('reveal', 3, {
+        rect: { x: 10, y: 10, width: 100, height: 0 },
+        zoom: 'fit-width',
+        anchor: { y: 'start' },
+      }),
+      st('reveal', 0, {
+        rect: { x: 0, y: 300, width: 0, height: 200 },
+        zoom: 'fit-height',
+        anchor: { x: 'start' },
+      }),
+      st('reveal', 1, {
+        rect: { x: 100, y: 100, width: 0, height: 0 },
+        zoom: { level: 1.5 },
+        anchor: { x: 'start', y: 'start' },
+      }),
       st('reveal', 1, { rect: { x: 100, y: 100, width: 0, height: 0 }, zoom: 'fit' }),
       st('reveal', 1, { rect: null, zoom: 'keep' }),
       st('reveal', 1, { rect: null, zoom: 'keep', anchor: {} }),
@@ -792,25 +958,49 @@ const navigationCases: ScenarioCase[] = [
     steps: [
       ...boot,
       st('goToPage', 1),
-      st('reveal', 1, { rect: { x: 100, y: 100, width: 50, height: 50 }, anchor: { x: 'keep', y: 'keep' } }),
+      st('reveal', 1, {
+        rect: { x: 100, y: 100, width: 50, height: 50 },
+        anchor: { x: 'keep', y: 'keep' },
+      }),
       st('reveal', 1, { rect: { x: 100, y: 100, width: 50, height: 50 }, anchor: {} }),
       st('reveal', 1, { rect: { x: 100, y: 700, width: 50, height: 50 }, anchor: {} }),
       st('reveal', 0, { rect: { x: 100, y: 100, width: 50, height: 50 }, anchor: {} }),
       st('reveal', 2, { rect: { x: 0, y: 0, width: 600, height: 800 }, anchor: {} }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: 'end', y: 'end' } }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: 'center', y: 0.35 } }),
+      st('reveal', 2, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        anchor: { x: 'end', y: 'end' },
+      }),
+      st('reveal', 2, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        anchor: { x: 'center', y: 0.35 },
+      }),
       st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: -3, y: 7 } }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 50, height: 50 }, zoom: { level: 2 } }),
-      st('reveal', 3, { rect: { x: 100, y: 200, width: 50, height: 50 }, zoom: { level: 2 }, anchor: { x: 'start' } }),
+      st('reveal', 3, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        zoom: { level: 2 },
+        anchor: { x: 'start' },
+      }),
     ],
     snapshot: SNAP,
   },
   {
     name: 'reveal-in-a-wrapped-grid',
-    covers: 'A positioned reveal whose zoom re-wraps a wrapped grid re-places against the new scene (instant: stabilized; smooth without frames: one recompute).',
-    plugins: stage({ layout: 'grid', columns: 'auto', scrollBehavior: 'instant', zoom: { level: 0.3 } }),
+    covers:
+      'A positioned reveal whose zoom re-wraps a wrapped grid re-places against the new scene (instant: stabilized; smooth without frames: one recompute).',
+    plugins: stage({
+      layout: 'grid',
+      columns: 'auto',
+      scrollBehavior: 'instant',
+      zoom: { level: 0.3 },
+    }),
     engine: engine(portrait(10)),
-    steps: [...boot, st('reveal', 7, { zoom: { level: 0.6 } }), st('reveal', 2, { zoom: { level: 0.2 }, behavior: 'smooth' }), st('reveal', 9, { zoom: 'fit' })],
+    steps: [
+      ...boot,
+      st('reveal', 7, { zoom: { level: 0.6 } }),
+      st('reveal', 2, { zoom: { level: 0.2 }, behavior: 'smooth' }),
+      st('reveal', 9, { zoom: 'fit' }),
+    ],
     snapshot: SNAP,
   },
 ];
@@ -847,23 +1037,53 @@ const manipulationCases: ScenarioCase[] = [
       'On a grid a NaN camera coordinate leaves the nearest-item lookup without an item: setCamera writes the camera, then throws a TypeError syncing the cursor, and every later anchor read throws the same way.',
     plugins: stage({ layout: 'grid', columns: 2, scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('setCamera', { x: NAN, y: 0, zoom: 1 }), st('camera'), st('currentPage'), st('viewpoint'), vp(900, 700), st('setCamera', { x: 0, y: 0, zoom: 1 }), st('currentPage')],
+    steps: [
+      ...boot,
+      st('setCamera', { x: NAN, y: 0, zoom: 1 }),
+      st('camera'),
+      st('currentPage'),
+      st('viewpoint'),
+      vp(900, 700),
+      st('setCamera', { x: 0, y: 0, zoom: 1 }),
+      st('currentPage'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'grid-nan-zoom-factor',
-    covers: 'On a grid zoomBy(NaN) and zoomAround at a NaN point throw a TypeError reading the focal point; panBy(NaN) throws syncing the cursor.',
+    covers:
+      'On a grid zoomBy(NaN) and zoomAround at a NaN point throw a TypeError reading the focal point; panBy(NaN) throws syncing the cursor.',
     plugins: stage({ layout: 'grid', columns: 2, scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('zoomBy', NAN), st('camera'), st('zoomAround', { x: NAN, y: 0 }, 2), st('camera'), st('panBy', NAN, 0), st('camera'), st('currentPage')],
+    steps: [
+      ...boot,
+      st('zoomBy', NAN),
+      st('camera'),
+      st('zoomAround', { x: NAN, y: 0 }, 2),
+      st('camera'),
+      st('panBy', NAN, 0),
+      st('camera'),
+      st('currentPage'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'grid-fractional-columns',
-    covers: 'A fractional grid column count makes the nearest-item index fractional past the last column: unbounded, a camera out there throws a TypeError syncing the cursor and reading the viewpoint, and so does a later settings write, which captures its anchor first.',
+    covers:
+      'A fractional grid column count makes the nearest-item index fractional past the last column: unbounded, a camera out there throws a TypeError syncing the cursor and reading the viewpoint, and so does a later settings write, which captures its anchor first.',
     plugins: stage({ layout: 'grid', columns: 2.5, scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('setBounded', false), st('setCamera', { x: 1500, y: 0, zoom: 1 }), st('camera'), st('currentPage'), st('viewpoint'), st('setColumns', 2), st('currentPage'), st('viewpoint')],
+    steps: [
+      ...boot,
+      st('setBounded', false),
+      st('setCamera', { x: 1500, y: 0, zoom: 1 }),
+      st('camera'),
+      st('currentPage'),
+      st('viewpoint'),
+      st('setColumns', 2),
+      st('currentPage'),
+      st('viewpoint'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -961,13 +1181,20 @@ const mutationEdgeCases: ScenarioCase[] = [
       'A rung exactly 1.1 times the one below it is deduped: fit-width 1100/1000 over an automatic of 1 leaves two rungs, so the tap from 1 climbs to 2.5.',
     plugins: stage({ scrollBehavior: 'instant', responsive: [] }),
     engine: engine([page(1, 0, 1000, 800), page(2, 1, 1000, 800)]),
-    steps: [start, open, vp(1148, 700), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel')],
+    steps: [
+      start,
+      open,
+      vp(1148, 700),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+    ],
     ...UNSNAPSHOTTED,
   },
   {
     name: 'double-tap-at-the-rung-edges',
     covers:
-      'The ladder\'s nearness test is strict at both ends: a zoom of exactly the rung times 1.1, or the rung over 1.1, is off the ladder and resets to the base rung.',
+      "The ladder's nearness test is strict at both ends: a zoom of exactly the rung times 1.1, or the rung over 1.1, is off the ladder and resets to the base rung.",
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine([page(1, 0, 1200, 800), page(2, 1, 1200, 800)]),
     steps: [
@@ -985,7 +1212,8 @@ const mutationEdgeCases: ScenarioCase[] = [
   },
   {
     name: 'scroller-memo-per-field',
-    covers: 'The scroller memo answers the new metrics when any one of its six numbers moves alone: top, height, width, client height and client width.',
+    covers:
+      'The scroller memo answers the new metrics when any one of its six numbers moves alone: top, height, width, client height and client width.',
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
     steps: [
@@ -1017,18 +1245,34 @@ const mutationEdgeCases: ScenarioCase[] = [
   },
   {
     name: 'px-gap-follows-the-zoom',
-    covers: 'With a {px} gap and no page frame, a zoom write alone re-keys the scene through the quantized gap.',
+    covers:
+      'With a {px} gap and no page frame, a zoom write alone re-keys the scene through the quantized gap.',
     plugins: stage({ scrollBehavior: 'instant', gap: { px: 40 } }),
     engine: engine(),
-    steps: [...boot, st('visiblePages'), st('zoomOut'), st('visiblePages'), st('zoomOut'), st('pageRect', 2)],
+    steps: [
+      ...boot,
+      st('visiblePages'),
+      st('zoomOut'),
+      st('visiblePages'),
+      st('zoomOut'),
+      st('pageRect', 2),
+    ],
     ...UNSNAPSHOTTED,
   },
   {
     name: 'paged-slice-rekeys',
-    covers: 'In paged flow the next slice can land the camera exactly where it was; the scene key still moves, so the visible pages follow.',
+    covers:
+      'In paged flow the next slice can land the camera exactly where it was; the scene key still moves, so the visible pages follow.',
     plugins: stage({ flow: 'paged', scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('visiblePages'), st('camera'), st('next'), st('camera'), st('visiblePages')],
+    steps: [
+      ...boot,
+      st('visiblePages'),
+      st('camera'),
+      st('next'),
+      st('camera'),
+      st('visiblePages'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1039,7 +1283,12 @@ const mutationEdgeCases: ScenarioCase[] = [
     engine: engine(Array.from({ length: 7 }, (_, i) => page(i + 1, i, 400, 300))),
     steps: [
       ...boot,
-      ...[1.1666, 1.1674, 1.18, 0.5, 1.2].flatMap((level) => [st('zoomTo', { level }), st('goToPage', 0), st('next'), st('currentPage')]),
+      ...[1.1666, 1.1674, 1.18, 0.5, 1.2].flatMap((level) => [
+        st('zoomTo', { level }),
+        st('goToPage', 0),
+        st('next'),
+        st('currentPage'),
+      ]),
     ],
     ...UNSNAPSHOTTED,
   },
@@ -1050,7 +1299,12 @@ const mutationEdgeCases: ScenarioCase[] = [
     engine: engine(Array.from({ length: 7 }, (_, i) => page(i + 1, i, 300, 800))),
     steps: [
       ...boot,
-      ...[0.815, 0.816, 0.83, 0.3, 0.9].flatMap((level) => [st('zoomTo', { level }), st('goToPage', 0), st('next'), st('currentPage')]),
+      ...[0.815, 0.816, 0.83, 0.3, 0.9].flatMap((level) => [
+        st('zoomTo', { level }),
+        st('goToPage', 0),
+        st('next'),
+        st('currentPage'),
+      ]),
     ],
     ...UNSNAPSHOTTED,
   },
@@ -1075,9 +1329,18 @@ const mutationEdgeCases: ScenarioCase[] = [
       st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 1000 }, anchor: { x: 'keep' } }),
       st('reveal', 2, { rect: { x: 500, y: 300, width: 40, height: 40 }, anchor: {} }),
       st('reveal', 2, { rect: { x: 10, y: 300, width: 40, height: 40 }, anchor: {} }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: 'start', y: 'end' } }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: 'end', y: 'start' } }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: 0.25, y: 0.75 } }),
+      st('reveal', 2, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        anchor: { x: 'start', y: 'end' },
+      }),
+      st('reveal', 2, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        anchor: { x: 'end', y: 'start' },
+      }),
+      st('reveal', 2, {
+        rect: { x: 100, y: 200, width: 50, height: 50 },
+        anchor: { x: 0.25, y: 0.75 },
+      }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 50, height: 500 }, zoom: 'fit' }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 400, height: 50 }, zoom: 'fit' }),
     ],
@@ -1085,34 +1348,83 @@ const mutationEdgeCases: ScenarioCase[] = [
   },
   {
     name: 'bare-reveal-outer-box',
-    covers: 'A bare reveal of pages smaller than the viewport scrolls the outer box, pageFrame bands on all four sides, horizontally and vertically.',
-    plugins: stage({ scrollBehavior: 'instant', layout: 'horizontal', zoom: { level: 1 }, pageFrame: { top: 10, right: 20, bottom: 30, left: 40 } }),
+    covers:
+      'A bare reveal of pages smaller than the viewport scrolls the outer box, pageFrame bands on all four sides, horizontally and vertically.',
+    plugins: stage({
+      scrollBehavior: 'instant',
+      layout: 'horizontal',
+      zoom: { level: 1 },
+      pageFrame: { top: 10, right: 20, bottom: 30, left: 40 },
+    }),
     engine: engine(Array.from({ length: 8 }, (_, i) => page(i + 1, i, 300, 200))),
-    steps: [...boot, st('reveal', 6), st('camera'), st('reveal', 0), st('camera'), st('setLayout', 'vertical'), st('reveal', 5), st('camera'), st('reveal', 1), st('camera')],
+    steps: [
+      ...boot,
+      st('reveal', 6),
+      st('camera'),
+      st('reveal', 0),
+      st('camera'),
+      st('setLayout', 'vertical'),
+      st('reveal', 5),
+      st('camera'),
+      st('reveal', 1),
+      st('camera'),
+    ],
     ...UNSNAPSHOTTED,
   },
   {
     name: 'focal-points-in-ltr',
-    covers: 'Named zoomAlign stops are physical in LTR: end holds the right padded edge, start the left.',
+    covers:
+      'Named zoomAlign stops are physical in LTR: end holds the right padded edge, start the left.',
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('zoomTo', { level: 3 }), st('setZoomAlign', { x: 'end', y: 'start' }), st('zoomIn'), st('camera'), st('setZoomAlign', { x: 'start', y: 'end' }), st('zoomOut'), st('camera')],
+    steps: [
+      ...boot,
+      st('zoomTo', { level: 3 }),
+      st('setZoomAlign', { x: 'end', y: 'start' }),
+      st('zoomIn'),
+      st('camera'),
+      st('setZoomAlign', { x: 'start', y: 'end' }),
+      st('zoomOut'),
+      st('camera'),
+    ],
     ...UNSNAPSHOTTED,
   },
   {
     name: 'double-tap-on-a-phone',
-    covers: 'On a narrow box automatic is fit-width: the ladder dedupes to two rungs, and the top rung is within 1.1 of nothing else.',
+    covers:
+      'On a narrow box automatic is fit-width: the ladder dedupes to two rungs, and the top rung is within 1.1 of nothing else.',
     plugins: stage({ scrollBehavior: 'instant', responsive: [] }),
     engine: engine(),
-    steps: [start, open, vp(348, 700), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel')],
+    steps: [
+      start,
+      open,
+      vp(348, 700),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+    ],
     ...UNSNAPSHOTTED,
   },
   {
     name: 'a-caught-extreme-stretch',
-    covers: 'Catching a stretch near the rubber asymptote caps the overshoot just under the viewport dimension so the inverse stays finite.',
+    covers:
+      'Catching a stretch near the rubber asymptote caps the overshoot just under the viewport dimension so the inverse stays finite.',
     plugins: stage({ scrollBehavior: 'instant', zoom: { level: 2 } }),
     engine: engine(),
-    steps: [...boot, st('beginGesture', { elastic: true }), st('panBy', 100000, 100000), st('camera'), st('zoomAround', { x: 500, y: 350 }, 1.1), st('panBy', 0, 0), st('camera'), st('endGesture')],
+    steps: [
+      ...boot,
+      st('beginGesture', { elastic: true }),
+      st('panBy', 100000, 100000),
+      st('camera'),
+      st('zoomAround', { x: 500, y: 350 }, 1.1),
+      st('panBy', 0, 0),
+      st('camera'),
+      st('endGesture'),
+    ],
     ...UNSNAPSHOTTED,
   },
 ];
@@ -1126,7 +1438,18 @@ const responsiveCases: ScenarioCase[] = [
       'The default rule gives a compact box (width at most 600) a padding of 4 and names it; crossing back releases it to the base; activeRules only republishes when the names change.',
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [start, open, vp(500, 700), st('padding'), st('matches', 'compact'), vp(550, 700), vp(1000, 700), st('padding'), st('activeRules'), vp(400, 400)],
+    steps: [
+      start,
+      open,
+      vp(500, 700),
+      st('padding'),
+      st('matches', 'compact'),
+      vp(550, 700),
+      vp(1000, 700),
+      st('padding'),
+      st('activeRules'),
+      vp(400, 400),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1138,7 +1461,12 @@ const responsiveCases: ScenarioCase[] = [
       responsive: [
         { name: 'narrow', when: { maxWidth: 700 }, settings: { padding: 2, spread: 'odd' } },
         { name: 'portrait', when: { orientation: 'portrait' } },
-        { when: fnSpec('tall?', { seq: [{ returns: false }, { returns: true }, { returns: 1 }, { returns: 0 }] }), settings: { gap: 4 } },
+        {
+          when: fnSpec('tall?', {
+            seq: [{ returns: false }, { returns: true }, { returns: 1 }, { returns: 0 }],
+          }),
+          settings: { gap: 4 },
+        },
       ],
     }),
     engine: engine(),
@@ -1171,16 +1499,31 @@ const responsiveCases: ScenarioCase[] = [
   },
   {
     name: 'a-rule-flips-the-flow',
-    covers: 'A rule that changes flow at a viewport crossing escalates the resize to a re-placement on the cursor page; one that changes a scene setting rebuilds.',
+    covers:
+      'A rule that changes flow at a viewport crossing escalates the resize to a re-placement on the cursor page; one that changes a scene setting rebuilds.',
     plugins: stage({
       scrollBehavior: 'instant',
       responsive: [
         { name: 'phone', when: { maxWidth: 500 }, settings: { flow: 'paged' } },
-        { name: 'landscape', when: { orientation: 'landscape', minWidth: 1100 }, settings: { spread: 'odd' } },
+        {
+          name: 'landscape',
+          when: { orientation: 'landscape', minWidth: 1100 },
+          settings: { spread: 'odd' },
+        },
       ],
     }),
     engine: engine(),
-    steps: [...boot, st('goToPage', 3), vp(400, 700), st('flow'), st('currentPage'), vp(1000, 700), st('flow'), vp(1200, 700), st('spread')],
+    steps: [
+      ...boot,
+      st('goToPage', 3),
+      vp(400, 700),
+      st('flow'),
+      st('currentPage'),
+      vp(1000, 700),
+      st('flow'),
+      vp(1200, 700),
+      st('spread'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1194,7 +1537,15 @@ const responsiveCases: ScenarioCase[] = [
       responsive: [{ name: 'narrow', when: { maxWidth: 700 }, settings: { gap: { px: 1.4 } } }],
     }),
     engine: engine(),
-    steps: [...boot, st('scrollMetrics'), vp(650, 700), st('gap'), st('scrollMetrics'), vp(1000, 700), st('scrollMetrics')],
+    steps: [
+      ...boot,
+      st('scrollMetrics'),
+      vp(650, 700),
+      st('gap'),
+      st('scrollMetrics'),
+      vp(1000, 700),
+      st('scrollMetrics'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1216,7 +1567,14 @@ const edgeCases: ScenarioCase[] = [
       'An axis whose content fits the viewport has no rubber: an elastic drag moves only the travelling axis, and a fling discards the fitting axis velocity (without frames it snaps into bounds).',
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
-    steps: [...boot, st('beginGesture', { elastic: true }), st('panBy', 300, 400), st('camera'), st('endGesture'), st('camera')],
+    steps: [
+      ...boot,
+      st('beginGesture', { elastic: true }),
+      st('panBy', 300, 400),
+      st('camera'),
+      st('endGesture'),
+      st('camera'),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1242,10 +1600,20 @@ const edgeCases: ScenarioCase[] = [
 const lensCases: ScenarioCase[] = [
   {
     name: 'two-lenses',
-    covers: 'stagePlugin({id, token}) registers an independent lens: its own slice, camera and settings, and lensId reports its id.',
+    covers:
+      'stagePlugin({id, token}) registers an independent lens: its own slice, camera and settings, and lensId reports its id.',
     plugins: [
       { factory: 'stage', config: { viewUnitsPerPoint: 1, scrollBehavior: 'instant' } },
-      { factory: 'stage', config: { lens: 'stage-thumbs', layout: 'grid', columns: 'auto', zoom: { level: 0.2 }, gap: { px: 8 } } },
+      {
+        factory: 'stage',
+        config: {
+          lens: 'stage-thumbs',
+          layout: 'grid',
+          columns: 'auto',
+          zoom: { level: 0.2 },
+          gap: { px: 8 },
+        },
+      },
     ],
     engine: engine(),
     steps: [
@@ -1294,15 +1662,38 @@ const motionCases: ScenarioCase[] = [
       'A smooth goToPage tweens x, y and zoom on easeOutCubic over 240 ms, clamping each frame to the target bounds; cameraInMotion reads true until the last frame; the cursor is set up front.',
     plugins: framed(),
     engine: engine(),
-    steps: [...boot, st('goToPage', 3), st('cameraInMotion'), st('currentPage'), advance(16), advance(48), advance(96), advance(96), st('cameraInMotion'), advance(32)],
+    steps: [
+      ...boot,
+      st('goToPage', 3),
+      st('cameraInMotion'),
+      st('currentPage'),
+      advance(16),
+      advance(48),
+      advance(96),
+      advance(96),
+      st('cameraInMotion'),
+      advance(32),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'caught-tween',
-    covers: 'Every verb cancels a running tween first: a setCamera mid-flight stops it where it is and no stale frame lands later.',
+    covers:
+      'Every verb cancels a running tween first: a setCamera mid-flight stops it where it is and no stale frame lands later.',
     plugins: framed(),
     engine: engine(),
-    steps: [...boot, st('next'), advance(48), st('setCamera', { x: 0, y: 500, zoom: 1 }), st('cameraInMotion'), advance(300), st('next'), advance(32), vp(900, 700), advance(300)],
+    steps: [
+      ...boot,
+      st('next'),
+      advance(48),
+      st('setCamera', { x: 0, y: 500, zoom: 1 }),
+      st('cameraInMotion'),
+      advance(300),
+      st('next'),
+      advance(32),
+      vp(900, 700),
+      advance(300),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1332,7 +1723,18 @@ const motionCases: ScenarioCase[] = [
       'doubleTapZoom tweens the zoom geometrically around the tapped point, holding it fixed each frame, syncs the cursor on arrival; a tap mid-tween climbs from where the intent says it was going.',
     plugins: framed(),
     engine: engine([page(1, 0, 1200, 800), page(2, 1, 1200, 800)]),
-    steps: [...boot, st('doubleTapZoom', { x: 500, y: 300 }), advance(64), advance(64), advance(160), st('zoomLevel'), st('doubleTapZoom', { x: 200, y: 600 }), advance(32), st('doubleTapZoom', { x: 200, y: 600 }), advance(300)],
+    steps: [
+      ...boot,
+      st('doubleTapZoom', { x: 500, y: 300 }),
+      advance(64),
+      advance(64),
+      advance(160),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 200, y: 600 }),
+      advance(32),
+      st('doubleTapZoom', { x: 200, y: 600 }),
+      advance(300),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1393,10 +1795,22 @@ const motionCases: ScenarioCase[] = [
   },
   {
     name: 'gesture-holds-the-rest-countdown',
-    covers: 'A zoom inside a gesture un-rests at once and cancels the countdown; endGesture commits the level and arms it.',
+    covers:
+      'A zoom inside a gesture un-rests at once and cancels the countdown; endGesture commits the level and arms it.',
     plugins: framed(),
     engine: engine(),
-    steps: [...boot, st('zoomIn'), advance(32), st('beginGesture'), st('zoomAround', { x: 10, y: 10 }, 1.3), advance(300), st('zoomAround', { x: 10, y: 10 }, 1.1), st('endGesture'), advance(100), advance(100)],
+    steps: [
+      ...boot,
+      st('zoomIn'),
+      advance(32),
+      st('beginGesture'),
+      st('zoomAround', { x: 10, y: 10 }, 1.3),
+      advance(300),
+      st('zoomAround', { x: 10, y: 10 }, 1.1),
+      st('endGesture'),
+      advance(100),
+      advance(100),
+    ],
     snapshot: SNAP,
   },
   {
@@ -1404,44 +1818,99 @@ const motionCases: ScenarioCase[] = [
     covers: 'A fling over a page that fits vertically but travels horizontally glides only on x.',
     plugins: framed({ zoom: { level: 1 } }),
     engine: engine([page(1, 0, 2400, 300)]),
-    steps: [...boot, st('fling', -2000, 3000), advance(160), st('camera'), advance(2000), st('cameraInMotion')],
+    steps: [
+      ...boot,
+      st('fling', -2000, 3000),
+      advance(160),
+      st('camera'),
+      advance(2000),
+      st('cameraInMotion'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'zoomed-fling',
-    covers: 'At zoom 2 the integrator works in screen px: positions scale by the zoom once, the edge conversion compares in px; a release of exactly 20 px/s still glides.',
+    covers:
+      'At zoom 2 the integrator works in screen px: positions scale by the zoom once, the edge conversion compares in px; a release of exactly 20 px/s still glides.',
     plugins: framed({ zoom: { level: 2 } }),
     engine: engine(),
-    steps: [...boot, st('fling', 1500, -2500), advance(96), st('camera'), advance(2000), st('camera'), st('fling', 0, 20), st('cameraInMotion'), advance(100)],
+    steps: [
+      ...boot,
+      st('fling', 1500, -2500),
+      advance(96),
+      st('camera'),
+      advance(2000),
+      st('camera'),
+      st('fling', 0, 20),
+      st('cameraInMotion'),
+      advance(100),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'a-caught-stretch-at-the-asymptote',
-    covers: 'Catching a spring that starts from a stretch at the rubber asymptote caps the overshoot one px under the viewport dimension, so the inverse stays finite.',
+    covers:
+      'Catching a spring that starts from a stretch at the rubber asymptote caps the overshoot one px under the viewport dimension, so the inverse stays finite.',
     plugins: framed({ zoom: { level: 2 } }),
     engine: engine(),
-    steps: [...boot, st('beginGesture', { elastic: true }), st('panBy', 0, 10000000), st('camera'), st('endGesture'), st('beginGesture', { elastic: true }), st('panBy', 0, 0), st('camera'), st('endGesture'), advance(1000)],
+    steps: [
+      ...boot,
+      st('beginGesture', { elastic: true }),
+      st('panBy', 0, 10000000),
+      st('camera'),
+      st('endGesture'),
+      st('beginGesture', { elastic: true }),
+      st('panBy', 0, 0),
+      st('camera'),
+      st('endGesture'),
+      advance(1000),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'zoomed-out-bounce',
-    covers: 'Below zoom 1 a bounce off the far edges clamps the true position each frame, on both travelling axes.',
+    covers:
+      'Below zoom 1 a bounce off the far edges clamps the true position each frame, on both travelling axes.',
     plugins: framed({ zoom: { level: 0.5 } }),
     engine: engine(Array.from({ length: 4 }, (_, i) => page(i + 1, i, 3000, 900))),
-    steps: [...boot, st('fling', -9000, -9000), advance(160), st('camera'), advance(480), st('camera'), advance(2000), st('camera')],
+    steps: [
+      ...boot,
+      st('fling', -9000, -9000),
+      advance(160),
+      st('camera'),
+      advance(480),
+      st('camera'),
+      advance(2000),
+      st('camera'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'pages-vanish-mid-tween',
-    covers: 'A double-tap tween whose document loses every page mid-flight skips its frames over the empty scene.',
+    covers:
+      'A double-tap tween whose document loses every page mid-flight skips its frames over the empty scene.',
     plugins: framed(),
     engine: engine([page(1, 0, 1200, 800), page(2, 1, 1200, 800)]),
-    steps: [...boot, st('doubleTapZoom', { x: 500, y: 300 }), advance(48), emit({ type: 'pages.deleted', layout: { pageCount: 0, pages: [] } }), advance(300), st('camera')],
+    steps: [
+      ...boot,
+      st('doubleTapZoom', { x: 500, y: 300 }),
+      advance(48),
+      emit({
+        type: 'pages.deleted',
+        pages: FIVE.map((p) => p.ref),
+        origin: LOCAL,
+        meta: { affectedPages: [], cacheDelta: null, opId: 'clear', undoable: true },
+        layout: { pageCount: 0, pages: [], namedPages: [] },
+      }),
+      advance(300),
+      st('camera'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'paged-reveal-tweens',
-    covers: 'A bare reveal in paged flow navigates with the reveal behavior: smooth tweens even when the setting is instant.',
+    covers:
+      'A bare reveal in paged flow navigates with the reveal behavior: smooth tweens even when the setting is instant.',
     plugins: framed({ flow: 'paged', scrollBehavior: 'instant' }),
     engine: engine(),
     steps: [...boot, st('reveal', 2, { behavior: 'smooth' }), st('cameraInMotion'), advance(300)],
@@ -1449,7 +1918,8 @@ const motionCases: ScenarioCase[] = [
   },
   {
     name: 'fit-all-with-frames',
-    covers: 'Under fit-all with frames, next and prev tween the whole scene and resizes re-place at once.',
+    covers:
+      'Under fit-all with frames, next and prev tween the whole scene and resizes re-place at once.',
     plugins: framed({ zoom: { mode: 'fit-all' } }),
     engine: engine(),
     steps: [...boot, st('next'), advance(300), vp(900, 800), advance(300)],
@@ -1459,22 +1929,58 @@ const motionCases: ScenarioCase[] = [
 
 // ── effects, actions and interaction ──────────────────────────────────────────
 
-const layoutEvent = (type: string, pages: unknown[]) => ({ type, pages: [], origin: LOCAL, layout: { pageCount: pages.length, pages } });
+const layoutEvent = (type: 'pages.rotated' | 'pages.deleted', pages: ReturnType<typeof page>[]) =>
+  confirmedEvent(
+    type,
+    pr(1),
+    pages,
+    type === 'pages.deleted'
+      ? FIVE.filter((p) => !pages.some((q) => q.ref.objectNumber === p.ref.objectNumber)).map(
+          (p) => p.ref,
+        )
+      : pages.map((p) => p.ref),
+  );
 
-const FORMS_EMPTY: ResponseSpec = { path: 'forms.list', value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] } };
+const FORMS_EMPTY: ResponseSpec = {
+  path: 'forms.list',
+  value: {
+    formKind: 'none',
+    needsAppearances: false,
+    fields: [],
+    widgets: [],
+    calculationOrder: [],
+  } satisfies FormSnapshot,
+};
 const ANNOTS_EMPTY: ResponseSpec = { path: 'page.annotations.list', value: { annotations: [] } };
 const withActions = (pages: unknown[]): FakeEngineSpec => ({
   documents: { a: { pages, security: { allows: '*' }, responses: [FORMS_EMPTY, ANNOTS_EMPTY] } },
 });
 const ACTIONS_OFF = { factory: 'actions', config: { openSequence: 'off' } };
-const act = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'actions', doc: 'a' }, method, args });
+const act = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'actions', doc: 'a' },
+  method,
+  args,
+});
 const tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
-const goto = (destination: Record<string, unknown>) => ({ type: 'goto', subtype: 'GoTo', destination, next: [] });
+const goto = (destination: PageDestination) => ({
+  type: 'goto',
+  subtype: 'GoTo',
+  destination,
+  next: [],
+});
+const pdfGoto = (destination: PdfDestination) =>
+  goto(pageDestinationOf(destination, { left: 0, bottom: 0, right: 600, top: 800 }));
 const named = (name: string) => ({ type: 'named', subtype: 'Named', name, next: [] });
 const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
 
 const interaction = { factory: 'interaction' };
-const ix = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'interaction', doc: 'a' }, method, args });
+const ix = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'interaction', doc: 'a' },
+  method,
+  args,
+});
 const mods = { shift: false, alt: false, ctrl: false, meta: false };
 const sample = (phase: string, x: number, y: number, onPage: boolean) => ({
   phase,
@@ -1494,10 +2000,22 @@ const feedCases: ScenarioCase[] = [
     steps: [
       start,
       open,
-      emit(layoutEvent('pages.rotated', [page(1, 0, 600, 800, { rotation: 90 }), page(2, 1), page(3, 2)])),
+      emit(
+        layoutEvent('pages.rotated', [
+          page(1, 0, 600, 800, { rotation: 90 }),
+          page(2, 1),
+          page(3, 2),
+        ]),
+      ),
       vp(1000, 700),
       st('goToPage', 1),
-      emit(layoutEvent('pages.rotated', [page(1, 0), page(2, 1, 600, 800, { rotation: 90 }), page(3, 2)])),
+      emit(
+        layoutEvent('pages.rotated', [
+          page(1, 0),
+          page(2, 1, 600, 800, { rotation: 90 }),
+          page(3, 2),
+        ]),
+      ),
       st('pageRect', 2),
       emit(layoutEvent('pages.deleted', [page(1, 0), page(3, 1)])),
       st('pageCount'),
@@ -1510,15 +2028,19 @@ const feedCases: ScenarioCase[] = [
   {
     name: 'navigation-executors',
     covers:
-      'The default lens registers goto and named executors with actions: goto reveals the destination smoothly (failed when the page is gone), NextPage/PrevPage/FirstPage/LastPage navigate, and any other name is inert.',
+      'The default lens registers goto and named executors with actions: goto reveals the destination under the instant scroll setting (failed when the page is gone), NextPage/PrevPage/FirstPage/LastPage navigate, and any other name is inert.',
     plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
+      act(
+        'execute',
+        tree(pdfGoto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })),
+        USER,
+      ),
       st('currentPage'),
       act('execute', tree(goto({ kind: 'fit', page: pr(5) })), USER),
-      act('execute', tree(goto({ kind: 'fitH', page: pr(99), top: 10 })), USER),
+      act('execute', tree(pdfGoto({ kind: 'fitH', page: pr(99), top: 10 })), USER),
       act('execute', tree(named('FirstPage')), USER),
       act('execute', tree(named('NextPage')), USER),
       act('execute', tree(named('NextPage')), USER),
@@ -1539,19 +2061,28 @@ const feedCases: ScenarioCase[] = [
     steps: [
       ...boot,
       act('execute', tree({ type: 'goto', subtype: 'GoTo', next: [] }), USER),
-      act('execute', tree(goto({ kind: 'fit' })), USER),
+      act(
+        'execute',
+        tree({ type: 'goto', subtype: 'GoTo', destination: { kind: 'fit' }, next: [] }),
+        USER,
+      ),
       st('currentPage'),
     ],
     snapshot: SNAP,
   },
   {
     name: 'executors-navigate-smoothly',
-    covers: 'The executors navigate smoothly whatever the scrollBehavior setting: with frames each lands over a tween.',
-    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant', frames: true })],
+    covers:
+      'The executors honor the smooth scrollBehavior setting: with frames each lands over a tween; the instant-setting case remains covered separately.',
+    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'smooth', frames: true })],
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
+      act(
+        'execute',
+        tree(pdfGoto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })),
+        USER,
+      ),
       st('cameraInMotion'),
       advance(300),
       act('execute', tree(named('NextPage')), USER),
@@ -1568,11 +2099,16 @@ const feedCases: ScenarioCase[] = [
     covers:
       'The default lens feeds actions a page-state report on placement and whenever the current pon or the visible pon set changes (not on a cause flip alone); a page open trigger it causes runs a navigation executor, whose report is programmatic.',
     plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
-    engine: withActions([page(1, 0), page(2, 1, 600, 800, { actions: { open: tree(named('NextPage')) } }), page(3, 2), page(4, 3)]),
+    engine: withActions([
+      page(1, 0),
+      page(2, 1, 600, 800, { actions: { open: tree(named('NextPage')) } }),
+      page(3, 2),
+      page(4, 3),
+    ]),
     steps: [
       start,
       open,
-      act('onDiagnostic', fnSpec('diagnostic')),
+      act('onDiagnosticReported', fnSpec('diagnostic')),
       vp(1000, 700),
       st('panBy', 0, -5),
       st('goToPage', 1),
@@ -1588,18 +2124,34 @@ const feedCases: ScenarioCase[] = [
   },
   {
     name: 'a-cursor-past-the-last-page',
-    covers: 'A restored view may carry a cursor the document no longer has: getCurrentPage is null then, and the feed reports a null current page.',
+    covers:
+      'A restored view may carry a cursor the document no longer has: getCurrentPage is null then, and the feed reports a null current page.',
     plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
     engine: withActions(portrait(3)),
-    steps: [...boot, st('applyViewState', view({ cursor: 7, anchor: { pageIndex: 2, fx: 0.5, fy: 0.5 } })), v3('getCurrentPage'), v3('getCurrentPageIndex')],
+    steps: [
+      ...boot,
+      st('applyViewState', view({ cursor: 7, anchor: { pageIndex: 2, fx: 0.5, fy: 0.5 } })),
+      v3('getCurrentPage'),
+      v3('getCurrentPageIndex'),
+    ],
     snapshot: ['stage::a', 'actions::a'],
   },
   {
     name: 'a-thumbnail-lens-stays-out',
-    covers: 'A lens with its own id registers no executors and feeds no page state, so actions only ever drive the main lens.',
-    plugins: [ACTIONS_OFF, { factory: 'stage', config: { lens: 'stage-thumbs', viewUnitsPerPoint: 1 } }],
+    covers:
+      'A lens with its own id registers no executors and feeds no page state, so actions only ever drive the main lens.',
+    plugins: [
+      ACTIONS_OFF,
+      { factory: 'stage', config: { lens: 'stage-thumbs', viewUnitsPerPoint: 1 } },
+    ],
     engine: withActions(FIVE),
-    steps: [start, open, lensCall('stage-thumbs', 'setViewport', { width: 300, height: 700 }), act('execute', tree(named('NextPage')), USER), act('execute', tree(goto({ kind: 'fit', page: pr(2) })), USER)],
+    steps: [
+      start,
+      open,
+      lensCall('stage-thumbs', 'setViewport', { width: 300, height: 700 }),
+      act('execute', tree(named('NextPage')), USER),
+      act('execute', tree(goto({ kind: 'fit', page: pr(2) })), USER),
+    ],
     snapshot: ['stage-thumbs::a'],
   },
   {
@@ -1660,7 +2212,8 @@ const feedCases: ScenarioCase[] = [
   },
   {
     name: 'pan-handler-gesture-id',
-    covers: 'A gesture the scroll handler captures reports its handler id, stage-scroll, on the hub\'s gesture events.',
+    covers:
+      "A gesture the scroll handler captures reports its handler id, stage-scroll, on the hub's gesture events.",
     plugins: [interaction, ...stage({ scrollBehavior: 'instant' }), { factory: 'stage-scroll' }],
     engine: engine(),
     steps: [
@@ -1675,8 +2228,13 @@ const feedCases: ScenarioCase[] = [
   },
   {
     name: 'pan-handler-without-fallback',
-    covers: 'With panFallback off the handler is enabled only for scroll tools: gap drags under the pointer tool do nothing and hovering claims no cursor.',
-    plugins: [interaction, ...stage({ scrollBehavior: 'instant' }), { factory: 'stage-scroll', config: { panFallback: false } }],
+    covers:
+      'With panFallback off the handler is enabled only for scroll tools: gap drags under the pointer tool do nothing and hovering claims no cursor.',
+    plugins: [
+      interaction,
+      ...stage({ scrollBehavior: 'instant' }),
+      { factory: 'stage-scroll', config: { panFallback: false } },
+    ],
     engine: engine(),
     steps: [
       ...boot,
@@ -1699,7 +2257,14 @@ const feedCases: ScenarioCase[] = [
 
 // ── the v3 surface: verbs with no v2 twin, and the change hooks ───────────────
 
-const HOOKS = ['onPageChanged', 'onZoomChanged', 'onCameraChanged', 'onMotionEnded', 'onSettingsChanged', 'onViewportChanged'];
+const HOOKS = [
+  'onPageChanged',
+  'onZoomChanged',
+  'onCameraChanged',
+  'onMotionEnded',
+  'onSettingsChanged',
+  'onViewportChanged',
+];
 /** Subscribe a logging listener to every hook; the unsubscribes are refs 0 to 5. */
 const listenAll = (): Step[] => HOOKS.map((hook) => v3(hook, fnSpec(hook)));
 
@@ -1729,7 +2294,7 @@ const v3VerbCases: ScenarioCase[] = [
       v3('reveal', pr(4)),
       v3('reveal', pr(99)),
       v3('getCamera'),
-      v3('revealRect', pr(2), { x: 10, y: 20, width: 100, height: 50 }, { zoom: 'fit' }),
+      v3('reveal', pr(2), { rect: { x: 10, y: 20, width: 100, height: 50 }, zoom: 'fit' }),
       v3('getCamera'),
       v3('getCurrentPageIndex'),
       v3('pageToViewport', pr(2), { x: 10, y: 20 }),
@@ -1763,15 +2328,25 @@ const v3VerbCases: ScenarioCase[] = [
   },
   {
     name: 'reset-settings',
-    covers: 'resetSettings writes the constructed config back as the base and re-resolves it, with the usual anchor-preserving reaction.',
+    covers:
+      'resetSettings writes the constructed config back as the base and re-resolves it, with the usual anchor-preserving reaction.',
     plugins: stage({ scrollBehavior: 'instant', padding: 10 }),
     engine: engine(),
-    steps: [...boot, st('goToPage', 2), st('update', { layout: 'horizontal', padding: 40, zoom: { level: 2 } }), v3('resetSettings'), v3('getSettings'), v3('getCamera'), v3('resetSettings')],
+    steps: [
+      ...boot,
+      st('goToPage', 2),
+      st('update', { layout: 'horizontal', padding: 40, zoom: { level: 2 } }),
+      v3('resetSettings'),
+      v3('getSettings'),
+      v3('getCamera'),
+      v3('resetSettings'),
+    ],
     snapshot: SNAP,
   },
   {
     name: 'withdrawn-initial-view',
-    covers: 'provideInitialView returns an unsubscribe; a provider withdrawn before placement is never asked, and a second call of the unsubscribe is harmless.',
+    covers:
+      'provideInitialView returns an unsubscribe; a provider withdrawn before placement is never asked, and a second call of the unsubscribe is harmless.',
     plugins: stage(),
     engine: engine(),
     steps: [
@@ -1799,7 +2374,10 @@ const eventCases: ScenarioCase[] = [
       start,
       open,
       ...listenAll(),
-      v3('onPageChanged', fnSpec('page-throws', { throws: { name: 'Error', message: 'listener' } })),
+      v3(
+        'onPageChanged',
+        fnSpec('page-throws', { throws: { name: 'Error', message: 'listener' } }),
+      ),
       vp(1000, 700),
       st('goToPage', 2),
       st('zoomTo', { level: 2 }),
@@ -1846,37 +2424,70 @@ const eventCases: ScenarioCase[] = [
   },
   {
     name: 'an-unbounded-landing-keeps-the-camera',
-    covers: 'On an unbounded stage a fling lands with setCam(cam()), which keeps the camera object: the last frame fires no camera event, then onMotionEnded does.',
+    covers:
+      'On an unbounded stage a fling lands with setCam(cam()), which keeps the camera object: the last frame fires no camera event, then onMotionEnded does.',
     plugins: framed({ bounded: false }),
     engine: engine(portrait(2)),
-    steps: [...boot, v3('onCameraChanged', fnSpec('camera')), v3('onMotionEnded', fnSpec('ended')), st('fling', 0, -300), advance(2000), v3('isMoving')],
+    steps: [
+      ...boot,
+      v3('onCameraChanged', fnSpec('camera')),
+      v3('onMotionEnded', fnSpec('ended')),
+      st('fling', 0, -300),
+      advance(2000),
+      v3('isMoving'),
+    ],
     snapshot: SNAP,
   },
 ];
+
+const withClock = (scenario: ScenarioCase): ScenarioCase => {
+  let framed = false;
+  const plugins = scenario.plugins?.map((plugin) => {
+    if (plugin.factory !== 'stage' || !plugin.config || typeof plugin.config !== 'object')
+      return plugin;
+    const { frames, ...config } = plugin.config as Record<string, unknown>;
+    framed ||= frames === true;
+    return { ...plugin, config };
+  });
+  return { ...scenario, plugins, ...(framed ? { clock: { frames: true } } : {}) };
+};
 
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stage-capability.json',
-    describes: 'packages/plugin/stage: placement, selectors, settings, navigation, reveal, manipulation and responsive rules, frameless.',
-    cases: [...placementCases, ...settingsCases, ...navigationCases, ...manipulationCases, ...mutationEdgeCases, ...responsiveCases, ...edgeCases, ...lensCases, ...v3VerbCases],
+    describes:
+      'packages/plugin/stage: placement, selectors, settings, navigation, reveal, manipulation and responsive rules, frameless.',
+    cases: [
+      ...placementCases,
+      ...settingsCases,
+      ...navigationCases,
+      ...manipulationCases,
+      ...mutationEdgeCases,
+      ...responsiveCases,
+      ...edgeCases,
+      ...lensCases,
+      ...v3VerbCases,
+    ].map(withClock),
   },
   {
     kind: 'scenario',
     file: 'plugins/stage-motion.json',
-    describes: 'packages/plugin/stage: the camera tween, rest detector, fling and rubber-band physics over the frame seam.',
-    cases: motionCases,
+    describes:
+      'packages/plugin/stage: the camera tween, rest detector, fling and rubber-band physics over the frame seam.',
+    cases: motionCases.map(withClock),
   },
   {
     kind: 'scenario',
     file: 'plugins/stage-feeds.json',
-    describes: 'packages/plugin/stage: the page-registry refit, the actions executors and page-state feed, and the pan handler on the interaction hub.',
-    cases: feedCases,
+    describes:
+      'packages/plugin/stage: the page-registry refit, the actions executors and page-state feed, and the pan handler on the interaction hub.',
+    cases: feedCases.map(withClock),
   },
   {
     kind: 'scenario',
     file: 'plugins/stage-events.json',
     describes: 'packages/plugin/stage: the six change hooks and the diffing dispatch behind them.',
-    cases: eventCases,
+    cases: eventCases.map(withClock),
   },
 ];

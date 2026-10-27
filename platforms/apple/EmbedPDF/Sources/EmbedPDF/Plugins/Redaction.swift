@@ -32,8 +32,7 @@ public typealias RedactionEvent = EmbedPDFBindings.RedactionEvent
 
 /// A document's redactions: mark regions, review them, apply them. Get one
 /// with `PDFViewer.redaction(for:)`; the viewer needs `ViewerConfig(
-/// interaction: true, annotation: AnnotationConfig(), redaction:
-/// RedactionConfig())`. It keeps the viewer alive. After its document
+/// interaction: true, annotation: "", redaction: RedactionConfig())`. It keeps the viewer alive. After its document
 /// closes, every call throws `instance-closed`.
 public struct RedactionCapability: Sendable {
   let handle: RedactionHandle
@@ -62,22 +61,22 @@ public struct RedactionCapability: Sendable {
   /// Creates pending redaction marks from the current text selection, one per page, then clears the selection.
   ///
   /// Requires the selection plugin. Returns an empty array when there is no selected text.
-  public func markSelection() async throws(PDFError) -> [AnnotationRef] {
+  public func markSelection() async throws(PDFError) -> [RedactionMark] {
     try await bridgedCancellable { token in try await handle.markSelection(cancel: token) }
   }
 
   /// Creates a pending area mark with page-space `bounds`; content remains until the mark is applied.
-  public func markArea(_ bounds: Rect, on page: PageRef) async throws(PDFError) -> AnnotationRef {
+  public func markArea(_ bounds: Rect, on page: PageRef) async throws(PDFError) -> RedactionMark {
     try await bridgedCancellable { token in try await handle.markArea(page: page, bounds: bounds, cancel: token) }
   }
 
   /// Creates a pending area mark covering the page; content remains until application.
-  public func markPage(_ page: PageRef) async throws(PDFError) -> AnnotationRef {
+  public func markPage(_ page: PageRef) async throws(PDFError) -> RedactionMark {
     try await bridgedCancellable { token in try await handle.markPage(page: page, cancel: token) }
   }
 
   /// Finds text matching `query` and creates pending marks on the specified pages, or all pages when `nil`.
-  public func markMatches(_ query: SearchQuery, on pages: [PageRef]? = nil) async throws(PDFError) -> [AnnotationRef] {
+  public func markMatches(_ query: SearchQuery, on pages: [PageRef]? = nil) async throws(PDFError) -> [RedactionMark] {
     try await bridgedCancellable { token in try await handle.markMatches(query: query, pages: pages, cancel: token) }
   }
 
@@ -91,8 +90,11 @@ public struct RedactionCapability: Sendable {
     try await bridgedCancellable { token in try await handle.clearPending(cancel: token) }
   }
 
-  /// Changes a pending mark's overlay label and repetition settings.
-  public func updateLabel(_ ref: AnnotationRef, _ patch: RedactionLabelPatch) async throws(PDFError) {
+  /// Changes a pending mark's overlay label and repetition settings and returns the updated mark.
+  @discardableResult
+  public func updateLabel(_ ref: AnnotationRef, _ patch: RedactionLabelPatch) async throws(PDFError)
+    -> RedactionMark
+  {
     try await bridgedCancellable { token in
       try await handle.updateLabel(annotationRef: ref, patch: patch, cancel: token)
     }

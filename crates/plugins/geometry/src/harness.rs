@@ -1,5 +1,11 @@
-//! The conformance adapter: the function table the vectors call by the
-//! TypeScript names, with arguments and results in canonical JSON.
+//! The conformance adapter: the function table the vectors call by name, with
+//! arguments and results in canonical JSON.
+//!
+//! The names are the ones `tooling/plugin-conformance/src/suites/geometry.ts`
+//! records. Some keep the case's historical label as the function name
+//! (`textQuadEdge` calls `quadEdge`, `applyTextQuad` calls `applyQuad`), and
+//! the page suite calls `engine-core`'s page-space conversions through the
+//! generator's `enginePageSpace` wrapper.
 
 use epdf_kernel::Error;
 use plugin_conformance::FunctionTable;
@@ -27,6 +33,8 @@ struct Probe {
     rects: Option<Vec<Rect>>,
 }
 
+/// The generator's `pageTransformProbe` result. Its method keys keep the
+/// names they had before 81bdc82ec renamed content space to page space.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PageTransformProbe {
@@ -53,10 +61,10 @@ fn page_transform_probe(a: &[Value]) -> Out {
     ok(PageTransformProbe {
         to_pixels: map(PageTransform::to_pixels),
         from_pixels: map(PageTransform::from_pixels),
-        content_to_view: map(PageTransform::content_to_view),
-        view_to_content: map(PageTransform::view_to_content),
-        content_to_view_rect: map_rect(PageTransform::content_to_view_rect),
-        view_to_content_rect: map_rect(PageTransform::view_to_content_rect),
+        content_to_view: map(PageTransform::page_to_view),
+        view_to_content: map(PageTransform::view_to_page),
+        content_to_view_rect: map_rect(PageTransform::page_to_view_rect),
+        view_to_content_rect: map_rect(PageTransform::view_to_page_rect),
         transform: t,
     })
 }
@@ -66,96 +74,55 @@ struct SpaceProbe {
     #[serde(default)]
     points: Option<Vec<Point>>,
     #[serde(default)]
-    rects: Option<Vec<Rect>>,
+    rects: Option<Vec<PageBox>>,
     #[serde(default)]
-    edges: Option<Vec<PdfEdges>>,
+    edges: Option<Vec<PdfRect>>,
     #[serde(default)]
     quads: Option<Vec<Quad>>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct PageSpaceProbe {
-    #[serde(flatten)]
-    space: PageSpace,
-    pdf_to_page: Vec<Point>,
-    page_to_pdf: Vec<Point>,
-    pdf_rect_to_page: Vec<Rect>,
-    page_rect_to_pdf: Vec<PageRectToPdfOut>,
-    pdf_quad_to_page: Vec<Quad>,
-    page_quad_to_pdf: Vec<Quad>,
+struct EnginePageSpaceProbe {
+    pdf_to_page: Vec<PagePoint>,
+    page_to_pdf: Vec<PdfPoint>,
+    pdf_rect_to_page: Vec<PageBox>,
+    page_rect_to_pdf: Vec<PdfRect>,
+    pdf_quad_to_page: Vec<PageQuad>,
+    page_quad_to_pdf: Vec<PdfQuad>,
 }
 
-/// `pageRectToPdf`'s result as the TypeScript literal in `page-space.ts`
-/// orders it: left, right, top, bottom. [`PdfEdges`] itself keeps the engine
-/// `PdfRect` order, which `crop` echoes.
-#[derive(Serialize)]
-struct PageRectToPdfOut {
-    left: f64,
-    right: f64,
-    top: f64,
-    bottom: f64,
-}
-
-impl From<PdfEdges> for PageRectToPdfOut {
-    fn from(e: PdfEdges) -> Self {
-        Self { left: e.left, right: e.right, top: e.top, bottom: e.bottom }
-    }
-}
-
-/// `edgesOfQuad`'s result as the TypeScript literal in `page-space.ts` orders
-/// it: left, right, bottom, top.
-#[derive(Serialize)]
-struct EdgesOfQuadOut {
-    left: f64,
-    right: f64,
-    bottom: f64,
-    top: f64,
-}
-
-impl From<PdfEdges> for EdgesOfQuadOut {
-    fn from(e: PdfEdges) -> Self {
-        Self { left: e.left, right: e.right, bottom: e.bottom, top: e.top }
-    }
-}
-
-/// The suite's `pageSpace` wrapper: build the space, then call each method on
-/// the probes.
-fn page_space_probe(a: &[Value]) -> Out {
-    let s = page_space(arg(a, 0)?);
+/// The suite's `enginePageSpace` wrapper: each `engine-core` page-space
+/// conversion on the probes, against one visible box.
+fn engine_page_space_probe(a: &[Value]) -> Out {
+    let visible: PdfRect = arg(a, 0)?;
     let probe: Option<SpaceProbe> = arg(a, 1)?;
     let probe = probe.unwrap_or_default();
     let points = probe.points.unwrap_or_default();
     let quads = probe.quads.unwrap_or_default();
-    ok(PageSpaceProbe {
-        pdf_to_page: points.iter().map(|p| s.pdf_to_page(*p)).collect(),
-        page_to_pdf: points.iter().map(|p| s.page_to_pdf(*p)).collect(),
+    ok(EnginePageSpaceProbe {
+        pdf_to_page: points.iter().map(|p| page_point_of(*p, visible)).collect(),
+        page_to_pdf: points.iter().map(|p| pdf_point_of(*p, visible)).collect(),
         pdf_rect_to_page: probe
             .edges
             .unwrap_or_default()
             .into_iter()
-            .map(|e| s.pdf_rect_to_page(e))
+            .map(|e| page_box_of(e, visible))
             .collect(),
         page_rect_to_pdf: probe
             .rects
             .unwrap_or_default()
             .into_iter()
-            .map(|r| PageRectToPdfOut::from(s.page_rect_to_pdf(r)))
+            .map(|r| pdf_rect_of(r, visible))
             .collect(),
-        pdf_quad_to_page: quads.iter().map(|q| s.pdf_quad_to_page(*q)).collect(),
-        page_quad_to_pdf: quads.iter().map(|q| s.page_quad_to_pdf(*q)).collect(),
-        space: s,
+        pdf_quad_to_page: quads.iter().map(|q| page_quad_of(*q, visible)).collect(),
+        page_quad_to_pdf: quads.iter().map(|q| pdf_quad_of(*q, visible)).collect(),
     })
-}
-
-#[derive(Deserialize)]
-struct LeftTop {
-    left: f64,
-    top: f64,
 }
 
 pub fn functions() -> FunctionTable {
     vec![
+        // geometry-basics.json
         ("NO_FRAME", |_| ok(NO_FRAME)),
         ("boundsOfRects", |a| ok(bounds_of_rects(&arg::<Vec<Rect>>(a, 0)?))),
         ("intersectRects", |a| ok(intersect_rects(arg(a, 0)?, arg(a, 1)?))),
@@ -167,6 +134,7 @@ pub fn functions() -> FunctionTable {
         ("snapToDevice", |a| ok(snap_to_device(arg(a, 0)?, arg(a, 1)?))),
         ("displaySize", |a| ok(display_size(arg(a, 0)?, arg(a, 1)?))),
         ("deviceHeightForWidth", |a| ok(device_height_for_width(arg(a, 0)?, arg(a, 1)?))),
+        // geometry-affine.json
         ("identity", |_| ok(identity())),
         ("compose", |a| ok(compose(arg(a, 0)?, arg(a, 1)?))),
         ("invert", |a| ok(invert(arg(a, 0)?).map_err(thrown)?)),
@@ -180,26 +148,22 @@ pub fn functions() -> FunctionTable {
         ("rotateAbout", |a| ok(rotate_about(arg(a, 0)?, arg(a, 1)?))),
         ("scaleAbout", |a| ok(scale_about(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
         ("angleOf", |a| ok(angle_of(arg(a, 0)?))),
+        // geometry-page.json (also `rectsOverlap`, above)
         ("rotateScaleMatrix", |a| {
             ok(rotate_scale_matrix(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?))
         }),
-        ("pdfToContentMatrix", |a| {
-            let LeftTop { left, top } = arg(a, 0)?;
-            ok(pdf_to_content_matrix(left, top))
-        }),
-        ("pageGeometry", |a| ok(page_geometry(arg(a, 0)?, arg(a, 1)?).map_err(thrown)?)),
         ("pageTransform", page_transform_probe),
-        ("pageSpace", page_space_probe),
-        ("edgesOverlap", |a| ok(edges_overlap(arg(a, 0)?, arg(a, 1)?))),
-        ("edgesOfQuad", |a| ok(EdgesOfQuadOut::from(edges_of_quad(arg(a, 0)?)))),
-        ("textQuadFromRect", |a| ok(text_quad_from_rect(arg(a, 0)?))),
-        ("textQuadPoints", |a| ok(text_quad_points(arg(a, 0)?))),
-        ("textQuadRing", |a| ok(text_quad_ring(arg(a, 0)?))),
-        ("textQuadEdge", |a| ok(text_quad_edge(arg(a, 0)?, arg(a, 1)?))),
-        ("textQuadEquals", |a| ok(text_quad_equals(arg(a, 0)?, arg(a, 1)?))),
-        ("textQuadBounds", |a| ok(text_quad_bounds(arg(a, 0)?))),
-        ("applyTextQuad", |a| ok(apply_text_quad(arg(a, 0)?, arg(a, 1)?))),
-        ("positionalQuad", |a| ok(positional_quad(arg(a, 0)?))),
-        ("normalizeQuad", |a| ok(normalize_quad(arg(a, 0)?))),
+        ("enginePageSpace", engine_page_space_probe),
+        ("pdfQuadBounds", |a| ok(pdf_quad_bounds(arg(a, 0)?))),
+        // geometry-text-quad.json
+        ("textQuadFromRect", |a| ok(quad_from_rect(arg(a, 0)?))),
+        ("textQuadPoints", |a| ok(quad_corners(arg(a, 0)?))),
+        ("quadCorners", |a| ok(quad_corners(arg(a, 0)?))),
+        ("textQuadRing", |a| ok(quad_ring(arg(a, 0)?))),
+        ("textQuadEdge", |a| ok(quad_edge(arg(a, 0)?, arg(a, 1)?))),
+        ("textQuadEquals", |a| ok(quad_equals(arg(a, 0)?, arg(a, 1)?))),
+        ("textQuadBounds", |a| ok(quad_bounds(arg(a, 0)?))),
+        ("applyTextQuad", |a| ok(apply_quad(arg(a, 0)?, arg(a, 1)?))),
+        ("normalizePdfQuad", |a| ok(normalize_pdf_quad(arg(a, 0)?))),
     ]
 }

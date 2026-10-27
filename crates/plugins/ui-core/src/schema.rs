@@ -1,5 +1,6 @@
-//! `schema.ts`: the structure-only schema vocabulary, the authoring sugar,
-//! and the normalized form the solver and projection consume.
+//! `schema.ts`: the structure-only bar vocabulary, the authoring sugar, and
+//! the normalized form the solver and projection consume. Where bars go, and
+//! the menus and panels around them, is the layout (`layout.rs`).
 //!
 //! Every type serializes to the JSON the TypeScript object prints: members
 //! the TypeScript leaves `undefined` are absent.
@@ -9,8 +10,6 @@ use std::collections::HashSet;
 use epdf_kernel::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-
-use crate::js::Record;
 
 /// Who yields space first: 1 degrades first, 3 is the default, 5 is pinned.
 /// The TypeScript type is the literal union `1 | 2 | 3 | 4 | 5`; the solver
@@ -50,12 +49,16 @@ pub struct BarItem {
     pub importance: Option<Importance>,
 }
 
+/// An app-rendered slot. Its `terminal` command is its menu form, what it
+/// becomes when it overflows; an item without one never leaves the bar (it is
+/// pinned, and so is its group).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CustomItem {
     pub slot: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variants: Option<Vec<String>>,
-    pub terminal: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
 }
@@ -130,6 +133,10 @@ pub struct BarGroup {
     pub collapse: Option<Collapse>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
+    /// Shows only while something that isn't dependent shows in the same
+    /// bar, like undo and redo beside a mode's tools.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependent: Option<bool>,
     pub items: Vec<BarChild>,
 }
 
@@ -190,59 +197,6 @@ pub struct BarSchema {
     pub sections: BarSections,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MenuSection {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub label_key: Option<String>,
-    pub items: Vec<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct MenuSchema {
-    pub id: String,
-    pub sections: Vec<MenuSection>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ToolbarPosition {
-    Top,
-    Bottom,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TabsVisibility {
-    Always,
-    Multiple,
-    Never,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct FrameSchema {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub toolbar: Option<ToolbarPosition>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tabs: Option<TabsVisibility>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub header: Option<bool>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ChromeSchema {
-    pub bars: Record<BarSchema>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub mode_bars: Option<Record<BarSchema>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub menus: Option<Record<MenuSchema>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub strips: Option<Record<BarSchema>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub frame: Option<FrameSchema>,
-}
-
 // ── authoring sugar ─────────────────────────────────────────────────────────
 
 /// `Omit<BarItem, 'command'>`.
@@ -254,17 +208,16 @@ pub struct ItemOpts {
     pub importance: Option<Importance>,
 }
 
-/// `Omit<CustomItem, 'slot'>`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// `Omit<CustomItem, 'slot' | 'terminal'>`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct CustomOpts {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variants: Option<Vec<String>>,
-    pub terminal: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
 }
 
-/// `Omit<BarGroup, 'id' | 'items'> & { items?: readonly BarChild[] }`.
+/// `Omit<BarGroup, 'id' | 'items'>`.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupOpts {
@@ -279,68 +232,44 @@ pub struct GroupOpts {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub items: Option<Vec<BarChild>>,
+    pub dependent: Option<bool>,
 }
 
-/// `group`'s second argument: the children, or options (`Array.isArray`).
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(untagged)]
-pub enum GroupOptsOrItems {
-    Items(Vec<BarChild>),
-    Opts(GroupOpts),
-}
-
-impl<'de> Deserialize<'de> for GroupOptsOrItems {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::Error as _;
-        let value = Value::deserialize(deserializer)?;
-        if value.is_array() {
-            serde_json::from_value(value).map(GroupOptsOrItems::Items).map_err(D::Error::custom)
-        } else {
-            serde_json::from_value(value).map(GroupOptsOrItems::Opts).map_err(D::Error::custom)
-        }
+/// A command button: `item("zoom:in", Some(ItemOpts { variants: .. }))`.
+pub fn item(command: &str, options: Option<ItemOpts>) -> BarItem {
+    let options = options.unwrap_or_default();
+    BarItem {
+        command: command.to_string(),
+        variants: options.variants,
+        importance: options.importance,
     }
 }
 
-/// `item(command, opts?)`.
-pub fn item(command: &str, opts: Option<ItemOpts>) -> BarItem {
-    let opts = opts.unwrap_or_default();
-    BarItem { command: command.to_string(), variants: opts.variants, importance: opts.importance }
-}
-
-/// `custom(slot, opts)`.
-pub fn custom(slot: &str, opts: CustomOpts) -> CustomItem {
+/// An item you draw yourself, by its slot name, and the command it becomes in
+/// the "More" menu. Without a command, the item never leaves the bar.
+pub fn custom(slot: &str, terminal: Option<&str>, options: Option<CustomOpts>) -> CustomItem {
+    let options = options.unwrap_or_default();
     CustomItem {
         slot: slot.to_string(),
-        variants: opts.variants,
-        terminal: opts.terminal,
-        importance: opts.importance,
+        terminal: terminal.map(str::to_string),
+        variants: options.variants,
+        importance: options.importance,
     }
 }
 
-/// `group(id, items)` and `group(id, opts, items?)`. With children as the
-/// second argument the third is ignored; with options, `items` wins over
-/// `opts.items`, and neither means none.
-pub fn group(id: &str, opts_or_items: GroupOptsOrItems, items: Option<Vec<BarChild>>) -> BarGroup {
-    match opts_or_items {
-        GroupOptsOrItems::Items(items) => BarGroup {
-            id: id.to_string(),
-            label_key: None,
-            role: None,
-            shed: None,
-            collapse: None,
-            importance: None,
-            items,
-        },
-        GroupOptsOrItems::Opts(opts) => BarGroup {
-            id: id.to_string(),
-            label_key: opts.label_key,
-            role: opts.role,
-            shed: opts.shed,
-            collapse: opts.collapse,
-            importance: opts.importance,
-            items: items.or(opts.items).unwrap_or_default(),
-        },
+/// A group of items, with a separator between groups:
+/// `group("zoom", vec!["zoom:out".into(), "zoom:in".into()], None)`.
+pub fn group(id: &str, items: Vec<BarChild>, options: Option<GroupOpts>) -> BarGroup {
+    let options = options.unwrap_or_default();
+    BarGroup {
+        id: id.to_string(),
+        label_key: options.label_key,
+        role: options.role,
+        shed: options.shed,
+        collapse: options.collapse,
+        importance: options.importance,
+        dependent: options.dependent,
+        items,
     }
 }
 
@@ -360,7 +289,9 @@ pub enum NormalizedUnit {
         key: String,
         slot: String,
         variants: Vec<String>,
-        terminal: String,
+        /// The command it becomes in menus, or `None` (`null`) for an item
+        /// without one, which [`filter_bar`] keeps, pinned.
+        terminal: Option<String>,
         importance: Importance,
     },
 }
@@ -386,14 +317,20 @@ impl NormalizedUnit {
             | NormalizedUnit::Custom { importance, .. } => *importance,
         }
     }
+}
 
-    /// The command the unit stands for in a menu: its own, or a custom
-    /// item's `terminal`.
-    pub fn menu_command(&self) -> &str {
-        match self {
-            NormalizedUnit::Command { command, .. } => command,
-            NormalizedUnit::Custom { terminal, .. } => terminal,
-        }
+/// Whether a unit is a custom item with no command to become in menus: it
+/// never leaves the bar.
+pub fn is_standalone_unit(unit: &NormalizedUnit) -> bool {
+    matches!(unit, NormalizedUnit::Custom { terminal: None, .. })
+}
+
+/// The command a unit runs: its own, or a custom item's `terminal`; `None`
+/// for a standalone item.
+pub fn command_of_unit(unit: &NormalizedUnit) -> Option<&str> {
+    match unit {
+        NormalizedUnit::Command { command, .. } => Some(command),
+        NormalizedUnit::Custom { terminal, .. } => terminal.as_deref(),
     }
 }
 
@@ -408,6 +345,11 @@ pub struct NormalizedGroup {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub collapse: Option<Collapse>,
     pub importance: Importance,
+    /// See [`BarGroup::dependent`]; the rule is [`has_visible_units`]. A
+    /// group read without one is not dependent, as the TypeScript reads
+    /// `undefined`.
+    #[serde(default)]
+    pub dependent: bool,
     pub units: Vec<NormalizedUnit>,
 }
 
@@ -440,7 +382,10 @@ fn normalize_child(
                 .clone()
                 .unwrap_or_else(|| vec![DEFAULT_CUSTOM_VARIANT.to_string()]),
             terminal: c.terminal.clone(),
-            importance: c.importance.unwrap_or(DEFAULT_IMPORTANCE),
+            importance: match c.terminal {
+                None => PINNED,
+                Some(_) => c.importance.unwrap_or(DEFAULT_IMPORTANCE),
+            },
         },
         BarChild::Command(command) => NormalizedUnit::Command {
             key: format!("{group_id}:{command}"),
@@ -470,7 +415,9 @@ fn normalize_child(
     Ok(unit)
 }
 
-/// Resolve shorthands and defaults; validate uniqueness.
+/// Resolve shorthands and defaults; validate uniqueness. A group holding a
+/// custom item without a command is pinned with it: it never collapses or
+/// overflows whole, so the item stays in the bar.
 pub fn normalize_bar(bar: &BarSchema) -> Result<NormalizedBar, Error> {
     let mut seen = HashSet::new();
     let mut group_ids = HashSet::new();
@@ -496,7 +443,12 @@ pub fn normalize_bar(bar: &BarSchema) -> Result<NormalizedBar, Error> {
                 role: g.role.unwrap_or(GroupRole::Buttons),
                 shed: g.shed.unwrap_or(false),
                 collapse: g.collapse,
-                importance: g.importance.unwrap_or(DEFAULT_IMPORTANCE),
+                importance: if units.iter().any(is_standalone_unit) {
+                    PINNED
+                } else {
+                    g.importance.unwrap_or(DEFAULT_IMPORTANCE)
+                },
+                dependent: g.dependent == Some(true),
                 units,
             });
         }
@@ -505,12 +457,16 @@ pub fn normalize_bar(bar: &BarSchema) -> Result<NormalizedBar, Error> {
     Ok(NormalizedBar { id: bar.id.clone(), sections })
 }
 
-/// Drop units `keep` rejects, before solving. Groups that empty out stay,
-/// with no units.
+/// Drop units whose command is currently invisible before solving: an
+/// invisible unit must not consume budget or appear in the overflow. A custom
+/// item without a command has nothing to ask `keep` about, and stays. A bar
+/// that shows nothing ([`has_visible_units`]) keeps no unit at all, so its
+/// dependent groups go too.
 pub fn filter_bar(
     bar: &NormalizedBar,
     mut keep: impl FnMut(&NormalizedUnit) -> bool,
 ) -> NormalizedBar {
+    let shows = has_visible_units(bar, &mut keep);
     NormalizedBar {
         id: bar.id.clone(),
         sections: bar
@@ -522,7 +478,15 @@ pub fn filter_bar(
                     .groups
                     .iter()
                     .map(|g| NormalizedGroup {
-                        units: g.units.iter().filter(|u| keep(u)).cloned().collect(),
+                        units: if shows {
+                            g.units
+                                .iter()
+                                .filter(|u| is_standalone_unit(u) || keep(u))
+                                .cloned()
+                                .collect()
+                        } else {
+                            Vec::new()
+                        },
                         ..g.clone()
                     })
                     .collect(),
@@ -531,59 +495,17 @@ pub fn filter_bar(
     }
 }
 
-/// Identity plus validation: every bar, mode bar and strip normalizes.
-/// Menus are not checked.
-pub fn define_chrome(chrome: ChromeSchema) -> Result<ChromeSchema, Error> {
-    for bar in chrome.bars.values() {
-        normalize_bar(bar)?;
-    }
-    for bar in chrome.mode_bars.iter().flat_map(Record::values) {
-        normalize_bar(bar)?;
-    }
-    for strip in chrome.strips.iter().flat_map(Record::values) {
-        normalize_bar(strip)?;
-    }
-    Ok(chrome)
-}
-
-/// Dev-time cross-check: every command the chrome references is in
-/// `known_commands`. A bar that does not normalize is an error, not a
-/// problem.
-pub fn validate_chrome(
-    chrome: &ChromeSchema,
-    known_commands: &HashSet<String>,
-) -> Result<Vec<String>, Error> {
-    let mut problems = Vec::new();
-    let mut check_bar = |bar: &BarSchema, collection: &str, id: &str| -> Result<(), Error> {
-        for section in normalize_bar(bar)?.sections {
-            for g in section.groups {
-                for u in g.units {
-                    let c = u.menu_command();
-                    if !known_commands.contains(c) {
-                        problems.push(format!("{collection}.{id}: unknown command \"{c}\""));
-                    }
-                }
-            }
-        }
-        Ok(())
-    };
-    for (id, bar) in chrome.bars.iter() {
-        check_bar(bar, "bars", id)?;
-    }
-    for (id, bar) in chrome.mode_bars.iter().flat_map(Record::iter) {
-        check_bar(bar, "modeBars", id)?;
-    }
-    for (id, strip) in chrome.strips.iter().flat_map(Record::iter) {
-        check_bar(strip, "strips", id)?;
-    }
-    for (id, menu) in chrome.menus.iter().flat_map(Record::iter) {
-        for section in &menu.sections {
-            for c in &section.items {
-                if !known_commands.contains(c) {
-                    problems.push(format!("menus.{id}: unknown command \"{c}\""));
-                }
-            }
-        }
-    }
-    Ok(problems)
+/// Whether the bar shows anything once `keep` (as for [`filter_bar`]) has had
+/// its say: a unit left in a group that isn't dependent. Dependent groups show
+/// only beside one, so a bar with only dependent groups left shows nothing.
+pub fn has_visible_units(
+    bar: &NormalizedBar,
+    mut keep: impl FnMut(&NormalizedUnit) -> bool,
+) -> bool {
+    bar.sections.iter().any(|section| {
+        section
+            .groups
+            .iter()
+            .any(|g| !g.dependent && g.units.iter().any(|u| is_standalone_unit(u) || keep(u)))
+    })
 }

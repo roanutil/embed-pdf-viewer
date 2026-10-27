@@ -4,22 +4,23 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run form-field
 //!
+//! Each case's recorded `request` (`forms.createField`, `forms.updateField`,
+//! `forms.deleteField` or `forms.detachWidget`) is replayed through
+//! `Host::call` with `common::replay`; the case literals keep the spelling
+//! the engine took before upstream's v3 forms (`fieldObjectNumber`,
+//! `pageObjectNumber`, `onState`), which no request carries now.
+//!
 //! # Every case opens its own copy
 //!
 //! A create hands out object numbers that depend on what the document
 //! already holds, so a shared document would make each case's numbers
 //! depend on the cases before it.
 
-use epdf_engine::cancel::CancelToken;
-use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::forms::field::{
-    FormFieldDraft, FormFieldPatch, OwnedPageWidgets, attach_widget, create_field, delete_field,
-    detach_widget, update_field,
-};
-use epdf_engine::features::forms::snapshot::FormFieldRef;
-use epdf_engine::session::authority::SessionAuthority;
-use epdf_engine::session::document::DocumentSession;
+mod common;
+
+use common::replay::Replay;
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -38,27 +39,15 @@ struct Case {
     name: String,
     covers: String,
     #[serde(default)]
-    draft: Option<serde_json::Value>,
-    #[serde(default)]
-    patch_of: Option<serde_json::Value>,
-    #[serde(default)]
-    patch: Option<serde_json::Value>,
-    #[serde(default)]
-    delete_of: Option<serde_json::Value>,
-    #[serde(default)]
-    attach_to: Option<serde_json::Value>,
-    #[serde(default)]
-    detach_from: Option<serde_json::Value>,
-    #[serde(default)]
-    widget_object_number: Option<u32>,
-    #[serde(default)]
-    on_state: Option<String>,
+    draft: Option<Value>,
     #[serde(default)]
     refused: bool,
     #[serde(default)]
     refused_with: Option<String>,
+    /// The wire request the TypeScript sent.
+    request: Value,
     #[serde(default)]
-    result: Option<serde_json::Value>,
+    result: Option<Value>,
 }
 
 fn load() -> VectorFile {
@@ -71,68 +60,59 @@ fn load() -> VectorFile {
     file
 }
 
-fn reference(value: &serde_json::Value, name: &str) -> FormFieldRef {
-    serde_json::from_value(value.clone())
-        .unwrap_or_else(|e| panic!("{name}: the ref does not decode: {e}"))
+fn case<'a>(file: &'a VectorFile, name: &str) -> &'a Case {
+    file.cases.iter().find(|c| c.name == name).unwrap_or_else(|| panic!("no case {name}"))
 }
 
-/// Run one case and report what it produced, as JSON in the vector's shape.
-fn run(
-    file: &VectorFile,
-    case: &Case,
-) -> Result<serde_json::Value, epdf_engine::error::EngineError> {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let cancel = CancelToken::never();
+/// The pool of object numbers upstream's local engine reserves for the
+/// creates its main thread names: a create that names none is numbered past
+/// it.
+const OBJECT_NUMBER_POOL_SIZE: u32 = 64;
 
-    if let Some(draft) = &case.draft {
-        let draft: FormFieldDraft = serde_json::from_value(draft.clone())
-            .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", case.name));
-        let widgets = OwnedPageWidgets::new(owned);
-        let field = create_field(owned.document(), &widgets, &draft, &cancel)?;
-        return Ok(serde_json::json!({ "field": field }));
+/// The fixture open as upstream's local engine opens it: `open.fatMem`, a
+/// layer over the bytes whose new objects are numbered past the base
+/// file's, with the pool its main thread names reserved.
+fn open(file: &VectorFile, doc_id: &str) -> Replay {
+    let mut host = epdf_engine::host::Host::new();
+    let opened = host.call_filled(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc_id,
+            "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
+        .to_string(),
+        vec![test_support::fixture(&file.fixture)],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    Replay::adopt(host, doc_id)
+}
+
+/// Run one case against a fresh copy of the fixture.
+fn run(file: &VectorFile, case: &Case) -> (Replay, Result<Value, Value>) {
+    let mut replay = open(file, &format!("form-field:{}", case.name));
+    let answer = replay.replay(&case.request);
+    (replay, answer)
+}
+
+/// What a case records of a write's answer: the field read back, or, for a
+/// delete, what its meta says went (`changedFields`, `changedWidgets`).
+fn recorded_shape(kind: &str, answer: &Value) -> Value {
+    let result = &answer["result"];
+    if kind == "forms.deleteField" {
+        return json!({
+            "changedFields": result["meta"]["changedFields"],
+            "changedWidgets": result["meta"]["changedWidgets"],
+        });
     }
-    if let Some(target) = &case.patch_of {
-        let patch: FormFieldPatch = serde_json::from_value(case.patch.clone().expect("a patch"))
-            .unwrap_or_else(|e| panic!("{}: the patch does not decode: {e}", case.name));
-        let field =
-            update_field(owned.document(), &reference(target, &case.name), &patch, &cancel)?;
-        return Ok(serde_json::json!({ "field": field }));
-    }
-    if let Some(target) = &case.delete_of {
-        let result = delete_field(owned.document(), &reference(target, &case.name), &cancel)?;
-        return Ok(serde_json::json!({
-            "deletedFieldObjectNumber": result.deleted_field_object_number,
-            "detachedWidgets": result.detached_widgets,
-        }));
-    }
-    if let Some(target) = &case.detach_from {
-        let field = detach_widget(
-            owned.document(),
-            &reference(target, &case.name),
-            case.widget_object_number.expect("a widget"),
-            &cancel,
-        )?;
-        return Ok(serde_json::json!({ "field": field }));
-    }
-    let target = case.attach_to.as_ref().expect("an operation");
-    let field = attach_widget(
-        owned.document(),
-        &reference(target, &case.name),
-        case.widget_object_number.expect("a widget"),
-        case.on_state.as_deref(),
-        &cancel,
-    )?;
-    Ok(serde_json::json!({ "field": field }))
+    json!({ "field": result["field"] })
+}
+
+/// The form as `forms.list` reads it now.
+fn form(replay: &mut Replay) -> Value {
+    replay.replay(&json!({ "kind": "forms.list" })).expect("the form lists")
 }
 
 #[test]
 fn a_structural_write_leaves_what_the_typescript_engine_left() {
     let file = load();
-    assert!(file.cases.len() >= 15, "the case list shrank");
+    assert!(file.cases.len() >= 20, "the case list shrank");
     let mut applied = 0usize;
 
     for case in &file.cases {
@@ -140,9 +120,11 @@ fn a_structural_write_leaves_what_the_typescript_engine_left() {
             continue;
         }
         applied += 1;
-        let mine = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let kind = case.request["kind"].as_str().expect("a kind");
+        let (_, answer) = run(&file, case);
+        let answer = answer.unwrap_or_else(|e| panic!("{}: {e}", case.name));
         assert_eq!(
-            test_support::canonical_numbers(&mine),
+            test_support::canonical_numbers(&recorded_shape(kind, &answer)),
             test_support::canonical_numbers(case.result.as_ref().expect("a recorded result")),
             "{}: {}",
             case.name,
@@ -150,7 +132,7 @@ fn a_structural_write_leaves_what_the_typescript_engine_left() {
         );
     }
 
-    assert!(applied >= 12, "the applied list shrank");
+    assert!(applied >= 15, "the applied list shrank");
 }
 
 #[test]
@@ -162,140 +144,130 @@ fn a_refused_structural_write_is_refused_for_the_same_reason() {
         if !case.refused {
             continue;
         }
-        // The merged field/widget case is the TypeScript's CASCADE
-        // refusing, not its field writer: the field goes and the worker
-        // host then asks the annotation plane to delete the same object,
-        // which will not delete a widget. This port has no cascade, so the
-        // field-plane half succeeds and there is nothing to compare.
-        if case.name == "delete-merged-field-refused" {
-            continue;
-        }
         refusals += 1;
-        let error = run(&file, case).expect_err(&case.name);
-        let expected = match case.refused_with.as_deref() {
-            Some("NotFound") => EngineErrorCode::NotFound,
-            Some("InvalidArg") => EngineErrorCode::InvalidArg,
-            other => panic!("{}: unhandled refusal code {other:?}", case.name),
-        };
-        assert!(error.is(expected), "{}: {} (got {error})", case.name, case.covers);
+        let (_, answer) = run(&file, case);
+        let error = answer.expect_err(&case.name);
+        assert_eq!(
+            error["code"].as_str(),
+            case.refused_with.as_deref(),
+            "{}: {} (got {error})",
+            case.name,
+            case.covers,
+        );
     }
 
-    assert!(refusals >= 5, "the refusal list shrank");
+    assert!(refusals >= 7, "the refusal list shrank");
 }
 
 #[test]
 fn a_draft_refusal_says_what_was_wrong_with_the_draft() {
-    // PDFium refuses each of these too, with the same code, and by then it
-    // has usually written something. The message is this engine's own and
-    // says which of the three it was.
+    // The messages are upstream's (`FormMutator.createField`,
+    // `onStateOf`): an unnamed field is the native create's refusal, options
+    // on a text field the options write's, and a stateless radio button the
+    // placement's own, before anything is written.
     let file = load();
     for (name, expected) in [
-        ("create-unnamed-refused", "needs a name"),
-        ("create-text-with-options-refused", "has no options"),
-        ("attach-off-state-refused", "\"Off\""),
+        ("create-unnamed-refused", "cannot create field \"\" (name conflict or invalid)"),
+        ("create-text-with-options-refused", "options rejected"),
+        (
+            "create-radio-without-state-refused",
+            "every radio button needs an exportValue other than \"Off\"",
+        ),
     ] {
-        let case = file.cases.iter().find(|c| c.name == name).expect(name);
-        let message = run(&file, case).expect_err(name).to_string();
-        assert!(message.contains(expected), "{name}: expected {expected:?} in {message:?}");
+        let (_, answer) = run(&file, case(&file, name));
+        let error = answer.expect_err(name);
+        assert_eq!(error["message"], expected, "{name}");
     }
+}
+
+#[test]
+fn a_refused_create_leaves_no_field_behind() {
+    // Options on a text field are refused by the options write, after the
+    // field exists: the create is all or none, so the field goes with it.
+    let file = load();
+    let refused = case(&file, "create-text-with-options-refused");
+    let mut replay = open(&file, "form-field:all-or-none");
+    let before = form(&mut replay);
+    replay.replay(&refused.request).expect_err("options on a text field");
+    let after = form(&mut replay);
+    assert_eq!(after["fields"], before["fields"], "the refused create left a field");
+    assert_eq!(after["widgets"], before["widgets"]);
 }
 
 #[test]
 fn a_widget_lands_where_the_placement_put_it() {
-    // The widget DTO is a REFERENCE: an annotation number and a page
-    // number, and no geometry. So a widget placed in the wrong box reads
-    // back identically, and the only way to see it is to ask the
-    // annotation.
+    // The field's widget is a REFERENCE: an annotation and a page, and no
+    // geometry. So a widget placed in the wrong box reads back identically,
+    // and the only way to see it is to read its row.
     let file = load();
-    let case = file.cases.iter().find(|c| c.name == "create-text-full").expect("the case");
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-
-    let draft: FormFieldDraft =
-        serde_json::from_value(case.draft.clone().expect("a draft")).expect("the draft decodes");
-    let placement = draft.placements().next().expect("one placement").clone();
-    let widgets = OwnedPageWidgets::new(owned);
-    create_field(owned.document(), &widgets, &draft, &CancelToken::never())
-        .expect("the field is created");
-
-    let page = owned.document().page(0).expect("page");
-    let last = page.annotation_count() - 1;
-    let written = page.annotation(last).expect("the new widget");
-    let rect = written.rect();
-    for (got, want) in [
-        (f64::from(rect.left), placement.rect.left),
-        (f64::from(rect.bottom), placement.rect.bottom),
-        (f64::from(rect.right), placement.rect.right),
-        (f64::from(rect.top), placement.rect.top),
-    ] {
-        assert!((got - want).abs() < 0.01, "the widget sits at {rect:?}, not {:?}", placement.rect);
+    let full = case(&file, "create-text-full");
+    let (mut replay, answer) = run(&file, full);
+    let answer = answer.expect("the field is created");
+    let widget = answer["result"]["field"]["widgets"][0]["ref"].clone();
+    let row = form(&mut replay)["widgets"]
+        .as_array()
+        .expect("widget rows")
+        .iter()
+        .find(|row| row["ref"] == widget)
+        .cloned()
+        .unwrap_or_else(|| panic!("no row for {widget}"));
+    let placed = &full.request["draft"]["widgets"][0]["rect"];
+    for edge in ["x", "y", "width", "height"] {
+        let (got, want) = (row["rect"][edge].as_f64(), placed[edge].as_f64());
+        assert!(
+            (got.unwrap() - want.unwrap()).abs() < 0.01,
+            "the widget sits at {}, not {placed}",
+            row["rect"]
+        );
     }
+    // And in the file where the case's draft put it, in the file's
+    // coordinates.
+    let pdf = &full.draft.as_ref().expect("a draft")["widget"]["rect"];
+    let height = pdf["top"].as_f64().unwrap() - pdf["bottom"].as_f64().unwrap();
+    assert!((row["rect"]["height"].as_f64().unwrap() - height).abs() < 0.01);
+    // The answer's row says the same.
+    assert_eq!(answer["result"]["widgets"][0]["rect"], row["rect"]);
 }
 
 #[test]
 fn a_radio_without_a_state_is_refused_before_the_field_exists() {
-    // PDFium refuses the ADOPTION of a stateless radio widget too, and with
-    // the same code. The difference is when: by then the field and the
-    // widget both exist, and nothing in this layer takes them back. So the
-    // check is in preflight, and this is what says so.
+    // The adoption would refuse a stateless radio widget too, by when the
+    // field and the widget both exist. So the check is in preflight.
     let file = load();
-    let case =
-        file.cases.iter().find(|c| c.name == "create-radio-without-state-refused").expect("case");
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let before = owned.document().page(0).expect("page").annotation_count();
-    let fields_before = owned.document().form_model().expect("a model").field_count();
-
-    let draft: FormFieldDraft =
-        serde_json::from_value(case.draft.clone().expect("a draft")).expect("the draft decodes");
-    let widgets = OwnedPageWidgets::new(owned);
-    create_field(owned.document(), &widgets, &draft, &CancelToken::never())
-        .expect_err("a radio widget needs a state");
-
+    let refused = case(&file, "create-radio-without-state-refused");
+    let mut replay = open(&file, "form-field:radio");
+    let before = form(&mut replay);
+    replay.replay(&refused.request).expect_err("a radio widget needs a state");
+    let after = form(&mut replay);
     assert_eq!(
-        owned.document().page(0).expect("page").annotation_count(),
-        before,
+        after["widgets"].as_array().map(Vec::len),
+        before["widgets"].as_array().map(Vec::len),
         "the refusal left a widget behind",
     );
     assert_eq!(
-        owned.document().form_model().expect("a model").field_count(),
-        fields_before,
+        after["fields"].as_array().map(Vec::len),
+        before["fields"].as_array().map(Vec::len),
         "the refusal left a field behind",
     );
 }
 
 #[test]
-fn deleting_a_field_leaves_its_widgets_on_the_page() {
-    // The half the vector cannot show, because the DTO it records is the
-    // field's and the field is gone. A widget survives its field as an
-    // inert annotation, which is what makes the detached list worth
-    // reporting: something still has to remove them from the page.
+fn deleting_a_field_takes_its_widgets_off_their_pages() {
+    // The half the vector cannot show: the field is gone, and so are its
+    // widgets (upstream's cascade). A merged field/widget is one dictionary,
+    // gone with it in the same write (60602f579).
     let file = load();
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let page = owned.document().page(0).expect("page");
-    let before = page.annotation_count();
-
-    let result = delete_field(
-        owned.document(),
-        &FormFieldRef::ObjectNumber { field: 9 },
-        &CancelToken::never(),
-    )
-    .expect("the radio group deletes");
-
-    assert_eq!(result.detached_widgets.len(), 2, "both widgets are reported");
-    assert_eq!(
-        page.annotation_count(),
-        before,
-        "a detached widget is still an annotation on its page",
-    );
+    for (name, widgets) in [("delete-radio-group", 2), ("delete-merged-field-refused", 1)] {
+        let deleting = case(&file, name);
+        let mut replay = open(&file, &format!("form-field:cascade-{name}"));
+        let before = form(&mut replay)["widgets"].as_array().map(Vec::len).unwrap();
+        let answer = replay.replay(&deleting.request).expect("the field deletes");
+        let removed = answer["result"]["meta"]["changedWidgets"].as_array().unwrap().clone();
+        assert_eq!(removed.len(), widgets, "{name}: every widget is reported");
+        let after = form(&mut replay)["widgets"].as_array().unwrap().clone();
+        assert_eq!(after.len(), before - widgets, "{name}: the widgets left their pages");
+        for widget in &removed {
+            assert!(after.iter().all(|row| row["ref"] != widget["ref"]), "{name}: {widget}");
+        }
+    }
 }

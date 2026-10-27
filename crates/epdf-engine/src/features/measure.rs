@@ -7,9 +7,14 @@
 //! `packages/engine/core/src/measure/validate.ts` (`assertWritableMeasure`)
 //! and the `validNumberFormat` it calls. Other producers' viewports survive
 //! every write; `/VP` itself is never rewritten.
+//!
+//! [`derive`] is the label a dimension annotation's points and scale work
+//! out (`core/src/measure/compute.ts`, `format.ts`, `derive.ts`).
+
+pub mod derive;
 
 use pdfium::measure::{Measure, MeasureAxis, MeasureSubtype, MeasureText, Viewport};
-use pdfium::{Document, PageBoxType, PageView, PointF, RectF};
+use pdfium::{Document, PageView, PointF, RectF};
 use serde_json::{Map, Value, json};
 
 use crate::cancel::CancelToken;
@@ -41,7 +46,7 @@ fn invalid(message: impl Into<String>) -> EngineError {
 
 /// `requireMeasureWrite`: a native rejection after validated input is an
 /// internal invariant, never caller validation.
-fn require_measure_write(ok: bool) -> Result<(), EngineError> {
+pub fn require_measure_write(ok: bool) -> Result<(), EngineError> {
     if ok {
         Ok(())
     } else {
@@ -66,9 +71,13 @@ fn normalized(r: RectF) -> Value {
 // ── MeasureReader / readViewports ───────────────────────────────────────────
 
 /// `MeasureReader.viewports` over `readViewports`: every viewport in
-/// drawing order, a malformed one or one whose `/BBox` doesn't read
-/// skipped. Answers `{viewports}`, the worker's result without its tag.
-pub fn read_viewports(page: &PageView<'_>, cancel: &CancelToken) -> Result<Value, EngineError> {
+/// drawing order, in the file's coordinates, a malformed one or one whose
+/// `/BBox` doesn't read skipped. A viewport with no name or no measure
+/// reads `null` for it.
+pub fn read_viewports(
+    page: &PageView<'_>,
+    cancel: &CancelToken,
+) -> Result<Vec<Value>, EngineError> {
     cancel.check()?;
     let mut viewports = Vec::new();
     for i in 0..page.viewport_count() {
@@ -77,31 +86,27 @@ pub fn read_viewports(page: &PageView<'_>, cancel: &CancelToken) -> Result<Value
         let name = text(viewport.name())?;
         let measure = read_measure(viewport.measure())?;
         let owned = name.as_deref() == Some(CALIBRATION_NAME)
-            && measure.as_ref().is_none_or(|m| m["subtype"] == "RL");
-        let mut out = Map::new();
-        out.insert("bbox".into(), normalized(bbox));
-        out.insert("owned".into(), owned.into());
-        if let Some(name) = name {
-            out.insert("name".into(), name.into());
-        }
-        if let Some(measure) = measure {
-            out.insert("measure".into(), measure);
-        }
-        viewports.push(Value::Object(out));
+            && measure.as_ref().is_none_or(|m| m["subtype"] == "rectilinear");
+        viewports.push(json!({
+            "bbox": normalized(bbox),
+            "owned": owned,
+            "name": name,
+            "measure": measure,
+        }));
     }
-    Ok(json!({ "viewports": viewports }))
+    Ok(viewports)
 }
 
 // ── measureCodec ────────────────────────────────────────────────────────────
 
-/// `readMeasure`: a foreign measure is its subtype name and nothing else;
-/// an `RL` one always carries `x`, `distance` and `area` (possibly empty)
+/// `readMeasure`: a foreign measure is its subtype name and nothing else
+/// (`geospatial` or `unknown`); a `rectilinear` one always carries `x`, `distance` and `area` (possibly empty)
 /// and `y`, `angle`, `slope` only when non-empty.
 pub fn read_measure(handle: Option<Measure<'_>>) -> Result<Option<Value>, EngineError> {
     let Some(m) = handle else { return Ok(None) };
     match m.subtype() {
         MeasureSubtype::Rl => {}
-        MeasureSubtype::Geo => return Ok(Some(json!({ "subtype": "GEO" }))),
+        MeasureSubtype::Geo => return Ok(Some(json!({ "subtype": "geospatial" }))),
         MeasureSubtype::Unknown => return Ok(Some(json!({ "subtype": "unknown" }))),
     }
     let formats = |axis: MeasureAxis| -> Result<Vec<Value>, EngineError> {
@@ -145,7 +150,7 @@ pub fn read_measure(handle: Option<Measure<'_>>) -> Result<Option<Value>, Engine
     };
     let ratio = text(m.ratio())?;
     let mut result = Map::new();
-    result.insert("subtype".into(), "RL".into());
+    result.insert("subtype".into(), "rectilinear".into());
     result.insert("x".into(), formats(MeasureAxis::X)?.into());
     result.insert("distance".into(), formats(MeasureAxis::Distance)?.into());
     result.insert("area".into(), formats(MeasureAxis::Area)?.into());
@@ -260,7 +265,7 @@ fn text_ok(value: Option<&Value>) -> bool {
 }
 
 /// `assertPdfFloat`.
-fn assert_pdf_float(n: Option<&Value>) -> Result<(), String> {
+pub fn assert_pdf_float(n: Option<&Value>) -> Result<(), String> {
     match n.and_then(Value::as_f64) {
         Some(n) if fround(n).is_finite() => Ok(()),
         _ => Err("Value is outside PDF float range".into()),
@@ -270,7 +275,7 @@ fn assert_pdf_float(n: Option<&Value>) -> Result<(), String> {
 /// `assertWritableMeasure`. `Err` is the `RangeError`'s message, which
 /// `MeasureMutator` rethrows as `InvalidArg`.
 pub fn assert_writable_measure(value: &Value) -> Result<(), String> {
-    if value.get("subtype").and_then(Value::as_str) != Some("RL") {
+    if value.get("subtype").and_then(Value::as_str) != Some("rectilinear") {
         return Err("Only rectilinear measures can be authored".into());
     }
     if let Some(ratio) = value.get("ratio")
@@ -331,7 +336,7 @@ pub fn assert_writable_measure(value: &Value) -> Result<(), String> {
 // ── MeasureMutator ──────────────────────────────────────────────────────────
 
 /// Whether the viewport is one `setScale` owns: named `EmbedPDF`, with no
-/// measure or an `RL` one. Read as `MeasureMutator` reads it, which is not
+/// measure or a rectilinear one. Read as `MeasureMutator` reads it, which is not
 /// `readViewports`: the `/BBox` doesn't matter here.
 fn is_owned(viewport: &Viewport<'_>) -> Result<bool, EngineError> {
     if text(viewport.name())?.as_deref() != Some(CALIBRATION_NAME) {
@@ -342,11 +347,13 @@ fn is_owned(viewport: &Viewport<'_>) -> Result<bool, EngineError> {
 
 /// `MeasureMutator.setScale`. `measure` is `None` for the wire's `null`:
 /// remove every owned viewport, highest index first. Otherwise update the
-/// last owned viewport, or append one over the crop box (else the media
-/// box), and write the measure into a fresh `/Measure`.
+/// last owned viewport, or append one over the visible page, and write the
+/// measure into a fresh `/Measure`.
 ///
-/// `document` and `index` are the page's, for the box read the TypeScript
-/// does through `EPDF_GetPageBoxByIndex`.
+/// The visible page is `pageBoxesOf`'s crop box (`readBoxes(...).crop`,
+/// `MeasureMutator.ts:52-56`): US Letter when the page has no media box,
+/// and the crop box cut to the media box. `document` and `index` are the
+/// page's, for that read.
 pub fn set_scale(
     document: &Document,
     index: u32,
@@ -365,15 +372,13 @@ pub fn set_scale(
             owned.push(i);
         }
     }
-    let raw = document
-        .page_box_by_index(index, PageBoxType::Crop)
-        .or_else(|| document.page_box_by_index(index, PageBoxType::Media))
-        .ok_or_else(|| invalid("Page has no valid calibration box"))?;
+    // `MeasureMutator`: the page's visible box (`readBoxes(...).crop`).
+    let crop = crate::features::pages::read_boxes(document, index).crop;
     let bbox = RectF {
-        left: raw.left.min(raw.right),
-        right: raw.left.max(raw.right),
-        bottom: raw.top.min(raw.bottom),
-        top: raw.top.max(raw.bottom),
+        left: crop.left as f32,
+        right: crop.right as f32,
+        bottom: crop.bottom as f32,
+        top: crop.top as f32,
     };
     if ![bbox.left, bbox.right, bbox.bottom, bbox.top].iter().all(|v| v.is_finite()) {
         return Err(invalid("Invalid calibration box"));

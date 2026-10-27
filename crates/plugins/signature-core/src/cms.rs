@@ -142,11 +142,13 @@ pub struct BuildInput {
     pub signing_time: Option<f64>,
 }
 
-fn attribute(oid: &str, value: Vec<u8>) -> Vec<u8> {
+pub(crate) fn attribute(oid: &str, value: Vec<u8>) -> Vec<u8> {
     der::sequence(&[der::oid(oid), der::set(&[value])])
 }
 
-fn signature_algorithm(algorithm: RawAlgorithm, hash: Digest) -> Vec<u8> {
+/// `signatureAlgorithmFor`: the SignerInfo signature algorithm of a raw key
+/// and hash.
+pub fn signature_algorithm_for(algorithm: RawAlgorithm, hash: Digest) -> Vec<u8> {
     match algorithm {
         RawAlgorithm::RsaPkcs1 => {
             let oid = match hash {
@@ -193,6 +195,12 @@ pub fn cms_ecdsa_signature(raw: &[u8]) -> Vec<u8> {
     }
     let (r, s) = raw.split_at(raw.len() / 2);
     der::sequence(&[der::integer_der(r), der::integer_der(s)])
+}
+
+/// `cmsSignatureValue`: a raw signature as a SignerInfo carries it (ECDSA
+/// `r || s` becomes DER).
+pub fn cms_signature_value(algorithm: RawAlgorithm, raw: Vec<u8>) -> Vec<u8> {
+    if algorithm == RawAlgorithm::Ecdsa { cms_ecdsa_signature(&raw) } else { raw }
 }
 
 /// `buildDetachedCms`.
@@ -248,15 +256,14 @@ pub async fn build_detached_cms(input: BuildInput) -> Result<Vec<u8>, Error> {
     let digest_algorithm = der::sequence(&[der::oid(input.hash.oid())]);
     let to_sign = der::set(&attributes);
     let raw = (input.signer.sign)(to_sign).await?;
-    let signature =
-        if input.signer.algorithm == RawAlgorithm::Ecdsa { cms_ecdsa_signature(&raw) } else { raw };
+    let signature = cms_signature_value(input.signer.algorithm, raw);
 
     let signer_info = der::sequence(&[
         der::integer(1),
         der::sequence(&[signer_cert.issuer.raw.clone(), der::integer_bytes(&signer_cert.serial)]),
         digest_algorithm.clone(),
         der::context(0, &attributes),
-        signature_algorithm(input.signer.algorithm, input.hash),
+        signature_algorithm_for(input.signer.algorithm, input.hash),
         der::octet_string(&signature),
     ]);
     let signed_data = der::sequence(&[

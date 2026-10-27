@@ -1,107 +1,145 @@
-//! `read/catalog.ts`: reads over the store and the binary sidecar:
-//! libraries, assets, previews, the library's PDF, and the two twins.
+//! `read/catalog.ts`: reads over the state and the binaries resource:
+//! libraries, assets, previews, the library's PDF, and the checks.
 
+use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::rt::Promise;
 use epdf_plugin_annotation::ANNOTATION;
+use serde_json::{Value, json};
 
 use crate::contract::*;
 use crate::controller::StampCapability;
-use crate::services::errors::not_found;
+use crate::services::errors::{CAPABILITY, not_found, throw_if_cancelled, verb};
 
 impl StampCapability {
-    /// `listLibraries(filter?)`: display order, optionally one kind or
-    /// several.
+    /// `listLibraries(filter)`: in display order, of the kinds asked for.
     pub fn list_libraries(&self, filter: Option<&StampLibraryFilter>) -> Vec<StampLibrary> {
-        let s = self.state();
+        let state = self.state();
         let kinds = filter.and_then(|f| f.kind.as_ref());
-        s.library_order
+        state
+            .library_order
             .iter()
-            .filter_map(|id| s.libraries.get(id))
-            .filter(|l| kinds.is_none_or(|kinds| kinds.contains(&l.kind)))
+            .filter_map(|id| state.libraries.get(id))
+            .filter(|library| kinds.is_none_or(|kinds| kinds.contains(&library.kind)))
             .cloned()
             .collect()
     }
 
-    /// `getLibrary(id)`.
-    pub fn get_library(&self, id: &str) -> Option<StampLibrary> {
-        self.state().libraries.get(id).cloned()
+    /// `getLibrary(libraryId)`.
+    pub fn get_library(&self, library_id: &str) -> Option<StampLibrary> {
+        self.state().libraries.get(library_id).cloned()
     }
 
-    /// `listAssets(filter?)`: library order, then asset order.
+    /// `listAssets(filter)`: in the order a picker shows them, by library,
+    /// then within it. An empty `libraryId` filters nothing, as the
+    /// TypeScript's falsy check has it.
     pub fn list_assets(&self, filter: Option<&StampAssetFilter>) -> Vec<StampAsset> {
-        let s = self.state();
-        let library_id = filter.and_then(|f| f.library_id.as_deref()).filter(|id| !id.is_empty());
-        let scope: Vec<String> = match library_id {
-            Some(id) => vec![id.to_string()],
-            None => s.library_order.clone(),
-        };
+        let state = self.state();
+        let library_ids: Vec<String> =
+            match filter.and_then(|f| f.library_id.clone()).filter(|id| !id.is_empty()) {
+                Some(id) => vec![id],
+                None => state.library_order.clone(),
+            };
         let kind = filter.and_then(|f| f.kind);
-        let category = filter.and_then(|f| f.category.as_deref()).filter(|c| !c.is_empty());
-        scope
+        let category =
+            filter.and_then(|f| f.category.as_deref()).filter(|category| !category.is_empty());
+        library_ids
             .iter()
-            .flat_map(|lid| s.libraries.get(lid).map(|l| l.asset_ids.clone()).unwrap_or_default())
-            .filter_map(|id| s.assets.get(&id).cloned())
-            .filter(|a| kind.is_none_or(|k| a.kind == k))
-            .filter(|a| {
-                category.is_none_or(|c| {
-                    a.categories.as_ref().is_some_and(|cs| cs.iter().any(|x| x == c))
+            .filter_map(|id| state.libraries.get(id))
+            .flat_map(|library| library.asset_ids.iter().filter_map(|id| state.assets.get(id)))
+            .filter(|asset| kind.is_none_or(|kind| asset.kind == kind))
+            .filter(|asset| {
+                category.is_none_or(|category| {
+                    asset.categories.as_ref().is_some_and(|c| c.iter().any(|c| c == category))
                 })
             })
+            .cloned()
             .collect()
     }
 
-    /// `getAsset(id)`.
-    pub fn get_asset(&self, id: &str) -> Option<StampAsset> {
-        self.state().assets.get(id).cloned()
+    /// `getAsset(assetId)`.
+    pub fn get_asset(&self, asset_id: &str) -> Option<StampAsset> {
+        self.state().assets.get(asset_id).cloned()
     }
 
-    /// `getAssetPreview(id)`: the cached thumbnail, or `None`.
-    pub fn get_asset_preview(&self, id: &str) -> Option<StampAssetPreview> {
-        self.0.binaries.borrow().get(id).and_then(|b| b.preview.clone())
+    /// `getAssetPreview(assetId)`: the cached thumbnail, or `None`.
+    pub fn get_asset_preview(&self, asset_id: &str) -> Option<StampAssetPreview> {
+        self.0.binaries.binaries.borrow().get(asset_id).and_then(|b| b.preview.clone())
     }
 
-    /// `renderAssetPreview(id, {width})`: a preview at any width, cached per
-    /// width; `not-found` for an unknown asset.
-    pub fn render_asset_preview(&self, id: &str, width: f64) -> Promise<Option<StampAssetPreview>> {
-        let Some(bin) = self.0.binaries.borrow().get(id).cloned() else {
-            return Promise::rejected(not_found("asset", id));
-        };
-        let local = self.ghost_cache(Some(id));
-        let pending = self.ghost_render(&local, &bin.bytes, &bin.preview, width);
-        // `.then((preview) => preview ? {bytes, mimeType ?? 'image/png'} : null)`
-        Promise::spawn(async move {
-            Ok(pending.await?.map(|p| StampAssetPreview {
-                bytes: p.bytes,
-                mime_type: Some(p.mime_type.unwrap_or_else(|| "image/png".into())),
+    /// `renderAssetPreview(assetId, {width, signal})`: a preview at any
+    /// width, rendered by the asset engine and cached per width. Rejects
+    /// `not-found`.
+    pub fn render_asset_preview(
+        &self,
+        asset_id: &str,
+        width: f64,
+        options: OperationOptions,
+    ) -> Promise<Option<StampAssetPreview>> {
+        let this = self.clone();
+        let asset_id = asset_id.to_string();
+        verb(Promise::spawn(async move {
+            throw_if_cancelled(options.signal.as_ref())?;
+            let binary = this.0.binaries.binaries.borrow().get(&asset_id).cloned();
+            let Some(binary) = binary else { return Err(not_found("asset", &asset_id)) };
+            let provider = this.ghost_provider(binary.bytes, binary.preview, Some(&asset_id));
+            let preview = cancellable(CAPABILITY, options.signal, provider(width)).await?;
+            Ok(preview.map(|preview| StampAssetPreview {
+                bytes: preview.bytes,
+                // `preview.mimeType ?? 'image/png'`
+                mime_type: Some(
+                    preview
+                        .mime_type
+                        .filter(|m| !m.is_null())
+                        .unwrap_or_else(|| Value::String("image/png".into())),
+                ),
             }))
+        }))
+    }
+
+    /// `readAssetBytes(assetId)`: a copy of the asset's placement bytes (a
+    /// one-page PDF), or `None`.
+    pub fn read_asset_bytes(&self, asset_id: &str) -> Option<Vec<u8>> {
+        self.0.binaries.binaries.borrow().get(asset_id).and_then(|b| b.bytes.clone())
+    }
+
+    /// `exportLibrary(libraryId)`: the library as the PDF it is. Rejects
+    /// `not-found`. The TypeScript leaves this one out of `verb`.
+    pub fn export_library(&self, library_id: &str, options: OperationOptions) -> Promise<Vec<u8>> {
+        let this = self.clone();
+        let library_id = library_id.to_string();
+        Promise::spawn(async move {
+            throw_if_cancelled(options.signal.as_ref())?;
+            let bytes =
+                this.0.binaries.library_binaries.borrow().get(&library_id).cloned().flatten();
+            bytes.ok_or_else(|| not_found("library", &library_id))
         })
     }
 
-    /// `readAssetBytes(id)`: a copy of the placement bytes, or `None`.
-    pub fn read_asset_bytes(&self, id: &str) -> Option<Vec<u8>> {
-        self.0.binaries.borrow().get(id).and_then(|b| b.bytes.clone())
-    }
-
-    /// `exportLibrary(id)`: the library as the PDF it is; `not-found` when
-    /// there are no canonical bytes.
-    pub fn export_library(&self, id: &str) -> Promise<Vec<u8>> {
-        let bytes = self.0.library_binaries.borrow().get(id).cloned().flatten();
-        let id = id.to_string();
-        Promise::spawn(async move { bytes.ok_or_else(|| not_found("library", &id)) })
-    }
-
-    /// `canPlace(documentId?)`: the target's annotation create grant, the
-    /// active document when none is named.
+    /// `canPlace(documentId)`: placing is annotation work, so the document's
+    /// annotation plugin answers.
     pub fn can_place(&self, document_id: Option<&str>) -> bool {
-        let id = match document_id {
-            Some(id) => Some(id.to_string()),
-            None => self.cx().core().active_id.clone(),
-        };
-        let Some(id) = id else { return false };
-        self.cx()
-            .try_for_document(&ANNOTATION, &id)
-            .ok()
-            .flatten()
-            .is_some_and(|annotation| annotation.can_create())
+        let Some(id) = self.document_id_of(document_id) else { return false };
+        match self.cx().try_for_document(&ANNOTATION, &id) {
+            Ok(Some(annotation)) => annotation.can_create(),
+            _ => false,
+        }
     }
+
+    /// `canCreateFromAnnotations(documentId)`: a stamp made from
+    /// annotations copies them out of the document, as a download does.
+    pub fn can_create_from_annotations(&self, document_id: Option<&str>) -> bool {
+        let Some(id) = self.document_id_of(document_id) else { return false };
+        self.documents().is_ok_and(|documents| documents.allows("doc.download", Some(&id)))
+    }
+}
+
+/// `{ bytes, mimeType }` of a preview for a caller that prints it, `null`
+/// for none.
+pub fn preview_json(preview: Option<&StampAssetPreview>) -> Value {
+    preview.map_or(Value::Null, StampAssetPreview::to_json)
+}
+
+/// The byte copy a reader takes, as JSON.
+pub fn bytes_json(bytes: Option<Vec<u8>>) -> Value {
+    bytes.map_or(Value::Null, |bytes| json!(epdf_kernel::bytes::Bytes(bytes).to_json()))
 }

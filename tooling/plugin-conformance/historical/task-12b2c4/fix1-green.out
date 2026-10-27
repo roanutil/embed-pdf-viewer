@@ -1,0 +1,13 @@
+(node:38849) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ hover coalesces only intermediate targets and releases paired work atomically (571.146458ms)
+✔ transaction ports return literal body and detached boot/run outputs (6.248ms)
+✔ boot without effects reads the world once and failed runs never invoke either commit sink (1.933167ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1361.80925

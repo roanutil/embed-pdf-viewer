@@ -1,0 +1,17 @@
+{
+  "current-inputs-runtime.json": "31994b178a4caf5c98527c7fa06133e6358c8be8961ba2f4677619406380978c",
+  "before-named-transitions.ts.txt": "af419ecb5725190e69ca2c3ec66058de2d98e7b96edf138a3c04ffd067c61734",
+  "runtime-summary.json": "183545bc8528023d8c75ed5ade31aa8137cc5814bda64c148e89d5e785030a33",
+  "original-runtime.json": "29d6123109c9f2dd9333890d15ce64ed3c3ffbd69d1d2dfbdf671f3487b2b901",
+  "preservation.json": "b56307bfe2d007f3fa4f66244eec804898a0edc5ee98a94df9788603d5d0bdbe",
+  "diagnostics.json": "c14bee809af5a9c1279dbc281007500813d1069ed40b122bf50022c677b45add",
+  "negative-channels.json": "2bb5a8b8ab40a05fd50354eb1b9d33bdec8ed9cfae2d4e74fc2fcdd4adf30706",
+  "accounting.json": "1b3e2639191ae0f51c6058b1bcc9c6cad99f296000521de5ab4ba3000d680201",
+  "original-shell.ts.txt": "5609b0a83e560df0cf5f70a103c8c1b79a2eaadbbceb5ac9af97d2d5f5b666ee",
+  "focus-upstream.patch.txt": "6c765e25052e50839fb6b1c2a993ad730df32b743207bad99d3a54f9415a20bc",
+  "source-evidence.json": "0d31394aa853f7e2a5c6174cddf7f1fd8bcd724be6e30ef5badfd47606c8df6d",
+  "original-commands-current.test.ts.txt": "f776415e0c2aa52aaf1924580ee745780c1610b8c68bb1e3438efe754afe9da8",
+  "task11-current-drift.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+  "prelude-restoration.json": "50531996db9da2761e45d8652a7515f47e5fd9171d98a0d204f201225211874b",
+  "before-focus-model.ts.txt": "8168a5875eb2d7ecb5f2215a060f1357e3a5a76834adc79cab9e23e03fc46afc"
+}

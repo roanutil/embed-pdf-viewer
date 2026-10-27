@@ -12,7 +12,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::auth::scope::PdfBits;
+use crate::auth::scope::{DocCapability, PdfBits, materialize_pdf_permissions};
 
 /// How a document was unlocked.
 ///
@@ -192,16 +192,22 @@ pub struct PermissionAdvisory {
     pub can_assemble: bool,
 }
 
+/// What `pdf.permissions` grants on a file with these bits
+/// (`advisoryFromPdfBits`, `document-security-state.ts`): read off
+/// [`materialize_pdf_permissions`], so the advisory and the resolver cannot
+/// disagree.
 pub fn advisory_from_pdf_bits(b: PdfBits) -> PermissionAdvisory {
+    let granted = materialize_pdf_permissions(b);
+    let has = |c: DocCapability| granted.contains(&c);
     PermissionAdvisory {
-        can_print: b.bit3,
-        can_print_high: b.bit12 && b.bit3,
-        can_copy: b.bit5,
-        can_annotate: b.bit6,
-        can_fill_forms: b.bit6 || b.bit9,
-        can_modify_forms: b.bit6 && b.bit4,
-        can_modify_pages: b.bit4,
-        can_assemble: b.bit11,
+        can_print: has(DocCapability::DocPrint),
+        can_print_high: has(DocCapability::DocPrintHigh),
+        can_copy: has(DocCapability::DocTextCopy),
+        can_annotate: has(DocCapability::DocAnnotateModify),
+        can_fill_forms: has(DocCapability::DocFormsFill),
+        can_modify_forms: has(DocCapability::DocFormsModify),
+        can_modify_pages: has(DocCapability::DocPagesModify),
+        can_assemble: has(DocCapability::DocPagesAssemble),
     }
 }
 
@@ -290,5 +296,129 @@ pub fn security_state_from_probe(info: &SecurityProbeInfo, opts: &StateOptions) 
             reasons,
             endpoint: required.then(|| opts.access_endpoint.clone()).flatten(),
         },
+    }
+}
+
+/// Who a password prompt asks for (`PasswordPrompt`'s `hint`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PromptHint {
+    User,
+    Owner,
+}
+
+/// Whether to ask for a password (`PasswordPrompt`,
+/// `packages/engine/core/src/engine/passwordPrompt.ts`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "lowercase")]
+pub enum PasswordPrompt {
+    None,
+    /// Nothing can be read until a password is given. `hint` is `None`
+    /// when the permissions are unknown; `incorrect` when the last
+    /// password tried was wrong.
+    Required {
+        hint: Option<PromptHint>,
+        incorrect: bool,
+    },
+    /// Open and readable; the owner password would allow more.
+    Optional {
+        hint: PromptHint,
+    },
+}
+
+/// `passwordPromptFromState(state, incorrect)`: the first rule that
+/// matches, top to bottom.
+pub fn password_prompt_from_state(state: &SecurityState, incorrect: bool) -> PasswordPrompt {
+    let permissions = &state.permissions;
+    if state.encryption.state == EncryptionState::None {
+        return PasswordPrompt::None;
+    }
+    if !permissions.known {
+        return PasswordPrompt::Required { hint: None, incorrect };
+    }
+    if state.encryption.requires_password == Some(true)
+        && permissions.opened_as == Some(OpenedAs::None)
+    {
+        return PasswordPrompt::Required { hint: Some(PromptHint::User), incorrect };
+    }
+    if permissions.opened_as == Some(OpenedAs::Owner) {
+        return PasswordPrompt::None;
+    }
+    if permissions.can_upgrade_to_owner {
+        return PasswordPrompt::Optional { hint: PromptHint::Owner };
+    }
+    PasswordPrompt::None
+}
+
+#[cfg(test)]
+mod prompt_tests {
+    //! `packages/engine/core/test/engine/passwordPrompt.test.ts`'s rules.
+    use super::*;
+    use serde_json::json;
+
+    fn state(
+        encryption: EncryptionState,
+        requires_password: Option<bool>,
+        known: bool,
+        opened_as: Option<OpenedAs>,
+        can_upgrade_to_owner: bool,
+    ) -> SecurityState {
+        SecurityState {
+            encryption: EncryptionSummary { state: encryption, requires_password },
+            permissions: PermissionState {
+                known,
+                bits: None,
+                all_allowed: None,
+                opened_as,
+                security_handler_revision: None,
+                can_upgrade_to_owner,
+            },
+            access: AccessSummary { required: false, reasons: Vec::new(), endpoint: None },
+        }
+    }
+
+    fn prompt(state: &SecurityState, incorrect: bool) -> serde_json::Value {
+        serde_json::to_value(password_prompt_from_state(state, incorrect)).unwrap()
+    }
+
+    #[test]
+    fn each_rule_answers_the_typescripts_prompt() {
+        use EncryptionState::{Encrypted, None as Plain};
+        use OpenedAs::{None as Anonymous, Owner, User};
+        assert_eq!(
+            prompt(&state(Plain, Some(false), true, Some(Anonymous), false), true),
+            json!({ "state": "none" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), false, None, true), true),
+            json!({ "state": "required", "hint": null, "incorrect": true })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), true, Some(Anonymous), true), false),
+            json!({ "state": "required", "hint": "user", "incorrect": false })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(Owner), false), false),
+            json!({ "state": "none" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(User), true), false),
+            json!({ "state": "optional", "hint": "owner" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(User), false), false),
+            json!({ "state": "none" })
+        );
+        // The user rule needs both a required password and no unlock: opened
+        // as the user, the owner upgrade decides; with no password required,
+        // an anonymous open prompts for nothing.
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), true, Some(User), true), false),
+            json!({ "state": "optional", "hint": "owner" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(Anonymous), false), false),
+            json!({ "state": "none" })
+        );
     }
 }

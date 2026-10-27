@@ -1,0 +1,3 @@
+tooling/plugin-conformance/src/suites/shell.ts 63ms
+tooling/plugin-conformance/test/shell-current.test.ts 32ms
+tooling/plugin-conformance/test/shell-evidence.ts 5ms (unchanged)

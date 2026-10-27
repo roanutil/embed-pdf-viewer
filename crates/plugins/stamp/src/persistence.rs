@@ -1,16 +1,20 @@
 //! `persistence.ts`: keeping custom libraries, over the plugin's public
-//! API. The plugin knows when a library changes (`onLibraryChanged`) and
-//! what its canonical bytes are (`exportLibrary`); where those bytes live is
-//! the embedder's [`StampLibraryStore`].
+//! API, in any environment. The plugin knows when a library changes
+//! (`onLibraryChanged`) and what its canonical bytes are (`exportLibrary`,
+//! a complete PDF). Where those bytes live is the embedder's decision:
+//! [`StampLibraryStore`] is the port. These helpers are the proof that the
+//! two capability calls are all a store needs.
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_kernel::bytes::Bytes;
-use epdf_kernel::rt::{self, Promise, TimerId};
+use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, Unsubscribe};
+use serde_json::Value;
 
-use crate::contract::{StampLibraryChange, StampLibraryChangeReason};
+use crate::contract::{ImportLibraryOptions, OperationOptions, StampLibraryChangeReason};
 use crate::controller::StampCapability;
 
 /// One stored library.
@@ -20,7 +24,7 @@ pub struct StoredLibrary {
     pub bytes: Vec<u8>,
 }
 
-/// `StampLibraryStore`: bytes by library id.
+/// `StampLibraryStore`: the persistence port, bytes by library id.
 pub trait StampLibraryStore {
     fn list(&self) -> Promise<Vec<StoredLibrary>>;
     fn put(&self, id: &str, bytes: Vec<u8>) -> Promise<()>;
@@ -28,7 +32,8 @@ pub trait StampLibraryStore {
 }
 
 /// `memoryStampStore()`: an in-memory store, for tests and hosts without
-/// storage. Rows list in insertion order, as a `Map` iterates.
+/// storage. Rows list in insertion order, as a `Map` iterates; a put of a
+/// stored id keeps its place.
 #[derive(Clone, Default)]
 pub struct MemoryStampStore {
     rows: Rc<RefCell<Vec<StoredLibrary>>>,
@@ -41,57 +46,47 @@ pub fn memory_stamp_store() -> MemoryStampStore {
 
 impl StampLibraryStore for MemoryStampStore {
     fn list(&self) -> Promise<Vec<StoredLibrary>> {
-        let rows = self.rows.clone();
-        Promise::spawn(async move { Ok(rows.borrow().clone()) })
+        Promise::resolved(self.rows.borrow().clone())
     }
 
     fn put(&self, id: &str, bytes: Vec<u8>) -> Promise<()> {
-        let (rows, id) = (self.rows.clone(), id.to_string());
-        Promise::spawn(async move {
-            let mut rows = rows.borrow_mut();
-            match rows.iter_mut().find(|r| r.id == id) {
-                Some(row) => row.bytes = bytes,
-                None => rows.push(StoredLibrary { id, bytes }),
-            }
-            Ok(())
-        })
+        let mut rows = self.rows.borrow_mut();
+        match rows.iter_mut().find(|row| row.id == id) {
+            Some(row) => row.bytes = bytes,
+            None => rows.push(StoredLibrary { id: id.to_string(), bytes }),
+        }
+        Promise::resolved(())
     }
 
     fn delete(&self, id: &str) -> Promise<()> {
-        let (rows, id) = (self.rows.clone(), id.to_string());
-        Promise::spawn(async move {
-            rows.borrow_mut().retain(|r| r.id != id);
-            Ok(())
-        })
+        self.rows.borrow_mut().retain(|row| row.id != id);
+        Promise::resolved(())
     }
 }
 
-/// The `console.warn` the helpers report to.
-pub type Warn = Option<Rc<dyn Fn(&str, &Error)>>;
-
-fn warn(sink: &Warn, message: &str, error: &Error) {
-    if let Some(sink) = sink {
-        sink(message, error);
-    }
+fn warn(message: String, error: &Error) {
+    crate::console::warn(vec![Value::String(message), error.to_canonical()]);
 }
 
-/// `restoreStampLibraries(stamp, store)`: import every stored library as it
-/// is; one that fails is reported and skipped. Answers the restored ids.
+/// `restoreStampLibraries(stamp, store)`: bring every stored library back.
+/// Each PDF is imported as it is (its title, registry and PieceInfo id come
+/// from the file; the store's key is only a hint); one that fails is
+/// reported and skipped. Call once at boot, before seeding defaults.
+/// Answers the restored ids.
 pub fn restore_stamp_libraries(
     stamp: &StampCapability,
     store: Rc<dyn StampLibraryStore>,
-    report: Warn,
 ) -> Promise<Vec<String>> {
     let stamp = stamp.clone();
+    let listing = store.list();
     Promise::spawn(async move {
         let mut restored = Vec::new();
-        for row in store.list().await? {
+        for row in listing.await? {
             let source = Bytes(row.bytes).to_json();
-            match stamp.import_library(source, Default::default()).await {
-                Ok(id) => restored.push(id),
+            match stamp.import_library(source, ImportLibraryOptions::default()).await {
+                Ok(library) => restored.push(library.id),
                 Err(error) => warn(
-                    &report,
-                    &format!("[stamp] stored library '{}' could not be restored:", row.id),
+                    format!("[stamp] stored library '{}' could not be restored:", row.id),
                     &error,
                 ),
             }
@@ -100,107 +95,102 @@ pub fn restore_stamp_libraries(
     })
 }
 
-/// `persistStampLibraries(stamp, store, {except, debounceMs})`'s options.
+/// `persistStampLibraries`' options: `except` names libraries never to
+/// persist (the bundled default set, typically).
 #[derive(Clone, Debug, Default)]
 pub struct PersistOptions {
     pub except: Vec<String>,
-    /// Default 250.
-    pub debounce_ms: Option<f64>,
 }
 
-struct Persisting {
+/// What a library's line does next in the store.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Step {
+    Save,
+    Delete,
+}
+
+/// One library's line: the store step waiting or running, and the one to
+/// follow it.
+struct Line {
+    step: Step,
+    started: bool,
+    next: Option<Step>,
+}
+
+struct Lines {
     stamp: StampCapability,
     store: Rc<dyn StampLibraryStore>,
-    report: Warn,
-    /// Pending writes in insertion order, as a `Map` keeps them.
-    timers: RefCell<Vec<(String, TimerId)>>,
+    lines: RefCell<HashMap<String, Rc<RefCell<Line>>>>,
 }
 
-impl Persisting {
-    /// `write(libraryId)`: export, then store; a failure is reported.
-    fn write(self: &Rc<Self>, library_id: &str) {
-        self.timers.borrow_mut().retain(|(id, _)| id != library_id);
-        let exporting = self.stamp.export_library(library_id);
+impl Lines {
+    /// `run(libraryId, step)`: not started yet, the line does the latest
+    /// wish; running, the latest wish follows it. A new line starts once
+    /// the current burst of changes is over, so the burst is one step.
+    fn run(self: &Rc<Self>, library_id: &str, step: Step) {
+        if let Some(line) = self.lines.borrow().get(library_id) {
+            let mut line = line.borrow_mut();
+            if line.started {
+                line.next = Some(step);
+            } else {
+                line.step = step;
+            }
+            return;
+        }
+        let fresh = Rc::new(RefCell::new(Line { step, started: false, next: None }));
+        self.lines.borrow_mut().insert(library_id.to_string(), fresh.clone());
         let (this, id) = (self.clone(), library_id.to_string());
+        // `void Promise.resolve().then(async () => ...)`
         rt::spawn(async move {
-            // `.then((bytes) => store.put(id, bytes)).catch(warn)`
-            let outcome = match exporting.await {
-                Ok(bytes) => {
-                    let putting = this.store.put(&id, bytes);
-                    // The `then` promise adopts the put's promise.
-                    rt::tick().await;
-                    putting.await
+            rt::tick().await;
+            fresh.borrow_mut().started = true;
+            let step = fresh.borrow().step;
+            let outcome = match step {
+                Step::Save => {
+                    match this.stamp.export_library(&id, OperationOptions::default()).await {
+                        Ok(bytes) => this.store.put(&id, bytes).await,
+                        Err(error) => Err(error),
+                    }
                 }
-                Err(error) => Err(error),
+                Step::Delete => this.store.delete(&id).await,
             };
             if let Err(error) = outcome {
-                // The `catch` reaction.
-                rt::tick().await;
-                warn(&this.report, &format!("[stamp] persisting library '{id}' failed:"), &error);
+                let doing = match fresh.borrow().step {
+                    Step::Save => "persisting",
+                    Step::Delete => "deleting stored",
+                };
+                warn(format!("[stamp] {doing} library '{id}' failed:"), &error);
+            }
+            this.lines.borrow_mut().remove(&id);
+            let next = fresh.borrow().next;
+            if let Some(next) = next {
+                this.run(&id, next);
             }
         });
     }
 }
 
-/// `persistStampLibraries(stamp, store, opts)`: keep the store in sync from
-/// now on. Each change writes the library's PDF once changes stop for the
-/// debounce; a removal deletes the stored copy. Answers the stop function,
-/// which unsubscribes and flushes pending writes.
+/// `persistStampLibraries(stamp, store, options)`: keep the store in sync
+/// from now on. Every canonical change saves the library's PDF, a removal
+/// deletes it. Each library has one line of store work, so saves never
+/// overlap and a delete never lands under a late save. Returns the
+/// unsubscribe; work already asked for still finishes.
 pub fn persist_stamp_libraries(
     stamp: &StampCapability,
     store: Rc<dyn StampLibraryStore>,
-    opts: PersistOptions,
-    report: Warn,
-) -> Rc<dyn Fn()> {
-    let persisting = Rc::new(Persisting {
-        stamp: stamp.clone(),
-        store,
-        report,
-        timers: RefCell::new(Vec::new()),
-    });
-    let debounce = opts.debounce_ms.unwrap_or(250.0);
-    let except = opts.except;
-    let listening = persisting.clone();
-    let off: Unsubscribe = stamp.on_library_changed(move |change: &StampLibraryChange| {
-        let id = change.library_id.clone();
-        if except.contains(&id) {
+    options: PersistOptions,
+) -> Unsubscribe {
+    let lines = Rc::new(Lines { stamp: stamp.clone(), store, lines: RefCell::default() });
+    let except = options.except;
+    stamp.on_library_changed(move |change| {
+        if except.contains(&change.library_id) {
             return Ok(());
         }
-        let pending = listening.timers.borrow().iter().find(|(k, _)| *k == id).map(|(_, t)| *t);
-        if let Some(pending) = pending {
-            rt::clear_timer(pending);
-        }
-        if change.reason == StampLibraryChangeReason::Removed {
-            listening.timers.borrow_mut().retain(|(k, _)| *k != id);
-            let deleting = listening.store.delete(&id);
-            let (report, id) = (listening.report.clone(), id.clone());
-            rt::spawn(async move {
-                if let Err(error) = deleting.await {
-                    warn(
-                        &report,
-                        &format!("[stamp] deleting stored library '{id}' failed:"),
-                        &error,
-                    );
-                }
-            });
-            return Ok(());
-        }
-        let writer = listening.clone();
-        let key = id.clone();
-        let timer = rt::set_timeout(debounce, move || writer.write(&key));
-        let mut timers = listening.timers.borrow_mut();
-        match timers.iter_mut().find(|(k, _)| *k == id) {
-            Some(slot) => slot.1 = timer,
-            None => timers.push((id, timer)),
-        }
+        let step = match change.reason {
+            StampLibraryChangeReason::Removed => Step::Delete,
+            _ => Step::Save,
+        };
+        lines.run(&change.library_id, step);
         Ok(())
-    });
-    Rc::new(move || {
-        off.call();
-        let pending: Vec<(String, TimerId)> = persisting.timers.borrow().clone();
-        for (library_id, timer) in pending {
-            rt::clear_timer(timer);
-            persisting.write(&library_id);
-        }
     })
 }

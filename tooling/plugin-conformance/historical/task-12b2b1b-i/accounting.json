@@ -1,0 +1,531 @@
+{
+  "base": "4a48f7acf",
+  "before": 49,
+  "after": 82,
+  "mapped": 49,
+  "retired": 0,
+  "renamed": 3,
+  "added": 33,
+  "legacyFixturesChanged": false,
+  "suites": [
+    {
+      "file": "plugins/annotation-api.json",
+      "before": 19,
+      "after": 19,
+      "retired": 0,
+      "renamed": 0,
+      "added": [],
+      "cases": [
+        {
+          "before": "draft-changed-per-draft",
+          "after": "draft-changed-per-draft",
+          "status": "retained",
+          "oldCanonicalInputSha256": "145a31a70b62f90ac5e2e61f188d2c4e5110f0d8b28a221d2c46030e653d1543",
+          "task11InputDrift": false,
+          "beforeCovers": "onDraftChanged fires whenever a step builds a new draft, not only when its value changes: a second pointermove to the same point fires again, and a step that keeps the draft (the up that clears it fires once) does not.",
+          "migrationNotes": "Actual gesture-derived draft callbacks use stable-born refs and current session state."
+        },
+        {
+          "before": "page-space-reads",
+          "after": "page-space-reads",
+          "status": "retained",
+          "oldCanonicalInputSha256": "3da2aadd58684141eb95fc66f74cae11e073fb2e99e0768bdf644a033e8ecf5d",
+          "task11InputDrift": false,
+          "beforeCovers": "get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space even with a selection; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.",
+          "migrationNotes": "Engine Annotation is the public read; pages/subtype filters, getAt and nested selection/tools replace projections, getRaw/listRaw aliases and removed author/group convenience filters. Tool registration/removal remains current."
+        },
+        {
+          "before": "create-from-page-space",
+          "after": "create-from-page-space",
+          "status": "retained",
+          "oldCanonicalInputSha256": "b4ab7cb86d1a3cbc10886c71a8bc6f3665a705979afd54b45b7feab1701c55ab",
+          "task11InputDrift": false,
+          "beforeCovers": "create stages page-space input through the one createAnnot path a draw tool takes: tool defaults, the tool’s /F seed under the input’s, props over defaults, optional selection; it resolves the engine’s ref once confirmed and announces onCreated with an api origin; an engine refusal rolls the entry back and rejects. Each geometry kind lowers to its draft. A page the document lacks, invalid geometry, an unknown tool and a subtype create cannot build reject without staging. createMany folds per-input outcomes into a batch result.",
+          "migrationNotes": "Each current create receives page + actual engine draft + resources + options. Per-input createMany is gone (cabdb0c7b); real individual creates preserve kind/default/flag/refusal coverage. Extra link/URI/flags/default creations live in reconciliation measurement-create-annot."
+        },
+        {
+          "before": "create-without-authority",
+          "after": "create-without-authority",
+          "status": "retained",
+          "oldCanonicalInputSha256": "e96d4c2ced714d7419efb258467c7b5956a87c8a40f284a7cf033e67249244f9",
+          "task11InputDrift": false,
+          "beforeCovers": "create, createFromSelection and createAttachment refuse with permission-denied when the session cannot create; the pointer, markup, caret and replace-text doors stay inert; canCreate answers false.",
+          "migrationNotes": "Current annotations:create gate rejects current create/from-selection/resource creates; host gestures stay inert. Unsupported old createAttachment convenience is replaced by resource-separated file create."
+        },
+        {
+          "before": "update-in-page-space",
+          "after": "update-in-page-space",
+          "status": "retained",
+          "oldCanonicalInputSha256": "daceaabd1ab62a41bb642984e606622dae81671ab44ef66d6d6560d6623edc20",
+          "task11InputDrift": false,
+          "beforeCovers": "update lowers page-space bounds, geometry per kind, props, flags, contents and rich text through the repository projection and one engine write, announcing onUpdated; rich text commits through the text door. A geometry of the wrong kind, bounds on a vertex kind, a props patch the annotation refuses, and an unloaded ref reject. setRotation and rotateBy write the geometry scope (a markup does not rotate); updateRaw sends a PDF-space patch as is; updateMany and deleteMany fold per-ref outcomes; delete announces onDeleted.",
+          "migrationNotes": "Current field patches replace geometry/props/flags wrappers. Every former shape family retains an actual write. Absolute rotation is a current field; arbitrary per-ref rotateBy/raw/batch conveniences were removed in cabdb0c7b, while nested selection quarter-turn/bulk paths remain. Invalid dimensions forwarded by plugin are explicitly refused by engine, rather than mislabeled local validation. Programmatic locked updates are observed separately from hand-edit twins."
+        },
+        {
+          "before": "selection-verbs",
+          "after": "selection-verbs",
+          "status": "retained",
+          "oldCanonicalInputSha256": "5be6b4120ef41ef40498c5ef9ca763f80054e17d72e157e876e040ec42fa8fba",
+          "task11InputDrift": false,
+          "beforeCovers": "selectAll selects every selectable annotation, or one page’s; selectInRect selects what intersects the rect, and an additive empty hit leaves the selection; rotateSelectionBy(-90) rotates each member through setRotation; resetSelectionRotation awaits its writes; updateSelection, updateSelectionFlags and deleteSelection settle into a batch result that names each refused member once.",
+          "migrationNotes": "Current selectAll/selectInRect and selection.update/delete/rotateBy/resetRotation preserve live selection behavior. Additive selectInRect option was removed; current set/add verbs own additive selection. Whole Change transactions replace partial per-record write semantics."
+        },
+        {
+          "before": "set-contents-settles-with-the-engine",
+          "after": "set-contents-settles-with-the-engine",
+          "status": "retained",
+          "oldCanonicalInputSha256": "6b2166dcaecfa0b654ef73718ce576325dbec29160f2a66eb84cca16a340db94",
+          "task11InputDrift": false,
+          "beforeCovers": "setContents and setRichText settle with the engine write they commit: a refused write rejects them.",
+          "migrationNotes": "Explicit current update(contents/richText) replaces removed setContents/setRichText convenience and observes engine refusals."
+        },
+        {
+          "before": "text-range-needs-an-active-edit",
+          "after": "text-range-needs-an-active-edit",
+          "status": "retained",
+          "oldCanonicalInputSha256": "f4a0556a822f345de50d63f1f39fac12cf39450739b7b5bb8ba32fac8734401f",
+          "task11InputDrift": false,
+          "beforeCovers": "getSelectionProps reads the range keys from the runs only while the ranged annotation is being edited and the range is not a bare caret; otherwise they come from the body.",
+          "migrationNotes": "Imported rich-body/body-field disagreement is deliberate; current text.begin and setTextSelection drive real selection property reads."
+        },
+        {
+          "before": "rich-text-editing",
+          "after": "rich-text-editing",
+          "status": "retained",
+          "oldCanonicalInputSha256": "2138e384e72d2ab0f6c35b78ed87268b48a7c7f0b359f2720abed0d05d6ce77c",
+          "task11InputDrift": false,
+          "beforeCovers": "setContents and setRichText commit through the one debounced text write immediately; draftRichText stages a paragraph edit and schedules the write; setTextSelection stores the editor range (a repeat is a no-op, null clears, a change of start alone is a change) and the range keys of getSelectionProps then read the runs it covers; updateSelection restyles those runs as a delta (flushing first) while the other keys restyle the body; toggleTextFormat flips a format from the current value; endTextEdit flushes and drops the range; getEditingRef and getCssFontFamily read back.",
+          "migrationNotes": "Current draftRichText and text.toggleFormat use the current single hold; complete body/paragraph edits and range formatting are asserted before and after acknowledgement."
+        },
+        {
+          "before": "attachments-stamps-and-downloads",
+          "after": "attachments-stamps-and-downloads",
+          "status": "retained",
+          "oldCanonicalInputSha256": "873acd728682c16e9c085392015cca6da997fcfbe9c78667eeb26cf0b700f9d0",
+          "task11InputDrift": false,
+          "beforeCovers": "createAttachment places the attachment tool’s icon at a point with its defaults and the picked file, selects and announces it; a page the document lacks rejects not-found; an engine refusal rejects as a PluginError. placeStamp sniffs the bytes and places them exactly as a click does, rejecting junk and a page with no crop. readAttachment rejects on an engine whose page service has no downloadFile.",
+          "migrationNotes": "Current create file/resources, stamps.place(center), downloadResource(file) preserve successful placement/download and refusal paths. Old required-method absence/downloadFile fallback is removed with that service; no malformed handle is treated as success."
+        },
+        {
+          "before": "measurement-distance-drafts",
+          "after": "measurement-distance-drafts",
+          "status": "retained",
+          "oldCanonicalInputSha256": "b954100d60344b94f066ec363ab42b6bc9391cec95a2a66ae12633a081d3622f",
+          "task11InputDrift": true,
+          "beforeCovers": "A dimension tool is inert on a page with no viewports; setPageViewports supplies them, and the scale comes from the viewport under the first point (the last containing one) or the fallback, a foreign scale refusing the draft. The distance tool drags its endpoints, then places the offset between clicks (distanceCreationPage names the page, the edit handler stands down and the hover projects onto it), and the next click commits a LineDimension draft with its caption and leader. The perimeter tool builds a PolyLineDimension. The calibrate tool captures the line in PDF space through onDraftCaptured instead of creating, and needs doc.annotate.modify.",
+          "migrationNotes": "Current complete measurement viewports, rectilinear scales and lower-case intents execute distance endpoint/offset phases and calibration capture. Actual Distance subject/fill/leader/label are retained."
+        },
+        {
+          "before": "dimension-drafts-continue-without-viewports",
+          "after": "dimension-drafts-continue-without-viewports",
+          "status": "retained",
+          "oldCanonicalInputSha256": "2bcb124846028b3e452311dcebbcc8116c47e93bab160a45cd06eafe35823112",
+          "task11InputDrift": true,
+          "beforeCovers": "A dimension draft already under way keeps taking clicks on its own page after the viewports are withdrawn, for the perimeter and the distance tools; a click on another page, which has none, starts nothing.",
+          "migrationNotes": "Current continuing dimension draft keeps its captured scale after viewport withdrawal. Foreign-page clicks do not steal it. Finish closes existing vertices; the final finish click does not append another vertex. Actual output is asserted."
+        },
+        {
+          "before": "calibration-needs-modify",
+          "after": "calibration-needs-modify",
+          "status": "retained",
+          "oldCanonicalInputSha256": "56e42f1908235d6479835b27c44495d1ba948f316e9734dfb68863cb1c2f1ede",
+          "task11InputDrift": false,
+          "beforeCovers": "The calibrate capture tool is inert without doc.annotate.modify, even with create authority.",
+          "migrationNotes": "Current calibration capture requires doc.annotate.modify while square creation remains authorized."
+        },
+        {
+          "before": "remeasure-page",
+          "after": "remeasure-page",
+          "status": "retained",
+          "oldCanonicalInputSha256": "a27e512d9bdecbb0840280cbe1fd066071230ab7606324f74d7ae08845107240",
+          "task11InputDrift": false,
+          "beforeCovers": "remeasurePage rehydrates, then rewrites the scale of every dimension on the page it can, reporting each updated ref and each one skipped: no update authority, locked, a foreign measure, or a scale that yields no readout; a refused write lands in failed. A hydration that ends in error reports it instead.",
+          "migrationNotes": "Remeasure reads confirmed mirror/current shown records, updates actual scale fields and reports locked/foreign/refused entries. No synthetic page reload table or no-op calibration is accepted."
+        },
+        {
+          "before": "remeasure-without-authority-and-after-errors",
+          "after": "remeasure-without-authority-and-after-errors",
+          "status": "retained",
+          "oldCanonicalInputSha256": "44b3052ac7363e72ef7b13206b919ef8f80bc5023304f806f093047a5b1e8a3a",
+          "task11InputDrift": false,
+          "beforeCovers": "A dimension this session may not update is skipped as no-authority; a remeasure whose rehydration fails reports the error and changes nothing.",
+          "migrationNotes": "Current allowsAnnotation.update:false yields no-authority. A failed flat reload yields an explicit report.error without claiming calibration success."
+        },
+        {
+          "before": "v3-document-events",
+          "after": "v3-document-events",
+          "status": "retained",
+          "oldCanonicalInputSha256": "369e34ef8a8196fde0d4eca27c874f06f8e9bdc5b93bd8dea660db43480f55e0",
+          "task11InputDrift": false,
+          "beforeCovers": "A form field update and a completed signature bump the widgets they repaint (a widget without an annotation address is skipped, a signature without a widget bumps nothing); document.versioned rehydrates; a failed page reload keeps the previous view.",
+          "migrationNotes": "Current document.versioned and annotations.restored facts drive actual bulk/page mirror reloads. Removed singular form/signature widget bump messages are not recreated: current widgets belong to lender/form owner (B2); this family now covers annotation reload/lifetime instead."
+        },
+        {
+          "before": "finish-drafts-and-the-edit-hub",
+          "after": "finish-drafts-and-the-edit-hub",
+          "status": "retained",
+          "oldCanonicalInputSha256": "eacb9ba5086cf2eef735009e40fbda870f228544c865b0df157f1d1a5b635faa",
+          "task11InputDrift": false,
+          "beforeCovers": "finishCreationDraft commits a polygon draft and resolves its ref, resolves null with no draft, and finishes a buffered ink draft through its own door; cancel drops a draft.",
+          "migrationNotes": "Current draft.finish/cancel preserve polygon completion/null/no-draft semantics. Buffered ink finish is current finishInkDraft and belongs with deferred tools ink tests, not removed hasCreationDraft API."
+        },
+        {
+          "before": "awaited-writes-and-pending-text",
+          "after": "awaited-writes-and-pending-text",
+          "status": "retained",
+          "oldCanonicalInputSha256": "ef3f856b7bb67a5899996336df27ac0178ad47a7d77707a1f265f1a22ecd7445",
+          "task11InputDrift": false,
+          "beforeCovers": "A quarter-turn whose write the engine refuses rejects rotateSelectionBy with the lowered error; a debounced text write whose annotation disappeared before the flush is dropped; the file-picker remover clears only the provider it installed; createAttachment refuses when the attachment tool no longer authors an icon kind.",
+          "migrationNotes": "Current quarter-turn refusal and text disappearance preserve awaited settlement/editor forget. File-picker removal now actually invokes the surviving provider through placeAt, then proves removal declines the next click. The removed arbitrary custom-pin kind is not resurrected."
+        },
+        {
+          "before": "stamp-preview-providers",
+          "after": "stamp-preview-providers",
+          "status": "retained",
+          "oldCanonicalInputSha256": "c692e45b8fce704a1bbbd5b0b4ea099924cd265a714115f83fb93c3b5d61cf41",
+          "task11InputDrift": false,
+          "beforeCovers": "A resolution-aware preview provider renders once per size bucket for the arm (powers of two from 128 px, capped at 4096); a provider that rejects is logged and reads null, and the null is cached for that bucket too.",
+          "migrationNotes": "Current stamps.arm/renderArmedStampPreview preserve size-bucket and failed-preview caching, with the one exact intended console error."
+        }
+      ]
+    },
+    {
+      "file": "plugins/annotation-crud.json",
+      "before": 13,
+      "after": 13,
+      "retired": 0,
+      "renamed": 1,
+      "added": [],
+      "cases": [
+        {
+          "before": "create-programmatically",
+          "after": "create-programmatically",
+          "status": "retained",
+          "oldCanonicalInputSha256": "1690015399f4d67ffe3aa93105a47b73df1266f7ef1380fe08df3841e799628a",
+          "task11InputDrift": false,
+          "beforeCovers": "create() defaults an absent /F to print and sends an explicit one verbatim, then syncs the created DTO (vector, or baked for a stamp) and resolves its ref. An engine refusal rejects; a page the document does not have rejects with the NotFound page() throws.",
+          "migrationNotes": "Current draft/page/resources create preserves explicit print/hidden flags, stable birth refs, stamp appearance bytes and refusals."
+        },
+        {
+          "before": "update-and-delete-by-ref",
+          "after": "update-and-delete-by-ref",
+          "status": "retained",
+          "oldCanonicalInputSha256": "4dbc3ec30a9e7d37a0f8854874097866cb794d06636561784f588ec728112981",
+          "task11InputDrift": false,
+          "beforeCovers": "update() and delete() resolve the page from the model (or an index ref’s own pon), await the engine, and sync or remove. An unknown ref rejects with the page error; an engine refusal rejects and changes nothing.",
+          "migrationNotes": "Current patches and deletes use real apply, confirming events and actual model presence. The removed mutable index/revision ref is replaced by a current baseIndex not-loaded refusal, with valid baseIndex success separately added."
+        },
+        {
+          "before": "selection-reads",
+          "after": "selection-reads",
+          "status": "retained",
+          "oldCanonicalInputSha256": "d34dd0498a0ab57a36a7ed652516933881658070e17e58b94b43cfefe49645d4",
+          "task11InputDrift": false,
+          "beforeCovers": "select (a group member takes its group, add extends), selection, getSelection and getSelected (drafts skipped), deselect, and the selection flags and props (shared specs, first values, mixed keys, the derived link value).",
+          "migrationNotes": "Nested set/add/clear/list and getProperties replace removed selection/flags/props aliases. Flat Annotation flags are read on selected DTOs, with real group/attached-link relationships."
+        },
+        {
+          "before": "restyle-writes-and-rolls-back",
+          "after": "restyle-writes-and-rolls-back",
+          "status": "retained",
+          "oldCanonicalInputSha256": "e1070c4ed0dea6d6eea0b14eb15ce62c27dca40851c5b7533d6de04c5130a861",
+          "task11InputDrift": false,
+          "beforeCovers": "updateSelection is optimistic: each selected member takes the keys its kind declares, and one scoped engine write per changed member re-syncs from the returned DTO (bumping the appearance only on the engine’s say-so). A refused write rolls the member back to its last committed DTO.",
+          "migrationNotes": "Selection restyle is one atomic change. Pending shared color shows, refusal rolls both members back, and a current line width update succeeds. Unsupported fontSize on square is ignored through current selection field filtering."
+        },
+        {
+          "before": "flags-writes",
+          "after": "flags-writes",
+          "status": "retained",
+          "oldCanonicalInputSha256": "6b19a36d7e893ca3e1c0aadc9fddad6d144d53b21e208faa4eef640179b8d1eb",
+          "task11InputDrift": false,
+          "beforeCovers": "updateSelectionFlags merges /F over the selection and writes the full flag set per changed member, re-syncing with the member’s own render source; a refused write reports to console.error. It works on a locked annotation (that is how one unlocks).",
+          "migrationNotes": "Flat flags are current patch fields; explicit unlocking succeeds even on locked records. A later whole-change flag refusal restores both records."
+        },
+        {
+          "before": "delete-and-rotate-the-selection",
+          "after": "delete-and-rotate-the-selection",
+          "status": "retained",
+          "oldCanonicalInputSha256": "db1b3bde1c241782109f83fdd41e31fb4a1a50c23cd9feee54002493ba6ef4d4",
+          "task11InputDrift": false,
+          "beforeCovers": "deleteSelection removes optimistically and fires one engine delete per committed member, whatever it answers; rotateSelection90 and resetSelectionRotation commit one geometry patch per rotatable member.",
+          "migrationNotes": "Current nested rotate/reset/delete stage real transactions. Atomic delete refusal preserves both selected records, rather than inventing partial per-record success."
+        },
+        {
+          "before": "drawn-shape-commits",
+          "after": "drawn-shape-commits",
+          "status": "retained",
+          "oldCanonicalInputSha256": "d0e2841192e0ea15f5b9d0ed63dbccf06a535ebc0864dada064d6ca1269f6cf8",
+          "task11InputDrift": false,
+          "beforeCovers": "A createPointer drag commits a draft: the create effect sends the repository draft (with the seeded /NM and /F), reconciles the temp id to the durable ref, and syncs the DTO as vector. A refused create drops the draft.",
+          "migrationNotes": "Current pointer down/move/up commits the last moved geometry with a reserved born ref; create refusal removes the second pending record."
+        },
+        {
+          "before": "free-text-editing",
+          "after": "free-text-editing",
+          "status": "retained",
+          "oldCanonicalInputSha256": "ae91e9331735d2498feb55eb1d282789d563e6576f9b34caea185801880514c4",
+          "task11InputDrift": false,
+          "beforeCovers": "beginTextEdit and beginTextEditAt (a hit on a free-text body or handle opens it; anything else reports false), setContents (optimistic, debounced 250ms per annotation, restarted by the next keystroke), endTextEdit (flushes the committed contents at once and cancels the timers), textItems and currentEditing.",
+          "migrationNotes": "Current beginTextEditAt/text.begin/draftContents/text.end preserve hit/miss, debounced words, callout text and editor lifetime. A hold is named at first typing, not at its send time."
+        },
+        {
+          "before": "text-commits-debounce-per-annotation",
+          "after": "text-commits-flush-when-switching-annotation",
+          "status": "renamed",
+          "oldCanonicalInputSha256": "120a3e11a265b86272f561245e54f27b25885d8ea693e3fdc4e68f39fa154048",
+          "task11InputDrift": false,
+          "beforeCovers": "Each annotation keeps its own debounce timer: typing into a second one neither cancels nor takes over the first one’s, and one firing leaves the other’s pending timer to be restarted, so each commits its last contents once.",
+          "migrationNotes": "Old per-annotation debounce timers no longer exist: current write/text-editing.ts owns one typing hold, flushing on annotation switch. The case is renamed and asserts each actual write/last text."
+        },
+        {
+          "before": "live-link-targets-and-finishing-a-draft",
+          "after": "live-link-targets-and-finishing-a-draft",
+          "status": "retained",
+          "oldCanonicalInputSha256": "9e2371b702b836e59c71e855ccd82a931622506492e1d05e95c115f636ce0725",
+          "task11InputDrift": false,
+          "beforeCovers": "linkItemsOn reads a link’s target from the model, so an optimistic retarget shows before the engine answers, and an optimistic clear falls back to the target the engine last reported; finishCreationDraft commits a poly draft.",
+          "migrationNotes": "Current standalone link target patch and real pending navigation projection preserve URI. Polygon completion uses draft.finish. Attached-parent links are separately covered in reconciliation and deferred comments."
+        },
+        {
+          "before": "settings",
+          "after": "settings",
+          "status": "retained",
+          "oldCanonicalInputSha256": "53333b386ac58faf566ed17fe91123b317dd2703dffa4358e3a206c3c556b408",
+          "task11InputDrift": false,
+          "beforeCovers": "setDefaults and currentDefaults through a tool’s preset (arrow reads its own bag; a bare subtype falls back), propsForTool through the tool’s props kind, setSnap and snapSettings, setChrome (deep merge) and chromeSettings, and chrome() dropping the rotate guides when they are disabled.",
+          "migrationNotes": "Current tools nouns and shared settings replace removed snap/chrome and prop convenience methods; preset isolation and rotationHandle settings remain."
+        },
+        {
+          "before": "render-projections",
+          "after": "render-projections",
+          "status": "retained",
+          "oldCanonicalInputSha256": "8fd8f3b564c3d3c86fd1bbece773e2405620e4a9289dc7148f93385229ed213c",
+          "task11InputDrift": false,
+          "beforeCovers": "pageItems (memoized by model, ghost and view), appearanceEpoch (baked, committed, painting annotations only), bakeScale (identity under the continuous policy), toContentBox, linkItemsOn (standalone and attached links, hidden ones excluded, the /AA hover flags), creationDraftAnchor.",
+          "migrationNotes": "Current page/text/link/chrome projections and polygon draft anchors use page-space records and canonical relationships. Bake-scale moved to render and the PDF/content coordinate bridge was removed; neither is faked on annotation."
+        },
+        {
+          "before": "memoized-selectors-and-edges",
+          "after": "memoized-selectors-and-edges",
+          "status": "retained",
+          "oldCanonicalInputSha256": "dea34b59e9bad95317fec310ce52523265d9fa83ce5a3f4680e1fec906b72307",
+          "task11InputDrift": false,
+          "beforeCovers": "The memoized selectors answer from cache while their inputs are unchanged and recompute on a view change; pointer intents carry zoom and display rotation; an unknown page has no page box; endTextEdit with nothing open is a plain end; a free-text with null contents flushes an empty string; a flags or props write on a draft that has no ref yet sends nothing.",
+          "migrationNotes": "Current selectors and pending state show stable refs from birth. A follow-up update confirms after its create in document order and survives; no ref-less draft shortcut remains."
+        }
+      ]
+    },
+    {
+      "file": "plugins/annotation-hydration.json",
+      "before": 17,
+      "after": 18,
+      "retired": 0,
+      "renamed": 2,
+      "added": ["stable-base-index-records"],
+      "cases": [
+        {
+          "before": "hydrates-every-page-at-open",
+          "after": "hydrates-every-page-at-open",
+          "status": "retained",
+          "oldCanonicalInputSha256": "e40383723fe7352c1c4e616ec4feb56f3669cedd3fe097a24ed8cd335ac9ff44",
+          "task11InputDrift": false,
+          "beforeCovers": "The effect subscribes, then kicks listRawAll once: loading until it lands, then one hydrated upsert of every page it has a crop for (a page it does not know is skipped), complete. Reads answer from the model.",
+          "migrationNotes": "Current flat list/status/whenSynced replace nested page snapshots and ensurePage/ensureHydrated aliases."
+        },
+        {
+          "before": "no-read-grant-means-forbidden",
+          "after": "no-read-grant-means-forbidden",
+          "status": "retained",
+          "oldCanonicalInputSha256": "2b8f7864247f45135934f85266441fefebbc8947859d4abd34ddbb41327beac7",
+          "task11InputDrift": false,
+          "beforeCovers": "Without doc.annotate.read hydration never asks: the state says forbidden, canRead is false. rehydrate re-checks, but it stores the resolved early-return promise as the running one, so a second rehydrate only flags a re-run and hands the same promise back: nothing is asked again.",
+          "migrationNotes": "Current read gate suppresses the bulk read and refresh rechecks it; no old hydration-controller stuck-promise behavior is asserted."
+        },
+        {
+          "before": "a-failed-hydration-degrades-to-live",
+          "after": "a-failed-hydration-degrades-to-live",
+          "status": "retained",
+          "oldCanonicalInputSha256": "dba9b407b1761626e1471466229a87a5416227d5a192613ff5d1ffaf8a0908d6",
+          "task11InputDrift": false,
+          "beforeCovers": "A listRawAll that rejects: remote events queued in the window apply in order, the state is error with the engine error, and live events keep applying. A rehydrate that succeeds re-ingests with bumpAp and completes.",
+          "migrationNotes": "Failed current bulk load retains queued/live facts; later successful refresh becomes ready."
+        },
+        {
+          "before": "the-hydration-window-replays-by-cursor",
+          "after": "the-hydration-window-replays-by-cursor",
+          "status": "retained",
+          "oldCanonicalInputSha256": "b75b1ab25a3908c64d411b99ff0ef8deb5a76530aa7dbefe9d427f44b0340d60",
+          "task11InputDrift": false,
+          "beforeCovers": "Remote annotation events during hydration queue, and replay after ingest: serverId <= auditHead is already in the snapshot and drops (the delete-resurrection guard), a newer one applies, one without a serverId applies. Local events and non-annotation events never queue.",
+          "migrationNotes": "Current numeric watermark drops included events and replays newer/cursorless facts from the actual event stream."
+        },
+        {
+          "before": "a-local-engine-replays-everything",
+          "after": "a-local-engine-replays-everything",
+          "status": "retained",
+          "oldCanonicalInputSha256": "a3ed24ad75a201a7ab2d27beff450a13efd5033ab9268995ecaab002d5697bd4",
+          "task11InputDrift": false,
+          "beforeCovers": "A snapshot without auditHead (a local engine) drops nothing it queued, and a string serverId compares as JavaScript does.",
+          "migrationNotes": "No-watermark local read replays all numeric queued facts. Malformed mixed/string coverage remains explicit in other cases."
+        },
+        {
+          "before": "mixed-type-cursors-compare-as-javascript",
+          "after": "mixed-type-cursors-compare-as-javascript",
+          "status": "retained",
+          "oldCanonicalInputSha256": "85010859d84875d739cc593530a0814fbd1cd73184dd43fd712ab98e44f175f8",
+          "task11InputDrift": false,
+          "beforeCovers": "A serverId that is not a number compares with a numeric auditHead as JavaScript does: true is 1, a numeric string is its number, a blank one is 0, so each is inside the snapshot and drops. A null auditHead reads as 0.",
+          "migrationNotes": "Explicit malformed serverId booleans/numeric strings/spaces retain current JS comparisons (out-of-contract adversarial inputs)."
+        },
+        {
+          "before": "a-null-cursor-reads-as-zero",
+          "after": "a-null-cursor-reads-as-zero",
+          "status": "retained",
+          "oldCanonicalInputSha256": "d369e6608cf1f831eab56703c417ff3ffd88a23dc213580813f2b842885cd1d4",
+          "task11InputDrift": false,
+          "beforeCovers": "With auditHead null, a serverId of 0 is inside the snapshot and drops; 1 applies.",
+          "migrationNotes": "Null auditHead means no watermark now, so event0 and1 both replay; old null-as-zero behavior changed upstream."
+        },
+        {
+          "before": "string-cursors-compare-as-strings",
+          "after": "string-cursors-compare-as-strings",
+          "status": "retained",
+          "oldCanonicalInputSha256": "b4a127b172f7b832f936461852b9fe707e3c3695a7e598e9d7df6351b26d6f4e",
+          "task11InputDrift": false,
+          "beforeCovers": "With a string auditHead, string serverIds compare lexicographically.",
+          "migrationNotes": "Explicit malformed string auditHead/serverId values retain the current lexical comparison (out-of-contract adversarial inputs)."
+        },
+        {
+          "before": "live-remote-events",
+          "after": "live-remote-events",
+          "status": "retained",
+          "oldCanonicalInputSha256": "70c8eb9ebf498fc298b7ff263555a95ade798a5d3eb5e5d748b08cb7f18a40b1",
+          "task11InputDrift": false,
+          "beforeCovers": "After hydration, remote events apply at once. A create bumps the appearance epoch, an update bumps only when the engine says the appearance changed, a move never does, a substrate-only annotation (a reply) never does. A delete removes a known id (object number or /NM) and ignores an unknown or empty one. An annotation on a page without a crop is skipped.",
+          "migrationNotes": "Current plural created/updated/reordered/deleted facts replace old moved/deleted-by-NM forms; all payloads are actual complete engine records/refs/meta/origin."
+        },
+        {
+          "before": "direct-delivery",
+          "after": "confirmed-origin-delivery",
+          "status": "renamed",
+          "oldCanonicalInputSha256": "70e25cfd06d9e794c02148796dc62a5bb92f890a6d03216a1e0b4d8d88920227",
+          "task11InputDrift": false,
+          "beforeCovers": "deliverRemoteAnnotationEvent applies at once outside a window; an event type it does not know is ignored. Each change is announced with originOf: remote or local by the origin kind, its sessionId as given, its sub (else null) as the actor.",
+          "migrationNotes": "Removed direct-delivery public method is replaced by actual confirmed engine event delivery, retaining complete local/remote origin assertions."
+        },
+        {
+          "before": "records-without-a-ref",
+          "after": "records-without-a-ref",
+          "status": "retained",
+          "oldCanonicalInputSha256": "1e82de7a68b068d13a330261c2bc2b7a46158d33f94a68b3f93412059825e8a3",
+          "task11InputDrift": false,
+          "beforeCovers": "A record with no ref cannot be keyed (annotationKey reads ref.kind), so ingesting it throws: a remote event carrying one applies nothing and announces nothing, a moved batch with one in it commits none of the batch, a hydration snapshot with one errors with the TypeError, and a page reload with one keeps only its removal of the stale page.",
+          "migrationNotes": "Retained malformed-protocol negative violates required Annotation.ref: exact failed-fold report + successful reload, then exact rejected malformed refresh with last good records retained. No accidental stale ref failure is approved."
+        },
+        {
+          "before": "rehydrate-chains-after-the-flight",
+          "after": "rehydrate-chains-after-the-flight",
+          "status": "retained",
+          "oldCanonicalInputSha256": "5a3a0223ac978fd4aea003d5a626109c12d9b7b40f7378f237430fec8a957a68",
+          "task11InputDrift": false,
+          "beforeCovers": "A rehydrate while one is in flight flags a re-run and returns the running promise; the finally clears it and starts the flagged run, which ingests with bumpAp. The chain settles three turns after its catch, and a stream.desynced event is a rehydrate.",
+          "migrationNotes": "Current refresh schedules one additional run while in flight and stream.desynced starts the actual mirror reload."
+        },
+        {
+          "before": "page-membership-events",
+          "after": "page-membership-events",
+          "status": "retained",
+          "oldCanonicalInputSha256": "5e84956bce3c88c47f89003fdd71b881d524db9a5840288bef4c29a9ee873673",
+          "task11InputDrift": false,
+          "beforeCovers": "pages.deleted drops the deleted pages’ annotations (nothing when none match); pages.inserted reloads each new page, which is a no-op for a page the layout does not know yet. Both are origin-agnostic.",
+          "migrationNotes": "Complete current page layout facts drop deleted pages and load inserted pages through flat annotations.list({pages})."
+        },
+        {
+          "before": "cross-plane-events",
+          "after": "cross-plane-events",
+          "status": "retained",
+          "oldCanonicalInputSha256": "bb2182506b81392f6d92bc71a68d8db7b2049b671d5121f54ae29eedfeb86196",
+          "task11InputDrift": false,
+          "beforeCovers": "redaction.applied reloads each applied page once (skipped results do not); form.valueChanged and form.effectsApplied bump the appearance version of the repainted widgets (object number > 0 only, so a widget numbered 0 keeps its version).",
+          "migrationNotes": "Current redaction.applied reloads applied pages; unchanged pages survive. Removed widget repaint messages belong to current form lender ownership (B2), not old annotation DTO tables."
+        },
+        {
+          "before": "reload-page",
+          "after": "restored-page-reloads",
+          "status": "renamed",
+          "oldCanonicalInputSha256": "8f587bb9c5394377f706c36baa4abd0942dd3ca1c7172553497eb1fbbdc30dfa",
+          "task11InputDrift": false,
+          "beforeCovers": "reloadPage replaces the page’s annotations with a fresh list, leaves other pages alone, keeps the previous view when the list fails, and does nothing for a page without a crop.",
+          "migrationNotes": "Removed reloadPage public method is replaced by the real annotations.restored event and page-scoped mirror reload; failure keeps previous records and status error."
+        },
+        {
+          "before": "closing-unsubscribes",
+          "after": "closing-unsubscribes",
+          "status": "retained",
+          "oldCanonicalInputSha256": "57bb9803ae1c99d48eea052c44407747096679f83fde625199b9d92d4417a2e3",
+          "task11InputDrift": false,
+          "beforeCovers": "The effect’s event subscription is released when the document closes.",
+          "migrationNotes": "Current document lifetime closes/releases annotation subscriptions."
+        },
+        {
+          "before": "rotated-page-layout",
+          "after": "rotated-page-layout",
+          "status": "retained",
+          "oldCanonicalInputSha256": "acbd24cb4591d5620a31e7660ec2380d8dbf9f46d1f7a3dc64cdbeae43c3e02e",
+          "task11InputDrift": false,
+          "beforeCovers": "Ingest reads each page’s own crop: an offset crop moves the content box.",
+          "migrationNotes": "Current page-space annotations on offset/rotated layouts require no removed PDF/content conversion; anchors/hits use the declared page space."
+        }
+      ]
+    }
+  ],
+  "newReconciliationSuite": {
+    "file": "plugins/annotation-reconciliation.json",
+    "added": [
+      "reconcile/loaded",
+      "reconcile/hydrated-reaps",
+      "reconcile/hydrated-bump",
+      "reconcile/hydrated-keeps-dragged",
+      "reconcile/hydrated-nothing-reaped",
+      "reconcile/hydrated-empty-hover",
+      "reconcile/hydrated-keeps-surviving-hover",
+      "reconcile/created",
+      "reconcile/created-index-ref",
+      "reconcile/created-mid-move",
+      "reconcile/created-mid-handle",
+      "reconcile/created-mid-rotate",
+      "reconcile/created-mid-poly-draft",
+      "reconcile/created-relationships",
+      "reconcile/created-then-echo-mid-move",
+      "reconcile/created-unknown",
+      "reconcile/create-failed",
+      "reconcile/create-failed-mid-move",
+      "reconcile/create-failed-mid-handle",
+      "reconcile/upsert",
+      "reconcile/upsert-while-dragging",
+      "reconcile/upsert-while-rotating",
+      "reconcile/upsert-while-group",
+      "reconcile/upsert-while-marquee",
+      "reconcile/bump-ap",
+      "reconcile/measurement-create-annot",
+      "reconcile/measurement-hydrated-under-caption-drag",
+      "reconcile/h3-confirmed-deletion-mid-move",
+      "reconcile/h3-mirror-disappearance-mid-handle",
+      "reconcile/h3-pending-stamp-confirm",
+      "reconcile/h3-pending-stamp-refuse",
+      "reconcile/h3-pending-caption-confirm"
+    ]
+  },
+  "deferred": {
+    "liveCases": 66,
+    "task11Drift": [
+      {
+        "file": "plugins/annotation-tools.json",
+        "name": "touch-consent",
+        "owner": "Task12b2b1b-ii",
+        "status": "original definition/legacy helper unchanged"
+      }
+    ]
+  }
+}

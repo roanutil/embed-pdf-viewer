@@ -1,0 +1,10 @@
+{
+  "path": "crates/plugins/acrojs/prelude.js",
+  "diffBytes": 18018,
+  "diffSha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf",
+  "matchesFullInspectedOriginalDiff": true,
+  "generatedSha256": "fd8bfaf3f4f213fd6b1d744a181636bff0256be1a929e8ccfbbc87f21f313b9e",
+  "restoredSha256": "be5e1652ba1496826f2cc2ddd85be94e8d9f53e025a91399877e739f87d9609a",
+  "restoredExactHead": true,
+  "afterLastImport": true
+}

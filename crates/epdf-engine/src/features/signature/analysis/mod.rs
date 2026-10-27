@@ -9,6 +9,9 @@ pub mod restrictions;
 pub mod types;
 pub mod verdict;
 
+#[cfg(test)]
+mod tests;
+
 pub use evaluate::{evaluate_step, restrictions_of, same_effective_value};
 pub use pdf_value::{PdfValue, parse_pdf_value, pdf_value_equals, stable_stringify};
 pub use resolve::{DEFAULT_EDGE_RESOLVER_BUDGET, EdgeResolver, EdgeResolverBudget};

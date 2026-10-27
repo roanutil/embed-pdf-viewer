@@ -1,0 +1,63 @@
+{
+  "base": "04c8e8611a933d2e190724cc0f79bce921add132",
+  "provenance": {
+    "original42": "Exact filtered C2 deferred-runtime authority; no recapture or baseline refresh",
+    "originalSource": "BASE full actions.ts archived before source edits; owned trigger/lifecycle spans unchanged from frozen C baseline",
+    "task11": {
+      "paths": [
+        "plugins/actions-triggers.json",
+        "plugins/actions-lifecycle.json"
+      ],
+      "inputDiff": 0,
+      "disposition": "Fresh Task12 migrations, neither path has inherited Task11 input drift"
+    }
+  },
+  "sourceHashes": {
+    "../../../packages/plugin/actions/src/contract.ts": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69",
+    "../../../packages/plugin/actions/src/host-contract.ts": "b6f97b8b9e93ac2e9629f3c1de088202d1fea97bac20edf480990cc3ba507745",
+    "../../../packages/plugin/actions/src/dispatch/dispatcher.ts": "0a04ed8e5b5e6153d5947a4ac27c93af5bbe2ae7768d08fe19db1f5f8d85fb9b",
+    "../../../packages/plugin/actions/src/dispatch/triggers.ts": "25b3218cb82b62bbfe88482c48ec9e46abd76f9782c218431cdf89c760695208",
+    "../../../packages/plugin/actions/src/lifecycle/open-sequence.ts": "a4bf5374c4a7e8eb81021cfe8fc8dc933abf974a55e429c4bdf7f9877a5d7a98",
+    "../../../packages/plugin/actions/src/lifecycle/page-lifecycle.ts": "4b246f1b6402670acb1f13346c1656e508c1db6f7b862a7da645d513bdbac470",
+    "../../../packages/plugin/actions/src/lifecycle/document-events.ts": "f1fe9c3273a7a04207f4793505d27cf005fce85e508117e951081c7ff0def9fc",
+    "../../../packages/plugin/actions/src/services/catalog.ts": "0b10fdd60fa81f181dd12c3a7520183518dd2b6b8fcfb6b95b8d4eb9713cf80f",
+    "../../../packages/plugin/actions/src/services/annotation-rows.ts": "4e9f3f5d46e781a488db92a95bc60682e03816d9f8354c1f6cdb2cc3c46210e0",
+    "../../../packages/plugin/actions/src/scripting/surface.ts": "0c27786f72554030e329f3632745d9e2ddb7a80c3944764759b9d61dbb2e477f",
+    "../../../packages/plugin/actions/src/scripting/executor.ts": "8a106ae9a7588630c503a480710eeb246fb35a231409d726a2c16b42cb41267e",
+    "../../../packages/engine/core/src/identity/AnnotationRef.ts": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b",
+    "../../../packages/engine/core/src/events/DocumentEvent.ts": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57",
+    "../src/suites/actions-current-fixtures.ts": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0",
+    "../src/scenario.ts": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354",
+    "../src/fake-engine.ts": "19d3ac602286730a4eafbbd360dc6d77aea2ecd980a60df7b92fabcb89c1dc16",
+    "../src/canonical.ts": "28720fd87e574c9c05e9d5a328a5bec83c5bf86d2d790155f944acd1bb8f26ce",
+    "../src/vectors.ts": "56381a25abba012c626ece0e70a98f1271a181a2dbd012a1b6f8a29fa5e77c7d"
+  },
+  "archiveHashes": {
+    "original-actions.ts.txt": "97cd9cec9be24b508b9f4cdf495ea30bbc33db6067e7c120c24cb69243d9a47b",
+    "original-inputs.json": "e1da723c3c51ea2c3feaf3d6395504064736d0845bbc52aeb7ec7d1ccdc3e748",
+    "original-runtime.json": "7ededd472fbff90ee2aca7c69a2943b8e75e71e42a2423887cf8c67eb3d263b0",
+    "current-inputs-runtime.json": "cefb5e7d3685a6f424c684d9b723a2e00e55a8c510ecc9e4c8813cf901332b51",
+    "accounting.json": "4352e4d59312c4477150ce5a59ac2c23f2696d64f4d5a67059216bcc60323fd8",
+    "negative-channels.json": "18987ffc4f6a60e4886fd36c2da185816d23cfc137cef44958001d3955c6a08c"
+  },
+  "immutableAuthorities": {
+    "../task-12b2c2/deferred-runtime.json": "c877b94482b0093398e712a08fab37c831b41fbd59e1cd1f82490458f89c8145",
+    "../task-12b2c2/current-inputs-runtime.json": "f152c54c86e34ab21be7c56abc6d03adfefcd7c4860616a6e1b5fc5bad1f169b",
+    "../task-12b2c2/link-runtime.json": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7"
+  },
+  "rulings": {
+    "guardProgression": "Binding C3 brief authorizes exactly two active-vector paths and C2 deferred exclusion plus scripting-to-pure source span; observer/factories/builders unchanged",
+    "M14": "Executor print consults print row for adapter path and rejects non-user kernel path; form surface bypasses adapter print row but rejects non-user kernel path. Supplemental typed current public-controller test preserves both; no production convergence."
+  },
+  "upstream": {
+    "getAndRefs": "83f6598d22d86e454e7f9110b078d8e0124cbba1",
+    "settingsEventsAndCreate": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719",
+    "visibility": "dispatch/triggers.ts planPageSteps visible/invisible annotations remain supported; ActionTreeSource.page open/close restriction never removed trigger visibility"
+  },
+  "currentSourceSha256": "859be9c7a47199490194841575c1753384aa793c7a6b85527a9cf5ee3319d3b3",
+  "semanticTestSha256": "0d6b0537482a109dcc016e9028d94e7c970e15a3493dc4ebba8e2080d5473d2b",
+  "guardSourceSha256": {
+    "tooling/plugin-conformance/test/actions-current.test.ts": "de68b07bfab1776a35be763aa05e48280c7181bea13160973a91a9746ab99a77",
+    "tooling/plugin-conformance/test/acrojs-current.test.ts": "e33cfeb13f73e0d2773e582165e6bce7f65a038680eafd373c956e8d59263d84"
+  }
+}

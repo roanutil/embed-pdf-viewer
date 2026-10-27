@@ -17,6 +17,14 @@ extension BaseSuite {
     }
 
     @Test func aNarrowScopeCannotSign() async throws {
+      // The field's ref, read where the session may read the form: refs
+      // are object numbers, the same in every viewer of the file.
+      let full = try PDFViewer(ViewerConfig(interaction: true, form: FormConfig(), signature: SignatureConfig()))
+      try await full.start()
+      let readable = try await full.signatures(for: try await full.open(Fixture.data("unsigned_sigfield")))
+      _ = try await readable.refresh()
+      let field = try #require(try await readable.unsignedFields().first).field
+      #expect(try await readable.canSign(field))
       let viewer = try PDFViewer(
         ViewerConfig(
           scope: ["doc.open", "doc.render"], interaction: true, form: FormConfig(), signature: SignatureConfig()))
@@ -24,9 +32,9 @@ extension BaseSuite {
       viewer.setSigner(try KeychainSignerTests.testSigner())
       let document = try await viewer.open(Fixture.data("unsigned_sigfield"))
       let signatures = try await viewer.signatures(for: document)
-      let got1 = try await signatures.canSign()
+      let got1 = try await signatures.canSign(field)
       expectNoDifference(got1, false)
-      let got2 = try await signatures.canFill()
+      let got2 = try await signatures.canFill(field)
       expectNoDifference(got2, false)
     }
 
@@ -46,7 +54,7 @@ extension BaseSuite {
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
       let metadata = try await viewer.metadata(for: document)
-      let got3 = try await metadata.canEdit()
+      let got3 = try await metadata.canUpdate()
       expectNoDifference(got3, false)
     }
   }

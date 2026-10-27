@@ -1,0 +1,3 @@
+src/suites/stamp-fixtures.ts:58:import { layout as pageLayout } from './annotation-fixtures';
+src/suites/signature-plugin.ts:85:import { created, hydrate, stamp as stampDto } from './annotation-fixtures';
+src/suites/form-fixtures.ts:26:import { annotationStep, formWidget, pr, v3Event, widget as annotationWidget } from './annotation-fixtures';

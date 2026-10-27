@@ -14,12 +14,21 @@
 //! agree ON, so a corpus regenerated from a broken TypeScript fails here
 //! rather than being adopted by Rust as the new truth.
 //!
+//! # Page space
+//!
+//! The vectors are page space (`schemaVersion` 2): the generator feeds the
+//! page-space geometry vectors to upstream's `createTextLayout`, which mirrors
+//! the runs top to bottom, runs the y-up layout, and flips each answer back.
+//! Quads name their corners, segment rects are page boxes, and hit probes are
+//! page-space points. The parity tests drive
+//! [`epdf_engine::page_space::text::create_text_layout`] the same way.
+//!
 //! Regenerate with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run layout
 
 use serde::Deserialize;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,11 +84,18 @@ struct Point {
 }
 
 #[derive(Debug, Deserialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
 struct Quad {
-    p1: Point,
-    p2: Point,
-    p3: Point,
-    p4: Point,
+    upper_left: Point,
+    upper_right: Point,
+    lower_left: Point,
+    lower_right: Point,
+}
+
+impl Quad {
+    fn corners(&self) -> [Point; 4] {
+        [self.upper_left, self.upper_right, self.lower_left, self.lower_right]
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,12 +112,13 @@ struct Segment {
     advance: i32,
 }
 
+/// A page box: `x, y` is its top-left corner.
 #[derive(Debug, Deserialize, Clone, Copy)]
 struct Rect {
-    left: f64,
-    bottom: f64,
-    right: f64,
-    top: f64,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -163,8 +180,10 @@ fn word_and_line_ranges_contain_their_glyph_and_stay_on_the_page() {
 #[test]
 fn a_degenerate_glyph_has_no_quad_and_a_real_one_does() {
     // `textGlyphQuad` returns null for an empty glyph, which is the anchor a
-    // caret would otherwise be placed at. font-size-zero.pdf is the corpus's
-    // all-degenerate page and the only place this is exercised.
+    // caret would otherwise be placed at. font-size-zero.pdf has no runs any
+    // more (PDFium drops non-finite page objects), so the degenerate probes
+    // are the empty glyphs of report, reverse-and-gapped-text and
+    // embedded-orientations.
     let file = load();
     let mut with_quad = 0usize;
     let mut without = 0usize;
@@ -174,7 +193,7 @@ fn a_degenerate_glyph_has_no_quad_and_a_real_one_does() {
         }
     }
     assert!(with_quad > 0, "no probe glyph has a quad, so the corpus has no real text");
-    assert!(without > 0, "no probe glyph is degenerate; font-size-zero.pdf should contribute one",);
+    assert!(without > 0, "no probe glyph is degenerate, so caret anchoring goes untested");
 }
 
 #[test]
@@ -187,10 +206,9 @@ fn every_segment_rect_bounds_its_own_quad() {
     for (case, page) in pages(&file) {
         for probe in &page.layout.segments {
             for (i, segment) in probe.segments.iter().enumerate() {
-                let xs =
-                    [segment.quad.p1.x, segment.quad.p2.x, segment.quad.p3.x, segment.quad.p4.x];
-                let ys =
-                    [segment.quad.p1.y, segment.quad.p2.y, segment.quad.p3.y, segment.quad.p4.y];
+                let xs = segment.quad.corners().map(|p| p.x);
+                let ys = segment.quad.corners().map(|p| p.y);
+                let r = segment.rect;
                 let where_ = format!(
                     "{} page {} range [{}, +{}) segment {i}",
                     case.name, page.index, probe.start, probe.count,
@@ -199,21 +217,21 @@ fn every_segment_rect_bounds_its_own_quad() {
                 // 1e-4 before they are compared.
                 let eps = 1e-4;
                 assert!(
-                    segment.rect.left <= xs.iter().cloned().fold(f64::INFINITY, f64::min) + eps,
-                    "{where_}: rect.left is inside the quad",
+                    r.x <= xs.iter().cloned().fold(f64::INFINITY, f64::min) + eps,
+                    "{where_}: the rect's left edge is inside the quad",
                 );
                 assert!(
-                    segment.rect.right
-                        >= xs.iter().cloned().fold(f64::NEG_INFINITY, f64::max) - eps,
-                    "{where_}: rect.right is inside the quad",
+                    r.x + r.width >= xs.iter().cloned().fold(f64::NEG_INFINITY, f64::max) - eps,
+                    "{where_}: the rect's right edge is inside the quad",
+                );
+                // Page space runs y down, so `y` is the top edge.
+                assert!(
+                    r.y <= ys.iter().cloned().fold(f64::INFINITY, f64::min) + eps,
+                    "{where_}: the rect's top edge is inside the quad",
                 );
                 assert!(
-                    segment.rect.bottom <= ys.iter().cloned().fold(f64::INFINITY, f64::min) + eps,
-                    "{where_}: rect.bottom is inside the quad",
-                );
-                assert!(
-                    segment.rect.top >= ys.iter().cloned().fold(f64::NEG_INFINITY, f64::max) - eps,
-                    "{where_}: rect.top is inside the quad",
+                    r.y + r.height >= ys.iter().cloned().fold(f64::NEG_INFINITY, f64::max) - eps,
+                    "{where_}: the rect's bottom edge is inside the quad",
                 );
                 assert!(
                     segment.advance == 1 || segment.advance == -1,
@@ -321,9 +339,11 @@ fn a_word_can_cross_a_line_boundary_between_abutting_runs() {
     // oriented one. Two text objects that abut with no space between them
     // therefore give a word that extends past its own line.
     //
-    // `embedded_orientations.pdf` has exactly that: glyph 16 reports word
-    // [16, 23] and line [15, 16], because the upright run ends and a rotated
-    // one begins without a space in between.
+    // `embedded_orientations.pdf` has exactly that: glyph 28 is an empty
+    // glyph in a run of two empties after the 330 degree run, and reports
+    // word [25, 28] and line [28, 29]. The word walk starts on the empty
+    // glyph and runs back into the rotated run, since only a neighbour can
+    // stop it; the line is the empty run alone.
     //
     // Recorded rather than asserted away, because a Rust port that "fixed" it
     // would disagree with the TypeScript on every such document, and because
@@ -357,11 +377,14 @@ fn a_word_can_cross_a_line_boundary_between_abutting_runs() {
 
 // --- G5: the Rust layout against the TypeScript one.
 
-/// The geometry snapshot each layout case was built from.
-fn snapshot_for(
-    case_name: &str,
-    page_index: u32,
-) -> epdf_engine::features::geometry::PageGeometrySnapshot {
+use epdf_engine::features::geometry::PageGeometrySnapshot;
+use epdf_engine::features::text::TextRange;
+use epdf_engine::geom::{PagePoint, PageQuad};
+use epdf_engine::page_space::PageCoordinates;
+use epdf_engine::page_space::text::{TextLayout, create_text_layout, mirrored_run};
+
+/// The page-space geometry snapshot each layout case was built from.
+fn snapshot_for(case_name: &str, page_index: u32) -> PageGeometrySnapshot<PageCoordinates> {
     let path =
         test_support::corpus::vectors_dir("pages.geometry").join(format!("{case_name}.json"));
     let text =
@@ -376,27 +399,53 @@ fn snapshot_for(
     serde_json::from_value(page["snapshot"].clone()).expect("snapshot")
 }
 
-/// Round to the corpus quantum, as the generator does.
-fn q(value: f64) -> f64 {
-    (value * 10_000.0).round() / 10_000.0
+fn layout_for(case_name: &str, page_index: u32) -> TextLayout {
+    create_text_layout(snapshot_for(case_name, page_index))
 }
 
-fn same_point(actual: epdf_engine::geom::PdfPoint, expected: Point) -> bool {
+/// Round to the corpus quantum, as the generator does with `Math.round`,
+/// which rounds a half up rather than away from zero.
+fn q(value: f64) -> f64 {
+    (value * 10_000.0 + 0.5).floor() / 10_000.0
+}
+
+fn same_point(actual: PagePoint, expected: Point) -> bool {
     q(actual.x) == expected.x && q(actual.y) == expected.y
+}
+
+fn same_quad(actual: &PageQuad, expected: &Quad) -> bool {
+    same_point(actual.upper_left, expected.upper_left)
+        && same_point(actual.upper_right, expected.upper_right)
+        && same_point(actual.lower_left, expected.lower_left)
+        && same_point(actual.lower_right, expected.lower_right)
+}
+
+/// `wordAt`/`lineAt` answer a range or nothing; the vectors keep an inclusive
+/// `[from, to]` and record nothing as the glyph alone, as the generator does.
+fn inclusive(range: Option<TextRange>, glyph: u32) -> (u32, u32) {
+    range.map_or((glyph, glyph), |r| (r.start, r.start + r.count - 1))
 }
 
 #[test]
 fn the_layout_shape_agrees_with_typescript() {
     use epdf_engine::features::text::layout::build_page_text_layout;
 
+    // `TextLayout` does not expose its frames, so the frame count reads the
+    // y-up layout built from the mirrored runs, which is what
+    // `createTextLayout` lays out and what the generator counts.
     let file = load();
     for (case, page) in pages(&file) {
-        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        let snapshot = snapshot_for(&case.name, page.index);
         let where_ = format!("{} page {}", case.name, page.index);
-        assert_eq!(layout.glyphs.len() as u32, page.layout.glyph_count, "{where_}: glyph count");
-        assert_eq!(layout.runs.len() as u32, page.layout.run_count, "{where_}: run count");
+        let mirrored =
+            PageGeometrySnapshot { runs: snapshot.runs.iter().map(mirrored_run).collect() };
+        let inner = build_page_text_layout(&mirrored);
+        let layout = create_text_layout(snapshot);
+        assert_eq!(layout.char_count(), page.layout.glyph_count, "{where_}: glyph count");
+        assert_eq!(inner.runs.len() as u32, page.layout.run_count, "{where_}: run count");
+        assert_eq!(layout.runs().len() as u32, page.layout.run_count, "{where_}: raw runs");
         assert_eq!(
-            layout.frames.len() as u32,
+            inner.frames.len() as u32,
             page.layout.frame_count,
             "{where_}: frame count, which is the orientation clustering",
         );
@@ -405,40 +454,29 @@ fn the_layout_shape_agrees_with_typescript() {
 
 #[test]
 fn glyph_quads_and_ranges_agree_with_typescript() {
-    use epdf_engine::features::text::layout::{
-        build_page_text_layout, expand_text_range_to_line, expand_text_range_to_word,
-        text_glyph_quad,
-    };
-
     let file = load();
     let mut probes = 0usize;
     for (case, page) in pages(&file) {
-        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        let layout = layout_for(&case.name, page.index);
         for probe in &page.layout.glyphs {
             let where_ = format!("{} page {} glyph {}", case.name, page.index, probe.glyph);
 
-            let actual_quad = text_glyph_quad(&layout, probe.glyph);
+            let actual_quad = layout.char_quad(probe.glyph);
             match (&actual_quad, &probe.quad) {
                 (None, None) => {}
                 (Some(a), Some(e)) => {
-                    assert!(
-                        same_point(a.p1, e.p1)
-                            && same_point(a.p2, e.p2)
-                            && same_point(a.p3, e.p3)
-                            && same_point(a.p4, e.p4),
-                        "{where_}: quad {a:?} against {e:?}",
-                    );
+                    assert!(same_quad(a, e), "{where_}: quad {a:?} against {e:?}");
                 }
                 _ => panic!("{where_}: one side produced a quad and the other did not"),
             }
 
             assert_eq!(
-                expand_text_range_to_word(&layout, probe.glyph),
+                inclusive(layout.word_at(probe.glyph), probe.glyph),
                 probe.word,
                 "{where_}: word range",
             );
             assert_eq!(
-                expand_text_range_to_line(&layout, probe.glyph),
+                inclusive(layout.line_at(probe.glyph), probe.glyph),
                 probe.line,
                 "{where_}: line range",
             );
@@ -450,8 +488,6 @@ fn glyph_quads_and_ranges_agree_with_typescript() {
 
 #[test]
 fn segments_agree_with_typescript() {
-    use epdf_engine::features::text::layout::{build_page_text_layout, text_segments_for_range};
-
     // The merge, which is the part adapted from Chromium and the part where a
     // reimplementation drifts. Every probe range in the corpus: single
     // glyphs, whole words, whole lines.
@@ -460,9 +496,9 @@ fn segments_agree_with_typescript() {
     let mut probes = 0usize;
 
     for (case, page) in pages(&file) {
-        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        let layout = layout_for(&case.name, page.index);
         for probe in &page.layout.segments {
-            let actual = text_segments_for_range(&layout, probe.start, probe.count);
+            let actual = layout.segments(TextRange { start: probe.start, count: probe.count });
             let where_ = format!(
                 "{} page {} range [{}, +{})",
                 case.name, page.index, probe.start, probe.count,
@@ -482,28 +518,24 @@ fn segments_agree_with_typescript() {
                         a.advance, e.advance,
                     ));
                 }
-                if !(same_point(a.quad.p1, e.quad.p1)
-                    && same_point(a.quad.p2, e.quad.p2)
-                    && same_point(a.quad.p3, e.quad.p3)
-                    && same_point(a.quad.p4, e.quad.p4))
-                {
+                if !same_quad(&a.quad, &e.quad) {
                     failures.push(format!("{where_} segment {i}: quad differs"));
                 }
-                if q(a.rect.left) != e.rect.left
-                    || q(a.rect.bottom) != e.rect.bottom
-                    || q(a.rect.right) != e.rect.right
-                    || q(a.rect.top) != e.rect.top
+                if q(a.rect.x) != e.rect.x
+                    || q(a.rect.y) != e.rect.y
+                    || q(a.rect.width) != e.rect.width
+                    || q(a.rect.height) != e.rect.height
                 {
                     failures.push(format!(
                         "{where_} segment {i}: rect [{}, {}, {}, {}] against [{}, {}, {}, {}]",
-                        q(a.rect.left),
-                        q(a.rect.bottom),
-                        q(a.rect.right),
-                        q(a.rect.top),
-                        e.rect.left,
-                        e.rect.bottom,
-                        e.rect.right,
-                        e.rect.top,
+                        q(a.rect.x),
+                        q(a.rect.y),
+                        q(a.rect.width),
+                        q(a.rect.height),
+                        e.rect.x,
+                        e.rect.y,
+                        e.rect.width,
+                        e.rect.height,
                     ));
                 }
             }
@@ -516,17 +548,13 @@ fn segments_agree_with_typescript() {
 
 #[test]
 fn hit_tests_agree_with_typescript() {
-    use epdf_engine::features::text::layout::{build_page_text_layout, text_glyph_at};
-    use epdf_engine::geom::PdfPoint;
-
     let file = load();
     let mut failures = Vec::new();
     for (case, page) in pages(&file) {
-        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        let layout = layout_for(&case.name, page.index);
         for probe in &page.layout.hits {
-            // 1.5 is the TypeScript's default tolerance factor, which the
-            // generator used.
-            let actual = text_glyph_at(&layout, PdfPoint { x: probe.x, y: probe.y }, 1.5);
+            // `charAt` uses the TypeScript's default tolerance factor, 1.5.
+            let actual = layout.char_at(PagePoint { x: probe.x, y: probe.y });
             if actual != probe.glyph {
                 failures.push(format!(
                     "{} page {} at ({}, {}): {actual:?} against {:?}",

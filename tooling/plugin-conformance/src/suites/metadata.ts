@@ -1,300 +1,511 @@
-/**
- * `packages/plugin/metadata`. Replayed by
- * `crates/plugins/metadata/tests/conformance.rs`.
- */
+/** Standard and custom metadata through the shipping lazy mirrors and guarded services. */
 import { MetadataToken, metadataPlugin } from '../../../../packages/plugin/metadata/src/index';
-
-import type { FakeDocumentSpec } from '../fake-engine';
-import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
+import { registerPlugin, type ScenarioCase } from '../scenario';
 import type { Suite } from '../vectors';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins changedKeys' comparison rules, through its returned value. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
+import {
+  meta,
+  doc,
+  reads,
+  start,
+  open,
+  close,
+  call,
+  custom,
+  hook,
+  fact,
+  customFact,
+  emit,
+  settle,
+  result,
+  customResult,
+  local,
+  remote,
+  pages,
+} from './metadata-current-fixtures';
 registerPlugin('metadata', { factory: () => metadataPlugin(), tokens: [MetadataToken] });
-
-const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const pages = [
-  { index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } },
-];
-const meta = (over: Record<string, unknown> = {}) => ({
-  title: null,
-  author: null,
-  subject: null,
-  keywords: null,
-  producer: null,
-  creator: null,
-  created: null,
-  modified: null,
-  trapped: 'unknown',
-  custom: {},
-  ...over,
-});
-const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
-
-const start: Step = { op: 'call', target: 'kernel', method: 'start' };
-const open = (id: string): Step => ({
-  op: 'call',
-  target: 'documents',
-  method: 'open',
-  args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
-});
-const call = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
-  op: 'call',
-  target: { token: 'metadata', doc },
-  method,
-  args,
-});
-
 const plugins = [{ factory: 'metadata' }];
-/** Engine events carry where they came from; the plugin projects it onto `ChangeOrigin`. */
-const local = { kind: 'local', sessionId: 's1', sub: null };
-const remote = { kind: 'remote', sessionId: 's2', sub: 'u-9' };
-const EDIT = { allows: ['doc.metadata.modify'] };
-
+const denied = {
+  name: 'PermissionDenied',
+  message: 'permission denied (local): doc.metadata.modify',
+  required: 'doc.metadata.modify',
+  context: 'local',
+  code: 'Forbidden',
+  details: { required: 'doc.metadata.modify', context: 'local' },
+};
+const gone = { name: 'EngineError', message: 'gone', code: 'Unknown' };
 const cases: ScenarioCase[] = [
   {
     name: 'seeds-from-a-read',
-    covers: 'The controller reads the Info dict once when the document connects and sets it; getSnapshot() is null until then.',
+    covers:
+      'Opening and synchronous getters do no reads. ensureLoaded starts both reads, keeps snapshots null until settled, and emits resynced separately.',
     plugins,
     engine: {
       documents: {
-        a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }),
+        a: doc([
+          { path: 'metadata.get', args: [], defer: 'read' },
+          { path: 'metadata.custom.get', args: [], defer: 'custom' },
+        ]),
       },
     },
     steps: [
       start,
-      open('a'),
-      call('getSnapshot'),
-      { op: 'settle', label: 'read', value: meta({ title: 'Report', custom: { Dept: 'Ops' } }) },
-      call('getSnapshot'),
+      open(),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      custom('getSnapshot', []),
+      custom('getStatus', []),
+      hook('onResynced'),
+      hook('custom.onResynced'),
+      call('ensureLoaded', []),
+      call('getSnapshot', []),
+      settle('read', meta({ title: 'Report' })),
+      call('getSnapshot', []),
+      custom('getSnapshot', []),
+      settle('custom', { Dept: 'Ops' }),
+      call('getStatus', []),
+      custom('getStatus', []),
+      call('ensureLoaded', []),
+      custom('getSnapshot', []),
     ],
   },
   {
     name: 'a-failed-seed-read-is-ignored',
-    covers: 'A read that rejects (a closed document, an aborted read) leaves the state null and reports nothing.',
+    covers:
+      'An on-demand read failure rejects its caller, leaves null metadata/error status, and reports nothing; custom success stays ready.',
     plugins,
     engine: {
       documents: {
-        a: doc({ responses: [{ path: 'metadata.read', error: { name: 'EngineError', message: 'closed', code: 'DocClosed' } }] }),
+        a: doc([
+          {
+            path: 'metadata.get',
+            args: [],
+            error: { name: 'EngineError', message: 'closed', code: 'DocClosed' },
+          },
+          ...reads().slice(1),
+        ]),
       },
     },
-    steps: [start, open('a'), call('getSnapshot')],
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      custom('getStatus', []),
+    ],
   },
   {
     name: 'live-updates-from-the-event-stream',
     covers:
-      'A metadata.updated event, own or remote, replaces the state with the metadata it carries; any other event is ignored; closing the document unsubscribes.',
+      'Both origins fold confirmed standard/custom facts. Unrelated facts are ignored; close releases the instance and reopen begins idle.',
     plugins,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', value: meta({ title: 'Seed' }) }] }) } },
+    engine: { documents: { a: doc(reads(meta({ title: 'Seed' }))) } },
     steps: [
       start,
-      open('a'),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Remote edit' }), origin: remote } },
-      call('getSnapshot'),
-      { op: 'emit', doc: 'a', event: { type: 'annotations.created', page: { kind: 'objectNumber', pageObjectNumber: 1 }, origin: local } },
-      call('getSnapshot'),
-      { op: 'call', target: 'documents', method: 'close', args: ['a'] },
+      open(),
+      call('ensureLoaded', []),
+      emit(fact(meta({ title: 'Remote edit' }))),
+      call('getSnapshot', []),
+      emit(customFact({ Dept: 'Ops' }, local)),
+      custom('getSnapshot', []),
+      emit({
+        type: 'pages.reordered',
+        origin: local,
+        pages: [{ kind: 'objectNumber', objectNumber: 1 }],
+        layout: { pageCount: 1, pages, namedPages: [] },
+        meta: result(meta()).meta,
+      }),
+      call('getSnapshot', []),
+      close,
+      open(),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      call('ensureLoaded', []),
+      call('getSnapshot', []),
     ],
   },
   {
     name: 'update-writes-through-and-sets',
     covers:
-      'update(patch) sends the three-state patch to the engine and resolves with its result once the confirmed metadata.updated event has set the snapshot.',
+      'The three-state standard patch reaches the engine unchanged. Only its confirmed event changes the mirror, before the structured write result settles.',
     plugins,
     engine: {
       documents: {
-        a: doc({
-          security: EDIT,
-          responses: [
-            { path: 'metadata.read', value: meta() },
-            { path: 'metadata.update', args: [{ title: 'New', author: null }], value: { metadata: meta({ title: 'New' }), cache: null } },
-          ],
-        }),
+        a: doc([
+          ...reads(),
+          {
+            path: 'metadata.update',
+            args: [{ title: 'New', author: null }],
+            value: result(meta({ title: 'New' })),
+            events: [fact(meta({ title: 'New' }), local)],
+          },
+        ]),
       },
     },
     steps: [
       start,
-      open('a'),
+      open(),
+      call('ensureLoaded', []),
+      hook('onUpdated'),
       call('update', [{ title: 'New', author: null }]),
-      call('getSnapshot'),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'New' }), origin: local } },
-      call('getSnapshot'),
+      call('getSnapshot', []),
     ],
   },
   {
     name: 'update-refused',
-    covers: 'An engine refusal rejects update() with the engine error and changes nothing.',
+    covers: 'An engine refusal rejects update and preserves the complete ready snapshots.',
     plugins,
     engine: {
       documents: {
-        a: doc({
-          security: EDIT,
-          responses: [
-            { path: 'metadata.read', value: meta({ title: 'Kept' }) },
-            {
-              path: 'metadata.update',
-              error: { name: 'PermissionDenied', message: 'permission denied (local): doc.metadata.modify', required: 'doc.metadata.modify', context: 'local' },
-            },
-          ],
-        }),
+        a: doc([
+          ...reads(meta({ title: 'Kept' })),
+          { path: 'metadata.update', args: [{ title: 'x' }], error: denied },
+        ]),
       },
     },
-    steps: [start, open('a'), call('update', [{ title: 'x' }]), call('getSnapshot')],
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      call('update', [{ title: 'x' }]),
+      call('getSnapshot', []),
+      call('getStatus', []),
+    ],
   },
   {
     name: 'reload',
-    covers: 'refresh() re-reads and sets; a failed refresh rejects.',
+    covers:
+      'refresh re-reads only the standard mirror; a failed refresh rejects and leaves its last value with error status.',
     plugins,
     engine: {
       documents: {
-        a: doc({
-          responses: [
-            { path: 'metadata.read', times: 1, value: meta({ title: 'First' }) },
-            { path: 'metadata.read', times: 1, value: meta({ title: 'Second' }) },
-            { path: 'metadata.read', error: { name: 'EngineError', message: 'gone', code: 'DocClosed' } },
-          ],
-        }),
+        a: doc([
+          { path: 'metadata.get', args: [], times: 1, value: meta({ title: 'First' }) },
+          { path: 'metadata.get', args: [], times: 1, value: meta({ title: 'Second' }) },
+          { path: 'metadata.get', args: [], error: { ...gone, code: 'DocClosed' } },
+          ...reads().slice(1),
+        ]),
       },
     },
-    steps: [start, open('a'), call('refresh'), call('getSnapshot'), call('refresh'), call('getSnapshot')],
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      hook('onResynced'),
+      call('refresh', []),
+      call('getSnapshot', []),
+      call('refresh', []),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      custom('getStatus', []),
+    ],
   },
   {
     name: 'can-edit',
-    covers: 'canEdit() is the doc.metadata.modify authority, wildcard included.',
+    covers:
+      'canUpdate is the doc.metadata.modify authority for both write surfaces, wildcard included, without loading.',
     plugins,
     engine: {
       documents: {
-        a: doc({ security: { allows: ['doc.metadata.modify'] }, responses: [{ path: 'metadata.read', value: meta() }] }),
-        b: doc({ security: { allows: ['doc.render'] }, responses: [{ path: 'metadata.read', value: meta() }] }),
-        c: doc({ security: { allows: '*' }, responses: [{ path: 'metadata.read', value: meta() }] }),
+        a: doc([], { security: { allows: ['doc.metadata.modify'] } }),
+        b: doc([], { security: { allows: ['doc.render'] } }),
+        c: doc([], { security: { allows: '*' } }),
       },
     },
-    steps: [start, open('a'), open('b'), open('c'), call('canEdit', [], 'a'), call('canEdit', [], 'b'), call('canEdit', [], 'c')],
+    steps: [
+      start,
+      open(),
+      open('b'),
+      open('c'),
+      call('canUpdate', [], 'a'),
+      call('canUpdate', [], 'b'),
+      call('canUpdate', [], 'c'),
+    ],
   },
   {
     name: 'update-without-the-capability-is-refused-locally',
     covers:
-      'Without doc.metadata.modify, update() rejects with a permission-denied PluginError before it reaches the engine, and the snapshot and status stay as they were.',
+      'Both writes reject permission-denied before any engine write and preserve snapshots/status.',
     plugins,
     engine: {
       documents: {
-        a: doc({ security: { allows: ['doc.render'] }, responses: [{ path: 'metadata.read', value: meta({ title: 'Kept' }) }] }),
-      },
-    },
-    steps: [start, open('a'), call('update', [{ title: 'x' }]), call('getSnapshot'), call('getStatus')],
-  },
-  {
-    name: 'a-forbidden-seed-read',
-    covers:
-      'A seed read the engine refuses with PermissionDenied leaves the snapshot null and the status forbidden; a later plain failure makes it error, and a good refresh makes it ready.',
-    plugins,
-    engine: {
-      documents: {
-        a: doc({
-          responses: [
-            {
-              path: 'metadata.read',
-              times: 1,
-              error: { name: 'PermissionDenied', message: 'permission denied (local): doc.metadata.read', required: 'doc.metadata.read', context: 'local' },
-            },
-            { path: 'metadata.read', times: 1, error: { name: 'EngineError', message: 'gone', code: 'Unknown' } },
-            { path: 'metadata.read', value: meta({ title: 'Back' }) },
-          ],
+        a: doc(reads(meta({ title: 'Kept' }), { Dept: 'Ops' }), {
+          security: { allows: ['doc.render'] },
         }),
       },
     },
     steps: [
       start,
-      open('a'),
-      call('getStatus'),
-      call('getSnapshot'),
-      call('refresh'),
-      call('getStatus'),
-      call('refresh'),
-      call('getStatus'),
-      call('getSnapshot'),
+      open(),
+      call('ensureLoaded', []),
+      call('update', [{ title: 'x' }]),
+      custom('update', [{ Dept: 'Other' }]),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      custom('getSnapshot', []),
+      custom('getStatus', []),
+    ],
+  },
+  {
+    name: 'a-forbidden-seed-read',
+    covers:
+      'An explicit first load may be forbidden; plain refresh failure is error; a later successful refresh recovers ready.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          {
+            path: 'metadata.get',
+            args: [],
+            times: 1,
+            error: {
+              ...denied,
+              message: 'permission denied (local): doc.metadata.read',
+              required: 'doc.metadata.read',
+              details: { required: 'doc.metadata.read', context: 'local' },
+            },
+          },
+          { path: 'metadata.get', args: [], times: 1, error: gone },
+          { path: 'metadata.get', args: [], value: meta({ title: 'Back' }) },
+          ...reads().slice(1),
+        ]),
+      },
+    },
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      call('getStatus', []),
+      call('getSnapshot', []),
+      call('refresh', []),
+      call('getStatus', []),
+      call('refresh', []),
+      call('getStatus', []),
+      call('getSnapshot', []),
     ],
   },
   {
     name: 'status-while-the-seed-read-is-in-flight',
     covers:
-      'The status is loading while the seed read is out, and a refresh made meanwhile shares that read instead of issuing a second one.',
+      'Loading is explicit. Concurrent ensureLoaded shares both reads; refresh joins the promise and queues one standard re-read.',
     plugins,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    engine: {
+      documents: {
+        a: doc([
+          { path: 'metadata.get', args: [], times: 1, defer: 'read' },
+          { path: 'metadata.get', args: [], times: 1, defer: 'refresh' },
+          { path: 'metadata.custom.get', args: [], defer: 'custom' },
+        ]),
+      },
+    },
     steps: [
       start,
-      open('a'),
-      call('getStatus'),
-      call('refresh'),
-      { op: 'settle', label: 'read', value: meta({ title: 'Once' }) },
-      call('getStatus'),
-      call('getSnapshot'),
+      open(),
+      call('getStatus', []),
+      call('ensureLoaded', []),
+      call('getStatus', []),
+      call('ensureLoaded', []),
+      call('refresh', []),
+      settle('read', meta({ title: 'Once' })),
+      call('getStatus', []),
+      custom('getStatus', []),
+      settle('custom', {}),
+      settle('refresh', meta({ title: 'Refreshed' })),
+      call('getSnapshot', []),
+      custom('getStatus', []),
     ],
   },
   {
     name: 'an-event-during-the-seed-read-wins',
-    covers:
-      'A confirmed metadata.updated that lands while the seed read is out is newer than that read, so the read is dropped when it arrives.',
+    covers: 'New standard and custom confirmed values win over both older in-flight load answers.',
     plugins,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    engine: {
+      documents: {
+        a: doc([
+          { path: 'metadata.get', args: [], defer: 'read' },
+          { path: 'metadata.custom.get', args: [], defer: 'custom' },
+        ]),
+      },
+    },
     steps: [
       start,
-      open('a'),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Event' }), origin: remote } },
-      { op: 'settle', label: 'read', value: meta({ title: 'Stale read' }) },
-      call('getSnapshot'),
-      call('getStatus'),
+      open(),
+      call('ensureLoaded', []),
+      emit(fact(meta({ title: 'Event' }))),
+      emit(customFact({ Dept: 'New' })),
+      settle('read', meta({ title: 'Stale read' })),
+      settle('custom', { Dept: 'Old' }),
+      call('getSnapshot', []),
+      call('getStatus', []),
+      custom('getSnapshot', []),
+      custom('getStatus', []),
     ],
   },
   {
     name: 'closing-during-the-seed-read',
     covers:
-      'Closing the document while its seed read is out ends that read as instance-closed, which the controller swallows: nothing is reported.',
+      'Close cancels the explicit load, suppresses late results/callbacks, and reopen starts with fresh idle mirrors.',
     plugins,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
-    steps: [start, open('a'), { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
+    engine: {
+      documents: {
+        a: doc([
+          { path: 'metadata.get', args: [], defer: 'read' },
+          { path: 'metadata.custom.get', args: [], defer: 'custom' },
+        ]),
+      },
+    },
+    steps: [
+      start,
+      open(),
+      hook('onResynced'),
+      hook('custom.onResynced'),
+      call('ensureLoaded', []),
+      close,
+      settle('read', meta({ title: 'Late' })),
+      settle('custom', { Late: 'old' }),
+      open(),
+      call('getSnapshot', []),
+      custom('getSnapshot', []),
+      call('getStatus', []),
+      custom('getStatus', []),
+    ],
   },
   {
     name: 'on-updated-reports-each-confirmed-change',
     covers:
-      'onUpdated fires once per confirmed value, after the snapshot changed: the seed read with every key and a system origin, then each event with its previous value, the keys that differ (custom by its JSON, so reordered entries count) and the origin the event carried. After unsubscribing it stays quiet.',
+      'Loads emit resynced; facts emit updated with full previous/changedKeys/origin. Custom key reordering compares equal; unsubscribing silences listeners.',
     plugins,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    engine: { documents: { a: doc(reads(meta({ title: 'Seed' }), { A: '1', B: '2' })) } },
     steps: [
       start,
-      open('a'),
-      call('onUpdated', [{ $fn: 'updated', returns: null }]),
-      { op: 'settle', label: 'read', value: meta({ title: 'Seed', custom: { A: '1', B: '2' } }) },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { A: '1', B: '2' } }), origin: local } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { B: '2', A: '1' } }), origin: remote } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { B: '2', A: '1' } }), origin: remote } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: { title: 'Sparse', author: null }, origin: local } },
+      open(),
+      hook('onUpdated', 'updated'),
+      hook('custom.onUpdated', 'customUpdated'),
+      hook('onResynced', 'resynced'),
+      hook('custom.onResynced', 'customResynced'),
+      call('ensureLoaded', []),
+      emit(fact(meta({ title: 'Local' }), local)),
+      emit(customFact({ B: '2', A: '1' }, remote)),
+      emit(fact(meta({ title: 'Local' }), remote)),
+      emit(customFact({ B: '3', C: '' }, remote)),
+      emit(fact(meta({ title: 'Sparse' }), local)),
       { op: 'call', target: { ref: 0 } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Unheard' }), origin: local } },
-      call('getSnapshot'),
+      { op: 'call', target: { ref: 1 } },
+      emit(fact(meta({ title: 'Unheard' }), local)),
+      emit(customFact({ Unheard: '1' }, local)),
+      call('getSnapshot', []),
+      custom('getSnapshot', []),
     ],
   },
   {
     name: 'changed-keys-beyond-the-info-dict',
     covers:
-      'changedKeys compares every key but custom with !==: an equal number is unchanged and a different one changed, while an object or array member always counts as changed, even with the same contents.',
+      'Custom keys are flat strings; shallow comparison records changed, added and removed keys and ignores equal/reordered entries.',
     plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', value: meta({ pages: 3, ratio: 1.5, extra: { x: 1 }, list: [1] }) }] }) } },
+    engine: {
+      documents: {
+        a: doc(reads(meta(), { pages: '3', ratio: '1.5', extra: 'object', list: 'array' })),
+      },
+    },
     steps: [
       start,
-      open('a'),
-      call('onUpdated', [{ $fn: 'updated', returns: null }]),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ pages: 3, ratio: 2.5, extra: { x: 1 }, list: [1] }), origin: local } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ pages: 4, ratio: 2.5, extra: 'x', list: 'y' }), origin: local } },
+      open(),
+      call('ensureLoaded', []),
+      hook('custom.onUpdated', 'updated'),
+      emit(customFact({ pages: '3', ratio: '2.5', extra: 'object', list: 'array' }, local)),
+      emit(customFact({ pages: '4', ratio: '2.5', extra: 'x', list: 'y' }, local)),
+      emit(customFact({ ratio: '2.5', extra: '', added: 'yes' }, remote)),
+    ],
+  },
+  {
+    name: 'custom-write-confirms-before-settlement',
+    covers:
+      'Custom patches set, clear and omit independently of standard fields; deferred engine confirmation fires before the returned result settles.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          ...reads(meta({ title: 'Kept' }), { A: '1', B: '2', C: '3' }),
+          {
+            path: 'metadata.custom.update',
+            args: [{ A: '', B: null }],
+            defer: 'write',
+            events: [customFact({ A: '', C: '3' }, local)],
+          },
+        ]),
+      },
+    },
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      hook('custom.onUpdated'),
+      custom('update', [{ A: '', B: null }]),
+      custom('getSnapshot', []),
+      settle('write', customResult({ A: '', C: '3' })),
+      custom('getSnapshot', []),
+      call('getSnapshot', []),
+    ],
+  },
+  {
+    name: 'standard-write-does-not-project-unconfirmed-result',
+    covers: 'A returned engine value alone does not update the mirror; only a confirmed fact does.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          ...reads(meta({ title: 'Kept' })),
+          {
+            path: 'metadata.update',
+            args: [{ title: 'Unconfirmed' }],
+            value: result(meta({ title: 'Unconfirmed' })),
+          },
+        ]),
+      },
+    },
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      hook('onUpdated'),
+      call('update', [{ title: 'Unconfirmed' }]),
+      call('getSnapshot', []),
+      emit(fact(meta({ title: 'Confirmed' }), local)),
+      call('getSnapshot', []),
+    ],
+  },
+  {
+    name: 'custom-refresh-and-refusal',
+    covers: 'Custom refresh and engine write refusal leave the standard mirror intact.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          ...reads(meta({ title: 'Kept' }), { A: '1' }).map((r) => ({ ...r, times: 1 })),
+          { path: 'metadata.custom.get', args: [], value: { A: '2' } },
+          { path: 'metadata.custom.update', args: [{ A: null }], error: gone },
+        ]),
+      },
+    },
+    steps: [
+      start,
+      open(),
+      call('ensureLoaded', []),
+      hook('custom.onResynced'),
+      custom('refresh', []),
+      custom('getSnapshot', []),
+      custom('update', [{ A: null }]),
+      custom('getSnapshot', []),
+      custom('getStatus', []),
+      call('getSnapshot', []),
     ],
   },
 ];
-
 export const suites: Suite[] = [
-  { kind: 'scenario', file: 'plugins/metadata.json', describes: 'packages/plugin/metadata: reactive Info-dict state.', cases },
+  {
+    kind: 'scenario',
+    file: 'plugins/metadata.json',
+    describes: 'packages/plugin/metadata: lazy standard and custom Info-dict mirrors.',
+    cases,
+  },
 ];

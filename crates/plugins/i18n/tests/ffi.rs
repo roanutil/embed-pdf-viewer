@@ -25,7 +25,7 @@ fn pack(code: &str, entries: &[(&str, &str)]) -> LocalePack {
 #[test]
 fn a_locale_json_file_flattens_to_dotted_keys() {
     let pack = locale_pack_from_json(
-        r#"{"code":"es","name":"Español","dir":"ltr",
+        r#"{"code":"es","name":"Español","direction":"ltr",
             "translations":{"zoom":{"in":"Acercar","out":"Alejar"},"pages":{"one":"{count} página","other":"{count} páginas"}}}"#
             .into(),
     )

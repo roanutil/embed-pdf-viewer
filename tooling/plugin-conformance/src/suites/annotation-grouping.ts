@@ -1,187 +1,182 @@
-/**
- * `packages/plugin/annotation`: grouping (`/IRT` + `/RT /Group`), and the
- * grouped create the Replace Text gesture commits (Caret primary, StrikeOut
- * subordinate) with its compensating rollback. Replayed by
- * `crates/plugins/annotation/tests/conformance.rs`.
- */
-import type { ScenarioCase } from '../scenario';
+import { born } from './annotation-live-answers';
+/** Group relationships and atomic replace-text creation through the current change queue. */
 import type { Suite } from '../vectors';
-
 import {
-  PLUGINS,
-  SNAP,
-  boot,
+  scenario,
   call,
-  caret,
-  circle,
-  created,
-  doc,
-  fail,
-  hydrate,
-  markup,
-  objRef,
-  settle,
   square,
+  circle,
+  caret,
+  objRef,
+  pr,
+  hydrate,
+  write,
   updated,
-} from './annotation-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins the authority refusal and the engine refusal of a group write, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const tq = (x: number, y: number, w: number, h: number) => ({
-  upperStart: { x, y },
-  upperEnd: { x: x + w, y },
-  lowerStart: { x, y: y + h },
-  lowerEnd: { x: x + w, y: y + h },
-});
-const anchor = { glyphQuad: tq(85, 45, 5, 12), advance: 1 };
-
-const grouped = (n: number, parent: number) => ({ inReplyTo: objRef(parent), replyType: 'group' });
-
-const cases: ScenarioCase[] = [
-  {
-    name: 'a-pair-groups',
-    covers: 'Two committed members on one page are enough: canGroup says so and group writes the one subordinate.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), square(2)] }),
-          { path: 'page.annotations.update', pon: 1, args: [objRef(2), { subtype: 'square', inReplyTo: objRef(1), replyType: 'group' }], value: updated(square(2, grouped(2, 1))) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('select', [objRef(1)]), call('select', [objRef(2), { add: true }]), call('canGroup'), call('group')],
+  refused,
+  created,
+  fail,
+  doc,
+  open,
+} from './annotation-live-fixtures';
+const group = (parent: number) => ({ to: objRef(parent), type: 'group' as const });
+const select = (...numbers: number[]) => call('selection.set', [numbers.map((n) => objRef(n))]);
+const quad = {
+  upperLeft: { x: 10, y: 40 },
+  upperRight: { x: 90, y: 40 },
+  lowerLeft: { x: 10, y: 55 },
+  lowerRight: { x: 90, y: 55 },
+};
+const anchor = {
+  glyphQuad: {
+    upperLeft: { x: 85, y: 45 },
+    upperRight: { x: 90, y: 45 },
+    lowerLeft: { x: 85, y: 57 },
+    lowerRight: { x: 90, y: 57 },
   },
-  {
-    name: 'group-and-ungroup',
-    covers:
-      'canGroup needs 2+ committed members on one page, each passing the update check, and not already one complete group. group makes the bottom-most member the primary and writes /IRT + /RT /Group onto the rest (a relationship-only patch, source preserved); ungroup clears it on every subordinate of the touched groups.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), square(2), circle(3)], 2: [square(9, { pageObjectNumber: 2 })] }),
-          { path: 'page.annotations.update', pon: 1, args: [objRef(2), { subtype: 'square', inReplyTo: objRef(1), replyType: 'group' }], value: updated(square(2, grouped(2, 1))) },
-          { path: 'page.annotations.update', pon: 1, args: [objRef(3), { subtype: 'circle', inReplyTo: objRef(1), replyType: 'group' }], value: updated(circle(3, grouped(3, 1))) },
-          { path: 'page.annotations.update', pon: 1, args: [objRef(2), { subtype: 'square', inReplyTo: null }], value: updated(square(2)) },
-          { path: 'page.annotations.update', pon: 1, args: [objRef(3), { subtype: 'circle', inReplyTo: null }], value: updated(circle(3)) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('canGroup'),
-      call('group'),
-      call('select', [objRef(1)]),
-      call('canGroup'),
-      call('group'),
-      call('select', [objRef(9), { add: true }]),
-      call('canGroup'),
-      call('group'),
-      call('select', [objRef(3)]),
-      call('select', [objRef(2), { add: true }]),
-      call('select', [objRef(1), { add: true }]),
-      call('canGroup'),
-      call('canUngroup'),
-      call('group'),
-      call('selection'),
-      call('canGroup'),
-      call('canUngroup'),
-      call('ungroup'),
-      call('canUngroup'),
-      call('list', [1]),
-    ],
-  },
-  {
-    name: 'group-refused-per-record',
-    covers: 'Without update authority neither verb is offered; the engine’s refusal of a group write rejects group().',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            hydrate({ 1: [square(1, { userId: 'u1', groupId: 'g1' }), square(2, { ...grouped(2, 1), userId: 'u2' }), square(3, { groupId: 'g2' })] }),
-            { path: 'page.annotations.update', pon: 1, error: { name: 'EngineError', message: 'nope', code: 'Refused' } },
-          ],
-          { security: { allows: '*', allowsAnnotationMutation: { update: false, delete: true } } },
-        ),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('select', [objRef(3)]),
-      call('select', [objRef(1), { add: true }]),
-      call('canGroup'),
-      call('canUngroup'),
-      call('group'),
-      call('ungroup'),
-    ],
-  },
-  {
-    name: 'replace-text-creates-a-group',
-    covers:
-      'createReplaceText commits the Caret first, then the StrikeOut with /IRT to the created Caret and /RT /Group, reconciling each temp id and syncing each DTO as vector; both stay selected.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(10, { intent: 'replace' })) },
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(markup('strikeout', 11, { intent: 'strikeout-text-edit', ...grouped(11, 10) })) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('createReplaceText', [1, [tq(10, 40, 80, 15)], anchor, 'replace-text']), call('selection')],
-  },
-  {
-    name: 'replace-text-rolls-back',
-    covers:
-      'A refused StrikeOut create deletes the committed Caret (compensation in reverse) and removes both parts; a Caret whose rollback delete also fails stays visible. A refused primary removes both temp parts. A group on a page without a crop never reaches the engine.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(10, { intent: 'replace' })) },
-          { path: 'page.annotations.create', pon: 1, times: 1, error: { name: 'EngineError', message: 'strikeout failed', code: 'Refused' } },
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(12, { intent: 'replace' })) },
-          { path: 'page.annotations.create', pon: 1, times: 1, error: { name: 'EngineError', message: 'strikeout failed again', code: 'Refused' } },
-          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'primary' },
-          { path: 'page.annotations.delete', pon: 1, times: 1, value: {} },
-          { path: 'page.annotations.delete', pon: 1, error: { name: 'EngineError', message: 'cannot delete', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('createReplaceText', [1, [tq(10, 40, 80, 15)], anchor, 'replace-text']),
-      call('list', [1]),
-      call('createReplaceText', [1, [tq(10, 80, 80, 15)], anchor]),
-      call('list', [1]),
-      call('createReplaceText', [1, [tq(10, 120, 80, 15)], anchor]),
-      fail('primary', 'caret failed'),
-      call('createReplaceText', [99, [tq(10, 120, 80, 15)], anchor]),
-      call('list', [1]),
-    ],
-  },
+  advance: 1,
+};
+const replace = () => call('createReplaceText', [pr(1), [quad], anchor, 'replace-text']);
+// Both entries are born under their reserved refs before one atomic write.
+const pair = [
+  created(
+    born(10001, {
+      subtype: 'caret',
+      box: { x: 87, y: 51, width: 6, height: 6 },
+      rotation: null,
+      color: '#ef4444',
+      opacity: 1,
+      intent: 'replace',
+      print: true,
+    }),
+  ),
+  created(
+    born(10002, {
+      subtype: 'strikeout',
+      color: '#ef4444',
+      quadPoints: [quad],
+      intent: 'strikeout-text-edit',
+      print: true,
+      reply: group(10001),
+    }),
+  ),
 ];
-
-void settle;
-
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/annotation-grouping.json',
-    describes: 'packages/plugin/annotation: group, ungroup, their twins, and the grouped Replace Text create with rollback.',
-    cases,
+    describes: 'Current grouping/ungrouping and atomic Caret + StrikeOut changes.',
+    cases: [
+      scenario(
+        'a-pair-groups',
+        'A pair groups with one relationship patch; selection stays group-aware.',
+        [
+          select(1, 2),
+          call('selection.canGroup'),
+          call('selection.group'),
+          call('selection.list'),
+          call('list'),
+        ],
+        [
+          hydrate([square(1), square(2)]),
+          write(1, [{ item: updated(square(2, { reply: group(1) })) }]),
+        ],
+      ),
+      scenario(
+        'group-and-ungroup',
+        'Grouping needs two changeable records on one page; grouping and ungrouping each write all subordinate patches in one atomic Change.',
+        [
+          call('selection.canGroup'),
+          call('selection.group'),
+          select(1),
+          call('selection.canGroup'),
+          call('selection.group'),
+          call('selection.add', [[objRef(9, 2)]]),
+          call('selection.canGroup'),
+          call('selection.group'),
+          select(3, 2, 1),
+          call('selection.canGroup'),
+          call('selection.canUngroup'),
+          call('selection.group'),
+          call('selection.list'),
+          call('selection.canGroup'),
+          call('selection.canUngroup'),
+          call('selection.ungroup'),
+          call('selection.canUngroup'),
+          call('list'),
+        ],
+        [
+          hydrate([square(1), square(2), circle(3), square(9, { page: pr(2), ref: objRef(9, 2) })]),
+          write(1, [
+            { item: updated(square(2, { reply: group(1) })) },
+            { item: updated(circle(3, { reply: group(1) })) },
+          ]),
+          write(2, [{ item: updated(square(2)) }, { item: updated(circle(3)) }]),
+        ],
+      ),
+      scenario(
+        'group-refused-per-record',
+        'Per-record update authority disables grouping and ungrouping while direct writes rely on engine refusal; a separately permitted selection reaches an intended atomic engine refusal.',
+        [
+          select(3, 1),
+          call('selection.canGroup'),
+          call('selection.canUngroup'),
+          call('selection.group'),
+          call('selection.ungroup'),
+          call('selection.list'),
+          open('b'),
+          call('selection.set', [[objRef(1), objRef(3)]], 'b'),
+          call('selection.canGroup', [], 'b'),
+          call('selection.group', [], 'b'),
+          call('selection.list', [], 'b'),
+        ],
+        [],
+        {
+          engine: {
+            documents: {
+              a: doc(
+                [
+                  hydrate([square(1), square(2, { reply: group(1) }), square(3)]),
+                  refused('intended denied group'),
+                  refused('intended denied ungroup'),
+                ],
+                { security: { allows: '*', allowsAnnotation: { update: false, delete: true } } },
+              ),
+              b: doc([hydrate([square(1), square(3)]), refused('intended group refusal')]),
+            },
+          },
+        },
+      ),
+      scenario(
+        'replace-text-creates-a-group',
+        'One Change creates the Caret primary and StrikeOut subordinate under stable born refs; both stay selected.',
+        [replace(), call('selection.list'), call('list')],
+        [
+          hydrate(),
+          write(
+            1,
+            pair.map((item) => ({ item })),
+          ),
+        ],
+      ),
+      scenario(
+        'replace-text-refusal-is-atomic',
+        'An engine refusal removes both pending parts together; no compensation delete runs. A held refused primary change clears both parts; the host route lets the engine refuse an unknown page.',
+        [
+          replace(),
+          call('list'),
+          replace(),
+          fail('pair', 'intended pair refusal'),
+          call('list'),
+          call('createReplaceText', [pr(99), [quad], anchor]),
+          call('list'),
+        ],
+        [
+          hydrate(),
+          refused('intended atomic pair refusal'),
+          { path: 'apply', times: 1, defer: 'pair' },
+          refused('intended unknown replace page'),
+        ],
+      ),
+    ],
   },
 ];

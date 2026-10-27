@@ -99,10 +99,12 @@ public final class PDFViewer: Sendable {
 
   /// Opens PDF bytes in a new active document tab.
   ///
-  /// Opening an encrypted PDF without a password can succeed with a `.locked`
-  /// status. Call ``unlock(_:password:)`` before requesting its capabilities.
-  /// A failed open can leave a `.failed` tab in ``documents()``; close that tab
-  /// when the application dismisses the failure.
+  /// Opening an encrypted PDF without a password, or with a wrong one,
+  /// succeeds with a `.locked` status; its `.locked` event says whether a
+  /// password was given. Call ``unlock(_:password:)`` before requesting its
+  /// capabilities. Bytes that are not a PDF fail the open (`operation-failed`,
+  /// "failed to open base document") and leave a `.failed` tab in
+  /// ``documents()``; close that tab when the application dismisses the failure.
   ///
   /// - Parameters:
   ///   - data: The complete PDF file. The viewer does not fetch URLs or manage
@@ -111,7 +113,7 @@ public final class PDFViewer: Sendable {
   ///   - password: The document password, if known.
   /// - Returns: A snapshot identifying the new document and its status.
   /// - Throws: A ``PDFError`` for an invalid PDF, refused access, or a closed
-  ///   workspace. An incorrect supplied password throws `permission-denied`.
+  ///   workspace.
   public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> DocumentInfo {
     try await measured("open") { () async throws(PDFError) in
       try await bridged {
@@ -121,9 +123,9 @@ public final class PDFViewer: Sendable {
   }
 
   /// Unlock a document that opened `.locked` (password-protected and opened
-  /// without one). Throws `permission-denied` for a wrong password (the
-  /// detail begins with the engine's `DocPasswordIncorrect`); the tab stays
-  /// locked.
+  /// or with a wrong one). Throws `permission-denied` for a wrong password,
+  /// with the engine's own message ("incorrect document password"); the tab
+  /// stays locked.
   ///
   /// The input snapshot remains unchanged after unlocking. Read ``documents()``
   /// for the updated status and page count.

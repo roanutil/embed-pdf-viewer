@@ -285,8 +285,10 @@ impl HarnessPlugin for ScriptHostHarness {
         };
         let budget = budget_of(&config)?;
         let h = h.clone();
+        // `create: (ctx) => ...`: the probe owns its host, and the kernel's
+        // cleanup disposes it (`ctx.cleanup(() => host.dispose())`).
         Ok(define::<Value, Value>("script-host")
-            .capability(&SCRIPT_HOST, move |_ctx| {
+            .create(&SCRIPT_HOST, move |cx| {
                 let boot_sources = boot_sources.clone();
                 let document = document.clone();
                 let identity = identity.clone();
@@ -304,7 +306,9 @@ impl HarnessPlugin for ScriptHostHarness {
                     }),
                     budget: budget.clone(),
                 });
-                Ok(ScriptHostDriver { host, h: h.clone() })
+                let owned = host.clone();
+                cx.cleanup_fn(move || owned.dispose());
+                Ok((ScriptHostDriver { host, h: h.clone() }, None))
             })
             .build())
     }
@@ -388,7 +392,7 @@ fn seed(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn resolve_identity(args: &[Value]) -> Result<Value, Error> {
-    let claims = args.first().cloned().unwrap_or(Value::Null);
+    let identity = args.first().cloned().unwrap_or(Value::Null);
     let overrides = match args.get(1) {
         None | Some(Value::Null) => None,
         Some(value) => {
@@ -400,7 +404,7 @@ fn resolve_identity(args: &[Value]) -> Result<Value, Error> {
             })
         }
     };
-    Ok(to_json(&resolve_script_identity_from(&claims, overrides.as_ref())))
+    Ok(to_json(&resolve_script_identity_from(&identity, overrides.as_ref())))
 }
 
 fn annot_writable_keys(_: &[Value]) -> Result<Value, Error> {

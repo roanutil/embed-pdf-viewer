@@ -1,73 +1,55 @@
-//! Whole-document steps stay linear in the annotation count: hydration
-//! reaps and removal filter through hash sets, as the TypeScript does
-//! through `Set`. Each case here took seconds when membership was a linear
-//! scan per annotation.
+//! Whole-session steps stay linear in the record count: `forget` and a
+//! removal look ids up in sets, as the TypeScript does with `Set`.
 
+use std::rc::Rc;
 use std::time::Instant;
 
+use epdf_annotation_core::types::ById;
+use epdf_annotation_core::update::changes::without_records;
+use epdf_annotation_core::update::{forget, initial_model};
 use epdf_annotation_core::*;
+use serde_json::json;
 
 const N: usize = 20_000;
 
-/// One template annotation from the reducer itself, stamped out `n` times
-/// with engine refs so hydration may reap them.
-fn annots(prefix: &str, n: usize) -> Vec<Annot> {
-    let msg = Msg::CreateAnnot {
-        page: PageRef::new(1),
-        subtype: "square".into(),
-        geom: Geom::Rect {
-            rect: Rect { x: 0.0, y: 0.0, width: 5.0, height: 5.0 },
-            ellipse: false,
-            rot: None,
-        },
-        preset: None,
-        props: None,
-        flags: None,
-        select: None,
-    };
-    let m = apply(&initial_model(), &msg).0;
-    let template = m.by_id.values().next().expect("one annotation").clone();
-    (0..n)
-        .map(|i| {
-            let id = format!("{prefix}{i}");
-            Annot {
-                id: id.clone(),
-                ref_: Some(AnnotationRef::Nm { page: PageRef::new(1), nm: id }),
-                ..template.clone()
-            }
-        })
-        .collect()
+fn model(n: usize) -> Model {
+    let template = ModelAnnotation::read(&json!({
+        "id": "obj:0",
+        "source": "vector",
+        "annotation": { "subtype": "square", "page": { "kind": "objectNumber", "objectNumber": 1 } },
+    }))
+    .expect("a record");
+    let mut by_id = ById::new();
+    let mut order = Vec::new();
+    for i in 0..n {
+        let id = format!("obj:{i}");
+        by_id.insert(id.clone(), Rc::new(ModelAnnotation { id: id.clone(), ..template.clone() }));
+        order.push(id);
+    }
+    Model {
+        selected: Rc::new(order.clone()),
+        by_id: Rc::new(by_id),
+        order: Rc::new(order),
+        ..initial_model()
+    }
 }
 
 #[test]
-fn hydrating_over_a_large_document_reaps_in_linear_time() {
-    let loaded = apply(&initial_model(), &Msg::Loaded { annots: annots("old", N) }).0;
-    assert_eq!(loaded.order.len(), N);
-    // Half the old annotations survive, half are reaped, and N/2 are new.
-    let mut incoming = annots("old", N / 2);
-    incoming.extend(annots("new", N / 2));
-
-    let start = Instant::now();
-    let hydrated = apply(&loaded, &Msg::Hydrated { annots: incoming, bump_ap: Some(false) }).0;
-    let elapsed = start.elapsed();
-
-    assert_eq!(hydrated.order.len(), N);
-    assert_eq!(hydrated.order.first().map(String::as_str), Some("old0"));
-    assert_eq!(hydrated.order.last().map(String::as_str), Some(&*format!("new{}", N / 2 - 1)));
-    assert!(!hydrated.by_id.contains_key(&format!("old{}", N / 2)));
-    assert!(elapsed.as_millis() < 1000, "hydration took {elapsed:?}");
+fn forgetting_every_record_is_linear() {
+    let m = model(N);
+    let ids: Vec<Id> = m.order.iter().cloned().collect();
+    let started = Instant::now();
+    let next = forget(&m, &ids);
+    assert!(next.selected.is_empty());
+    assert!(started.elapsed().as_secs_f64() < 2.0, "took {:?}", started.elapsed());
 }
 
 #[test]
-fn removing_most_of_a_large_document_runs_in_linear_time() {
-    let loaded = apply(&initial_model(), &Msg::Loaded { annots: annots("a", N) }).0;
-    let ids: Vec<Id> = loaded.order.iter().skip(1).cloned().collect();
-
-    let start = Instant::now();
-    let removed = apply(&loaded, &Msg::Remove { ids }).0;
-    let elapsed = start.elapsed();
-
-    assert_eq!(removed.order.as_slice(), ["a0".to_string()]);
-    assert_eq!(removed.by_id.len(), 1);
-    assert!(elapsed.as_millis() < 1000, "removal took {elapsed:?}");
+fn removing_every_record_is_linear() {
+    let m = model(N);
+    let ids: Vec<Id> = m.order.iter().cloned().collect();
+    let started = Instant::now();
+    let next = without_records(&m, &ids);
+    assert!(next.by_id.is_empty() && next.order.is_empty() && next.selected.is_empty());
+    assert!(started.elapsed().as_secs_f64() < 2.0, "took {:?}", started.elapsed());
 }

@@ -1,21 +1,20 @@
 //! G2. Page geometry. The first operation ported, and the first to flip.
 //!
-//! Replaces `services/src/features/geometry/PageGeometryReader.ts` (333) and
-//! `core/src/dto/PageGeometrySnapshot.ts` (127). Operation: `pages.geometry`.
+//! Replaces `services/src/features/geometry/PageGeometryReader.ts` and
+//! `core/src/dto/PageGeometrySnapshot.ts`. Operation: `pages.geometry`.
 //!
-//! Geometry is emitted in PDF user space, y-up edges, per the coordinate
-//! contract in [`crate::geom`]. No y-flip, no device transform: the viewer
-//! converts through the page geometry matrix.
+//! The reader answers in the file's coordinates, PDF user space with y-up
+//! edges ([`PageGeometrySnapshot<PdfCoordinates>`]), as upstream's reader
+//! does. The host boundary turns the answer into page space
+//! ([`crate::page_space::text::page_geometry_of`]); the C ABI export in
+//! `crates/epdf-wasm` hands the file's coordinates to the TypeScript worker
+//! host, whose own boundary converts them.
 //!
 //! One `EPDFText_GetCharGeometry` call per glyph supplies boxes, oriented
 //! cells, matrix and flags together, and [`build_runs_from_raw_glyphs`] groups
 //! them into the run union. That single fork call is the whole reason this
 //! operation is worth moving: the boundary crossing is per operation, and no
 //! host call happens per glyph.
-//!
-//! Upright runs are materialized exactly as the pre-orientation reader did,
-//! quirks included, so upright documents never pay for orientation and their
-//! snapshots stay identical.
 
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +24,7 @@ use crate::access::PageAccess;
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::geom::{PdfPoint, PdfQuad, PdfRect, normalize_pdf_rect, pdf_quad_bounds};
+use crate::page_space::{Coordinates, PdfCoordinates};
 
 /// Mid-object orientation drift that forces a run split, about 0.5 degrees.
 ///
@@ -32,51 +32,60 @@ use crate::geom::{PdfPoint, PdfQuad, PdfRect, normalize_pdf_rect, pdf_quad_bound
 /// cases so a run's `rotation` is representative of every glyph in it.
 const ROTATION_SPLIT_TOLERANCE: f64 = 0.0087;
 
-/// Wire flag: the glyph is a space.
+/// A record's flag: the glyph is a space. The wire carries it as `space`.
 pub const GLYPH_FLAG_SPACE: u32 = 1;
-/// Wire flag: the glyph is degenerate and its geometry is zeroed.
+/// A record's flag: the glyph has no box of its own and its geometry is
+/// zeroed. The wire carries it as `empty`.
 pub const GLYPH_FLAG_EMPTY: u32 = 2;
 
-/// One upright glyph's geometry.
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+/// One upright character's geometry (`PageGeometryGlyph<C>`).
 ///
-/// `loose_box` is the loose char cell (`FPDFText_GetLooseCharBox`): the
+/// `loose` is the loose char cell (`FPDFText_GetLooseCharBox`): the
 /// font-metric box covering the full glyph cell without regard to the glyph's
-/// shape. Always present, zeroed and flagged empty for degenerate glyphs, and
-/// it is the box selection envelopes are built from.
+/// shape. Always present, zeroed and `empty` for degenerate glyphs, and it is
+/// the box selection envelopes are built from.
 ///
-/// `tight_box` is the box hugging the actual outline
-/// (`FPDFText_GetCharBox`). Absent for empty and whitespace glyphs, which have
-/// no outline.
+/// `tight` is the box hugging the actual outline (`FPDFText_GetCharBox`).
+/// Absent for empty and whitespace glyphs, which have no outline.
+///
+/// `space` and `empty` are on the wire, as `true`, only when they hold.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageGeometryGlyph {
-    pub loose_box: PdfRect,
-    pub flags: u32,
+#[serde(bound = "")]
+pub struct PageGeometryGlyph<C: Coordinates = PdfCoordinates> {
+    pub loose: C::Rect,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tight_box: Option<PdfRect>,
+    pub tight: Option<C::Rect>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub space: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub empty: bool,
 }
 
-/// One non-upright glyph's geometry: the exact oriented cells, in page
-/// coordinates rather than a local frame.
+/// One non-upright character's geometry: the exact oriented cells, in the
+/// page's coordinates rather than a local frame (`RotatedGeometryGlyph<C>`).
+/// Each cell's corners are named in the glyph's own upright frame, as every
+/// quad's are.
 ///
-/// The corner slots are frame-geometric in the glyph's own upright frame:
-/// `p1` upper-start, `p2` upper-end, `p3` lower-start, `p4` lower-end, where
-/// "upper" is the ascent side and "start" is the frame's minimum-x side. That
-/// is deliberately not a bidi or reading-order statement; advance direction is
-/// a glyph-sequence concern carried separately.
-///
-/// Degenerate glyphs carry a zeroed `loose_quad` plus the empty flag,
-/// mirroring the upright variant's zeroed-box convention.
+/// Degenerate glyphs carry a zeroed `loose` quad and `empty`, mirroring the
+/// upright variant's zeroed-box convention.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RotatedGeometryGlyph {
-    pub loose_quad: PdfQuad,
-    pub flags: u32,
+#[serde(bound = "")]
+pub struct RotatedGeometryGlyph<C: Coordinates = PdfCoordinates> {
+    pub loose: C::Quad,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tight_quad: Option<PdfQuad>,
+    pub tight: Option<C::Quad>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub space: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub empty: bool,
 }
 
-/// One text run: contiguous glyphs sharing a text object and an orientation.
+/// One text run: contiguous glyphs sharing a text object and an orientation
+/// (`PageGeometryRun<C>`).
 ///
 /// An enum rather than one struct with optional fields, so a consumer cannot
 /// read axis-aligned boxes off rotated text by accident. Handling orientation
@@ -87,16 +96,19 @@ pub struct RotatedGeometryGlyph {
 /// `Rotated` is listed first because an untagged decoder takes the first arm
 /// that fits.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PageGeometryRun {
+#[serde(untagged, bound = "")]
+pub enum PageGeometryRun<C: Coordinates = PdfCoordinates> {
     Rotated {
-        /// A page-space AABB, for culling, like every other wire rect.
-        rect: PdfRect,
-        #[serde(rename = "charStart")]
-        char_start: u32,
-        glyphs: Vec<RotatedGeometryGlyph>,
-        /// Baseline angle in radians, counter-clockwise in PDF y-up space:
-        /// `atan2(m.b, m.a)` of the run's char matrix. A shear-only run has
+        /// An axis-aligned box over the run, for culling, like every other
+        /// wire rect.
+        rect: C::Rect,
+        /// The run's first character; it covers `glyphs.len()` characters
+        /// from here.
+        start: u32,
+        glyphs: Vec<RotatedGeometryGlyph<C>>,
+        /// How far the text is turned from upright, in degrees clockwise as
+        /// the page shows it, 0 up to 360, like every other `rotation`: text
+        /// that reads straight up the page is 270. A shear-only run has
         /// `rotation == 0.0` and still uses this variant, because its cells
         /// are parallelograms an AABB would misrepresent.
         rotation: f64,
@@ -108,25 +120,26 @@ pub enum PageGeometryRun {
         font_size: Option<f64>,
     },
     Upright {
-        rect: PdfRect,
-        #[serde(rename = "charStart")]
-        char_start: u32,
-        glyphs: Vec<PageGeometryGlyph>,
+        rect: C::Rect,
+        /// The run's first character; it covers `glyphs.len()` characters
+        /// from here.
+        start: u32,
+        glyphs: Vec<PageGeometryGlyph<C>>,
         #[serde(rename = "fontSize", default, skip_serializing_if = "Option::is_none")]
         font_size: Option<f64>,
     },
 }
 
-impl PageGeometryRun {
-    pub fn rect(&self) -> PdfRect {
+impl<C: Coordinates> PageGeometryRun<C> {
+    pub fn rect(&self) -> C::Rect {
         match self {
             Self::Upright { rect, .. } | Self::Rotated { rect, .. } => *rect,
         }
     }
 
-    pub fn char_start(&self) -> u32 {
+    pub fn start(&self) -> u32 {
         match self {
-            Self::Upright { char_start, .. } | Self::Rotated { char_start, .. } => *char_start,
+            Self::Upright { start, .. } | Self::Rotated { start, .. } => *start,
         }
     }
 
@@ -147,14 +160,24 @@ impl PageGeometryRun {
         matches!(self, Self::Rotated { .. })
     }
 
-    /// Uniform oriented-cell view over either variant: the glyph's loose cell
-    /// as a quad, synthesized from the box corners when the run is upright, in
-    /// the same frame-geometric slot order.
+    /// Whether the run has a character with a box of its own (`hasBox`).
+    pub fn has_box(&self) -> bool {
+        match self {
+            Self::Upright { glyphs, .. } => glyphs.iter().any(|g| !g.empty),
+            Self::Rotated { glyphs, .. } => glyphs.iter().any(|g| !g.empty),
+        }
+    }
+}
+
+impl PageGeometryRun<PdfCoordinates> {
+    /// Uniform oriented-cell view over either variant, in the file's
+    /// coordinates (`glyphLooseQuad`): the glyph's loose cell as a quad,
+    /// synthesized from the box corners when the run is upright.
     pub fn glyph_loose_quad(&self, index: usize) -> Option<PdfQuad> {
         match self {
-            Self::Rotated { glyphs, .. } => glyphs.get(index).map(|g| g.loose_quad),
+            Self::Rotated { glyphs, .. } => glyphs.get(index).map(|g| g.loose.into()),
             Self::Upright { glyphs, .. } => glyphs.get(index).map(|g| {
-                let b = g.loose_box;
+                let b = g.loose;
                 PdfQuad {
                     p1: PdfPoint { x: b.left, y: b.top },
                     p2: PdfPoint { x: b.right, y: b.top },
@@ -165,8 +188,9 @@ impl PageGeometryRun {
         }
     }
 
-    /// Uniform AABB view: the glyph's loose box, or the enclosing bounds of
-    /// its oriented cell when the run is rotated.
+    /// Uniform AABB view, in the file's coordinates (`glyphLooseBounds`):
+    /// the glyph's loose box, or the enclosing bounds of its oriented cell
+    /// when the run is rotated.
     ///
     /// The conservative envelope for consumers that genuinely want a box, such
     /// as culling and scroll targets. Never a substitute for handling
@@ -174,20 +198,21 @@ impl PageGeometryRun {
     pub fn glyph_loose_bounds(&self, index: usize) -> Option<PdfRect> {
         match self {
             Self::Rotated { glyphs, .. } => {
-                glyphs.get(index).map(|g| pdf_quad_bounds(g.loose_quad))
+                glyphs.get(index).map(|g| pdf_quad_bounds(g.loose.into()))
             }
-            Self::Upright { glyphs, .. } => glyphs.get(index).map(|g| g.loose_box),
+            Self::Upright { glyphs, .. } => glyphs.get(index).map(|g| g.loose),
         }
     }
 }
 
-/// Geometry-only text layout for one page.
+/// Geometry-only text layout for one page (`PageGeometrySnapshot<C>`).
 ///
 /// Pure content, addressed and cached by content version. Carries no
 /// annotation liveness envelope; liveness lives on annotation reads.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PageGeometrySnapshot {
-    pub runs: Vec<PageGeometryRun>,
+#[serde(bound = "")]
+pub struct PageGeometrySnapshot<C: Coordinates = PdfCoordinates> {
+    pub runs: Vec<PageGeometryRun<C>>,
 }
 
 /// One glyph as read from `EPDFText_GetCharGeometry`, plus the grouping
@@ -202,10 +227,11 @@ pub struct RawGeometryGlyphRecord {
     pub object_key: TextObjectKey,
     /// Sampled at each text object's first glyph. Run splits inherit it.
     pub font_size: Option<f64>,
-    /// Wire flags. Synthesized-but-visible glyphs (`/ActualText` pieces) stay
-    /// `0`, exactly like the legacy reader: they are real, selectable text.
+    /// [`GLYPH_FLAG_SPACE`] and [`GLYPH_FLAG_EMPTY`]. Synthesized-but-visible
+    /// glyphs (`/ActualText` pieces) stay `0`, exactly like the legacy
+    /// reader: they are real, selectable text.
     pub flags: u32,
-    /// Page-space AABB, zeroed when empty.
+    /// The cell's AABB in the file's coordinates, zeroed when empty.
     pub loose_box: PdfRect,
     pub tight_box: Option<PdfRect>,
     /// Oriented cells. Real glyphs with a usable (non-singular) matrix only.
@@ -216,7 +242,7 @@ pub struct RawGeometryGlyphRecord {
     pub upright: bool,
     /// Baseline angle, radians counter-clockwise in PDF y-up. Zero when
     /// upright.
-    pub rotation: f64,
+    pub baseline_angle: f64,
     /// True when the ascent vector maps opposite the rotated +y, `det < 0`.
     pub ascent_flip: bool,
 }
@@ -235,7 +261,7 @@ impl RawGeometryGlyphRecord {
             loose_quad: None,
             tight_quad: None,
             upright: true,
-            rotation: 0.0,
+            baseline_angle: 0.0,
             ascent_flip: false,
         }
     }
@@ -249,7 +275,7 @@ impl RawGeometryGlyphRecord {
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum RunClass {
     Upright,
-    Rotated { rotation: f64, ascent_flip: bool },
+    Rotated { baseline_angle: f64, ascent_flip: bool },
 }
 
 /// Reads the geometry of every glyph on a page.
@@ -297,10 +323,7 @@ pub fn read_page_geometry(
 }
 
 /// Decodes one `EPDF_CHAR_GEOMETRY` into the reader's record.
-fn raw_record(
-    object_key: TextObjectKey,
-    geometry: pdfium::CharGeometry,
-) -> RawGeometryGlyphRecord {
+fn raw_record(object_key: TextObjectKey, geometry: pdfium::CharGeometry) -> RawGeometryGlyphRecord {
     // Degenerate geometry keeps the legacy zeroed-glyph convention, so upright
     // snapshots stay identical to the pre-orientation reader's.
     if geometry.flags.empty() {
@@ -317,7 +340,7 @@ fn raw_record(
         loose_quad: None,
         tight_quad: None,
         upright,
-        rotation: 0.0,
+        baseline_angle: 0.0,
         ascent_flip: false,
     };
     if geometry.flags.has_tight_box() {
@@ -332,10 +355,9 @@ fn raw_record(
         }
         if !upright {
             let m = geometry.matrix;
-            record.rotation = f64::from(m.b).atan2(f64::from(m.a));
-            record.ascent_flip = f64::from(m.a) * f64::from(m.d)
-                - f64::from(m.b) * f64::from(m.c)
-                < 0.0;
+            record.baseline_angle = f64::from(m.b).atan2(f64::from(m.a));
+            record.ascent_flip =
+                f64::from(m.a) * f64::from(m.d) - f64::from(m.b) * f64::from(m.c) < 0.0;
         }
     }
     record
@@ -376,7 +398,7 @@ fn quad(q: pdfium::QuadF) -> PdfQuad {
 pub fn build_runs_from_raw_glyphs(records: &[RawGeometryGlyphRecord]) -> Vec<PageGeometryRun> {
     let mut runs = Vec::new();
     let mut buffer: Vec<RawGeometryGlyphRecord> = Vec::new();
-    let mut char_start: u32 = 0;
+    let mut start: u32 = 0;
     let mut font_size: Option<f64> = None;
     let mut object_key: Option<TextObjectKey> = None;
     let mut class: Option<RunClass> = None;
@@ -384,7 +406,7 @@ pub fn build_runs_from_raw_glyphs(records: &[RawGeometryGlyphRecord]) -> Vec<Pag
     for (i, record) in records.iter().enumerate() {
         let i = i as u32;
         if object_key != Some(record.object_key) {
-            flush(&mut runs, &mut buffer, &mut char_start, font_size, &mut class, i);
+            flush(&mut runs, &mut buffer, &mut start, font_size, &mut class, i);
             object_key = Some(record.object_key);
             // Sampled at the object's first glyph. A later orientation split
             // inside the same object inherits it rather than resampling.
@@ -392,7 +414,7 @@ pub fn build_runs_from_raw_glyphs(records: &[RawGeometryGlyphRecord]) -> Vec<Pag
         }
         if let Some(record_class) = class_of(record) {
             if class.is_some_and(|current| !same_class(current, record_class)) {
-                flush(&mut runs, &mut buffer, &mut char_start, font_size, &mut class, i);
+                flush(&mut runs, &mut buffer, &mut start, font_size, &mut class, i);
             }
             if class.is_none() {
                 class = Some(record_class);
@@ -400,31 +422,24 @@ pub fn build_runs_from_raw_glyphs(records: &[RawGeometryGlyphRecord]) -> Vec<Pag
         }
         buffer.push(*record);
     }
-    flush(
-        &mut runs,
-        &mut buffer,
-        &mut char_start,
-        font_size,
-        &mut class,
-        records.len() as u32,
-    );
+    flush(&mut runs, &mut buffer, &mut start, font_size, &mut class, records.len() as u32);
     runs
 }
 
 fn flush(
     runs: &mut Vec<PageGeometryRun>,
     buffer: &mut Vec<RawGeometryGlyphRecord>,
-    char_start: &mut u32,
+    start: &mut u32,
     font_size: Option<f64>,
     class: &mut Option<RunClass>,
     next_start: u32,
 ) {
     if !buffer.is_empty() {
-        runs.push(materialize_run(buffer, *char_start, font_size, *class));
+        runs.push(materialize_run(buffer, *start, font_size, *class));
         buffer.clear();
         *class = None;
     }
-    *char_start = next_start;
+    *start = next_start;
 }
 
 fn class_of(record: &RawGeometryGlyphRecord) -> Option<RunClass> {
@@ -432,9 +447,10 @@ fn class_of(record: &RawGeometryGlyphRecord) -> Option<RunClass> {
         return None; // empty glyphs never classify
     }
     match record.loose_quad {
-        Some(_) if !record.upright => {
-            Some(RunClass::Rotated { rotation: record.rotation, ascent_flip: record.ascent_flip })
-        }
+        Some(_) if !record.upright => Some(RunClass::Rotated {
+            baseline_angle: record.baseline_angle,
+            ascent_flip: record.ascent_flip,
+        }),
         _ => Some(RunClass::Upright),
     }
 }
@@ -444,8 +460,8 @@ fn same_class(a: RunClass, b: RunClass) -> bool {
         (RunClass::Upright, RunClass::Upright) => true,
         (RunClass::Upright, _) | (_, RunClass::Upright) => false,
         (
-            RunClass::Rotated { rotation: ra, ascent_flip: fa },
-            RunClass::Rotated { rotation: rb, ascent_flip: fb },
+            RunClass::Rotated { baseline_angle: ra, ascent_flip: fa },
+            RunClass::Rotated { baseline_angle: rb, ascent_flip: fb },
         ) => {
             if fa != fb {
                 return false;
@@ -460,56 +476,51 @@ fn same_class(a: RunClass, b: RunClass) -> bool {
 
 fn materialize_run(
     buffer: &[RawGeometryGlyphRecord],
-    char_start: u32,
+    start: u32,
     font_size: Option<f64>,
     class: Option<RunClass>,
 ) -> PageGeometryRun {
-    if let Some(RunClass::Rotated { rotation, ascent_flip }) = class {
+    if let Some(RunClass::Rotated { baseline_angle, ascent_flip }) = class {
         let glyphs = buffer
             .iter()
-            .map(|g| match g.loose_quad {
-                Some(loose_quad) => {
-                    RotatedGeometryGlyph { loose_quad, flags: g.flags, tight_quad: g.tight_quad }
-                }
-                // Empty glyphs inside a rotated run: zeroed quad plus the
-                // empty flag, mirroring the upright zeroed-box convention.
-                None => RotatedGeometryGlyph {
-                    loose_quad: ZERO_QUAD,
-                    flags: g.flags,
-                    tight_quad: None,
-                },
+            .map(|g| RotatedGeometryGlyph {
+                // Empty glyphs inside a rotated run: zeroed quad plus
+                // `empty`, mirroring the upright zeroed-box convention.
+                loose: g.loose_quad.unwrap_or(ZERO_QUAD).into(),
+                tight: g.loose_quad.and(g.tight_quad).map(Into::into),
+                space: g.flags & GLYPH_FLAG_SPACE != 0,
+                empty: g.flags & GLYPH_FLAG_EMPTY != 0,
             })
             .collect();
         return PageGeometryRun::Rotated {
-            rect: run_bounds(buffer, |g| {
-                g.loose_quad.map_or(ZERO_RECT, pdf_quad_bounds)
-            }),
-            char_start,
+            rect: run_bounds(buffer, |g| g.loose_quad.map_or(ZERO_RECT, pdf_quad_bounds)),
+            start,
             glyphs,
-            rotation,
+            rotation: rotation_of_baseline(baseline_angle),
             ascent_flip,
             font_size,
         };
     }
 
-    // Upright and degenerate-only runs: the legacy materialization verbatim.
-    // Quads the native layer offered are dropped, the rect seeds from the
-    // FIRST glyph's box (zeroed for an empty glyph, quirk included) and
-    // expands over non-empty glyphs only.
+    // Upright and degenerate-only runs: the quads the native layer offered
+    // are dropped, and the rect is the union of the real glyphs' boxes.
     let glyphs = buffer
         .iter()
         .map(|g| PageGeometryGlyph {
-            loose_box: g.loose_box,
-            flags: g.flags,
-            tight_box: g.tight_box,
+            loose: g.loose_box,
+            tight: g.tight_box,
+            space: g.flags & GLYPH_FLAG_SPACE != 0,
+            empty: g.flags & GLYPH_FLAG_EMPTY != 0,
         })
         .collect();
-    PageGeometryRun::Upright {
-        rect: run_bounds(buffer, |g| g.loose_box),
-        char_start,
-        glyphs,
-        font_size,
-    }
+    PageGeometryRun::Upright { rect: run_bounds(buffer, |g| g.loose_box), start, glyphs, font_size }
+}
+
+/// A baseline's angle (radians, counter-clockwise) as the API's turn:
+/// degrees clockwise, 0 up to 360 (`rotationOfBaseline`).
+fn rotation_of_baseline(radians: f64) -> f64 {
+    let degrees = (-radians * 180.0) / std::f64::consts::PI;
+    ((degrees % 360.0) + 360.0) % 360.0
 }
 
 const ZERO_RECT: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
@@ -517,28 +528,37 @@ const ZERO_POINT: PdfPoint = PdfPoint { x: 0.0, y: 0.0 };
 const ZERO_QUAD: PdfQuad =
     PdfQuad { p1: ZERO_POINT, p2: ZERO_POINT, p3: ZERO_POINT, p4: ZERO_POINT };
 
-/// The legacy run-rect algorithm: seed from the first glyph whatever it is,
-/// then expand over non-empty glyphs only.
+/// A run's box: the union of its glyphs' boxes (`runBounds`). A glyph with no
+/// box ([`GLYPH_FLAG_EMPTY`]) has only a zeroed stand-in, so it takes no
+/// part; a run of nothing but such glyphs gets the zeroed box itself.
 fn run_bounds(
     buffer: &[RawGeometryGlyphRecord],
     bounds_of: impl Fn(&RawGeometryGlyphRecord) -> PdfRect,
 ) -> PdfRect {
-    let mut rect = bounds_of(&buffer[0]);
+    let mut rect: Option<PdfRect> = None;
     for g in buffer {
         if g.is_empty() {
             continue;
         }
         let b = bounds_of(g);
-        rect.left = rect.left.min(b.left);
-        rect.bottom = rect.bottom.min(b.bottom);
-        rect.right = rect.right.max(b.right);
-        rect.top = rect.top.max(b.top);
+        rect = Some(match rect {
+            None => b,
+            Some(r) => PdfRect {
+                left: r.left.min(b.left),
+                bottom: r.bottom.min(b.bottom),
+                right: r.right.max(b.right),
+                top: r.top.max(b.top),
+            },
+        });
     }
-    rect
+    rect.unwrap_or(ZERO_RECT)
 }
 
 #[cfg(test)]
 mod tests {
+    //! `packages/engine/main/test/page-geometry-reader.test.ts`
+    //! (`buildRunsFromRawGlyphs`), and the wire shape.
+
     use super::*;
 
     fn key(n: usize) -> TextObjectKey {
@@ -549,252 +569,343 @@ mod tests {
         PdfRect { left, bottom, right, top }
     }
 
-    /// An upright, non-empty glyph in one text object.
-    fn upright_glyph(object: usize, left: f64) -> RawGeometryGlyphRecord {
+    /// Axis-aligned quad over a box.
+    fn quad_of(left: f64, bottom: f64, right: f64, top: f64) -> PdfQuad {
+        PdfQuad {
+            p1: PdfPoint { x: left, y: top },
+            p2: PdfPoint { x: right, y: top },
+            p3: PdfPoint { x: left, y: bottom },
+            p4: PdfPoint { x: right, y: bottom },
+        }
+    }
+
+    /// Quad of the w×h cell at (x, y), turned 90° counter-clockwise
+    /// (baseline along +y).
+    fn rotated_quad(x: f64, y: f64, w: f64, h: f64) -> PdfQuad {
+        PdfQuad {
+            p1: PdfPoint { x: x + h, y },
+            p2: PdfPoint { x: x + h, y: y + w },
+            p3: PdfPoint { x, y },
+            p4: PdfPoint { x, y: y + w },
+        }
+    }
+
+    fn upright(object: usize, loose_box: PdfRect) -> RawGeometryGlyphRecord {
         RawGeometryGlyphRecord {
             object_key: key(object),
             font_size: None,
             flags: 0,
-            loose_box: box_rect(left, 0.0, left + 10.0, 12.0),
-            tight_box: Some(box_rect(left + 1.0, 1.0, left + 9.0, 11.0)),
+            loose_box,
+            tight_box: None,
             loose_quad: None,
             tight_quad: None,
             upright: true,
-            rotation: 0.0,
+            baseline_angle: 0.0,
             ascent_flip: false,
         }
     }
 
-    /// A glyph whose char matrix is not upright, so it classifies a run as
-    /// rotated.
-    fn rotated_glyph(object: usize, rotation: f64) -> RawGeometryGlyphRecord {
+    fn rotated(object: usize, loose_quad: PdfQuad, baseline_angle: f64) -> RawGeometryGlyphRecord {
         RawGeometryGlyphRecord {
             object_key: key(object),
             font_size: None,
             flags: 0,
-            loose_box: box_rect(0.0, 0.0, 10.0, 12.0),
+            loose_box: ZERO_RECT,
             tight_box: None,
-            loose_quad: Some(PdfQuad {
-                p1: PdfPoint { x: 0.0, y: 12.0 },
-                p2: PdfPoint { x: 10.0, y: 12.0 },
-                p3: PdfPoint { x: 0.0, y: 0.0 },
-                p4: PdfPoint { x: 10.0, y: 0.0 },
-            }),
+            loose_quad: Some(loose_quad),
             tight_quad: None,
             upright: false,
-            rotation,
+            baseline_angle,
             ascent_flip: false,
         }
     }
 
-    fn empty_glyph(object: usize) -> RawGeometryGlyphRecord {
+    fn empty(object: usize) -> RawGeometryGlyphRecord {
         RawGeometryGlyphRecord::empty(key(object))
     }
 
-    #[test]
-    fn splits_runs_on_a_text_object_change_and_tiles_char_start() {
-        let records = [
-            upright_glyph(1, 0.0),
-            upright_glyph(1, 10.0),
-            upright_glyph(2, 20.0),
-            upright_glyph(3, 30.0),
-            upright_glyph(3, 40.0),
-            upright_glyph(3, 50.0),
-        ];
-        let runs = build_runs_from_raw_glyphs(&records);
+    fn glyph(loose: PdfRect, tight: Option<PdfRect>, space: bool) -> PageGeometryGlyph {
+        PageGeometryGlyph { loose, tight, space, empty: false }
+    }
 
+    #[test]
+    fn groups_upright_glyphs_per_text_object_and_drops_native_offered_quads() {
+        let mut first = upright(1, box_rect(10.0, 10.0, 20.0, 22.0));
+        first.font_size = Some(12.0);
+        first.tight_box = Some(box_rect(11.0, 12.0, 19.0, 20.0));
+        // The native layer offers quads for every real glyph; upright runs
+        // must not carry them onto the wire.
+        first.loose_quad = Some(quad_of(10.0, 10.0, 20.0, 22.0));
+        first.tight_quad = Some(quad_of(11.0, 12.0, 19.0, 20.0));
+        let mut space = upright(1, box_rect(20.0, 10.0, 30.0, 22.0));
+        space.flags = GLYPH_FLAG_SPACE;
+        let mut other = upright(2, box_rect(40.0, 10.0, 50.0, 22.0));
+        other.font_size = Some(9.0);
+
+        let runs = build_runs_from_raw_glyphs(&[first, space, other]);
+        assert_eq!(runs.len(), 2);
+        let PageGeometryRun::Upright { rect, start, glyphs, font_size } = &runs[0] else {
+            panic!("expected an upright run");
+        };
+        assert_eq!(*start, 0);
+        assert_eq!(*font_size, Some(12.0));
+        assert_eq!(*rect, box_rect(10.0, 10.0, 30.0, 22.0));
+        // Boxes, not quads, and the space state only where it is true.
+        assert_eq!(
+            glyphs,
+            &vec![
+                glyph(
+                    box_rect(10.0, 10.0, 20.0, 22.0),
+                    Some(box_rect(11.0, 12.0, 19.0, 20.0)),
+                    false
+                ),
+                glyph(box_rect(20.0, 10.0, 30.0, 22.0), None, true),
+            ]
+        );
+        assert_eq!(runs[1].start(), 2);
+        assert_eq!(runs[1].font_size(), Some(9.0));
+    }
+
+    #[test]
+    fn a_runs_rect_covers_its_real_glyphs_and_a_glyph_with_no_box_takes_no_part() {
+        let runs = build_runs_from_raw_glyphs(&[
+            empty(1), // a generated space opening the object
+            upright(1, box_rect(100.0, 200.0, 110.0, 212.0)),
+            empty(1),
+            upright(1, box_rect(110.0, 200.0, 120.0, 212.0)),
+        ]);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].rect(), box_rect(100.0, 200.0, 120.0, 212.0));
+        let PageGeometryRun::Upright { glyphs, .. } = &runs[0] else {
+            panic!("expected an upright run");
+        };
+        assert_eq!(
+            glyphs[0],
+            PageGeometryGlyph { loose: ZERO_RECT, tight: None, space: false, empty: true }
+        );
+    }
+
+    #[test]
+    fn a_run_of_nothing_but_glyphs_with_no_box_keeps_the_zeroed_rect() {
+        let runs = build_runs_from_raw_glyphs(&[empty(1), empty(1)]);
+        assert_eq!(runs.len(), 1);
+        assert!(!runs[0].is_rotated());
+        assert_eq!(runs[0].rect(), ZERO_RECT);
+    }
+
+    #[test]
+    fn a_rotated_run_opening_with_a_glyph_with_no_box_covers_only_its_real_cells() {
+        let q1 = rotated_quad(50.0, 100.0, 10.0, 14.0);
+        let runs =
+            build_runs_from_raw_glyphs(&[empty(1), rotated(1, q1, std::f64::consts::FRAC_PI_2)]);
+        assert_eq!(runs.len(), 1);
+        assert!(runs[0].is_rotated());
+        assert_eq!(runs[0].rect(), box_rect(50.0, 100.0, 64.0, 110.0));
+    }
+
+    #[test]
+    fn a_rotated_object_emits_the_rotated_variant_and_empty_glyphs_get_zeroed_quads() {
+        let q1 = rotated_quad(50.0, 100.0, 10.0, 14.0);
+        let q2 = rotated_quad(50.0, 112.0, 10.0, 14.0);
+        let mut first = rotated(1, q1, std::f64::consts::FRAC_PI_2);
+        first.font_size = Some(10.0);
+        first.tight_quad = Some(rotated_quad(51.0, 101.0, 8.0, 12.0));
+        let runs = build_runs_from_raw_glyphs(&[
+            first,
+            empty(1),
+            rotated(1, q2, std::f64::consts::FRAC_PI_2),
+        ]);
+
+        assert_eq!(runs.len(), 1);
+        let PageGeometryRun::Rotated { rect, glyphs, rotation, ascent_flip, font_size, .. } =
+            &runs[0]
+        else {
+            panic!("expected a rotated run");
+        };
+        assert!((rotation - 270.0).abs() < 1e-6, "rotation {rotation}");
+        assert!(!ascent_flip);
+        assert_eq!(*font_size, Some(10.0));
+        assert_eq!(glyphs[0].loose, q1.into());
+        assert_eq!(glyphs[0].tight, Some(rotated_quad(51.0, 101.0, 8.0, 12.0).into()));
+        assert_eq!(
+            glyphs[1],
+            RotatedGeometryGlyph {
+                loose: ZERO_QUAD.into(),
+                tight: None,
+                space: false,
+                empty: true
+            }
+        );
+        // The AABB over the real glyphs' cells.
+        assert_eq!(*rect, box_rect(50.0, 100.0, 64.0, 122.0));
+    }
+
+    #[test]
+    fn an_orientation_change_mid_object_splits_the_run_and_inherits_the_font_size() {
+        let mut first = upright(1, box_rect(10.0, 10.0, 20.0, 22.0));
+        first.font_size = Some(12.0);
+        let runs = build_runs_from_raw_glyphs(&[
+            first,
+            upright(1, box_rect(20.0, 10.0, 30.0, 22.0)),
+            rotated(1, rotated_quad(40.0, 10.0, 10.0, 12.0), std::f64::consts::FRAC_PI_2),
+        ]);
+        assert_eq!(runs.len(), 2);
+        assert_eq!(runs[0].start(), 0);
+        assert_eq!(runs[1].start(), 2);
+        assert!(!runs[0].is_rotated());
+        assert!(runs[1].is_rotated());
+        // The same text object, so inherited rather than resampled.
+        assert_eq!(runs[1].font_size(), Some(12.0));
+    }
+
+    #[test]
+    fn drift_splits_beyond_the_tolerance_and_holds_within_it() {
+        let base = std::f64::consts::FRAC_PI_4;
+        let within = build_runs_from_raw_glyphs(&[
+            rotated(1, rotated_quad(0.0, 0.0, 10.0, 12.0), base),
+            rotated(1, rotated_quad(0.0, 12.0, 10.0, 12.0), base + 0.005),
+        ]);
+        assert_eq!(within.len(), 1);
+
+        let beyond = build_runs_from_raw_glyphs(&[
+            rotated(1, rotated_quad(0.0, 0.0, 10.0, 12.0), base),
+            rotated(1, rotated_quad(0.0, 12.0, 10.0, 12.0), base + 0.02),
+        ]);
+        assert_eq!(beyond.len(), 2);
+        // A mid-object split still tiles.
+        assert_eq!(beyond[1].start(), 1);
+    }
+
+    #[test]
+    fn an_ascent_flip_mismatch_splits_the_run() {
+        let mut flipped = rotated(1, rotated_quad(0.0, 0.0, 10.0, 12.0), std::f64::consts::PI);
+        flipped.ascent_flip = true;
+        let runs = build_runs_from_raw_glyphs(&[
+            flipped,
+            rotated(1, rotated_quad(0.0, 12.0, 10.0, 12.0), std::f64::consts::PI),
+        ]);
+        assert_eq!(runs.len(), 2);
+    }
+
+    #[test]
+    fn quad_less_non_upright_glyphs_degrade_to_an_upright_run() {
+        // Synthesized /ActualText pieces and singular-matrix glyphs have boxes
+        // but no oriented cells, so they classify upright.
+        let mut synthesized = upright(1, box_rect(10.0, 10.0, 30.0, 22.0));
+        synthesized.upright = false;
+        synthesized.baseline_angle = std::f64::consts::FRAC_PI_2;
+        let runs = build_runs_from_raw_glyphs(&[synthesized]);
+        assert_eq!(runs.len(), 1);
+        let PageGeometryRun::Upright { glyphs, .. } = &runs[0] else {
+            panic!("expected an upright run");
+        };
+        assert_eq!(glyphs[0].loose, box_rect(10.0, 10.0, 30.0, 22.0));
+    }
+
+    #[test]
+    fn runs_split_on_a_text_object_change_and_their_starts_tile() {
+        let records: Vec<_> = [1, 1, 2, 3, 3, 3]
+            .iter()
+            .enumerate()
+            .map(|(i, &object)| {
+                upright(object, box_rect(i as f64 * 10.0, 0.0, i as f64 * 10.0 + 10.0, 12.0))
+            })
+            .collect();
+        let runs = build_runs_from_raw_glyphs(&records);
         assert_eq!(runs.len(), 3);
-        // charStart tiles the character range with no gap and no overlap,
-        // which the orientation conformance suite asserts as a property.
         let mut next = 0;
         for run in &runs {
-            assert_eq!(run.char_start(), next);
+            assert_eq!(run.start(), next);
             next += run.glyph_count() as u32;
         }
         assert_eq!(next, records.len() as u32);
-    }
-
-    #[test]
-    fn an_empty_record_list_produces_no_runs() {
         assert!(build_runs_from_raw_glyphs(&[]).is_empty());
-    }
-
-    #[test]
-    fn a_runs_rect_seeds_from_its_first_glyph_and_expands_over_non_empty_ones() {
-        // The legacy quirk, kept deliberately: an empty first glyph seeds the
-        // rect at the origin even though it contributes nothing afterwards.
-        let records = [empty_glyph(1), upright_glyph(1, 100.0)];
-        let runs = build_runs_from_raw_glyphs(&records);
-        assert_eq!(runs.len(), 1);
-        assert_eq!(runs[0].rect(), box_rect(0.0, 0.0, 110.0, 12.0));
-
-        // With a real glyph first, the origin is not included.
-        let records = [upright_glyph(1, 100.0), empty_glyph(1)];
-        let runs = build_runs_from_raw_glyphs(&records);
-        assert_eq!(runs[0].rect(), box_rect(100.0, 0.0, 110.0, 12.0));
-    }
-
-    #[test]
-    fn empty_glyphs_never_classify_and_adopt_the_runs_variant() {
-        // Leading empties do not make the run upright; the first classifiable
-        // glyph does, and here it is rotated.
-        let records = [empty_glyph(1), empty_glyph(1), rotated_glyph(1, 0.5)];
-        let runs = build_runs_from_raw_glyphs(&records);
-        assert_eq!(runs.len(), 1);
-        assert!(runs[0].is_rotated());
-        assert_eq!(runs[0].glyph_count(), 3);
-
-        // A run of nothing but empties emits as upright, the legacy
-        // degenerate behavior.
-        let runs = build_runs_from_raw_glyphs(&[empty_glyph(1), empty_glyph(1)]);
-        assert_eq!(runs.len(), 1);
-        assert!(!runs[0].is_rotated());
-    }
-
-    #[test]
-    fn an_empty_glyph_inside_a_rotated_run_gets_a_zeroed_quad() {
-        let records = [rotated_glyph(1, 0.5), empty_glyph(1)];
-        let runs = build_runs_from_raw_glyphs(&records);
-        let PageGeometryRun::Rotated { glyphs, .. } = &runs[0] else {
-            panic!("expected a rotated run");
-        };
-        assert_eq!(glyphs[1].loose_quad, ZERO_QUAD);
-        assert_eq!(glyphs[1].flags, GLYPH_FLAG_EMPTY);
-        assert_eq!(glyphs[1].tight_quad, None);
-    }
-
-    #[test]
-    fn a_real_glyph_with_no_oriented_cell_classifies_upright() {
-        // Synthesized /ActualText pieces and singular matrices have no loose
-        // quad, so box-only data degrades to exactly the legacy behavior even
-        // when the native flags say the matrix is not upright.
-        let mut synthesized = upright_glyph(1, 0.0);
-        synthesized.upright = false;
-        synthesized.loose_quad = None;
-
-        let runs = build_runs_from_raw_glyphs(&[synthesized]);
-        assert!(!runs[0].is_rotated());
-    }
-
-    #[test]
-    fn orientation_drift_splits_a_run_only_past_the_tolerance() {
-        let inside = ROTATION_SPLIT_TOLERANCE * 0.9;
-        let records = [rotated_glyph(1, 0.5), rotated_glyph(1, 0.5 + inside)];
-        assert_eq!(build_runs_from_raw_glyphs(&records).len(), 1);
-
-        let outside = ROTATION_SPLIT_TOLERANCE * 2.0;
-        let records = [rotated_glyph(1, 0.5), rotated_glyph(1, 0.5 + outside)];
-        let runs = build_runs_from_raw_glyphs(&records);
-        assert_eq!(runs.len(), 2);
-        // A mid-object split still tiles.
-        assert_eq!(runs[0].char_start(), 0);
-        assert_eq!(runs[1].char_start(), 1);
     }
 
     #[test]
     fn angles_either_side_of_pi_are_one_class() {
         // Comparing raw angles would call these 2π apart and split the run.
-        let records = [
-            rotated_glyph(1, std::f64::consts::PI - 0.001),
-            rotated_glyph(1, -std::f64::consts::PI + 0.001),
-        ];
-        assert_eq!(build_runs_from_raw_glyphs(&records).len(), 1);
+        let q = rotated_quad(0.0, 0.0, 10.0, 12.0);
+        let runs = build_runs_from_raw_glyphs(&[
+            rotated(1, q, std::f64::consts::PI - 0.001),
+            rotated(1, q, -std::f64::consts::PI + 0.001),
+        ]);
+        assert_eq!(runs.len(), 1);
     }
 
     #[test]
-    fn a_mirrored_glyph_splits_from_an_unmirrored_one_at_the_same_angle() {
-        let mut mirrored = rotated_glyph(1, 0.5);
-        mirrored.ascent_flip = true;
-        let records = [rotated_glyph(1, 0.5), mirrored];
-        assert_eq!(build_runs_from_raw_glyphs(&records).len(), 2);
-    }
-
-    #[test]
-    fn an_orientation_change_splits_the_run_but_keeps_the_objects_font_size() {
-        // Font size is sampled at the text object's first glyph. A split
-        // inside that object inherits it rather than resampling, which would
-        // read the size at a glyph that is not the object's first.
-        let mut first = upright_glyph(1, 0.0);
-        first.font_size = Some(11.0);
-        let records = [first, rotated_glyph(1, 1.2)];
-
-        let runs = build_runs_from_raw_glyphs(&records);
-        assert_eq!(runs.len(), 2);
-        assert!(!runs[0].is_rotated());
-        assert!(runs[1].is_rotated());
-        assert_eq!(runs[0].font_size(), Some(11.0));
-        assert_eq!(runs[1].font_size(), Some(11.0));
-    }
-
-    #[test]
-    fn a_new_text_object_resamples_the_font_size() {
-        let mut first = upright_glyph(1, 0.0);
-        first.font_size = Some(11.0);
-        let mut second = upright_glyph(2, 10.0);
-        second.font_size = Some(24.0);
-
-        let runs = build_runs_from_raw_glyphs(&[first, second]);
-        assert_eq!(runs[0].font_size(), Some(11.0));
-        assert_eq!(runs[1].font_size(), Some(24.0));
-    }
-
-    #[test]
-    fn upright_runs_drop_the_quads_the_native_layer_offered() {
-        // The dominant case never pays for orientation: an upright run's wire
-        // shape is the pre-orientation one.
-        let mut with_quad = upright_glyph(1, 0.0);
-        with_quad.loose_quad = Some(ZERO_QUAD);
-        let runs = build_runs_from_raw_glyphs(&[with_quad]);
-
-        let PageGeometryRun::Upright { glyphs, .. } = &runs[0] else {
-            panic!("expected an upright run");
-        };
-        assert_eq!(glyphs[0].loose_box, box_rect(0.0, 0.0, 10.0, 12.0));
-        assert_eq!(glyphs[0].tight_box, Some(box_rect(1.0, 1.0, 9.0, 11.0)));
+    fn a_baseline_angle_reads_as_degrees_clockwise_from_0_up_to_360() {
+        // 30° counter-clockwise (0.5236 rad on the old wire) is 330°
+        // clockwise.
+        assert!((rotation_of_baseline(std::f64::consts::FRAC_PI_6) - 330.0).abs() < 1e-9);
+        assert_eq!(rotation_of_baseline(0.0), 0.0);
+        assert!((rotation_of_baseline(-std::f64::consts::FRAC_PI_2) - 90.0).abs() < 1e-9);
+        assert!((rotation_of_baseline(std::f64::consts::PI) - 180.0).abs() < 1e-9);
     }
 
     #[test]
     fn the_uniform_views_agree_across_both_variants() {
-        let upright = build_runs_from_raw_glyphs(&[upright_glyph(1, 0.0)]).remove(0);
-        let quad = upright.glyph_loose_quad(0).unwrap();
-        // Synthesized in the same frame-geometric slot order: upper-start,
-        // upper-end, lower-start, lower-end.
-        assert_eq!(quad.p1, PdfPoint { x: 0.0, y: 12.0 });
-        assert_eq!(quad.p4, PdfPoint { x: 10.0, y: 0.0 });
-        assert_eq!(upright.glyph_loose_bounds(0), Some(box_rect(0.0, 0.0, 10.0, 12.0)));
+        let upright_run =
+            build_runs_from_raw_glyphs(&[upright(1, box_rect(0.0, 0.0, 10.0, 12.0))]).remove(0);
+        // Synthesized in the same corner order: upper-left, upper-right,
+        // lower-left, lower-right.
+        assert_eq!(upright_run.glyph_loose_quad(0), Some(quad_of(0.0, 0.0, 10.0, 12.0)));
+        assert_eq!(upright_run.glyph_loose_bounds(0), Some(box_rect(0.0, 0.0, 10.0, 12.0)));
 
-        let rotated = build_runs_from_raw_glyphs(&[rotated_glyph(1, 0.5)]).remove(0);
-        assert_eq!(rotated.glyph_loose_bounds(0), Some(box_rect(0.0, 0.0, 10.0, 12.0)));
-        assert_eq!(rotated.glyph_loose_quad(1), None);
+        let q = rotated_quad(0.0, 0.0, 10.0, 12.0);
+        let rotated_run = build_runs_from_raw_glyphs(&[rotated(1, q, 0.5)]).remove(0);
+        assert_eq!(rotated_run.glyph_loose_bounds(0), Some(pdf_quad_bounds(q)));
+        assert_eq!(rotated_run.glyph_loose_quad(1), None);
     }
 
     #[test]
-    fn the_wire_shape_distinguishes_the_variants_by_the_rotation_key() {
+    fn the_wire_shape_is_upstreams_in_the_files_coordinates() {
         // `isRotatedGeometryRun` narrows on `'rotation' in run`, so an upright
         // run must not carry the key and a rotated one must.
-        let upright = build_runs_from_raw_glyphs(&[upright_glyph(1, 0.0)]).remove(0);
-        let json = serde_json::to_value(&upright).unwrap();
-        assert_eq!(json.get("rotation"), None);
-        assert_eq!(json.get("ascentFlip"), None);
-        assert_eq!(json["charStart"], 0);
-        assert!(json["glyphs"][0].get("looseBox").is_some());
-        // An absent font size is omitted, not null.
-        assert_eq!(json.get("fontSize"), None);
+        let mut space = upright(1, box_rect(10.0, 0.0, 20.0, 12.0));
+        space.flags = GLYPH_FLAG_SPACE;
+        let upright_run = build_runs_from_raw_glyphs(&[
+            upright(1, box_rect(0.0, 0.0, 10.0, 12.0)),
+            space,
+            empty(1),
+        ])
+        .remove(0);
+        assert_eq!(
+            serde_json::to_value(&upright_run).unwrap(),
+            serde_json::json!({
+                "rect": { "left": 0.0, "bottom": 0.0, "right": 20.0, "top": 12.0 },
+                "start": 0,
+                "glyphs": [
+                    { "loose": { "left": 0.0, "bottom": 0.0, "right": 10.0, "top": 12.0 } },
+                    { "loose": { "left": 10.0, "bottom": 0.0, "right": 20.0, "top": 12.0 }, "space": true },
+                    { "loose": { "left": 0.0, "bottom": 0.0, "right": 0.0, "top": 0.0 }, "empty": true },
+                ],
+            })
+        );
 
-        let rotated = build_runs_from_raw_glyphs(&[rotated_glyph(1, 0.5)]).remove(0);
-        let json = serde_json::to_value(&rotated).unwrap();
-        assert_eq!(json["rotation"], 0.5);
+        let q = rotated_quad(0.0, 0.0, 10.0, 12.0);
+        let rotated_run = build_runs_from_raw_glyphs(&[rotated(1, q, 0.5)]).remove(0);
+        let json = serde_json::to_value(&rotated_run).unwrap();
+        assert_eq!(json["start"], 0);
         assert_eq!(json["ascentFlip"], false);
-        assert!(json["glyphs"][0].get("looseQuad").is_some());
+        assert!(json["rotation"].as_f64().unwrap() > 300.0);
+        assert_eq!(
+            json["glyphs"][0]["loose"]["upperLeft"],
+            serde_json::json!({ "x": 12.0, "y": 0.0 })
+        );
+        assert_eq!(
+            json["glyphs"][0]["loose"]["lowerRight"],
+            serde_json::json!({ "x": 0.0, "y": 10.0 })
+        );
     }
 
     #[test]
     fn runs_round_trip_through_the_untagged_wire_form() {
         let snapshot = PageGeometrySnapshot {
             runs: build_runs_from_raw_glyphs(&[
-                upright_glyph(1, 0.0),
-                rotated_glyph(2, 0.5),
-                empty_glyph(3),
+                upright(1, box_rect(0.0, 0.0, 10.0, 12.0)),
+                rotated(2, rotated_quad(0.0, 0.0, 10.0, 12.0), 0.5),
+                empty(3),
             ]),
         };
         let json = serde_json::to_string(&snapshot).unwrap();

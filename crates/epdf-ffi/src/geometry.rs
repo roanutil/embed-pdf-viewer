@@ -5,7 +5,7 @@
 //! `origin`/`size` shape is the TypeScript one. Each record converts from
 //! and to both crates' types.
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Record)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, uniffi::Record)]
 pub struct PageRef {
     pub page_object_number: u32,
 }
@@ -102,35 +102,35 @@ impl From<Rect> for epdf_geometry::Rect {
     }
 }
 
-/// A quad whose orientation is known, corners named in the text's own
-/// upright frame: `upper` is the ascent side, `start` to `end` runs along
-/// the reading direction. Page space.
+/// `Quad`: four corners named in the text's own upright frame (`upper` is
+/// the ascent side, `left` to `right` runs along the reading direction),
+/// as `@embedpdf/geometry` names them. Page space.
 #[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
-pub struct TextQuad {
-    pub upper_start: Point,
-    pub upper_end: Point,
-    pub lower_start: Point,
-    pub lower_end: Point,
+pub struct Quad {
+    pub upper_left: Point,
+    pub upper_right: Point,
+    pub lower_left: Point,
+    pub lower_right: Point,
 }
 
-impl From<epdf_geometry::TextQuad> for TextQuad {
-    fn from(q: epdf_geometry::TextQuad) -> Self {
-        TextQuad {
-            upper_start: q.upper_start.into(),
-            upper_end: q.upper_end.into(),
-            lower_start: q.lower_start.into(),
-            lower_end: q.lower_end.into(),
+impl From<epdf_geometry::Quad> for Quad {
+    fn from(q: epdf_geometry::Quad) -> Self {
+        Quad {
+            upper_left: q.upper_left.into(),
+            upper_right: q.upper_right.into(),
+            lower_left: q.lower_left.into(),
+            lower_right: q.lower_right.into(),
         }
     }
 }
 
-impl From<TextQuad> for epdf_geometry::TextQuad {
-    fn from(q: TextQuad) -> Self {
-        epdf_geometry::TextQuad {
-            upper_start: q.upper_start.into(),
-            upper_end: q.upper_end.into(),
-            lower_start: q.lower_start.into(),
-            lower_end: q.lower_end.into(),
+impl From<Quad> for epdf_geometry::Quad {
+    fn from(q: Quad) -> Self {
+        epdf_geometry::Quad {
+            upper_left: q.upper_left.into(),
+            upper_right: q.upper_right.into(),
+            lower_left: q.lower_left.into(),
+            lower_right: q.lower_right.into(),
         }
     }
 }

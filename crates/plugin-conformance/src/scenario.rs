@@ -18,17 +18,6 @@ use crate::fake_engine::FakeEngine;
 use crate::harness::{Answer, Harness, HarnessPlugin, Outcome};
 use crate::scrub;
 
-const CORE_ACTIONS: [&str; 8] = [
-    CORE_DOCUMENT_ADDED,
-    CORE_DOCUMENT_REMOVED,
-    CORE_ACTIVE_CHANGED,
-    CORE_ORDER_CHANGED,
-    CORE_DOCUMENT_PAGES_UPDATED,
-    CORE_DOCUMENT_OPENING,
-    CORE_DOCUMENT_LOCKED,
-    CORE_DOCUMENT_OPEN_FAILED,
-];
-
 /// The adapters a run may use. Plugin crates add theirs.
 #[derive(Clone, Default)]
 pub struct Registry {
@@ -85,20 +74,24 @@ const DOCUMENTS_MEMBERS: &[&str] = &[
     "setOrder",
     "move",
     "swap",
-    "save",
-    "saveLayer",
+    "download",
+    "downloadLayer",
+    "preparePrint",
+    "print",
+    "getPrintQuality",
+    "canDownload",
+    "canPrint",
     "listPages",
     "getPage",
-    "getPageAt",
     "getPageIndex",
     "getRevision",
-    "allows",
     "onOpened",
     "onOpenFailed",
     "onLocked",
     "onClosed",
     "onActiveChanged",
     "onPagesChanged",
+    "onUnsavedChangesChanged",
 ];
 
 /// Subscribe a scripted `$fn` listener to a lifecycle event; the outcome is
@@ -215,7 +208,7 @@ impl HarnessPlugin for DocumentsAdapter {
             ),
             "list" => Outcome::Returned(serde_json::to_value(docs.list()).unwrap()),
             "get" => Outcome::Returned(
-                docs.get(str_arg(&args, 0).unwrap_or_default())
+                docs.get_document(str_arg(&args, 0))
                     .map_or(Value::Null, |d| serde_json::to_value(d).unwrap()),
             ),
             "has" => Outcome::Returned(json!(docs.has(str_arg(&args, 0).unwrap_or_default()))),
@@ -245,12 +238,45 @@ impl HarnessPlugin for DocumentsAdapter {
                 );
                 Outcome::undefined()
             }
-            "save" => {
+            "download" => {
                 let mode = arg(&args, 1).and_then(|o| o.get("mode")).filter(|m| !is_undefined(m));
                 Outcome::Promise(docs.save(str_arg(&args, 0), mode.cloned()))
             }
-            "saveLayer" => Outcome::Promise(docs.save_layer(str_arg(&args, 0))),
+            "downloadLayer" => Outcome::Promise(docs.save_layer(str_arg(&args, 0))),
             "listPages" => Outcome::Returned(json!(docs.list_pages(str_arg(&args, 0)))),
+            "getPage" if arg(&args, 0).is_some_and(Value::is_number) => Outcome::Returned(
+                docs.get_page_at(
+                    arg(&args, 0).and_then(Value::as_i64).unwrap_or(-1),
+                    str_arg(&args, 1),
+                )
+                .unwrap_or(Value::Null),
+            ),
+            // The replayed vectors pass the kernel no printer, so these
+            // answer as TS does without one (kernel.ts:736-752, 887-897).
+            "canPrint" => Outcome::Returned(json!(docs.can_print(str_arg(&args, 0)))),
+            "getPrintQuality" => Outcome::Returned(
+                docs.get_print_quality(str_arg(&args, 0))
+                    .map_or(Value::Null, |quality| quality.to_json()),
+            ),
+            "preparePrint" | "print" => {
+                let options = print_options(arg(&args, 1));
+                if method == "print" {
+                    Outcome::Promise(
+                        docs.print(str_arg(&args, 0), options).convert(|_| Ok(undefined())),
+                    )
+                } else {
+                    Outcome::Promise(docs.prepare_print(str_arg(&args, 0), options).convert(
+                        |prepared| {
+                            Ok(json!({
+                                "quality": prepared.quality().to_json(),
+                                "pageCount": prepared.page_count(),
+                                "needsTap": prepared.needs_tap(),
+                            }))
+                        },
+                    ))
+                }
+            }
+            "canDownload" => Outcome::Returned(json!(docs.can_download(str_arg(&args, 0)))),
             "getPage" => Outcome::Returned(
                 page_ref(arg(&args, 0))
                     .and_then(|r| docs.get_page(r, str_arg(&args, 1)))
@@ -271,8 +297,13 @@ impl HarnessPlugin for DocumentsAdapter {
             "allows" => Outcome::Returned(json!(
                 docs.allows(str_arg(&args, 0).unwrap_or_default(), str_arg(&args, 1))
             )),
-            "onOpened" | "onOpenFailed" | "onLocked" | "onClosed" | "onActiveChanged"
-            | "onPagesChanged" => {
+            "onOpened"
+            | "onOpenFailed"
+            | "onLocked"
+            | "onClosed"
+            | "onActiveChanged"
+            | "onPagesChanged"
+            | "onUnsavedChangesChanged" => {
                 let Some(events) = docs.events() else { return Some(Outcome::undefined()) };
                 let hook = match method {
                     "onOpened" => events.opened,
@@ -280,7 +311,8 @@ impl HarnessPlugin for DocumentsAdapter {
                     "onLocked" => events.locked,
                     "onClosed" => events.closed,
                     "onActiveChanged" => events.active_changed,
-                    _ => events.pages_changed,
+                    "onPagesChanged" => events.pages_changed,
+                    _ => events.unsaved_changes_changed,
                 };
                 subscribe_listener(&hook, arg(&args, 0).unwrap_or(&Value::Null), h)
             }
@@ -296,6 +328,23 @@ impl HarnessPlugin for DocumentsAdapter {
     }
 }
 
+/// `PrintOptions` as a step spells them: `pages` and `includeAnnotations`.
+///
+/// A page ref that is not one (`printPagesOf`'s `findPage` finds nothing
+/// for it, `kernel.ts:764-772`) goes in as object number 0, which no page
+/// has, so the kernel refuses it `not-found` in its place in the list, as
+/// TypeScript does; dropping it would print the other pages instead. Only
+/// the message's number differs: `0` where TypeScript prints the value.
+fn print_options(value: Option<&Value>) -> epdf_kernel::print::PrintOptions {
+    use epdf_kernel::geometry::PageRef;
+    let pages = value.and_then(|o| o.get("pages")).and_then(Value::as_array).map(|refs| {
+        refs.iter().map(|r| PageRef::from_json(r).unwrap_or(PageRef::new(0))).collect()
+    });
+    let include_annotations =
+        value.and_then(|o| o.get("includeAnnotations")).and_then(Value::as_bool);
+    epdf_kernel::print::PrintOptions { pages, include_annotations, ..Default::default() }
+}
+
 /// One replayed case: the trace, and any engine call nothing answered.
 pub struct Run {
     pub trace: Vec<Value>,
@@ -305,6 +354,15 @@ pub struct Run {
 fn token_arg(value: Option<&Value>, h: &Harness) -> AnyToken {
     let name = value.and_then(|v| v.get("$token")).and_then(Value::as_str).unwrap_or_default();
     h.token(name, None)
+}
+
+/// A returned capability, printed; a throwing getter makes the call throw.
+fn described(h: &Harness, capability: Rc<dyn Any>) -> Outcome {
+    match h.try_describe(capability) {
+        Some(Ok(value)) => Outcome::Returned(value),
+        Some(Err(error)) => Outcome::Threw(error),
+        None => Outcome::Returned(json!({})),
+    }
 }
 
 fn kernel_call(kernel: &Kernel, method: &str, args: &[Value], h: &Harness) -> Outcome {
@@ -320,18 +378,14 @@ fn kernel_call(kernel: &Kernel, method: &str, args: &[Value], h: &Harness) -> Ou
         "capability" => {
             let token = token_arg(args.first(), h);
             match kernel.capability_any(&token, str_arg(args, 1)) {
-                Ok(capability) => {
-                    Outcome::Returned(h.describe(capability).unwrap_or_else(|| json!({})))
-                }
+                Ok(capability) => described(h, capability),
                 Err(error) => Outcome::Threw(error),
             }
         }
         "tryCapability" => {
             let token = token_arg(args.first(), h);
             match kernel.try_capability_any(&token, str_arg(args, 1)) {
-                Ok(Some(capability)) => {
-                    Outcome::Returned(h.describe(capability).unwrap_or_else(|| json!({})))
-                }
+                Ok(Some(capability)) => described(h, capability),
                 Ok(None) => Outcome::Returned(Value::Null),
                 Err(error) => Outcome::Threw(error),
             }
@@ -343,20 +397,72 @@ fn kernel_call(kernel: &Kernel, method: &str, args: &[Value], h: &Harness) -> Ou
 fn spy(h: &Harness) -> AnyPlugin {
     let h = h.clone();
     define::<Value, Value>("@@conformance/spy")
+        .initial_state(undefined)
         .effects(move |fx| {
-            for kind in CORE_ACTIONS {
-                let h = h.clone();
-                fx.on_action(kind, move |action| {
-                    h.0.entry
-                        .borrow_mut()
-                        .actions
-                        .push(json!({ "slice": "@@core", "action": scrub(&action.to_json()) }));
-                    Ok(())
-                });
+            let docs = fx.get(&*DOCUMENTS)?;
+            if let Some(events) = docs.events() {
+                for (name, hook) in [
+                    ("opened", events.opened),
+                    ("openFailed", events.open_failed),
+                    ("locked", events.locked),
+                    ("closed", events.closed),
+                    ("activeChanged", events.active_changed),
+                    ("pagesChanged", events.pages_changed),
+                    ("unsavedChangesChanged", events.unsaved_changes_changed),
+                ] {
+                    let h = h.clone();
+                    let off = hook.on(move |value| {
+                        h.0.entry
+                            .borrow_mut()
+                            .document_events
+                            .push(json!({"event": name, "value": scrub(value)}));
+                        Ok(())
+                    });
+                    fx.cleanup_fn(move || off.call());
+                }
             }
             Ok(())
         })
         .build()
+}
+
+fn instrument(plugin: AnyPlugin, h: &Harness) -> AnyPlugin {
+    let Some(create) = plugin.create.clone() else { return plugin };
+    let mut wrapper = epdf_kernel::plugin::PluginDef {
+        id: plugin.id.clone(),
+        token: plugin.token.clone(),
+        scope: plugin.scope,
+        requires: plugin.requires.clone(),
+        optional: plugin.optional.clone(),
+        initial_state: plugin.initial_state.clone(),
+        reducer: plugin.reducer.clone(),
+        to_json: plugin.to_json.clone(),
+        to_text: plugin.to_text.clone(),
+        settings: plugin.settings.clone(),
+        capability: plugin.capability.clone(),
+        init: plugin.init.clone(),
+        effects: plugin.effects.clone(),
+        create: None,
+        resolves_any_capability: plugin.resolves_any_capability,
+        in_scope: plugin.in_scope.clone(),
+    };
+    let h = h.clone();
+    // Printed through the slice's own JSON, as the TypeScript records the
+    // state object: a typed slice is not a `Value`.
+    let to_json = plugin.to_json.clone();
+    wrapper.create = Some(Rc::new(move |cx| {
+        let slice = cx.slice_key().to_string();
+        let h = h.clone();
+        let to_json = to_json.clone();
+        let off = cx.lease().on_change(move |change| {
+            let show = |state: &epdf_kernel::store::SliceState| (to_json)(&**state);
+            h.0.entry.borrow_mut().state_changes.push(json!({"slice": slice, "previous": show(&change.previous), "next": show(&change.next)}));
+            Ok(())
+        });
+        cx.listen(off);
+        create(cx)
+    }));
+    Rc::new(wrapper)
 }
 
 fn snapshot(kernel: &Kernel, keys: Option<&Vec<Value>>) -> Value {
@@ -387,16 +493,73 @@ fn finish_entry(h: &Harness, extra: serde_json::Map<String, Value>) -> Value {
         out.insert("outcome".into(), outcome);
     }
     out.insert("settled".into(), Value::Array(entry.settled));
-    out.insert("actions".into(), Value::Array(entry.actions));
+    out.insert("stateChanges".into(), Value::Array(entry.state_changes));
+    out.insert("documentEvents".into(), Value::Array(entry.document_events));
     out.insert("callbacks".into(), Value::Array(entry.callbacks));
     out.insert("reports".into(), Value::Array(entry.reports));
     out.extend(extra);
     Value::Object(out)
 }
 
+/// The scenario host schedules real runtime timers, including 16 ms frames.
+pub struct ScenarioClock {
+    pub frames: bool,
+}
+impl epdf_kernel::clock::HostClock for ScenarioClock {
+    fn now(&self) -> f64 {
+        rt::now()
+    }
+    fn after(&self, ms: f64, run: Box<dyn FnOnce()>) -> epdf_kernel::Unsubscribe {
+        let timer = rt::set_timeout(ms, run);
+        epdf_kernel::Unsubscribe::new(move || rt::clear_timer(timer))
+    }
+    fn has_frames(&self) -> bool {
+        self.frames
+    }
+    fn next_frame(&self, run: Box<dyn FnOnce(f64)>) -> epdf_kernel::Unsubscribe {
+        self.after(16.0, Box::new(move || run(rt::now())))
+    }
+}
+
+thread_local! {
+    static CASE_ENTROPY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Restores the UUID source on drop; a nested install holds none, so the
+/// outer case's sequence continues, as `installCaseEntropy` returns early
+/// when one is installed (case-entropy.ts:11).
+pub struct CaseEntropy(Option<epdf_kernel::identity::UuidSourceGuard>);
+
+impl Drop for CaseEntropy {
+    fn drop(&mut self) {
+        if let Some(guard) = self.0.take() {
+            drop(guard);
+            CASE_ENTROPY.with(|installed| installed.set(false));
+        }
+    }
+}
+
+/// One sequence shared by factories and kernel changes, restored on every exit.
+pub fn install_case_entropy() -> CaseEntropy {
+    if CASE_ENTROPY.with(|installed| installed.replace(true)) {
+        return CaseEntropy(None);
+    }
+    let sequence = std::cell::Cell::new(0_u32);
+    CaseEntropy(Some(epdf_kernel::identity::with_uuid_source(
+        Rc::new(move |bytes| {
+            let next = sequence.get().wrapping_add(1);
+            sequence.set(next);
+            bytes.fill(0);
+            bytes[12..].copy_from_slice(&next.to_be_bytes());
+        }),
+        Rc::new(rt::now),
+    )))
+}
+
 /// Replay one case.
 pub fn run_case(case: &Value, registry: &Registry) -> Run {
     rt::reset();
+    let _entropy = install_case_entropy();
     let mut tokens: HashMap<String, AnyToken> = HashMap::new();
     tokens.insert(DOCUMENTS.name().to_string(), DOCUMENTS.any().clone());
     for adapter in &registry.adapters {
@@ -410,13 +573,25 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
 
     let mut plugins = vec![spy(&h)];
     let mut build_error = None;
+    let mut wrapped: Vec<(AnyPlugin, AnyPlugin)> = Vec::new();
     for spec in case.get("plugins").and_then(Value::as_array).into_iter().flatten() {
         let factory = spec["factory"].as_str().unwrap_or_default();
         let config = spec.get("config").cloned().unwrap_or_else(undefined);
         let adapter = registry.adapters.iter().find(|a| a.factories().contains(&factory));
         match adapter {
             Some(adapter) => match adapter.build(factory, &config, &h) {
-                Ok(plugin) => plugins.push(plugin),
+                Ok(plugin) => {
+                    let wrapper = wrapped
+                        .iter()
+                        .find(|(original, _)| Rc::ptr_eq(original, &plugin))
+                        .map(|(_, wrapper)| wrapper.clone())
+                        .unwrap_or_else(|| {
+                            let wrapper = instrument(plugin.clone(), &h);
+                            wrapped.push((plugin, wrapper.clone()));
+                            wrapper
+                        });
+                    plugins.push(wrapper);
+                }
                 Err(error) => {
                     build_error = Some(error);
                     break;
@@ -442,23 +617,27 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
                 .push(json!({ "slice": slice, "action": scrub(&action.to_json()) }));
         })),
         release_closed_sessions: false,
+        printer: None,
     };
-    let kernel =
-        match Kernel::new(Rc::new(crate::fake_engine::AsEngine(fake.clone())), plugins, options) {
-            Ok(kernel) => kernel,
-            Err(error) => {
-                h.0.entry.borrow_mut().outcome = Some(json!({ "threw": error.to_canonical() }));
-                let mut extra = serde_json::Map::new();
-                extra.insert("engine".into(), json!([]));
-                extra.insert("status".into(), json!("unconstructed"));
-                extra.insert("engineState".into(), json!({}));
-                return Run { trace: vec![finish_entry(&h, extra)], unmatched: fake.unmatched() };
-            }
-        };
+    let kernel = match Kernel::new_with_clock(
+        Rc::new(crate::fake_engine::AsEngine(fake.clone())),
+        plugins,
+        options,
+        Rc::new(ScenarioClock { frames: case["clock"]["frames"].as_bool() == Some(true) }),
+    ) {
+        Ok(kernel) => kernel,
+        Err(error) => {
+            h.0.entry.borrow_mut().outcome = Some(json!({ "threw": error.to_canonical() }));
+            let mut extra = serde_json::Map::new();
+            extra.insert("engine".into(), json!([]));
+            extra.insert("status".into(), json!("unconstructed"));
+            extra.insert("engineState".into(), json!({}));
+            return Run { trace: vec![finish_entry(&h, extra)], unmatched: fake.unmatched() };
+        }
+    };
 
-    // The TypeScript starts every step with a blank entry, so whatever the
-    // plugins logged while the kernel was being built is not in any step.
-    *h.0.entry.borrow_mut() = Default::default();
+    // Whatever the plugins logged while the kernel was being built stays in
+    // the first step's entry, as the TypeScript's first entry holds it.
     let snapshot_keys = case.get("snapshot");
     let mut trace = Vec::new();
     let mut logged = 0;
@@ -570,5 +749,29 @@ fn invoke(step: &Value, kernel: &Kernel, h: &Harness) -> Outcome {
                 Err(error) => Outcome::Threw(error),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use epdf_kernel::geometry::PageRef;
+    use serde_json::json;
+
+    use super::print_options;
+
+    #[test]
+    fn a_malformed_print_page_stays_in_its_place_as_no_page() {
+        let options = print_options(Some(&json!({
+            "pages": [
+                { "kind": "objectNumber", "objectNumber": 3 },
+                { "kind": "index", "index": 0 },
+                { "kind": "objectNumber", "objectNumber": 2.5 },
+                { "kind": "objectNumber", "objectNumber": 5 },
+            ],
+        })));
+        assert_eq!(
+            options.pages,
+            Some(vec![PageRef::new(3), PageRef::new(0), PageRef::new(0), PageRef::new(5)])
+        );
     }
 }

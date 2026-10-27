@@ -27,7 +27,7 @@ fn first_page_number(doc: &OwnedDocument) -> PageObjectNumber {
 fn assert_snapshot_invariants(snapshot: &PageGeometrySnapshot, char_count: u32) {
     let mut next_char = 0;
     for run in &snapshot.runs {
-        assert_eq!(run.char_start(), next_char, "charStart does not tile");
+        assert_eq!(run.start(), next_char, "run starts do not tile");
         next_char += run.glyph_count() as u32;
 
         let rect = run.rect();

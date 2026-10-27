@@ -270,3 +270,213 @@ fn malformed_maps_are_rejected_the_same_way() {
         );
     }
 }
+
+// --- `test/text/charmap.test.ts`, upstream's own cases.
+//
+// Upstream's ranges are `TextRange`s (`start`, `count`); this crate's charmap
+// still takes half-open `[start, end)` pairs, so each case converts. The
+// cases with a negative boundary or count have no `u32` spelling and are
+// left out, and the `PageTextSnapshotSchema` cases belong to the wire schema,
+// not to this module.
+
+/// Fixtures named by their character list. `x` marks a non-printing
+/// character (a character slot, zero text units); the emoji contributes a
+/// surrogate pair (two units).
+mod upstream {
+    use super::*;
+
+    fn snapshot(text: &str, char_count: u32, anchors: &[(u32, u32)]) -> PageTextSnapshot {
+        PageTextSnapshot {
+            text: text.to_string(),
+            char_count,
+            char_map: anchors.iter().map(|&(c, t)| CharMapAnchor::new(c, t)).collect(),
+        }
+    }
+
+    fn identity() -> PageTextSnapshot {
+        snapshot("ABC", 3, &[])
+    }
+
+    /// bug_1139's shape: a leading non-printing character shifts every text
+    /// index by one.
+    fn leading_drop() -> PageTextSnapshot {
+        snapshot("AB", 3, &[(1, 0)])
+    }
+
+    /// `[A, x]`: the trailing zero-width character must stay outside a range
+    /// ending at "A".
+    fn trailing_drop() -> PageTextSnapshot {
+        snapshot("A", 2, &[(2, 1)])
+    }
+
+    /// `[A, x, B]`.
+    fn interior_drop() -> PageTextSnapshot {
+        snapshot("AB", 3, &[(2, 1)])
+    }
+
+    /// `[x, x, A]`: a plateau of two zero-width characters before the first
+    /// real unit.
+    fn double_drop() -> PageTextSnapshot {
+        snapshot("A", 3, &[(1, 0), (2, 0)])
+    }
+
+    /// `[emoji, A]`.
+    fn astral() -> PageTextSnapshot {
+        snapshot("\u{1F600}A", 2, &[(1, 2)])
+    }
+
+    fn all() -> [PageTextSnapshot; 6] {
+        [identity(), leading_drop(), trailing_drop(), interior_drop(), double_drop(), astral()]
+    }
+
+    /// `charRangeForTextOffsets` as upstream spells it: a text range in, a
+    /// character range out, both `(start, count)`.
+    fn char_range(s: &PageTextSnapshot, start: u32, count: u32) -> (u32, u32) {
+        let r = char_range_for_text_offsets(s, start, start + count);
+        (r.start, r.end - r.start)
+    }
+
+    fn slice(s: &PageTextSnapshot, start: u32, count: u32) -> String {
+        slice_text_by_chars(s, start, start + count)
+    }
+
+    fn offsets(s: &PageTextSnapshot, boundaries: std::ops::RangeInclusive<u32>) -> Vec<u32> {
+        boundaries.map(|b| boundary_text_offset(s, b)).collect()
+    }
+
+    #[test]
+    fn the_identity_map_is_the_identity_clamped() {
+        let s = identity();
+        assert_eq!(offsets(&s, 0..=3), [0, 1, 2, 3]);
+        assert_eq!(boundary_text_offset(&s, 99), 3);
+    }
+
+    #[test]
+    fn dropped_characters_advance_the_boundary_but_not_the_offset() {
+        assert_eq!(offsets(&leading_drop(), 0..=3), [0, 0, 1, 2]);
+        assert_eq!(offsets(&trailing_drop(), 0..=2), [0, 1, 1]);
+        assert_eq!(offsets(&double_drop(), 0..=3), [0, 0, 0, 1]);
+    }
+
+    #[test]
+    fn a_supplementary_character_advances_by_two() {
+        assert_eq!(offsets(&astral(), 0..=2), [0, 2, 3]);
+    }
+
+    #[test]
+    fn the_final_boundary_always_lands_on_the_text_length() {
+        for s in all() {
+            assert_eq!(boundary_text_offset(&s, s.char_count), s.text_len_utf16(), "{s:?}");
+        }
+    }
+
+    #[test]
+    fn a_start_is_right_biased_past_leading_zero_width_characters() {
+        // "A" in [x, A, B] must not include the dropped character's slot.
+        assert_eq!(char_range(&leading_drop(), 0, 1), (1, 1));
+    }
+
+    #[test]
+    fn an_end_is_left_biased_before_trailing_zero_width_characters() {
+        // "A" in [A, x] must not swallow the trailing dropped character.
+        assert_eq!(char_range(&trailing_drop(), 0, 1), (0, 1));
+    }
+
+    #[test]
+    fn an_interior_zero_width_character_belongs_to_neither_neighbour() {
+        assert_eq!(char_range(&interior_drop(), 0, 1), (0, 1)); // "A"
+        assert_eq!(char_range(&interior_drop(), 1, 1), (2, 1)); // "B"
+    }
+
+    #[test]
+    fn a_plateau_of_several_zero_width_characters_resolves_to_its_far_edge() {
+        assert_eq!(char_range(&double_drop(), 0, 1), (2, 1));
+    }
+
+    #[test]
+    fn an_offset_inside_a_surrogate_pair_covers_the_whole_character() {
+        assert_eq!(char_range(&astral(), 1, 2), (0, 2));
+        assert_eq!(char_range(&astral(), 0, 1), (0, 1));
+    }
+
+    #[test]
+    fn an_empty_input_normalizes_to_a_single_boundary_and_never_inverts() {
+        assert_eq!(char_range(&double_drop(), 0, 0).1, 0);
+        assert_eq!(char_range(&identity(), 2, 0), (2, 0));
+    }
+
+    #[test]
+    fn the_full_range_is_always_the_whole_text() {
+        for s in all() {
+            assert_eq!(slice(&s, 0, s.char_count), s.text, "{s:?}");
+        }
+    }
+
+    #[test]
+    fn dropped_characters_contribute_nothing_to_a_slice() {
+        assert_eq!(slice(&leading_drop(), 0, 1), "");
+        assert_eq!(slice(&leading_drop(), 0, 2), "A");
+        assert_eq!(slice(&interior_drop(), 0, 2), "A");
+        assert_eq!(slice(&interior_drop(), 1, 2), "B");
+    }
+
+    #[test]
+    fn a_supplementary_character_arrives_whole() {
+        assert_eq!(slice(&astral(), 0, 1), "\u{1F600}");
+        assert_eq!(slice(&astral(), 1, 1), "A");
+    }
+
+    #[test]
+    fn an_empty_range_slices_to_nothing() {
+        assert_eq!(slice(&identity(), 2, 0), "");
+    }
+
+    #[test]
+    fn start_and_end_bias_disagree_exactly_on_plateaus() {
+        let s = trailing_drop();
+        // [A, x] has a plateau at offset 1: start crosses it, end stops before.
+        assert_eq!(char_boundary_at_text_offset(&s, 1, CharBoundaryBias::Start), 2);
+        assert_eq!(char_boundary_at_text_offset(&s, 1, CharBoundaryBias::End), 1);
+        // No plateau at offset 0.
+        assert_eq!(char_boundary_at_text_offset(&s, 0, CharBoundaryBias::Start), 0);
+        assert_eq!(char_boundary_at_text_offset(&s, 0, CharBoundaryBias::End), 0);
+    }
+
+    #[test]
+    fn every_fixture_is_a_valid_map() {
+        for s in all() {
+            assert_eq!(char_map_violation(s.char_count, s.text_len_utf16(), &s.char_map), None);
+        }
+    }
+
+    fn violation(char_count: u32, text_len: u32, anchors: &[(u32, u32)]) -> String {
+        let map: Vec<CharMapAnchor> =
+            anchors.iter().map(|&(c, t)| CharMapAnchor::new(c, t)).collect();
+        char_map_violation(char_count, text_len, &map).expect("a violation")
+    }
+
+    #[test]
+    fn identity_requires_matching_lengths() {
+        assert!(violation(3, 2, &[]).contains("identity"));
+    }
+
+    #[test]
+    fn anchors_must_strictly_increase_and_stay_on_the_page() {
+        assert!(violation(3, 2, &[(1, 0), (1, 0)]).contains("strictly"));
+        assert!(violation(3, 2, &[(0, 0)]).contains("strictly"));
+        assert!(violation(3, 2, &[(4, 2)]).contains("outside"));
+    }
+
+    #[test]
+    fn a_step_other_than_zero_or_two_is_malformed() {
+        // An anchor implying the previous character contributed exactly one
+        // unit is redundant: the canonical form has no such anchor.
+        assert!(violation(3, 3, &[(1, 1)]).contains("expected 0 or 2"));
+        assert!(violation(3, 5, &[(1, 3)]).contains("expected 0 or 2"));
+    }
+
+    #[test]
+    fn a_tail_that_misses_the_text_length_is_malformed() {
+        assert!(violation(3, 3, &[(1, 0)]).contains("text length"));
+    }
+}

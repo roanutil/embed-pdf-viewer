@@ -1,0 +1,72 @@
+commit 98e5c270c6a7fb3446523fecbbb73bfee9ef1971
+Author: Bob Singor <bob@singor.com>
+Date:   Sat Oct 10 23:20:13 2026 +0300
+
+    Forms engine round: prediction helpers, widget looks, field rights; applyEffects removed
+
+    - engine-core: the form rules as pure functions (fieldValueWriteOf, fieldAfterValue,
+      fieldAfterReset, widgetsAfterDisplay, formFieldOfDraft, formFieldAfter,
+      widgetAfterPatch), checked by runFormPredictionConformance on both engines
+    - widgets: underline border, dashArray, checkStyle; form writes report redrawnWidgets
+    - doc.security.fieldRights() on both engines
+    - doc.forms.applyEffects, FormsEffectsApplier, forms.effectsApplied and the server's
+      form/effects route removed: a script run's effects are one doc.apply change
+    - a reset at defaults or a display that changes no widget records no undo step
+    - form plugin writes script results through doc.apply; the actions form sink
+      answers { status, error? }; forms.setDisplay ops take no expect
+    - contract, TS SDK, API snapshots and docs regenerated
+
+diff --git a/packages/plugin/actions/src/dispatch/run.ts b/packages/plugin/actions/src/dispatch/run.ts
+index c4a2359ae..895085fe4 100644
+--- a/packages/plugin/actions/src/dispatch/run.ts
++++ b/packages/plugin/actions/src/dispatch/run.ts
+@@ -143,11 +143,8 @@ export function createRunner(
+         const result = await ports.formCommitSink(
+           fieldRefs.map((ref) => ({ kind: 'setDisplay', ref, display })),
+         );
+-        const firstFailure = result.results.find(
+-          (entry) => entry.status === 'failed' || entry.status === 'rejected',
+-        );
+-        if (firstFailure) {
+-          failedDetail = firstFailure.error?.message ?? firstFailure.status;
++        if (result.status === 'failed') {
++          failedDetail = result.error ?? 'failed';
+           diagnoseHide({ code: 'executor-failed', message: `hide: ${failedDetail}` });
+         }
+       }
+diff --git a/packages/plugin/actions/src/host-contract.ts b/packages/plugin/actions/src/host-contract.ts
+index e4983afcf..adf6d836e 100644
+--- a/packages/plugin/actions/src/host-contract.ts
++++ b/packages/plugin/actions/src/host-contract.ts
+@@ -13,12 +13,7 @@ import type {
+   ScriptTransaction,
+   ScriptUiEffect,
+ } from '@embedpdf/core-acrojs';
+-import type {
+-  DocumentHandle,
+-  FormEffect,
+-  FormEffectsResult,
+-  PageRef,
+-} from '@embedpdf/engine-core/runtime';
++import type { DocumentHandle, FormEffect, PageRef } from '@embedpdf/engine-core/runtime';
+
+ import type {
+   ActionContext,
+@@ -76,9 +71,14 @@ export interface AnnotCommitResult {
+ }
+ export type AnnotCommitSink = (entries: AnnotCommitEntry[]) => Promise<AnnotCommitResult>;
+
+-/** The form plugin's document commit: engine `applyEffects` + snapshot
+- *  reconciliation (its existing commit tail, extracted). */
+-export type FormCommitSink = (effects: FormEffect[]) => Promise<FormEffectsResult>;
++/** What the form plugin's commit did: every effect written as one change, or none of them. */
++export interface FormCommitSinkResult {
++  status: 'applied' | 'failed';
++  /** Why the change was refused, when it was. */
++  error?: string;
++}
++/** The form plugin's document commit: a script run's form effects, written as one change. */
++export type FormCommitSink = (effects: FormEffect[]) => Promise<FormCommitSinkResult>;
+
+ /**
+  * Which realm produced a script result. `'document'` = this document's own

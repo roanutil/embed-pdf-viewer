@@ -22,7 +22,16 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
+import type {
+  AnnotationDraft,
+  AnnotationPatch,
+} from '../../../packages/engine/core/src/annotation/kinds';
+import type {
+  AnnotationResourceRole,
+  AnnotationResources,
+} from '../../../packages/engine/core/src/annotation/resources';
+
+import { normalizeWriteStamps } from './annotation-write-stamps';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -33,65 +42,63 @@ const SCHEMA_VERSION = 1;
 
 const FIXTURE = 'tooling/engine-conformance/fixtures/rich_metadata.pdf';
 
+/*
+ * The drafts and patches are what the engine takes since upstream's Engine
+ * API v3, the request a replay sends as it is: page space from the page's
+ * top-left (1a243431a), colours as '#rrggbb' (c053c3d33), named quad corners
+ * (00d2c8760), top-level flags (c78997346), `box` and a clockwise `rotation`
+ * for the box kinds with their `rect` the engine's (2bdc74fbf), no `rect` on
+ * the point and markup kinds (6153c181e), and destinations naming their page
+ * by ref. Each case was ported from the pre-v3 spelling to describe the same
+ * annotation and the same edit; `polygon-degenerate` and `line-endpoints`
+ * lost the `rect` their patches moved, which the engine now derives. Page 3
+ * of the fixture is 612 by 792 with its crop box at the origin. The
+ * commented-out cases below are in the pre-v3 spelling they were written in.
+ */
 const QUAD = {
-  p1: { x: 72, y: 720 },
-  p2: { x: 200, y: 720 },
-  p3: { x: 72, y: 700 },
-  p4: { x: 200, y: 700 },
+  upperLeft: { x: 72, y: 72 },
+  upperRight: { x: 200, y: 72 },
+  lowerLeft: { x: 72, y: 92 },
+  lowerRight: { x: 200, y: 92 },
 };
 const SHIFTED_QUAD = {
-  p1: { x: 102, y: 700 },
-  p2: { x: 230, y: 700 },
-  p3: { x: 102, y: 680 },
-  p4: { x: 230, y: 680 },
+  upperLeft: { x: 102, y: 92 },
+  upperRight: { x: 230, y: 92 },
+  lowerLeft: { x: 102, y: 112 },
+  lowerRight: { x: 230, y: 112 },
 };
 const SECOND_QUAD = {
-  p1: { x: 72, y: 690 },
-  p2: { x: 160, y: 690 },
-  p3: { x: 72, y: 670 },
-  p4: { x: 160, y: 670 },
+  upperLeft: { x: 72, y: 102 },
+  upperRight: { x: 160, y: 102 },
+  lowerLeft: { x: 72, y: 122 },
+  lowerRight: { x: 160, y: 122 },
 };
 
-const SQUARE_RECT = { left: 300, bottom: 600, right: 400, top: 660 };
-
-const TRIANGLE_RECT = { left: 300, bottom: 300, right: 420, top: 380 };
-const NOTE_RECT = { left: 72, bottom: 600, right: 92, top: 620 };
-const CARET_RECT = { left: 150, bottom: 530, right: 180, top: 570 };
-const FREE_TEXT_RECT = { left: 72, bottom: 400, right: 260, top: 470 };
-const REDACT_RECT = { left: 72, bottom: 200, right: 260, top: 240 };
-const LINK_RECT = { left: 72, bottom: 640, right: 200, top: 660 };
-const STAMP_RECT = { left: 72, bottom: 400, right: 152, top: 480 };
-const WIDGET_RECT = { left: 72, bottom: 250, right: 240, top: 274 };
-const TRIANGLE = [
-  { x: 300, y: 300 },
-  { x: 420, y: 300 },
-  { x: 360, y: 380 },
-];
+type Resources = Readonly<Partial<Record<AnnotationResourceRole, readonly number[]>>>;
 
 interface UpdateCase {
   readonly name: string;
   readonly covers: string;
   readonly draft: Record<string, unknown>;
   readonly patch: Record<string, unknown>;
-  /** Payloads the draft or the patch names by key. See the create generator. */
-  readonly resources?: Readonly<Record<string, readonly number[]>>;
+  /** Bytes the create carries beside the draft, by role. See the create generator. */
+  readonly draftResources?: Resources;
+  /** Bytes the update carries beside the patch, by role. */
+  readonly patchResources?: Resources;
+  /** The engine refuses this patch; the case records the error code. */
+  readonly refused?: true;
 }
 
-/** See `generate-annotation-create-vectors.ts`. */
-function materialize(value: unknown, resources: Record<string, readonly number[]>): unknown {
-  if (Array.isArray(value)) return value.map((entry) => materialize(entry, resources));
-  if (value === null || typeof value !== 'object') return value;
-  const entries = Object.entries(value as Record<string, unknown>);
-  const ref = entries.find(([key]) => key === 'resource');
-  if (ref && typeof ref[1] === 'string') {
-    const bytes = resources[ref[1]];
-    if (!bytes) throw new Error(`no payload for resource '${ref[1]}'`);
-    return Object.fromEntries([
-      ['data', Uint8Array.from(bytes)],
-      ...entries.filter(([key]) => key !== 'resource'),
-    ]);
-  }
-  return Object.fromEntries(entries.map(([key, entry]) => [key, materialize(entry, resources)]));
+/** A case's resources as the bytes the write option takes. */
+function resourcesOf(
+  resources: Resources | undefined,
+): { resources: AnnotationResources } | Record<string, never> {
+  if (!resources) return {};
+  return {
+    resources: Object.fromEntries(
+      Object.entries(resources).map(([role, bytes]) => [role, Uint8Array.from(bytes!)]),
+    ),
+  };
 }
 
 /** A tiny 4x2 PNG, for the stamp cases. */
@@ -102,21 +109,21 @@ const CASES: readonly UpdateCase[] = [
     name: 'inert-patch',
     covers:
       'A patch that repeats what is already there. Nothing changed value, so the appearance is preserved and a client is told not to re-raster.',
-    draft: { subtype: 'highlight', quadPoints: [QUAD], color: { r: 255, g: 255, b: 0 } },
-    patch: { subtype: 'highlight', color: { r: 255, g: 255, b: 0 } },
+    draft: { subtype: 'highlight', quadPoints: [QUAD], color: '#ffff00' },
+    patch: { subtype: 'highlight', color: '#ffff00' },
   },
   {
     name: 'metadata-only',
     covers:
       'Contents and flags, neither of which is painted on a highlight. Still inert, which is what stops editing a comment from destroying a shape.',
     draft: { subtype: 'highlight', quadPoints: [QUAD] },
-    patch: { subtype: 'highlight', contents: 'a note', flags: { hidden: true } },
+    patch: { subtype: 'highlight', contents: 'a note', hidden: true },
   },
   {
     name: 'colour-change',
     covers: 'A semantic edit. The appearance is re-baked and the client is told so.',
     draft: { subtype: 'highlight', quadPoints: [QUAD] },
-    patch: { subtype: 'highlight', color: { r: 0, g: 0, b: 255 } },
+    patch: { subtype: 'highlight', color: '#0000ff' },
   },
   {
     name: 'quad-translation',
@@ -143,30 +150,32 @@ const CASES: readonly UpdateCase[] = [
     name: 'flags-preserve-what-they-do-not-mention',
     covers:
       'The annotation is created printing and the patch hides it. Hiding must not also stop it printing.',
-    draft: { subtype: 'highlight', quadPoints: [QUAD], flags: { print: true } },
-    patch: { subtype: 'highlight', flags: { hidden: true } },
+    draft: { subtype: 'highlight', quadPoints: [QUAD], print: true },
+    patch: { subtype: 'highlight', hidden: true },
   },
   {
     name: 'square-rect-translation',
     covers:
       'A shape moved without resizing, which DOES preserve: the patch carries the rect, so the translation can be verified. Read beside quad-translation, which cannot be.',
-    draft: { subtype: 'square', rect: SQUARE_RECT },
-    patch: {
-      subtype: 'square',
-      rect: { left: 330, bottom: 585, right: 430, top: 645 },
-    },
+    draft: { subtype: 'square', box: { x: 300, y: 132, width: 100, height: 60 } },
+    patch: { subtype: 'square', box: { x: 330, y: 147, width: 100, height: 60 } },
   },
   {
     name: 'square-resize',
     covers: 'A shape resized. The pixels would be scaled rather than shifted, so it re-bakes.',
-    draft: { subtype: 'square', rect: SQUARE_RECT },
-    patch: { subtype: 'square', rect: { left: 300, bottom: 600, right: 500, top: 660 } },
+    draft: { subtype: 'square', box: { x: 300, y: 132, width: 100, height: 60 } },
+    patch: { subtype: 'square', box: { x: 300, y: 132, width: 200, height: 60 } },
   },
   {
     name: 'square-border-width-only',
     covers:
       'A width with no style. /BS is one native call taking both, so the style has to be read rather than defaulted, or a patch that never mentioned it would reset it.',
-    draft: { subtype: 'square', rect: SQUARE_RECT, borderStyle: 'dashed', dashArray: [4, 2] },
+    draft: {
+      subtype: 'square',
+      box: { x: 300, y: 132, width: 100, height: 60 },
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+    },
     patch: { subtype: 'square', strokeWidth: 5 },
   },
   {
@@ -174,15 +183,19 @@ const CASES: readonly UpdateCase[] = [
     covers: 'A tri-state clear of a fill that was there.',
     draft: {
       subtype: 'square',
-      rect: SQUARE_RECT,
-      interiorColor: { r: 0, g: 255, b: 0 },
+      box: { x: 300, y: 132, width: 100, height: 60 },
+      interiorColor: '#00ff00',
     },
     patch: { subtype: 'square', interiorColor: null },
   },
   {
     name: 'square-clear-cloudy',
     covers: 'A tri-state clear of a cloudy border that was there.',
-    draft: { subtype: 'square', rect: SQUARE_RECT, cloudyIntensity: 2 },
+    draft: {
+      subtype: 'square',
+      box: { x: 300, y: 132, width: 100, height: 60 },
+      cloudyIntensity: 2,
+    },
     patch: { subtype: 'square', cloudyIntensity: null },
   },
   {
@@ -197,17 +210,11 @@ const CASES: readonly UpdateCase[] = [
       'A vertex list that SHRINKS, which /QuadPoints cannot do. SetVertices replaces the array rather than appending to it, so there is no stale tail and no preflight to refuse one.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: [
-        { x: 300, y: 300 },
-        { x: 420, y: 300 },
-        { x: 420, y: 380 },
-        { x: 300, y: 380 },
-      ],
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 420, y: 412 }, { x: 300, y: 412 }],
     },
     patch: {
       subtype: 'polygon',
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
     },
   },
   {
@@ -216,25 +223,19 @@ const CASES: readonly UpdateCase[] = [
       'A polygon flattened onto a line. PDFium has no appearance to bake for one, so the verdict is a third thing: the edit landed and the stream could not be rebuilt. A client is told rather than shown a stale picture.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
     },
-    patch: {
-      subtype: 'polygon',
-      rect: { left: 300, bottom: 300, right: 420, top: 300 },
-      vertices: [
-        { x: 300, y: 300 },
-        { x: 420, y: 300 },
-      ],
-    },
+    patch: { subtype: 'polygon', vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }] },
+    // Refused since 404b79b3e ("Engine API v3 drawing details": too few
+    // points to draw is InvalidArg); the case records the refusal code.
+    refused: true,
   },
   {
     name: 'polygon-clear-cloudy',
     covers: 'A polygon is the one vertex kind with a /BE, and it clears on the same terms a shape does.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
       cloudyIntensity: 2,
     },
     patch: { subtype: 'polygon', cloudyIntensity: null },
@@ -245,9 +246,8 @@ const CASES: readonly UpdateCase[] = [
       'A tri-state clear of a fill that was there. On the create path clearing and not saying are the same thing; here they are not.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
-      interiorColor: { r: 0, g: 255, b: 0 },
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      interiorColor: '#00ff00',
     },
     patch: { subtype: 'polygon', interiorColor: null },
   },
@@ -257,8 +257,7 @@ const CASES: readonly UpdateCase[] = [
       'A border width with no style. /BS takes both in one call, so the writer has to READ the style rather than default it: defaulting would reset a dashed border nobody mentioned.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
       borderStyle: 'dashed',
       dashArray: [4, 2],
     },
@@ -270,8 +269,7 @@ const CASES: readonly UpdateCase[] = [
       'The other half of the /BS read-modify-write: a style with no width. Defaulting the width would reset a three-point border nobody mentioned.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
       strokeWidth: 3,
     },
     patch: { subtype: 'polygon', borderStyle: 'dashed', dashArray: [5, 3] },
@@ -279,12 +277,11 @@ const CASES: readonly UpdateCase[] = [
   {
     name: 'polygon-clear-rotation',
     covers:
-      'The advisory scalar, removed. A vertex kind carries an angle and no logical box, so clearing it is the whole of un-rotating one.',
+      'The rotation scalar, removed. A vertex kind carries an angle and no logical box; since 6153c181e the angle turns the upright points when the appearance is drawn, so clearing it is the whole of un-rotating one and regenerates the appearance.',
     draft: {
       subtype: 'polygon',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
-      rotation: 30,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      rotation: 330,
     },
     patch: { subtype: 'polygon', rotation: null },
   },
@@ -293,8 +290,7 @@ const CASES: readonly UpdateCase[] = [
     covers: 'The /LE pair, changed after creation. The two ends differ, so a writer that wrote one twice is visible.',
     draft: {
       subtype: 'polyline',
-      rect: TRIANGLE_RECT,
-      vertices: TRIANGLE,
+      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
       lineEndings: { start: 'none', end: 'none' },
     },
     patch: { subtype: 'polyline', lineEndings: { start: 'diamond', end: 'open-arrow' } },
@@ -302,16 +298,8 @@ const CASES: readonly UpdateCase[] = [
   {
     name: 'line-endpoints',
     covers: 'Moving a line is moving its two points, and its /Rect is the caller arithmetic over them.',
-    draft: {
-      subtype: 'line',
-      rect: { left: 450, bottom: 300, right: 560, top: 400 },
-      linePoints: { start: { x: 450, y: 300 }, end: { x: 560, y: 400 } },
-    },
-    patch: {
-      subtype: 'line',
-      rect: { left: 450, bottom: 300, right: 520, top: 340 },
-      linePoints: { start: { x: 450, y: 340 }, end: { x: 520, y: 300 } },
-    },
+    draft: { subtype: 'line', linePoints: { start: { x: 450, y: 492 }, end: { x: 560, y: 392 } } },
+    patch: { subtype: 'line', linePoints: { start: { x: 450, y: 452 }, end: { x: 520, y: 492 } } },
   },
   {
     name: 'ink-replace-strokes',
@@ -319,28 +307,12 @@ const CASES: readonly UpdateCase[] = [
       'A new pen path. There is no way to replace one stroke, so the whole list goes and the new one is appended; half of that leaves the old strokes under the new ones.',
     draft: {
       subtype: 'ink',
-      rect: { left: 72, bottom: 200, right: 240, top: 300 },
       inkList: [
-        [
-          { x: 72, y: 200 },
-          { x: 120, y: 280 },
-          { x: 160, y: 200 },
-        ],
-        [
-          { x: 180, y: 220 },
-          { x: 240, y: 300 },
-        ],
+        [{ x: 72, y: 592 }, { x: 120, y: 512 }, { x: 160, y: 592 }],
+        [{ x: 180, y: 572 }, { x: 240, y: 492 }],
       ],
     },
-    patch: {
-      subtype: 'ink',
-      inkList: [
-        [
-          { x: 80, y: 210 },
-          { x: 130, y: 260 },
-        ],
-      ],
-    },
+    patch: { subtype: 'ink', inkList: [[{ x: 80, y: 582 }, { x: 130, y: 532 }]] },
   },
   {
     name: 'text-state-alone',
@@ -348,7 +320,7 @@ const CASES: readonly UpdateCase[] = [
       'A /State with no /StateModel, which a DRAFT refuses. A patch touches what it states and the model is already on the annotation, so the rule is draft-only.',
     draft: {
       subtype: 'text',
-      rect: NOTE_RECT,
+      rect: { x: 72, y: 172, width: 20, height: 20 },
       stateModel: 'review',
     },
     patch: { subtype: 'text', state: 'accepted' },
@@ -359,7 +331,7 @@ const CASES: readonly UpdateCase[] = [
       'A tri-state clear of the review state. Removing the entry is not the same as setting it to none, which is a state a workflow can mean.',
     draft: {
       subtype: 'text',
-      rect: NOTE_RECT,
+      rect: { x: 72, y: 172, width: 20, height: 20 },
       stateModel: 'review',
       state: 'accepted',
     },
@@ -368,30 +340,29 @@ const CASES: readonly UpdateCase[] = [
   {
     name: 'text-icon',
     covers: 'The /Name icon, changed after creation. The picture is the generator\'s, baked from /C and /Name.',
-    draft: { subtype: 'text', rect: NOTE_RECT },
-    patch: { subtype: 'text', icon: 'help', color: { r: 0, g: 160, b: 255 } },
+    draft: { subtype: 'text', rect: { x: 72, y: 172, width: 20, height: 20 } },
+    patch: { subtype: 'text', icon: 'help', color: '#00a0ff' },
   },
-  {
-    name: 'caret-clear-rect-differences',
-    covers: 'A tri-state clear of the inset of the drawn caret from its box.',
-    draft: {
-      subtype: 'caret',
-      rect: CARET_RECT,
-      rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
-    },
-    patch: { subtype: 'caret', rectDifferences: null },
-  },
+  // `rectDifferences` is gone from every kind since 2bdc74fbf ("round 5b:
+  // clockwise rotation, box and the engine's rect"): a box kind's shape is
+  // its `box`, and the engine draws inside it. This case was only about
+  // clearing that inset, so it stays here, commented out.
+  // {
+  //   name: 'caret-clear-rect-differences',
+  //   covers: 'A tri-state clear of the inset of the drawn caret from its box.',
+  //   draft: {
+  //     subtype: 'caret',
+  //     rect: CARET_RECT,
+  //     rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
+  //   },
+  //   patch: { subtype: 'caret', rectDifferences: null },
+  // },
   {
     name: 'caret-rotate-existing-box',
     covers:
       'A rotation with no unrotatedRect in the patch, which a DRAFT refuses. The box is already on the annotation, so the pair is satisfied and this is what rotating a box a second time looks like.',
-    draft: {
-      subtype: 'caret',
-      rect: CARET_RECT,
-      rotation: 30,
-      unrotatedRect: { left: 155, bottom: 535, right: 175, top: 565 },
-    },
-    patch: { subtype: 'caret', rotation: 60 },
+    draft: { subtype: 'caret', box: { x: 155, y: 227, width: 20, height: 30 }, rotation: 330 },
+    patch: { subtype: 'caret', rotation: 300 },
   },
   {
     name: 'free-text-size-only',
@@ -400,11 +371,11 @@ const CASES: readonly UpdateCase[] = [
     draft: {
       subtype: 'free-text',
       intent: 'free-text',
-      rect: FREE_TEXT_RECT,
+      box: { x: 72, y: 322, width: 188, height: 70 },
       fontFamily: 'times-bold',
       fontSize: 18,
       textAlign: 'center',
-      color: { r: 0, g: 0, b: 200 },
+      color: '#0000c8',
     },
     patch: { subtype: 'free-text', fontSize: 9 },
   },
@@ -415,12 +386,12 @@ const CASES: readonly UpdateCase[] = [
     draft: {
       subtype: 'free-text',
       intent: 'free-text',
-      rect: FREE_TEXT_RECT,
+      box: { x: 72, y: 322, width: 188, height: 70 },
       fontFamily: 'courier',
       fontSize: 20,
       textAlign: 'left',
     },
-    patch: { subtype: 'free-text', color: { r: 200, g: 0, b: 0 } },
+    patch: { subtype: 'free-text', color: '#c80000' },
   },
   {
     name: 'free-text-clear-background',
@@ -429,11 +400,11 @@ const CASES: readonly UpdateCase[] = [
     draft: {
       subtype: 'free-text',
       intent: 'free-text',
-      rect: FREE_TEXT_RECT,
+      box: { x: 72, y: 322, width: 188, height: 70 },
       fontFamily: 'helvetica',
       fontSize: 12,
       textAlign: 'left',
-      interiorColor: { r: 240, g: 240, b: 200 },
+      interiorColor: '#f0f0c8',
     },
     patch: { subtype: 'free-text', interiorColor: null },
   },
@@ -443,7 +414,7 @@ const CASES: readonly UpdateCase[] = [
       'A tri-state clear of /OverlayText. There is no call that removes the entry, so an empty string is how a label goes away.',
     draft: {
       subtype: 'redact',
-      rect: REDACT_RECT,
+      rect: { x: 72, y: 552, width: 188, height: 40 },
       overlayText: 'REDACTED',
       fontSize: 9,
     },
@@ -455,23 +426,27 @@ const CASES: readonly UpdateCase[] = [
       'A label colour with no size, over a marking whose label is nine points. Unlike free text, a redaction writes /DA whole: the entry belongs to the label rather than to the annotation, so the nine points go back to twelve.',
     draft: {
       subtype: 'redact',
-      rect: REDACT_RECT,
+      rect: { x: 72, y: 552, width: 188, height: 40 },
       overlayText: 'DRAFT',
       fontFamily: 'helvetica-bold',
       fontSize: 9,
     },
-    patch: { subtype: 'redact', fontColor: { r: 255, g: 255, b: 255 } },
+    patch: { subtype: 'redact', fontColor: '#ffffff' },
   },
   {
     name: 'redact-relabel',
     covers: 'A new label and a new alignment on an existing marking.',
-    draft: { subtype: 'redact', rect: REDACT_RECT, overlayText: 'DRAFT' },
+    draft: {
+      subtype: 'redact',
+      rect: { x: 72, y: 552, width: 188, height: 40 },
+      overlayText: 'DRAFT',
+    },
     patch: {
       subtype: 'redact',
       overlayText: 'FINAL',
       repeat: true,
       textAlign: 'center',
-      fontColor: { r: 255, g: 255, b: 255 },
+      fontColor: '#ffffff',
     },
   },
   {
@@ -480,16 +455,31 @@ const CASES: readonly UpdateCase[] = [
       'A text redaction gaining a region, with no rect in the patch. The box follows the quads here, unlike on a draft: a patch that moves the regions and says nothing about the box is asking for the box to follow.',
     draft: {
       subtype: 'redact',
-      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      rect: { x: 276, y: 548, width: 198, height: 48 },
       quadPoints: [
-        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+        {
+          upperLeft: { x: 280, y: 552 },
+          upperRight: { x: 470, y: 552 },
+          lowerLeft: { x: 280, y: 572 },
+          lowerRight: { x: 470, y: 572 },
+        },
       ],
     },
     patch: {
       subtype: 'redact',
       quadPoints: [
-        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
-        { p1: { x: 280, y: 218 }, p2: { x: 400, y: 218 }, p3: { x: 280, y: 200 }, p4: { x: 400, y: 200 } },
+        {
+          upperLeft: { x: 280, y: 552 },
+          upperRight: { x: 470, y: 552 },
+          lowerLeft: { x: 280, y: 572 },
+          lowerRight: { x: 470, y: 572 },
+        },
+        {
+          upperLeft: { x: 280, y: 574 },
+          upperRight: { x: 400, y: 574 },
+          lowerLeft: { x: 280, y: 592 },
+          lowerRight: { x: 400, y: 592 },
+        },
       ],
     },
   },
@@ -499,17 +489,32 @@ const CASES: readonly UpdateCase[] = [
       'The other branch: a patch that supplies both. It has already decided what the box is, so the quads do not get to decide again, and the margin survives.',
     draft: {
       subtype: 'redact',
-      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      rect: { x: 276, y: 548, width: 198, height: 48 },
       quadPoints: [
-        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+        {
+          upperLeft: { x: 280, y: 552 },
+          upperRight: { x: 470, y: 552 },
+          lowerLeft: { x: 280, y: 572 },
+          lowerRight: { x: 470, y: 572 },
+        },
       ],
     },
     patch: {
       subtype: 'redact',
-      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      rect: { x: 276, y: 548, width: 198, height: 48 },
       quadPoints: [
-        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
-        { p1: { x: 280, y: 218 }, p2: { x: 400, y: 218 }, p3: { x: 280, y: 200 }, p4: { x: 400, y: 200 } },
+        {
+          upperLeft: { x: 280, y: 552 },
+          upperRight: { x: 470, y: 552 },
+          lowerLeft: { x: 280, y: 572 },
+          lowerRight: { x: 470, y: 572 },
+        },
+        {
+          upperLeft: { x: 280, y: 574 },
+          upperRight: { x: 400, y: 574 },
+          lowerLeft: { x: 280, y: 592 },
+          lowerRight: { x: 400, y: 592 },
+        },
       ],
     },
   },
@@ -518,12 +523,15 @@ const CASES: readonly UpdateCase[] = [
     covers: 'A link pointed somewhere else. The action is replaced rather than merged.',
     draft: {
       subtype: 'link',
-      rect: LINK_RECT,
+      rect: { x: 72, y: 132, width: 128, height: 20 },
       target: { kind: 'uri', uri: 'https://example.invalid/old' },
     },
     patch: {
       subtype: 'link',
-      target: { kind: 'goto', destination: { kind: 'fit', page: toPageRef(3) } },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'fit', page: { kind: 'objectNumber', objectNumber: 3 } },
+      },
     },
   },
   {
@@ -532,7 +540,7 @@ const CASES: readonly UpdateCase[] = [
       'A dead link. Both /A and /Dest go, because removing only the action would resurrect a stale direct destination as the live target.',
     draft: {
       subtype: 'link',
-      rect: LINK_RECT,
+      rect: { x: 72, y: 132, width: 128, height: 20 },
       target: { kind: 'uri', uri: 'https://example.invalid/old' },
     },
     patch: { subtype: 'link', target: null },
@@ -541,72 +549,66 @@ const CASES: readonly UpdateCase[] = [
     name: 'file-attachment-icon',
     covers:
       'A marker restyled. The FILE is not patchable: bytes enter once, and replacing them is a different attachment.',
-    resources: { r0: [104, 105] },
     draft: {
       subtype: 'file-attachment',
-      rect: NOTE_RECT,
-      file: { resource: 'r0', name: 'notes.txt' },
+      rect: { x: 72, y: 172, width: 20, height: 20 },
+      file: { name: 'notes.txt' },
     },
-    patch: { subtype: 'file-attachment', icon: 'graph', color: { r: 0, g: 200, b: 120 } },
+    draftResources: { file: [104, 105] },
+    patch: { subtype: 'file-attachment', icon: 'graph', color: '#00c878' },
   },
   {
     name: 'stamp-move-only',
     covers:
       'A stamp moved with no new bytes. The existing appearance is re-fitted into the new box, which is what makes moving one cheap.',
-    resources: { r0: STAMP_PNG },
-    draft: {
-      subtype: 'stamp',
-      rect: STAMP_RECT,
-      source: { resource: 'r0' },
-    },
-    patch: { subtype: 'stamp', rect: { left: 200, bottom: 400, right: 360, top: 480 } },
+    draft: { subtype: 'stamp', box: { x: 72, y: 312, width: 80, height: 80 } },
+    draftResources: { appearance: STAMP_PNG },
+    patch: { subtype: 'stamp', box: { x: 200, y: 312, width: 160, height: 80 } },
   },
   {
     name: 'stamp-replace-source',
     covers:
       'New bytes. The existing appearance objects are dropped and the picture is authored again; painting over them would leave the old one underneath.',
-    resources: { r0: STAMP_PNG, r1: STAMP_PNG },
-    draft: {
-      subtype: 'stamp',
-      rect: STAMP_RECT,
-      source: { resource: 'r0' },
-    },
-    patch: { subtype: 'stamp', source: { resource: 'r1' }, fit: 'fill' },
+    draft: { subtype: 'stamp', box: { x: 72, y: 312, width: 80, height: 80 } },
+    draftResources: { appearance: STAMP_PNG },
+    patch: { subtype: 'stamp', fit: 'fill' },
+    patchResources: { appearance: STAMP_PNG },
   },
-  {
-    name: 'widget-restyle',
-    covers:
-      'The widget plane, patched. The colours are /MK, and a clear is an explicit no-colour rather than the absence a create leaves.',
-    draft: {
-      subtype: 'widget',
-      rect: WIDGET_RECT,
-      color: { r: 30, g: 30, b: 120 },
-      interiorColor: { r: 245, g: 245, b: 230 },
-      strokeWidth: 2,
-    },
-    patch: { subtype: 'widget', interiorColor: null, strokeWidth: 4 },
-  },
-  {
-    name: 'widget-font-size-only',
-    covers:
-      'A /DA size with no family, over a widget that HAS one. Unlike free text, the other two members are defaulted rather than read: one writer serves this and the forms placement path, so a widget style is a whole description and the times-roman goes away.',
-    draft: {
-      subtype: 'widget',
-      rect: WIDGET_RECT,
-      fontFamily: 'times-roman',
-      fontSize: 11,
-      fontColor: { r: 20, g: 20, b: 20 },
-    },
-    patch: { subtype: 'widget', fontSize: 16 },
-  },
+  // The annotation verbs refuse a widget since 1233d1349 ("Read and write
+  // widgets through the form"): a widget is created onto a field through
+  // the form and restyled by `doc.forms.updateWidget`. These two cases made
+  // and patched a bare widget through the annotation verbs, so they stay
+  // here, commented out.
+  // {
+  //   name: 'widget-restyle',
+  //   covers:
+  //     'The widget plane, patched. The colours are /MK, and a clear is an explicit no-colour rather than the absence a create leaves.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: WIDGET_RECT,
+  //     color: { r: 30, g: 30, b: 120 },
+  //     interiorColor: { r: 245, g: 245, b: 230 },
+  //     strokeWidth: 2,
+  //   },
+  //   patch: { subtype: 'widget', interiorColor: null, strokeWidth: 4 },
+  // },
+  // {
+  //   name: 'widget-font-size-only',
+  //   covers:
+  //     'A /DA size with no family, over a widget that HAS one. Unlike free text, the other two members are defaulted rather than read: one writer serves this and the forms placement path, so a widget style is a whole description and the times-roman goes away.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: WIDGET_RECT,
+  //     fontFamily: 'times-roman',
+  //     fontSize: 11,
+  //     fontColor: { r: 20, g: 20, b: 20 },
+  //   },
+  //   patch: { subtype: 'widget', fontSize: 16 },
+  // },
   {
     name: 'ink-intent',
     covers: 'The only /IT ink carries, set after creation.',
-    draft: {
-      subtype: 'ink',
-      rect: { left: 72, bottom: 200, right: 240, top: 300 },
-      inkList: [[{ x: 72, y: 200 }, { x: 240, y: 300 }]],
-    },
+    draft: { subtype: 'ink', inkList: [[{ x: 72, y: 592 }, { x: 240, y: 492 }]] },
     patch: { subtype: 'ink', intent: 'ink-highlight' },
   },
 ];
@@ -631,28 +633,39 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
       const page = doc.page(first.ref);
-
-      const payloads = { ...(entry.resources ?? {}) };
       const created = await page.annotations.create(
-        materialize(entry.draft, payloads) as never,
+        entry.draft as unknown as AnnotationDraft,
+        resourcesOf(entry.draftResources),
       );
-      const result = await page.annotations.update(
-        created.created.ref,
-        materialize(entry.patch, payloads) as never,
-      );
+      let result;
+      try {
+        result = await page.annotations.update(
+          created.annotation.ref,
+          entry.patch as unknown as AnnotationPatch,
+          resourcesOf(entry.patchResources),
+        );
+      } catch (error) {
+        // Only the code is recorded: the engines word refusals differently.
+        if (!entry.refused) throw error;
+        const code = String((error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, pageObjectNumber: first.ref.objectNumber, refusedWith: code };
+      }
+      if (entry.refused) throw new Error(`${entry.name}: expected a refusal`);
 
-      const { modified, ...updated } = result.updated as Record<string, unknown>;
+      // The results name the annotation `annotation` and the timestamp
+      // `modifiedAt` since 83f6598d2 and fd175ba50; `weakRefsInvalidated` and
+      // `shouldRefetch` went in bc0057f3a ("Remove NM and implement BaseID").
+      const { modifiedAt, ...updated } = result.annotation as unknown as Record<string, unknown>;
       return {
         ...entry,
-        pageObjectNumber: first.ref.pageObjectNumber,
+        pageObjectNumber: first.ref.objectNumber,
         updated,
-        hasModified: typeof modified === 'string' && modified.length > 0,
+        hasModified: typeof modifiedAt === 'string' && modifiedAt.length > 0,
         appearance: result.appearance,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
       };
     } finally {
@@ -677,7 +690,9 @@ function normalizeSessionIds(value: unknown): unknown {
           // Rust runner instead.
           key === 'creationDate' && typeof entry === 'string'
           ? [key, '<stamped>']
-          : [key, normalizeSessionIds(entry)],
+          : normalizeWriteStamps(key, entry) !== undefined
+            ? [key, normalizeWriteStamps(key, entry)]
+            : [key, normalizeSessionIds(entry)],
     ),
   );
 }

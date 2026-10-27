@@ -1,0 +1,14 @@
+{
+  "total": 50,
+  "files": {
+    "src/suites/annotation-fixtures.ts": 3,
+    "src/suites/form-fixtures.ts": 12,
+    "src/suites/i18n.ts": 12,
+    "src/suites/render-pure.ts": 2,
+    "src/suites/render.ts": 2,
+    "src/suites/shell.ts": 6,
+    "src/suites/signature-core.ts": 2,
+    "src/suites/signature-plugin.ts": 1,
+    "src/suites/stamp-fixtures.ts": 10
+  }
+}

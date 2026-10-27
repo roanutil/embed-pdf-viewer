@@ -1,268 +1,354 @@
-//! `write/selection.ts`: what is selected, and the verbs that restyle,
-//! flag, delete, rotate, group and ungroup it as one. Every member goes
-//! through the `update` → patch effect → `toPatch` path a gesture takes.
+//! `write/selection.ts`: the selection. What is selected, and the verbs that
+//! change its fields, link, delete, rotate, group and ungroup it as one,
+//! every member through the same `update` and patch effect path a gesture
+//! takes. Each verb is one change.
 
-use epdf_annotation_core::richtext::{RichTextDocumentInput, RichTextRange, apply_style_to_range};
-use epdf_annotation_core::{
-    Annot, AnnotationFlagsPatch, AnnotationPropsPatch, AnnotationRef, Id, Msg, PageRef, Rect,
-    expand_groups, geom_visual_bounds, group_key_of, is_selectable,
-};
-use epdf_geometry::intersect_rects;
+use std::rc::Rc;
+
+use epdf_annotation_core::group::{expand_groups, group_key_of};
+use epdf_annotation_core::hit::is_selectable;
+use epdf_annotation_core::record::group_of;
+use epdf_annotation_core::richtext::{RichTextRange, RichTextStyleDelta, apply_style_to_range};
+use epdf_annotation_core::types::{Id, ModelAnnotation, Rect};
+use epdf_annotation_core::update::selection_in_box;
+use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
-use serde_json::json;
+use epdf_kernel::signal::AbortSignal;
+use serde_json::{Map, Value, json};
 
-use crate::contract::*;
-use crate::controller::AnnotationCapability;
-use crate::promise;
-use crate::repository::annotation_key;
-use crate::rich_text::{TextFormat, rich_doc_of, run_delta_for_props};
-use crate::services::store::refs_of_in;
-use crate::write::crud::rotation_of;
+use crate::controller::Core;
+use crate::js::{Object, key_or_none, page_object_number};
+use crate::read::chrome::core_page;
+use crate::rich_text::{rich_doc_of, run_delta_for_fields};
+use crate::services::staging::StoreChange;
+use crate::services::store::{Commit, refs_of_in};
+use crate::write::outcomes::{applied_or_throw, batch_result_of, throw_if_failed};
 
-impl AnnotationCapability {
-    fn selected_refs(&self) -> Vec<AnnotationRef> {
-        let m = self.model();
-        refs_of_in(&m, &m.selected)
+/// A patch for the selection: the same for each member, or one per member.
+pub enum SelectionPatch {
+    Fields(Object),
+    PerMember(Rc<dyn Fn(&Value) -> Object>),
+}
+
+impl Core {
+    fn selected_refs(&self) -> Vec<Value> {
+        let model = self.model();
+        refs_of_in(&model, &model.selected)
     }
 
-    /// `restyle(patch)`: one flat props patch through the core. While the
-    /// editor holds a range, the range keys restyle the runs it covers.
-    fn restyle(&self, patch: AnnotationPropsPatch) {
-        let m = self.model();
-        if let Some(range) = self.active_text_range(&m) {
-            let a = m.by_id.get(&range.id).cloned().expect("an active range names a model entry");
-            let fonts = self.fonts();
-            let (delta, rest) = run_delta_for_props(&patch, Some(&fonts));
-            if delta != Default::default() {
-                let paragraphs = rich_doc_of(&a, Some(&fonts)).paragraphs;
+    /// `commitOverSelection(commit, signal)`: the outcome over the refs that were selected.
+    fn commit_over_selection(
+        &self,
+        commit: impl FnOnce() -> Result<Vec<Commit>, Error>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let refs = self.selected_refs();
+        let commits = match commit() {
+            Ok(c) => c,
+            Err(e) => return Promise::rejected(e),
+        };
+        let all = crate::promise::all(commits.into_iter().map(|c| c.written).collect());
+        let all = self.cancellable(signal, all);
+        Promise::spawn(async move {
+            let outcomes = all.await?;
+            let failed: Vec<_> = outcomes.into_iter().flat_map(|o| o.failed).collect();
+            Ok(batch_result_of(&refs, &failed))
+        })
+    }
+
+    /// `restyle(patch)`: the selection's fields, a patch per member.
+    fn restyle(&self, patch: &SelectionPatch) -> Result<Vec<Commit>, Error> {
+        let model = self.model();
+        let range = self.active_text_range(&model);
+        let mut commits = Vec::new();
+        let mut patches = Map::new();
+        for id in model.selected.iter() {
+            let Some(record) = model.by_id.get(id) else { continue };
+            let own = match patch {
+                SelectionPatch::Fields(f) => f.clone(),
+                SelectionPatch::PerMember(f) => f(&Value::Object((*record.annotation).clone())),
+            };
+            if range.as_ref().map(|r| r.id.as_str()) != Some(id.as_str()) {
+                patches.insert(id.clone(), Value::Object(own));
+                continue;
+            }
+            let range = range.as_ref().expect("a range");
+            let (delta, rest) = run_delta_for_fields(&own, self.fonts().as_deref());
+            if !delta.is_empty() {
+                let doc = rich_doc_of(&record.annotation, self.fonts().as_deref());
+                let typed_delta: RichTextStyleDelta =
+                    serde_json::from_value(Value::Object(delta.clone())).unwrap_or_default();
                 let next = apply_style_to_range(
-                    &paragraphs,
+                    &doc.typed(),
                     RichTextRange { start: range.start, end: range.end },
-                    &delta,
+                    &typed_delta,
                     &[],
-                )
-                .unwrap_or(paragraphs);
-                self.commit(Msg::SetRichText {
-                    id: range.id.clone(),
-                    doc: RichTextDocumentInput { body: None, paragraphs: next },
-                });
-                if let Some(r) = &a.ref_ {
-                    self.schedule_text_commit(r);
-                }
+                );
+                let paragraphs = match next {
+                    Some(p) => serde_json::to_value(p).unwrap_or(Value::Array(Vec::new())),
+                    None => Value::Array(doc.paragraphs.clone()),
+                };
+                commits.push(self.type_text(
+                    id,
+                    json!({ "type": "setRichText", "id": id, "doc": { "paragraphs": paragraphs } }),
+                )?);
             }
-            if !rest.keys().is_empty() {
-                let _ = self.flush_text_commits();
-                self.commit(Msg::SetProps { patch: rest });
+            patches.insert(id.clone(), Value::Object(rest));
+        }
+        if patches.values().any(|p| p.as_object().is_some_and(|o| !o.is_empty())) {
+            commits.push(self.commit_json(json!({ "type": "setFields", "patches": patches }))?);
+        }
+        Ok(commits)
+    }
+
+    fn select_refs(&self, refs: &[Value], add: bool) {
+        let ids: Vec<String> = refs.iter().map(key_or_none).collect();
+        self.commit_or_log(json!({ "type": "select", "ids": ids, "add": add }));
+    }
+
+    /// `toggleFormat(format, options)`.
+    pub fn toggle_format(&self, format: &str, signal: Option<AbortSignal>) -> Promise<()> {
+        let on = self.selection_properties()["values"][format] != json!(true);
+        let range = self.active_text_range(&self.model());
+        let commits = if range.is_some() {
+            let mut fields = Map::new();
+            fields.insert(format.to_string(), json!(on));
+            self.restyle(&SelectionPatch::Fields(fields))
+        } else {
+            self.commit_json(json!({ "type": "setTextFormat", "format": format, "on": on }))
+                .map(|c| vec![c])
+        };
+        let commits = match commits {
+            Ok(c) => c,
+            Err(e) => return Promise::rejected(e),
+        };
+        let all = self.cancellable(
+            signal,
+            crate::promise::all(commits.into_iter().map(|c| c.written).collect()),
+        );
+        Promise::spawn(async move {
+            for outcome in all.await? {
+                throw_if_failed(&outcome)?;
             }
+            Ok(())
+        })
+    }
+
+    /// `selection.set(refs)`: `set([])` selects nothing.
+    pub fn selection_set(&self, refs: &[Value]) {
+        if refs.is_empty() {
+            self.commit_or_log(json!({ "type": "deselect" }));
+        } else {
+            self.select_refs(refs, false);
+        }
+    }
+
+    /// `selection.add(refs)`.
+    pub fn selection_add(&self, refs: &[Value]) {
+        self.select_refs(refs, true);
+    }
+
+    /// `selection.selectAll(page)`.
+    pub fn selection_select_all(&self, page: Option<&Value>) {
+        let only = page.map(|p| self.get_page(p));
+        if let Some(None) = only {
+            self.commit_or_log(json!({ "type": "deselect" }));
             return;
         }
-        if m.editing.is_some() {
-            let _ = self.flush_text_commits();
-        }
-        self.commit(Msg::SetProps { patch });
-    }
-
-    /// `select(refs, { add })`: group-aware.
-    pub fn select(&self, refs: &[AnnotationRef], add: Option<bool>) {
-        self.commit(Msg::Select { ids: refs.iter().map(annotation_key).collect(), add });
-    }
-
-    /// `selectAll(page)`: everything selectable, or one page's.
-    pub fn select_all(&self, page: Option<PageRef>) {
-        let m = self.model();
-        let ids: Vec<Id> = m
+        let only_number = only.flatten().and_then(|info| info.get("ref").map(page_object_number));
+        let model = self.model();
+        let ids: Vec<Id> = model
             .order
             .iter()
             .filter(|id| {
-                m.by_id.get(*id).is_some_and(|a| page.is_none_or(|p| a.page.same_page(&p)))
-                    && is_selectable(&m, id)
+                model
+                    .by_id
+                    .get(*id)
+                    .is_some_and(|r| only_number.is_none_or(|n| r.page_number() == Some(n)))
+                    && is_selectable(&model, id)
             })
             .cloned()
             .collect();
-        self.commit(Msg::Select { ids, add: None });
+        self.commit_or_log(json!({ "type": "select", "ids": ids }));
     }
 
-    /// `selectInRect(page, rect, { add })`: whatever intersects the rect.
-    pub fn select_in_rect(&self, page: PageRef, rect: Rect, add: Option<bool>) {
-        let m = self.model();
-        let ids: Vec<Id> = m
-            .order
-            .iter()
-            .filter(|id| {
-                let Some(a) = m.by_id.get(*id) else { return false };
-                if !a.page.same_page(&page) || !is_selectable(&m, id) {
-                    return false;
-                }
-                let hit = intersect_rects(
-                    geom_visual_bounds(&a.geom, a.style.stroke_width, Some(&a.style.border)),
-                    rect,
-                );
-                hit.width > 0.0 && hit.height > 0.0
-            })
-            .cloned()
-            .collect();
-        if !ids.is_empty() || add != Some(true) {
-            self.commit(Msg::Select { ids, add });
+    /// `selection.selectInRect(page, rect)`.
+    pub fn selection_select_in_rect(&self, page: &Value, rect: Rect) -> Result<(), Error> {
+        let reference = self.page_ref_of(page)?;
+        let engaged = self.engaged_ids_on(page_object_number(&reference));
+        let ids =
+            selection_in_box(&self.model(), &core_page(&reference), rect, engaged.as_ref(), None);
+        self.commit_json(json!({ "type": "select", "ids": ids }))?;
+        Ok(())
+    }
+
+    /// `selection.clear()`.
+    pub fn selection_clear(&self) {
+        self.commit_or_log(json!({ "type": "deselect" }));
+    }
+
+    /// `selection.update(changes, options)`.
+    pub fn selection_update(
+        &self,
+        patch: SelectionPatch,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        self.commit_over_selection(|| self.restyle(&patch), signal)
+    }
+
+    /// `selection.updateLink(target, options)`.
+    pub fn selection_update_link(
+        &self,
+        target: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        self.commit_over_selection(
+            || self.commit_json(json!({ "type": "setLink", "target": target })).map(|c| vec![c]),
+            signal,
+        )
+    }
+
+    /// `selection.delete(options)`.
+    pub fn selection_delete(&self, signal: Option<AbortSignal>) -> Promise<Value> {
+        self.commit_over_selection(
+            || self.commit_json(json!({ "type": "delete" })).map(|c| vec![c]),
+            signal,
+        )
+    }
+
+    fn commit_and_throw(&self, message: Value, signal: Option<AbortSignal>) -> Promise<()> {
+        let commit = match self.commit_json(message) {
+            Ok(c) => c,
+            Err(e) => return Promise::rejected(e),
+        };
+        let written = self.cancellable(signal, commit.written);
+        Promise::spawn(async move { throw_if_failed(&written.await?) })
+    }
+
+    /// `selection.rotateBy(degrees, options)`.
+    pub fn selection_rotate_by(&self, degrees: f64, signal: Option<AbortSignal>) -> Promise<()> {
+        self.commit_and_throw(
+            json!({ "type": "rotateSelection", "degrees": crate::js::num(degrees) }),
+            signal,
+        )
+    }
+
+    /// `selection.resetRotation(options)`.
+    pub fn selection_reset_rotation(&self, signal: Option<AbortSignal>) -> Promise<()> {
+        self.commit_and_throw(json!({ "type": "resetRotation" }), signal)
+    }
+
+    /// `selection.getAnchor()`.
+    pub fn selection_get_anchor(&self) -> Value {
+        self.selection_anchor_of(None, None, None)
+    }
+
+    /// `selection.group(options)`: one relationship written onto every subordinate.
+    pub fn selection_group(&self, signal: Option<AbortSignal>) -> Promise<()> {
+        let model = self.model();
+        let members = self.selected_records();
+        if members.len() < 2 || members.iter().any(|r| self.lending.owns(&r.id)) {
+            return Promise::resolved(());
         }
+        let page = members[0].page_number();
+        if members.iter().any(|r| r.page_number() != page) {
+            return Promise::resolved(());
+        }
+        let mut ordered = members.clone();
+        let position = |id: &str| model.order.iter().position(|o| o == id).map_or(-1, |p| p as i64);
+        ordered.sort_by_key(|r| position(&r.id));
+        let primary = &ordered[0];
+        let Some(primary_ref) = primary.annotation.get("ref").cloned() else {
+            return Promise::resolved(());
+        };
+        self.write_relationships(
+            &ordered[1..],
+            json!({ "to": primary_ref, "type": "group" }),
+            signal,
+        )
     }
 
-    /// `clearSelection()`.
-    pub fn clear_selection(&self) {
-        self.commit(Msg::Deselect { ids: None });
+    fn subordinates(&self) -> Vec<Rc<ModelAnnotation>> {
+        let model = self.model();
+        expand_groups(&model, &model.selected)
+            .iter()
+            .filter_map(|id| model.by_id.get(id).cloned())
+            .filter(|r| group_of(&r.annotation).is_some())
+            .collect()
     }
 
-    /// `updateSelection(patch)`.
-    pub fn update_selection(
-        &self,
-        patch: AnnotationPropsPatch,
-    ) -> Promise<BatchResult<AnnotationRef>> {
-        let refs = self.selected_refs();
-        let ((), pending) = self.collect_writes(|| self.restyle(patch));
-        self.settle_writes(refs, pending)
+    /// `selection.ungroup(options)`.
+    pub fn selection_ungroup(&self, signal: Option<AbortSignal>) -> Promise<()> {
+        let subs = self.subordinates();
+        self.write_relationships(&subs, Value::Null, signal)
     }
 
-    /// `updateSelectionFlags(patch)`.
-    pub fn update_selection_flags(
-        &self,
-        patch: AnnotationFlagsPatch,
-    ) -> Promise<BatchResult<AnnotationRef>> {
-        let refs = self.selected_refs();
-        let (_, pending) = self.collect_writes(|| self.commit(Msg::SetFlags { patch, ids: None }));
-        self.settle_writes(refs, pending)
-    }
-
-    /// `deleteSelection()`.
-    pub fn delete_selection(&self) -> Promise<BatchResult<AnnotationRef>> {
-        let refs = self.selected_refs();
-        let (_, pending) = self.collect_writes(|| self.commit(Msg::Delete));
-        self.settle_writes(refs, pending)
-    }
-
-    /// `rotateSelectionBy(delta)`: a quarter turn. `-90` rotates each member
-    /// through `setRotation`.
-    pub fn rotate_selection_by(&self, turn: QuarterTurn) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            if turn == QuarterTurn::Plus90 {
-                let (_, pending) = this.collect_writes(|| this.commit(Msg::Rotate90));
-                return this.await_all_writes(pending).await;
-            }
-            for r in this.selected_refs() {
-                let a = this.loaded_or_throw(&r)?;
-                this.set_rotation(r, rotation_of(&a) - 90.0).await?;
-            }
-            Ok(())
-        })
-    }
-
-    /// `resetSelectionRotation()`.
-    pub fn reset_selection_rotation(&self) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let (_, pending) = this.collect_writes(|| this.commit(Msg::ResetRotation));
-            this.await_all_writes(pending).await
-        })
-    }
-
-    /// `toggleTextFormat(format)`: flip it from the current value.
-    pub fn toggle_text_format(&self, format: TextFormat) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let key = format.key();
-            let current = this.get_selection_props()?.values.get(key.as_str()).cloned();
-            let on = crate::value::truthy(current.as_ref());
-            let patch: AnnotationPropsPatch =
-                serde_json::from_value(json!({ key.as_str(): !on })).unwrap_or_default();
-            let ((), pending) = this.collect_writes(|| this.restyle(patch));
-            this.await_all_writes(pending).await
-        })
-    }
-
-    /// `group()`: the bottom-most member becomes the primary.
-    pub fn group(&self) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let m = this.model();
-            let members = this.selected_committed();
-            if members.len() < 2 {
-                return Ok(());
-            }
-            let pon = members[0].page.page_object_number;
-            if members.iter().any(|a| a.page.page_object_number != pon) {
-                return Ok(());
-            }
-            let index =
-                |a: &Annot| m.order.iter().position(|id| *id == a.id).map_or(-1.0, |i| i as f64);
-            let mut ordered = members.clone();
-            ordered.sort_by(|a, b| {
-                (index(a) - index(b)).partial_cmp(&0.0).unwrap_or(std::cmp::Ordering::Equal)
-            });
-            let primary = ordered[0].clone();
-            let Some(primary_ref) = primary.ref_.clone() else { return Ok(()) };
-            let writes = ordered[1..]
-                .iter()
-                .map(|a| this.write_relationship(a.clone(), Some(primary_ref.clone()), true))
-                .collect();
-            promise::all(writes).await?;
-            Ok(())
-        })
-    }
-
-    /// `ungroup()`: every subordinate of a touched group becomes top-level.
-    pub fn ungroup(&self) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let m = this.model();
-            let subs: Vec<Annot> = expand_groups(&m, &m.selected)
-                .iter()
-                .filter_map(|id| m.by_id.get(id))
-                .filter(|a| a.ref_.is_some() && a.data.is_some() && a.group.is_some())
-                .cloned()
-                .collect();
-            let writes =
-                subs.into_iter().map(|a| this.write_relationship(a, None, false)).collect();
-            promise::all(writes).await?;
-            Ok(())
-        })
-    }
-
-    /// `canGroup()`.
-    pub fn can_group(&self) -> bool {
-        let m = self.model();
-        let members = self.selected_committed();
-        if members.len() < 2 {
+    /// `selection.canGroup()`.
+    pub fn selection_can_group(&self) -> bool {
+        let model = self.model();
+        let members = self.selected_records();
+        if members.len() < 2 || members.iter().any(|r| self.lending.owns(&r.id)) {
             return false;
         }
-        if members.iter().any(|a| a.page.page_object_number != members[0].page.page_object_number) {
+        if members.iter().any(|r| r.page_number() != members[0].page_number()) {
             return false;
         }
-        if !members
-            .iter()
-            .all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r)))
-        {
+        if !members.iter().all(|r| {
+            r.annotation
+                .get("ref")
+                .is_some_and(|reference| self.allows_mutation("update", reference))
+        }) {
             return false;
         }
         let mut keys: Vec<Option<Id>> = Vec::new();
-        for id in &m.selected {
-            let k = group_key_of(&m, id);
-            if !keys.contains(&k) {
-                keys.push(k);
+        for id in model.selected.iter() {
+            let key = group_key_of(&model, id);
+            if !keys.contains(&key) {
+                keys.push(key);
             }
         }
-        !(keys.len() == 1 && !keys.contains(&None))
+        !(keys.len() == 1 && keys[0].is_some())
     }
 
-    /// `canUngroup()`.
-    pub fn can_ungroup(&self) -> bool {
-        let m = self.model();
-        let subs: Vec<&Annot> = expand_groups(&m, &m.selected)
-            .iter()
-            .filter_map(|id| m.by_id.get(id))
-            .filter(|a| a.group.is_some())
-            .collect();
+    /// `selection.canUngroup()`.
+    pub fn selection_can_ungroup(&self) -> bool {
+        let subs = self.subordinates();
         !subs.is_empty()
-            && subs
-                .iter()
-                .all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r)))
+            && subs.iter().all(|r| {
+                r.annotation
+                    .get("ref")
+                    .is_some_and(|reference| self.allows_mutation("update", reference))
+            })
+    }
+
+    /// `writeRelationships(targets, reply, options)`: one change.
+    fn write_relationships(
+        &self,
+        targets: &[Rc<ModelAnnotation>],
+        reply: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<()> {
+        let changes: Vec<StoreChange> = targets
+            .iter()
+            .filter_map(|record| {
+                let reference = record.annotation.get("ref")?.clone();
+                let mut patch = Map::new();
+                patch.insert("subtype".into(), json!(record.subtype()));
+                patch.insert("reply".into(), reply.clone());
+                Some(StoreChange::Update { reference, patch, resources: None })
+            })
+            .collect();
+        if changes.is_empty() {
+            return Promise::resolved(());
+        }
+        let applied = match self.apply(&changes, false) {
+            Ok(a) => a,
+            Err(e) => return Promise::rejected(e),
+        };
+        let done = self.cancellable(signal, applied_or_throw(&applied));
+        Promise::spawn(async move {
+            done.await?;
+            Ok(())
+        })
     }
 }

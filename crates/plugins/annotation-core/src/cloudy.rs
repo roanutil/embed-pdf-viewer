@@ -1,12 +1,14 @@
-//! `cloudy.ts`: cloudy-border (scalloped outline) path generation, after
-//! Apache PDFBox's `CloudyBorder` (the curl placement PDFium bakes into the
-//! `/BE` appearance). Pure: a content-space box or vertex ring in, SVG path
-//! data in absolute content coordinates out. The math runs in PDFBox's y-up
-//! frame; [`PathBuilder`] flips back on the way out.
+//! `cloudy.ts`: cloudy-border (scalloped outline) curves, after Apache
+//! PDFBox's `CloudyBorder` (the curl placement PDFium bakes into the `/BE`
+//! appearance). The math runs in PDFBox's y-up frame; each [`CurveSink`]
+//! flips back into page space on the way out: SVG path data
+//! ([`cloudy_path`]), the box around the curves ([`cloudy_bounds`]), or the
+//! points along them ([`cloudy_outline`]).
 
 use std::f64::consts::PI;
 
 use crate::js;
+use crate::rect::expand_rect;
 use crate::types::{Point, Rect};
 
 const ANGLE_180: f64 = PI;
@@ -15,14 +17,15 @@ const ANGLE_34: f64 = (34.0 * PI) / 180.0;
 const ANGLE_30: f64 = (30.0 * PI) / 180.0;
 const ANGLE_12: f64 = (12.0 * PI) / 180.0;
 
-/// The most curls one cloudy border may ask for. Curls sit at least
-/// `2 * cos(34deg) * 0.5` (about 0.83) units apart, so this is a perimeter
-/// of roughly 830,000 units: about fourteen times round the largest page a
-/// PDF allows (14,400 units a side). Geometry from a hostile /Rect,
-/// /Vertices or /BE past it would make the loops below allocate without
-/// bound (or, past 2^53, never advance), so it draws no border instead. The
-/// TypeScript has no such limit; every real document stays far below it,
-/// and there the output is identical.
+/// The most curls one cloudy border may ask for (review finding M20, a kept
+/// Rust-only bound). Curls sit at least `2 * cos(34deg) * 0.5` (about 0.83)
+/// units apart, so this is a perimeter of roughly 830,000 units: about
+/// fourteen times round the largest page a PDF allows (14,400 units a side).
+/// Geometry from a hostile /Rect, /Vertices or /BE past it would make the
+/// loops below allocate without bound (or, past 2^53, never advance), so it
+/// draws no cloud instead: an empty path, no curves, and the box grown by
+/// half the stroke. The TypeScript has no such limit; every real document
+/// stays far below it, and there the output is identical.
 pub(crate) const MAX_CLOUDY_CURLS: f64 = 1_000_000.0;
 
 /// The narrowest curl spacing any path here can reach.
@@ -35,12 +38,17 @@ fn over_budget(length: f64) -> bool {
 }
 
 /// `Number(n.toFixed(4)).toString()`.
-fn r(n: f64) -> String {
+fn format_number(n: f64) -> String {
     js::number_to_string(js::fixed(n, 4))
 }
 
-/// Accumulates SVG path commands: y-up input, y-down output offset into the
-/// box origin.
+/// Where the cloud's curves go (`CurveSink`).
+pub(crate) trait CurveSink {
+    fn move_to(&mut self, x: f64, y: f64);
+    fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64);
+}
+
+/// SVG path commands: y-up input, y-down output offset into the box origin.
 struct PathBuilder {
     parts: Vec<String>,
     started: bool,
@@ -52,21 +60,6 @@ impl PathBuilder {
     fn new(ox: f64, oy: f64) -> Self {
         PathBuilder { parts: Vec::new(), started: false, ox, oy }
     }
-    fn move_to(&mut self, x: f64, y: f64) {
-        self.parts.push(format!("M {} {}", r(x + self.ox), r(-y + self.oy)));
-        self.started = true;
-    }
-    fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
-        self.parts.push(format!(
-            "C {} {}, {} {}, {} {}",
-            r(x1 + self.ox),
-            r(-y1 + self.oy),
-            r(x2 + self.ox),
-            r(-y2 + self.oy),
-            r(x3 + self.ox),
-            r(-y3 + self.oy)
-        ));
-    }
     fn close(&mut self) {
         if self.started {
             self.parts.push("Z".into());
@@ -74,6 +67,200 @@ impl PathBuilder {
     }
     fn build(&self) -> String {
         self.parts.join(" ")
+    }
+}
+
+impl CurveSink for PathBuilder {
+    fn move_to(&mut self, x: f64, y: f64) {
+        self.parts.push(format!(
+            "M {} {}",
+            format_number(x + self.ox),
+            format_number(-y + self.oy)
+        ));
+        self.started = true;
+    }
+    fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
+        self.parts.push(format!(
+            "C {} {}, {} {}, {} {}",
+            format_number(x1 + self.ox),
+            format_number(-y1 + self.oy),
+            format_number(x2 + self.ox),
+            format_number(-y2 + self.oy),
+            format_number(x3 + self.ox),
+            format_number(-y3 + self.oy)
+        ));
+    }
+}
+
+/// The point at `t` on the cubic Bezier `p0..p3`.
+fn bezier_at(p0: Point, p1: Point, p2: Point, p3: Point, t: f64) -> Point {
+    let rest = 1.0 - t;
+    let w = [rest * rest * rest, 3.0 * rest * rest * t, 3.0 * rest * t * t, t * t * t];
+    Point {
+        x: w[0] * p0.x + w[1] * p1.x + w[2] * p2.x + w[3] * p3.x,
+        y: w[0] * p0.y + w[1] * p1.y + w[2] * p2.y + w[3] * p3.y,
+    }
+}
+
+/// The parameters in (0, 1) where a cubic coordinate's slope is zero.
+fn turns_of(p0: f64, p1: f64, p2: f64, p3: f64) -> Vec<f64> {
+    let a = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    let b = 2.0 * (p0 - 2.0 * p1 + p2);
+    let c = p1 - p0;
+    let roots = if a.abs() < 1e-12 {
+        if b.abs() < 1e-12 { Vec::new() } else { vec![-c / b] }
+    } else if b * b - 4.0 * a * c < 0.0 {
+        Vec::new()
+    } else {
+        vec![
+            (-b + (b * b - 4.0 * a * c).sqrt()) / (2.0 * a),
+            (-b - (b * b - 4.0 * a * c).sqrt()) / (2.0 * a),
+        ]
+    };
+    roots.into_iter().filter(|t| *t > 0.0 && *t < 1.0).collect()
+}
+
+/// The box around the curves themselves, in page space.
+struct CurveBounds {
+    left: f64,
+    top: f64,
+    right: f64,
+    bottom: f64,
+    current: Point,
+    ox: f64,
+    oy: f64,
+}
+
+impl CurveBounds {
+    fn new(ox: f64, oy: f64) -> Self {
+        CurveBounds {
+            left: f64::INFINITY,
+            top: f64::INFINITY,
+            right: f64::NEG_INFINITY,
+            bottom: f64::NEG_INFINITY,
+            current: Point { x: 0.0, y: 0.0 },
+            ox,
+            oy,
+        }
+    }
+    fn add(&mut self, p: Point) {
+        self.left = js::min(self.left, p.x);
+        self.right = js::max(self.right, p.x);
+        self.top = js::min(self.top, p.y);
+        self.bottom = js::max(self.bottom, p.y);
+    }
+    fn place(&self, x: f64, y: f64) -> Point {
+        Point { x: x + self.ox, y: -y + self.oy }
+    }
+    fn bounds(&self) -> Rect {
+        Rect {
+            x: self.left,
+            y: self.top,
+            width: self.right - self.left,
+            height: self.bottom - self.top,
+        }
+    }
+}
+
+impl CurveSink for CurveBounds {
+    fn move_to(&mut self, x: f64, y: f64) {
+        self.current = self.place(x, y);
+        self.add(self.current);
+    }
+    fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
+        let p0 = self.current;
+        let p1 = self.place(x1, y1);
+        let p2 = self.place(x2, y2);
+        let p3 = self.place(x3, y3);
+        let mut ts = turns_of(p0.x, p1.x, p2.x, p3.x);
+        ts.extend(turns_of(p0.y, p1.y, p2.y, p3.y));
+        for t in ts {
+            self.add(bezier_at(p0, p1, p2, p3, t));
+        }
+        self.add(p3);
+        self.current = p3;
+    }
+}
+
+/// Chord length the curves are split into, in page units.
+const FLATTEN_STEP: f64 = 0.5;
+
+/// The most points one cloud's outline may hold (review finding M20, a kept
+/// Rust-only bound). Each curve flattens to one point per half unit of its
+/// control hull, and the hull grows with the curl radius
+/// (`4 * intensity + strokeWidth / 2`), which the perimeter budget doesn't
+/// see: a hostile /BE /I or /BS /W would ask for a list beyond memory, and
+/// an infinite one would never finish. Past this many points the outline is
+/// empty, no cloud, as for a border over the curl budget. A box or circle
+/// the size of the largest page, at intensity 1, stays under it
+/// (`tests/hostile_geometry.rs`); the TypeScript has no limit. The outline
+/// is flattened on every hit test, so the budget is kept to the curl
+/// budget: about 16 MB and a few milliseconds for a hostile record.
+const MAX_OUTLINE_POINTS: f64 = MAX_CLOUDY_CURLS;
+
+/// The curves as polylines, one per subpath, in page space.
+struct CurvePolylines {
+    lines: Vec<Vec<Point>>,
+    current: Point,
+    ox: f64,
+    oy: f64,
+    /// Points written so far, against [`MAX_OUTLINE_POINTS`].
+    written: f64,
+    over: bool,
+}
+
+impl CurvePolylines {
+    fn new(ox: f64, oy: f64) -> Self {
+        CurvePolylines {
+            lines: Vec::new(),
+            current: Point { x: 0.0, y: 0.0 },
+            ox,
+            oy,
+            written: 0.0,
+            over: false,
+        }
+    }
+    /// The polylines, or none when the cloud was over the point budget.
+    fn finish(self) -> Vec<Vec<Point>> {
+        if self.over { Vec::new() } else { self.lines }
+    }
+    fn place(&self, x: f64, y: f64) -> Point {
+        Point { x: x + self.ox, y: -y + self.oy }
+    }
+}
+
+impl CurveSink for CurvePolylines {
+    fn move_to(&mut self, x: f64, y: f64) {
+        self.current = self.place(x, y);
+        if !self.over {
+            self.lines.push(vec![self.current]);
+        }
+    }
+    fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
+        let p0 = self.current;
+        let p1 = self.place(x1, y1);
+        let p2 = self.place(x2, y2);
+        let p3 = self.place(x3, y3);
+        let hull = distance(p0, p1) + distance(p1, p2) + distance(p2, p3);
+        let steps = js::max(2.0, (hull / FLATTEN_STEP).ceil());
+        // A NaN count compares false and stays on the drawing side, where
+        // the loop below writes nothing for it.
+        if self.over || self.written + steps > MAX_OUTLINE_POINTS {
+            self.over = true;
+            self.lines.clear();
+            return;
+        }
+        self.written += if steps.is_nan() { 0.0 } else { steps };
+        if self.lines.is_empty() {
+            self.lines.push(vec![p0]);
+        }
+        let line = self.lines.last_mut().expect("a line");
+        let mut i = 1.0;
+        while i <= steps {
+            line.push(bezier_at(p0, p1, p2, p3, i / steps));
+            i += 1.0;
+        }
+        self.current = p3;
     }
 }
 
@@ -128,7 +315,7 @@ fn arc_segment(
     cy: f64,
     rx: f64,
     ry: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
     add_move_to: bool,
 ) {
     let cos_a = start.cos();
@@ -181,7 +368,7 @@ fn get_arc(
     ry: f64,
     cx: f64,
     cy: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
     add_move_to: bool,
 ) {
     let mut angle_todo = end - start;
@@ -212,7 +399,7 @@ fn add_corner_curl(
     cy: f64,
     alpha: f64,
     alpha_prev: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
     add_move_to: bool,
 ) {
     let a = angle_prev + ANGLE_180 + alpha_prev;
@@ -227,7 +414,7 @@ fn add_first_intermediate_curl(
     alpha: f64,
     cx: f64,
     cy: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
 ) {
     let a = angle_cur + ANGLE_180;
     arc_segment(a + alpha, a + alpha - ANGLE_30, cx, cy, rad, rad, out, false);
@@ -243,7 +430,7 @@ fn intermediate_curl_template(angle_cur: f64, rad: f64) -> Vec<Point> {
     out
 }
 
-fn output_curl_template(template: &[Point], x: f64, y: f64, out: &mut PathBuilder) {
+fn output_curl_template(template: &[Point], x: f64, y: f64, out: &mut dyn CurveSink) {
     let mut i = 0;
     while i + 2 < template.len() {
         out.curve_to(
@@ -284,7 +471,7 @@ fn cloudy_polygon_impl(
     is_ellipse: bool,
     intensity: f64,
     line_width: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
 ) {
     let mut polygon = remove_zero_length_segments(vertices);
     ensure_positive_winding(&mut polygon);
@@ -430,9 +617,9 @@ fn cloudy_ellipse_impl(
     top: f64,
     intensity: f64,
     line_width: f64,
-    out: &mut PathBuilder,
+    out: &mut dyn CurveSink,
 ) {
-    let plain_ellipse = |out: &mut PathBuilder| {
+    let plain_ellipse = |out: &mut dyn CurveSink| {
         let rx = (right - left).abs() / 2.0;
         let ry = (top - bottom).abs() / 2.0;
         get_arc(0.0, 2.0 * PI, rx, ry, (left + right) / 2.0, (bottom + top) / 2.0, out, true);
@@ -562,62 +749,121 @@ fn cloudy_ellipse_impl(
     }
 }
 
-/// The per-side inset from a shape's outer box to the cloud's inner
-/// boundary: the scallop radius plus half the stroke. This is the `/RD`.
-pub fn cloudy_border_extent(intensity: f64, stroke_width: f64, ellipse: bool) -> f64 {
-    let cr = if ellipse {
-        ellipse_cloud_radius(intensity, stroke_width)
-    } else {
-        polygon_cloud_radius(intensity, stroke_width)
-    };
-    cr + stroke_width / 2.0
-}
-
-/// SVG path data for a cloudy polygon border: curls centred on the vertex
-/// path, reaching outward.
-pub fn cloudy_poly_path(points: &[Point], intensity: f64, stroke_width: f64) -> String {
-    let mut out = PathBuilder::new(0.0, 0.0);
+/// The ring a closed polygon's cloud walks, in y-up coordinates, its first
+/// vertex repeated at the end.
+fn polygon_ring(points: &[Point]) -> Vec<Point> {
     let mut ring: Vec<Point> = points.iter().map(|p| Point { x: p.x, y: -p.y }).collect();
     if let (Some(&first), Some(&last)) = (ring.first(), ring.last())
         && (first.x != last.x || first.y != last.y)
     {
         ring.push(first);
     }
+    ring
+}
+
+/// The cloud of a closed polygon, its curves into `out`; `false` when the
+/// border is over the curl budget (nothing drawn).
+fn polygon_cloud(
+    points: &[Point],
+    intensity: f64,
+    stroke_width: f64,
+    out: &mut dyn CurveSink,
+) -> bool {
+    let ring = polygon_ring(points);
     let length: f64 = ring.windows(2).map(|w| distance(w[0], w[1])).sum();
     if over_budget(length) {
+        return false;
+    }
+    cloudy_polygon_impl(&ring, false, intensity, stroke_width, out);
+    true
+}
+
+/// The cloud of a square's or circle's `box`, its curves into `out`;
+/// `false` when the border is over the curl budget.
+fn box_cloud(
+    rect: Rect,
+    ellipse: bool,
+    intensity: f64,
+    stroke_width: f64,
+    out: &mut dyn CurveSink,
+) -> bool {
+    let right = rect.width;
+    let bottom = rect.height;
+    // Twice the box's semi-perimeter bounds both the ring and the flattened
+    // ellipse (which takes about `2 * max(rx, ry)` points).
+    if over_budget(2.0 * (right.abs() + bottom.abs())) {
+        return false;
+    }
+    if ellipse {
+        cloudy_ellipse_impl(0.0, -bottom, right, 0.0, intensity, stroke_width, out);
+    } else {
+        let ring = [
+            Point { x: 0.0, y: 0.0 },
+            Point { x: right, y: 0.0 },
+            Point { x: right, y: -bottom },
+            Point { x: 0.0, y: -bottom },
+            Point { x: 0.0, y: 0.0 },
+        ];
+        cloudy_polygon_impl(&ring, false, intensity, stroke_width, out);
+    }
+    true
+}
+
+/// `cloudyPolyPath(points, intensity, strokeWidth)`: SVG path data for a
+/// cloudy polygon border, curls centred on the vertex path.
+pub fn cloudy_poly_path(points: &[Point], intensity: f64, stroke_width: f64) -> String {
+    let mut out = PathBuilder::new(0.0, 0.0);
+    if !polygon_cloud(points, intensity, stroke_width, &mut out) {
         return String::new();
     }
-    cloudy_polygon_impl(&ring, false, intensity, stroke_width, &mut out);
     out.close();
     out.build()
 }
 
-/// SVG path data for a cloudy square or circle: scallops generated on the
-/// box inset by [`cloudy_border_extent`], bulging back out to its edge.
-pub fn cloudy_path(bx: Rect, ellipse: bool, intensity: f64, stroke_width: f64) -> String {
-    let inset = cloudy_border_extent(intensity, stroke_width, ellipse);
-    let mut out = PathBuilder::new(bx.x, bx.y);
-    let left = inset;
-    let top = inset;
-    let right = bx.width - inset;
-    let bottom = bx.height - inset;
-    // Twice the box's semi-perimeter bounds both the ring and the flattened
-    // ellipse (which takes about `2 * max(rx, ry)` points).
-    if over_budget(2.0 * ((right - left).abs() + (bottom - top).abs())) {
+/// `cloudyPath(box, ellipse, intensity, strokeWidth)`: SVG path data for a
+/// cloudy square or circle, scallops on `box`, bulging out from it.
+pub fn cloudy_path(rect: Rect, ellipse: bool, intensity: f64, stroke_width: f64) -> String {
+    let mut out = PathBuilder::new(rect.x, rect.y);
+    if !box_cloud(rect, ellipse, intensity, stroke_width, &mut out) {
         return String::new();
-    }
-    if ellipse {
-        cloudy_ellipse_impl(left, -bottom, right, -top, intensity, stroke_width, &mut out);
-    } else {
-        let ring = [
-            Point { x: left, y: -top },
-            Point { x: right, y: -top },
-            Point { x: right, y: -bottom },
-            Point { x: left, y: -bottom },
-            Point { x: left, y: -top },
-        ];
-        cloudy_polygon_impl(&ring, false, intensity, stroke_width, &mut out);
     }
     out.close();
     out.build()
+}
+
+/// `cloudyPolyBounds(points, intensity, strokeWidth)`.
+pub fn cloudy_poly_bounds(points: &[Point], intensity: f64, stroke_width: f64) -> Rect {
+    let mut out = CurveBounds::new(0.0, 0.0);
+    if !polygon_cloud(points, intensity, stroke_width, &mut out) {
+        return expand_rect(crate::rect::union_rect(points), stroke_width / 2.0);
+    }
+    expand_rect(out.bounds(), stroke_width / 2.0)
+}
+
+/// `cloudyPolyOutline(points, intensity, strokeWidth)`.
+pub fn cloudy_poly_outline(points: &[Point], intensity: f64, stroke_width: f64) -> Vec<Vec<Point>> {
+    let mut out = CurvePolylines::new(0.0, 0.0);
+    polygon_cloud(points, intensity, stroke_width, &mut out);
+    out.finish()
+}
+
+/// `cloudyOutline(box, ellipse, intensity, strokeWidth)`.
+pub fn cloudy_outline(
+    rect: Rect,
+    ellipse: bool,
+    intensity: f64,
+    stroke_width: f64,
+) -> Vec<Vec<Point>> {
+    let mut out = CurvePolylines::new(rect.x, rect.y);
+    box_cloud(rect, ellipse, intensity, stroke_width, &mut out);
+    out.finish()
+}
+
+/// `cloudyBounds(box, ellipse, intensity, strokeWidth)`.
+pub fn cloudy_bounds(rect: Rect, ellipse: bool, intensity: f64, stroke_width: f64) -> Rect {
+    let mut out = CurveBounds::new(rect.x, rect.y);
+    if !box_cloud(rect, ellipse, intensity, stroke_width, &mut out) {
+        return expand_rect(rect, stroke_width / 2.0);
+    }
+    expand_rect(out.bounds(), stroke_width / 2.0)
 }

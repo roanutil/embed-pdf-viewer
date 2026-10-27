@@ -1,0 +1,245 @@
+[
+  {
+    "family": "annotation-update",
+    "historical": "loaded",
+    "scenario": "reconcile/loaded",
+    "assertion": "annotation-update/loaded → reconcile/loaded",
+    "historicalSource": "src/suites/annotation-core-update.ts:1236",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['loaded', S(), [{ type: 'loaded', annots: [sq('sq', rc(0, 0, 1, 1)), sq('new1', rc(5, 5, 10, 10)), sq('new2', rc(6, 6, 10, 10))] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-reaps",
+    "scenario": "reconcile/hydrated-reaps",
+    "assertion": "annotation-update/hydrated-reaps → reconcile/hydrated-reaps",
+    "historicalSource": "src/suites/annotation-core-update.ts:1237",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-reaps', S({ selected: ['sq', 'ln'], hovered: 'ln', editing: 'ln' }), [{ type: 'hydrated', annots: ANNOTS.filter((a) => a.id !== 'ln' && a.id !== 'sq2').map((a) => (a.id === 'sq' ? { ...a, style: style({ color: '#000000' }) } : a)) }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-bump",
+    "scenario": "reconcile/hydrated-bump",
+    "assertion": "annotation-update/hydrated-bump → reconcile/hydrated-bump",
+    "historicalSource": "src/suites/annotation-core-update.ts:1238",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-bump', GROUP, [{ type: 'hydrated', annots: [sq('p', rc(0, 0, 5, 5)), sq('fresh', rc(1, 1, 5, 5))], bumpAp: true }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-keeps-dragged",
+    "scenario": "reconcile/hydrated-keeps-dragged",
+    "assertion": "annotation-update/hydrated-keeps-dragged → reconcile/hydrated-keeps-dragged",
+    "historicalSource": "src/suites/annotation-core-update.ts:1239",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-keeps-dragged', S(), [ed('down', 101, 130), ed('move', 131, 170), { type: 'hydrated', annots: [] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-nothing-reaped",
+    "scenario": "reconcile/hydrated-nothing-reaped",
+    "assertion": "annotation-update/hydrated-nothing-reaped → reconcile/hydrated-nothing-reaped",
+    "historicalSource": "src/suites/annotation-core-update.ts:1240",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-nothing-reaped', S(), [{ type: 'hydrated', annots: ANNOTS }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created",
+    "scenario": "reconcile/created",
+    "assertion": "annotation-update/created → reconcile/created",
+    "historicalSource": "src/suites/annotation-core-update.ts:1241",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created', GROUP, [{ type: 'beginTextEdit', id: 'tmp:1' }, { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-mid-move",
+    "scenario": "reconcile/created-mid-move",
+    "assertion": "annotation-update/created-mid-move → reconcile/created-mid-move",
+    "historicalSource": "src/suites/annotation-core-update.ts:1243",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 170, 150), ed('up', 170, 150)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-mid-handle",
+    "scenario": "reconcile/created-mid-handle",
+    "assertion": "annotation-update/created-mid-handle → reconcile/created-mid-handle",
+    "historicalSource": "src/suites/annotation-core-update.ts:1244",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-mid-handle', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 200, 160), { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 220, 180), ed('up', 220, 180)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-mid-rotate",
+    "scenario": "reconcile/created-mid-rotate",
+    "assertion": "annotation-update/created-mid-rotate → reconcile/created-mid-rotate",
+    "historicalSource": "src/suites/annotation-core-update.ts:1249",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-mid-rotate', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 76), { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 200, 90), ed('up', 200, 90)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-then-echo-mid-move",
+    "scenario": "reconcile/created-then-echo-mid-move",
+    "assertion": "annotation-update/created-then-echo-mid-move → reconcile/created-then-echo-mid-move",
+    "historicalSource": "src/suites/annotation-core-update.ts:1250",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-then-echo-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, { type: 'upsert', annots: [sq('c1', rc(0, 0, 5, 5))] }, ed('move', 170, 150), ed('up', 170, 150)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "create-failed-mid-move",
+    "scenario": "reconcile/create-failed-mid-move",
+    "assertion": "annotation-update/create-failed-mid-move → reconcile/create-failed-mid-move",
+    "historicalSource": "src/suites/annotation-core-update.ts:1251",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['create-failed-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { type: 'createFailed', tempId: 'tmp:1' }, ed('move', 170, 150), ed('up', 170, 150)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "create-failed-mid-handle",
+    "scenario": "reconcile/create-failed-mid-handle",
+    "assertion": "annotation-update/create-failed-mid-handle → reconcile/create-failed-mid-handle",
+    "historicalSource": "src/suites/annotation-core-update.ts:1252",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['create-failed-mid-handle', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 200, 160), { type: 'createFailed', tempId: 'tmp:1' }, ed('move', 220, 180), ed('up', 220, 180)]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-mid-poly-draft",
+    "scenario": "reconcile/created-mid-poly-draft",
+    "assertion": "annotation-update/created-mid-poly-draft → reconcile/created-mid-poly-draft",
+    "historicalSource": "src/suites/annotation-core-update.ts:1273",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-mid-poly-draft', {}, [...drag('square', v(100, 100), v(200, 160)), cr('polygon', 'down', 300, 300), { type: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, cr('polygon', 'move', 350, 300), cr('polygon', 'down', 350, 300), cr('polygon', 'down', 330, 350), cr('polygon', 'down', 330, 350, { finish: true })]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-unknown",
+    "scenario": "reconcile/created-unknown",
+    "assertion": "annotation-update/created-unknown → reconcile/created-unknown",
+    "historicalSource": "src/suites/annotation-core-update.ts:1274",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-unknown', GROUP, [{ type: 'created', tempId: 'tmp:9', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-index-ref",
+    "scenario": "reconcile/created-index-ref",
+    "assertion": "annotation-update/created-index-ref → reconcile/created-index-ref",
+    "historicalSource": "src/suites/annotation-core-update.ts:1275",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['created-index-ref', GROUP, [{ type: 'created', tempId: 'tmp:2', id: 'c2', ref: { kind: 'index', page: pageRef(PON), index: 3, revision: { docSessionId: 's', page: pageRef(PON), generation: 2 } } }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "create-failed",
+    "scenario": "reconcile/create-failed",
+    "assertion": "annotation-update/create-failed → reconcile/create-failed",
+    "historicalSource": "src/suites/annotation-core-update.ts:1276",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['create-failed', GROUP, [{ type: 'createFailed', tempId: 'tmp:2' }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "upsert",
+    "scenario": "reconcile/upsert",
+    "assertion": "annotation-update/upsert → reconcile/upsert",
+    "historicalSource": "src/suites/annotation-core-update.ts:1277",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['upsert', S(), [{ type: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1)), sq('brand-new', rc(0, 0, 3, 3))] }, { type: 'upsert', annots: [sq('sq', rc(0, 0, 2, 2))], bumpAp: true }, { type: 'upsert', annots: [sq('sq', rc(0, 0, 2, 2))], bumpAp: true }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "upsert-while-dragging",
+    "scenario": "reconcile/upsert-while-dragging",
+    "assertion": "annotation-update/upsert-while-dragging → reconcile/upsert-while-dragging",
+    "historicalSource": "src/suites/annotation-core-update.ts:1278",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['upsert-while-dragging', S({ selected: ['sq'] }), [ed('down', 180, 160), { type: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1)), sq('sq2', rc(0, 0, 1, 1))] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "upsert-while-rotating",
+    "scenario": "reconcile/upsert-while-rotating",
+    "assertion": "annotation-update/upsert-while-rotating → reconcile/upsert-while-rotating",
+    "historicalSource": "src/suites/annotation-core-update.ts:1279",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['upsert-while-rotating', S({ selected: ['sq', 'sq2'] }), [ed('down', 240, 76), { type: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1))] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "upsert-while-group",
+    "scenario": "reconcile/upsert-while-group",
+    "assertion": "annotation-update/upsert-while-group → reconcile/upsert-while-group",
+    "historicalSource": "src/suites/annotation-core-update.ts:1280",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['upsert-while-group', S({ selected: ['sq', 'sq2'] }), [ed('down', 380, 160), { type: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1))] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "upsert-while-marquee",
+    "scenario": "reconcile/upsert-while-marquee",
+    "assertion": "annotation-update/upsert-while-marquee → reconcile/upsert-while-marquee",
+    "historicalSource": "src/suites/annotation-core-update.ts:1281",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['upsert-while-marquee', S(), [mq('down', 0, 0), { type: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1))] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "bump-ap",
+    "scenario": "reconcile/bump-ap",
+    "assertion": "annotation-update/bump-ap → reconcile/bump-ap",
+    "historicalSource": "src/suites/annotation-core-update.ts:1282",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['bump-ap', S(), [{ type: 'bumpAp', ids: ['widget', 'ghost', 'widget'] }, { type: 'bumpAp', ids: ['ghost'] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-empty-hover",
+    "scenario": "reconcile/hydrated-empty-hover",
+    "assertion": "annotation-update/hydrated-empty-hover → reconcile/hydrated-empty-hover",
+    "historicalSource": "src/suites/annotation-core-update.ts:1406",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-empty-hover', S({ hovered: '', editing: '' }), [{ type: 'hydrated', annots: [] }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "hydrated-keeps-surviving-hover",
+    "scenario": "reconcile/hydrated-keeps-surviving-hover",
+    "assertion": "annotation-update/hydrated-keeps-surviving-hover → reconcile/hydrated-keeps-surviving-hover",
+    "historicalSource": "src/suites/annotation-core-update.ts:1408",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: records/reconciliation left Session): ['hydrated-keeps-surviving-hover', S({ hovered: 'sq', editing: 'ft' }), [{ type: 'hydrated', annots: ANNOTS.filter((a) => a.id !== 'ln') }]],"
+  },
+  {
+    "family": "annotation-update",
+    "historical": "created-relationships",
+    "scenario": "reconcile/created-relationships",
+    "assertion": "annotation-update/created-relationships → reconcile/created-relationships",
+    "historicalSource": "src/suites/annotation-core-update.ts:1641",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8: final object-number ids remove temp-id remapping): ['created-relationships', start([\n  // Historical (67180c5d8: final object-number ids remove temp-id remapping): annot('tmp:1', 'caret', gCaret(rc(10, 10, 5, 5)), { ref: null }),\n  // Historical (67180c5d8: final object-number ids remove temp-id remapping): annot('r-irt', 'text', gRect(rc(0, 0, 5, 5)), { irt: 'tmp:1' }),\n  // Historical (67180c5d8: final object-number ids remove temp-id remapping): annot('r-group', 'strikeout', gQuads([tq(0, 0, 5, 5)]), { group: 'tmp:1', irt: 'other' }),\n  // Historical (67180c5d8: final object-number ids remove temp-id remapping): annot('r-both', 'strikeout', gQuads([tq(0, 0, 5, 5)]), { group: 'tmp:1', irt: 'tmp:1' }),\n  // Historical (67180c5d8: final object-number ids remove temp-id remapping): ], { selected: ['r-irt', 'tmp:1'] }), [{ type: 'created', tempId: 'tmp:1', id: 'final', ref: { kind: 'objectNumber', page: pageRef(PON), annotObjectNumber: 9 } }]],"
+  },
+  {
+    "family": "annotation-measurement-model",
+    "historical": "create-annot",
+    "scenario": "reconcile/measurement-create-annot",
+    "assertion": "annotation-measurement-model/create-annot → reconcile/measurement-create-annot",
+    "historicalSource": "src/suites/annotation-core-measurement.ts:1315",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8, removed record reconciliation): ['create-annot', MS({ defaults: { arrow: { lineEndings: { end: 'closed-arrow' }, color: '#0000ff' }, link: { link: { kind: 'uri', uri: 'https://e.x' } as never } } }), [\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'line', geometry: gLine(v(0, 0), v(50, 50)), preset: 'arrow' },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'line', geometry: gLine(v(0, 0), v(50, 50), ends('square', 'none')) },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'polyline', geometry: gPoly(ZIG, false), preset: 'arrow', select: true },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(2), subtype: 'polygon', geometry: gPoly(AREA_POINTS, true), flags: { hidden: true } },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'free-text', geometry: gText(rc(10, 10, 100, 30)), props: { fontSize: 20, bold: true } },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'link', geometry: gRect(rc(10, 10, 100, 30)) },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'square', geometry: gRect(rc(10, 10, 100, 30)), props: { color: '#00ff00', strokeWidth: 4 } },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'square', geometry: gRect(rc(10, 10, 100, 30)), props: { icon: 'x' } },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'square', geometry: gRect(rc(10, 10, 100, 30)), props: { color: '#00ff00' }, flags: { locked: true } },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'createAnnot', page: pageRef(PON), subtype: 'link', geometry: gRect(rc(0, 0, 5, 5)), preset: 'none-link', select: false },\n  // Historical (67180c5d8, removed record reconciliation): ] as Msg[]],"
+  },
+  {
+    "family": "annotation-measurement-model",
+    "historical": "hydrated-under-caption-drag",
+    "scenario": "reconcile/measurement-hydrated-under-caption-drag",
+    "assertion": "annotation-measurement-model/hydrated-under-caption-drag → reconcile/measurement-hydrated-under-caption-drag",
+    "historicalSource": "src/suites/annotation-core-measurement.ts:1536",
+    "upstreamRemoval": "67180c5d8",
+    "definition": "  // Historical (67180c5d8, removed record reconciliation): ['hydrated-under-caption-drag', MS({ selected: ['dist'] }), [\n  // Historical (67180c5d8, removed record reconciliation): ed('down', DIST_CAPTION.x, DIST_CAPTION.y),\n  // Historical (67180c5d8, removed record reconciliation): { type: 'hydrated', annots: [annot('dist', 'line', LINE)] },\n  // Historical (67180c5d8, removed record reconciliation): { type: 'hydrated', annots: [] },\n  // Historical (67180c5d8, removed record reconciliation): ]],"
+  }
+]

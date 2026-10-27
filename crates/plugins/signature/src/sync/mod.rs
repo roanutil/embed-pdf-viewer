@@ -1,4 +1,5 @@
-//! `sync/`: the engine's facts into the slice.
+//! `sync/`: the engine's facts, mirrored, and the judgement that reacts to
+//! them.
 
-pub mod document_events;
-pub mod hydration;
+pub mod signatures;
+pub mod validation;

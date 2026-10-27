@@ -1,0 +1,28 @@
+wrote crates/plugins/acrojs/prelude.js
+(node:24479) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current dispatcher executes document work before deferred navigation and URI callbacks (625.782667ms)
+✔ current tree reads return catalog, field, page and annotation trees through current services (2.8595ms)
+✔ every owned dispatch and submit result, observer report and callback order has an exact semantic expectation (28.466041ms)
+✔ raw tree resolution uses current refs, returns exact values and memoizes the catalog (1.40525ms)
+✔ hide resolves fields and widgets through the forms plane before annotation patches (1.716375ms)
+✔ submit normalizes the resolver intent and sends current request fields and ISO clock to the home (1.748584ms)
+✔ handler acceptance bypasses the home, exposes the optional delegate and detached failure stays external (1.348208ms)
+✔ queued execution does not run or settle later work before the deferred executor answers (1.148792ms)
+✔ settings patches retain untouched policy origins and canExecute follows current policy (3.709459ms)
+✔ event listeners report exceptions to the kernel and preserve sibling delivery and unsubscribe identity (1.760416ms)
+✔ pure trigger descriptors and URL encoding have exact independent results (0.154ms)
+✔ current factory preserves actual scripting enablement with null or omitted overrides (0.068459ms)
+✔ all 84 deferred actions and 29 link inputs and exact outcomes remain frozen (140.405708ms)
+✔ every owned operation and diagnostic callback payload is precisely accounted for (26.040917ms)
+✔ named execution events carry the current source/tree/result and preserve link provenance (0.980834ms)
+✔ legacy registrations, builders and deferred scenario source sections remain byte exact (1.143167ms)
+✔ current registered factory keeps a scripting realm enabled with a null factory override (0.695125ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1716.807292

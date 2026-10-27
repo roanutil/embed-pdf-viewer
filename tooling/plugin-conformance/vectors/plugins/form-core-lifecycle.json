@@ -1,0 +1,4518 @@
+{
+  "schemaVersion": 2,
+  "kind": "scenario",
+  "describes": "Current form mirror status, actual pending confirmation/refusal and field permission gate.",
+  "cases": [
+    {
+      "name": "formReducer/set-status",
+      "covers": "The real fields mirror is loading before its deferred list answers, then ready; no session SET_STATUS exists.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "form-current",
+          "config": {
+            "validation": "none"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 410,
+                  "top": 520
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "objectNumbers": [
+              10001,
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012,
+              10013,
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024,
+              10025,
+              10026,
+              10027,
+              10028,
+              10029,
+              10030,
+              10031,
+              10032,
+              10033,
+              10034,
+              10035,
+              10036,
+              10037,
+              10038,
+              10039,
+              10040,
+              10041,
+              10042,
+              10043,
+              10044,
+              10045,
+              10046,
+              10047,
+              10048,
+              10049,
+              10050,
+              10051,
+              10052,
+              10053,
+              10054,
+              10055,
+              10056,
+              10057,
+              10058,
+              10059,
+              10060,
+              10061,
+              10062,
+              10063,
+              10064,
+              10065,
+              10066,
+              10067,
+              10068,
+              10069,
+              10070,
+              10071,
+              10072,
+              10073,
+              10074,
+              10075,
+              10076,
+              10077,
+              10078,
+              10079,
+              10080,
+              10081,
+              10082,
+              10083,
+              10084,
+              10085,
+              10086,
+              10087,
+              10088,
+              10089,
+              10090,
+              10091,
+              10092,
+              10093,
+              10094,
+              10095,
+              10096,
+              10097,
+              10098,
+              10099,
+              10100,
+              10101,
+              10102,
+              10103,
+              10104,
+              10105,
+              10106,
+              10107,
+              10108,
+              10109,
+              10110,
+              10111,
+              10112,
+              10113,
+              10114,
+              10115,
+              10116,
+              10117,
+              10118,
+              10119,
+              10120,
+              10121,
+              10122,
+              10123,
+              10124,
+              10125,
+              10126,
+              10127,
+              10128,
+              10129,
+              10130,
+              10131,
+              10132,
+              10133,
+              10134,
+              10135,
+              10136,
+              10137,
+              10138,
+              10139,
+              10140,
+              10141,
+              10142,
+              10143,
+              10144,
+              10145,
+              10146,
+              10147,
+              10148,
+              10149,
+              10150,
+              10151,
+              10152,
+              10153,
+              10154,
+              10155,
+              10156,
+              10157,
+              10158,
+              10159,
+              10160,
+              10161,
+              10162,
+              10163,
+              10164,
+              10165,
+              10166,
+              10167,
+              10168,
+              10169,
+              10170,
+              10171,
+              10172,
+              10173,
+              10174,
+              10175,
+              10176,
+              10177,
+              10178,
+              10179,
+              10180,
+              10181,
+              10182,
+              10183,
+              10184,
+              10185,
+              10186,
+              10187,
+              10188,
+              10189,
+              10190,
+              10191,
+              10192,
+              10193,
+              10194,
+              10195,
+              10196,
+              10197,
+              10198,
+              10199,
+              10200
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "name": "name",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "fieldFamily": "text"
+                    }
+                  ],
+                  "calculationOrder": []
+                },
+                "defer": "form-load"
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "form::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "form-load",
+          "value": {
+            "formKind": "acroform",
+            "needsAppearances": false,
+            "fields": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "name": "name",
+                "origin": "acroform",
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "alternateName": null,
+                "mappingName": null,
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "Ada"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "groupId": null,
+                "createdBy": null,
+                "createdAt": null,
+                "filledBy": null,
+                "filledByName": null,
+                "filledAt": null,
+                "importedBy": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 101
+                    },
+                    "objectNumber": 101,
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  }
+                ],
+                "family": "text",
+                "value": "Ada",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              }
+            ],
+            "widgets": [
+              {
+                "subtype": "widget",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 101
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": false,
+                "appearanceState": null,
+                "nm": null,
+                "rect": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "contents": null,
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "box": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 100,
+                  "height": 100
+                },
+                "rotation": null,
+                "color": null,
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "fontFamily": null,
+                "fontSize": null,
+                "fontColor": null,
+                "textAlign": "left",
+                "caption": null,
+                "checkStyle": null,
+                "field": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "fieldFamily": "text"
+              }
+            ],
+            "calculationOrder": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "loading"
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "formKind": "acroform",
+              "needsAppearances": false,
+              "fields": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "name": "name",
+                  "origin": "acroform",
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "alternateName": null,
+                  "mappingName": null,
+                  "valueEntry": {
+                    "kind": "scalar",
+                    "value": "Ada"
+                  },
+                  "defaultValueEntry": {
+                    "kind": "none"
+                  },
+                  "groupId": null,
+                  "createdBy": null,
+                  "createdAt": null,
+                  "filledBy": null,
+                  "filledByName": null,
+                  "filledAt": null,
+                  "importedBy": null,
+                  "widgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "family": "text",
+                  "value": "Ada",
+                  "defaultValue": "",
+                  "maxLength": null,
+                  "multiline": false,
+                  "password": false,
+                  "comb": false
+                }
+              ],
+              "widgets": [
+                {
+                  "subtype": "widget",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 101
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "hasAppearance": false,
+                  "appearanceState": null,
+                  "nm": null,
+                  "rect": {
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 24
+                  },
+                  "contents": null,
+                  "subject": null,
+                  "blendMode": "normal",
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false,
+                  "reply": null,
+                  "popup": null,
+                  "groupId": null,
+                  "author": null,
+                  "createdAt": null,
+                  "modifiedAt": null,
+                  "userId": null,
+                  "createdBy": null,
+                  "modifiedBy": null,
+                  "importedBy": null,
+                  "actions": null,
+                  "box": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 100,
+                    "height": 100
+                  },
+                  "rotation": null,
+                  "color": null,
+                  "interiorColor": null,
+                  "strokeWidth": 1,
+                  "borderStyle": "solid",
+                  "dashArray": null,
+                  "fontFamily": null,
+                  "fontSize": null,
+                  "fontColor": null,
+                  "textAlign": "left",
+                  "caption": null,
+                  "checkStyle": null,
+                  "field": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "fieldFamily": "text"
+                }
+              ],
+              "calculationOrder": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "formReducer/set-status-unchanged-is-no-change",
+      "covers": "A ready read stays ready across a refresh with identical fields; the empty session state emits no changes.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "form-current",
+          "config": {
+            "validation": "none"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 410,
+                  "top": 520
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "objectNumbers": [
+              10001,
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012,
+              10013,
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024,
+              10025,
+              10026,
+              10027,
+              10028,
+              10029,
+              10030,
+              10031,
+              10032,
+              10033,
+              10034,
+              10035,
+              10036,
+              10037,
+              10038,
+              10039,
+              10040,
+              10041,
+              10042,
+              10043,
+              10044,
+              10045,
+              10046,
+              10047,
+              10048,
+              10049,
+              10050,
+              10051,
+              10052,
+              10053,
+              10054,
+              10055,
+              10056,
+              10057,
+              10058,
+              10059,
+              10060,
+              10061,
+              10062,
+              10063,
+              10064,
+              10065,
+              10066,
+              10067,
+              10068,
+              10069,
+              10070,
+              10071,
+              10072,
+              10073,
+              10074,
+              10075,
+              10076,
+              10077,
+              10078,
+              10079,
+              10080,
+              10081,
+              10082,
+              10083,
+              10084,
+              10085,
+              10086,
+              10087,
+              10088,
+              10089,
+              10090,
+              10091,
+              10092,
+              10093,
+              10094,
+              10095,
+              10096,
+              10097,
+              10098,
+              10099,
+              10100,
+              10101,
+              10102,
+              10103,
+              10104,
+              10105,
+              10106,
+              10107,
+              10108,
+              10109,
+              10110,
+              10111,
+              10112,
+              10113,
+              10114,
+              10115,
+              10116,
+              10117,
+              10118,
+              10119,
+              10120,
+              10121,
+              10122,
+              10123,
+              10124,
+              10125,
+              10126,
+              10127,
+              10128,
+              10129,
+              10130,
+              10131,
+              10132,
+              10133,
+              10134,
+              10135,
+              10136,
+              10137,
+              10138,
+              10139,
+              10140,
+              10141,
+              10142,
+              10143,
+              10144,
+              10145,
+              10146,
+              10147,
+              10148,
+              10149,
+              10150,
+              10151,
+              10152,
+              10153,
+              10154,
+              10155,
+              10156,
+              10157,
+              10158,
+              10159,
+              10160,
+              10161,
+              10162,
+              10163,
+              10164,
+              10165,
+              10166,
+              10167,
+              10168,
+              10169,
+              10170,
+              10171,
+              10172,
+              10173,
+              10174,
+              10175,
+              10176,
+              10177,
+              10178,
+              10179,
+              10180,
+              10181,
+              10182,
+              10183,
+              10184,
+              10185,
+              10186,
+              10187,
+              10188,
+              10189,
+              10190,
+              10191,
+              10192,
+              10193,
+              10194,
+              10195,
+              10196,
+              10197,
+              10198,
+              10199,
+              10200
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "name": "name",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "fieldFamily": "text"
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "form::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "refresh",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "formKind": "acroform",
+              "needsAppearances": false,
+              "fields": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "name": "name",
+                  "origin": "acroform",
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "alternateName": null,
+                  "mappingName": null,
+                  "valueEntry": {
+                    "kind": "scalar",
+                    "value": "Ada"
+                  },
+                  "defaultValueEntry": {
+                    "kind": "none"
+                  },
+                  "groupId": null,
+                  "createdBy": null,
+                  "createdAt": null,
+                  "filledBy": null,
+                  "filledByName": null,
+                  "filledAt": null,
+                  "importedBy": null,
+                  "widgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "family": "text",
+                  "value": "Ada",
+                  "defaultValue": "",
+                  "maxLength": null,
+                  "multiline": false,
+                  "password": false,
+                  "comb": false
+                }
+              ],
+              "widgets": [
+                {
+                  "subtype": "widget",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 101
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "hasAppearance": false,
+                  "appearanceState": null,
+                  "nm": null,
+                  "rect": {
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 24
+                  },
+                  "contents": null,
+                  "subject": null,
+                  "blendMode": "normal",
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false,
+                  "reply": null,
+                  "popup": null,
+                  "groupId": null,
+                  "author": null,
+                  "createdAt": null,
+                  "modifiedAt": null,
+                  "userId": null,
+                  "createdBy": null,
+                  "modifiedBy": null,
+                  "importedBy": null,
+                  "actions": null,
+                  "box": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 100,
+                    "height": 100
+                  },
+                  "rotation": null,
+                  "color": null,
+                  "interiorColor": null,
+                  "strokeWidth": 1,
+                  "borderStyle": "solid",
+                  "dashArray": null,
+                  "fontFamily": null,
+                  "fontSize": null,
+                  "fontColor": null,
+                  "textAlign": "left",
+                  "caption": null,
+                  "checkStyle": null,
+                  "field": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "fieldFamily": "text"
+                }
+              ],
+              "calculationOrder": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "current-form-confirmation-refusal-and-permission",
+      "covers": "Without annotation, a fill is predicted, confirmed once before resolution, then a refused fill leaves the confirmed value. A second document denies fill locally.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "form-current",
+          "config": {
+            "validation": "none"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 410,
+                  "top": 520
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "objectNumbers": [
+              10001,
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012,
+              10013,
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024,
+              10025,
+              10026,
+              10027,
+              10028,
+              10029,
+              10030,
+              10031,
+              10032,
+              10033,
+              10034,
+              10035,
+              10036,
+              10037,
+              10038,
+              10039,
+              10040,
+              10041,
+              10042,
+              10043,
+              10044,
+              10045,
+              10046,
+              10047,
+              10048,
+              10049,
+              10050,
+              10051,
+              10052,
+              10053,
+              10054,
+              10055,
+              10056,
+              10057,
+              10058,
+              10059,
+              10060,
+              10061,
+              10062,
+              10063,
+              10064,
+              10065,
+              10066,
+              10067,
+              10068,
+              10069,
+              10070,
+              10071,
+              10072,
+              10073,
+              10074,
+              10075,
+              10076,
+              10077,
+              10078,
+              10079,
+              10080,
+              10081,
+              10082,
+              10083,
+              10084,
+              10085,
+              10086,
+              10087,
+              10088,
+              10089,
+              10090,
+              10091,
+              10092,
+              10093,
+              10094,
+              10095,
+              10096,
+              10097,
+              10098,
+              10099,
+              10100,
+              10101,
+              10102,
+              10103,
+              10104,
+              10105,
+              10106,
+              10107,
+              10108,
+              10109,
+              10110,
+              10111,
+              10112,
+              10113,
+              10114,
+              10115,
+              10116,
+              10117,
+              10118,
+              10119,
+              10120,
+              10121,
+              10122,
+              10123,
+              10124,
+              10125,
+              10126,
+              10127,
+              10128,
+              10129,
+              10130,
+              10131,
+              10132,
+              10133,
+              10134,
+              10135,
+              10136,
+              10137,
+              10138,
+              10139,
+              10140,
+              10141,
+              10142,
+              10143,
+              10144,
+              10145,
+              10146,
+              10147,
+              10148,
+              10149,
+              10150,
+              10151,
+              10152,
+              10153,
+              10154,
+              10155,
+              10156,
+              10157,
+              10158,
+              10159,
+              10160,
+              10161,
+              10162,
+              10163,
+              10164,
+              10165,
+              10166,
+              10167,
+              10168,
+              10169,
+              10170,
+              10171,
+              10172,
+              10173,
+              10174,
+              10175,
+              10176,
+              10177,
+              10178,
+              10179,
+              10180,
+              10181,
+              10182,
+              10183,
+              10184,
+              10185,
+              10186,
+              10187,
+              10188,
+              10189,
+              10190,
+              10191,
+              10192,
+              10193,
+              10194,
+              10195,
+              10196,
+              10197,
+              10198,
+              10199,
+              10200
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "name": "name",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "fieldFamily": "text"
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "apply",
+                "times": 1,
+                "defer": "confirm",
+                "value": {
+                  "items": [
+                    {
+                      "type": "forms.setValue",
+                      "field": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "name": "name",
+                        "origin": "acroform",
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "alternateName": null,
+                        "mappingName": null,
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Grace"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "groupId": null,
+                        "createdBy": null,
+                        "createdAt": null,
+                        "filledBy": null,
+                        "filledByName": null,
+                        "filledAt": null,
+                        "importedBy": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 101
+                            },
+                            "objectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            }
+                          }
+                        ],
+                        "family": "text",
+                        "value": "Grace",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      "widgets": [
+                        {
+                          "subtype": "widget",
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "hasAppearance": false,
+                          "appearanceState": null,
+                          "nm": null,
+                          "rect": {
+                            "x": 10,
+                            "y": 20,
+                            "width": 100,
+                            "height": 24
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "blendMode": "normal",
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false,
+                          "reply": null,
+                          "popup": null,
+                          "groupId": null,
+                          "author": null,
+                          "createdAt": null,
+                          "modifiedAt": null,
+                          "userId": null,
+                          "createdBy": null,
+                          "modifiedBy": null,
+                          "importedBy": null,
+                          "actions": null,
+                          "box": {
+                            "x": 100,
+                            "y": 100,
+                            "width": 100,
+                            "height": 100
+                          },
+                          "rotation": null,
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "dashArray": null,
+                          "fontFamily": null,
+                          "fontSize": null,
+                          "fontColor": null,
+                          "textAlign": "left",
+                          "caption": null,
+                          "checkStyle": null,
+                          "field": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "fieldFamily": "text"
+                        }
+                      ],
+                      "meta": {
+                        "affectedPages": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        ],
+                        "cacheDelta": null,
+                        "opId": "00000000-0000-7000-8000-000000000001",
+                        "undoable": true,
+                        "changedFields": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        ],
+                        "changedWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 101
+                            },
+                            "objectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            }
+                          }
+                        ],
+                        "redrawnWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 101
+                            },
+                            "objectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "affectedPages": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    ],
+                    "cacheDelta": null,
+                    "opId": "00000000-0000-7000-8000-000000000001",
+                    "undoable": true
+                  }
+                },
+                "events": [
+                  {
+                    "type": "forms.valueSet",
+                    "field": {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "name": "name",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Grace"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "family": "text",
+                      "value": "Grace",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    "widgets": [
+                      {
+                        "subtype": "widget",
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 101
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "hasAppearance": false,
+                        "appearanceState": null,
+                        "nm": null,
+                        "rect": {
+                          "x": 10,
+                          "y": 20,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "blendMode": "normal",
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false,
+                        "reply": null,
+                        "popup": null,
+                        "groupId": null,
+                        "author": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "userId": null,
+                        "createdBy": null,
+                        "modifiedBy": null,
+                        "importedBy": null,
+                        "actions": null,
+                        "box": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "rotation": null,
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "dashArray": null,
+                        "fontFamily": null,
+                        "fontSize": null,
+                        "fontColor": null,
+                        "textAlign": "left",
+                        "caption": null,
+                        "checkStyle": null,
+                        "field": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "fieldFamily": "text"
+                      }
+                    ],
+                    "meta": {
+                      "affectedPages": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      ],
+                      "cacheDelta": null,
+                      "opId": "00000000-0000-7000-8000-000000000001",
+                      "undoable": true,
+                      "changedFields": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      ],
+                      "changedWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "redrawnWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ]
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "sub": null,
+                      "ts": 0,
+                      "serverId": null,
+                      "tx": {
+                        "id": "00000000-0000-7000-8000-000000000001",
+                        "index": 0,
+                        "count": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "apply",
+                "times": 1,
+                "defer": "refuse"
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 410,
+                  "top": 520
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": [
+                "doc.forms.read"
+              ],
+              "allowsField": {
+                "fill": false
+              }
+            },
+            "objectNumbers": [
+              10001,
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012,
+              10013,
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024,
+              10025,
+              10026,
+              10027,
+              10028,
+              10029,
+              10030,
+              10031,
+              10032,
+              10033,
+              10034,
+              10035,
+              10036,
+              10037,
+              10038,
+              10039,
+              10040,
+              10041,
+              10042,
+              10043,
+              10044,
+              10045,
+              10046,
+              10047,
+              10048,
+              10049,
+              10050,
+              10051,
+              10052,
+              10053,
+              10054,
+              10055,
+              10056,
+              10057,
+              10058,
+              10059,
+              10060,
+              10061,
+              10062,
+              10063,
+              10064,
+              10065,
+              10066,
+              10067,
+              10068,
+              10069,
+              10070,
+              10071,
+              10072,
+              10073,
+              10074,
+              10075,
+              10076,
+              10077,
+              10078,
+              10079,
+              10080,
+              10081,
+              10082,
+              10083,
+              10084,
+              10085,
+              10086,
+              10087,
+              10088,
+              10089,
+              10090,
+              10091,
+              10092,
+              10093,
+              10094,
+              10095,
+              10096,
+              10097,
+              10098,
+              10099,
+              10100,
+              10101,
+              10102,
+              10103,
+              10104,
+              10105,
+              10106,
+              10107,
+              10108,
+              10109,
+              10110,
+              10111,
+              10112,
+              10113,
+              10114,
+              10115,
+              10116,
+              10117,
+              10118,
+              10119,
+              10120,
+              10121,
+              10122,
+              10123,
+              10124,
+              10125,
+              10126,
+              10127,
+              10128,
+              10129,
+              10130,
+              10131,
+              10132,
+              10133,
+              10134,
+              10135,
+              10136,
+              10137,
+              10138,
+              10139,
+              10140,
+              10141,
+              10142,
+              10143,
+              10144,
+              10145,
+              10146,
+              10147,
+              10148,
+              10149,
+              10150,
+              10151,
+              10152,
+              10153,
+              10154,
+              10155,
+              10156,
+              10157,
+              10158,
+              10159,
+              10160,
+              10161,
+              10162,
+              10163,
+              10164,
+              10165,
+              10166,
+              10167,
+              10168,
+              10169,
+              10170,
+              10171,
+              10172,
+              10173,
+              10174,
+              10175,
+              10176,
+              10177,
+              10178,
+              10179,
+              10180,
+              10181,
+              10182,
+              10183,
+              10184,
+              10185,
+              10186,
+              10187,
+              10188,
+              10189,
+              10190,
+              10191,
+              10192,
+              10193,
+              10194,
+              10195,
+              10196,
+              10197,
+              10198,
+              10199,
+              10200
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "name": "name",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 101
+                          },
+                          "objectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "fieldFamily": "text"
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "form::a",
+        "form::b"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "onValueChanged",
+          "args": [
+            {
+              "$fn": "valueChanged"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "canFill",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "setValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            {
+              "value": "Grace"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "listWidgets",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "confirm",
+          "value": {
+            "items": [
+              {
+                "type": "forms.setValue",
+                "field": {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "name": "name",
+                  "origin": "acroform",
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "alternateName": null,
+                  "mappingName": null,
+                  "valueEntry": {
+                    "kind": "scalar",
+                    "value": "Grace"
+                  },
+                  "defaultValueEntry": {
+                    "kind": "none"
+                  },
+                  "groupId": null,
+                  "createdBy": null,
+                  "createdAt": null,
+                  "filledBy": null,
+                  "filledByName": null,
+                  "filledAt": null,
+                  "importedBy": null,
+                  "widgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "family": "text",
+                  "value": "Grace",
+                  "defaultValue": "",
+                  "maxLength": null,
+                  "multiline": false,
+                  "password": false,
+                  "comb": false
+                },
+                "widgets": [
+                  {
+                    "subtype": "widget",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "hasAppearance": false,
+                    "appearanceState": null,
+                    "nm": null,
+                    "rect": {
+                      "x": 10,
+                      "y": 20,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "contents": null,
+                    "subject": null,
+                    "blendMode": "normal",
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false,
+                    "reply": null,
+                    "popup": null,
+                    "groupId": null,
+                    "author": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "userId": null,
+                    "createdBy": null,
+                    "modifiedBy": null,
+                    "importedBy": null,
+                    "actions": null,
+                    "box": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 100
+                    },
+                    "rotation": null,
+                    "color": null,
+                    "interiorColor": null,
+                    "strokeWidth": 1,
+                    "borderStyle": "solid",
+                    "dashArray": null,
+                    "fontFamily": null,
+                    "fontSize": null,
+                    "fontColor": null,
+                    "textAlign": "left",
+                    "caption": null,
+                    "checkStyle": null,
+                    "field": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "fieldFamily": "text"
+                  }
+                ],
+                "meta": {
+                  "affectedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  ],
+                  "cacheDelta": null,
+                  "opId": "00000000-0000-7000-8000-000000000001",
+                  "undoable": true,
+                  "changedFields": [
+                    {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  ],
+                  "changedWidgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "redrawnWidgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "meta": {
+              "affectedPages": [
+                {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                }
+              ],
+              "cacheDelta": null,
+              "opId": "00000000-0000-7000-8000-000000000001",
+              "undoable": true
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "setValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            {
+              "value": "refused"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "refuse",
+          "error": {
+            "name": "EngineError",
+            "code": "Refused",
+            "message": "intended form refusal"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "b"
+          },
+          "method": "canFill",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "b"
+          },
+          "method": "setValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            {
+              "value": "denied"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "b"
+          },
+          "method": "getValue",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "validate",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "exportValues",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "Ada"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "forms.setValue",
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "value": {
+                        "value": "Grace"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000001"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "Grace"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "key": "obj:1",
+                "fieldRef": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "annotObjectNumber": 101,
+                "annotationRef": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 101
+                },
+                "box": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "look": {
+                  "border": null,
+                  "borderWidth": 1,
+                  "borderStyle": "solid",
+                  "background": null,
+                  "color": null,
+                  "fontFamily": null,
+                  "fontSize": null,
+                  "textAlign": "left"
+                },
+                "disabled": false,
+                "label": "name",
+                "control": "text",
+                "value": "Grace",
+                "multiline": false,
+                "password": false,
+                "maxLength": null,
+                "comb": false
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "field": {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "name": "name",
+                  "origin": "acroform",
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "alternateName": null,
+                  "mappingName": null,
+                  "valueEntry": {
+                    "kind": "scalar",
+                    "value": "Grace"
+                  },
+                  "defaultValueEntry": {
+                    "kind": "none"
+                  },
+                  "groupId": null,
+                  "createdBy": null,
+                  "createdAt": null,
+                  "filledBy": null,
+                  "filledByName": null,
+                  "filledAt": null,
+                  "importedBy": null,
+                  "widgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 101
+                      },
+                      "objectNumber": 101,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "family": "text",
+                  "value": "Grace",
+                  "defaultValue": "",
+                  "maxLength": null,
+                  "multiline": false,
+                  "password": false,
+                  "comb": false
+                },
+                "status": "applied"
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "valueChanged",
+              "args": [
+                {
+                  "field": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "name": "name",
+                    "origin": "acroform",
+                    "readOnly": false,
+                    "required": false,
+                    "noExport": false,
+                    "alternateName": null,
+                    "mappingName": null,
+                    "valueEntry": {
+                      "kind": "scalar",
+                      "value": "Grace"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "groupId": null,
+                    "createdBy": null,
+                    "createdAt": null,
+                    "filledBy": null,
+                    "filledByName": null,
+                    "filledAt": null,
+                    "importedBy": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 101
+                        },
+                        "objectNumber": 101,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      }
+                    ],
+                    "family": "text",
+                    "value": "Grace",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  },
+                  "origin": {
+                    "kind": "local",
+                    "sessionId": "s1",
+                    "sub": null,
+                    "ts": 0,
+                    "serverId": null,
+                    "tx": {
+                      "id": "00000000-0000-7000-8000-000000000001",
+                      "index": 0,
+                      "count": 1
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "Grace"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "forms.setValue",
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "value": {
+                        "value": "refused"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000002"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "refused"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "intended form refusal",
+                  "code": "operation-failed",
+                  "capability": "form",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "intended form refusal",
+                      "code": "Refused"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "Grace"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "document": {
+                  "id": "b",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "b",
+                "previousDocumentId": "a"
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "b",
+                "info": {
+                  "id": "b",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "b",
+              "path": "render.getPolicy",
+              "args": []
+            },
+            {
+              "doc": "b",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "form.setValue requires doc.forms.fill",
+                  "code": "permission-denied",
+                  "capability": "form",
+                  "permission": "doc.forms.fill"
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "value": "Ada"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "valid": true,
+              "missing": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "name": "Grace"
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {},
+              "form::b": {}
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

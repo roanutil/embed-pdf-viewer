@@ -9,6 +9,8 @@ pub const MESSAGE_DIGEST: &str = "1.2.840.113549.1.9.4";
 pub const SIGNING_TIME: &str = "1.2.840.113549.1.9.5";
 pub const SIGNING_CERTIFICATE_V2: &str = "1.2.840.113549.1.9.16.2.47";
 pub const TIMESTAMP_TOKEN: &str = "1.2.840.113549.1.9.16.2.14";
+/// id-ct-TSTInfo: the content of an RFC 3161 timestamp token.
+pub const TST_INFO: &str = "1.2.840.113549.1.9.16.1.4";
 pub const SHA1: &str = "1.3.14.3.2.26";
 pub const SHA256: &str = "2.16.840.1.101.3.4.2.1";
 pub const SHA384: &str = "2.16.840.1.101.3.4.2.2";

@@ -1,12 +1,15 @@
 # epdf-plugin-actions
 
-`packages/plugin/actions` in Rust, at the v3 contract: the PDF action engine. All 159 cases replay
-identically (`cargo test -p epdf-plugin-actions`): 36 function cases in `vectors/plugins/actions.json`
-and 123 scenarios across `actions-dispatcher.json` (30), `actions-submit.json` (10),
-`actions-triggers.json` (15), `actions-lifecycle.json` (27), `actions-script.json` (31) and
-`actions-hover.json` (10).
+`packages/plugin/actions` in Rust, at the current TypeScript contract (Task 13.12): the PDF action
+engine. All 160 schema-2 cases replay identically (`cargo test -p epdf-plugin-actions`): 36 function
+cases in `vectors/plugins/actions.json` and 124 scenarios across `actions-dispatcher.json` (30),
+`actions-submit.json` (10), `actions-triggers.json` (15), `actions-lifecycle.json` (27),
+`actions-script.json` (32) and `actions-hover.json` (10). One member-order allowance remains,
+`actions-submit.json` `a-handler-beats-the-home`: the resolver hands back a request whose `charSet`
+it appended last, and the typed `ActionSubmitRequest` prints it in field order.
 
-The plugin is document-scoped and built through `create`, so its controller exists from bring-up. A
+The plugin is document-scoped, stateless (its slice is `undefined`) and built through `create`, so
+its controller exists from bring-up. A
 `headless` open sequence therefore reads the catalog while the document opens, as the TypeScript
 does. Triggers, sources, page-state reports and hover targets carry a `PageRef`; engine DTOs (action
 trees and nodes, annotation and field refs, form effects) stay `serde_json::Value`, because the
@@ -27,12 +30,15 @@ surface) and `submit/` (intent, perform). Every verb still has one home.
 
 The TypeScript splits the capability into a public lens (`/contract`) and a host lens
 (`/contract/host`) over one runtime object. Rust has one `ActionsCapability` behind one token,
-`ACTIONS`, and `ActionsHostCapability` is an alias. The public surface is `execute`, `canExecute`,
-`executeNamed`, `getActionTree`, `getPolicy`, `updatePolicy`, `isScriptingEnabled`, `dispatch`,
+`ACTIONS`, and `ActionsHostCapability` is an alias. The public surface is the four settings calls
+(`getSettings`, `updateSettings`, `resetSettings`, `onSettingsChanged`), `execute`, `canExecute`,
+`executeNamed`, `canExecuteNamed`, `getActionTree`, `isScriptingEnabled`, `dispatch`,
 `canDispatch`, `setUiAdapter`, `runDocumentVerb`, `prepareClose`, `setSubmitHandler`,
-`registerExecutor` and the five hooks (`onExecuted`, `onDiagnostic`, `onScriptDiagnostic`,
-`onScriptError`, `onOpenSequenceCompleted`). The host lens adds `register_annot_commit_sink`,
-`register_form_commit_sink`, `register_submit_resolver`, `report_page_state`,
+`registerExecutor` and the five events (`onExecuted`, `onDiagnosticReported`,
+`onScriptDiagnosticReported`, `onScriptFailed`, `onOpenSequenceCompleted`). The verbs that take
+`OperationOptions` in the TypeScript take a trailing `Option<AbortSignal>`. The host lens adds
+`register_annot_commit_sink`, `register_form_commit_sink`, `register_form_reader`,
+`register_submit_resolver`, `report_page_state`,
 `surface_script_result`, `surface_script_commit`, `script_realm` and
 `create_detached_script_realm`.
 
@@ -45,9 +51,12 @@ boot sources and the configured budget (`detached-script-realm`). The caller own
 `dispose`. A result surfaced with `realm: detached` reaches the adapter only as an alert; print,
 `gotoPage` and `submitForm` are suppressed with `ui-effect-suppressed` (`surface-a-detached-realm`).
 
-Policy is live. `config.policy` and `updatePolicy` merge row-wise, so a row names only the origins it
-changes, and `updatePolicy` bumps `policyRevision` in the slice even for an empty patch
-(`policy-rows-merge-and-update-live`).
+The rules are settings, kept in the kernel's store for the whole registration: a change reaches
+every open document. `policy` rows merge origin by origin (`policy-rows-merge-and-update-live`).
+`javascript.enabled` is read when a document opens, so it reaches only documents opened after the
+change. `javascript.identity` may be a function, which JSON can't hold: `settings.rs` stores it as a
+handle, `{"$identity": n}`, into a table the registration owns, so the same function reads back as
+the same `Rc` (`a_function_identity_keeps_its_identity_through_the_store` in `tests/behavior.rs`).
 
 Rust ships no default UI adapter, so the dispatcher does the URI check the TypeScript's default
 adapter does. `sanitize_external_uri` holds a link's scheme to http, https, mailto and tel before
@@ -57,24 +66,32 @@ can. No vector covers it, since every vector link is https.
 
 ## Host inputs
 
-The TypeScript reads three ambient values, and each is an input here:
+The TypeScript reads two ambient values, and each is an input here. A throwing event listener is no
+longer one: it goes to the kernel's reporter, as every `ctx.events` source's does, and
+`observer_error` is gone.
 
-- The five hooks report a throwing listener to `console.error`. Rust takes that sink as
-  `ActionsConfig::observer_error`, called with the same message and error; with no sink the report
-  is dropped. The vectors route both sides into the trace as a `console.error` callback.
-- `Date.now()` is `rt::now()`, or `javascript.now` when configured (it also stamps `clientTimeMs` on
-  submits, with scripting on or off).
-- `-new Date(nowMs).getTimezoneOffset()` is `host_utc_offset_minutes`, default zero. The generator
-  pins `TZ=UTC`, so the vectors record zero.
+- `Date.now()` is `rt::now()`, or `javascript.now` when configured (it also stamps a submit's
+  `sentAt`, with scripting on or off).
+- `-new Date(nowMs).getTimezoneOffset()` is `javascript.host_utc_offset_minutes`, default zero. The
+  generator pins `TZ=UTC`, so the vectors record zero.
+
+Print requests go to the kernel's print when the host gave the kernel a printer
+(`KernelOptions::printer`): `DocumentPrint` reads `can_print()` and `print()` on the documents
+capability as this document's scope sees it, and `around_print` runs `/WP` and `/DP` around every
+kernel print, as `controller.ts` does with `ctx.aroundPrint`. Without a printer every print falls back
+to the UI adapter. The printer branches (user prints, the M14 non-user refusal, the form pipeline's
+print effect, the wrap holding the print latch) are tested in `lifecycle/document_events.rs`; no
+vector configures a printer.
 
 ## Scripting without a sandbox
 
-JavaScript runs only when `javascript.enabled` is set and the host supplies
-`javascript.sandbox_factory`. Where the TypeScript lazily imports `@embedpdf/core-js-sandbox` as a
-default, we have none, and a host with no sandbox runs exactly as the TypeScript does with scripting
-disabled: javascript nodes are inert ("no executor registered (scripting unavailable)"),
-`is_scripting_enabled()` is false, and both realm members are absent. The `no-sandbox-host` case pins
-that configuration against the TypeScript with `enabled: false`.
+With `javascript.enabled` on and no `javascript.sandbox_factory`, the TypeScript lazily imports
+QuickJS from `@embedpdf/core-js-sandbox`. Rust has no JavaScript engine. The realm still exists, as
+the TypeScript's does: `is_scripting_enabled()` is true and both realm members are present, which is
+what `no-sandbox-host` replays (it closes the document before any run). Every sandbox build then
+rejects with `NO_DEFAULT_SANDBOX`, so a javascript node fails with that message
+(`scripting_on_without_a_factory_has_a_realm_whose_runs_fail`). Before Task 13.12 such a host ran as
+if scripting were off; the vector now records the realm, so Rust follows it.
 
 ## Where the port has to be careful
 
@@ -87,22 +104,16 @@ promise. An `async` function that returns a promise unawaited resolves through t
 than observing it, so its reactions keep their registration order.
 
 Event names in an `ActionContext` are Rust enums, so a type-violating name (`'bogus'`) can't be
-expressed. The hover pump compares an index ref's `revision` by value; the TypeScript's `===` is
-reference identity for a `RevisionToken` object, which a feed holding one token object means the
-same way.
+expressed. The hover pump compares targets by page and `annotationKey`, as the TypeScript now does.
 
-`can_dispatch` answers `false` where the TypeScript throws. Its `ctx.doc !== null` reads the
-`ctx.doc` getter, which throws `not-ready` while the document has no engine handle
-(`packages/core/main/src/controller.ts:44-49`). Rust's `self.doc().is_ok()` turns that same error
-into `false` (`dispatch/dispatcher.rs:236-238`). The review behind
-`docs/research/rust-plugins-branch-review.md` (L-A4) found no caller that asks before the handle
-exists, and no vector does. Matching it
-would mean `can_dispatch` returning `Result`, which every caller then has to unwrap for a case that
-does not occur.
+`can_dispatch` used to answer `false` where the TypeScript threw `not-ready` (L-A4 in
+`docs/research/rust-plugins-branch-review.md`). The current TypeScript reads only the `triggers`
+setting there (`dispatch/dispatcher.ts`, `canDispatch`), and so does Rust: that note no longer
+applies.
 
 ## Coverage
 
-The generators reach 3,184 of the package's 3,195 statements and 754 of its 780 branches. This port
+Stale since Task 13.12; not re-run since 172f5369d. The generators reach 3,184 of the package's 3,195 statements and 754 of its 780 branches. This port
 added nine scenarios to `src/suites/actions.ts` (`policy-rows-merge-and-update-live`,
 `execute-named`, `get-action-tree`, `open-sequence-completed-event`, `detached-script-realm`,
 `detached-script-realm-without-metadata`, `no-detached-realm-without-scripting`,
@@ -130,14 +141,13 @@ statements and 26 branches left are unreachable from the public surface or don't
 
 ## TypeScript behaviour pinned as is
 
-- `updatePolicy({})` dispatches `ACTIONS_POLICY_CHANGED` and bumps `policyRevision` although nothing
-  changed (`policy-rows-merge-and-update-live`).
 - A blocked Print verb reports its node type, not its policy row: `executeNamed('Print', {origin:
   'hover'})` diagnoses "named: policy 'block' for origin 'hover'" while the decision came from the
   `print` row (`execute-named`).
 
 ## Mutation testing
 
+Stale since Task 13.12 (the re-port moved most lines and removed `model.rs`); the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) gave 4 mutants, all unviable.
 `scripts/mutants.sh -p epdf-plugin-actions --test-package epdf-plugin-actions --file <file>`, file
 by file over every module but `harness.rs`, catches 307 of 314 viable mutants (295 caught, 12
 timeouts; 142 unviable). The timeouts are all in `hover_pump.rs`: a `same_target` that never

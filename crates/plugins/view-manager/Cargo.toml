@@ -19,7 +19,7 @@ uniffi = ["dep:uniffi", "dep:epdf-ffi"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
 epdf-ffi = { path = "../../epdf-ffi", optional = true }
@@ -28,3 +28,6 @@ uniffi = { version = "=0.32.0", optional = true }
 [dev-dependencies]
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 plugin-conformance = { path = "../../plugin-conformance" }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

@@ -15,17 +15,18 @@ use epdf_acrojs::{
     ScriptHostOptions, ScriptSandboxFactory, java_script_program_from_action_tree,
     resolve_script_identity, seed_from,
 };
-use epdf_kernel::Controller;
+use epdf_kernel::Error;
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::rt::{self, Promise};
+use epdf_kernel::settings::InstanceSettings;
 use serde_json::Value;
 
 use crate::ActionsCapability;
-use crate::contract::{ActionsConfig, JavaScriptConfig};
-use crate::controller::Inner;
-use crate::host_contract::ScriptRealmTarget;
-use crate::model::{ActionsAction, ActionsState};
+use crate::contract::{JavaScriptConfig, NO_DEFAULT_SANDBOX};
+use crate::controller::{ActionsController, Inner};
+use crate::host_contract::{ScriptDocument, ScriptRealmTarget};
 use crate::services::get;
+use crate::settings::IdentityTable;
 
 /// `ScriptRealmFactory`: mints realms under one environment.
 #[derive(Clone)]
@@ -33,28 +34,36 @@ pub(crate) struct ScriptRealmFactory {
     js: JavaScriptConfig,
     sandbox_factory: ScriptSandboxFactory,
     identity_doc: Rc<dyn DocumentHandle>,
-    host_utc_offset_minutes: Option<Rc<dyn Fn(f64) -> f64>>,
+    /// The `javascript.identity` setting as it is at each run.
+    table: Rc<IdentityTable>,
+    settings: InstanceSettings,
     /// The embedder's budget (or the default): the per-run budget every
     /// minted realm enforces and the transaction aggregate consumers apply.
     pub(crate) budget: ScriptBudget,
 }
 
 impl ScriptRealmFactory {
-    /// `js?.enabled && ctx.doc ? createScriptRealmFactory(js, ctx.doc) : null`.
-    /// The TypeScript's default sandbox is a lazily imported QuickJS; Rust has
-    /// none, so a host that supplies no factory runs with scripting disabled.
-    pub(crate) fn for_config(
-        cx: &Controller<ActionsState, ActionsAction>,
-        config: &ActionsConfig,
+    /// `createScriptRealmFactory(environment, identity, ctx.doc)`, built when
+    /// the `javascript.enabled` setting is on as the document opens. The
+    /// TypeScript's default sandbox is a lazily imported QuickJS; Rust has no
+    /// JavaScript engine, so without the host's factory every sandbox build
+    /// rejects with [`NO_DEFAULT_SANDBOX`] and the realm still exists.
+    pub(crate) fn new(
+        cx: &ActionsController,
+        js: &JavaScriptConfig,
+        table: Rc<IdentityTable>,
+        settings: InstanceSettings,
     ) -> Option<Self> {
-        let js = config.javascript.as_ref().filter(|js| js.enabled)?;
-        let sandbox_factory = js.sandbox_factory.clone()?;
         let identity_doc = cx.doc().ok()?;
+        let sandbox_factory = js.sandbox_factory.clone().unwrap_or_else(|| {
+            Rc::new(|| Promise::rejected(Error::new(NO_DEFAULT_SANDBOX))) as ScriptSandboxFactory
+        });
         Some(ScriptRealmFactory {
             js: js.clone(),
             sandbox_factory,
             identity_doc,
-            host_utc_offset_minutes: config.host_utc_offset_minutes.clone(),
+            table,
+            settings,
             budget: js.budget.clone().unwrap_or(DEFAULT_SCRIPT_BUDGET),
         })
     }
@@ -81,8 +90,12 @@ impl ScriptRealmFactory {
             })
         };
         let identity = {
-            let (doc, overrides) = (self.identity_doc.clone(), self.js.identity.clone());
-            Rc::new(move || resolve_script_identity(doc.as_ref(), overrides.as_ref()))
+            let (doc, table, settings) =
+                (self.identity_doc.clone(), self.table.clone(), self.settings.clone());
+            Rc::new(move || {
+                let identity = table.decode(&settings.get()).javascript.identity;
+                resolve_script_identity(doc.as_ref(), identity.as_ref())
+            })
         };
         let environment = {
             let (now, offset, seed) = (
@@ -90,7 +103,7 @@ impl ScriptRealmFactory {
                 self.js.utc_offset_minutes.clone(),
                 self.js.random_seed.clone(),
             );
-            let (host_offset, doc) = (self.host_utc_offset_minutes.clone(), target.doc.clone());
+            let (host_offset, doc) = (self.js.host_utc_offset_minutes.clone(), target.doc.clone());
             Rc::new(move |sequence: f64| {
                 let now_ms = now.as_ref().map_or_else(rt::now, |f| f());
                 ScriptEnvironment {
@@ -118,15 +131,11 @@ impl ScriptRealmFactory {
 
     /// This document's own realm (`scripting/realm.ts`): the viewer document,
     /// its metadata, and the catalog's name-tree programs.
-    pub(crate) fn own_realm(
-        &self,
-        cx: &Controller<ActionsState, ActionsAction>,
-        weak: Weak<Inner>,
-    ) -> ScriptHost {
+    pub(crate) fn own_realm(&self, cx: &ActionsController, weak: Weak<Inner>) -> ScriptHost {
         let meta_cx = cx.clone();
         self.realm_for(ScriptRealmTarget {
             doc: self.identity_doc.clone(),
-            document: Rc::new(move || meta_cx.document()),
+            document: Rc::new(move || meta_cx.document().map(ScriptDocument::from)),
             boot_sources: Rc::new(move || {
                 let Some(this) = ActionsCapability::upgrade(&weak) else {
                     return Ok(Promise::resolved(Vec::new()));

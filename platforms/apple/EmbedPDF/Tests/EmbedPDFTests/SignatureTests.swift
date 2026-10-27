@@ -5,11 +5,11 @@ import Testing
 
 extension BaseSuite {
   @Suite struct SignatureTests {
-    func opened(_ fixture: String, signer: Bool = true) async throws
+    func opened(_ fixture: String, signer: Bool = true, mode: SignatureMode? = nil) async throws
       -> (PDFViewer, DocumentInfo, SignatureCapability)
     {
       let viewer = try PDFViewer(
-        ViewerConfig(interaction: true, annotation: AnnotationConfig(), form: FormConfig(), signature: SignatureConfig()))
+        ViewerConfig(interaction: true, annotation: "", form: FormConfig(), signature: SignatureConfig(mode: mode)))
       try await viewer.start()
       if signer { viewer.setSigner(try KeychainSignerTests.testSigner()) }
       let document = try await viewer.open(Fixture.data(fixture))
@@ -21,6 +21,14 @@ extension BaseSuite {
     func unsignedField(_ signatures: SignatureCapability) async throws -> FormFieldRef {
       let fields = try await signatures.unsignedFields()
       return try #require(fields.first).field
+    }
+
+    /// `sign`'s input with the artwork as its mark. The mark is the
+    /// appearance the engine draws into the widget; the TypeScript's `sign`
+    /// sends it unconditionally (`write/sign.ts`, `appearance: { pdf }`), so
+    /// a signing without one is refused by the engine.
+    func signInput(_ field: FormFieldRef) throws -> SignatureSignInput {
+      SignatureSignInput(field: field, mark: .source(bytes: try Fixture.data("signature_artwork")))
     }
 
     @Test func twoApprovalsAreListed() async throws {
@@ -42,7 +50,7 @@ extension BaseSuite {
     @Test func aFieldSignsAndValidatesUntrusted() async throws {
       let (_, _, signatures) = try await opened("unsigned_sigfield")
       let field = try await unsignedField(signatures)
-      let done = try await signatures.sign(SignatureSignInput(field: field))
+      let done = try await signatures.sign(try signInput(field))
       expectNoDifference(done.signature.signed, true)
       expectNoDifference(done.status, .completed)
       let verdict = try await signatures.validate(field)
@@ -61,7 +69,7 @@ extension BaseSuite {
       let (viewer, _, signatures) = try await opened("unsigned_sigfield")
       viewer.setTrust(try TrustAnchors(pem: [Fixture.text("TEST-ONLY-signer", ext: "pem")]))
       let field = try await unsignedField(signatures)
-      _ = try await signatures.sign(SignatureSignInput(field: field))
+      _ = try await signatures.sign(try signInput(field))
       let verdict = try await signatures.validate(field)
       expectNoDifference(verdict.trust, .trusted)
       expectNoDifference(verdict.summary, .valid)
@@ -72,7 +80,7 @@ extension BaseSuite {
       viewer.setSigner(CancellingSigner())
       let field = try await unsignedField(signatures)
       await #expect {
-        _ = try await signatures.sign(SignatureSignInput(field: field))
+        _ = try await signatures.sign(try signInput(field))
       } throws: { error in
         (error as? PDFError)?.code == "operation-cancelled"
       }
@@ -83,31 +91,45 @@ extension BaseSuite {
     }
 
     @Test func aVisualFillNeedsNoSigner() async throws {
-      let (_, _, signatures) = try await opened("unsigned_sigfield", signer: false)
+      // The host's key is a function over the viewer's signer, so the mode
+      // is `.sign` unless the config asks for `.visual` (`authority.ts`
+      // `getMode`).
+      let (_, _, signatures) = try await opened("unsigned_sigfield", signer: false, mode: .visual)
       let got4 = try await signatures.mode()
       expectNoDifference(got4, .visual)
-      let got5 = try await signatures.canSign()
-      expectNoDifference(got5, false)
+      // Without a signer the field still may be filled with a mark.
       let field = try await unsignedField(signatures)
+      let got5 = try await signatures.canFill(field)
+      expectNoDifference(got5, true)
       try await signatures.fill(field, with: .source(bytes: Fixture.data("signature_artwork")))
       try await signatures.clearField(field)
     }
 
     @Test func settingASignerTurnsSigningOn() async throws {
       let (viewer, _, signatures) = try await opened("unsigned_sigfield", signer: false)
-      let got6 = try await signatures.canSign()
-      expectNoDifference(got6, false)
+      // `canSign(field)` is the session's permission (`doc.sign`), as the
+      // TypeScript's `canSign` is; the signer decides the mode.
+      // The host's key resolves the viewer's signer per signing: without
+      // one a signing is refused `invalid-input`, with one it seals.
+      let field = try await unsignedField(signatures)
+      let got6 = try await signatures.mode()
+      expectNoDifference(got6, .sign)
+      await #expect {
+        _ = try await signatures.sign(try signInput(field))
+      } throws: { error in
+        (error as? PDFError)?.code == "invalid-input"
+      }
       viewer.setSigner(try KeychainSignerTests.testSigner())
-      let got7 = try await signatures.canSign()
+      let got7 = try await signatures.canSign(field)
       expectNoDifference(got7, true)
-      let got8 = try await signatures.mode()
-      expectNoDifference(got8, .sign)
+      let got8 = try await signatures.sign(try signInput(field))
+      expectNoDifference(got8.status, .completed)
     }
 
     @Test func aStampMarkFillsAField() async throws {
       let viewer = try PDFViewer(
         ViewerConfig(
-          interaction: true, annotation: AnnotationConfig(), form: FormConfig(), stamp: StampConfig(),
+          interaction: true, annotation: "", form: FormConfig(), stamp: StampConfig(),
           signature: SignatureConfig()))
       try await viewer.start()
       let stamps = try await viewer.stamps()
@@ -140,7 +162,7 @@ extension BaseSuite {
       expectNoDifference(prepared.digest.count, 32)
       let got9 = try await signatures.pending()?.signingId
       expectNoDifference(got9, prepared.signingId)
-      try await signatures.abortPending()
+      try await signatures.cancelPending()
       let got10 = try await signatures.pending()
       expectNoDifference(got10, nil)
     }
@@ -186,7 +208,7 @@ extension BaseSuite {
       let keychain = try KeychainSignerTests.testSigner()
       viewer.setSigner(HeldSigner(keychain, held: continuation))
       let field = try await unsignedField(signatures)
-      let signing = Task { try await signatures.sign(SignatureSignInput(field: field)) }
+      let signing = Task { try await signatures.sign(try signInput(field)) }
       var iterator = held.makeAsyncIterator()
       let (message, completion) = try #require(await iterator.next())
       // The signer has not answered, and the viewer still serves calls.
@@ -203,7 +225,7 @@ extension BaseSuite {
       let signer = try KeychainSignerTests.testSigner()
       let (_, _, signatures) = try await opened("unsigned_sigfield")
       let field = try await unsignedField(signatures)
-      let done = try await signatures.sign(SignatureSignInput(field: field), with: signer)
+      let done = try await signatures.sign(try signInput(field), with: signer)
       expectNoDifference(done.status, .completed)
     }
 
@@ -257,7 +279,7 @@ extension BaseSuite {
     @Test func signCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, signatures) = try await opened("unsigned_sigfield")
       let field = try await unsignedField(signatures)
-      try await cancels(signatures) { try await signatures.sign(SignatureSignInput(field: field)) }
+      try await cancels(signatures) { try await signatures.sign(try signInput(field)) }
     }
 
     @Test func prepareSignatureCancelsWhenTheTaskIsCancelled() async throws {
@@ -271,9 +293,9 @@ extension BaseSuite {
       try await cancels(signatures) { try? await signatures.completeSignature("none", cms: Data([0x30, 0])) }
     }
 
-    @Test func abortPendingCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func cancelPendingCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, signatures) = try await opened("unsigned_sigfield")
-      try await cancels(signatures) { try await signatures.abortPending() }
+      try await cancels(signatures) { try await signatures.cancelPending() }
     }
 
     @Test func fillCancelsWhenTheTaskIsCancelled() async throws {

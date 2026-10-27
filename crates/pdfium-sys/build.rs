@@ -15,7 +15,7 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed=wrapper.h");
-    // wrapper.h #includes 30 headers under here, populated by the runtime
+    // wrapper.h #includes 45 headers under here, populated by the runtime
     // package's fetch script. A directory path is enough: Cargo walks it.
     println!("cargo:rerun-if-changed={}", include.display());
     // lib_root() and fork_target() read these directly. Without tracking them,

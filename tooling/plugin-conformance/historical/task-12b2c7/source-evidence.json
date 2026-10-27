@@ -1,0 +1,64 @@
+{
+  "base": "7a9d07f4da2414d743edba67c66eb9fd1919e7fe",
+  "commits": {
+    "onDemand": "3ea7cb1f3e5b11e1e75f1f4649fae4f07004e3fa",
+    "customSplit": "a4b8259f74637c2d096fbb4d88fa5009dcb82ebf",
+    "mirrorOwnership": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411",
+    "capabilityVocabulary": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+  },
+  "currentOwners": [
+    {
+      "path": "packages/plugin/metadata/src/controller.ts",
+      "sha256": "d62ffdd8d6ae538a8f6744ebd74e5a62ffa30d403d763276e5854b9b7b85a443"
+    },
+    {
+      "path": "packages/plugin/metadata/src/contract.ts",
+      "sha256": "352a7efbac0ab759a79195c0209216764186e5e8a5ed886a2ef2491785200804"
+    },
+    {
+      "path": "packages/plugin/metadata/src/model.ts",
+      "sha256": "b34fc936374a9d148f8a21b28872782f2c125b760f69cc0889ab96e1a159c962"
+    },
+    {
+      "path": "packages/engine/core/src/dto/DocumentMetadata.ts",
+      "sha256": "39fbc64df7e571802d670fb7363952a52d6613c40dd1099dd4ca97ef281a063a"
+    },
+    {
+      "path": "packages/engine/core/src/dto/MetadataPatch.ts",
+      "sha256": "0b024923d153ec2fcdd93d920c076eab8bfa69d9e613b7d6d7adc7eeabc61b26"
+    },
+    {
+      "path": "packages/engine/core/src/engine/MetadataService.ts",
+      "sha256": "ed95c0358ee9a1a9dfa2a7afc0796253c335a544dbc6a0afa9353f0bbefea653"
+    },
+    {
+      "path": "packages/engine/core/src/engine/CustomMetadataService.ts",
+      "sha256": "3aec09c8899448e66ff008d396f5a48214b659174bb6af446e97670a99caac7b"
+    },
+    {
+      "path": "packages/engine/core/src/events/DocumentEvent.ts",
+      "sha256": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57"
+    },
+    {
+      "path": "packages/core/main/src/mirror.ts",
+      "sha256": "eb1dc941fb0fc5907a845a635437038e50608fcca50d96610c05ab08b4f8e8f8"
+    },
+    {
+      "path": "packages/core/main/src/errors.ts",
+      "sha256": "bc7012fde188e512fc7e24cf8e9aa828e9c5aff37171300b57c67d508b13b0fe"
+    },
+    {
+      "path": "packages/engine/core/src/auth/scope/errors.ts",
+      "sha256": "39374aef81237ee3b569fbf0ea3c071af240d69d1dc6373f37ed6e451dde3abc"
+    }
+  ],
+  "rules": {
+    "lazy": "controller.ts onDemand:true / ensureLoaded; 3ea7cb1f3 adds explicit load to both mirrors",
+    "split": "a4b8259f7 splits custom keys and replaces JSON custom comparison with shallow union of keys",
+    "loads": "controller changed cause=load emits onResynced only; confirmed events emit onUpdated",
+    "refresh": "core mirror.ts refresh sets loadAgain when running; ensureLoaded returns running without requesting re-read",
+    "errors": "toPluginError maps Forbidden code and details.required; class name alone is not a permission error",
+    "lifetime": "guarded service and ctx.cancellable reject writes on close; mirror suppresses instance-close load failure",
+    "dto": "DocumentMetadata dates are createdAt/modifiedAt; standard/custom results include full MutationMeta, public API returns just metadata/custom"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "scenarios": 13,
+  "steps": 202,
+  "callbacks": 17,
+  "settlements": 45,
+  "rejections": 1,
+  "reports": 5,
+  "stepThrows": 1,
+  "pure": 82,
+  "pureThrows": 0,
+  "runnerExceptions": 0,
+  "unmatched": 0
+}

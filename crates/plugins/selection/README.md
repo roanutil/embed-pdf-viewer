@@ -7,15 +7,18 @@ and the `canSelect` / `canCopy` twins. Every case in the three vector files repl
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events with their origins, registry and content invalidation, permissions, the `dragThreshold` option |
-| `vectors/plugins/selection-geometry.json` | 290 | the coordinate seam, the engine-core text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceTextByChars`, the reducer |
+| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events, registry and content invalidation, permissions, the `dragThreshold` setting |
+| `vectors/plugins/selection-geometry.json` | 288 | `pageGeometryOf`, `pdfPointOf`, `pageQuadOf`, `pageTextSegmentOf`, the page-space text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceText`, the model's transitions |
 | `vectors/plugins/selection-handles.json` | 43 | `selectionHandleGeom`, the handle drag session, the handle constants |
 
-Geometry and text reach the plugin from the fake engine's response table in the `engine-core`
-shapes (`PageGeometrySnapshot` with upright and rotated runs, `PageTextSnapshot` with a char map).
+Geometry and text reach the plugin from the fake engine's response table: `page.text.layout`
+answers a `$textLayout` marker holding a page-space `PageGeometrySnapshot` (Ruling 13.2), which
+the plugin builds into its own `TextLayout`, and `page.text.get` answers a `PageTextSnapshot` with a
+char map.
 
 ## Coverage
 
+Stale since Task 13.15 re-ported the controller (the figures below were not refreshed in Task 14).
 The generators reach 1,446 of the package's 1,447 statements and 287 of its 296 branches. None of
 the 9 missing branches, nor the one statement, is reachable from the public surface:
 
@@ -31,26 +34,69 @@ the 9 missing branches, nor the one statement, is reachable from the public surf
 
 ## The downstream API
 
-Annotation markup and redaction use the `/contract/host` and `/internal` entries. Here those are
-one type, `SelectionCapability`, resolved with `SELECTION`: the public methods (`select`,
-`get_snapshot`, `read_text`, `on_changed`, `on_committed`, `list_selected_pages`, `list_segments`,
-...) and the host ones (`ensure_loaded`, `begin_gesture`, `begin_gesture_at`, `extend_to`,
-`end_gesture`, `set_highlight_visible`, ...) sit side by side. `SelectionHostCapability` is an alias
-for it. `create_selection_controller`, `create_text_select_handler`, the model and the seam
-(`geometry`) are public, as `/internal` exports them. `harness::Selection` is public so a
-downstream crate's tests can register it. Those two downstream crates are not on v3 yet and do not
-build against this one.
+Annotation markup, redaction and the viewer host use the public contract and `/contract/host`.
+Here those are one type, `SelectionCapability`, resolved with `SELECTION`: the settings
+(`get_settings`, `update_settings`, `reset_settings`, `on_settings_changed`), the public methods
+(`select`, `get_snapshot`, `is_selecting`, `read_text`, `on_changed`, `list_segments`, ...) and the
+host ones (`ensure_loaded`, `begin_gesture_at`, `end_gesture`, `set_highlight_visible`, ...) sit
+side by side. `SelectionHostCapability` is an alias for it. A public verb takes a `PageRef` or an
+index (`impl Into<PageTarget>`), as the TypeScript's `PageRef | number`. Segments, endpoints and
+anchors carry named quads (`epdf_geometry::Quad`) and page-space `Rect`s. `text_layout` is public
+for search and redaction, which build the same layout (Ruling13.15). `harness::Selection` is public
+so a downstream crate's tests can register it.
+
+### Migrating from the pre-13.15 API
+
+For annotation (Task 13.17), search (13.20), redaction (13.23), and the viewer host and `epdf-web`
+(13.33).
+
+| Old | New |
+|---|---|
+| engine path `page.geometry.read` (PDF space, `charStart`, `looseBox`, `flags`) | `page.text.layout`, answering `{"$textLayout": PageGeometrySnapshot<Page>}` or the bare page-space snapshot. 13.33 must route it in `translate.rs` and `JsDocumentHandle` |
+| engine path `page.text.read` | `page.text.get` |
+| `text_layout::{UprightGeometryRun, RotatedGeometryRun, PageGeometryGlyph{loose_box, flags, tight_box}}` | `PageGeometryRun<C>::{Upright{rect,start,font_size,glyphs}, Rotated{rect,start,rotation,ascent_flip,font_size,glyphs}}`, glyphs `{space, empty, loose, tight}`, `C` = `PageCoordinates` (default) or `PdfCoordinates` |
+| `build_page_text_layout` + `text_glyph_at`/`expand_*`/`text_glyph_quad`/`text_segments_for_range` on PDF space | `create_text_layout(PageGeometrySnapshot) -> TextLayout` with `char_at`, `word_at`/`line_at` (`TextAt` point or index, `-> Option<text_layout::TextRange{start,count}>`), `segments`, `char_quad`. The y-up functions stay public on `PageTextLayout` |
+| `slice_text_by_chars(snap, from, to)` | `slice_text(snap, start, count)` |
+| `geometry::{SelectionPageGeometry, build_selection_page_geometry, content_point_to_pdf, to_content_segment, to_content_text_quad}` | removed. `text_layout::{page_geometry_of, pdf_point_of, page_text_segment_of}` |
+| `SelectionSegment{quad: TextQuad, rect, advance}` | `PageTextSegment{quad: epdf_geometry::Quad, rect: Rect, advance: i32}` |
+| `SelectionEndpoint.glyph_quad: TextQuad`, `SelectionHandleEndpoint.glyph_quad: TextQuad` | `Quad` (`upper_left`..`lower_right`) |
+| `SnapshotPage.segments: Vec<_>` | `Rc<Vec<_>>` (iterates the same) |
+| `page_ref_json` on contract types | kernel `PageRef` serde |
+| `SelectionConfig { drag_threshold: Option<f64> }` | `{ drag_threshold, color: Option<Option<String>>, handles: Option<SelectionHandleConfig> }`, `to_json`/`from_json`. New `SelectionSettings`, `selection_defaults()`, `SelectionSettingsChanged`, and `get_settings`/`update_settings`/`reset_settings`/`on_settings_changed` |
+| `ChangeOrigin`, `ChangeTrigger`, `.origin` on changed and cleared events | removed. `SelectionChangedEvent{range, pages}`, `SelectionClearedEvent{}` |
+| `is_gesture_active()` | `is_selecting()` |
+| `select_page`, `select_word_at`, `select_line_at`, `extend_to`, `list_segments`, `list_rects` take `PageRef` | take `impl Into<PageTarget>` (`PageRef` or `usize`; `PageTarget::Index(f64)`) |
+| `GlyphPointer`, `SelectionAction`, `reduce_selection`, `SelectionState.{loaded, gesture_active}` | `GlyphPosition`; `model::{set_selection, clear_selection, set_highlight_hidden, set_selecting, content_changed_pages_of}`; `SelectionState{selection, segments, highlight_hidden, selecting}` |
+| `create_selection_controller` (pub) | crate-private |
+| `TextSelectHandlerOptions{drag_threshold: Option<f64>}` | `Option<Rc<dyn Fn() -> f64>>` |
+| new | `selection_state`/`SelectionStateView`, `SelectionHandleEndpoints`, `selection_handle_endpoints_of`, `arm_selection_handle`/`ArmedSelectionHandle`, `SelectionHandleStage`/`selection_handle_view_of` |
+| ffi `SelectionChangeTrigger`, `.trigger`, `SelectionClearedEvent`, `is_gesture_active` | removed; `SelectionEvent::Cleared` is a unit variant; `is_selecting`. Quads map onto `epdf_ffi::TextQuad` through `quad()` until 13.33 renames the mirror |
+
+Known call sites: `annotation/src/tools/markup_bridge.rs:43-46` and `annotation/src/write/markup.rs:102-130` (segment quads become `Quad`), `redaction/src/write/marks.rs:78-97` (only `has_selection`, unchanged), `epdf-viewer-host/tests/translate.rs:2657` (uses the removed `UprightGeometryRun` and `char_start`), `epdf-viewer-host/src/lib.rs:440` and the ffi handle, and `epdf-web/src/adapters.rs:26`. Search (13.20) and redaction (13.23) build the same layout from `epdf_plugin_selection::text_layout` (Ruling13.15).
 
 ## Where the port differs in shape
 
-`text_layout` is a second transcription of `engine-core`'s `text/layout.ts` and the
-`sliceTextByChars` half of `text/charmap.ts`. That is still true under v3, and for the same reason:
-`crates/epdf-engine` has the first copy in `src/features/text/layout.rs`, and that crate depends on
-`pdfium` unconditionally, which the plugin layer must not link. The cost is two Rust copies of one
-algorithm to keep in step. `selection-geometry.json` pins this one against the TypeScript,
-including every run variant (rotated, mirrored, sheared, all-empty, RTL). Glyph indices and range
-bounds are `i64`, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and `select`
-accepts a negative start.
+`text_layout` is a second transcription of `engine-core`'s `text/layout.ts`, its page-space
+wrapper `createTextLayout` (`pageSpace/text.ts`) and `sliceText` (`text/charmap.ts`). The first is
+`crates/epdf-engine`'s (`src/features/text/layout.rs`, `src/page_space/text.rs`), and that crate
+links PDFium, which the plugins' wasm32 build must not (Ruling13.15, the same call as
+`annotation-core`'s `src/engine` and `form-core`). The cost is two copies of one algorithm to keep
+in step. Two things hold them there: `selection-geometry.json` pins this copy against the
+TypeScript, and `tests/engine_cross_check.rs` runs every page-space layout the selection vectors
+carry, plus a shared-edge tie, empty text and rotated and mirrored runs, through both copies on
+native hosts and asserts they agree within the vectors' one part in 10^12. The shared-edge
+tie-break (`dx + dy < best - EDGE_EPSILON`, `text/layout.ts:362`) is in both. The engine is a
+dev-dependency gated to non-wasm32 targets, so
+`cargo tree -p epdf-web --target wasm32-unknown-unknown -e normal -i pdfium-sys` still prints
+nothing.
+
+The copies differ in one place, on input PDFium never produces. Glyph indices and range bounds
+are `i64` here, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and a caller
+can start a range before the page. Runs whose `start`s don't tile the glyphs are read without
+indexing past them in both copies (S2 here, the engine's since Task 14.3), where the TypeScript
+reads `undefined` and throws a `TypeError`. The cross-check compares the vector layouts
+`rotated-all-empty` and `char-start-past-the-glyphs` like the rest and pins that they are the two
+that don't tile.
 
 `read_text_in_range` slices UTF-16 code units, as `String.prototype.slice` does, so a
 supplementary-plane character behind a char map comes out whole. Its page reads mirror the
@@ -62,9 +108,15 @@ The selection writes return `Result`. `select_word_at`, `select_line_at`, `exten
 `can_select()` has answered true, so it drops those `Result`s. The `SelectionHandleTarget` impl on
 the capability drops `extend_to`'s for the same reason: `begin_gesture_at` answers false first.
 
-A page whose crop box has no area has no selection geometry here. The TypeScript's `pageGeometry`
-throws on it, and the throw would surface from `isOverText`, a hover, or `select`. No vector opens
-such a page.
+A `page.text.layout` answer that is neither a `$textLayout` marker nor a page-space snapshot reads
+as a page with no geometry: the page is loaded and nothing on it hits. The TypeScript would hold
+whatever the engine answered and throw when a method is called on it. No vector answers one.
+
+The typed settings API only writes well-typed members, but a host can write any JSON through the
+kernel's settings store (`kernel.settings_of`). A member of the wrong type reads as its default in
+`get_settings` and `on_settings_changed`, where the TypeScript hands the value back, and the
+change listener's event reports `[selection] malformed settings` once its listeners have run
+(`a_malformed_setting_reads_as_its_default_and_is_reported` in `tests/api.rs`).
 
 The two TypeScript tokens (the public one from the package root, the host one from
 `/contract/host`) are the same runtime object with two static types. Rust has one token and one
@@ -72,6 +124,7 @@ type.
 
 ## Mutation testing
 
+Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 1 of 1 viable mutant (1 unviable).
 `scripts/mutants.sh -p epdf-plugin-selection --test-package epdf-plugin-selection --file <file>`,
 file by file over every module but `harness.rs`, catches 699 of 716 viable mutants (693 caught, 6
 timeouts; 79 unviable). Sixteen of those are killed by new cases, each checked by applying the

@@ -1,0 +1,45 @@
+wrote crates/plugins/acrojs/prelude.js
+(node:19016) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✖ script host constructs and boots exactly once across transactions (615.626042ms)
+✖ current snapshot has complete fields and script identity uses current security claims (0.153708ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1331.762542
+
+✖ failing tests:
+
+test at test/acrojs-current.test.ts:1:398
+✖ script host constructs and boots exactly once across transactions (615.626042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/acrojs-current.test.ts:13:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/acrojs-current.test.ts:1:957
+✖ current snapshot has complete fields and script identity uses current security claims (0.153708ms)
+  TypeError [Error]: Cannot read properties of undefined (reading 'map')
+      at Object.scriptFieldsFromSnapshot (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/packages/core/acrojs/src/input.ts:48:22)
+      at invoke (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/acrojs-current.test.ts:24:46)
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/acrojs-current.test.ts:26:20)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)

@@ -8,12 +8,15 @@
 //! count that is not whole, an index past `u32`, a page row without its
 //! size) is an `invalid-state` error, never a guess.
 //!
+//! A page argument is a `PageRef`; the `_index` twins take a display index
+//! (the TypeScript's `PageRef | number`). Motion runs on the kernel's host
+//! clock: a host that paints gives the kernel frames, and without them every
+//! navigation jumps.
+//!
 //! Every method hops to the kernel thread. `set_camera`, `pan_by`,
 //! `scroll_by` and `zoom_around` fire without a reply; their errors go to
 //! the kernel's report sink.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -25,7 +28,7 @@ use epdf_ffi::{
 };
 use epdf_geometry::PageRotation;
 use epdf_kernel::error::{code, plugin_error};
-use epdf_kernel::{Error, Unsubscribe, rt};
+use epdf_kernel::{Error, Unsubscribe};
 use epdf_plugin_interaction::{InteractionCapability, RegisterHandlerOptions};
 use serde::Deserialize;
 use serde_json::Value;
@@ -33,12 +36,18 @@ use serde_json::Value;
 use crate::settings::SettingKey;
 use crate::{
     ArrivalAlignValue, ArrivalAlignment, BoxQuery, ColumnsPolicy, FlowMode, Gap, GestureOptions,
-    GoToOptions, GridColumns, Keep, LayoutKind, Orientation, PageHit, PartialArrivalAlignment,
-    PartialSettings, ResponsiveRule, RevealAnchor, RevealAnchorValue, RevealOptions, RevealWord,
-    RevealZoom, RevealZoomWord, RuleWhen, Scheduler, ScrollBehaviorKind, ScrollHandlerOptions,
-    StageCapability, StageZoomMode as CoreZoomMode, Viewpoint, VisiblePage, ZoomTarget,
-    ZoomToOptions, create_scroll_handler,
+    GoToDestinationOptions, GoToOptions, GridColumns, Keep, LayoutKind, Orientation,
+    PageDestination, PageHit, PageTarget, PartialArrivalAlignment, PartialPageFrame,
+    ResponsiveRule, RevealAnchor, RevealAnchorValue, RevealOptions, RevealWord, RevealZoom,
+    RevealZoomWord, RuleWhen, ScrollBehaviorKind, ScrollHandlerOptions, StageCapability,
+    StageZoomMode as CoreZoomMode, Viewpoint, VisiblePage, ZoomTarget, ZoomToOptions,
+    create_scroll_handler,
 };
+
+/// A page argument by its ref.
+fn page_target(page: PageRef) -> PageTarget {
+    PageTarget::Ref(page.into())
+}
 
 fn invalid(what: String) -> Error {
     Error::named("InvalidState", format!("[stage] {what}")).with("code", "invalid-state")
@@ -101,12 +110,15 @@ pub enum StageSettingKey {
     ViewRotation,
     Zoom,
     ScrollBehavior,
+    Interaction,
+    PanFallback,
+    ZoomGestures,
     ViewUnitsPerPoint,
 }
 mirror_enum!(StageSettingKey <=> SettingKey {
     Flow, Layout, Spread, Sizing, Columns, Bounded, Padding, Gap, PageFrame, Direction,
     FitAlign, ArrivalAlign, ZoomAlign, AnchorAlign, ViewRotation, Zoom, ScrollBehavior,
-    ViewUnitsPerPoint,
+    Interaction, PanFallback, ZoomGestures, ViewUnitsPerPoint,
 });
 
 /// Grid columns: about the square root of the item count, as many as fit,
@@ -246,6 +258,12 @@ pub struct StageSettings {
     pub view_rotation: f64,
     pub zoom: ZoomSpec,
     pub scroll_behavior: StageScrollBehavior,
+    /// Whether this view's pointer input reaches the interaction hub.
+    pub interaction: bool,
+    /// With `interaction`: a drag between pages pans whatever the tool.
+    pub pan_fallback: bool,
+    /// Whether a pinch or a zoom wheel zooms this view.
+    pub zoom_gestures: bool,
     pub view_units_per_point: f64,
 }
 
@@ -270,6 +288,9 @@ impl TryFrom<crate::StageSettings> for StageSettings {
             view_rotation: s.view_rotation.0,
             zoom: s.zoom.into(),
             scroll_behavior: s.scroll_behavior.into(),
+            interaction: s.interaction,
+            pan_fallback: s.pan_fallback,
+            zoom_gestures: s.zoom_gestures,
             view_units_per_point: s.view_units_per_point,
         })
     }
@@ -296,6 +317,9 @@ impl TryFrom<StageSettings> for crate::StageSettings {
             view_rotation: PageRotation(s.view_rotation),
             zoom: s.zoom.into(),
             scroll_behavior: s.scroll_behavior.into(),
+            interaction: s.interaction,
+            pan_fallback: s.pan_fallback,
+            zoom_gestures: s.zoom_gestures,
             view_units_per_point: s.view_units_per_point,
         })
     }
@@ -339,13 +363,19 @@ pub struct StageSettingsPatch {
     #[uniffi(default = None)]
     pub scroll_behavior: Option<StageScrollBehavior>,
     #[uniffi(default = None)]
+    pub interaction: Option<bool>,
+    #[uniffi(default = None)]
+    pub pan_fallback: Option<bool>,
+    #[uniffi(default = None)]
+    pub zoom_gestures: Option<bool>,
+    #[uniffi(default = None)]
     pub view_units_per_point: Option<f64>,
 }
 
-impl TryFrom<StageSettingsPatch> for PartialSettings {
+impl TryFrom<StageSettingsPatch> for crate::StageSettingsPatch {
     type Error = Error;
     fn try_from(p: StageSettingsPatch) -> Result<Self, Error> {
-        Ok(PartialSettings {
+        Ok(crate::StageSettingsPatch {
             flow: p.flow.map(Into::into),
             layout: p.layout.map(Into::into),
             spread: p.spread.map(Into::into),
@@ -354,7 +384,9 @@ impl TryFrom<StageSettingsPatch> for PartialSettings {
             bounded: p.bounded,
             padding: p.padding,
             gap: p.gap.map(Into::into),
-            page_frame: p.page_frame.map(Into::into),
+            page_frame: p
+                .page_frame
+                .map(|frame| PartialPageFrame::from(epdf_geometry::PageFrame::from(frame))),
             direction: p.direction.map(Into::into),
             fit_align: p.fit_align.map(Into::into),
             arrival_align: p.arrival_align.map(Into::into),
@@ -363,6 +395,9 @@ impl TryFrom<StageSettingsPatch> for PartialSettings {
             view_rotation: p.view_rotation.map(PageRotation),
             zoom: p.zoom.map(Into::into),
             scroll_behavior: p.scroll_behavior.map(Into::into),
+            interaction: p.interaction,
+            pan_fallback: p.pan_fallback,
+            zoom_gestures: p.zoom_gestures,
             view_units_per_point: p.view_units_per_point,
         })
     }
@@ -412,7 +447,7 @@ impl TryFrom<StageResponsiveRule> for ResponsiveRule {
         Ok(ResponsiveRule {
             name: r.name,
             when: RuleWhen::Query(r.when.into()),
-            settings: r.settings.map(PartialSettings::try_from).transpose()?,
+            settings: r.settings.map(crate::StageSettingsPatch::try_from).transpose()?,
         })
     }
 }
@@ -766,8 +801,8 @@ struct Row {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct RowRef {
+    #[serde(rename = "objectNumber")]
     page_object_number: u32,
 }
 
@@ -794,60 +829,82 @@ fn page_info(row: &Value) -> Result<PageInfo, Error> {
 }
 
 /// `stagePlugin({ config })`'s options, as `ViewerConfig` carries them.
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+/// Tweens and flings run on the kernel's host clock; a host clock without
+/// frames makes every navigation jump.
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct StageConfig {
     #[uniffi(default = None)]
     pub settings: Option<StageSettingsPatch>,
     /// `None` keeps the stage's default rules; an empty list opts out.
     #[uniffi(default = None)]
     pub responsive: Option<Vec<StageResponsiveRule>>,
-    /// Tweens and flings on the kernel's 16 ms timer. `false` makes every
-    /// navigation jump.
-    #[uniffi(default = true)]
-    pub frames: bool,
-}
-
-impl Default for StageConfig {
-    fn default() -> Self {
-        StageConfig { settings: None, responsive: None, frames: true }
-    }
-}
-
-/// The host frame seam on the kernel's clock: each frame is a 16 ms timer,
-/// as render's `request_frame` falls back to. Lives on the kernel thread.
-#[derive(Default)]
-pub struct KernelFrames {
-    next: std::cell::Cell<u64>,
-    timers: RefCell<HashMap<u64, rt::TimerId>>,
-}
-
-impl Scheduler for KernelFrames {
-    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64 {
-        let handle = self.next.get() + 1;
-        self.next.set(handle);
-        let timer = rt::set_timeout(16.0, move || callback(rt::now()));
-        self.timers.borrow_mut().insert(handle, timer);
-        handle
-    }
-
-    fn caf(&self, handle: u64) {
-        if let Some(timer) = self.timers.borrow_mut().remove(&handle) {
-            rt::clear_timer(timer);
-        }
-    }
 }
 
 impl StageConfig {
-    /// On the kernel thread: the scheduler is an `Rc`.
+    /// On the kernel thread: a rule is an `Rc`.
     pub fn into_config(self) -> Result<crate::StageConfig, Error> {
         Ok(crate::StageConfig {
-            settings: self.settings.map(PartialSettings::try_from).transpose()?.unwrap_or_default(),
-            scheduler: self.frames.then(|| Rc::new(KernelFrames::default()) as Rc<dyn Scheduler>),
+            settings: self
+                .settings
+                .map(crate::StageSettingsPatch::try_from)
+                .transpose()?
+                .unwrap_or_default(),
             responsive: self
                 .responsive
                 .map(|rules| rules.into_iter().map(ResponsiveRule::try_from).collect())
                 .transpose()?,
         })
+    }
+}
+
+/// A destination in page space (`PageDestination`): the page it goes to
+/// and where on it, from the page's top-left, y down. `None` keeps the
+/// viewer's current value; an `xyz` zoom of 0 means the same.
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Enum)]
+pub enum StagePageDestination {
+    Xyz { page: PageRef, x: Option<f64>, y: Option<f64>, zoom: Option<f64> },
+    Fit { page: PageRef },
+    FitH { page: PageRef, y: Option<f64> },
+    FitV { page: PageRef, x: Option<f64> },
+    FitR { page: PageRef, x: f64, y: f64, width: f64, height: f64 },
+    FitB { page: PageRef },
+    FitBh { page: PageRef, y: Option<f64> },
+    FitBv { page: PageRef, x: Option<f64> },
+}
+
+impl From<StagePageDestination> for PageDestination {
+    fn from(d: StagePageDestination) -> Self {
+        use StagePageDestination as D;
+        match d {
+            D::Xyz { page, x, y, zoom } => PageDestination::Xyz { page: page.into(), x, y, zoom },
+            D::Fit { page } => PageDestination::Fit { page: page.into() },
+            D::FitH { page, y } => PageDestination::FitH { page: page.into(), y },
+            D::FitV { page, x } => PageDestination::FitV { page: page.into(), x },
+            D::FitR { page, x, y, width, height } => {
+                PageDestination::FitR { page: page.into(), x, y, width, height }
+            }
+            D::FitB { page } => PageDestination::FitB { page: page.into() },
+            D::FitBh { page, y } => PageDestination::FitBh { page: page.into(), y },
+            D::FitBv { page, x } => PageDestination::FitBv { page: page.into(), x },
+        }
+    }
+}
+
+impl From<PageDestination> for StagePageDestination {
+    fn from(d: PageDestination) -> Self {
+        use StagePageDestination as D;
+        match d {
+            PageDestination::Xyz { page, x, y, zoom } => D::Xyz { page: page.into(), x, y, zoom },
+            PageDestination::Fit { page } => D::Fit { page: page.into() },
+            PageDestination::FitH { page, y } => D::FitH { page: page.into(), y },
+            PageDestination::FitV { page, x } => D::FitV { page: page.into(), x },
+            PageDestination::FitR { page, x, y, width, height } => {
+                D::FitR { page: page.into(), x, y, width, height }
+            }
+            PageDestination::FitB { page } => D::FitB { page: page.into() },
+            PageDestination::FitBh { page, y } => D::FitBh { page: page.into(), y },
+            PageDestination::FitBv { page, x } => D::FitBv { page: page.into(), x },
+        }
     }
 }
 
@@ -945,15 +1002,25 @@ impl StageHandle {
     }
 
     pub async fn is_page_visible(&self, page: PageRef) -> Result<bool, ViewerError> {
-        self.read(move |c| Ok(c.is_page_visible(page.into()))).await
+        self.read(move |c| Ok(c.is_page_visible(page_target(page)))).await
     }
 
     pub async fn current_page_index(&self) -> Result<u32, ViewerError> {
         self.read(|c| to_u32(c.get_current_page_index(), "the current page index")).await
     }
 
-    pub async fn current_page(&self) -> Result<Option<PageInfo>, ViewerError> {
-        self.read(|c| c.get_current_page().as_ref().map(page_info).transpose()).await
+    pub async fn current_page(&self) -> Result<Option<PageRef>, ViewerError> {
+        self.read(|c| Ok(c.get_current_page().map(Into::into))).await
+    }
+
+    pub async fn page_count(&self) -> Result<u32, ViewerError> {
+        self.read(|c| to_u32(c.get_page_count(), "the page count")).await
+    }
+
+    /// Where the view is, as a destination; `None` before a page is on
+    /// screen.
+    pub async fn current_destination(&self) -> Result<Option<StagePageDestination>, ViewerError> {
+        self.read(|c| Ok(c.get_current_destination().map(Into::into))).await
     }
 
     /// The pages of the current item (two in a spread).
@@ -963,7 +1030,7 @@ impl StageHandle {
 
     pub async fn page_frame(&self, page: PageRef) -> Result<Option<StageVisiblePage>, ViewerError> {
         self.read(move |c| {
-            c.get_page_frame(page.into()).as_ref().map(StageVisiblePage::try_from).transpose()
+            c.get_page_frame(page_target(page)).as_ref().map(StageVisiblePage::try_from).transpose()
         })
         .await
     }
@@ -977,7 +1044,8 @@ impl StageHandle {
         page: PageRef,
         point: Point,
     ) -> Result<Option<Point>, ViewerError> {
-        self.read(move |c| Ok(c.viewport_to_page(page.into(), point.into()).map(Into::into))).await
+        self.read(move |c| Ok(c.viewport_to_page(page_target(page), point.into()).map(Into::into)))
+            .await
     }
 
     pub async fn page_to_world(
@@ -985,7 +1053,8 @@ impl StageHandle {
         page: PageRef,
         point: Point,
     ) -> Result<Option<Point>, ViewerError> {
-        self.read(move |c| Ok(c.page_to_world(page.into(), point.into()).map(Into::into))).await
+        self.read(move |c| Ok(c.page_to_world(page_target(page), point.into()).map(Into::into)))
+            .await
     }
 
     pub async fn page_rect_to_viewport(
@@ -993,8 +1062,10 @@ impl StageHandle {
         page: PageRef,
         rect: Rect,
     ) -> Result<Option<Rect>, ViewerError> {
-        self.read(move |c| Ok(c.page_rect_to_viewport(page.into(), rect.into()).map(Into::into)))
-            .await
+        self.read(move |c| {
+            Ok(c.page_rect_to_viewport(page_target(page), rect.into()).map(Into::into))
+        })
+        .await
     }
 
     pub async fn world_to_viewport(&self, point: Point) -> Result<Point, ViewerError> {
@@ -1010,7 +1081,8 @@ impl StageHandle {
         page: PageRef,
         point: Point,
     ) -> Result<Option<Point>, ViewerError> {
-        self.read(move |c| Ok(c.page_to_viewport(page.into(), point.into()).map(Into::into))).await
+        self.read(move |c| Ok(c.page_to_viewport(page_target(page), point.into()).map(Into::into)))
+            .await
     }
 
     /// Degrees clockwise.
@@ -1096,7 +1168,7 @@ impl StageHandle {
         options: Option<StageGoToOptions>,
     ) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.go_to_page_index(index as isize, options.map(Into::into));
+            c.go_to_page(index as usize, options.map(Into::into));
             Ok(())
         })
         .await
@@ -1108,7 +1180,7 @@ impl StageHandle {
         options: Option<StageGoToOptions>,
     ) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.go_to_page(page.into(), options.map(Into::into));
+            c.go_to_page(page_target(page), options.map(Into::into));
             Ok(())
         })
         .await
@@ -1177,20 +1249,24 @@ impl StageHandle {
         options: Option<StageRevealOptions>,
     ) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.reveal(page.into(), options.map(Into::into));
+            c.reveal(page_target(page), options.map(Into::into));
             Ok(())
         })
         .await
     }
 
-    pub async fn reveal_rect(
+    /// Go where a destination says. It may change the zoom, as the
+    /// destination asks.
+    pub async fn go_to_destination(
         &self,
-        page: PageRef,
-        rect: Rect,
-        options: Option<StageRevealOptions>,
+        destination: StagePageDestination,
+        behavior: Option<StageScrollBehavior>,
     ) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.reveal_rect(page.into(), rect.into(), options.map(Into::into));
+            c.go_to_destination(
+                &destination.into(),
+                Some(GoToDestinationOptions { behavior: behavior.map(Into::into) }),
+            );
             Ok(())
         })
         .await
@@ -1202,7 +1278,7 @@ impl StageHandle {
         options: Option<StageRevealOptions>,
     ) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.reveal_index(index as isize, options.map(Into::into));
+            c.reveal(index as usize, options.map(Into::into));
             Ok(())
         })
         .await
@@ -1242,25 +1318,9 @@ impl StageHandle {
         self.read(|c| Ok(c.list_active_rules())).await
     }
 
-    pub async fn set_flow(&self, flow: StageFlow) -> Result<(), ViewerError> {
-        self.read(move |c| c.set_flow(flow.into())).await
-    }
-
-    pub async fn set_layout(&self, layout: StageLayout) -> Result<(), ViewerError> {
-        self.read(move |c| c.set_layout(layout.into())).await
-    }
-
-    pub async fn set_spread(&self, spread: StageSpreadMode) -> Result<(), ViewerError> {
-        self.read(move |c| c.set_spread(spread.into())).await
-    }
-
-    pub async fn set_sizing(&self, sizing: StageSizingMode) -> Result<(), ViewerError> {
-        self.read(move |c| c.set_sizing(sizing.into())).await
-    }
-
     pub async fn apply_view_state(&self, view: StageViewState) -> Result<(), ViewerError> {
         self.read(move |c| {
-            c.apply_view_state(view.try_into()?);
+            c.apply_view_state(crate::StageViewState::try_from(view)?);
             Ok(())
         })
         .await
@@ -1430,7 +1490,7 @@ impl StageHandle {
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StagePageChangedEvent {
-    pub page: Option<PageInfo>,
+    pub page: Option<PageRef>,
     pub page_index: u32,
     pub previous_page_index: u32,
 }
@@ -1465,6 +1525,8 @@ pub struct StageViewportChangedEvent {
     pub size: Size,
 }
 
+// One event per call; boxing a variant would change the foreign enum.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum StageEvent {
     PageChanged { event: StagePageChangedEvent },
@@ -1507,7 +1569,7 @@ impl StageHandle {
                     let offs: Vec<Unsubscribe> = vec![
                         relay!(on_page_changed, |e| StageEvent::PageChanged {
                             event: StagePageChangedEvent {
-                                page: e.page.as_ref().map(page_info).transpose()?,
+                                page: e.page.map(Into::into),
                                 page_index: to_u32(e.page_index, "a page index")?,
                                 previous_page_index: to_u32(e.previous_page_index, "a page index")?,
                             },

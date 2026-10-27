@@ -1,0 +1,46 @@
+[
+  {
+    "name": "no-shell-without-a-document",
+    "step": 0,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" requires an active document."
+      }
+    }
+  },
+  {
+    "name": "no-shell-without-a-document",
+    "step": 2,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" requires an active document."
+      }
+    }
+  },
+  {
+    "name": "no-shell-without-a-document",
+    "step": 3,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: no document \"zzz\"."
+      }
+    }
+  },
+  {
+    "name": "per-document-state",
+    "step": 19,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: no document \"a\"."
+      }
+    }
+  }
+]

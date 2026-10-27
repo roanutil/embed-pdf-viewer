@@ -72,21 +72,21 @@ impl RevisionAuthority {
 
     /// Strict equality against what the store holds.
     ///
-    /// Reports [`EngineErrorCode::InvalidReference`] rather than silently
+    /// Reports `InvalidArg` rather than silently
     /// retargeting. A stale token means the caller is addressing a row that
     /// may no longer be the row they meant, and guessing which one they want
     /// is how an edit lands on the wrong annotation.
     pub fn validate(&self, token: &RevisionToken) -> Result<(), EngineError> {
         if token.doc_session_id != self.doc_session_id {
             return Err(EngineError::with_message(
-                EngineErrorCode::InvalidReference,
+                EngineErrorCode::InvalidArg,
                 "revision token belongs to a different document session",
             ));
         }
         let current = self.token(token.page_object_number);
         if &current != token {
             return Err(EngineError::with_message(
-                EngineErrorCode::InvalidReference,
+                EngineErrorCode::InvalidArg,
                 format!(
                     "revision token is stale: page {} is at generation {}, token carries {}",
                     token.page_object_number, current.generation, token.generation,
@@ -155,7 +155,7 @@ mod tests {
         authority.validate(&after).expect("the new token");
         assert_eq!(
             authority.validate(&before).expect_err("the old token").code,
-            EngineErrorCode::InvalidReference,
+            EngineErrorCode::InvalidArg,
         );
     }
 
@@ -176,7 +176,7 @@ mod tests {
         let foreign = RevisionToken::new("session-1", page(3), 0);
         assert_eq!(
             authority.validate(&foreign).expect_err("a foreign token").code,
-            EngineErrorCode::InvalidReference,
+            EngineErrorCode::InvalidArg,
         );
     }
 

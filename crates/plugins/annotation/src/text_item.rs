@@ -1,61 +1,65 @@
-//! `text-item.ts`: the core's geometry-only `textBoxes` joined with the
-//! DTO-derived font, the rich paragraphs and the CSS into render-ready
-//! [`TextItem`]s.
+//! `text-item.ts`: the free-text presentation projection, the core's
+//! geometry-only `textBoxes` joined with the font and CSS into render-ready
+//! `TextItem`s.
 
-use epdf_annotation_core::richtext::{RichTextParagraph, RichTextRun};
-use epdf_annotation_core::{
-    Model, PageRef, ViewEnv, initial_text_style, text_boxes, text_plate_inset,
-};
-use serde_json::json;
+use epdf_annotation_core::font_css::css_font_family_for_font;
+use epdf_annotation_core::object::Json;
+use epdf_annotation_core::props::initial_text_style;
+use epdf_annotation_core::record::{style_of, text_of};
+use epdf_annotation_core::shapes::text_box::text_plate_inset;
+use epdf_annotation_core::types::{Model, PageRef, ViewEnv};
+use epdf_annotation_core::view::text_boxes;
+use serde_json::{Map, Value, json};
 
-use crate::contract::{RichTextParagraphs, TextItem, TextItemCss};
-use crate::rich_text::{css_font_family_for_font, rich_doc_of, strip_body_defaults};
-use crate::value::{get, truthy_num};
+use crate::js::num;
+use crate::rich_text::{rich_doc_of, strip_body_defaults};
 
-/// `buildTextItems(m, page, view)`.
-pub fn build_text_items(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Vec<TextItem> {
-    text_boxes(m, page, view)
+/// `buildTextItems(model, page, view)`.
+pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<Value> {
+    text_boxes(model, page, view)
         .into_iter()
         .map(|tb| {
-            let a = m.by_id.get(&tb.id);
-            let t = a.and_then(|a| a.text.clone()).unwrap_or_else(initial_text_style);
-            let sw = a.map_or(0.0, |a| a.style.stroke_width);
-            let contents = a
-                .and_then(|a| a.data.as_ref())
-                .and_then(|d| get(d, "contents"))
-                .filter(|c| !c.is_null())
+            let record = model.by_id.get(&tb.id);
+            let style = record.and_then(|r| text_of(&r.annotation)).unwrap_or_else(initial_text_style);
+            let sw = record.map_or(0.0, |r| style_of(&r.annotation).stroke_width);
+            let doc = record.map(|r| rich_doc_of(&r.annotation, None));
+            let paragraphs = match &doc {
+                Some(doc) => Value::Array(strip_body_defaults(&doc.paragraphs, &doc.body)),
+                None => json!([{ "runs": [{ "text": "" }] }]),
+            };
+            let mut item = Map::new();
+            item.insert("id".into(), json!(tb.id));
+            item.insert(
+                "ref".into(),
+                record.and_then(|r| r.annotation.get("ref").cloned()).unwrap_or(Value::Null),
+            );
+            item.insert("box".into(), tb.rect.json());
+            let contents = record
+                .and_then(|r| r.annotation.get("contents"))
+                .filter(|c| !c.is_null() && !epdf_kernel::is_undefined(c))
                 .cloned()
                 .unwrap_or_else(|| json!(""));
-            let paragraphs = match a {
-                Some(a) => {
-                    let doc = rich_doc_of(a, None);
-                    strip_body_defaults(&doc.paragraphs, &doc.body)
-                }
-                None => vec![RichTextParagraph {
-                    runs: vec![RichTextRun { text: String::new(), style: None }],
-                    props: Default::default(),
-                }],
-            };
-            let on = |f: Option<bool>| f == Some(true);
-            TextItem {
-                id: tb.id.clone(),
-                ref_: a.and_then(|a| a.ref_.clone()),
-                box_: tb.box_,
-                contents,
-                rich_text: RichTextParagraphs { paragraphs },
-                editing: tb.editing,
-                rot: tb.rot.filter(|r| truthy_num(*r)),
-                css: TextItemCss {
-                    font_family: css_font_family_for_font(&t.font_family),
-                    font_size: t.font_size,
-                    color: t.font_color,
-                    font_weight: if on(t.bold) { 700.0 } else { 400.0 },
-                    font_style: if on(t.italic) { "italic" } else { "normal" },
-                    text_decoration: if on(t.underline) { "underline" } else { "none" },
-                    align: t.text_align,
-                    padding: text_plate_inset(sw),
-                },
+            item.insert("contents".into(), contents);
+            item.insert("richText".into(), json!({ "paragraphs": paragraphs }));
+            item.insert("editing".into(), json!(tb.editing));
+            if tb.rot != 0.0 && !tb.rot.is_nan() {
+                item.insert("rot".into(), num(tb.rot));
             }
+            let family = style.font_family.as_ref().and_then(Value::as_str).unwrap_or("undefined");
+            item.insert(
+                "css".into(),
+                json!({
+                    "fontFamily": css_font_family_for_font(family),
+                    "fontSize": style.font_size.clone().unwrap_or_else(epdf_kernel::undefined),
+                    "color": style.font_color.clone().unwrap_or_else(epdf_kernel::undefined),
+                    "fontWeight": if style.bold == Some(true) { 700 } else { 400 },
+                    "fontStyle": if style.italic == Some(true) { "italic" } else { "normal" },
+                    "textDecoration": if style.underline == Some(true) { "underline" } else { "none" },
+                    "align": style.text_align.clone().unwrap_or_else(epdf_kernel::undefined),
+                    "padding": num(text_plate_inset(sw)),
+                }),
+            );
+            Value::Object(item)
         })
         .collect()
 }

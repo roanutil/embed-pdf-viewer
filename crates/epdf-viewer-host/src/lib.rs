@@ -239,8 +239,9 @@ impl ViewerHost {
                 // An open refused before the engine took the bytes (a
                 // destroyed kernel) leaves them in the table.
                 opened.on_settle(move |_| HostTable::release(bytes));
-                Ok(opened.map(move |id| {
-                    let id = id.as_str().unwrap_or_default().to_owned();
+                // `open()` resolves `{ document: DocumentInfo }`.
+                Ok(opened.map(move |opened| {
+                    let id = opened["document"]["id"].as_str().unwrap_or_default().to_owned();
                     documents.get(&id).map(DocumentInfo::from).ok_or_else(|| {
                         Error::new(format!("[epdf-viewer-host] {id} opened but is not listed"))
                     })
@@ -449,7 +450,7 @@ impl ViewerHost {
         let post = self.post.clone();
         self.call(move |s| {
             let cap = capability(&s.kernel, &epdf_plugin_link::LINK, Some(&document_id))?;
-            Ok(LinkHandle::with_report(cap, post, reporter(&s.kernel)))
+            Ok(LinkHandle::new(cap, post))
         })
         .await
     }

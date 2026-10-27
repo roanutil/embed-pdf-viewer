@@ -18,16 +18,12 @@ public typealias SelectionDirection = EmbedPDFBindings.SelectionDirection
 public typealias SelectionSnapshotPage = EmbedPDFBindings.SelectionSnapshotPage
 /// The current selection, its page geometry, and an input that can restore its range.
 public typealias SelectionSnapshot = EmbedPDFBindings.SelectionSnapshot
-/// The operation or gesture that caused a selection change.
-public typealias SelectionChangeTrigger = EmbedPDFBindings.SelectionChangeTrigger
 /// An event describing selection changes, commits, and clears.
 public typealias SelectionEvent = EmbedPDFBindings.SelectionEvent
 /// An event describing a selection range or geometry change.
 public typealias SelectionChangedEvent = EmbedPDFBindings.SelectionChangedEvent
 /// An event describing a gesture ending with a selection.
 public typealias SelectionCommittedEvent = EmbedPDFBindings.SelectionCommittedEvent
-/// An event describing a selection being cleared.
-public typealias SelectionClearedEvent = EmbedPDFBindings.SelectionClearedEvent
 
 /// A document's text selection: select by range, span, word, line or
 /// page; read its geometry and its text. Get one with
@@ -58,7 +54,7 @@ public struct SelectionCapability: Sendable {
 
   /// Select a search hit's characters.
   public func select(_ hit: SearchHit) async throws(PDFError) {
-    try await select(.span(page: hit.page, start: Int64(hit.charStart), count: Int64(hit.charCount)))
+    try await select(.span(page: hit.page, start: Int64(hit.start), count: Int64(hit.count)))
   }
 
   /// Selects text across every page of the document.
@@ -172,9 +168,9 @@ public struct SelectionCapability: Sendable {
     try await bridged { try await handle.endGesture() }
   }
 
-  /// Returns whether a selection gesture is in progress.
-  public func isGestureActive() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.isGestureActive() }
+  /// Returns whether a selecting gesture is in progress.
+  public func isSelecting() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.isSelecting() }
   }
 
   /// Changes whether selection highlights are visible without changing the selected range.

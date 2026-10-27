@@ -35,7 +35,7 @@ Select plugins in the initializer's declared argument order. Required dependenci
 | `stage: StageConfig()` | Viewport layout, camera, zoom, and navigation | None; pointer-driven stage scrolling additionally uses interaction |
 | `selection: true` | Text selection and extraction | Interaction |
 | `link: true` | Link hit areas and activation | Interaction |
-| `annotation: AnnotationConfig()` | Annotation editing and comments | Interaction |
+| `annotation: ""` | Annotation editing and comments | Interaction |
 | `form: FormConfig()` | AcroForm filling and field design | Interaction |
 | `redaction: RedactionConfig()` | Mark and apply redactions | Annotation and interaction |
 | `measurement: MeasurementConfig()` | Calibration and measurement readouts | Annotation and interaction |
@@ -47,6 +47,8 @@ Select plugins in the initializer's declared argument order. Required dependenci
 | `commands: true` | Application command registration | None |
 | `actions: ActionsConfig(...)` | PDF action dispatch and host ports | Supply ports for actions your app supports |
 | `signature: SignatureConfig()` | Signature fields, analysis, validation, and signing | Form and interaction; signing also needs a signer |
+
+The `annotation` value is settings JSON applied over the plugin's defaults; `""` keeps the defaults.
 
 Selection enables annotation markup from selected text. Redaction marking from search results additionally needs search; marking from the current selection needs selection. Those optional workflows are distinct from the base plugin dependencies.
 
@@ -61,7 +63,7 @@ func makeAnnotationWorkspace() throws -> PDFViewer {
     interaction: true,
     stage: StageConfig(),
     selection: true,
-    annotation: AnnotationConfig()
+    annotation: ""
   ))
 }
 ```

@@ -423,6 +423,7 @@ dependencies = [
 name = "epdf-acrojs"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
@@ -433,6 +434,8 @@ dependencies = [
 name = "epdf-annotation-core"
 version = "0.0.0"
 dependencies = [
+ "build-support",
+ "epdf-engine",
  "epdf-geometry",
  "epdf-kernel",
  "indexmap",
@@ -446,6 +449,7 @@ name = "epdf-engine"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-geometry",
  "epdf-signature-core",
  "getrandom 0.3.4",
  "pdfium",
@@ -474,9 +478,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-fonts"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-form-core"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-annotation-core",
+ "epdf-fonts",
+ "epdf-geometry",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-geometry"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
@@ -520,6 +550,7 @@ dependencies = [
 name = "epdf-plugin-actions"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-acrojs",
  "epdf-ffi",
  "epdf-kernel",
@@ -535,6 +566,7 @@ name = "epdf-plugin-annotation"
 version = "0.0.0"
 dependencies = [
  "async-trait",
+ "build-support",
  "epdf-acrojs",
  "epdf-annotation-core",
  "epdf-ffi",
@@ -545,6 +577,7 @@ dependencies = [
  "epdf-plugin-render",
  "epdf-plugin-selection",
  "futures",
+ "indexmap",
  "plugin-conformance",
  "serde",
  "serde_json",
@@ -552,9 +585,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-attachment"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-annotation",
+ "epdf-plugin-history",
+ "epdf-plugin-interaction",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-commands"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-i18n",
@@ -571,14 +622,18 @@ dependencies = [
 name = "epdf-plugin-form"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-acrojs",
  "epdf-annotation-core",
+ "epdf-engine",
  "epdf-ffi",
+ "epdf-form-core",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
+ "epdf-plugin-render",
  "futures",
  "indexmap",
  "plugin-conformance",
@@ -588,9 +643,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-history"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-i18n"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",
@@ -604,6 +671,7 @@ dependencies = [
 name = "epdf-plugin-interaction"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
@@ -618,6 +686,7 @@ dependencies = [
 name = "epdf-plugin-link"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",
@@ -628,7 +697,6 @@ dependencies = [
  "epdf-plugin-stage",
  "futures",
  "plugin-conformance",
- "serde",
  "serde_json",
  "uniffi",
 ]
@@ -637,6 +705,7 @@ dependencies = [
 name = "epdf-plugin-measurement"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",
@@ -654,6 +723,7 @@ dependencies = [
 name = "epdf-plugin-metadata"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",
@@ -664,9 +734,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-outline"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-history",
+ "epdf-plugin-i18n",
+ "epdf-plugin-interaction",
+ "epdf-plugin-link",
+ "epdf-plugin-selection",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-page-edit"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
@@ -681,6 +770,7 @@ dependencies = [
 name = "epdf-plugin-redaction"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",
@@ -700,6 +790,7 @@ dependencies = [
 name = "epdf-plugin-render"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
@@ -715,10 +806,10 @@ dependencies = [
 name = "epdf-plugin-search"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
- "epdf-plugin-actions",
  "epdf-plugin-stage",
  "futures",
  "plugin-conformance",
@@ -731,6 +822,8 @@ dependencies = [
 name = "epdf-plugin-selection"
 version = "0.0.0"
 dependencies = [
+ "build-support",
+ "epdf-engine",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
@@ -746,6 +839,7 @@ dependencies = [
 name = "epdf-plugin-shell"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",
@@ -760,6 +854,7 @@ name = "epdf-plugin-signature"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-kernel",
@@ -781,6 +876,7 @@ dependencies = [
 name = "epdf-plugin-stage"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
@@ -798,10 +894,9 @@ dependencies = [
 name = "epdf-plugin-stamp"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-acrojs",
- "epdf-annotation-core",
  "epdf-ffi",
- "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
@@ -819,6 +914,7 @@ dependencies = [
 name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",
@@ -833,6 +929,7 @@ name = "epdf-signature-core"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
  "ecdsa",
  "epdf-geometry",
  "epdf-kernel",
@@ -851,6 +948,7 @@ dependencies = [
 name = "epdf-stage-core"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-geometry",
  "epdf-kernel",
  "plugin-conformance",
@@ -862,6 +960,7 @@ dependencies = [
 name = "epdf-ui-core"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
@@ -893,13 +992,16 @@ dependencies = [
  "epdf-manual-bridge",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
+ "epdf-plugin-attachment",
  "epdf-plugin-commands",
  "epdf-plugin-form",
+ "epdf-plugin-history",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
  "epdf-plugin-link",
  "epdf-plugin-measurement",
  "epdf-plugin-metadata",
+ "epdf-plugin-outline",
  "epdf-plugin-page-edit",
  "epdf-plugin-redaction",
  "epdf-plugin-render",
@@ -941,13 +1043,16 @@ dependencies = [
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
+ "epdf-plugin-attachment",
  "epdf-plugin-commands",
  "epdf-plugin-form",
+ "epdf-plugin-history",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
  "epdf-plugin-link",
  "epdf-plugin-measurement",
  "epdf-plugin-metadata",
+ "epdf-plugin-outline",
  "epdf-plugin-page-edit",
  "epdf-plugin-redaction",
  "epdf-plugin-render",
@@ -1578,6 +1683,8 @@ name = "plugin-conformance"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
+ "epdf-engine",
  "epdf-kernel",
  "serde",
  "serde_json",

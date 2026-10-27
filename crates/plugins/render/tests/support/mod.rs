@@ -29,7 +29,7 @@ pub const BLUE: [u8; 4] = [0, 0, 255, 255];
 fn page(index: u32, pon: u32, width: u32, height: u32) -> Value {
     json!({
         "index": index,
-        "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+        "ref": { "kind": "objectNumber", "objectNumber": pon },
         "label": null,
         "size": { "width": width, "height": height },
         "rotation": 0,

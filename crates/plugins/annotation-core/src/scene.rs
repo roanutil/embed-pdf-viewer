@@ -1,261 +1,313 @@
-//! `scene.ts`: the render contract. A render item becomes a flat list of
-//! painted nodes; a framework maps each to one element.
+//! `scene.ts`: `scene(item)`, the render contract. A render item becomes a
+//! flat list of fully painted nodes; a renderer maps each to one element.
 
-use epdf_geometry::{text_quad_bounds, text_quad_ring};
+use epdf_geometry::{quad_bounds, quad_ring};
+use serde_json::Value;
 
+use crate::appearance::draws_live;
+use crate::font_css::css_font_family_for_font;
 use crate::geometry::geom_scene;
+use crate::helvetica::{HELVETICA_ASCENT, HELVETICA_LINE_HEIGHT, helvetica_advance};
+use crate::icons::{file_attachment_icon_scene, note_icon_scene};
 use crate::js;
+use crate::json;
+use crate::kinds::{blend_for, dash_of};
 use crate::measurement::{MeasurementAppearance, distance_scene, measurement_caption_scene};
 use crate::measurement_shape::shape_measurement_layout;
+use crate::shapes::caret::CARET_STROKE_WIDTH;
 use crate::types::{
-    BlendMode, Border, Geom, Label, Paint, Point, Quad, Rect, RenderItem, RenderNode, Round,
-    SceneNode, Style, TextAlign, TextQuad, TextStyle,
+    ItemSource, Paint, Point, Quad, Rect, RedactLabel, RenderItem, RenderNode, SceneNode, Shape,
+    Style, TextScene, TextStyle,
 };
 
-/// `Number(n.toFixed(3))`.
-fn num(n: f64) -> f64 {
-    js::fixed(n, 3)
+fn num(value: f64) -> f64 {
+    js::fixed(value, 3)
 }
 
-/// CSS mix-blend-mode for live vector paint; `normal` needs none.
-pub fn blend_for(style: &Style) -> Option<BlendMode> {
-    (style.blend_mode != BlendMode::Normal).then_some(style.blend_mode)
+fn s(text: &str) -> Value {
+    Value::String(text.into())
 }
 
+/// `shapePaint(style, closed)`, its blend laid over it.
 fn shape_paint(style: &Style, closed: bool) -> Paint {
+    let cloudy = style.cloudy_intensity.as_option().is_some_and(|i| *i != 0.0 && !i.is_nan());
+    let mut keys = vec!["fill", "stroke", "width", "opacity", "dash"];
+    if cloudy {
+        keys.push("join");
+    }
+    keys.push("blend");
     Paint {
-        fill: if closed { style.interior_color.clone() } else { None },
-        stroke: Some(style.color.clone()),
+        fill: if closed { style.interior_color.as_option().map(|c| s(c)) } else { None },
+        stroke: style.color.clone(),
         width: Some(style.stroke_width),
-        opacity: Some(style.opacity),
-        dash: match &style.border {
-            Border::Dashed { dash } => Some(dash.clone()),
-            _ => None,
-        },
-        join: matches!(style.border, Border::Cloudy { .. }).then_some(Round::Round),
+        opacity: style.opacity.clone(),
+        dash: dash_of(style),
+        join: cloudy.then(|| "round".into()),
+        blend: blend_for(style),
         ..Paint::default()
     }
+    .ordered(&keys)
 }
 
-/// A smooth squiggle along an arbitrary baseline: one `Q` hump, then
-/// reflected `T` segments.
-fn squiggle_path(start: Point, u: Point, n: Point, w: f64, amp: f64) -> String {
+/// A smooth squiggle along a baseline.
+fn squiggle_path(start: Point, direction: Point, normal: Point, length: f64, amp: f64) -> String {
     let half = js::max(2.0, amp * 1.5);
     // One segment per `half` (at least 2) units. A hostile /QuadPoints width
     // would otherwise grow the string without bound, or past 2^53 never
-    // advance `t`. Every real quad is a few thousand units at most, so the
-    // limit (the same budget as a cloudy border's) never engages there; the
-    // TypeScript has none.
-    if w / half > crate::cloudy::MAX_CLOUDY_CURLS {
+    // advance `position`. Every real quad is a few thousand units at most,
+    // so the limit (the same budget as a cloudy border's) never engages
+    // there; the TypeScript has none (review finding M20, kept).
+    if length / half > crate::cloudy::MAX_CLOUDY_CURLS {
         return String::new();
     }
-    let at = |t: f64, off: f64| Point {
-        x: start.x + u.x * t + n.x * off,
-        y: start.y + u.y * t + n.y * off,
+    let at = |distance: f64, off: f64| Point {
+        x: start.x + direction.x * distance + normal.x * off,
+        y: start.y + direction.y * distance + normal.y * off,
     };
-    let p =
-        |v: Point| format!("{} {}", js::number_to_string(num(v.x)), js::number_to_string(num(v.y)));
+    let fmt =
+        |p: Point| format!("{} {}", js::number_to_string(num(p.x)), js::number_to_string(num(p.y)));
     let hump = at(half / 2.0, amp);
-    let mut d = format!("M {} Q {} {}", p(at(0.0, 0.0)), p(hump), p(at(half, 0.0)));
-    let mut t = half;
-    while t + half <= w + 0.5 {
-        d.push_str(&format!(" T {}", p(at(t + half, 0.0))));
-        t += half;
+    let mut d = format!("M {} Q {} {}", fmt(at(0.0, 0.0)), fmt(hump), fmt(at(half, 0.0)));
+    let mut position = half;
+    while position + half <= length + 0.5 {
+        d.push_str(&format!(" T {}", fmt(at(position + half, 0.0))));
+        position += half;
     }
     d
 }
 
-fn markup_scene(subtype: &str, quads: &[TextQuad], style: &Style) -> Vec<SceneNode> {
-    let color = &style.color;
-    let opacity = style.opacity;
-    let mut nodes = Vec::new();
-    let stroke = |lw: f64| Paint {
-        stroke: Some(color.clone()),
-        width: Some(lw),
-        opacity: Some(opacity),
+fn line_paint(style: &Style, width: f64) -> Paint {
+    Paint {
+        stroke: style.color.clone(),
+        width: Some(width),
+        opacity: style.opacity.clone(),
         blend: blend_for(style),
         ..Paint::default()
-    };
-    for q in quads {
-        let down =
-            Point { x: q.lower_start.x - q.upper_start.x, y: q.lower_start.y - q.upper_start.y };
-        let h = js::hypot(down.x, down.y);
-        let w_vec =
-            Point { x: q.lower_end.x - q.lower_start.x, y: q.lower_end.y - q.lower_start.y };
-        let w = js::hypot(w_vec.x, w_vec.y);
-        if w <= 0.0 || h <= 0.0 {
+    }
+    .ordered(&["stroke", "width", "opacity", "blend"])
+}
+
+/// Per-subtype markup nodes on the quads' own edges.
+fn markup_scene(subtype: &str, quads: &[Quad], style: &Style) -> Vec<SceneNode> {
+    let mut nodes = Vec::new();
+    for quad in quads {
+        let down = Point {
+            x: quad.lower_left.x - quad.upper_left.x,
+            y: quad.lower_left.y - quad.upper_left.y,
+        };
+        let ink_height = js::hypot(down.x, down.y);
+        let w = Point {
+            x: quad.lower_right.x - quad.lower_left.x,
+            y: quad.lower_right.y - quad.lower_left.y,
+        };
+        let baseline_length = js::hypot(w.x, w.y);
+        if baseline_length <= 0.0 || ink_height <= 0.0 {
             continue;
         }
-        let n = Point { x: down.x / h, y: down.y / h };
-        let lw = js::min(2.5, js::max(0.75, h * 0.06));
+        let normal = Point { x: down.x / ink_height, y: down.y / ink_height };
+        let lw = js::min(2.5, js::max(0.75, ink_height * 0.06));
         match subtype {
-            "underline" => nodes.push(SceneNode::Line {
-                a: Point { x: q.lower_start.x - n.x * lw, y: q.lower_start.y - n.y * lw },
-                b: Point { x: q.lower_end.x - n.x * lw, y: q.lower_end.y - n.y * lw },
-                paint: stroke(lw),
-            }),
-            "strikeout" => nodes.push(SceneNode::Line {
-                a: Point {
-                    x: (q.upper_start.x + q.lower_start.x) / 2.0,
-                    y: (q.upper_start.y + q.lower_start.y) / 2.0,
-                },
-                b: Point {
-                    x: (q.upper_end.x + q.lower_end.x) / 2.0,
-                    y: (q.upper_end.y + q.lower_end.y) / 2.0,
-                },
-                paint: stroke(lw),
-            }),
+            "underline" => nodes.push(SceneNode::painted(
+                &RenderNode::line(
+                    Point {
+                        x: quad.lower_left.x - normal.x * lw,
+                        y: quad.lower_left.y - normal.y * lw,
+                    },
+                    Point {
+                        x: quad.lower_right.x - normal.x * lw,
+                        y: quad.lower_right.y - normal.y * lw,
+                    },
+                ),
+                line_paint(style, lw),
+            )),
+            "strikeout" => nodes.push(SceneNode::painted(
+                &RenderNode::line(
+                    Point {
+                        x: (quad.upper_left.x + quad.lower_left.x) / 2.0,
+                        y: (quad.upper_left.y + quad.lower_left.y) / 2.0,
+                    },
+                    Point {
+                        x: (quad.upper_right.x + quad.lower_right.x) / 2.0,
+                        y: (quad.upper_right.y + quad.lower_right.y) / 2.0,
+                    },
+                ),
+                line_paint(style, lw),
+            )),
             "squiggly" => {
-                let amp = js::min(2.0, js::max(1.0, h * 0.08));
-                let u = Point { x: w_vec.x / w, y: w_vec.y / w };
-                let start =
-                    Point { x: q.lower_start.x - n.x * amp, y: q.lower_start.y - n.y * amp };
-                nodes.push(SceneNode::Path {
-                    d: squiggle_path(start, u, Point { x: -n.x, y: -n.y }, w, amp),
-                    paint: stroke(lw),
-                });
+                let amp = js::min(2.0, js::max(1.0, ink_height * 0.08));
+                let direction = Point { x: w.x / baseline_length, y: w.y / baseline_length };
+                let start = Point {
+                    x: quad.lower_left.x - normal.x * amp,
+                    y: quad.lower_left.y - normal.y * amp,
+                };
+                let d = squiggle_path(
+                    start,
+                    direction,
+                    Point { x: -normal.x, y: -normal.y },
+                    baseline_length,
+                    amp,
+                );
+                nodes.push(SceneNode::path(d, line_paint(style, lw)));
             }
-            _ => nodes.push(SceneNode::Poly {
-                points: text_quad_ring(*q).to_vec(),
-                closed: true,
-                paint: Paint {
-                    fill: Some(color.clone()),
-                    opacity: Some(opacity),
+            _ => nodes.push(SceneNode::painted(
+                &RenderNode::poly(quad_ring(*quad).to_vec(), true),
+                Paint {
+                    fill: style.color.clone(),
+                    opacity: style.opacity.clone(),
                     blend: blend_for(style),
                     ..Paint::default()
-                },
-            }),
+                }
+                .ordered(&["fill", "opacity", "blend"]),
+            )),
         }
     }
     nodes
 }
 
 struct RedactRegion {
-    ring: Quad,
+    ring: [Point; 4],
     bounds: Rect,
 }
 
-fn rect_ring(r: Rect) -> Quad {
+fn rect_ring(rect: Rect) -> [Point; 4] {
     [
-        Point { x: r.x, y: r.y },
-        Point { x: r.x + r.width, y: r.y },
-        Point { x: r.x + r.width, y: r.y + r.height },
-        Point { x: r.x, y: r.y + r.height },
+        Point { x: rect.x, y: rect.y },
+        Point { x: rect.x + rect.width, y: rect.y },
+        Point { x: rect.x + rect.width, y: rect.y + rect.height },
+        Point { x: rect.x, y: rect.y + rect.height },
     ]
 }
 
-fn redact_regions(geom: &Geom) -> Vec<RedactRegion> {
-    match geom {
-        Geom::Quads { quads } => quads
+fn redact_regions(geometry: &Shape) -> Vec<RedactRegion> {
+    match geometry {
+        Shape::Quads(q) => q
+            .quad_points
             .iter()
-            .filter_map(|q| {
-                let bounds = text_quad_bounds(*q);
+            .filter_map(|quad| {
+                let bounds = quad_bounds(*quad);
                 (bounds.width > 0.0 && bounds.height > 0.0)
-                    .then(|| RedactRegion { ring: text_quad_ring(*q), bounds })
+                    .then(|| RedactRegion { ring: quad_ring(*quad), bounds })
             })
             .collect(),
-        Geom::Rect { rect, .. } => vec![RedactRegion { ring: rect_ring(*rect), bounds: *rect }],
+        Shape::Box(b) => vec![RedactRegion { ring: rect_ring(b.box_), bounds: b.box_ }],
         _ => Vec::new(),
     }
 }
 
-/// Redaction label layout: top-aligned, `/Q` alignment, `/Repeat` tiling a
-/// grid that fits the region (at most 400 nodes). Character advance is
-/// estimated at 0.55 em; the length is in UTF-16 code units.
+const REPEAT_FIT_FONT_SIZE: f64 = 12.0;
+const FIT_FONT_SIZES: [f64; 25] = [
+    4.0, 6.0, 8.0, 9.0, 10.0, 12.0, 14.0, 18.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0,
+    60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 144.0,
+];
+
+fn fit_font_size(region: Rect, advance: f64) -> f64 {
+    let mut fitted = FIT_FONT_SIZES[0];
+    for size in FIT_FONT_SIZES {
+        if size * HELVETICA_LINE_HEIGHT > region.height || size * advance > region.width {
+            break;
+        }
+        fitted = size;
+    }
+    fitted
+}
+
+/// `layoutRedactLabel(region, label, text)`.
 pub fn layout_redact_label(
     region: Rect,
-    label: &Label,
+    label: &RedactLabel,
     text: Option<&TextStyle>,
 ) -> Vec<SceneNode> {
     if label.text.is_empty() {
         return Vec::new();
     }
-    let size = match text {
-        Some(t) if t.font_size > 0.0 => t.font_size,
-        _ => region.height * 0.6,
-    };
+    let repeat = json::truthy(label.repeat.as_ref());
+    let advance = helvetica_advance(&label.text);
+    let fit = if repeat { REPEAT_FIT_FONT_SIZE } else { fit_font_size(region, advance) };
+    let size = text.map(TextStyle::size).filter(|s| *s > 0.0).unwrap_or(fit);
     let font_size = js::max(4.0, size);
-    let char_w = font_size * 0.55;
-    let text_w = js::utf16_len(&label.text) as f64 * char_w;
-    let line_h = font_size * 1.2;
-    let paint = Paint {
-        fill: Some(text.map_or_else(|| "#ffffff".to_string(), |t| t.font_color.clone())),
-        opacity: Some(1.0),
-        ..Paint::default()
+    let text_w = advance * font_size;
+    let gap = helvetica_advance(" ") * font_size;
+    let line_h = font_size * HELVETICA_LINE_HEIGHT;
+    let fill =
+        text.and_then(|t| t.font_color.clone()).filter(|c| !c.is_null()).unwrap_or(s("#ffffff"));
+    let paint = Paint { fill: Some(fill), opacity: Some(json::num(1.0)), ..Paint::default() }
+        .ordered(&["fill", "opacity"]);
+    let font_family =
+        text.and_then(TextStyle::family).filter(|f| !f.is_empty()).map(css_font_family_for_font);
+    let baseline = |row_top: f64| row_top + font_size * HELVETICA_ASCENT;
+    let align = text.and_then(TextStyle::align);
+    let line_start = |width: f64| match align {
+        Some("center") => region.x + js::max(0.0, (region.width - width) / 2.0),
+        Some("right") => region.x + js::max(0.0, region.width - width),
+        _ => region.x,
     };
-    let font_family = text.map(|t| t.font_family.clone()).filter(|f| !f.is_empty());
-    let node = |at: Point| SceneNode::Text {
-        at,
-        text: label.text.clone(),
-        font_size,
-        font_family: font_family.clone(),
-        rotation: None,
-        paint: paint.clone(),
+    let node = |at: Point| {
+        SceneNode::Text(TextScene {
+            at,
+            text: label.text.clone(),
+            font_size,
+            font_family: font_family.clone(),
+            rotation: None,
+            paint: paint.clone(),
+            clip: None,
+            order: Default::default(),
+        })
     };
-    let baseline = |row_top: f64| row_top + font_size * 0.95;
-
-    if !label.repeat {
+    if !repeat {
         if font_size > region.height {
             return Vec::new();
         }
-        let x = match text.map(|t| t.text_align) {
-            Some(TextAlign::Center) => region.x + js::max(0.0, (region.width - text_w) / 2.0),
-            Some(TextAlign::Right) => region.x + js::max(0.0, region.width - text_w),
-            _ => region.x,
-        };
-        return vec![node(Point { x, y: baseline(region.y) })];
+        return vec![node(Point { x: line_start(text_w), y: baseline(region.y) })];
     }
-
-    let cols = js::max(1.0, ((region.width + char_w) / (text_w + char_w)).floor());
+    let cols = js::max(1.0, ((region.width + gap) / (text_w + gap)).floor());
     let rows = js::max(1.0, (region.height / line_h).floor());
+    let left = line_start(cols * text_w + (cols - 1.0) * gap);
     let mut nodes = Vec::new();
-    let mut r = 0.0;
-    while r < rows && nodes.len() < 400 {
-        let mut c = 0.0;
-        while c < cols && nodes.len() < 400 {
+    let mut row = 0.0;
+    while row < rows && nodes.len() < 400 {
+        let mut column = 0.0;
+        while column < cols && nodes.len() < 400 {
             nodes.push(node(Point {
-                x: region.x + c * (text_w + char_w),
-                y: baseline(region.y + r * line_h),
+                x: left + column * (text_w + gap),
+                y: baseline(region.y + row * line_h),
             }));
-            c += 1.0;
+            column += 1.0;
         }
-        r += 1.0;
+        row += 1.0;
     }
     nodes
 }
 
 fn redact_scene(item: &RenderItem) -> Vec<SceneNode> {
-    let regions = redact_regions(&item.geom);
+    let regions = redact_regions(&item.geometry);
     if item.hovered != Some(true) {
-        let width = if item.style.stroke_width == 0.0 || item.style.stroke_width.is_nan() {
-            1.5
-        } else {
+        let width = if item.style.stroke_width != 0.0 && !item.style.stroke_width.is_nan() {
             item.style.stroke_width
+        } else {
+            1.5
         };
         let paint = Paint {
-            stroke: Some(item.style.color.clone()),
+            stroke: item.style.color.clone(),
             width: Some(width),
-            opacity: Some(item.style.opacity),
+            opacity: item.style.opacity.clone(),
             ..Paint::default()
-        };
+        }
+        .ordered(&["stroke", "width", "opacity"]);
         return regions
-            .into_iter()
-            .map(|region| SceneNode::Poly {
-                points: region.ring.to_vec(),
-                closed: true,
-                paint: paint.clone(),
-            })
+            .iter()
+            .map(|r| SceneNode::painted(&RenderNode::poly(r.ring.to_vec(), true), paint.clone()))
             .collect();
     }
     let mut nodes = Vec::new();
-    if let Some(fill) = item.style.interior_color.as_ref().filter(|c| !c.is_empty()) {
-        let paint = Paint { fill: Some(fill.clone()), opacity: Some(1.0), ..Paint::default() };
+    if let Some(fill) = item.style.interior_color.as_option().filter(|c| !c.is_empty()) {
+        let paint =
+            Paint { fill: Some(s(fill)), opacity: Some(json::num(1.0)), ..Paint::default() }
+                .ordered(&["fill", "opacity"]);
         for region in &regions {
-            nodes.push(SceneNode::Poly {
-                points: region.ring.to_vec(),
-                closed: true,
-                paint: paint.clone(),
-            });
+            nodes.push(SceneNode::painted(
+                &RenderNode::poly(region.ring.to_vec(), true),
+                paint.clone(),
+            ));
         }
     }
     if let Some(label) = &item.label {
@@ -266,63 +318,77 @@ fn redact_scene(item: &RenderItem) -> Vec<SceneNode> {
     nodes
 }
 
-/// The full painted scene for one annotation.
+/// `hasLiveDrawing(item)`.
+pub fn has_live_drawing(item: &RenderItem) -> bool {
+    item.source != ItemSource::Baked
+        || item.lent_scene.0.is_some()
+        || item.annotation.as_ref().is_some_and(|a| draws_live(a, false))
+}
+
+/// `scene(item)`: the full painted scene for one annotation.
 pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
+    if let Some(lent) = &item.lent_scene.0 {
+        return lent();
+    }
     if item.subtype == "link" {
         return Vec::new();
     }
-    if let Some(MeasurementAppearance::Distance(d)) = &item.measure {
-        return distance_scene(&item.geom, d, &item.style);
+    let icon = item.icon.as_ref().and_then(Value::as_str);
+    if let Shape::Box(b) = &item.geometry {
+        if item.subtype == "text" {
+            return note_icon_scene(icon, b.box_, &item.style);
+        }
+        if item.subtype == "file-attachment" {
+            return file_attachment_icon_scene(icon, b.box_, &item.style);
+        }
+    }
+    let measure = item.measure.clone().map(MeasurementAppearance);
+    if let Some(m) = measure.as_ref().filter(|m| m.is_distance()) {
+        return distance_scene(&item.geometry, m, &item.style);
     }
     if item.subtype == "redact" {
         return redact_scene(item);
     }
-    if let Geom::Quads { quads } = &item.geom {
-        return markup_scene(&item.subtype, quads, &item.style);
+    if let Shape::Quads(q) = &item.geometry {
+        return markup_scene(&item.subtype, &q.quad_points, &item.style);
     }
-    if let Geom::Caret { .. } = item.geom {
+    if let Shape::Caret(_) = &item.geometry {
         let paint = Paint {
-            fill: Some(item.style.color.clone()),
-            stroke: Some(item.style.color.clone()),
-            width: Some(0.5),
-            opacity: Some(item.style.opacity),
+            fill: item.style.color.clone(),
+            stroke: item.style.color.clone(),
+            width: Some(CARET_STROKE_WIDTH),
+            opacity: item.style.opacity.clone(),
             ..Paint::default()
-        };
-        return geom_scene(&item.geom, 0.0, None)
-            .into_iter()
+        }
+        .ordered(&["fill", "stroke", "width", "opacity"]);
+        return geom_scene(&item.geometry, item.style.stroke())
+            .iter()
             .map(|n| SceneNode::painted(n, paint.clone()))
             .collect();
     }
-    let ink = matches!(item.geom, Geom::Ink { .. });
-    let mut nodes: Vec<SceneNode> =
-        geom_scene(&item.geom, item.style.stroke_width, Some(&item.style.border))
-            .into_iter()
-            .map(|n| {
-                let closed = match &n {
-                    RenderNode::Rect { .. }
-                    | RenderNode::Ellipse { .. }
-                    | RenderNode::Path { .. } => true,
-                    RenderNode::Poly { closed, .. } => *closed,
-                    RenderNode::Line { .. } => false,
-                };
-                let mut paint =
-                    Paint { blend: blend_for(&item.style), ..shape_paint(&item.style, closed) };
-                if ink {
-                    paint.cap = Some(Round::Round);
-                    paint.join = Some(Round::Round);
-                }
-                SceneNode::painted(n, paint)
-            })
-            .collect();
-    if let Some(measure) = &item.measure {
-        let caption = match measure {
-            MeasurementAppearance::Shape(s) => {
-                shape_measurement_layout(&item.geom, s, &item.style).and_then(|l| l.caption)
+    let ink = matches!(item.geometry, Shape::Ink(_));
+    let mut nodes: Vec<SceneNode> = geom_scene(&item.geometry, item.style.stroke())
+        .iter()
+        .map(|node| {
+            let closed = match node {
+                RenderNode::Rect(_) | RenderNode::Ellipse(_) | RenderNode::Path(_) => true,
+                RenderNode::Poly(p) => p.closed,
+                RenderNode::Line(_) => false,
+            };
+            let mut paint = shape_paint(&item.style, closed);
+            if ink {
+                paint.line_cap = Some("round".into());
+                paint.join = Some("round".into());
             }
-            // A distance returned above.
-            MeasurementAppearance::Distance(_) => None,
-        };
-        nodes.extend(measurement_caption_scene(caption.as_ref(), &item.style));
+            SceneNode::painted(node, paint)
+        })
+        .collect();
+    if let Some(m) = &measure {
+        let layout = shape_measurement_layout(&item.geometry, m, &item.style);
+        nodes.extend(measurement_caption_scene(
+            layout.and_then(|l| l.caption).as_ref(),
+            &item.style,
+        ));
     }
     nodes
 }

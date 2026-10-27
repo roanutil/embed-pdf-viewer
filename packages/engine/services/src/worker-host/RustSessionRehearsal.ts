@@ -33,6 +33,8 @@ export class RustSessionRehearsal {
   /** Document ids opened on the Rust side, so reads can refuse precisely. */
   private readonly owned = new Set<string>();
   private destroyed = false;
+  /** The next request's `jobId`. The host requires one on every kind, as upstream's worker does. */
+  private nextJobId = 1;
 
   constructor(runtime: PdfRuntimeModule) {
     const createHost = runtime.rust?.createHost;
@@ -76,7 +78,12 @@ export class RustSessionRehearsal {
     password: string | undefined,
   ): DocumentSecurityProbeInfo {
     const result = this.call<{ security: DocumentSecurityProbeInfo }>(
-      { kind: 'open.fatMem', docId, ...(password === undefined ? {} : { password }) },
+      {
+        kind: 'open.fatMem',
+        effect: 'open',
+        docId,
+        ...(password === undefined ? {} : { password }),
+      },
       [bytes],
     );
     this.owned.add(docId);
@@ -91,6 +98,7 @@ export class RustSessionRehearsal {
   ): DocumentSecurityProbeInfo {
     return this.call<DocumentSecurityProbeInfo>({
       kind: 'document.checkPasswordPermissions',
+      effect: 'open',
       docId,
       password,
       ...(mode === undefined ? {} : { mode }),
@@ -101,6 +109,7 @@ export class RustSessionRehearsal {
   probeSecurityFile(path: string, password: string | undefined): DocumentSecurityProbeInfo {
     return this.call<DocumentSecurityProbeInfo>({
       kind: 'document.probeSecurityFile',
+      effect: 'read',
       path,
       ...(password === undefined ? {} : { password }),
     });
@@ -109,14 +118,14 @@ export class RustSessionRehearsal {
   /** Closes every session for a document. Safe for one this does not own. */
   close(docId: string): void {
     if (!this.owned.has(docId)) return;
-    this.call({ kind: 'close', docId });
+    this.call({ kind: 'close', effect: 'close', docId });
     this.owned.delete(docId);
   }
 
   /** Closes one layer view, leaving the base session open. */
   closeLayer(docId: string, layerName: string): void {
     if (!this.owned.has(docId)) return;
-    this.call({ kind: 'layer.close', docId, layerName });
+    this.call({ kind: 'layer.close', effect: 'close', docId, layerName });
   }
 
   /**
@@ -148,7 +157,10 @@ export class RustSessionRehearsal {
         'the Rust session rehearsal has been destroyed',
       );
     }
-    const response = this.host.call(JSON.stringify(request), payloads);
+    const response = this.host.call(
+      JSON.stringify({ ...request, jobId: this.nextJobId++ }),
+      payloads,
+    );
     const envelope = JSON.parse(response.json) as {
       result?: T;
       error?: { code: EngineErrorCode; message: string; details?: Record<string, unknown> };

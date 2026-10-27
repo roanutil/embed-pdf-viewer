@@ -15,9 +15,7 @@ crate-type = ["rlib"]
 default = ["harness"]
 harness = [
   "dep:plugin-conformance",
-  "dep:epdf-plugin-interaction",
   "epdf-plugin-annotation/harness",
-  "epdf-plugin-interaction/harness",
   "epdf-plugin-search/harness",
   "epdf-plugin-selection/harness",
 ]
@@ -32,9 +30,7 @@ epdf-annotation-core = { path = "../annotation-core", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
 epdf-plugin-search = { path = "../search", default-features = false }
 epdf-plugin-selection = { path = "../selection", default-features = false }
-# The harness's `redaction-tool` lens arms the redact tool through the hub.
-epdf-plugin-interaction = { path = "../interaction", default-features = false, optional = true }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
 epdf-ffi = { path = "../../epdf-ffi", optional = true }
@@ -50,5 +46,12 @@ name = "conformance"
 required-features = ["harness"]
 
 [[test]]
+name = "behavior"
+required-features = ["harness"]
+
+[[test]]
 name = "ffi"
 required-features = ["uniffi"]
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

@@ -1,144 +1,200 @@
-//! `measurement.ts` and `measurement-font.ts`: the distance annotation's
-//! layout (dimension line, leaders, caption) and the one layout's uses:
-//! preview scene, selection, handles and hit testing.
+//! `measurement.ts` and `measurement-font.ts`: a distance measurement's
+//! layout (its dimension line, leaders, caption and endings), what it draws,
+//! where it is grabbed, and the fields a new measurement states.
 
-use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::endings::{ending_nodes, ending_points};
-use crate::geometry::{geom_hit, geom_rotation, rotate_point, selection_quad, union_rect};
+use crate::endings::{ending_nodes, ending_pieces, ending_points};
+use crate::engine::measure::{DimensionInput, measurement_readout};
+use crate::geometry::{geom_rotation, selection_quad};
+use crate::helvetica::helvetica_advance;
 use crate::js;
-use crate::measure::{DimensionInput, PdfMeasurement, measurement_readout};
-use crate::measurement_shape::ShapeMeasurementAppearance;
+use crate::json::{self, Object, num};
+use crate::kinds::dash_of;
+use crate::object::{Json, JsonError};
+use crate::painted::{PaintedPiece, body_pieces};
+use crate::rect::{rotate_point, union_rect};
+use crate::shapes::points::{drawn_line_of, stroked_outline_of};
 use crate::types::{
-    Border, Geom, Handle, Paint, PdfPoint, PdfRect, Point, Quad, Rect, RenderNode, SceneNode, Style,
+    Handle, Paint, Point, Rect, RenderNode, SceneNode, Shape, Stroke, Style, TextScene,
 };
 
-// ── the appearance ──────────────────────────────────────────────────────────
+/// A measurement's appearance (`MeasurementAppearance`): the engine's own
+/// fields for its scale, caption, leader and label, read off a dimension
+/// annotation. Kept as the object the TypeScript builds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MeasurementAppearance(pub Object);
 
-/// `'LineDimension'`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DistanceIntent {
-    #[default]
-    LineDimension,
-}
-
-/// `LineDimensionCaption['position']`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum CaptionPosition {
-    Inline,
-    Top,
-}
-
-/// A caption displacement in directed line axes, PDF units.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct CaptionOffset {
-    pub along: f64,
-    pub perpendicular: f64,
-}
-
-/// `LineDimensionCaption`.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LineDimensionCaption {
-    pub enabled: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub position: Option<CaptionPosition>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<CaptionOffset>,
-}
-
-/// `LineLeader`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct LineLeader {
-    pub length: f64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub extension: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub offset: Option<f64>,
-}
-
-/// A distance annotation's render projection. Offsets stay in directed PDF
-/// line axes; the crop keeps rounding in the PDF frame.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DistanceAppearance {
-    pub intent: DistanceIntent,
-    #[serde(default)]
-    pub measure: Option<PdfMeasurement>,
-    pub caption: LineDimensionCaption,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub leader: Option<LineLeader>,
-    pub crop: PdfRect,
-    pub text: String,
-}
-
-impl DistanceAppearance {
-    /// `{ ...a, leader: { ...a.leader, length } }`.
-    pub fn with_leader_length(&self, length: f64) -> DistanceAppearance {
-        let leader = LineLeader { length, ..self.leader.unwrap_or_default() };
-        DistanceAppearance { leader: Some(leader), ..self.clone() }
+impl Json for MeasurementAppearance {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        Object::from_json(value).map(MeasurementAppearance)
     }
-}
-
-/// `MeasurementAppearance = DistanceAppearance | ShapeMeasurementAppearance`,
-/// told apart by `intent`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum MeasurementAppearance {
-    Distance(DistanceAppearance),
-    Shape(ShapeMeasurementAppearance),
+    fn to_json(&self) -> Option<Value> {
+        Some(Value::Object(self.0.clone()))
+    }
 }
 
 impl MeasurementAppearance {
-    /// `intent === 'LineDimension'`.
-    pub fn as_distance(&self) -> Option<&DistanceAppearance> {
-        match self {
-            MeasurementAppearance::Distance(d) => Some(d),
-            MeasurementAppearance::Shape(_) => None,
-        }
+    pub fn intent(&self) -> &str {
+        json::get_str(&self.0, "intent").unwrap_or("")
     }
-
-    pub fn as_shape(&self) -> Option<&ShapeMeasurementAppearance> {
-        match self {
-            MeasurementAppearance::Shape(s) => Some(s),
-            MeasurementAppearance::Distance(_) => None,
-        }
+    /// A distance (`line-dimension`), rather than a perimeter or an area.
+    pub fn is_distance(&self) -> bool {
+        self.intent() == "line-dimension"
     }
-
-    /// `intent === 'PolygonDimension'`.
-    pub fn is_polygon(&self) -> bool {
-        self.as_shape().is_some_and(|s| s.is_polygon())
+    pub fn measure(&self) -> Option<&Value> {
+        json::get(&self.0, "measure")
+    }
+    pub fn caption_enabled(&self) -> bool {
+        json::truthy(self.0.get("captionEnabled"))
+    }
+    pub fn caption_position(&self) -> Option<&str> {
+        json::get_str(&self.0, "captionPosition")
+    }
+    pub fn contents(&self) -> Option<&str> {
+        json::get(&self.0, "contents").and_then(Value::as_str)
+    }
+    /// `captionOffset`, `None` when absent or null.
+    pub fn caption_offset(&self) -> Option<(f64, f64)> {
+        let offset = json::get(&self.0, "captionOffset")?;
+        Some((
+            offset.get("along").and_then(json::number).unwrap_or(f64::NAN),
+            offset.get("perpendicular").and_then(json::number).unwrap_or(f64::NAN),
+        ))
+    }
+    /// A member of `leader`, `None` when the leader or the member is absent.
+    pub fn leader_member(&self, name: &str) -> Option<f64> {
+        json::get(&self.0, "leader")
+            .and_then(|l| l.get(name))
+            .filter(|v| !json::nullish(Some(v)))
+            .and_then(json::number)
+    }
+    pub fn leader_length(&self) -> f64 {
+        self.leader_member("length").unwrap_or(0.0)
+    }
+    /// `{ ...appearance, leader: { ...appearance.leader, length } }`.
+    pub fn with_leader_length(&self, length: f64) -> MeasurementAppearance {
+        let mut leader =
+            json::get(&self.0, "leader").and_then(Value::as_object).cloned().unwrap_or_default();
+        leader.insert("length".into(), num(length));
+        let mut out = self.0.clone();
+        out.insert("leader".into(), Value::Object(leader));
+        MeasurementAppearance(out)
     }
 }
 
-// ── the layout ──────────────────────────────────────────────────────────────
+/// `measurementOf(annotation)`: the annotation's measurement, when it is one.
+pub fn measurement_of(annotation: &Object) -> Option<MeasurementAppearance> {
+    let subtype = json::get_str(annotation, "subtype")?;
+    let intent = json::get_str(annotation, "intent");
+    let pick = |names: &[&str]| -> Object {
+        let mut out = Object::new();
+        for name in names {
+            if let Some(v) = annotation.get(*name).filter(|v| !json::undefined(Some(v))) {
+                out.insert((*name).into(), v.clone());
+            }
+        }
+        out
+    };
+    if subtype == "line" && intent == Some("line-dimension") {
+        return Some(MeasurementAppearance(pick(&[
+            "intent",
+            "measure",
+            "captionEnabled",
+            "captionPosition",
+            "captionOffset",
+            "leader",
+            "contents",
+        ])));
+    }
+    if (subtype == "polyline" || subtype == "polygon")
+        && matches!(intent, Some("polyline-dimension" | "polygon-dimension"))
+    {
+        return Some(MeasurementAppearance(pick(&[
+            "intent",
+            "measure",
+            "captionEnabled",
+            "contents",
+        ])));
+    }
+    None
+}
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+/// `measurementDraftFields(appearance)`: what a new measurement states beside its points.
+pub fn measurement_draft_fields(appearance: &MeasurementAppearance) -> Object {
+    let a = &appearance.0;
+    let mut out = json::object([("intent", a.get("intent").cloned().unwrap_or(Value::Null))]);
+    let measure = match json::get(a, "measure") {
+        Some(m) if m.get("subtype").and_then(Value::as_str) == Some("rectilinear") => m.clone(),
+        _ => Value::Null,
+    };
+    out.insert("measure".into(), measure);
+    let caption: &[&str] = if appearance.is_distance() {
+        &["captionEnabled", "captionPosition", "captionOffset", "leader"]
+    } else {
+        &["captionEnabled"]
+    };
+    for name in caption {
+        if let Some(v) = a.get(*name).filter(|v| !json::undefined(Some(v))) {
+            out.insert((*name).into(), v.clone());
+        }
+    }
+    let subject = match appearance.intent() {
+        "line-dimension" => "Distance",
+        "polyline-dimension" => "Perimeter",
+        _ => "Area",
+    };
+    out.insert("subject".into(), Value::String(subject.into()));
+    out
+}
+
+// ── measurement-font.ts ─────────────────────────────────────────────────────
+
+pub const DISTANCE_CAPTION_SIZE: f64 = 9.0;
+
+/// `distanceCaptionWidth(text)`.
+pub fn distance_caption_width(text: &str) -> f64 {
+    helvetica_advance(text.trim_end_matches(is_js_trailing_space)) * DISTANCE_CAPTION_SIZE
+}
+
+/// `String.prototype.trimEnd`'s whitespace.
+fn is_js_trailing_space(c: char) -> bool {
+    matches!(
+        c,
+        '\t' | '\n' | '\u{0b}' | '\u{0c}' | '\r' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'
+            ..='\u{200a}'
+                | '\u{2028}'
+                | '\u{2029}'
+                | '\u{202f}'
+                | '\u{205f}'
+                | '\u{3000}'
+                | '\u{feff}'
+    )
+}
+
+// ── layout ──────────────────────────────────────────────────────────────────
+
+/// A dimension, leader or connector segment.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DistanceSegment {
     pub from: Point,
     pub to: Point,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DistanceCaptionLayout {
+/// A measurement's caption (`DistanceCaptionLayout`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CaptionLayout {
     pub text: String,
     pub center: Point,
     pub along: Point,
     pub normal: Point,
     pub width: f64,
     pub height: f64,
-    pub bounds: Quad,
+    pub bounds: [Point; 4],
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ArrowPlacement {
-    Inside,
-    Outside,
-}
-
-/// One layout drives the preview, selection, handles and hit testing.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// One layout drives a distance's preview, selection, handles and hit testing.
+#[derive(Clone, Debug, PartialEq)]
 pub struct DistanceLayout {
     pub along: Point,
     pub normal: Point,
@@ -150,119 +206,54 @@ pub struct DistanceLayout {
     pub dimension_segments: Vec<DistanceSegment>,
     pub leader_segments: Vec<DistanceSegment>,
     pub caption_connector: Vec<DistanceSegment>,
-    pub caption: Option<DistanceCaptionLayout>,
-    pub arrow_placement: ArrowPlacement,
+    pub caption: Option<CaptionLayout>,
+    /// `inside` or `outside`.
+    pub arrow_placement: &'static str,
     pub endings: Vec<RenderNode>,
     pub selection_points: Vec<Point>,
     pub visual_bounds: Rect,
 }
-
-// ── measurement-font.ts ─────────────────────────────────────────────────────
-
-/// The caption font size (points).
-pub const DISTANCE_CAPTION_SIZE: f64 = 9.0;
-
-/// Standard Helvetica advances in 1/1000 em, ASCII 32 to 126.
-const HELVETICA_ADVANCES: [u16; 95] = [
-    278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556,
-    556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667,
-    611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667,
-    667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500,
-    222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
-];
-
-fn extra_advance(c: char) -> f64 {
-    match c {
-        '²' | '³' => 333.0,
-        '′' => 191.0,
-        '″' => 355.0,
-        '−' => 584.0,
-        '\u{a0}' => 278.0,
-        _ => 556.0,
-    }
-}
-
-/// `String#trimEnd`: JavaScript's white space and line terminators.
-fn js_trim_end(s: &str) -> &str {
-    s.trim_end_matches(|c: char| {
-        matches!(
-            c,
-            '\t' | '\n' | '\u{b}' | '\u{c}' | '\r' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'
-                ..='\u{200a}'
-                    | '\u{2028}'
-                    | '\u{2029}'
-                    | '\u{202f}'
-                    | '\u{205f}'
-                    | '\u{3000}'
-                    | '\u{feff}'
-        )
-    })
-}
-
-/// The caption's width in points, from the Helvetica advances.
-pub fn distance_caption_width(text: &str) -> f64 {
-    let mut advance = 0.0;
-    for c in js_trim_end(text).chars() {
-        let code = c as u32;
-        advance += match code.checked_sub(32).and_then(|i| HELVETICA_ADVANCES.get(i as usize)) {
-            Some(a) => f64::from(*a),
-            None => extra_advance(c),
-        };
-    }
-    (advance * DISTANCE_CAPTION_SIZE) / 1000.0
-}
-
-// ── measurement.ts ──────────────────────────────────────────────────────────
 
 const CAPTION_PADDING: f64 = 2.0;
 const OUTSIDE_CAPTION_PADDING: f64 = 7.0;
 const ARROW_RESERVE: f64 = 24.0;
 const OUTSIDE_STUB_LENGTH: f64 = 20.0;
 
-pub(crate) fn offset_point(point: Point, direction: Point, distance: f64) -> Point {
-    Point { x: point.x + direction.x * distance, y: point.y + direction.y * distance }
+fn offset_point(p: Point, direction: Point, distance: f64) -> Point {
+    Point { x: p.x + direction.x * distance, y: p.y + direction.y * distance }
 }
 
 fn project_delta(from: Point, to: Point, direction: Point) -> f64 {
     (to.x - from.x) * direction.x + (to.y - from.y) * direction.y
 }
 
-struct Axes {
-    along: Point,
-    normal: Point,
-    length: f64,
-}
-
-fn line_axes(start: Point, end: Point) -> Axes {
+fn line_axes(start: Point, end: Point) -> (Point, Point, f64) {
     let length = js::hypot(end.x - start.x, end.y - start.y);
     let along = if length > 0.0 {
         Point { x: (end.x - start.x) / length, y: (end.y - start.y) / length }
     } else {
         Point { x: 1.0, y: 0.0 }
     };
-    // PDF's +90° normal, in content coordinates (y down).
-    let normal = Point { x: along.y, y: -along.x };
-    Axes { along, normal, length }
+    (along, Point { x: along.y, y: -along.x }, length)
 }
 
-/// The caption text: the readout's label for a line, else the stored text.
-pub fn distance_label(geom: &Geom, appearance: &DistanceAppearance) -> String {
-    let Geom::Line { a, b, .. } = geom else {
-        return appearance.text.clone();
-    };
-    let crop = appearance.crop;
-    let to_pdf = |p: Point| PdfPoint { x: p.x + crop.left, y: crop.top - p.y };
-    let readout = measurement_readout(&DimensionInput {
+/// `distanceLabel(geometry, appearance)`.
+pub fn distance_label(geometry: &Shape, appearance: &MeasurementAppearance) -> String {
+    let Shape::Line(line) = geometry else { return appearance.contents().unwrap_or("").into() };
+    let input = DimensionInput {
         subtype: "line",
-        intent: "LineDimension",
-        measure: appearance.measure.as_ref(),
-        line_points: Some((to_pdf(*a), to_pdf(*b))),
+        intent: Some(appearance.intent()),
+        measure: appearance.measure(),
+        line_points: Some((line.line_points.start, line.line_points.end)),
         vertices: Vec::new(),
-    });
-    readout.readout().map_or_else(|| appearance.text.clone(), |r| r.label.clone())
+    };
+    match measurement_readout(&input).label() {
+        Some(label) => label.into(),
+        None => appearance.contents().unwrap_or("").into(),
+    }
 }
 
-fn caption_quad(center: Point, along: Point, normal: Point, width: f64, height: f64) -> Quad {
+fn caption_quad(center: Point, along: Point, normal: Point, width: f64, height: f64) -> [Point; 4] {
     let corner = |x: f64, y: f64| offset_point(offset_point(center, along, x), normal, y);
     [
         corner(-width / 2.0, -height / 2.0),
@@ -272,19 +263,17 @@ fn caption_quad(center: Point, along: Point, normal: Point, width: f64, height: 
     ]
 }
 
-/// A displaced caption connects to the midpoint, stopping clear of its text.
 fn caption_connector(
     midpoint: Point,
-    caption: &DistanceCaptionLayout,
+    caption: &CaptionLayout,
     along: Point,
     normal: Point,
-    offset: Option<CaptionOffset>,
+    offset: Option<(f64, f64)>,
 ) -> Vec<DistanceSegment> {
-    let Some(offset) = offset else {
-        return Vec::new();
-    };
-    if offset.along == 0.0 && offset.perpendicular == 0.0 {
-        return Vec::new();
+    match offset {
+        None => return Vec::new(),
+        Some((a, p)) if a == 0.0 && p == 0.0 => return Vec::new(),
+        _ => {}
     }
     let perpendicular = project_delta(midpoint, caption.center, normal);
     let horizontal = project_delta(midpoint, caption.center, along);
@@ -310,8 +299,8 @@ fn dimension_segments(
     along: Point,
     normal: Point,
     length: f64,
-    caption: Option<&DistanceCaptionLayout>,
-    position: Option<CaptionPosition>,
+    caption: Option<&CaptionLayout>,
+    position: Option<&str>,
     outside: bool,
     stroke_width: f64,
 ) -> Vec<DistanceSegment> {
@@ -322,7 +311,7 @@ fn dimension_segments(
             DistanceSegment { from: end, to: offset_point(end, along, stub) },
         ];
     }
-    let Some(caption) = caption.filter(|_| position != Some(CaptionPosition::Top)) else {
+    let Some(caption) = caption.filter(|_| position != Some("top")) else {
         return vec![DistanceSegment { from: start, to: end }];
     };
     let perpendicular = project_delta(start, caption.center, normal);
@@ -343,28 +332,22 @@ fn dimension_segments(
     segments
 }
 
-fn segment_points(segments: &[DistanceSegment]) -> impl Iterator<Item = Point> + '_ {
-    segments.iter().flat_map(|s| [s.from, s.to])
-}
-
-/// The distance layout of a line geom, `None` for any other.
+/// `distanceLayout(geometry, appearance, strokeWidth)`.
 pub fn distance_layout(
-    geom: &Geom,
-    appearance: &DistanceAppearance,
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
     stroke_width: f64,
 ) -> Option<DistanceLayout> {
-    let Geom::Line { a, b, ends, .. } = geom else {
-        return None;
-    };
-    let (a, b) = (*a, *b);
-    let Axes { along, normal, length } = line_axes(a, b);
-    let leader_length = appearance.leader.map_or(0.0, |l| l.length);
+    let Shape::Line(line) = geometry else { return None };
+    let (a, b) = drawn_line_of(geometry);
+    let (along, normal, length) = line_axes(a, b);
+    let leader_length = appearance.leader_length();
     let dimension_start = offset_point(a, normal, leader_length);
     let dimension_end = offset_point(b, normal, leader_length);
     let midpoint = offset_point(dimension_start, along, length / 2.0);
-    let text = distance_label(geom, appearance);
+    let text = distance_label(geometry, appearance);
     let width = distance_caption_width(&text);
-    let has_caption = appearance.caption.enabled && !text.is_empty();
+    let has_caption = appearance.caption_enabled() && !text.is_empty();
     let outside =
         has_caption && width + 2.0 * CAPTION_PADDING + ARROW_RESERVE * stroke_width > length;
 
@@ -372,31 +355,31 @@ pub fn distance_layout(
         let reversed = along.x < 0.0 || (along.x == 0.0 && along.y > 0.0);
         let text_along = if reversed { Point { x: -along.x, y: -along.y } } else { along };
         let text_normal = Point { x: text_along.y, y: -text_along.x };
-        let offset = appearance.caption.offset;
-        let mut center = offset_point(midpoint, along, offset.map_or(0.0, |o| o.along));
-        center = offset_point(center, normal, offset.map_or(0.0, |o| o.perpendicular));
-        if appearance.caption.position == Some(CaptionPosition::Top) || outside {
+        let offset = appearance.caption_offset();
+        let mut center = offset_point(midpoint, along, offset.map_or(0.0, |o| o.0));
+        center = offset_point(center, normal, offset.map_or(0.0, |o| o.1));
+        if appearance.caption_position() == Some("top") || outside {
             let side = if outside && leader_length < 0.0 { -1.0 } else { 1.0 };
             let padding = if outside { OUTSIDE_CAPTION_PADDING } else { CAPTION_PADDING };
             center = offset_point(center, normal, side * (DISTANCE_CAPTION_SIZE / 2.0 + padding));
         }
-        DistanceCaptionLayout {
-            bounds: caption_quad(center, text_along, text_normal, width, DISTANCE_CAPTION_SIZE),
-            text,
+        CaptionLayout {
+            text: text.clone(),
             center,
             along: text_along,
             normal: text_normal,
             width,
             height: DISTANCE_CAPTION_SIZE,
+            bounds: caption_quad(center, text_along, text_normal, width, DISTANCE_CAPTION_SIZE),
         }
     });
 
     let mut leader_segments = Vec::new();
     if leader_length != 0.0 {
         let side = js::sign(leader_length);
-        let leader = appearance.leader.unwrap_or_default();
-        let leader_offset = side * leader.offset.unwrap_or(0.0);
-        let leader_end = leader_length + side * leader.extension.unwrap_or(0.0);
+        let leader_offset = side * appearance.leader_member("offset").unwrap_or(0.0);
+        let leader_end =
+            leader_length + side * appearance.leader_member("extension").unwrap_or(0.0);
         for endpoint in [a, b] {
             leader_segments.push(DistanceSegment {
                 from: offset_point(endpoint, normal, leader_offset),
@@ -412,34 +395,35 @@ pub fn distance_layout(
         normal,
         length,
         caption.as_ref(),
-        appearance.caption.position,
+        appearance.caption_position(),
         outside,
         stroke_width,
     );
-    let connector = caption.as_ref().map_or_else(Vec::new, |c| {
-        caption_connector(midpoint, c, along, normal, appearance.caption.offset)
-    });
+    let connector = match &caption {
+        Some(c) => caption_connector(midpoint, c, along, normal, appearance.caption_offset()),
+        None => Vec::new(),
+    };
 
     let angle = along.y.atan2(along.x);
-    let pi = std::f64::consts::PI;
-    let start_angle = if outside { angle } else { angle + pi };
-    let end_angle = if outside { angle + pi } else { angle };
-    let start_ending = ends.map(|e| e.start);
-    let end_ending = ends.map(|e| e.end);
+    let start_angle = if outside { angle } else { angle + std::f64::consts::PI };
+    let end_angle = if outside { angle + std::f64::consts::PI } else { angle };
+    let endings_of = line.line_endings.as_ref();
+    let start_ending = endings_of.and_then(|e| e.start.as_deref());
+    let end_ending = endings_of.and_then(|e| e.end.as_deref());
     let mut endings = ending_nodes(dimension_start, start_angle, start_ending, stroke_width);
     endings.extend(ending_nodes(dimension_end, end_angle, end_ending, stroke_width));
-    let mut bounds_points = vec![a, b];
-    bounds_points.extend(segment_points(&segments));
-    bounds_points.extend(segment_points(&leader_segments));
-    bounds_points.extend(segment_points(&connector));
-    bounds_points.extend(ending_points(dimension_start, start_angle, start_ending, stroke_width));
-    bounds_points.extend(ending_points(dimension_end, end_angle, end_ending, stroke_width));
-    if let Some(c) = &caption {
-        bounds_points.extend(c.bounds);
-    }
-    let visual_bounds =
-        expand_distance_bounds(union_rect(&bounds_points), stroke_width / 2.0 + 1.0);
 
+    let mut points = vec![a, b];
+    for s in segments.iter().chain(leader_segments.iter()).chain(connector.iter()) {
+        points.push(s.from);
+        points.push(s.to);
+    }
+    points.extend(ending_points(dimension_start, start_angle, start_ending, stroke_width));
+    points.extend(ending_points(dimension_end, end_angle, end_ending, stroke_width));
+    if let Some(c) = &caption {
+        points.extend(c.bounds.iter().copied());
+    }
+    let visual_bounds = expand_distance_bounds(union_rect(&points), stroke_width / 2.0 + 1.0);
     Some(DistanceLayout {
         along,
         normal,
@@ -452,14 +436,14 @@ pub fn distance_layout(
         leader_segments,
         caption_connector: connector,
         caption,
-        arrow_placement: if outside { ArrowPlacement::Outside } else { ArrowPlacement::Inside },
+        arrow_placement: if outside { "outside" } else { "inside" },
         endings,
-        selection_points: bounds_points,
+        selection_points: points,
         visual_bounds,
     })
 }
 
-/// A rect grown by `padding` on every side.
+/// `expandDistanceBounds(bounds, padding)`.
 pub fn expand_distance_bounds(bounds: Rect, padding: f64) -> Rect {
     Rect {
         x: bounds.x - padding,
@@ -469,23 +453,22 @@ pub fn expand_distance_bounds(bounds: Rect, padding: f64) -> Rect {
     }
 }
 
-/// The oriented selection quad of a distance annotation: every component,
-/// boxed in the line's advisory rotation frame about its start.
+/// `distanceSelectionQuad(geometry, appearance, strokeWidth)`.
 pub fn distance_selection_quad(
-    geom: &Geom,
-    appearance: &DistanceAppearance,
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
     stroke_width: f64,
-) -> Quad {
-    let (Some(layout), Geom::Line { a: origin, .. }) =
-        (distance_layout(geom, appearance, stroke_width), geom)
-    else {
-        return selection_quad(geom, stroke_width, None);
+) -> [Point; 4] {
+    let layout = distance_layout(geometry, appearance, stroke_width);
+    let Some(layout) = layout.filter(|_| matches!(geometry, Shape::Line(_))) else {
+        return selection_quad(geometry, Stroke::width(stroke_width));
     };
-    let angle = geom_rotation(geom);
+    let angle = geom_rotation(geometry);
+    let origin = drawn_line_of(geometry).0;
     let points: Vec<Point> =
-        layout.selection_points.iter().map(|p| rotate_point(*p, *origin, -angle)).collect();
+        layout.selection_points.iter().map(|p| rotate_point(*p, origin, -angle)).collect();
     let bounds = expand_distance_bounds(union_rect(&points), stroke_width / 2.0 + 1.0);
-    let corner = |x: f64, y: f64| rotate_point(Point { x, y }, *origin, angle);
+    let corner = |x: f64, y: f64| rotate_point(Point { x, y }, origin, angle);
     [
         corner(bounds.x, bounds.y),
         corner(bounds.x + bounds.width, bounds.y),
@@ -494,166 +477,169 @@ pub fn distance_selection_quad(
     ]
 }
 
-/// The endpoint and leader handles.
+/// `distanceHandles(layout)`.
 pub fn distance_handles(layout: &DistanceLayout) -> Vec<Handle> {
-    let h = |id: &str, at: Point, cursor: &str| Handle { id: id.into(), at, cursor: cursor.into() };
     vec![
-        h("v0", layout.measured_start, "crosshair"),
-        h("v1", layout.measured_end, "crosshair"),
-        h("leader-start", layout.dimension_start, "move"),
-        h("leader-end", layout.dimension_end, "move"),
+        Handle::new("v0", layout.measured_start, "crosshair"),
+        Handle::new("v1", layout.measured_end, "crosshair"),
+        Handle::new("leader-start", layout.dimension_start, "move"),
+        Handle::new("leader-end", layout.dimension_end, "move"),
     ]
 }
 
-/// Is the point on the caption box, grown by `margin`?
-pub fn distance_caption_hit(
-    caption: Option<&DistanceCaptionLayout>,
-    point: Point,
-    margin: f64,
-) -> bool {
-    let Some(caption) = caption else {
-        return false;
-    };
+/// `distanceCaptionHit(layout, point, margin)`.
+pub fn distance_caption_hit(caption: Option<&CaptionLayout>, point: Point, margin: f64) -> bool {
+    let Some(caption) = caption else { return false };
     let along = project_delta(caption.center, point, caption.along);
     let perpendicular = project_delta(caption.center, point, caption.normal);
     along.abs() <= caption.width / 2.0 + margin
         && perpendicular.abs() <= caption.height / 2.0 + margin
 }
 
-fn line_geom(from: Point, to: Point) -> Geom {
-    Geom::Line { a: from, b: to, ends: None, rot: None }
+/// `captionPainted(caption)`.
+pub fn caption_painted(caption: Option<&CaptionLayout>) -> Vec<PaintedPiece> {
+    caption.map(|c| body_pieces(&c.bounds)).unwrap_or_default()
 }
 
-/// Is the point on the distance annotation: caption, any segment, or an
-/// ending?
-pub fn distance_hit(layout: &DistanceLayout, point: Point, stroke_width: f64, margin: f64) -> bool {
-    if distance_caption_hit(layout.caption.as_ref(), point, margin) {
-        return true;
-    }
-    let segments = layout
+fn segments_of(layout: &DistanceLayout) -> Vec<DistanceSegment> {
+    layout
         .dimension_segments
         .iter()
-        .chain(&layout.leader_segments)
-        .chain(&layout.caption_connector);
-    let on_segment = segments
-        .clone()
-        .any(|s| geom_hit(&line_geom(s.from, s.to), point, margin, false, stroke_width));
-    on_segment
-        || layout.endings.iter().any(|ending| match ending {
-            RenderNode::Poly { points, closed } => geom_hit(
-                &Geom::Poly { points: points.clone(), closed: *closed, ends: None, rot: None },
-                point,
-                margin,
-                true,
-                stroke_width,
-            ),
-            RenderNode::Ellipse { rect } => geom_hit(
-                &Geom::Rect { rect: *rect, ellipse: true, rot: None },
-                point,
-                margin,
-                true,
-                stroke_width,
-            ),
-            _ => false,
-        })
+        .chain(layout.leader_segments.iter())
+        .chain(layout.caption_connector.iter())
+        .copied()
+        .collect()
 }
 
-/// The caption's centre, or `None` without a line or a caption.
+/// `distancePainted(layout, strokeWidth)`.
+pub fn distance_painted(layout: &DistanceLayout, stroke_width: f64) -> Vec<PaintedPiece> {
+    let half_width = stroke_width / 2.0;
+    let mut out = caption_painted(layout.caption.as_ref());
+    for s in segments_of(layout) {
+        out.push(PaintedPiece::Stroke { points: vec![s.from, s.to], closed: false, half_width });
+    }
+    out.extend(ending_pieces(&layout.endings, stroke_width));
+    out
+}
+
+/// `distanceCaptionAt(geometry, appearance, width)`.
 pub fn distance_caption_at(
-    geom: &Geom,
-    appearance: &DistanceAppearance,
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
     width: f64,
 ) -> Option<Point> {
-    distance_layout(geom, appearance, width)?.caption.map(|c| c.center)
+    distance_layout(geometry, appearance, width)?.caption.map(|c| c.center)
 }
 
-/// The leader length that puts the dimension line through `point`.
-pub fn distance_leader_length(geom: &Geom, point: Point) -> f64 {
-    let Geom::Line { a, b, .. } = geom else {
+/// `distanceLeaderLength(geometry, point)`.
+pub fn distance_leader_length(geometry: &Shape, point: Point) -> f64 {
+    if !matches!(geometry, Shape::Line(_)) {
         return 0.0;
-    };
-    project_delta(*a, point, line_axes(*a, *b).normal)
-}
-
-/// The appearance with its caption displaced by a content-space delta.
-pub fn move_distance_caption(
-    geom: &Geom,
-    appearance: &DistanceAppearance,
-    delta: Point,
-) -> DistanceAppearance {
-    let Geom::Line { a, b, .. } = geom else {
-        return appearance.clone();
-    };
-    let Axes { along, normal, .. } = line_axes(*a, *b);
-    let previous = appearance.caption.offset;
-    let offset = CaptionOffset {
-        along: previous.map_or(0.0, |o| o.along) + delta.x * along.x + delta.y * along.y,
-        perpendicular: previous.map_or(0.0, |o| o.perpendicular)
-            + delta.x * normal.x
-            + delta.y * normal.y,
-    };
-    DistanceAppearance {
-        caption: LineDimensionCaption { offset: Some(offset), ..appearance.caption },
-        ..appearance.clone()
     }
+    let (start, end) = drawn_line_of(geometry);
+    let (_, normal, _) = line_axes(start, end);
+    project_delta(start, point, normal)
 }
 
-/// The painted distance annotation.
+/// `moveDistanceCaption(geometry, appearance, delta)`.
+pub fn move_distance_caption(
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
+    delta: Point,
+) -> MeasurementAppearance {
+    if !matches!(geometry, Shape::Line(_)) {
+        return appearance.clone();
+    }
+    let (start, end) = drawn_line_of(geometry);
+    let (along, normal, _) = line_axes(start, end);
+    let previous = appearance.caption_offset();
+    let offset = json::object([
+        ("along", num(previous.map_or(0.0, |p| p.0) + delta.x * along.x + delta.y * along.y)),
+        (
+            "perpendicular",
+            num(previous.map_or(0.0, |p| p.1) + delta.x * normal.x + delta.y * normal.y),
+        ),
+    ]);
+    let mut out = appearance.0.clone();
+    out.insert("captionOffset".into(), Value::Object(offset));
+    MeasurementAppearance(out)
+}
+
+/// `distanceDrawnBounds(layout, strokeWidth)`.
+pub fn distance_drawn_bounds(layout: &DistanceLayout, stroke_width: f64) -> Rect {
+    let mut nodes: Vec<RenderNode> =
+        segments_of(layout).iter().map(|s| RenderNode::line(s.from, s.to)).collect();
+    nodes.extend(layout.endings.iter().cloned());
+    let mut points = stroked_outline_of(&nodes, stroke_width);
+    if let Some(c) = &layout.caption {
+        points.extend(c.bounds.iter().copied());
+    }
+    union_rect(&points)
+}
+
+/// The paint a distance's lines and endings take.
+fn line_paint(style: &Style) -> Paint {
+    Paint {
+        stroke: style.color.clone(),
+        width: Some(style.stroke_width),
+        opacity: style.opacity.clone(),
+        dash: dash_of(style),
+        ..Paint::default()
+    }
+    .ordered(&["stroke", "width", "opacity", "dash"])
+}
+
+/// `distanceScene(geometry, appearance, style)`.
 pub fn distance_scene(
-    geom: &Geom,
-    appearance: &DistanceAppearance,
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
     style: &Style,
 ) -> Vec<SceneNode> {
-    let Some(layout) = distance_layout(geom, appearance, style.stroke_width) else {
+    let Some(layout) = distance_layout(geometry, appearance, style.stroke_width) else {
         return Vec::new();
     };
-    let paint = Paint {
-        stroke: Some(style.color.clone()),
-        width: Some(style.stroke_width),
-        opacity: Some(style.opacity),
-        dash: match &style.border {
-            Border::Dashed { dash } => Some(dash.clone()),
-            _ => None,
-        },
-        ..Paint::default()
-    };
-    let mut nodes: Vec<SceneNode> = layout
-        .dimension_segments
+    let paint = line_paint(style);
+    let mut nodes: Vec<SceneNode> = segments_of(&layout)
         .iter()
-        .chain(&layout.leader_segments)
-        .chain(&layout.caption_connector)
-        .map(|s| SceneNode::Line { a: s.from, b: s.to, paint: paint.clone() })
+        .map(|s| SceneNode::painted(&RenderNode::line(s.from, s.to), paint.clone()))
         .collect();
     for ending in &layout.endings {
-        let filled =
-            matches!(ending, RenderNode::Ellipse { .. } | RenderNode::Poly { closed: true, .. });
-        let fill = if filled { style.interior_color.clone() } else { None };
-        nodes.push(SceneNode::painted(ending.clone(), Paint { fill, ..paint.clone() }));
+        let filled = match ending {
+            RenderNode::Ellipse(_) => true,
+            RenderNode::Poly(p) => p.closed,
+            _ => false,
+        };
+        // `{ ...paint, fill }`: the fill, when there is one, prints last.
+        let mut ending_paint = paint.clone();
+        ending_paint.fill = if filled {
+            style.interior_color.as_option().map(|c| Value::String(c.clone()))
+        } else {
+            None
+        };
+        nodes.push(SceneNode::painted(ending, ending_paint));
     }
     nodes.extend(measurement_caption_scene(layout.caption.as_ref(), style));
     nodes
 }
 
-/// The caption as painted text, baseline-anchored and turned with the line.
-pub fn measurement_caption_scene(
-    caption: Option<&DistanceCaptionLayout>,
-    style: &Style,
-) -> Vec<SceneNode> {
-    let Some(caption) = caption else {
-        return Vec::new();
-    };
+/// `measurementCaptionScene(caption, style)`.
+pub fn measurement_caption_scene(caption: Option<&CaptionLayout>, style: &Style) -> Vec<SceneNode> {
+    let Some(caption) = caption else { return Vec::new() };
     let baseline = offset_point(caption.center, caption.normal, -DISTANCE_CAPTION_SIZE * 0.33);
     let at = offset_point(baseline, caption.along, -caption.width / 2.0);
-    vec![SceneNode::Text {
+    vec![SceneNode::Text(TextScene {
         at,
         text: caption.text.clone(),
         font_size: DISTANCE_CAPTION_SIZE,
         font_family: Some("Helvetica, Arial, sans-serif".into()),
         rotation: Some((caption.along.y.atan2(caption.along.x) * 180.0) / std::f64::consts::PI),
         paint: Paint {
-            fill: Some("#000000".into()),
-            opacity: Some(style.opacity),
+            fill: Some(Value::String("#000000".into())),
+            opacity: style.opacity.clone(),
             ..Paint::default()
-        },
-    }]
+        }
+        .ordered(&["fill", "opacity"]),
+        clip: None,
+        order: Default::default(),
+    })]
 }

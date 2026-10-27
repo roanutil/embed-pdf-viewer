@@ -36,7 +36,7 @@ extension BaseSuite {
     func anObjectPrototypeNameIsFoundClosed(id: String) async throws {
       let (_, _, shell) = try await opened()
       let surface = try await shell.surface(id)
-      expectNoDifference(surface, ShellSurface(id: id, open: false, exclusive: nil, propsJson: nil))
+      expectNoDifference(surface, ShellSurface(id: id, open: false, exclusive: nil, propsJson: nil, focusRequest: 0))
       let isOpen = try await shell.isOpen(id)
       expectNoDifference(isOpen, false)
     }
@@ -65,8 +65,8 @@ extension BaseSuite {
       expectNoDifference(
         seen,
         [
-          .surfaceClosed(event: ShellSurfaceEvent(id: "thumbnails", propsJson: nil)),
-          .surfaceOpened(event: ShellSurfaceEvent(id: "search", propsJson: nil)),
+          .surfaceClosed(event: ShellSurfaceClosedEvent(id: "thumbnails")),
+          .surfaceOpened(event: ShellSurfaceOpenedEvent(id: "search", propsJson: nil)),
         ])
     }
 

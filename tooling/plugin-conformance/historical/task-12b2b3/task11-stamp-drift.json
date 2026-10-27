@@ -1,0 +1,93 @@
+{
+  "authority": "task-11-cases.out:101",
+  "frozen": {
+    "name": "library-added-to-empty",
+    "fn": "stampReducer",
+    "args": [
+      {
+        "libraries": {},
+        "libraryOrder": [],
+        "assets": {}
+      },
+      {
+        "type": "LIBRARY_ADDED",
+        "library": {
+          "id": "L",
+          "name": "Library L",
+          "kind": "stamps",
+          "assetIds": []
+        }
+      }
+    ],
+    "outcome": {
+      "returned": {
+        "changed": true,
+        "state": {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": []
+            }
+          },
+          "libraryOrder": [
+            "L"
+          ],
+          "assets": {}
+        }
+      }
+    }
+  },
+  "base": {
+    "source": "stamp-functions",
+    "file": "plugins/stamp-functions.json",
+    "kind": "function",
+    "name": "library-added-to-empty",
+    "input": {
+      "name": "library-added-to-empty",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {},
+          "libraryOrder": [],
+          "assets": {},
+          "armed": {}
+        },
+        {
+          "type": "LIBRARY_ADDED",
+          "library": {
+            "id": "L",
+            "name": "Library L",
+            "kind": "stamps",
+            "assetIds": []
+          }
+        }
+      ]
+    },
+    "inputSha256": "9ddd4b52c058987bac4ee1d19ed197f5bd73084d49be41136e891e071542371a",
+    "outcome": {
+      "returned": {
+        "changed": true,
+        "state": {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": []
+            }
+          },
+          "libraryOrder": [
+            "L"
+          ],
+          "assets": {},
+          "armed": {}
+        }
+      }
+    }
+  },
+  "exactDifference": "BASE args[0].armed={} is newly present; other arguments are equal",
+  "equalWithoutArmed": true,
+  "disposition": "Intentional current shipping initialStampState addition; retained in complete typed state. Replace stampReducer wrapper with shipping addLibrary(state, library) during iii; no case retirement justified."
+}

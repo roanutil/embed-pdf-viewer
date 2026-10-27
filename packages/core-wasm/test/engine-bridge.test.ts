@@ -153,6 +153,178 @@ describe('the engine bridge over the local engine', () => {
   });
 });
 
+describe('the bridge members for the local brand, the object-number pool and call facts', () => {
+  let engine: Engine;
+  let bridge: EngineBridge;
+  let docId: string;
+
+  beforeAll(async () => {
+    engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
+    bridge = createEngineBridge(engine);
+    const bytes = new Uint8Array(await readFile(resolve(fixtures, FIXTURE)));
+    docId = JSON.parse(
+      await bridge.open(
+        JSON.stringify({ kind: 'bytes', id: 'brand', bytes: bytesJson(bytes) }),
+        JSON.stringify({ scope: ['*'] }),
+      ),
+    );
+  });
+  afterAll(async () => {
+    await bridge.destroy();
+  });
+
+  test('isLocal and isLocalDocument read the local brand', () => {
+    expect(bridge.isLocal()).toBe(true);
+    expect(bridge.isLocalDocument(docId)).toBe(true);
+    expect(() => bridge.isLocalDocument('nope')).toThrow('no document "nope"');
+  });
+
+  test('an unbranded engine and its documents are not local', async () => {
+    const plain = { open: async () => ({ id: 'x' }), destroy: async () => {} };
+    const cloud = createEngineBridge(plain as unknown as Engine);
+    expect(cloud.isLocal()).toBe(false);
+    await cloud.open('{"kind":"bytes"}');
+    expect(cloud.isLocalDocument('x')).toBe(false);
+    cloud.dispose();
+  });
+
+  test('heldObjectNumbers and takeObjectNumber read the live pool, synchronously', async () => {
+    // `reserve` goes through `call`, as the kernel's default does.
+    await bridge.call(docId, 'objectNumbers.reserve', null, '[3]');
+    const held = bridge.heldObjectNumbers(docId);
+    expect(held).toBeGreaterThanOrEqual(3);
+    const first = bridge.takeObjectNumber(docId);
+    expect(typeof first).toBe('number');
+    const second = bridge.takeObjectNumber(docId);
+    expect(second).toBeGreaterThan(first as number);
+    expect(bridge.heldObjectNumbers(docId)).toBeLessThanOrEqual(held - 2 + 64);
+    expect(() => bridge.heldObjectNumbers('nope')).toThrow('no document "nope"');
+    expect(() => bridge.takeObjectNumber('nope')).toThrow('no document "nope"');
+  });
+
+  test('takeObjectNumber answers null when the pool is empty', () => {
+    const pool = {
+      held: 0,
+      take: () => null,
+      onLost: () => () => {},
+    };
+    const fake = createEngineBridge({
+      open: async () => ({ id: 'e', objectNumbers: pool }),
+    } as unknown as Engine);
+    return fake.open('{"kind":"bytes"}').then(() => {
+      expect(fake.takeObjectNumber('e')).toBeNull();
+      expect(fake.heldObjectNumbers('e')).toBe(0);
+      fake.dispose();
+    });
+  });
+
+  test('onLostObjectNumbers passes each loss as JSON text until unsubscribed', () => {
+    const live = new Map<string, (lost: unknown) => void>();
+    const fakePool = {
+      held: 0,
+      take: () => null,
+      onLost(listener: (lost: unknown) => void) {
+        live.set('l', listener);
+        return () => live.delete('l');
+      },
+    };
+    const fake = createEngineBridge({
+      open: async () => ({ id: 'e', objectNumbers: fakePool }),
+    } as unknown as Engine);
+    return fake.open('{"kind":"bytes"}').then(() => {
+      const seen: string[] = [];
+      const off = fake.onLostObjectNumbers('e', (json) => seen.push(json));
+      live.get('l')?.({ numbers: [5, 6], reason: 'versioned' });
+      expect(seen.map((json) => JSON.parse(json))).toEqual([
+        { numbers: [5, 6], reason: 'versioned' },
+      ]);
+      off();
+      expect(live.has('l')).toBe(false);
+      fake.dispose();
+    });
+  });
+
+  test('onLostObjectNumbers is wired to the real pool and its unsubscriber', async () => {
+    const bytes = new Uint8Array(await readFile(resolve(fixtures, FIXTURE)));
+    const real = (await engine.open(
+      { kind: 'bytes', id: 'lost', bytes },
+      { scope: ['*'] },
+    )) as unknown as { objectNumbers: { notifyLost(lost: unknown): void } };
+    const own = createEngineBridge({ open: async () => real } as unknown as Engine);
+    await own.open('{"kind":"bytes"}');
+    const seen: string[] = [];
+    const off = own.onLostObjectNumbers('lost', (json) => seen.push(json));
+    real.objectNumbers.notifyLost({ numbers: [8, 9], reason: 'reclaimed' });
+    expect(seen.map((json) => JSON.parse(json))).toEqual([
+      { numbers: [8, 9], reason: 'reclaimed' },
+    ]);
+    off();
+    real.objectNumbers.notifyLost({ numbers: [10], reason: 'versioned' });
+    expect(seen).toHaveLength(1);
+    expect(() => own.onLostObjectNumbers('nope', () => {})).toThrow('no document "nope"');
+    own.dispose();
+  });
+
+  test('callWith runs the chain on doc.with(facts), for the document and for a page', async () => {
+    const facts = JSON.stringify({ priority: 'high', view: 'v1' });
+    const list = JSON.parse(await bridge.callWith(docId, facts, 'pages.list', null, '[]'));
+    expect(list.pageCount).toBe(2);
+    const pon = list.pages[0].ref.objectNumber;
+    const index = await bridge.callWith(
+      docId,
+      '{}',
+      'page.render.image',
+      pon,
+      '[{"width":32,"format":"bmp"}]',
+    );
+    expect(JSON.parse(index).format).toBe('bmp');
+  });
+
+  test('callWith carries the facts on the handle it calls', async () => {
+    const seen: unknown[] = [];
+    const handle = (facts?: unknown) => ({
+      id: 'w',
+      facts,
+      with(f: unknown) {
+        seen.push(f);
+        return handle(f);
+      },
+      ping(arg: string) {
+        return Promise.resolve({ facts: this.facts, arg });
+      },
+    });
+    const fake = createEngineBridge({ open: async () => handle() } as unknown as Engine);
+    await fake.open('{"kind":"bytes"}');
+    const out = await fake.callWith('w', '{"priority":"low"}', 'ping', null, '["a"]');
+    expect(seen).toEqual([{ priority: 'low' }]);
+    expect(JSON.parse(out)).toEqual({ facts: { priority: 'low' }, arg: 'a' });
+    fake.dispose();
+  });
+
+  test('callWith rejects, never throws, for a missing document, bad facts or a missing member', async () => {
+    const message = async (call: Promise<string>) => {
+      try {
+        await call;
+      } catch (error) {
+        return (error as { $error: { message: string } }).$error.message;
+      }
+      throw new Error('did not reject');
+    };
+    expect(await message(bridge.callWith('nope', '{}', 'pages.list', null, '[]'))).toContain(
+      'no document "nope"',
+    );
+    expect(await message(bridge.callWith(docId, 'not json', 'pages.list', null, '[]'))).toMatch(
+      /JSON/,
+    );
+    expect(await message(bridge.callWith(docId, '{}', 'pages.nope', null, '[]'))).toContain(
+      'pages.nope is not a function',
+    );
+    expect(await message(bridge.callWith(docId, '{}', 'pages.list', 1, '[]'))).toContain(
+      'is not a page path',
+    );
+  });
+});
+
 describe('two bridges share one host table', () => {
   test('ids are unique across bridges, and the module-level hostBytes resolves either', () => {
     // Two independent bridges, as two live `WasmKernel`s would each build

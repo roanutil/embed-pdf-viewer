@@ -1,0 +1,12 @@
+{
+  "legacyObserverFactoriesBuildersExact": true,
+  "legacyTriggerBuildersExact": true,
+  "legacyScriptingSurfaceHoverExact": true,
+  "reviewedCurrentFixtureExact": true,
+  "preludeExactHeadAfterLastImport": true,
+  "finalCoveringTests": 441,
+  "remainingDeferredActionCases": 42,
+  "remainingLinkCases": 29,
+  "priorCurrentC2Cases": 76,
+  "ownedOriginalCases": 42
+}

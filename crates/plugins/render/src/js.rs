@@ -1,58 +1,13 @@
 //! The JavaScript built-ins this plugin's strings depend on, where Rust's
 //! answer differs. The numeric ones (`Math.round`, `Math.max`, number
-//! printing) come from [`epdf_geometry::js`]; these three are the ones only
-//! this plugin needs.
+//! printing, `toFixed`) come from [`epdf_geometry::js`]; these three are the
+//! ones only this plugin needs.
 
 use std::cmp::Ordering;
 
 use epdf_kernel::Error;
 
-pub use epdf_geometry::js::{max, min, number_to_string, round};
-
-/// `Number.prototype.toFixed(digits)`: the exact binary value rounded at
-/// `digits` places, a tie going to the larger magnitude (`(0.125).toFixed(2)`
-/// is `0.13`, where Rust's `{:.2}` rounds half to even). At `1e21` and past
-/// it, and for the non-finite values, it is `Number#toString`.
-pub fn to_fixed(x: f64, digits: usize) -> String {
-    if !x.is_finite() || x.abs() >= 1e21 {
-        return number_to_string(x);
-    }
-    let negative = x < 0.0;
-    // 1100 places is past the longest exact decimal expansion of any f64
-    // (1074 fractional digits for the smallest subnormal), so this string is
-    // the exact value and the rounding below is decided on exact digits.
-    let exact = format!("{:.1100}", x.abs());
-    let (int_part, frac_part) = exact.split_once('.').expect("fixed notation has a point");
-    let mut kept: Vec<u8> = int_part.bytes().chain(frac_part.bytes().take(digits)).collect();
-    let round_up = frac_part.as_bytes().get(digits).is_some_and(|d| *d >= b'5');
-    if round_up {
-        let mut i = kept.len();
-        loop {
-            if i == 0 {
-                kept.insert(0, b'1');
-                break;
-            }
-            i -= 1;
-            if kept[i] == b'9' {
-                kept[i] = b'0';
-            } else {
-                kept[i] += 1;
-                break;
-            }
-        }
-    }
-    let int_len = kept.len() - digits;
-    let mut out = String::with_capacity(kept.len() + 2);
-    if negative {
-        out.push('-');
-    }
-    out.push_str(std::str::from_utf8(&kept[..int_len]).expect("ascii"));
-    if digits > 0 {
-        out.push('.');
-        out.push_str(std::str::from_utf8(&kept[int_len..]).expect("ascii"));
-    }
-    out
-}
+pub use epdf_geometry::js::{max, min, number_to_string, round, to_fixed};
 
 /// Printable ASCII in the order of the CLDR root collation, which is what
 /// `String.prototype.localeCompare` uses under Node's full ICU. Letters of
@@ -99,20 +54,6 @@ pub fn dom_abort_error() -> Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn to_fixed_matches_the_spec() {
-        assert_eq!(to_fixed(0.125, 2), "0.13");
-        assert_eq!(to_fixed(1.005, 2), "1.00");
-        assert_eq!(to_fixed(7.65, 2), "7.65");
-        assert_eq!(to_fixed(2.5, 0), "3");
-        assert_eq!(to_fixed(9.999, 2), "10.00");
-        assert_eq!(to_fixed(-0.001, 2), "-0.00");
-        assert_eq!(to_fixed(-0.0, 1), "0.0");
-        assert_eq!(to_fixed(1e21, 2), "1e+21");
-        assert_eq!(to_fixed(f64::NAN, 1), "NaN");
-        assert_eq!(to_fixed(7.65, 1), "7.7");
-    }
 
     #[test]
     fn locale_compare_puts_punctuation_before_digits() {

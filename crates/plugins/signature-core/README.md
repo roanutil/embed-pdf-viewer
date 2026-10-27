@@ -2,7 +2,10 @@
 
 `packages/core/signature` in Rust: parse, verify and build detached CMS signatures, the completion
 gate, certificate chain validation, `sign()` and `validateSignatures()` over a document handle, and
-the signer ports. All 460 cases in the five `vectors/core/signature-*.json` files replay identically
+the signer ports. Document timestamps (`sign` with `kind: 'timestamp'`, `cms/timestamp.ts`, the
+`timestamp` gate profile and `createTestTimestampAuthority`) port too. No vector signs a timestamp,
+so `tests/timestamp.rs` checks them against the refusal texts the TypeScript gives for the same
+inputs. All 460 cases in the five `vectors/core/signature-*.json` files replay identically
 (`cargo test -p epdf-signature-core`): 204 parse cases, 97 for verify, build and the gate, 96 for
 trust, 35 for signing and validation over a document, and 28 for the signers.
 
@@ -63,19 +66,53 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   digest algorithm; the parameters' hash is only looked up. A SHA-1 PSS signature under a SHA-256
   digest is `invalid`, and SHA-1 parameters over a SHA-256 signature are `valid`
   (`verify-pssSha1`, `verify-pssSha1ParamsOverSha256`).
+- RSA moduli up to 16,384 bits verify, and a longer one imports but never verifies, as Node's
+  WebCrypto behaves (`crypto.rs:126`, `tests/adversarial.rs:108,118`). The `rsa` crate's own
+  default stops at 4,096 bits, so the limit is set explicitly.
 
 ## Deliberate deviations from the TypeScript
 
-- Malformed input outside the vectors can refuse with different text. pkijs validates the whole
-  SignedData against one schema and reports "Object's schema was not verified against input data
-  for SignedData"; this port applies the same structure and reports the same text, but asn1js's
-  schema matcher has corners (extra members, constructed strings) it doesn't follow member for
-  member.
+- Every BER read the TypeScript makes with `asn1js.fromBER` (the CMS, a TSTInfo, a certificate,
+  a subject key identifier) first asks `asn1js::from_ber` whether asn1js 3.0.10 would accept it.
+  That walk follows asn1js's `localFromBER` byte for byte: its 100-level and 10,000-element
+  limits, the elements it counts while speculatively decoding each primitive OCTET STRING (and
+  each BIT STRING whose unused-bits octet is 0), its identifier, length and value-block refusals,
+  and the readers that throw (a GeneralizedTime `fromString` cannot read, a BMPString of odd
+  length, a UniversalString whose length is not a multiple of 4). `tests/asn1js_parity.rs`
+  carries the TypeScript's verdicts: re-encodings of `rsaCades`, the node limit over a whole CMS
+  (9,817 extra NULLs read, 9,818 do not) and a TSTInfo (9,989 NULL parameters read, 9,990 do
+  not), and the depth limit. Against 47,413 fuzzed and limit-straddling inputs the walk and
+  `asn1js.fromBER` gave the same answer every time. The signature, message-digest, ESS certHash
+  and certificate `extnValue` read as pkijs reads them: a constructed signature or `extnValue`
+  fails pkijs's schema, and a constructed message-digest or certHash reads as no bytes, which is
+  `valueHexView` of a constructed OCTET STRING. `der` still builds the tree. It keeps a constructed string's content as bytes, as asn1js's
+  `HexBlock` does (an indefinite one's runs to the end of its input). Where its tree and
+  asn1js's still differ it is the stricter one: it refuses a constructed element whose last
+  member runs past the declared length, which asn1js reads on while the buffer lasts. One throw
+  is not modelled:
+  `String.fromCharCode.apply` over a string of more than about 120,000 octets throws a
+  RangeError at a threshold set by the host's stack.
+- `timestamp::read_timestamp_info` reads a TSTInfo as `new pkijs.TSTInfo({ schema })` does. The
+  schema match follows asn1js's `compareSchema`, including its rule that a trailing member no
+  optional slot can place fails the whole schema, and genTime goes through a port of asn1js's
+  `GeneralizedTime.fromString`. `tests/timestamp.rs` replays 66 TSTInfo inputs with the verdicts
+  pkijs 3.4.0 and asn1js 3.0.10 gave for them. A GeneralizedTime without `Z` is local time to
+  asn1js, so its value depends on the host's time zone; this reads it as a host on UTC does.
+  Accepting or refusing it doesn't depend on the zone, and the gate never reads the time.
+- Three reads still differ from pkijs, none reached by a vector. An extension's value is read
+  lazily by pkijs (`Extension.parsedValue`, pkijs 3.4.0 `build/index.js:7441-7447`); here
+  `Extension::parsed` and the chain engine's key identifiers (`cert.rs:117`, `trust.rs:214`) go
+  through `der` without asking `asn1js::from_ber`, so an extension asn1js refuses or throws on
+  can still be read. The timestamp token is the unsigned attribute's bytes as they arrived,
+  where TS re-encodes them with `toBER(false)`, so a token with non-DER lengths reaches the
+  timestamp check unchanged here and normalised there. And `signingTime` takes its value from
+  `Node::time`, not asn1js's `toDate()`: accept and refuse match through the walk, but a
+  GeneralizedTime asn1js reads oddly (no `Z`, a comma fraction) can give a different instant.
+- A constructed eContent joins its primitive pieces only, as asn1js's `OctetString.getValue()`
+  does: a nested constructed piece adds no bytes.
 - An ECDSA hash shorter than half the curve's field (SHA-256 over P-521) is left-padded before
   `verify_prehash`, which is what WebCrypto's integer conversion does; the `ecdsa` crate would
   otherwise refuse it.
-- RSA keys go through `rsa::RsaPublicKey::new`, which refuses moduli above 4,096 bits. WebCrypto
-  in Node accepts up to 16,384. Such a signature verifies as `invalid` here.
 - Two CA certificates that issue each other send pkijs's `buildPath` into a recursion that never
   returns: `validateChain` hangs. A straight port overflows the stack instead, which aborts the
   process, and a hostile PDF can carry such a chain. `ChainEngine::build_path` refuses an issuer
@@ -107,6 +144,9 @@ signers in `packages/engine/main/test/fixtures`, one of them with the OpenSSL-st
 engine's policy and name-constraint half.
 
 ## Mutation testing
+
+These counts predate the Task 13.9 catch-up (document timestamps, `CompletionProfile`, the
+harness's `pkcs7` fallback for an unknown gate profile) and are stale: the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 235 of 239 viable mutants (234 caught, 1 timeout; 13 unviable); the 4 left are equivalent (`.superpowers/sdd/multiplatform-upstream-catchup/task-14.8b-report.md`).
 
 `scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
 file over every module but `harness.rs`, catches 1,781 of 1,824 viable mutants (1,777 caught, 4

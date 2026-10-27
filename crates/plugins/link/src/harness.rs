@@ -2,26 +2,24 @@
 //! plugin from a vector and calls its capability by name, plus the function
 //! table.
 //!
-//! It mirrors the generator's two shims in
-//! `tooling/plugin-conformance/src/suites/link.ts`. The `link` factory's
+//! It mirrors the generator's shim in
+//! `tooling/plugin-conformance/src/suites/link.ts`: the `link` factory's
 //! `onActivate` config is a scripted callback spec, subscribed to
-//! `onActivated` as the controller is built; the event it logs spells a
-//! dispatched activation's promise as the string `[promise]`. And a
-//! `console.error` whose message starts `[link]` logs as the callback
-//! `console.error`.
+//! `onActivated` as the controller is built (and released with the
+//! instance). The event it logs spells a dispatched activation's promise as
+//! the string `[promise]`.
 
 use std::any::Any;
 use std::rc::Rc;
 
-use epdf_annotation_core::{PageRef, PdfLinkTarget};
-use epdf_geometry::Point;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe, is_undefined, undefined};
+use epdf_kernel::geometry::Point;
+use epdf_kernel::{
+    AnyPlugin, AnyToken, ControllerContext, Error, Unsubscribe, is_undefined, undefined,
+};
 use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Value, json};
 
-use crate::controller::is_link;
-use crate::model::items_in_source_order;
 use crate::*;
 
 /// The adapter.
@@ -35,48 +33,58 @@ pub const MEMBERS: &[&str] = &[
     "listAllLinks",
     "ensureLoaded",
     "isLoaded",
+    "getStatus",
     "resolve",
     "activate",
     "activateAt",
     "getLabel",
     "onActivated",
     "onLoaded",
+    "registerUriOpener",
     "isNavigationEngaged",
 ];
 
-fn present(args: &[Value], index: usize) -> Option<&Value> {
-    args.get(index).filter(|v| !is_undefined(v) && !v.is_null())
+fn arg(args: &[Value], index: usize) -> Value {
+    args.get(index).cloned().unwrap_or_else(undefined)
 }
 
-fn arg<T: serde::de::DeserializeOwned>(args: &[Value], index: usize) -> Result<T, Error> {
-    from_value(args.get(index).unwrap_or(&undefined()))
+/// A `PageRef | number` argument. Anything else names no page.
+fn page_arg(args: &[Value], index: usize) -> PageTarget {
+    let value = arg(args, index);
+    match &value {
+        Value::Number(n) => PageTarget::Index(n.as_f64().unwrap_or(f64::NAN)),
+        other => PageRef::from_json(other).map_or(PageTarget::Index(f64::NAN), PageTarget::Ref),
+    }
 }
 
-/// `'target' in value && 'bounds' in value`.
-fn input_arg(args: &[Value]) -> Result<LinkInput, Error> {
-    let value = args.first().cloned().unwrap_or(Value::Null);
-    Ok(if is_link(&value) {
-        LinkInput::Link(Box::new(from_value(&value)?))
-    } else {
-        LinkInput::Target(from_value::<PdfLinkTarget>(&value)?)
-    })
+fn point_arg(args: &[Value], index: usize) -> Result<Point, Error> {
+    from_value(&arg(args, index))
 }
 
-fn context_arg(args: &[Value], index: usize) -> Result<Option<LinkActivateContext>, Error> {
-    present(args, index).map(from_value).transpose()
+/// An optional `LinkActivateContext` argument.
+fn context_arg(args: &[Value], index: usize) -> Option<LinkActivateContext> {
+    args.get(index).filter(|v| !is_undefined(v) && !v.is_null()).map(LinkActivateContext::from_json)
+}
+
+/// `OperationOptions` carry only a signal, which no vector passes.
+fn options() -> OperationOptions {
+    OperationOptions::default()
 }
 
 /// The event as the generator's shim logs it.
 fn printable(event: &LinkActivatedEvent) -> Value {
     json!({
-        "target": to_value(&event.target),
+        "target": event.target,
         "activation": event.activation.to_json_with(|_| json!("[promise]")),
-        "origin": event.origin,
     })
 }
 
 fn activation_json(activation: &LinkActivation, h: &Harness) -> Value {
     activation.to_json_with(|dispatch| h.track(dispatch.map(|result| Ok(to_value(&result)))))
+}
+
+fn or_null(link: Option<Link>) -> Value {
+    link.unwrap_or(Value::Null)
 }
 
 /// Subscribe a scripted listener; the outcome is the unsubscribe, as a ref.
@@ -104,44 +112,50 @@ fn call_capability(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     Ok(match method {
-        "listLinks" => {
-            Outcome::Returned(items_json(cap, &cap.list_links(&arg::<PageRef>(args, 0)?)))
-        }
+        "listLinks" => Outcome::Returned((*cap.list_links(page_arg(args, 0))).clone()),
         "getLink" => {
-            let id: String = arg(args, 1)?;
-            let link = cap.get_link(&arg(args, 0)?, &id);
-            Outcome::Returned(link.map_or(Value::Null, |l| link_json(cap, l)))
+            let id = arg(args, 1);
+            let link = id.as_str().and_then(|id| cap.get_link(page_arg(args, 0), id));
+            Outcome::Returned(or_null(link))
         }
         "getLinkAt" => {
-            let link = cap.get_link_at(&arg(args, 0)?, arg::<Point>(args, 1)?);
-            Outcome::Returned(link.map_or(Value::Null, |l| link_json(cap, l)))
+            Outcome::Returned(or_null(cap.get_link_at(page_arg(args, 0), point_arg(args, 1)?)))
         }
-        "listAllLinks" => {
-            let owner = cap.clone();
-            Outcome::Promise(cap.list_all_links().map(move |items| Ok(items_json(&owner, &items))))
-        }
-        "ensureLoaded" => Outcome::promise_unit(cap.ensure_loaded(&arg(args, 0)?)),
-        "isLoaded" => Outcome::Returned(json!(cap.is_loaded(&arg(args, 0)?))),
-        "resolve" => Outcome::Returned(cap.resolve(&arg(args, 0)?)?.to_json()),
+        "listAllLinks" => Outcome::Promise(cap.list_all_links(options())),
+        "ensureLoaded" => Outcome::promise_unit(cap.ensure_loaded(page_arg(args, 0), options())),
+        "isLoaded" => Outcome::Returned(json!(cap.is_loaded(page_arg(args, 0)))),
+        "getStatus" => Outcome::Returned(json!(cap.get_status(page_arg(args, 0)).as_str())),
+        "resolve" => Outcome::Returned(cap.resolve(&arg(args, 0)).to_json()),
         "activate" => {
-            let activation = cap.activate(&input_arg(args)?, context_arg(args, 1)?.as_ref())?;
+            let activation = cap.activate(&arg(args, 0), context_arg(args, 1).as_ref());
             Outcome::Returned(activation_json(&activation, h))
         }
         "activateAt" => {
-            let page: PageRef = arg(args, 0)?;
-            let point: Point = arg(args, 1)?;
-            match cap.activate_at(&page, point, context_arg(args, 2)?.as_ref())? {
+            let point = point_arg(args, 1)?;
+            match cap.activate_at(page_arg(args, 0), point, context_arg(args, 2).as_ref())? {
                 Some(activation) => Outcome::Returned(activation_json(&activation, h)),
                 None => Outcome::Returned(Value::Null),
             }
         }
-        "getLabel" => {
-            let input = args.first().cloned().unwrap_or(Value::Null);
-            Outcome::Returned(json!(cap.get_label(&input)))
-        }
+        "getLabel" => Outcome::Returned(json!(cap.get_label(&arg(args, 0)))),
         "onActivated" => hook(h, args.first(), printable, |l| cap.on_activated(l)),
-        "onLoaded" => {
-            hook(h, args.first(), |e: &LinkLoadedEvent| to_value(e), |l| cap.on_loaded(l))
+        "onLoaded" => hook(h, args.first(), LinkLoadedEvent::to_json, |l| cap.on_loaded(l)),
+        "registerUriOpener" => {
+            // A scripted opener: its answer's truthiness is whether it
+            // opened. A throw cannot cross `UriOpener`'s `bool`, so it reads
+            // as a refusal, where the TypeScript's throw leaves `activate`.
+            let callback = h.callback(args.first().unwrap_or(&Value::Null));
+            let off = cap.register_uri_opener(Rc::new(move |uri: &Value| {
+                match callback.call(vec![uri.clone()]) {
+                    Answer::Returns(value) => epdf_annotation_core::json::truthy(Some(&value)),
+                    Answer::Promise(_) => true,
+                    Answer::Throws(_) => false,
+                }
+            }));
+            Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                off.call();
+                Outcome::undefined()
+            })))
         }
         "isNavigationEngaged" => Outcome::Returned(json!(cap.is_navigation_engaged())),
         other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
@@ -154,26 +168,21 @@ impl HarnessPlugin for LinkAdapter {
     }
 
     fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        let log = h.clone();
-        let config_ = LinkConfig {
-            host: LinkHost {
-                console_error: Some(Rc::new(move |message: &str, error: &Error| {
-                    log.log("console.error", vec![json!(message), error.to_canonical()]);
-                })),
-            },
-        };
         let on_created = config.get("onActivate").filter(|s| s.get("$fn").is_some()).map(|spec| {
             let callback = h.callback(spec);
-            Rc::new(move |api: &LinkCapability| {
+            Rc::new(move |api: &LinkCapability, cx: &ControllerContext| {
                 let callback = callback.clone();
-                let _ =
-                    api.on_activated(move |event| match callback.call(vec![printable(event)]) {
+                // `void callback(...)`: what it answers is dropped, a throw
+                // is the listener's.
+                cx.listen(api.on_activated(
+                    move |event| match callback.call(vec![printable(event)]) {
                         Answer::Throws(error) => Err(error),
                         _ => Ok(()),
-                    });
-            }) as Rc<dyn Fn(&LinkCapability)>
+                    },
+                ));
+            }) as Rc<dyn Fn(&LinkCapability, &ControllerContext)>
         });
-        Ok(build_link_plugin(config_, on_created))
+        Ok(build_link_plugin(on_created))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -199,36 +208,20 @@ impl HarnessPlugin for LinkAdapter {
 
 // ── functions ─────────────────────────────────────────────────────────────────
 
-fn initial_link_state_fn(_: &[Value]) -> Result<Value, Error> {
-    Ok(to_value(&initial_link_state()))
-}
-
-/// `{changed: next !== state, state: next}`.
-fn link_reducer_fn(a: &[Value]) -> Result<Value, Error> {
-    let state: LinkState = from_value(&a[0])?;
-    let action: LinkAction = from_value(&a[1])?;
-    let next = link_reducer(&state, &action);
-    Ok(json!({ "changed": next.is_some(), "state": to_value(next.as_ref().unwrap_or(&state)) }))
+/// The generator's `resolveLinkTarget(target, pages)`: a page is known when
+/// one of `pages` has its `objectNumber`.
+fn resolve_link_target_fn(args: &[Value]) -> Result<Value, Error> {
+    let target = arg(args, 0);
+    let pages = arg(args, 1);
+    let known = pages.as_array().cloned().unwrap_or_default();
+    let resolution = resolve_link_target(&target, |page| {
+        let number = |p: &Value| p.get("objectNumber").and_then(epdf_annotation_core::json::number);
+        known.iter().any(|p| number(p) == number(page))
+    });
+    Ok(resolution.to_json())
 }
 
 /// The pure functions, by the names the vectors use.
 pub fn functions() -> FunctionTable {
-    vec![("initialLinkState", initial_link_state_fn), ("linkReducer", link_reducer_fn)]
-}
-
-/// Links in the member order of whichever TypeScript built them: the
-/// annotation plugin's `LinkNavItem` order, or `source.ts`'s (see
-/// [`InSourceOrder`]).
-fn link_json(cap: &LinkCapability, link: Link) -> Value {
-    match items_json(cap, &[link]) {
-        Value::Array(mut one) => one.pop().unwrap_or(Value::Null),
-        other => other,
-    }
-}
-
-fn items_json(cap: &LinkCapability, items: &[Link]) -> Value {
-    if cap.uses_annotation_links() {
-        return to_value(&items);
-    }
-    items_in_source_order(items, serde_json::value::Serializer).unwrap_or(Value::Null)
+    vec![("resolveLinkTarget", resolve_link_target_fn)]
 }

@@ -1,13 +1,15 @@
 //! `contract.ts`: the public action vocabulary (triggers, contexts,
-//! results, policy, the UI adapter and submit handler ports) and the two
-//! pure mappings, `eventOf` and `triggerOriginOf`. The host lens lives in
-//! [`crate::host_contract`]; both are one runtime object,
+//! results, events, policy, the settings, the UI adapter and submit handler
+//! ports) and the two pure mappings, `eventOf` and `triggerOriginOf`. The
+//! host lens lives in [`crate::host_contract`]; both are one runtime object,
 //! [`crate::ActionsCapability`].
 
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_acrojs::{IdentityOverrides, ScriptBudget, ScriptSandboxFactory};
+use epdf_acrojs::{
+    IdentityOverrides, ScriptBudget, ScriptDiagnostic, ScriptExecutionError, ScriptSandboxFactory,
+};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::{Error, Token};
@@ -29,9 +31,15 @@ pub type PdfActionNode = Value;
 pub type PdfActionTargetRef = Value;
 /// `FormEffect`.
 pub type FormEffect = Value;
+/// `OutlineItemRef`: `{objectNumber}`, as the engine wrote it.
+pub type OutlineItemRef = Value;
+/// `PdfActionType`: the node's `type` (`goto`, `uri`, `javascript`, ...).
+pub type PdfActionType = String;
+/// `FormSnapshot`, as the engine or the form plugin wrote it.
+pub type FormSnapshot = Value;
 
-/// `PageRef` as JSON, for the serde derives in this crate. The kernel's
-/// `PageRef` carries no serde impls.
+/// `PageRef` as JSON, for serde derives. The kernel's `PageRef` now carries
+/// serde impls of its own; this module stays for callers that name it.
 pub mod page_ref_json {
     use super::*;
 
@@ -125,6 +133,10 @@ pub enum ActionSource {
         annotation: Option<AnnotationRef>,
         #[serde(default, skip_serializing_if = "Option::is_none", with = "page_ref_json::option")]
         page: Option<PageRef>,
+    },
+    /// An outline item the user followed: its /A, run as a link's is.
+    Outline {
+        item: OutlineItemRef,
     },
     /// A non-widget annotation's own /AA event.
     Annotation {
@@ -293,6 +305,10 @@ pub enum ActionTreeSource {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         event: Option<DocumentTriggerEvent>,
     },
+    /// An outline item's /A.
+    Outline {
+        item: OutlineItemRef,
+    },
 }
 
 /// The document-open sequence has run (once per document).
@@ -447,6 +463,9 @@ pub enum ActionResultStatus {
     Partial,
     Inert,
     Refused,
+    /// The caller's signal fired while the tree or trigger ran: the walk
+    /// stopped before its next node and nothing deferred fired.
+    Cancelled,
 }
 
 /// One dispatch transaction's outcome. Document work is not rollback-atomic:
@@ -458,11 +477,38 @@ pub struct ActionDispatchResult {
     pub diagnostics: Vec<ActionDiagnostic>,
 }
 
+// ── events ────────────────────────────────────────────────────────────────────
+
+/// `onExecuted`: one tree ran, whatever started it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ActionDispatchEvent {
-    pub ctx: ActionContext,
+pub struct ActionExecutedEvent {
     pub tree: PdfActionTree,
     pub result: ActionDispatchResult,
+    /// What started it.
+    pub source: ActionSource,
+}
+
+/// `onDiagnosticReported`: an action was blocked, reported or couldn't run.
+/// `action` and `source` are `None` (`null`) for a diagnostic about no one
+/// action. The run that reported it lists the same diagnostic with its
+/// message.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionDiagnosticReportedEvent {
+    pub code: ActionDiagnosticCode,
+    pub action: Option<PdfActionType>,
+    pub source: Option<ActionSource>,
+}
+
+/// `onScriptDiagnosticReported`: a script was stopped from doing something,
+/// or used something the viewer doesn't support.
+pub type ScriptDiagnosticReportedEvent = ScriptDiagnostic;
+
+/// `onScriptFailed`: a script threw. `source` is `None` (`null`) for a
+/// script no action started (a field's K/F/V/C script, a stamp template).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ScriptFailedEvent {
+    pub error: ScriptExecutionError,
+    pub source: Option<ActionSource>,
 }
 
 /// One tree's execution inside a trigger, with its own source and results.
@@ -611,7 +657,7 @@ pub struct ActionPolicyPatch {
     pub submit_form: Option<PartialActionPolicyRow>,
 }
 
-/// Trigger-family gates, default all on. `activate` is never gated.
+/// A change to the `triggers` setting: only the families it names.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct TriggerGates {
@@ -624,6 +670,16 @@ pub struct TriggerGates {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub annotation: Option<bool>,
+}
+
+/// The `triggers` setting: run the actions of the `document`, its `page`s,
+/// or `annotation`s. A click on a link or button always runs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct ActionTriggers {
+    pub document: bool,
+    pub page: bool,
+    pub annotation: bool,
 }
 
 /// When the document-open sequence fires.
@@ -640,44 +696,123 @@ pub enum OpenSequence {
     Off,
 }
 
-/// `ActionsConfig.javascript`: the one JavaScript switch.
+impl OpenSequence {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            OpenSequence::Auto => "auto",
+            OpenSequence::Headless => "headless",
+            OpenSequence::Off => "off",
+        }
+    }
+}
+
+/// `ActionsScriptIdentity`: who scripts think the user is, fields over the
+/// document's user or a function that returns them.
+pub type ActionsScriptIdentity = IdentityOverrides;
+
+/// `ActionsSettings['javascript']`.
+#[derive(Clone)]
+pub struct JavaScriptSettings {
+    /// Run the document's JavaScript. Off by default. Read when a document
+    /// opens: its script realm exists from then on, or never.
+    pub enabled: bool,
+    /// Who scripts think the user is, on top of the document's user. `None`
+    /// (`null`): the document's user. Read at every run.
+    pub identity: Option<ActionsScriptIdentity>,
+}
+
+/// `ActionsSettings`: the plugin's settings, registered over
+/// [`actions_defaults`] and changed with `update_settings` for every
+/// document. `policy`, `triggers` and `javascript.identity` apply to the
+/// next action; `javascript.enabled` to documents opened after the change;
+/// `open_sequence` until a document's opening actions have run.
+#[derive(Clone)]
+pub struct ActionsSettings {
+    /// The rules, per kind of action and per origin.
+    pub policy: ActionPolicy,
+    pub triggers: ActionTriggers,
+    pub open_sequence: OpenSequence,
+    pub javascript: JavaScriptSettings,
+}
+
+/// `ACTIONS_DEFAULTS`: the settings when the app registers none.
+pub fn actions_defaults() -> ActionsSettings {
+    ActionsSettings {
+        policy: crate::services::policy::default_policy(),
+        triggers: ActionTriggers { document: true, page: true, annotation: true },
+        open_sequence: OpenSequence::Auto,
+        javascript: JavaScriptSettings { enabled: false, identity: None },
+    }
+}
+
+/// A change to `ActionsSettings['javascript']`.
+#[derive(Clone, Default)]
+pub struct JavaScriptSettingsPatch {
+    pub enabled: Option<bool>,
+    /// `Some(None)` sets `null`; `None` leaves the identity as it is.
+    pub identity: Option<Option<ActionsScriptIdentity>>,
+}
+
+/// `DeepPartial<ActionsSettings>`: what `update_settings` merges. Policy
+/// rows merge origin by origin; a function identity is given whole.
+#[derive(Clone, Default)]
+pub struct ActionsSettingsPatch {
+    pub policy: Option<ActionPolicyPatch>,
+    pub triggers: Option<TriggerGates>,
+    pub open_sequence: Option<OpenSequence>,
+    pub javascript: Option<JavaScriptSettingsPatch>,
+}
+
+/// `ActionsSettingsChangedEvent`: the settings after a change, and which
+/// top-level settings changed.
+#[derive(Clone)]
+pub struct ActionsSettingsChanged {
+    pub settings: ActionsSettings,
+    pub changed: Vec<String>,
+}
+
+/// `ActionsConfig.javascript`: the `javascript` settings plus the script
+/// environment, which is no setting: a document's script engine is built
+/// with it when the document opens.
 #[derive(Clone, Default)]
 pub struct JavaScriptConfig {
-    pub enabled: bool,
+    /// The `javascript.enabled` setting.
+    pub enabled: Option<bool>,
+    /// The `javascript.identity` setting (`Some(None)` registers `null`).
+    pub identity: Option<Option<ActionsScriptIdentity>>,
     /// The sandbox. The TypeScript lazily imports QuickJS when this is
-    /// absent; Rust has no default, and `enabled` with no factory runs as the
-    /// TypeScript does with scripting disabled.
+    /// absent. Rust ships no JavaScript engine: a realm built without one
+    /// exists (as the TypeScript's does) and fails each sandbox build with
+    /// [`NO_DEFAULT_SANDBOX`].
     pub sandbox_factory: Option<ScriptSandboxFactory>,
-    /// Embedder identity fields layered over the engine identity.
-    pub identity: Option<IdentityOverrides>,
     pub file_name: Option<Rc<dyn Fn() -> String>>,
-    /// The deterministic clock. Also `clientTimeMs` for submits, with
-    /// scripting on or off. Default: `rt::now()`.
+    /// The deterministic clock. Also the submit `sentAt`, with scripting on
+    /// or off. Default: `rt::now()`.
     pub now: Option<Rc<dyn Fn() -> f64>>,
     pub utc_offset_minutes: Option<Rc<dyn Fn() -> f64>>,
     pub random_seed: Option<Rc<dyn Fn() -> f64>>,
     pub budget: Option<ScriptBudget>,
     /// The most JS nodes one dispatch may run. Default 16.
     pub max_script_nodes_per_dispatch: Option<f64>,
+    /// Host input: `-new Date(nowMs).getTimezoneOffset()`, the local UTC
+    /// offset in minutes at an instant, used when `utc_offset_minutes` is not
+    /// configured. The TypeScript reads it from the platform. Default: zero.
+    pub host_utc_offset_minutes: Option<Rc<dyn Fn(f64) -> f64>>,
 }
 
-/// `ActionsConfig`, plus the two host inputs the TypeScript reads from the
-/// environment.
+/// The message a realm's sandbox build rejects with when the host supplied
+/// no sandbox factory.
+pub const NO_DEFAULT_SANDBOX: &str = "[actions] no script sandbox: Rust has no default JavaScript engine; the host must supply javascript.sandbox_factory";
+
+/// `ActionsConfig`: any of the settings, merged over the defaults, and the
+/// script environment beside `javascript`'s settings.
 #[derive(Clone, Default)]
 pub struct ActionsConfig {
-    /// Row-wise overrides merged over the defaults.
+    /// Row-wise overrides merged over the default policy.
     pub policy: Option<ActionPolicyPatch>,
     pub triggers: Option<TriggerGates>,
     pub open_sequence: Option<OpenSequence>,
     pub javascript: Option<JavaScriptConfig>,
-    /// Host input: where a throwing observer on one of the five hooks is
-    /// reported. The TypeScript writes these to `console.error` with the
-    /// same message; with no sink they are dropped.
-    pub observer_error: Option<Rc<dyn Fn(&str, &Error)>>,
-    /// Host input: `-new Date(nowMs).getTimezoneOffset()`, the local UTC
-    /// offset in minutes at an instant, used when
-    /// `javascript.utc_offset_minutes` is not configured. Default: zero.
-    pub host_utc_offset_minutes: Option<Rc<dyn Fn(f64) -> f64>>,
 }
 
 // ── registration surfaces ─────────────────────────────────────────────────────

@@ -3,16 +3,16 @@
 //!
 //! `multiplatform-plan.md` Section 11 keeps the zod schemas handwritten while
 //! making the Rust types canonical, which only works if something holds the
-//! two together. This is that something for `MetadataPatch`, the Phase 0 DTO
-//! proof; G7 and G11 extend the same harness to annotation DTOs, drafts and
-//! patches.
+//! two together. This is that something for `MetadataPatch` and
+//! `CustomMetadataPatch`, the Phase 0 DTO proof; G7 and G11 extend the same
+//! harness to annotation DTOs, drafts and patches.
 //!
 //! The vectors under `tooling/engine-conformance/vectors/schema/` carry zod's
 //! verdict on each hand-written input, recorded by
 //! `@embedpdf/tooling-engine-conformance`. Regenerate them, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run schema
 
-use epdf_engine::dto::MetadataPatch;
+use epdf_engine::dto::{CustomMetadataPatch, MetadataPatch};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -101,6 +101,11 @@ where
 #[test]
 fn metadata_patch_agrees_with_its_zod_schema() {
     check::<MetadataPatch>("MetadataPatch");
+}
+
+#[test]
+fn custom_metadata_patch_agrees_with_its_zod_schema() {
+    check::<CustomMetadataPatch>("CustomMetadataPatch");
 }
 
 /// The corpus covers all three states and at least one rejection.

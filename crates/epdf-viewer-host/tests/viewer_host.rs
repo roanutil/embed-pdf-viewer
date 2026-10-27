@@ -77,16 +77,43 @@ fn the_password_reaches_the_engine() {
 #[test]
 fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
     let host = started();
-    // A wrong password fails the open; no password at all opens locked.
-    let options = OpenDocumentOptions { password: Some("nope".into()), ..options() };
-    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options))
-        .unwrap_err();
+    // Bytes that are not a PDF fail the open.
+    let _ = block_on(host.open_document(b"not a pdf".to_vec(), options())).unwrap_err();
     let documents = block_on(host.documents()).unwrap();
     let [tab] = documents.as_slice() else { panic!("{documents:?}") };
     assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
     let error = tab.error.as_ref().expect("a failed tab without its error");
-    // The kernel's `toPluginError` keeps the engine code in the message.
-    assert!(error.message.starts_with("DocPasswordIncorrect"), "{error:?}");
+    assert_eq!(error.capability, "documents", "{error:?}");
+    // The engine's words, as the TypeScript's tab says them: bytes open
+    // through a memory base (`WorkerHost.openBytesAsLayer`), whose
+    // `baseOpenError` says "failed to open base document", and
+    // `toPluginError` passes `EngineError.message` on with no code in front.
+    assert_eq!(error.message, "failed to open base document", "{error:?}");
+}
+
+/// A wrong password parks the document as a locked tab whose prompt says
+/// the password was wrong (`LocalEngine.openResult` marks it rejected): it
+/// does not fail the open.
+#[test]
+fn a_wrong_password_parks_the_document_as_a_locked_tab() {
+    let host = started();
+    let events = Arc::new(Recorded::default());
+    let _subscription = host.subscribe_documents(events.clone());
+    let wrong = OpenDocumentOptions { password: Some("nope".into()), ..options() };
+    let doc = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), wrong))
+        .unwrap();
+    assert_eq!(doc.status, DocumentStatus::Locked, "{doc:?}");
+    let locked = events.0.lock().unwrap().clone();
+    assert!(
+        locked.contains(&DocumentEvent::Locked {
+            document_id: doc.id.clone(),
+            password_provided: true
+        }),
+        "{locked:?}"
+    );
+    // The right password opens it.
+    block_on(host.unlock_document(doc.id.clone(), "hôtel".into())).unwrap();
+    assert!(!block_on(host.pages(doc.id)).unwrap().is_empty());
 }
 
 #[test]
@@ -126,9 +153,7 @@ fn a_failed_open_announces_the_tabs_error_with_its_code() {
     let host = started();
     let events = Arc::new(Recorded::default());
     let _subscription = host.subscribe_documents(events.clone());
-    let options = OpenDocumentOptions { password: Some("nope".into()), ..options() };
-    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options))
-        .unwrap_err();
+    let _ = block_on(host.open_document(b"not a pdf".to_vec(), options())).unwrap_err();
     let tab = block_on(host.documents()).unwrap().remove(0);
     let failed = events.0.lock().unwrap().iter().find_map(|event| match event {
         DocumentEvent::OpenFailed { document_id, error } => {
@@ -139,9 +164,9 @@ fn a_failed_open_announces_the_tabs_error_with_its_code() {
     let (document_id, error) = failed.expect("no OpenFailed event");
     assert_eq!(document_id, tab.id);
     assert_eq!(Some(&error), tab.error.as_ref());
-    assert_eq!(error.code, "permission-denied", "{error:?}");
+    assert_eq!(error.code, "operation-failed", "{error:?}");
     assert_eq!(error.capability, "documents");
-    assert!(error.message.starts_with("DocPasswordIncorrect"), "{error:?}");
+    assert_eq!(error.message, "failed to open base document", "{error:?}");
 }
 
 #[test]
@@ -167,18 +192,23 @@ fn kernel_code(error: &ViewerError) -> Option<&str> {
 }
 
 #[test]
-fn a_wrong_password_is_permission_denied_with_the_engine_code_in_the_detail() {
+fn a_wrong_password_is_permission_denied_with_the_engines_message() {
     let host = started();
-    let wrong = OpenDocumentOptions { password: Some("nope".into()), ..options() };
-    let error = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), wrong))
-        .unwrap_err();
-    assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
-    assert!(format!("{error}").contains("DocPasswordIncorrect"), "{error}");
     let locked =
         block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
             .unwrap();
-    let error = block_on(host.unlock_document(locked.id, "nope".into())).unwrap_err();
+    let error = block_on(host.unlock_document(locked.id.clone(), "nope".into())).unwrap_err();
     assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
+    // `DocPasswordIncorrect` maps to `permission-denied`, and the message is
+    // the engine's own words, as `toPluginError` passes them on (no code in
+    // front since Task 14.3).
+    assert!(
+        matches!(&error, ViewerError::Kernel { detail, .. } if detail == "incorrect document password"),
+        "{error:?}"
+    );
+    // The tab stays locked, its prompt now saying the password was wrong.
+    let tab = block_on(host.documents()).unwrap().into_iter().find(|d| d.id == locked.id).unwrap();
+    assert_eq!(tab.status, DocumentStatus::Locked);
 }
 
 #[test]
@@ -264,7 +294,9 @@ fn saving_an_unknown_document_fails() {
     let host = started();
     let error =
         block_on(host.save("nope".into(), SaveMode::Incremental, CancelToken::new())).unwrap_err();
-    assert!(format!("{error:?}").contains("no document to save"), "{error:?}");
+    // `readySession(id, 'download')` (`kernel.ts:683-689`).
+    assert_eq!(kernel_code(&error), Some("not-ready"), "{error:?}");
+    assert!(format!("{error:?}").contains("no open document to download"), "{error:?}");
 }
 
 #[test]
@@ -621,7 +653,7 @@ fn the_stage_plugin_lays_out_and_navigates_through_the_host() {
 #[test]
 fn revealing_the_active_hit_moves_the_stage() {
     let host = with(ViewerConfig {
-        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        stage: Some(StageConfig::default()),
         search: Some(SearchConfig::default()),
         ..Default::default()
     });
@@ -636,7 +668,13 @@ fn revealing_the_active_hit_moves_the_stage() {
     let mut moved = false;
     // Walk hits until one is off screen; revealing it must move the camera.
     for _ in 0..50 {
-        let hit = block_on(search.next_hit(None)).unwrap().unwrap();
+        // The host's clock has frames, so a smooth reveal moves over them:
+        // ask for an instant one.
+        let instant = epdf_plugin_search::ffi::SearchRevealOptions {
+            anchor: None,
+            behavior: Some(epdf_plugin_search::ffi::SearchScrollBehavior::Instant),
+        };
+        let hit = block_on(search.next_hit(Some(instant))).unwrap().unwrap();
         let after = block_on(stage.camera()).unwrap();
         if after != before {
             assert!(block_on(stage.is_page_visible(hit.page)).unwrap());
@@ -651,7 +689,7 @@ fn revealing_the_active_hit_moves_the_stage() {
 fn a_pan_tool_drag_scrolls_the_stage() {
     use epdf_ffi::{Modifiers, Point, PointerKind, PointerPageHit, PointerPhase, PointerSample};
     let host = with(ViewerConfig {
-        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        stage: Some(StageConfig::default()),
         interaction: true,
         ..Default::default()
     });
@@ -714,10 +752,7 @@ fn a_fling_in_flight_at_close_stops_without_a_report() {
 
 #[test]
 fn a_scroll_handler_without_the_interaction_plugin_is_unsupported() {
-    let host = with(ViewerConfig {
-        stage: Some(StageConfig { frames: false, ..Default::default() }),
-        ..Default::default()
-    });
+    let host = with(ViewerConfig { stage: Some(StageConfig::default()), ..Default::default() });
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     let stage = block_on(host.stage(doc.id)).unwrap();
@@ -858,7 +893,7 @@ struct Gestures(Mutex<Vec<String>>);
 impl InteractionEventListener for Gestures {
     fn on_event(&self, event: InteractionEvent) {
         if let InteractionEvent::GestureStarted { event } = event {
-            self.0.lock().unwrap().push(event.handler_id);
+            self.0.lock().unwrap().push(event.tool_id);
         }
     }
     fn on_end(&self) {}
@@ -910,8 +945,7 @@ fn with_links(stage: bool) -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
         link: true,
-        stage: stage
-            .then(|| epdf_plugin_stage::ffi::StageConfig { frames: false, ..Default::default() }),
+        stage: stage.then(epdf_plugin_stage::ffi::StageConfig::default),
         ..Default::default()
     };
     let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
@@ -930,7 +964,13 @@ fn the_link_plugin_lists_and_activates_links_through_the_host() {
     block_on(link.ensure_loaded(pages[0].page)).unwrap();
     let links = block_on(link.links(pages[0].page)).unwrap();
     assert_eq!(links.len(), 2, "{links:?}");
-    let external = links.iter().find(|l| matches!(l.target, HostTarget::Uri { .. })).unwrap();
+    let external = links
+        .iter()
+        .find(|l| {
+            let target: serde_json::Value = serde_json::from_str(&l.target_json).unwrap();
+            matches!(HostTarget::from_json(&target), Ok(HostTarget::Uri { .. }))
+        })
+        .unwrap();
     let activation =
         block_on(link.activate(LinkInput::Link { page: pages[0].page, id: external.id.clone() }))
             .unwrap();
@@ -1016,7 +1056,7 @@ fn with_actions_a_link_dispatches_its_action_tree() {
     let config = ViewerConfig {
         interaction: true,
         link: true,
-        stage: Some(epdf_plugin_stage::ffi::StageConfig { frames: false, ..Default::default() }),
+        stage: Some(epdf_plugin_stage::ffi::StageConfig::default()),
         actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
             policy: None,
             triggers: None,
@@ -1060,16 +1100,11 @@ fn without_its_flag_the_link_plugin_is_not_installed() {
     assert!(block_on(host.link(doc.id)).is_err());
 }
 
-use epdf_plugin_annotation::ffi::{AnnotationConfig, AnnotationPatch, CreateAnnotationInput};
-
 const ANNOTATED: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf";
 
 fn with_annotation() -> Arc<ViewerHost> {
-    let config = ViewerConfig {
-        interaction: true,
-        annotation: Some(AnnotationConfig::default()),
-        ..Default::default()
-    };
+    let config =
+        ViewerConfig { interaction: true, annotation: Some(String::new()), ..Default::default() };
     let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
     block_on(host.start()).unwrap();
     host
@@ -1094,7 +1129,7 @@ fn an_annotation_read_back_updates_through_the_native_engine() {
     let first = block_on(annotations.list(None)).unwrap().remove(0);
     block_on(annotations.update(
         first.annotation_ref.clone(),
-        AnnotationPatch { contents: Some("Edited from Rust".into()), ..Default::default() },
+        serde_json::json!({ "contents": "Edited from Rust" }).to_string(),
         CancelToken::new(),
     ))
     .unwrap();
@@ -1110,26 +1145,26 @@ fn a_square_created_on_report_is_listed() {
     let pages = block_on(host.pages(doc.id.clone())).unwrap();
     let annotations = block_on(host.annotation(doc.id)).unwrap();
     block_on(annotations.refresh(CancelToken::new())).unwrap();
-    let created = block_on(annotations.create(
-        CreateAnnotationInput {
-            page: pages[0].page,
-            subtype: "square".into(),
-            bounds: Some(epdf_ffi::Rect { x: 72.0, y: 72.0, width: 100.0, height: 50.0 }),
-            ..Default::default()
-        },
-        CancelToken::new(),
-    ))
+    let created = block_on(
+        annotations.create(
+            pages[0].page,
+            serde_json::json!({
+                "subtype": "square", "box": { "x": 72, "y": 72, "width": 100, "height": 50 }
+            })
+            .to_string(),
+            None,
+            None,
+            CancelToken::new(),
+        ),
+    )
     .unwrap();
     assert!(block_on(annotations.get(created)).unwrap().is_some());
 }
 
 #[test]
 fn annotation_without_interaction_fails_to_build() {
-    let config = ViewerConfig {
-        interaction: false,
-        annotation: Some(AnnotationConfig::default()),
-        ..Default::default()
-    };
+    let config =
+        ViewerConfig { interaction: false, annotation: Some(String::new()), ..Default::default() };
     let error = ViewerHost::new(config, Arc::new(Delegate)).err().expect("no interaction plugin");
     assert!(format!("{error}").contains("interaction"), "{error}");
 }
@@ -1150,36 +1185,122 @@ fn a_reply_lands_through_the_native_engine() {
     let pages = block_on(host.pages(doc.id.clone())).unwrap();
     let annotations = block_on(host.annotation(doc.id)).unwrap();
     block_on(annotations.refresh(CancelToken::new())).unwrap();
-    let root = block_on(annotations.create(
-        CreateAnnotationInput {
-            page: pages[0].page,
-            subtype: "square".into(),
-            bounds: Some(epdf_ffi::Rect { x: 72.0, y: 72.0, width: 100.0, height: 50.0 }),
-            ..Default::default()
-        },
-        CancelToken::new(),
-    ))
+    let root = block_on(
+        annotations.create(
+            pages[0].page,
+            serde_json::json!({
+                "subtype": "square", "box": { "x": 72, "y": 72, "width": 100, "height": 50 }
+            })
+            .to_string(),
+            None,
+            None,
+            CancelToken::new(),
+        ),
+    )
     .unwrap();
     let reply =
-        block_on(annotations.threads().reply(root, "Agreed".into(), CancelToken::new())).unwrap();
-    // The draft's `inReplyTo` reaches the host as the flat ref it parses
-    // (before, the create failed WireFormat). `epdf-engine`'s create does
-    // not write `/IRT` yet, so the reply is not read back as threaded.
+        block_on(annotations.threads().reply(root.clone(), "Agreed".into(), CancelToken::new()))
+            .unwrap();
+    // The reply's `reply.to` reaches the host as the ref it parses, and the
+    // reply reads back threaded under its root.
     let read = block_on(annotations.get(reply)).unwrap().unwrap();
     assert_eq!(read.subtype, "text");
     assert_eq!(read.contents.as_deref(), Some("Agreed"));
+    assert_eq!(read.in_reply_to, Some(root));
+}
+
+/// A measured line (`intent: line-dimension` with its `measure`) is
+/// created through the native engine, and a caption-only update changes
+/// its caption and keeps the measurement.
+#[test]
+fn a_measured_lines_caption_updates_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let fields = serde_json::json!({
+        "subtype": "line", "intent": "line-dimension",
+        "linePoints": { "start": { "x": 100, "y": 100 }, "end": { "x": 244, "y": 100 } },
+        "measure": {
+            "subtype": "rectilinear", "ratio": "1:1",
+            "x": [{ "unit": "m", "conversion": 0.00035277777351439, "precision": 100 }],
+            "distance": [{ "unit": "m", "conversion": 1, "precision": 100 }],
+            "area": [{ "unit": "m²", "conversion": 1, "precision": 100 }]
+        },
+        "captionEnabled": true, "captionPosition": "inline"
+    });
+    let created = block_on(annotations.create(
+        pages[0].page,
+        fields.to_string(),
+        None,
+        None,
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let read = block_on(annotations.get(created.clone())).unwrap().unwrap();
+    let record: serde_json::Value = serde_json::from_str(&read.fields_json).unwrap();
+    assert_eq!(record["measure"]["subtype"], "rectilinear", "{record}");
+    assert_eq!(record["captionPosition"], "inline");
+    block_on(annotations.update(
+        created.clone(),
+        serde_json::json!({ "captionPosition": "top" }).to_string(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let again = block_on(annotations.get(created)).unwrap().unwrap();
+    let record: serde_json::Value = serde_json::from_str(&again.fields_json).unwrap();
+    assert_eq!(record["captionPosition"], "top", "{record}");
+    assert_eq!(record["measure"]["subtype"], "rectilinear", "{record}");
+}
+
+/// Deleting a thread deletes its first comment and its replies, all or
+/// none (`comments.deleteThread`).
+#[test]
+fn a_thread_deletes_with_its_replies_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let root = block_on(
+        annotations.create(
+            pages[0].page,
+            serde_json::json!({
+                "subtype": "square", "box": { "x": 72, "y": 72, "width": 100, "height": 50 }
+            })
+            .to_string(),
+            None,
+            None,
+            CancelToken::new(),
+        ),
+    )
+    .unwrap();
+    let threads = annotations.threads();
+    let reply = block_on(threads.reply(root.clone(), "Agreed".into(), CancelToken::new())).unwrap();
+    let result = block_on(threads.delete_thread(root.clone(), CancelToken::new())).unwrap();
+    assert!(result.failed.is_empty(), "{result:?}");
+    assert!(result.deleted.contains(&root) && result.deleted.contains(&reply), "{result:?}");
+    assert!(block_on(annotations.get(root)).unwrap().is_none());
+    assert!(block_on(annotations.get(reply)).unwrap().is_none());
 }
 
 use epdf_plugin_form::ffi::{
-    FormConfig, FormDataFormat, FormFieldDetail, FormKind, FormValidation,
+    FormConfig, FormFieldDetail, FormKind, FormValidation, FormValueInput,
 };
+
+fn text_value(text: &str) -> FormValueInput {
+    FormValueInput::Value { value: Some(text.into()) }
+}
 
 const FORM: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
 
 fn with_form() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
-        annotation: Some(epdf_plugin_annotation::ffi::AnnotationConfig::default()),
+        annotation: Some(String::new()),
         form: Some(FormConfig { validation: Some(FormValidation::None) }),
         ..Default::default()
     };
@@ -1208,9 +1329,10 @@ fn a_text_field_fills_through_the_native_engine() {
     let text = block_on(form.fields(None))
         .unwrap()
         .into_iter()
-        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.read_only)
         .expect("form_fields.pdf has a writable text field");
-    block_on(form.set_text(text.field_ref.clone(), "Filled".into(), CancelToken::new())).unwrap();
+    block_on(form.set_value(text.field_ref.clone(), text_value("Filled"), CancelToken::new()))
+        .unwrap();
     let again = block_on(form.field(text.field_ref)).unwrap().unwrap();
     assert!(matches!(again.detail, FormFieldDetail::Text { value, .. } if value == "Filled"));
 }
@@ -1224,20 +1346,31 @@ fn a_checkbox_is_checked_by_its_on_state() {
     let field = block_on(form.fields(None))
         .unwrap()
         .into_iter()
-        .find(|f| matches!(f.detail, FormFieldDetail::Checkbox { .. }) && !f.flags.read_only)
+        .find(|f| matches!(f.detail, FormFieldDetail::Checkbox { .. }) && !f.read_only)
         .expect("form_fields.pdf has a writable checkbox");
     let on_state = field.widgets[0].toggle.as_ref().unwrap().on_state.clone();
     // The fixture's box starts checked; clear it so checking it is a change.
-    let cleared =
-        block_on(form.set_checked(field.field_ref.clone(), None, CancelToken::new())).unwrap();
-    assert_eq!(cleared.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
-    let checked =
-        block_on(form.set_checked(field.field_ref.clone(), Some(on_state), CancelToken::new()))
-            .unwrap();
-    assert_eq!(checked.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
+    let cleared = block_on(form.set_value(
+        field.field_ref.clone(),
+        FormValueInput::Checked { checked: false },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(cleared.status, epdf_plugin_form::ffi::FormSetValueStatus::Applied);
+    let off = block_on(form.field(field.field_ref.clone())).unwrap().unwrap();
+    assert_eq!(off.widgets[0].toggle.as_ref().map(|t| t.checked), Some(false), "{off:?}");
+    let checked = block_on(form.set_value(
+        field.field_ref.clone(),
+        FormValueInput::Checked { checked: true },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(checked.status, epdf_plugin_form::ffi::FormSetValueStatus::Applied);
     let read = block_on(form.field(field.field_ref)).unwrap().unwrap();
     assert!(matches!(read.detail, FormFieldDetail::Checkbox { checked: true, .. }), "{read:?}");
-    assert_eq!(read.widgets[0].toggle.as_ref().map(|t| t.checked), Some(true));
+    // Checked means the widget shows its own on state, the one it had.
+    let toggle = read.widgets[0].toggle.as_ref().expect("a checkbox widget without its toggle");
+    assert_eq!((toggle.on_state.as_str(), toggle.checked), (on_state.as_str(), true));
 }
 
 #[test]
@@ -1256,19 +1389,23 @@ fn a_reset_restores_the_default_through_the_native_engine() {
     let text = block_on(form.fields(None))
         .unwrap()
         .into_iter()
-        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.read_only)
         .unwrap();
-    block_on(form.set_text(text.field_ref.clone(), "Changed".into(), CancelToken::new())).unwrap();
-    // `reset` takes `forms.applyEffects` when the host has it.
-    block_on(form.reset(text.field_ref.clone(), CancelToken::new())).unwrap();
+    block_on(form.set_value(text.field_ref.clone(), text_value("Changed"), CancelToken::new()))
+        .unwrap();
+    block_on(form.reset(Some(vec![text.field_ref.clone()]), CancelToken::new())).unwrap();
     let read = block_on(form.field(text.field_ref)).unwrap().unwrap();
     let FormFieldDetail::Text { value, default_value, .. } = read.detail else { unreachable!() };
     assert_eq!(value, default_value);
     assert_eq!(*reports.0.lock().unwrap(), Vec::<String>::new());
 }
 
+/// A form's values out of one copy and into a fresh one by full name
+/// (`exportValues`, `importValues`), and its fields as a bundle
+/// (`forms.export` and `forms.import`, which replaced FDF upstream in
+/// 7f0b73a3c) copied into another document.
 #[test]
-fn an_fdf_export_imports_back() {
+fn a_form_bundle_export_fills_a_fresh_copy() {
     let host = with_form();
     let bytes = test_support::fixture(FORM);
     let first = block_on(host.open_document(bytes.clone(), options())).unwrap();
@@ -1277,21 +1414,45 @@ fn an_fdf_export_imports_back() {
     let text = block_on(form.fields(None))
         .unwrap()
         .into_iter()
-        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.read_only)
         .unwrap();
-    block_on(form.set_text(text.field_ref.clone(), "Round trip".into(), CancelToken::new()))
+    block_on(form.set_value(text.field_ref.clone(), text_value("Round trip"), CancelToken::new()))
         .unwrap();
-    let export = block_on(form.export_data(Some(FormDataFormat::Fdf), CancelToken::new())).unwrap();
-    assert!(export.bytes.starts_with(b"%FDF"));
-    let second = block_on(host.open_document(bytes, options())).unwrap();
+    let values = block_on(form.export_values()).unwrap();
+    let export = block_on(form.export(None, CancelToken::new())).unwrap();
+    let bundle: serde_json::Value = serde_json::from_str(&export).expect("a bundle");
+    assert_eq!(bundle["format"], "embedpdf/form");
+    assert!(bundle["fields"].as_array().is_some_and(|f| !f.is_empty()), "{bundle}");
+    let second = block_on(host.open_document(bytes.clone(), options())).unwrap();
     let fresh = block_on(host.form(second.id)).unwrap();
     block_on(fresh.refresh(CancelToken::new())).unwrap();
-    block_on(fresh.import_data(export.bytes, Some(FormDataFormat::Fdf), CancelToken::new()))
-        .unwrap();
+    // The text field's value, by its full name. (The whole export would
+    // also name `inline.direct`, a field with no object number. Its write
+    // resolves the field again by the number the read found, 0, and is
+    // refused `NotFound` ("form field not found: object 0"), failing the
+    // batch: the TypeScript engine answers the same (`formChanges.ts`
+    // `writeValue`, the `direct-field-refused` vector).)
+    let values: serde_json::Value = serde_json::from_str(&values).unwrap();
+    let one = serde_json::json!({ text.name.clone(): values[&text.name].clone() });
+    assert_eq!(one[&text.name], "Round trip");
+    let result = block_on(fresh.import_values(one.to_string(), CancelToken::new())).unwrap();
+    assert!(result.failed.is_empty(), "{result:?}");
     let imported = block_on(fresh.field(text.field_ref)).unwrap().unwrap();
     assert!(
         matches!(imported.detail, FormFieldDetail::Text { value, .. } if value == "Round trip")
     );
+    // The bundle's fields copy into a document without a form, page by
+    // page position (`BundleImportPages`, `transfer/bundle.ts:37-40`).
+    let blank =
+        block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+            .unwrap();
+    let blank_form = block_on(host.form(blank.id)).unwrap();
+    block_on(blank_form.refresh(CancelToken::new())).unwrap();
+    let before = block_on(blank_form.fields(None)).unwrap().len();
+    let options = serde_json::json!({ "attribution": "stamp", "pages": "by-position" }).to_string();
+    let result = block_on(blank_form.import(export, options, CancelToken::new())).unwrap();
+    assert!(!result.fields.is_empty(), "{}", result.dropped_json);
+    assert_eq!(block_on(blank_form.fields(None)).unwrap().len(), before + result.fields.len());
 }
 
 #[test]
@@ -1305,8 +1466,11 @@ fn a_document_without_a_form_lists_no_fields() {
     assert_eq!(block_on(form.snapshot()).unwrap().map(|s| s.form_kind), Some(FormKind::None));
 }
 
+/// A field the form creates has its widget, by annotation ref; the widget
+/// is the form's, not an annotation record: "Form fields' widgets aren't
+/// annotation records: they come with the form" (`sync/records.ts:5-6`).
 #[test]
-fn a_created_field_is_selectable_as_an_annotation() {
+fn a_created_fields_widget_comes_with_the_form_not_the_annotations() {
     let host = with_form();
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
@@ -1315,19 +1479,24 @@ fn a_created_field_is_selectable_as_an_annotation() {
     let annotations = block_on(host.annotation(doc.id)).unwrap();
     block_on(form.refresh(CancelToken::new())).unwrap();
     block_on(annotations.refresh(CancelToken::new())).unwrap();
-    let created = block_on(form.create_field(
+    let created = block_on(form.create(
         epdf_plugin_form::ffi::FormCreateFieldInput {
             family: epdf_ffi::FormFieldFamily::Text,
             page,
             bounds: epdf_ffi::Rect { x: 72.0, y: 72.0, width: 200.0, height: 24.0 },
-            name: Some("added".into()),
+            name: "added".into(),
             options: None,
+            export_value: None,
         },
         CancelToken::new(),
     ))
     .unwrap();
-    let widget = created.widget.and_then(|w| w.annotation_ref).expect("the widget's ref");
-    assert!(block_on(annotations.get(widget)).unwrap().is_some());
+    let widget =
+        created.widgets.iter().find_map(|w| w.annotation_ref.clone()).expect("the widget's ref");
+    let field = block_on(form.field(created.field_ref)).unwrap().expect("the created field");
+    assert!(field.widgets.iter().any(|w| w.annotation_ref.as_ref() == Some(&widget)));
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    assert!(block_on(annotations.get(widget)).unwrap().is_none());
 }
 
 #[test]
@@ -1343,7 +1512,7 @@ use epdf_plugin_redaction::ffi::{RedactionConfig, RedactionPageStatus};
 fn with_redaction() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
-        annotation: Some(AnnotationConfig::default()),
+        annotation: Some(String::new()),
         search: Some(SearchConfig::default()),
         redaction: Some(RedactionConfig::default()),
         ..Default::default()
@@ -1396,15 +1565,15 @@ fn without_its_config_the_redaction_plugin_is_not_installed() {
     assert!(block_on(host.redaction(doc.id)).is_err());
 }
 
-use epdf_plugin_measurement::ScaleChangeOptions;
 use epdf_plugin_measurement::ffi::{
-    MeasurementConfig, MeasurementPageTarget, MeasurementReading, MeasurementScaleSource,
+    MeasurementConfig, MeasurementPageTarget, MeasurementReading, MeasurementScaleChangeOptions,
+    MeasurementScaleSource,
 };
 
 fn with_measurement() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
-        annotation: Some(AnnotationConfig::default()),
+        annotation: Some(String::new()),
         measurement: Some(MeasurementConfig::default()),
         ..Default::default()
     };
@@ -1428,7 +1597,7 @@ fn a_measurement_scale_persists_through_the_native_engine() {
     let reports = block_on(m.set_preset(
         MeasurementPageTarget::Page { page },
         preset,
-        ScaleChangeOptions::default(),
+        MeasurementScaleChangeOptions::default(),
         CancelToken::new(),
     ))
     .unwrap();
@@ -1462,14 +1631,14 @@ fn a_foreign_scale_is_read_and_kept_through_the_native_engine() {
     block_on(m.set_preset(
         MeasurementPageTarget::Page { page },
         preset,
-        ScaleChangeOptions::default(),
+        MeasurementScaleChangeOptions::default(),
         CancelToken::new(),
     ))
     .unwrap();
     assert_eq!(block_on(m.page_scale(page)).unwrap().source, MeasurementScaleSource::Owned);
     block_on(m.clear_scale(
         MeasurementPageTarget::Page { page },
-        ScaleChangeOptions::default(),
+        MeasurementScaleChangeOptions::default(),
         CancelToken::new(),
     ))
     .unwrap();
@@ -1489,7 +1658,7 @@ use epdf_plugin_stamp::ffi::{StampAddAssetInput, StampAssetFilter, StampConfig};
 fn with_stamp() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
-        annotation: Some(AnnotationConfig::default()),
+        annotation: Some(String::new()),
         stamp: Some(StampConfig::default()),
         ..Default::default()
     };
@@ -1540,7 +1709,7 @@ fn a_dropped_persist_registration_keeps_writing_until_unregistered() {
     let host = with_stamp();
     let stamp = block_on(host.stamp()).unwrap();
     let store = Arc::new(MemoryStampStore::default());
-    let registration = block_on(stamp.persist(store.clone(), Vec::new(), Some(0.0))).unwrap();
+    let registration = block_on(stamp.persist(store.clone(), Vec::new())).unwrap();
     let unregister = {
         let registration = registration.clone();
         move || registration.unregister()
@@ -1636,9 +1805,9 @@ fn a_library_created_natively_takes_a_pdf_asset() {
 }
 
 #[test]
-fn an_authored_mark_needs_an_appearance_export_the_native_engine_lacks() {
+fn an_authored_mark_is_exported_through_the_native_engine() {
     // Ink and text marks are drawn as annotations and exported through
-    // `page.annotations.exportAppearance`, which `epdf-engine` doesn't have.
+    // `page.annotations.exportAppearance` (`write/assets.ts:223`).
     let host = with_stamp();
     let stamp = block_on(host.stamp()).unwrap();
     let library =
@@ -1654,15 +1823,13 @@ fn an_authored_mark_needs_an_appearance_export_the_native_engine_lacks() {
         }),
         ..Default::default()
     };
-    match block_on(stamp.create_asset(input, CancelToken::new())).unwrap_err() {
-        // The engine's `NotImplemented`.
-        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("unsupported")),
-        other => panic!("{other:?}"),
-    }
+    let asset = block_on(stamp.create_asset(input, CancelToken::new())).unwrap();
+    assert!(block_on(stamp.read_asset_bytes(asset)).unwrap().unwrap().starts_with(b"%PDF"));
 }
 
+/// No annotations to copy: the engine's export refuses an empty list.
 #[test]
-fn create_asset_from_annotations_is_unsupported_natively() {
+fn create_asset_from_no_annotations_is_invalid_input() {
     let host = with_stamp();
     let stamp = block_on(host.stamp()).unwrap();
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
@@ -1677,7 +1844,7 @@ fn create_asset_from_annotations_is_unsupported_natively() {
     ))
     .unwrap_err();
     match error {
-        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("unsupported")),
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("invalid-input")),
         other => panic!("{other:?}"),
     }
 }
@@ -1726,12 +1893,14 @@ fn placing_into_a_closed_document_fails_and_clears_its_arming() {
     ))
     .unwrap_err();
     match error {
-        // The kernel's plain error for a token on a document it no longer
-        // has, as the TypeScript kernel throws it, which `toPluginError`
-        // makes `operation-failed`.
+        // `assertMayPlace` (`canPlace`, `read/catalog.ts:45-49`): a document
+        // the kernel no longer has has no annotation plugin to create in.
         ViewerError::Kernel { name, code, detail } => {
-            assert_eq!((name.as_str(), code.as_deref()), ("Error", Some("operation-failed")));
-            assert!(detail.contains("no document"), "{detail}");
+            assert_eq!(
+                (name.as_str(), code.as_deref()),
+                ("PluginError", Some("permission-denied"))
+            );
+            assert!(detail.contains("annotations:create"), "{detail}");
         }
         other => panic!("{other:?}"),
     }
@@ -1840,7 +2009,7 @@ fn a_subset_of_another_pdf_inserts_through_a_second_open() {
     let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
     let options = epdf_plugin_page_edit::ffi::PageEditBytesOptions {
         page_indexes: Some(vec![0]),
-        placement: Some(PageEditPlacement::Index { index: 0 }),
+        placement: Some(PageEditPlacement::Start),
     };
     let insertion = block_on(edit.insert_from_bytes(
         test_support::fixture(test_support::REPORT),
@@ -1864,7 +2033,14 @@ fn bytes_that_are_not_a_pdf_are_refused() {
         CancelToken::new(),
     ))
     .unwrap_err();
-    assert!(format!("{error:?}").contains("DocOpenFailed"), "{error:?}");
+    // `MalformedPdf`, as `PagesInserter.insert` refuses a source it can't
+    // open (`runPageInsertConformance`): `invalid-input` with its words.
+    assert_eq!(kernel_code(&error), Some("invalid-input"), "{error:?}");
+    assert!(
+        matches!(&error, ViewerError::Kernel { detail, .. }
+            if detail == "pages.insert source PDF could not be opened"),
+        "{error:?}"
+    );
     assert_eq!(block_on(host.pages(doc.id)).unwrap().len(), 14);
 }
 
@@ -1920,9 +2096,17 @@ fn a_second_document_splits_into_its_own_pane() {
     let colors =
         block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
             .unwrap();
-    let pane = block_on(vm.split_pane(colors.id.clone())).unwrap();
-    assert_eq!(block_on(vm.pane_of_document(colors.id)).unwrap(), Some(pane));
-    assert_eq!(block_on(vm.pane_of_document(report.id)).unwrap().as_deref(), Some("pane-1"));
+    let pane = block_on(vm.split_pane(colors.id.clone(), None)).unwrap();
+    assert_eq!(block_on(vm.pane_of_document(colors.id.clone())).unwrap(), Some(pane.clone()));
+    assert_eq!(
+        block_on(vm.pane_of_document(report.id.clone())).unwrap().as_deref(),
+        Some("pane-1")
+    );
+    // `from` names the pane to split beside: the report splits out of
+    // `pane-1` into a third pane, focused.
+    let third = block_on(vm.split_pane(report.id.clone(), Some("pane-1".into()))).unwrap();
+    assert_ne!(third, pane);
+    assert_eq!(block_on(vm.pane_of_document(report.id)).unwrap(), Some(third));
 }
 
 #[test]
@@ -1949,8 +2133,11 @@ fn each_document_keeps_its_own_shell() {
             .unwrap();
     let first = block_on(host.shell(report.id.clone())).unwrap();
     let second = block_on(host.shell(colors.id)).unwrap();
-    let options =
-        ShellOpenOptions { exclusive: None, props_json: Some(r#"{"tab":"outline"}"#.into()) };
+    let options = ShellOpenOptions {
+        exclusive: None,
+        focus: false,
+        props_json: Some(r#"{"tab":"outline"}"#.into()),
+    };
     block_on(first.open_surface("sidebar".into(), Some(options))).unwrap();
     assert!(block_on(first.is_open("sidebar".into())).unwrap());
     assert!(!block_on(second.is_open("sidebar".into())).unwrap());
@@ -2091,7 +2278,7 @@ fn a_panel_command_toggles_the_shell_surface() {
         .unwrap();
     let commands = block_on(host.commands()).unwrap();
     let mut toggle = routing_command("panel:search", "commands.search");
-    toggle.panel = Some(CommandPanel { id: "search".into(), exclusive: None });
+    toggle.panel = Some(CommandPanel { id: "search".into(), exclusive: None, focus: None });
     block_on(commands.register_command(toggle, false)).unwrap();
     block_on(commands.execute("panel:search".into(), Some(doc.id.clone()), None)).unwrap();
     let shell = block_on(host.shell(doc.id)).unwrap();
@@ -2187,7 +2374,7 @@ fn an_engine_turns_scripting_on() {
 #[test]
 fn executing_a_named_next_page_action_moves_the_stage() {
     let config = ViewerConfig {
-        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        stage: Some(StageConfig::default()),
         actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
             policy: None,
             triggers: None,
@@ -2250,8 +2437,17 @@ fn open_signing(host: &ViewerHost, name: &str) -> String {
     block_on(host.open_document(bytes, options())).unwrap().id
 }
 
+/// `SignFieldInput` with its mark (`contract.ts:108-111`: a sign takes
+/// one, and it is the appearance).
 fn sign_input(field: epdf_ffi::FormFieldRef) -> SignatureSignInput {
-    SignatureSignInput { field, mark: None, attribution: None, certify: None, lock: None }
+    let artwork = test_support::fixture(&format!("{SIGNING}/signature_artwork.pdf"));
+    SignatureSignInput {
+        field,
+        mark: Some(epdf_plugin_signature::ffi::SignatureMark::Source { bytes: artwork }),
+        signer: None,
+        certify: None,
+        lock: None,
+    }
 }
 
 #[test]
@@ -2390,29 +2586,58 @@ fn a_signer_completion_dropped_unanswered_fails_the_signing() {
     assert_eq!(block_on(s.pending()).unwrap(), None);
 }
 
+/// `canSign(field)` and `canFill(field)` (`contract.ts:362-367`) are the
+/// field's permissions, whatever signer the host set; the host's key is a
+/// function over its signer slot, so the mode is `sign`
+/// (`services/authority.ts`, `key` set).
 #[test]
-fn can_sign_follows_the_host_signer() {
+fn can_sign_and_can_fill_follow_the_fields_permissions() {
     let host = signature_host();
     let doc = open_signing(&host, "unsigned_sigfield.pdf");
     let s = block_on(host.signature(doc)).unwrap();
-    assert!(!block_on(s.can_sign()).unwrap());
-    assert_eq!(block_on(s.mode()).unwrap(), SignatureMode::Visual);
-    assert!(block_on(s.can_fill()).unwrap());
-    host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
-    assert!(block_on(s.can_sign()).unwrap());
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    assert!(block_on(s.can_sign(field.clone())).unwrap());
+    assert!(block_on(s.can_fill(field.clone())).unwrap());
     assert_eq!(block_on(s.mode()).unwrap(), SignatureMode::Sign);
+    host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
+    assert!(block_on(s.can_sign(field.clone())).unwrap());
     host.set_signature_signer(None);
-    assert!(!block_on(s.can_sign()).unwrap());
+    assert!(block_on(s.can_sign(field)).unwrap());
 }
 
 #[test]
 fn a_narrow_scope_cannot_sign_or_fill() {
-    let host = signature_host_with(Some(vec!["doc.open".into(), "doc.render".into()]));
+    let host = signature_host_with(Some(vec![
+        "doc.open".into(),
+        "doc.render".into(),
+        "doc.forms.read".into(),
+    ]));
     host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
     let doc = open_signing(&host, "unsigned_sigfield.pdf");
     let s = block_on(host.signature(doc)).unwrap();
-    assert!(!block_on(s.can_sign()).unwrap());
-    assert!(!block_on(s.can_fill()).unwrap());
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    // The scope reads the form, so the field is there: only the field
+    // gate (`NativeSecurity::allows_field`) can refuse it.
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    assert!(!block_on(s.can_sign(field.clone())).unwrap());
+    assert!(!block_on(s.can_fill(field)).unwrap());
+
+    // The same scope with the write permissions may do both.
+    let host = signature_host_with(Some(vec![
+        "doc.open".into(),
+        "doc.render".into(),
+        "doc.forms.read".into(),
+        "doc.forms.fill".into(),
+        "doc.sign".into(),
+    ]));
+    host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    assert!(block_on(s.can_sign(field.clone())).unwrap());
+    assert!(block_on(s.can_fill(field)).unwrap());
 }
 
 #[test]
@@ -2468,7 +2693,14 @@ fn a_certified_document_refuses_edits_natively() {
     let annotations = block_on(host.annotation(doc.clone())).unwrap();
     assert!(!block_on(annotations.can_create()).unwrap());
     let s = block_on(host.signature(doc)).unwrap();
-    assert!(block_on(s.can_fill()).unwrap());
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields())
+        .unwrap()
+        .first()
+        .map(|f| f.field.clone())
+        .or_else(|| block_on(s.signatures()).unwrap().first().map(|f| f.field.clone()))
+        .expect("a signature field");
+    assert!(block_on(s.can_fill(field)).unwrap());
 }
 
 #[test]
@@ -2497,9 +2729,27 @@ fn a_certification_signed_here_protects_the_document() {
     assert!(!block_on(edit.can_edit()).unwrap());
 }
 
+/// With the `visual` mode (`SignatureConfig.mode`), placing a mark fills
+/// the field and needs no signer. The host's key is a function over its
+/// signer slot, so without the setting the mode is `sign`
+/// (`authority.ts` `getMode`: `key` set).
 #[test]
-fn placing_a_mark_without_a_signer_fills_the_field() {
-    let host = signature_host();
+fn placing_a_mark_in_visual_mode_fills_the_field_without_a_signer() {
+    let host = ViewerHost::new(
+        ViewerConfig {
+            interaction: true,
+            annotation: Some(Default::default()),
+            form: Some(Default::default()),
+            signature: Some(SignatureConfig {
+                mode: Some(SignatureMode::Visual),
+                ..SignatureConfig::default()
+            }),
+            ..Default::default()
+        },
+        Arc::new(Delegate),
+    )
+    .unwrap();
+    block_on(host.start()).unwrap();
     let doc = open_signing(&host, "unsigned_sigfield.pdf");
     let s = block_on(host.signature(doc)).unwrap();
     block_on(s.refresh(CancelToken::new())).unwrap();
@@ -2543,10 +2793,10 @@ fn every_plugin_builds_together() {
         render: Some(RenderConfig::default()),
         interaction: true,
         feedback: Some(FeedbackConfig::new(ticks)),
-        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        stage: Some(StageConfig::default()),
         selection: true,
         link: true,
-        annotation: Some(AnnotationConfig::default()),
+        annotation: Some(String::new()),
         form: Some(FormConfig { validation: Some(FormValidation::None) }),
         redaction: Some(RedactionConfig::default()),
         measurement: Some(MeasurementConfig::default()),
@@ -2570,6 +2820,9 @@ fn every_plugin_builds_together() {
             utc_offset_minutes: None,
         }),
         signature: Some(SignatureConfig::default()),
+        history: true,
+        outline: true,
+        attachment: true,
     };
     let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
     block_on(host.start()).unwrap();

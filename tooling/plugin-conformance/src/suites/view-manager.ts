@@ -2,14 +2,18 @@
  * `packages/plugin/view-manager`. Replayed by
  * `crates/plugins/view-manager/tests/conformance.rs`.
  *
- * The reducer as function cases (with its reference identity made visible),
+ * Named pure transitions as function cases,
  * and the plugin as scenarios: the capability, and the effect that
  * reconciles panes with the kernel's open-document order.
  */
-import { viewManagerPlugin, ViewManagerToken } from '../../../../packages/plugin/view-manager/src/index';
-import { initialViewManagerState, viewManagerReducer } from '../../../../packages/plugin/view-manager/src/model';
-import type { ViewManagerAction, ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
+import {
+  viewManagerPlugin,
+  ViewManagerToken,
+} from '../../../../packages/plugin/view-manager/src/index';
+import * as model from '../../../../packages/plugin/view-manager/src/model';
+import type { ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
 
+import type { PageLayout } from '@embedpdf/engine-core';
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
@@ -17,128 +21,200 @@ import type { FunctionCase, Suite } from '../vectors';
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
   snapshot: 'none',
-  reason: "Pins the pane events each write fires, which the event callbacks record. Its dispatched actions are compared; the state they build is not.",
+  reason:
+    'Pins the pane events each write fires, which the event callbacks record. Its committed state changes and callbacks are recorded.',
 } as const;
 
-/**
- * The shipping controller spreads its context (`{ ...rawCtx, dispatch }`),
- * which reads the controller context's `doc` getter, and for a workspace
- * plugin that getter throws: `createKernel` with `viewManagerPlugin()`
- * refuses, whatever else is installed. This factory hides `doc` from the
- * spread, so the vectors describe the panes as the controller means them.
- * The workaround and the defect are recorded in multiplatform-plugins-status.md.
- */
-const withoutDoc = <T extends object>(ctx: T): T =>
-  new Proxy(ctx, {
-    ownKeys: (target) => Reflect.ownKeys(target).filter((key) => key !== 'doc'),
-    getOwnPropertyDescriptor: (target, key) =>
-      key === 'doc' ? undefined : Reflect.getOwnPropertyDescriptor(target, key),
-  });
-
-registerPlugin('view-manager', {
-  factory: () => {
-    const plugin = viewManagerPlugin();
-    return { ...plugin, create: (ctx) => plugin.create!(withoutDoc(ctx)) } as typeof plugin;
-  },
+registerPlugin('view-manager', { factory: () => viewManagerPlugin(), tokens: [ViewManagerToken] });
+registerPlugin('view-manager-as-shipped', {
+  factory: () => viewManagerPlugin(),
   tokens: [ViewManagerToken],
 });
-/** The shipping plugin, unmodified: `a-kernel-refuses-the-shipping-plugin` pins the defect. */
-registerPlugin('view-manager-as-shipped', { factory: () => viewManagerPlugin(), tokens: [ViewManagerToken] });
 
-// ── function cases: the reducer ───────────────────────────────────────────────
+// Named shipping transitions receive their actual typed positional arguments.
+const fn = <K extends keyof typeof model>(
+  name: string,
+  target: K,
+  ...args: Parameters<(typeof model)[K]>
+): FunctionCase => ({ name, fn: target, args });
 
-const reduce = (state: ViewManagerState, action: ViewManagerAction) => {
-  const next = viewManagerReducer(state, action);
-  return { same: next === state, next };
-};
-const initial = () => initialViewManagerState();
-
-const view = (id: string, documentIds: string[], activeDocumentId: string | null = documentIds[0] ?? null) => ({ id, documentIds, activeDocumentId });
-const st = (views: ReturnType<typeof view>[], over: Partial<ViewManagerState> = {}): ViewManagerState => ({
+const view = (
+  id: string,
+  documentIds: string[],
+  activeDocumentId: string | null = documentIds[0] ?? null,
+) => ({ id, documentIds, activeDocumentId });
+const st = (
+  views: ReturnType<typeof view>[],
+  over: Partial<ViewManagerState> = {},
+): ViewManagerState => ({
   panes: Object.fromEntries(views.map((v) => [v.id, v])),
   order: views.map((v) => v.id),
   focusedPaneId: views[0]?.id ?? null,
   seq: views.length,
   ...over,
 });
-const panes = st([view('pane-1', ['a', 'b', 'c'], 'b'), view('pane-2', ['d'], 'd'), view('pane-3', [], null)], { focusedPaneId: 'pane-2' });
-const nan = { $number: 'NaN' };
-
-const r = (name: string, action: unknown, state: ViewManagerState = panes): FunctionCase => ({ name, fn: 'viewManagerReducer', args: [state, action] });
+const panes = st(
+  [view('pane-1', ['a', 'b', 'c'], 'b'), view('pane-2', ['d'], 'd'), view('pane-3', [], null)],
+  { focusedPaneId: 'pane-2' },
+);
+const nan = NaN;
 
 const reducerCases: FunctionCase[] = [
-  { name: 'initial-state', fn: 'initialViewManagerState', args: [] },
-  r('create', { type: 'CREATE_PANE', pane: view('pane-4', [], null) }),
-  r('create-on-empty', { type: 'CREATE_PANE', pane: view('pane-1', [], null) }, st([])),
-  r('remove-unknown-is-ignored', { type: 'REMOVE_PANE', id: 'nope' }),
-  r('remove-focused-focuses-the-last', { type: 'REMOVE_PANE', id: 'pane-2' }),
-  r('remove-unfocused-keeps-focus', { type: 'REMOVE_PANE', id: 'pane-1' }),
-  r('remove-the-only-view', { type: 'REMOVE_PANE', id: 'pane-1' }, st([view('pane-1', ['a'])])),
-  r('reorder', { type: 'REORDER_PANES', order: ['pane-3', 'pane-1', 'pane-2'] }),
-  r('set-focused', { type: 'SET_FOCUSED', id: 'pane-3' }),
-  r('set-focused-null', { type: 'SET_FOCUSED', id: null }),
-  r('set-focused-same-is-a-new-state', { type: 'SET_FOCUSED', id: 'pane-2' }),
-  r('set-active', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: 'c' }),
-  r('set-active-null', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: null }),
-  r('set-active-unknown-view', { type: 'SET_ACTIVE_DOC', paneId: 'nope', documentId: 'a' }),
-  r('set-active-foreign-document', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: 'd' }),
-  r('add-appends', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e' }),
-  r('add-at-index', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 1 }),
-  r('add-at-zero', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 0 }),
-  r('add-negative-clamps', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: -4 }),
-  r('add-past-the-end-clamps', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 99 }),
-  r('add-fractional-truncates', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 2.9 }),
-  r('add-nan-lands-first', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: nan }),
-  r('add-infinity-appends', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: { $number: 'Infinity' } }),
-  r('add-negative-infinity-lands-first', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: { $number: '-Infinity' } }),
-  r('add-to-empty-activates', { type: 'ADD_DOC', paneId: 'pane-3', documentId: 'e' }),
-  r('add-present-is-ignored', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'a' }),
-  r('add-unknown-view-is-ignored', { type: 'ADD_DOC', paneId: 'nope', documentId: 'e' }),
-  r('add-moves-from-its-holder', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'd', index: 0 }),
-  r('add-moves-into-an-empty-pane', { type: 'ADD_DOC', paneId: 'pane-3', documentId: 'b' }),
-  // Two holders (a state the reducer never builds): `find` walks `Object.values`, which puts
-  // integer-like keys first, so pane '0' is the holder, not '1'.
-  r('add-takes-the-first-holder-in-property-order', { type: 'ADD_DOC', paneId: 'b', documentId: 'x' }, st([view('0', ['x', 'y']), view('1', ['x']), view('b', [])])),
-  r('remove-doc-inactive', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'a' }),
-  r('remove-doc-active-picks-the-next', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'b' }),
-  r('remove-doc-active-last-picks-the-previous', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'c' }, st([view('pane-1', ['a', 'b', 'c'], 'c')])),
-  r('remove-doc-only-leaves-null', { type: 'REMOVE_DOC', paneId: 'pane-2', documentId: 'd' }),
-  r('remove-doc-absent-is-a-new-state', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'zzz' }),
-  r('remove-doc-unknown-view', { type: 'REMOVE_DOC', paneId: 'nope', documentId: 'a' }),
-  r('move-within', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'a', toIndex: 2 }),
-  r('move-within-to-front', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'c', toIndex: 0 }),
-  r('move-within-clamps', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'a', toIndex: 50 }),
-  r('move-within-nan', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'c', toIndex: nan }),
-  r('move-within-absent', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'd', toIndex: 0 }),
-  r('move-within-unknown-view', { type: 'MOVE_DOC_WITHIN', paneId: 'nope', documentId: 'a', toIndex: 0 }),
-  r('move-between', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'b' }),
-  r('move-between-at-index', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'a', toIndex: 0 }),
-  r('move-between-into-empty', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-2', toPaneId: 'pane-3', documentId: 'd', toIndex: 5 }),
-  r('move-between-same-view', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-1', documentId: 'a' }),
-  r('move-between-same-view-at-index', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-1', documentId: 'c', toIndex: 0 }),
-  r('move-between-unknown-from', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'nope', toPaneId: 'pane-1', documentId: 'a' }),
-  r('move-between-unknown-to', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'nope', documentId: 'a' }),
-  r('move-between-absent-document', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'd' }),
-  r('reconcile-prunes-closed', { type: 'RECONCILE', open: ['a', 'd'], preferPaneId: 'pane-2' }),
-  r('reconcile-prunes-the-active', { type: 'RECONCILE', open: ['a', 'c', 'd'], preferPaneId: null }),
-  r('reconcile-assigns-to-preferred', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x', 'y'], preferPaneId: 'pane-3' }),
-  r('reconcile-assigns-to-focused', { type: 'RECONCILE', open: ['x', 'a', 'b', 'c', 'd'], preferPaneId: 'nope' }),
-  r('reconcile-assigns-to-first', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x'], preferPaneId: null }, { ...panes, focusedPaneId: 'gone' }),
-  r('reconcile-assigns-to-first-no-focus', { type: 'RECONCILE', open: ['x'], preferPaneId: '' }, { ...panes, focusedPaneId: null }),
-  r('reconcile-creates-a-default-pane', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([])),
-  r('reconcile-creates-and-keeps-a-stale-focus', { type: 'RECONCILE', open: ['a'], preferPaneId: 'x' }, st([], { focusedPaneId: 'x', seq: 4 })),
-  r('reconcile-nothing-open', { type: 'RECONCILE', open: [], preferPaneId: null }),
-  r('reconcile-nothing-open-no-views', { type: 'RECONCILE', open: [], preferPaneId: null }, st([])),
-  r('reconcile-empty-active-is-replaced', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([view('pane-1', ['a', 'b'], '')])),
-  r('reconcile-duplicate-assignments', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([view('pane-1', ['a']), view('pane-2', ['a', 'b'], 'b')])),
-  r('reconcile-keeps-other-members', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd'], preferPaneId: null }),
-  r('unknown-action-is-ignored', { type: 'NOPE' }),
+  fn('initial-state', 'initialViewManagerState'),
+  fn('create', 'createPane', panes),
+  fn('create-on-empty', 'createPane', st([])),
+  fn('remove-unknown-is-ignored', 'removePane', panes, 'nope'),
+  fn('remove-focused-focuses-the-last', 'removePane', panes, 'pane-2'),
+  fn('remove-unfocused-keeps-focus', 'removePane', panes, 'pane-1'),
+  fn('remove-the-only-view', 'removePane', st([view('pane-1', ['a'])]), 'pane-1'),
+  fn('reorder', 'movePane', panes, 'pane-3', 0),
+  fn('set-focused', 'setFocusedPane', panes, 'pane-3'),
+  fn('set-focused-null', 'setFocusedPane', panes, null),
+  fn('set-focused-same-is-ignored', 'setFocusedPane', panes, 'pane-2'),
+  fn('set-active', 'setActiveDocument', panes, 'pane-1', 'c'),
+  fn('set-active-null', 'setActiveDocument', panes, 'pane-1', null),
+  fn('set-active-unknown-view', 'setActiveDocument', panes, 'nope', 'a'),
+  fn('set-active-foreign-document', 'setActiveDocument', panes, 'pane-1', 'd'),
+  fn('add-appends', 'addDocument', panes, 'pane-1', 'e'),
+  fn('add-at-index', 'addDocument', panes, 'pane-1', 'e', 1),
+  fn('add-at-zero', 'addDocument', panes, 'pane-1', 'e', 0),
+  fn('add-negative-clamps', 'addDocument', panes, 'pane-1', 'e', -4),
+  fn('add-past-the-end-clamps', 'addDocument', panes, 'pane-1', 'e', 99),
+  fn('add-fractional-truncates', 'addDocument', panes, 'pane-1', 'e', 2.9),
+  fn('add-nan-lands-first', 'addDocument', panes, 'pane-1', 'e', nan),
+  fn('add-infinity-appends', 'addDocument', panes, 'pane-1', 'e', Infinity),
+  fn('add-negative-infinity-lands-first', 'addDocument', panes, 'pane-1', 'e', -Infinity),
+  fn('add-to-empty-activates', 'addDocument', panes, 'pane-3', 'e'),
+  fn('add-present-is-ignored', 'addDocument', panes, 'pane-1', 'a'),
+  fn('add-unknown-view-is-ignored', 'addDocument', panes, 'nope', 'e'),
+  fn('add-moves-from-its-holder', 'addDocument', panes, 'pane-1', 'd', 0),
+  fn('add-moves-into-an-empty-pane', 'addDocument', panes, 'pane-3', 'b'),
+  // Malformed duplicate holders are resolved in explicit pane order, not record-key order.
+  fn(
+    'add-takes-the-first-holder-in-pane-order',
+    'addDocument',
+    st([view('0', ['x', 'y']), view('1', ['x']), view('b', [])]),
+    'b',
+    'x',
+  ),
+  fn('remove-doc-inactive', 'removeDocument', panes, 'pane-1', 'a'),
+  fn('remove-doc-active-picks-the-next', 'removeDocument', panes, 'pane-1', 'b'),
+  fn(
+    'remove-doc-active-last-picks-the-previous',
+    'removeDocument',
+    st([view('pane-1', ['a', 'b', 'c'], 'c')]),
+    'pane-1',
+    'c',
+  ),
+  fn('remove-doc-only-leaves-null', 'removeDocument', panes, 'pane-2', 'd'),
+  fn('remove-doc-absent-is-ignored', 'removeDocument', panes, 'pane-1', 'zzz'),
+  fn('remove-doc-unknown-view', 'removeDocument', panes, 'nope', 'a'),
+  fn('move-within', 'moveDocumentWithin', panes, 'pane-1', 'a', 2),
+  fn('move-within-to-front', 'moveDocumentWithin', panes, 'pane-1', 'c', 0),
+  fn('move-within-clamps', 'moveDocumentWithin', panes, 'pane-1', 'a', 50),
+  fn('move-within-nan', 'moveDocumentWithin', panes, 'pane-1', 'c', nan),
+  fn('move-within-absent', 'moveDocumentWithin', panes, 'pane-1', 'd', 0),
+  fn('move-within-unknown-view', 'moveDocumentWithin', panes, 'nope', 'a', 0),
+  fn('move-between', 'moveDocumentBetween', panes, 'pane-1', 'pane-2', 'b'),
+  fn('move-between-at-index', 'moveDocumentBetween', panes, 'pane-1', 'pane-2', 'a', 0),
+  fn('move-between-into-empty', 'moveDocumentBetween', panes, 'pane-2', 'pane-3', 'd', 5),
+  fn('move-between-same-view', 'moveDocumentBetween', panes, 'pane-1', 'pane-1', 'a'),
+  fn('move-between-same-view-at-index', 'moveDocumentBetween', panes, 'pane-1', 'pane-1', 'c', 0),
+  fn('move-between-unknown-from', 'moveDocumentBetween', panes, 'nope', 'pane-1', 'a'),
+  fn('move-between-unknown-to', 'moveDocumentBetween', panes, 'pane-1', 'nope', 'a'),
+  fn('move-between-absent-document', 'moveDocumentBetween', panes, 'pane-1', 'pane-2', 'd'),
+  fn('reconcile-prunes-closed', 'reconcile', panes, ['a', 'd'], 'pane-2'),
+  fn('reconcile-prunes-the-active', 'reconcile', panes, ['a', 'c', 'd'], null),
+  fn(
+    'reconcile-assigns-to-preferred',
+    'reconcile',
+    panes,
+    ['a', 'b', 'c', 'd', 'x', 'y'],
+    'pane-3',
+  ),
+  fn('reconcile-assigns-to-focused', 'reconcile', panes, ['x', 'a', 'b', 'c', 'd'], 'nope'),
+  fn(
+    'reconcile-assigns-to-first',
+    'reconcile',
+    { ...panes, focusedPaneId: 'gone' },
+    ['a', 'b', 'c', 'd', 'x'],
+    null,
+  ),
+  fn(
+    'reconcile-assigns-to-first-no-focus',
+    'reconcile',
+    { ...panes, focusedPaneId: null },
+    ['x'],
+    '',
+  ),
+  fn('reconcile-creates-a-default-pane', 'reconcile', st([]), ['a', 'b'], null),
+  fn(
+    'reconcile-creates-and-keeps-a-stale-focus',
+    'reconcile',
+    st([], { focusedPaneId: 'x', seq: 4 }),
+    ['a'],
+    'x',
+  ),
+  fn('reconcile-nothing-open', 'reconcile', panes, [], null),
+  fn('reconcile-nothing-open-no-views', 'reconcile', st([]), [], null),
+  fn(
+    'reconcile-empty-active-is-replaced',
+    'reconcile',
+    st([view('pane-1', ['a', 'b'], '')]),
+    ['a', 'b'],
+    null,
+  ),
+  fn(
+    'reconcile-duplicate-assignments',
+    'reconcile',
+    st([view('pane-1', ['a']), view('pane-2', ['a', 'b'], 'b')]),
+    ['a', 'b'],
+    null,
+  ),
+  fn('reconcile-keeps-other-members', 'reconcile', panes, ['a', 'b', 'c', 'd'], null),
+  fn('next-pane-id', 'nextPaneId', panes),
+  fn('create-at-front', 'createPane', panes, 0),
+  fn('create-at-fraction', 'createPane', panes, 1.9),
+  fn('create-at-negative', 'createPane', panes, -9),
+  fn('create-at-infinity', 'createPane', panes, Infinity),
+  fn('create-at-nan', 'createPane', panes, NaN),
+  fn('create-sequence-survives-removal', 'createPane', st([], { seq: 8 })),
+  fn('move-pane-negative', 'movePane', panes, 'pane-2', -1),
+  fn('move-pane-infinity', 'movePane', panes, 'pane-1', Infinity),
+  fn('move-pane-fractional', 'movePane', panes, 'pane-3', 1.9),
+  fn('move-pane-nan', 'movePane', panes, 'pane-3', NaN),
+  fn('move-pane-unknown', 'movePane', panes, 'unknown', 0),
+  fn('move-pane-same-index', 'movePane', panes, 'pane-2', 1),
+  fn('rename-active', 'renameDocument', panes, 'b', 'real'),
+  fn('rename-inactive', 'renameDocument', panes, 'a', 'real'),
+  fn('rename-absent', 'renameDocument', panes, 'absent', 'real'),
+  fn('pane-of-document', 'paneOfDocument', panes, 'd'),
+  fn('pane-of-absent-document', 'paneOfDocument', panes, 'absent'),
+  fn(
+    'holder-follows-pane-order-not-property-order',
+    'addDocument',
+    st([view('0', ['x', 'y']), view('1', ['x']), view('b', [])], { order: ['1', '0', 'b'] }),
+    'b',
+    'x',
+  ),
 ];
 
 // ── scenarios ─────────────────────────────────────────────────────────────────
 
-const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const pages = [{ index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
+const box = { x: 0, y: 0, width: 600, height: 800 };
+const pages: PageLayout[] = [
+  {
+    index: 0,
+    ref: { kind: 'objectNumber', objectNumber: 1 },
+    label: null,
+    size: { width: 600, height: 800 },
+    rotation: 0,
+    userUnit: 1,
+    tabOrder: null,
+    boxes: { media: box, crop: box, bleed: box, trim: box, art: box },
+    pdfCropBox: { left: 0, bottom: 0, right: 600, top: 800 },
+  },
+];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
@@ -146,10 +222,23 @@ const open = (id: string, options?: unknown): Step => ({
   op: 'call',
   target: 'documents',
   method: 'open',
-  args: options === undefined ? [{ kind: 'bytes', id, bytes: { $bytes: '' } }] : [{ kind: 'bytes', id, bytes: { $bytes: '' } }, options],
+  args:
+    options === undefined
+      ? [{ kind: 'bytes', id, bytes: { $bytes: '' } }]
+      : [{ kind: 'bytes', id, bytes: { $bytes: '' } }, options],
 });
-const docs = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: 'documents', method, args });
-const vm = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'view-manager' }, method, args });
+const docs = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: 'documents',
+  method,
+  args,
+});
+const vm = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'view-manager' },
+  method,
+  args,
+});
 const reads: Step[] = [vm('listPanes'), vm('getPaneOrder'), vm('getFocusedPaneId')];
 
 const plugins = [{ factory: 'view-manager' }];
@@ -157,8 +246,33 @@ const snapshot = ['view-manager'];
 
 const cases: ScenarioCase[] = [
   {
+    name: 'pending-rename-preserves-split-and-tab-position',
+    covers:
+      'A thunk ticket is split before resolving; its real id replaces it in that pane and active slot without losing placement. Later split uses an explicit nonfocused from pane.',
+    plugins,
+    snapshot,
+    engine: { documents: { real: doc(), b: doc() } },
+    steps: [
+      start,
+      docs('open', { $fn: 'source', defer: 'source' }),
+      vm('splitPane', 'pending:1'),
+      ...reads,
+      {
+        op: 'settle',
+        label: 'source',
+        value: { kind: 'bytes', id: 'real', bytes: { $bytes: '' } },
+      },
+      ...reads,
+      open('b'),
+      vm('createPane'),
+      vm('splitPane', 'b', { from: 'pane-1' }),
+      ...reads,
+    ],
+  },
+  {
     name: 'selectors-before-start',
-    covers: 'The capability exists from createKernel(); with no panes the selectors are empty, get() and documentView() are null.',
+    covers:
+      'The capability exists from createKernel(); with no panes the selectors are empty, getPane() and getPaneOfDocument() are null.',
     plugins,
     snapshot,
     steps: [...reads, vm('getPane', 'pane-1'), vm('getPaneOfDocument', 'a')],
@@ -166,10 +280,19 @@ const cases: ScenarioCase[] = [
   {
     name: 'first-open-makes-a-pane',
     covers:
-      'The effect reconciles whenever the open order changes: the first open (while still loading) creates view-1 and assigns the document to it; later opens land in the focused pane; get/documentView/list read it back as copies.',
+      'The effect reconciles whenever the open order changes: the first open (while still loading) creates pane-1 and assigns the document to it; later opens land in the focused pane; getPane/getPaneOfDocument/listPanes read the current public view.',
     plugins,
     snapshot,
-    engine: { documents: { a: doc(), b: doc(), c: doc() }, responses: [{ path: 'open', args: [{ kind: 'bytes', id: 'c', bytes: { $bytes: '' } }, {}], defer: 'open-c' }] },
+    engine: {
+      documents: { a: doc(), b: doc(), c: doc() },
+      responses: [
+        {
+          path: 'open',
+          args: [{ kind: 'bytes', id: 'c', bytes: { $bytes: '' } }, {}],
+          defer: 'open-c',
+        },
+      ],
+    },
     steps: [
       start,
       ...reads,
@@ -187,7 +310,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'closing-prunes',
-    covers: 'Closing a document drops it from its pane and picks a neighbour as active; closing every document leaves the empty pane.',
+    covers:
+      'Closing a document drops it from its pane and picks a neighbour as active; closing every document leaves the empty pane.',
     plugins,
     snapshot,
     engine: { documents: { a: doc(), b: doc(), c: doc() } },
@@ -206,7 +330,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'panes',
     covers:
-      'createView focuses the new pane and later opens land there; removeView refocuses; moveView reorders with clamping and ignores unknown ids; setFocused takes any id.',
+      'createPane focuses the new pane and later opens land there; removePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.',
     plugins,
     snapshot,
     engine: { documents: { a: doc(), b: doc(), c: doc() } },
@@ -239,7 +363,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'tabs',
     covers:
-      'addDocument/removeDocument/setActiveDocument/moveDocumentWithin/moveDocumentBetween dispatch their actions; the reducer ignores the invalid ones.',
+      'addDocument/removeDocument/setActiveDocument/moveDocumentWithin/moveDocumentBetween apply current transitions; the model ignores the invalid ones.',
     plugins,
     snapshot,
     engine: { documents: { a: doc(), b: doc(), c: doc() } },
@@ -267,7 +391,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'reordering-tabs-reconciles',
-    covers: 'documents.move changes the open order, so the effect reconciles (a no-op for pane contents); setActive alone does not.',
+    covers:
+      'documents.move changes the open order, so the effect reconciles (a no-op for pane contents); setActive alone does not.',
     plugins,
     snapshot,
     engine: { documents: { a: doc(), b: doc() } },
@@ -275,16 +400,26 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'a-failed-open',
-    covers: 'A document whose open fails keeps its tab in the order (status error), so it stays assigned until it is closed.',
+    covers:
+      'A document whose open fails keeps its tab in the order (status error), so it stays assigned until it is closed.',
     plugins,
     snapshot,
-    engine: { documents: { a: doc() }, responses: [{ path: 'open', args: [{ kind: 'bytes', id: 'x', bytes: { $bytes: '' } }, {}], error: { name: 'EngineError', message: 'bad file', code: 'Format' } }] },
+    engine: {
+      documents: { a: doc() },
+      responses: [
+        {
+          path: 'open',
+          args: [{ kind: 'bytes', id: 'x', bytes: { $bytes: '' } }, {}],
+          error: { name: 'EngineError', message: 'bad file', code: 'Format' },
+        },
+      ],
+    },
     steps: [start, open('a'), open('x'), ...reads, docs('close', 'x'), ...reads],
   },
   {
     name: 'create-populated-and-split',
     covers:
-      'createPane with documentIds creates the pane, then moves each document into it (out of the pane that held it); splitPane(documentId) is createPane with that one document, and ignores its from option.',
+      'createPane with documentIds creates the pane, then moves each document into it (out of the pane that held it); splitPane(documentId) is createPane with that one document, and inserts beside its from option.',
     plugins,
     snapshot,
     engine: { documents: { a: doc(), b: doc(), c: doc() } },
@@ -365,9 +500,9 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'a-kernel-refuses-the-shipping-plugin',
+    name: 'a-kernel-installs-the-shipping-plugin',
     covers:
-      'The shipping viewManagerPlugin() cannot be installed: its controller spreads its context, which reads the workspace doc getter, which throws, so createKernel throws. Every other case installs it through a factory that hides doc.',
+      'The unmodified shipping workspace plugin installs successfully; its selectors are available before start.',
     plugins: [{ factory: 'view-manager-as-shipped' }],
     steps: [...reads],
   },
@@ -385,9 +520,15 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/view-manager/reducer.json',
-    describes: 'packages/plugin/view-manager: viewManagerReducer and initialViewManagerState (`same` is reference identity).',
-    functions: { viewManagerReducer: reduce, initialViewManagerState: initial },
+    describes:
+      'packages/plugin/view-manager: named model transitions, generated pane ids and ordered document partition.',
+    functions: { ...model },
     cases: reducerCases,
   },
-  { kind: 'scenario', file: 'plugins/view-manager/plugin.json', describes: 'packages/plugin/view-manager: panes over the open documents.', cases },
+  {
+    kind: 'scenario',
+    file: 'plugins/view-manager/plugin.json',
+    describes: 'packages/plugin/view-manager: panes over the open documents.',
+    cases,
+  },
 ];

@@ -126,8 +126,8 @@ public struct StageCapability: Sendable {
   public func isPageVisible(_ page: PageRef) async throws(PDFError) -> Bool { try await bridged { try await handle.isPageVisible(page: page) } }
   /// Returns the cursor page's zero-based display index.
   public func currentPageIndex() async throws(PDFError) -> UInt32 { try await bridged { try await handle.currentPageIndex() } }
-  /// Returns the cursor page's registry entry, or nil before the document has pages.
-  public func currentPage() async throws(PDFError) -> PageInfo? { try await bridged { try await handle.currentPage() } }
+  /// Returns the cursor page's reference, or nil before the document has pages.
+  public func currentPage() async throws(PDFError) -> PageRef? { try await bridged { try await handle.currentPage() } }
   /// Returns the pages in the current layout item, which can be a page, spread, or grid row.
   public func currentItemPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentItemPages() } }
   /// Returns a page's laid-out frame and transform, or nil before placement or for an unknown page.
@@ -209,9 +209,6 @@ public struct StageCapability: Sendable {
   public func resetView() async throws(PDFError) { try await bridged { try await handle.resetView() } }
   /// Brings the supplied page into view using optional alignment, zoom, and animation settings.
   public func reveal(_ page: PageRef, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.reveal(page: page, options: options) } }
-  /// Reveals a rectangle in intrinsic PDF page coordinates using optional alignment, zoom,
-  /// and animation settings.
-  public func revealRect(_ page: PageRef, _ rect: Rect, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealRect(page: page, rect: rect, options: options) } }
   /// Reveals the page at a zero-based display index.
   public func revealIndex(_ index: UInt32, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealIndex(index: index, options: options) } }
 
@@ -229,14 +226,6 @@ public struct StageCapability: Sendable {
   public func matchesRule(_ name: String) async throws(PDFError) -> Bool { try await bridged { try await handle.matchesRule(name: name) } }
   /// Returns the names of responsive rules currently matching the viewport.
   public func activeRules() async throws(PDFError) -> [String] { try await bridged { try await handle.activeRules() } }
-  /// Changes the stage's page-flow setting.
-  public func setFlow(_ flow: StageFlow) async throws(PDFError) { try await bridged { try await handle.setFlow(flow: flow) } }
-  /// Changes how pages are arranged into layout items.
-  public func setLayout(_ layout: StageLayout) async throws(PDFError) { try await bridged { try await handle.setLayout(layout: layout) } }
-  /// Changes the page-pairing mode used by the layout.
-  public func setSpread(_ spread: StageSpreadMode) async throws(PDFError) { try await bridged { try await handle.setSpread(spread: spread) } }
-  /// Changes how page sizes are resolved within the layout.
-  public func setSizing(_ sizing: StageSizingMode) async throws(PDFError) { try await bridged { try await handle.setSizing(sizing: sizing) } }
   /// Restores settings, cursor, and anchor from a previously captured view state.
   public func applyViewState(_ view: StageViewState) async throws(PDFError) { try await bridged { try await handle.applyViewState(view: view) } }
 

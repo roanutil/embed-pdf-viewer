@@ -1,0 +1,9 @@
+rendered 1 suites
+render OK plugins/i18n/core.json cases=86
+rendered 1 suites
+render OK plugins/i18n/plurals.json cases=532
+(node:69369) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+rendered 1 suites
+render OK plugins/i18n/plugin.json cases=24
+captured 642

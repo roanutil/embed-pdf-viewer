@@ -1,0 +1,264 @@
+wrote crates/plugins/acrojs/prelude.js
+(node:47079) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✖ current links replace the removed cache reducer and use the current annotation host (1.81775ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 808.691125
+
+✖ failing tests:
+
+test at test/link-current.test.ts:1:141
+✖ current links replace the removed cache reducer and use the current annotation host (1.81775ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /removedUpstream|from '.\/annotation-fixtures'/. Input:
+
+  '/**\n' +
+    ' * `packages/plugin/link`: the navigation plane of link annotations. The\n' +
+    ' * scenarios run the real interaction, annotation, actions and stage plugins\n' +
+    ' * beside this one, in the combinations a deployment ships: viewer-only (the\n' +
+    ' * engine-backed page cache), annotation-backed (the folded model and the\n' +
+    ' * `link-nav` behavior), with a stage (reveal), and with the action engine\n' +
+    ' * (dispatch). Replayed by `crates/plugins/link/tests/conformance.rs`.\n' +
+    ' *\n' +
+    ' * One shim, mirrored by `crates/plugins/link/src/harness.rs`: the `link`\n' +
+    " * factory's `onActivate` config is a scripted callback spec. The event it\n" +
+    " * receives can carry the in-flight dispatch promise, which a callback's\n" +
+    ' * logged arguments cannot print, so the shim logs that member as the string\n' +
+    ' * `[promise]`.\n' +
+    ' */\n' +
+    "import type { AnyPlugin } from '@embedpdf/core';\n" +
+    '\n' +
+    "import { linkPlugin } from '../../../../packages/plugin/link/src/link.plugin';\n" +
+    "import { LinkToken, type LinkActivatedEvent, type LinkHostCapability } from '../../../../packages/plugin/link/src/host-contract';\n" +
+    '\n' +
+    "import type { ResponseSpec } from '../fake-engine';\n" +
+    "import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';\n" +
+    "import { removedUpstream } from '../removed';\n" +
+    "import type { FunctionCase, Suite } from '../vectors';\n" +
+    "import { scriptedCallback, type AnswerSpec } from './acrojs';\n" +
+    "import { stageStep } from './stage-plugin';\n" +
+    '\n' +
+    'import {\n' +
+    '  CROP2,\n' +
+    '  FLAGS,\n' +
+    '  boot,\n' +
+    '  call as anno,\n' +
+    '  created,\n' +
+    '  doc,\n' +
+    '  emit,\n' +
+    '  hydrate,\n' +
+    '  ix,\n' +
+    '  layout,\n' +
+    '  link,\n' +
+    '  objRef,\n' +
+    '  pr,\n' +
+    '  settle,\n' +
+    '  square,\n' +
+    '  updated,\n' +
+    "} from './annotation-fixtures';\n" +
+    '\n' +
+    '/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */\n' +
+    'const UNSNAPSHOTTED = {\n' +
+    "  snapshot: 'none',\n" +
+    '  reason: "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",\n' +
+    '} as const;\n' +
+    '\n' +
+    '// ── the factory ───────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    'type Scripted = AnswerSpec & { readonly $fn: string };\n' +
+    'interface HarnessConfig {\n' +
+    '  readonly onActivate?: Scripted;\n' +
+    '}\n' +
+    '\n' +
+    'const printable = (event: LinkActivatedEvent) => ({\n' +
+    '  target: event.target,\n' +
+    "  activation: event.activation.outcome === 'dispatched' ? { outcome: 'dispatched', dispatch: '[promise]' } : event.activation,\n" +
+    '  origin: event.origin,\n' +
+    '});\n' +
+    '\n' +
+    '/** A throwing onActivated listener is reported to `console.error` with a\n' +
+    ' *  `[link]` prefix; while a link factory is current that logs as the\n' +
+    ' *  callback `console.error`, as the annotation and redaction suites do. */\n' +
+    "let linkLog: PluginEnv['log'] | null = null;\n" +
+    'onCaseEnd(() => {\n' +
+    '  linkLog = null;\n' +
+    '});\n' +
+    '{\n' +
+    '  const previous = console.error;\n' +
+    '  console.error = (...args: unknown[]) => {\n' +
+    "    if (linkLog && typeof args[0] === 'string' && args[0].startsWith('[link]')) {\n" +
+    "      linkLog('console.error', args);\n" +
+    '      return;\n' +
+    '    }\n' +
+    '    previous(...args);\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    "registerPlugin('link', {\n" +
+    '  factory: (config, env) => {\n' +
+    '    linkLog = env.log;\n' +
+    '    const { onActivate } = (config ?? {}) as HarnessConfig;\n' +
+    '    const plugin = linkPlugin() as AnyPlugin;\n' +
+    '    if (!onActivate) return plugin;\n' +
+    '    // v2 took `onActivate` as config; v3 publishes `onActivated`, which the\n' +
+    '    // harness subscribes the scripted callback to as the controller is built.\n' +
+    '    const callback = scriptedCallback(onActivate.$fn, onActivate, env);\n' +
+    '    return {\n' +
+    '      ...plugin,\n' +
+    '      create: (ctx) => {\n' +
+    '        const built = plugin.create!(ctx);\n' +
+    '        (built.api as LinkHostCapability).onActivated((event) => void callback(printable(event)));\n' +
+    '        return built;\n' +
+    '      },\n' +
+    '    } as AnyPlugin;\n' +
+    '  },\n' +
+    '  tokens: [LinkToken],\n' +
+    '});\n' +
+    '\n' +
+    '// ── steps ─────────────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    "const LINK: Readonly<Record<string, string>> = { linksOn: 'listLinks', ensurePage: 'ensureLoaded', engaged: 'isNavigationEngaged' };\n" +
+    "const lk = (method: string, args: unknown[] = [], docId = 'a'): Step => ({\n" +
+    "  op: 'call',\n" +
+    "  target: { token: 'link', doc: docId },\n" +
+    '  method: LINK[method] ?? method,\n' +
+    "  args: (method === 'linksOn' || method === 'ensurePage') && typeof args[0] === 'number' ? [pr(args[0]), ...args.slice(1)] : args,\n" +
+    '});\n' +
+    "const st = (method: string, args: unknown[] = []): Step => stageStep('stage', 'a', method, args);\n" +
+    "const ref = (n: number, args: unknown[] = []): Step => ({ op: 'call', target: { ref: n }, args });\n" +
+    "const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };\n" +
+    "const viewport: Step = st('setViewport', [{ width: 1000, height: 700 }]);\n" +
+    '\n' +
+    '// ── plugins ───────────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    "const LOGGED = { factory: 'link', config: { onActivate: { $fn: 'onActivate' } } };\n" +
+    "const INTERACTION = { factory: 'interaction' };\n" +
+    "const STAGE = { factory: 'stage', config: { viewUnitsPerPoint: 1, scrollBehavior: 'instant' } };\n" +
+    "const ACTIONS = { factory: 'actions', config: { openSequence: 'off' } };\n" +
+    "const ANNOTATION = { factory: 'annotation' };\n" +
+    '\n' +
+    'const VIEWER = [INTERACTION, LOGGED];\n' +
+    'const WITH_STAGE = [INTERACTION, STAGE, LOGGED];\n' +
+    'const WITH_ANNOTATION = [INTERACTION, ANNOTATION, LOGGED];\n' +
+    'const FULL = [INTERACTION, ACTIONS, STAGE, ANNOTATION, LOGGED];\n' +
+    "const SNAP = ['link::a'];\n" +
+    '\n' +
+    '// ── fixtures ──────────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    "const goto = (destination: Record<string, unknown>) => ({ kind: 'goto', destination });\n" +
+    "const xyz = (pon: number, left: unknown, top: unknown, zoom: unknown) => ({ kind: 'xyz', page: pr(pon), left, top, zoom });\n" +
+    "const uri = (u: string) => ({ kind: 'uri', uri: u });\n" +
+    "const named = (name: string) => ({ kind: 'named', name });\n" +
+    'const tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });\n' +
+    "const gotoNode = (destination: Record<string, unknown>) => ({ type: 'goto', subtype: 'GoTo', destination, next: [] });\n" +
+    "const uriNode = (u: string) => ({ type: 'uri', subtype: 'URI', uri: u, next: [] });\n" +
+    '\n' +
+    'const list = (annotations: unknown[]) => ({ annotations });\n' +
+    'const omit = (dto: Record<string, unknown>, key: string) => {\n' +
+    '  const { [key]: _omitted, ...rest } = dto;\n' +
+    '  return rest;\n' +
+    '};\n' +
+    'const pageList = (pon: number, annotations: unknown[], times?: number): ResponseSpec => ({\n' +
+    "  path: 'page.annotations.list',\n" +
+    '  pon,\n' +
+    '  value: list(annotations),\n' +
+    '  ...(times === undefined ? {} : { times }),\n' +
+    '});\n' +
+    '\n' +
+    '/** Page 1 of the viewer-only suite: every shape `loadLinksPage` sorts. */\n' +
+    'const PAGE1 = [\n' +
+    '  link(1, { rect: { left: 100, bottom: 700, right: 200, top: 720 } }),\n' +
+    '  link(2, {\n' +
+    "    ref: { kind: 'nm', page: pr(1), nm: 'n-2' },\n" +
+    '    target: goto(xyz(2, 20, 500, 0)),\n' +
+    '    rect: { left: 0, bottom: 0, right: 50, top: 10 },\n' +
+    '  }),\n' +
+    '  link(3, {\n' +
+    "    ref: { kind: 'index', page: pr(1), index: 3, revision: { docSessionId: 's', page: pr(1), generation: 1 } },\n" +
+    "    target: named('NextPage'),\n" +
+    '  }),\n' +
+    '  square(4),\n' +
+    '  link(5, { target: null }),\n' +
+    '  (() => {\n' +
+    '    const { target: _omitted, ...rest } = link(6);\n' +
+    '    return rest;\n' +
+    '  })(),\n' +
+    '  link(7, { flags: FLAGS({ hidden: true }) }),\n' +
+    '  link(8, { flags: FLAGS({ noView: true }) }),\n' +
+    "  link(9, { flags: FLAGS({ invisible: true }), target: { kind: 'javascript' } }),\n" +
+    "  link(10, { actions: { activate: tree(uriNode('https://a.example')) } }),\n" +
+    "  link(11, { actions: { cursorEnter: { root: uriNode('https://enter.example') } } }),\n" +
+    "  link(12, { actions: { cursorExit: { root: uriNode('https://exit.example') }, activate: null } }),\n" +
+    '  link(13, { actions: { cursorEnter: { root: null }, cursorExit: {} } }),\n' +
+    '  link(14, { actions: {} }),\n' +
+    "  link(15, { replyType: 'group', inReplyTo: objRef(4) }),\n" +
+    "  link(16, { replyType: 'group', inReplyTo: null }),\n" +
+    "  link(17, { replyType: 'reply', inReplyTo: objRef(4) }),\n" +
+    '];\n' +
+    '/** Page 2 sits on an offset crop, so its rects shift. */\n' +
+    'const PAGE2 = [link(20, { pageObjectNumber: 2, ref: objRef(20, 2), rect: { left: 30, bottom: 40, right: 130, top: 90 } })];\n' +
+    '\n' +
+    'const annotationDoc = (byPage: Record<number, unknown[]>, extra: ResponseSpec[] = []) =>\n' +
+    '  doc([hydrate(byPage as never), ...extra]);\n' +
+    '\n' +
+    "const FORMS_EMPTY: ResponseSpec = { path: 'forms.list', value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] } };\n" +
+    '\n' +
+    '// ── scenarios ─────────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    'const cases: ScenarioCase[] = [\n' +
+    '  {\n' +
+    "    name: 'viewer-only-page-cache',\n" +
+    '    covers:\n' +
+    "      'Without the annotation plugin linksOn reads the engine-backed cache (empty until loaded). ensurePage lists the page once, keeps visible links with a target (hidden and noView dropped, invisible kept), ids obj: refs by object number and every other ref by page and index, converts the rect through the page crop, copies a truthy activate tree, flags hover events from either cursor root, and marks group children attached. A loaded page, or one the document does not have, asks nothing.',\n" +
+    '    plugins: VIEWER,\n' +
+    '    engine: { documents: { a: doc([pageList(1, PAGE1), pageList(2, PAGE2)]) } },\n' +
+    '    snapshot: SNAP,\n' +
+    '    steps: [\n' +
+    '      ...boot,\n' +
+    "      lk('linksOn', [1]),\n" +
+    "      lk('ensurePage', [1]),\n" +
+    "      lk('linksOn', [1]),\n" +
+    "      lk('ensurePage', [1]),\n" +
+    "      lk('ensurePage', [2]),\n" +
+    "      lk('linksOn', [2]),\n" +
+    "      lk('ensurePage', [99]),\n" +
+    "      lk('linksOn', [99]),\n" +
+    "      lk('engaged'),\n" +
+    '    ],\n' +
+    '  },\n' +
+    '  {\n' +
+    "    name: 'viewer-only-malformed-lists',\n" +
+    '    covers:\n' +
+    "      'A list the fulfilled handler throws on (no annotations member, a null entry, a link without flags, ref or rect) caches nothing; a non-link without flags is skipped before flags are read. A missing index prints as undefined in the id and a rect without edges converts to NaN.',\n" +
+    '    plugins: VIEWER,\n' +
+    '    engine: {\n' +
+    '      documents: {\n' +
+    '        a: doc(\n' +
+    '          [\n' +
+    "            { path: 'page.annotations.list', pon: 1, value: {} },\n" +
+    '            pageList(2, [link(1), null]),\n' +
+    "            pageList(3, [link(1), omit(link(2), 'flags')]),\n" +
+    "            pageList(4, [omit(link(1), 'ref')]),\n" +
+    "            pageList(5, [omit(link(1), 'rect')]),\n" +
+    '            pageList(6, [\n' +
+    "              omit(square(1), 'flags'),\n" +
+    "              omit(link(3, { ref: { kind: 'nm', page: pr(6), nm: 'x' } }), 'index'),\n" +
+    '              link(4, { rect: {} '... 19698 more characters
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/link-current.test.ts:7:9)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '/**\n * `packages/plugin/link`: the navigation plane of link annotations. The\n * scenarios run the real interaction, annotation, actions and stage plugins\n * beside this one, in the combinations a deployment ships: viewer-only (the\n * engine-backed page cache), annotation-backed (the folded model and the\n * `link-nav` behavior), with a stage (reveal), and with the action engine\n * (dispatch). Replayed by `crates/plugins/link/tests/conformance.rs`.\n *\n * One shim, mirrored by `crates/plugins/link/src/harness.rs`: the `link`\n * factory\'s `onActivate` config is a scripted callback spec. The event it\n * receives can carry the in-flight dispatch promise, which a callback\'s\n * logged arguments cannot print, so the shim logs that member as the string\n * `[promise]`.\n */\nimport type { AnyPlugin } from \'@embedpdf/core\';\n\nimport { linkPlugin } from \'../../../../packages/plugin/link/src/link.plugin\';\nimport { LinkToken, type LinkActivatedEvent, type LinkHostCapability } from \'../../../../packages/plugin/link/src/host-contract\';\n\nimport type { ResponseSpec } from \'../fake-engine\';\nimport { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from \'../scenario\';\nimport { removedUpstream } from \'../removed\';\nimport type { FunctionCase, Suite } from \'../vectors\';\nimport { scriptedCallback, type AnswerSpec } from \'./acrojs\';\nimport { stageStep } from \'./stage-plugin\';\n\nimport {\n  CROP2,\n  FLAGS,\n  boot,\n  call as anno,\n  created,\n  doc,\n  emit,\n  hydrate,\n  ix,\n  layout,\n  link,\n  objRef,\n  pr,\n  settle,\n  square,\n  updated,\n} from \'./annotation-fixtures\';\n\n/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */\nconst UNSNAPSHOTTED = {\n  snapshot: \'none\',\n  reason: "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",\n} as const;\n\n// ── the factory ───────────────────────────────────────────────────────────────\n\ntype Scripted = AnswerSpec & { readonly $fn: string };\ninterface HarnessConfig {\n  readonly onActivate?: Scripted;\n}\n\nconst printable = (event: LinkActivatedEvent) => ({\n  target: event.target,\n  activation: event.activation.outcome === \'dispatched\' ? { outcome: \'dispatched\', dispatch: \'[promise]\' } : event.activation,\n  origin: event.origin,\n});\n\n/** A throwing onActivated listener is reported to `console.error` with a\n *  `[link]` prefix; while a link factory is current that logs as the\n *  callback `console.error`, as the annotation and redaction suites do. */\nlet linkLog: PluginEnv[\'log\'] | null = null;\nonCaseEnd(() => {\n  linkLog = null;\n});\n{\n  const previous = console.error;\n  console.error = (...args: unknown[]) => {\n    if (linkLog && typeof args[0] === \'string\' && args[0].startsWith(\'[link]\')) {\n      linkLog(\'console.error\', args);\n      return;\n    }\n    previous(...args);\n  };\n}\n\nregisterPlugin(\'link\', {\n  factory: (config, env) => {\n    linkLog = env.log;\n    const { onActivate } = (config ?? {}) as HarnessConfig;\n    const plugin = linkPlugin() as AnyPlugin;\n    if (!onActivate) return plugin;\n    // v2 took `onActivate` as config; v3 publishes `onActivated`, which the\n    // harness subscribes the scripted callback to as the controller is built.\n    const callback = scriptedCallback(onActivate.$fn, onActivate, env);\n    return {\n      ...plugin,\n      create: (ctx) => {\n        const built = plugin.create!(ctx);\n        (built.api as LinkHostCapability).onActivated((event) => void callback(printable(event)));\n        return built;\n      },\n    } as AnyPlugin;\n  },\n  tokens: [LinkToken],\n});\n\n// ── steps ─────────────────────────────────────────────────────────────────────\n\nconst LINK: Readonly<Record<string, string>> = { linksOn: \'listLinks\', ensurePage: \'ensureLoaded\', engaged: \'isNavigationEngaged\' };\nconst lk = (method: string, args: unknown[] = [], docId = \'a\'): Step => ({\n  op: \'call\',\n  target: { token: \'link\', doc: docId },\n  method: LINK[method] ?? method,\n  args: (method === \'linksOn\' || method === \'ensurePage\') && typeof args[0] === \'number\' ? [pr(args[0]), ...args.slice(1)] : args,\n});\nconst st = (method: string, args: unknown[] = []): Step => stageStep(\'stage\', \'a\', method, args);\nconst ref = (n: number, args: unknown[] = []): Step => ({ op: \'call\', target: { ref: n }, args });\nconst close: Step = { op: \'call\', target: \'documents\', method: \'close\', args: [\'a\'] };\nconst viewport: Step = st(\'setViewport\', [{ width: 1000, height: 700 }]);\n\n// ── plugins ───────────────────────────────────────────────────────────────────\n\nconst LOGGED = { factory: \'link\', config: { onActivate: { $fn: \'onActivate\' } } };\nconst INTERACTION = { factory: \'interaction\' };\nconst STAGE = { factory: \'stage\', config: { viewUnitsPerPoint: 1, scrollBehavior: \'instant\' } };\nconst ACTIONS = { factory: \'actions\', config: { openSequence: \'off\' } };\nconst ANNOTATION = { factory: \'annotation\' };\n\nconst VIEWER = [INTERACTION, LOGGED];\nconst WITH_STAGE = [INTERACTION, STAGE, LOGGED];\nconst WITH_ANNOTATION = [INTERACTION, ANNOTATION, LOGGED];\nconst FULL = [INTERACTION, ACTIONS, STAGE, ANNOTATION, LOGGED];\nconst SNAP = [\'link::a\'];\n\n// ── fixtures ──────────────────────────────────────────────────────────────────\n\nconst goto = (destination: Record<string, unknown>) => ({ kind: \'goto\', destination });\nconst xyz = (pon: number, left: unknown, top: unknown, zoom: unknown) => ({ kind: \'xyz\', page: pr(pon), left, top, zoom });\nconst uri = (u: string) => ({ kind: \'uri\', uri: u });\nconst named = (name: string) => ({ kind: \'named\', name });\nconst tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });\nconst gotoNode = (destination: Record<string, unknown>) => ({ type: \'goto\', subtype: \'GoTo\', destination, next: [] });\nconst uriNode = (u: string) => ({ type: \'uri\', subtype: \'URI\', uri: u, next: [] });\n\nconst list = (annotations: unknown[]) => ({ annotations });\nconst omit = (dto: Record<string, unknown>, key: string) => {\n  const { [key]: _omitted, ...rest } = dto;\n  return rest;\n};\nconst pageList = (pon: number, annotations: unknown[], times?: number): ResponseSpec => ({\n  path: \'page.annotations.list\',\n  pon,\n  value: list(annotations),\n  ...(times === undefined ? {} : { times }),\n});\n\n/** Page 1 of the viewer-only suite: every shape `loadLinksPage` sorts. */\nconst PAGE1 = [\n  link(1, { rect: { left: 100, bottom: 700, right: 200, top: 720 } }),\n  link(2, {\n    ref: { kind: \'nm\', page: pr(1), nm: \'n-2\' },\n    target: goto(xyz(2, 20, 500, 0)),\n    rect: { left: 0, bottom: 0, right: 50, top: 10 },\n  }),\n  link(3, {\n    ref: { kind: \'index\', page: pr(1), index: 3, revision: { docSessionId: \'s\', page: pr(1), generation: 1 } },\n    target: named(\'NextPage\'),\n  }),\n  square(4),\n  link(5, { target: null }),\n  (() => {\n    const { target: _omitted, ...rest } = link(6);\n    return rest;\n  })(),\n  link(7, { flags: FLAGS({ hidden: true }) }),\n  link(8, { flags: FLAGS({ noView: true }) }),\n  link(9, { flags: FLAGS({ invisible: true }), target: { kind: \'javascript\' } }),\n  link(10, { actions: { activate: tree(uriNode(\'https://a.example\')) } }),\n  link(11, { actions: { cursorEnter: { root: uriNode(\'https://enter.example\') } } }),\n  link(12, { actions: { cursorExit: { root: uriNode(\'https://exit.example\') }, activate: null } }),\n  link(13, { actions: { cursorEnter: { root: null }, cursorExit: {} } }),\n  link(14, { actions: {} }),\n  link(15, { replyType: \'group\', inReplyTo: objRef(4) }),\n  link(16, { replyType: \'group\', inReplyTo: null }),\n  link(17, { replyType: \'reply\', inReplyTo: objRef(4) }),\n];\n/** Page 2 sits on an offset crop, so its rects shift. */\nconst PAGE2 = [link(20, { pageObjectNumber: 2, ref: objRef(20, 2), rect: { left: 30, bottom: 40, right: 130, top: 90 } })];\n\nconst annotationDoc = (byPage: Record<number, unknown[]>, extra: ResponseSpec[] = []) =>\n  doc([hydrate(byPage as never), ...extra]);\n\nconst FORMS_EMPTY: ResponseSpec = { path: \'forms.list\', value: { formKind: \'none\', needsAppearances: false, fields: [], calculationOrder: [] } };\n\n// ── scenarios ─────────────────────────────────────────────────────────────────\n\nconst cases: ScenarioCase[] = [\n  {\n    name: \'viewer-only-page-cache\',\n    covers:\n      \'Without the annotation plugin linksOn reads the engine-backed cache (empty until loaded). ensurePage lists the page once, keeps visible links with a target (hidden and noView dropped, invisible kept), ids obj: refs by object number and every other ref by page and index, converts the rect through the page crop, copies a truthy activate tree, flags hover events from either cursor root, and marks group children attached. A loaded page, or one the document does not have, asks nothing.\',\n    plugins: VIEWER,\n    engine: { documents: { a: doc([pageList(1, PAGE1), pageList(2, PAGE2)]) } },\n    snapshot: SNAP,\n    steps: [\n      ...boot,\n      lk(\'linksOn\', [1]),\n      lk(\'ensurePage\', [1]),\n      lk(\'linksOn\', [1]),\n      lk(\'ensurePage\', [1]),\n      lk(\'ensurePage\', [2]),\n      lk(\'linksOn\', [2]),\n      lk(\'ensurePage\', [99]),\n      lk(\'linksOn\', [99]),\n      lk(\'engaged\'),\n    ],\n  },\n  {\n    name: \'viewer-only-malformed-lists\',\n    covers:\n      \'A list the fulfilled handler throws on (no annotations member, a null entry, a link without flags, ref or rect) caches nothing; a non-link without flags is skipped before flags are read. A missing index prints as undefined in the id and a rect without edges converts to NaN.\',\n    plugins: VIEWER,\n    engine: {\n      documents: {\n        a: doc(\n          [\n            { path: \'page.annotations.list\', pon: 1, value: {} },\n            pageList(2, [link(1), null]),\n            pageList(3, [link(1), omit(link(2), \'flags\')]),\n            pageList(4, [omit(link(1), \'ref\')]),\n            pageList(5, [omit(link(1), \'rect\')]),\n            pageList(6, [\n              omit(square(1), \'flags\'),\n              omit(link(3, { ref: { kind: \'nm\', page: pr(6), nm: \'x\' } }), \'index\'),\n              link(4, { rect: {} '... 19698 more characters,
+    expected: /removedUpstream|from '.\/annotation-fixtures'/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }

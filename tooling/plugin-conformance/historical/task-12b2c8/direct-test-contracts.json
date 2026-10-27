@@ -1,0 +1,21 @@
+{
+  "file": "test/page-edit-current.test.ts",
+  "trackedAdditionalWitnesses": [
+    "Two pending turns: full before/after registry, undo predictions, rotate labels, callback-before-promise order",
+    "Duplicate extraction waits for prior changes; duplicate/blank/delete labels and counts",
+    "Six independent blank size/position/count/full confirmed layout matrix rows",
+    "Pre-aborted all nine verbs; permission precedes abort; duplicate separately needs download",
+    "After-stage cancellation rejects only caller; eventual confirmed edit applies; delete-all refusal",
+    "Close rejects pending edit/removes all subscriptions/suppresses late facts",
+    "Selection identity/dedup and deleted-page projection",
+    "Reorder and whole-PDF insert label scope; unconfirmed result does not mutate registry"
+  ],
+  "negativeChannels": [
+    "operation-cancelled: pageEdit.<verb> was cancelled",
+    "operation-cancelled: operation cancelled",
+    "permission-denied: pageEdit.duplicate requires doc.download",
+    "permission-denied: pageEdit.extract requires doc.download",
+    "invalid-input: a document keeps at least one page",
+    "instance-closed: the document closed"
+  ]
+}

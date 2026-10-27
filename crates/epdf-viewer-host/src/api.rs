@@ -59,12 +59,28 @@ pub struct ViewerConfig {
     /// Requires `interaction`. With `stage`, a `goto` link reveals its page.
     #[uniffi(default = false)]
     pub link: bool,
-    /// Install `annotationPlugin(config)`: read, create, edit and comment
-    /// on annotations, one per document. Requires `interaction`; uses
-    /// `selection` for markup from selected text and `actions` for the
-    /// hover feed when they are installed.
+    /// Install `annotationPlugin(settings)`: read, create, edit and comment
+    /// on annotations, one per document. The value is the settings JSON
+    /// registered over the defaults (`""` for the defaults). Requires
+    /// `interaction`; uses `selection` for markup from selected text,
+    /// `history` for undo and `actions` for the hover feed when they are
+    /// installed.
     #[uniffi(default = None)]
-    pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
+    pub annotation: Option<String>,
+    /// Install `historyPlugin()`: undo and redo of the document's changes,
+    /// one per document.
+    #[uniffi(default = false)]
+    pub history: bool,
+    /// Install `outlinePlugin()`: the document's bookmarks, one per
+    /// document. Uses `stage`, `actions`, `link`, `selection` and `i18n`
+    /// when they are installed.
+    #[uniffi(default = false)]
+    pub outline: bool,
+    /// Install `attachmentPlugin()`: the document's embedded files and file
+    /// attachment annotations, one per document. Uses `annotation` and
+    /// `stage` when they are installed.
+    #[uniffi(default = false)]
+    pub attachment: bool,
     /// Install `formPlugin(config)`: read, fill and design AcroForm fields.
     /// Needs `interaction`.
     #[uniffi(default = None)]
@@ -210,11 +226,7 @@ impl From<DocInfo> for DocumentInfo {
             name: info.name,
             page_count: info.page_count,
             status: info.status.into(),
-            error: info.error.map(|e| PluginErrorInfo {
-                code: e.code,
-                message: e.message,
-                capability: e.capability,
-            }),
+            error: info.error.map(PluginErrorInfo::from),
         }
     }
 }
@@ -254,7 +266,7 @@ impl Lifecycle {
                     .map_err(|e| malformed(format!("an opened event without its info ({e})")))?;
                 DocumentEvent::Opened { document: info.into() }
             }
-            // `{documentId, error: {code, message, capability}}`
+            // `{documentId, error: {code, message, capability, permission}}`
             Lifecycle::OpenFailed => {
                 let error = payload.get("error").ok_or_else(|| {
                     malformed(format!("an open failure without \"error\": {payload}"))
@@ -265,6 +277,10 @@ impl Lifecycle {
                         code: string(error, "code", "an open failure")?,
                         message: string(error, "message", "an open failure")?,
                         capability: string(error, "capability", "an open failure")?,
+                        permission: error
+                            .get("permission")
+                            .and_then(Value::as_str)
+                            .map(str::to_owned),
                     },
                 }
             }

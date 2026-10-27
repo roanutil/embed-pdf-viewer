@@ -1,69 +1,89 @@
-//! `services/authority.ts`: session authority and the mode and signer
-//! resolution.
+//! `services/authority.ts`: the mode and the key, read from the settings
+//! where they're used, so a change applies at once; and who may sign or
+//! fill in which field, by the field's group (`ctx.allowsField`), as the
+//! engine checks it.
 
+use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
 use epdf_signature_core::SignerPort;
+use serde_json::Value;
 
-use crate::contract::{SignatureMode, SignerSource};
+use crate::contract::{SignatureKey, SignatureMode};
 use crate::controller::SignatureCapability;
 use crate::promise::adopt;
 
 impl SignatureCapability {
-    /// `allows(cap)`: `ctx.doc?.security.allows(cap) ?? false`.
-    pub(crate) fn allows(&self, capability: &str) -> bool {
-        self.cx().doc().map(|doc| doc.security().allows(capability)).unwrap_or(false)
-    }
-
-    /// `getMode()`: the configured mode; `sign` with a signer, else
-    /// `visual`.
+    /// `mode()`: the `mode` setting, or `sign` with a key and `visual`
+    /// without.
     pub fn get_mode(&self) -> SignatureMode {
-        let config = self.config();
-        config.mode.unwrap_or(if self.signer_available() {
+        let settings = self.settings();
+        settings.mode.unwrap_or(if settings.key.is_some() {
             SignatureMode::Sign
         } else {
             SignatureMode::Visual
         })
     }
 
-    /// `resolveSigner(override)`: an `async` function.
-    pub(crate) fn resolve_signer(&self, override_: Option<SignerSource>) -> Promise<SignerPort> {
-        let signer = override_.or_else(|| self.config().signer.clone());
+    /// `resolveKey(override)`: an `async` function. `invalid-input` without
+    /// a key; a function key is called and its answer adopted.
+    pub(crate) fn resolve_key(&self, override_: Option<SignatureKey>) -> Promise<SignerPort> {
+        let key = override_.or_else(|| self.settings().key);
         Promise::spawn(async move {
-            match signer {
+            match key {
                 None => Err(plugin_error(
                     code::INVALID_INPUT,
                     "signature",
-                    "no signer: configure `signer` or pass one with the call (mode \"sign\" needs one)",
+                    "no key: set the `key` setting or pass one with the call",
                     None,
                     None,
                 )),
-                Some(SignerSource::Port(port)) => Ok(port),
-                Some(SignerSource::Thunk(thunk)) => adopt(thunk()).await,
-                Some(SignerSource::Host { resolve, .. }) => adopt(resolve()).await,
+                Some(SignatureKey::Port(port)) => Ok((*port).clone()),
+                Some(SignatureKey::Thunk(thunk)) => adopt(thunk()).await,
             }
         })
     }
 
-    /// `canSign()`: `doc.sign` is granted and a signer is configured.
-    pub fn can_sign(&self) -> bool {
-        self.allows("doc.sign") && self.signer_available()
+    /// `allowsField(action, ref)`: whether the session may `action` this
+    /// field; `false` for a field the form doesn't have.
+    fn allows_field(&self, action: &str, reference: &Value) -> bool {
+        self.form().get(reference).is_some_and(|field| self.cx().allows_field(action, &field))
     }
 
-    /// `config.signer` is set (and, for a host slot, holds a signer now).
-    fn signer_available(&self) -> bool {
-        self.config().signer.as_ref().is_some_and(SignerSource::is_available)
+    /// `assertAllowedField(action, ref, operation)`: refuse a write to this
+    /// field the session may not make, before anything starts. A field the
+    /// form doesn't show yet is the engine's to answer (`not-found`).
+    pub(crate) fn assert_allowed_field(
+        &self,
+        action: &str,
+        reference: &Value,
+        operation: &str,
+    ) -> Result<(), Error> {
+        match self.form().get(reference) {
+            Some(field) => self.cx().assert_allowed_field(action, &field, operation),
+            None => Ok(()),
+        }
     }
 
-    /// `canFill()`: visual fills ride `doc.forms.fill` and an engine that
-    /// draws into a signature field.
-    pub fn can_fill(&self) -> bool {
-        self.allows("doc.forms.fill")
-            && self.cx().doc().is_ok_and(|doc| doc.has("forms.setSignatureAppearance"))
+    /// `canSign(field)`: `doc.sign`, or a `fields:sign` permission for its
+    /// group. `false` for a field the form doesn't have.
+    pub fn can_sign(&self, field: &Value) -> bool {
+        self.allows_field("sign", field)
     }
 
-    /// `canCertify()`: `allowCertify` and `doc.sign.certify`.
+    /// `canFill(field)`: `doc.forms.fill`, or a `fields:fill` permission for
+    /// its group.
+    pub fn can_fill(&self, field: &Value) -> bool {
+        self.allows_field("fill", field)
+    }
+
+    /// `canCertify()`: the `allowCertify` setting and `doc.sign.certify`.
     pub fn can_certify(&self) -> bool {
-        self.config().allow_certify == Some(true) && self.allows("doc.sign.certify")
+        self.settings().allow_certify && self.cx().allows("doc.sign.certify")
+    }
+
+    /// `canReadRevision()`: `doc.download`.
+    pub fn can_read_revision(&self) -> bool {
+        self.cx().allows("doc.download")
     }
 }

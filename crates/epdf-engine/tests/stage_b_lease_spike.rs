@@ -280,11 +280,9 @@ fn a_panic_partway_through_a_write_poisons_the_session() {
     assert!(settled.poisoned, "and the caller is told the session is now poisoned");
     assert!(session.is_poisoned());
 
-    for refused in [
-        session.page_count().err(),
-        session.annotation_count(0).err(),
-        session.checkout().err(),
-    ] {
+    for refused in
+        [session.page_count().err(), session.annotation_count(0).err(), session.checkout().err()]
+    {
         assert_eq!(
             refused.expect("a poisoned session serves nothing").code,
             EngineErrorCode::RuntimeUnavailable,

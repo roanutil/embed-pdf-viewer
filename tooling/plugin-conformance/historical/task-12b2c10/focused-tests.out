@@ -1,0 +1,19 @@
+(node:76426) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ pure replay targets actual named shipping transitions with current records (0.693667ms)
+✔ current scenarios execute with exact named lifetime failures and no other diagnostics (647.125ms)
+✔ focus, exclusive closure, replacement props and snapshots have literal state and events (0.732875ms)
+✔ every pure occurrence has independently specified complete state including no-op identity (0.568708ms)
+✔ surfaces, menus, per-document routing and wholesale snapshots have literal successful reads (5.677083ms)
+✔ state diff events have exact payloads, order and unsubscribe silence (2.721959ms)
+✔ prior i18n642 and actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel (1196.53025ms)
+✔ all current shell inputs and complete outcomes remain independently replayable (11.12475ms)
+✔ all38 immutable original definitions and outcomes map uniquely with explicit retirement accounting (9.566959ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2204.326541

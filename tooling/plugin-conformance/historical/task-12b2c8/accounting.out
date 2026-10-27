@@ -1,0 +1,23 @@
+{
+  "accounting": {
+    "original": 19,
+    "current": 19,
+    "mapped": 19,
+    "wholeRetirements": 0,
+    "partialRetirements": 16,
+    "additions": 0,
+    "changedInputs": 19
+  },
+  "runtime": {
+    "steps": 153,
+    "callbacks": 0,
+    "settlements": 116,
+    "rejections": 42,
+    "stepThrows": 3,
+    "scenarios": 19,
+    "runnerExceptions": 0,
+    "unmatched": 0,
+    "reports": 0
+  },
+  "preserved": 589
+}

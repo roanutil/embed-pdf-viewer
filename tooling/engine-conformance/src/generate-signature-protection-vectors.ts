@@ -37,10 +37,17 @@ interface SignatureShape {
   lock?: FieldLockSpec;
 }
 
+/**
+ * A signature as `signatures.list` reads one. The field ref's
+ * `fieldObjectNumber` is `objectNumber` since 595bdc6c7 ("Engine API one
+ * name for object numbers"), and the signer's `claimedTime` is `signedAt`
+ * since fd175ba50 ("One date type IsoDateTime"). Neither is read by
+ * `deriveProtection`.
+ */
 function signature(index: number, shape: SignatureShape): SignatureDTO {
   return {
     index,
-    field: { kind: 'objectNumber', fieldObjectNumber: 10 + index },
+    field: { kind: 'objectNumber', objectNumber: 10 + index },
     fieldName: `Sig${index}`,
     widget: null,
     signed: shape.signed,
@@ -51,7 +58,7 @@ function signature(index: number, shape: SignatureShape): SignatureDTO {
     contentsSize: shape.signed ? 8192 : 0,
     coverage: shape.signed ? 'whole-revision' : null,
     revisionIndex: shape.signed ? index : null,
-    signer: { name: null, reason: null, location: null, contactInfo: null, claimedTime: null },
+    signer: { name: null, reason: null, location: null, contactInfo: null, signedAt: null },
     docMdp: shape.docMdp ?? null,
     catalogCertification: shape.catalogCertification ?? false,
     fieldMdp: shape.fieldMdp ?? null,

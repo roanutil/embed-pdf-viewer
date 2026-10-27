@@ -1,8 +1,11 @@
 //! `read/pages.ts`: the page reads. Laid-out pages with their transforms
 //! (PDF points to view px to device px), the scroller projection, the
-//! visible set (memoized so selectors stay reference-stable), coordinate
-//! conversions and the camera, zoom and viewpoint reads.
+//! visible set (memoized so reads stay reference-stable), coordinate
+//! conversions and the camera, zoom, viewpoint and destination reads.
 
+use epdf_kernel::geometry::PageRef;
+
+use crate::controller::{JsNumber, VisibleInputs};
 use crate::prelude::*;
 
 const EMPTY_SCROLL_METRICS: ScrollMetrics = ScrollMetrics {
@@ -17,65 +20,82 @@ const EMPTY_SCROLL_METRICS: ScrollMetrics = ScrollMetrics {
 };
 
 impl StageCapability {
-    /// The durable identity for a display index, from the registry
-    /// captured at open.
-    pub(crate) fn ref_for_index(&self, index: usize) -> PageRef {
-        self.registry()
-            .get(index)
-            .and_then(Option::as_ref)
-            .map_or(PageRef::new(index as PageObjectNumber + 1), |p| p.page_ref)
+    /// The durable identity of the page at a display index, from the
+    /// registry.
+    pub(crate) fn page_ref_at(&self, index: usize) -> PageRef {
+        let rows = self.registry_rows();
+        rows.as_array()
+            .and_then(|pages| pages.get(index))
+            .and_then(|page| page.get("ref"))
+            .and_then(PageRef::from_json)
+            .unwrap_or(PageRef::new(index as u32 + 1))
     }
 
-    /// Fallback un-rotated point size from a laid-out box.
-    pub(crate) fn unrotated_points(b: &PageBox) -> Size {
+    /// The un-rotated point size of a laid-out box, for when the registry
+    /// entry is momentarily absent.
+    fn unrotated_points(b: &PageBox) -> Size {
         let content = display_size(Size { width: b.width, height: b.height }, b.rotation);
         Size { width: content.width / b.content_scale, height: content.height / b.content_scale }
     }
 
-    pub(crate) fn with_transform(&self, b: &PageBox) -> VisiblePage {
+    /// Attach durable identity and the per-page transform. `None` where the
+    /// TypeScript throws `Mat2D.invert: non-invertible matrix`: a view scale
+    /// whose square underflows (a huge device ratio over a tiny unbounded
+    /// zoom). No read here returns a `Result`, so the page is left out of
+    /// the visible list and `get_page_frame` answers `None` (a Rust-only
+    /// divergence, registered with the crate's other kept ones).
+    pub(crate) fn with_transform(&self, b: &PageBox) -> Option<VisiblePage> {
         let registry = self.registry();
-        let reg = registry.get(b.page_index).and_then(Option::as_ref);
-        let page_size = reg.map_or_else(|| Self::unrotated_points(b), |r| r.size);
-        let c = self.cam();
+        let registered = registry.get(b.page_index).and_then(Option::as_ref);
+        let page_size = registered.map_or_else(|| Self::unrotated_points(b), |r| r.size);
+        let current = self.camera();
         let ratio = self.dpr();
-        let raw_x = (b.x - c.x) * c.zoom;
-        let raw_y = (b.y - c.y) * c.zoom;
+        // The footprint's top-left, camera-resolved. Device-snapped at rest;
+        // while the zoom moves it places fractionally.
+        let raw_x = (b.x - current.x) * current.zoom;
+        let raw_y = (b.y - current.y) * current.zoom;
         let resting = self.st().camera_resting;
         let screen_x = if resting { snap_to_device(raw_x, ratio) } else { raw_x };
         let screen_y = if resting { snap_to_device(raw_y, ratio) } else { raw_y };
         let transform = page_transform(PageTransformInput {
             page_size,
             rotation: b.rotation,
-            scale: b.content_scale * c.zoom,
+            scale: b.content_scale * current.zoom,
+            // The page's physical 100%: the platform unit factor times its
+            // /UserUnit.
             base_scale: Some(
                 self.st().settings.view_units_per_point
-                    * reg.and_then(|r| r.user_unit).unwrap_or(1.0),
+                    * registered.and_then(|r| r.user_unit).unwrap_or(1.0),
             ),
             dpr: ratio,
         })
-        .expect("a page transform at a positive zoom is invertible");
-        let v = self.vp();
+        .ok()?;
+        // The on-screen page region in points: viewport ∩ footprint in view
+        // space, inverted through the transform.
+        let size = self.viewport();
         let on_screen = intersect_rects(
-            Rect { x: -screen_x, y: -screen_y, width: v.width, height: v.height },
+            Rect { x: -screen_x, y: -screen_y, width: size.width, height: size.height },
             Rect { x: 0.0, y: 0.0, width: transform.view_width, height: transform.view_height },
         );
         let visible_rect = if on_screen.width > 0.0 && on_screen.height > 0.0 {
-            transform.view_to_content_rect(on_screen)
+            transform.view_to_page_rect(on_screen)
         } else {
             Rect { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
         };
-        VisiblePage {
+        Some(VisiblePage {
             page: *b,
-            page_ref: self.ref_for_index(b.page_index),
+            page_ref: self.page_ref_at(b.page_index),
             screen_x,
             screen_y,
             transform,
             visible_rect,
-        }
+        })
     }
 
-    // ── scroller projection ───────────────────────────────────────────────────
+    // ── the scroller projection ──
 
+    /// The camera in native DOM vocabulary, against the bounds the pan clamp
+    /// uses. The same value until a field moves.
     pub(crate) fn scroll_metrics_now(&self) -> ScrollMetrics {
         if !self.st().placed {
             return EMPTY_SCROLL_METRICS;
@@ -86,202 +106,251 @@ impl StageCapability {
         } else {
             Rect { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
         };
-        let m = sc::scroll_metrics(self.cam(), bounds, self.vp(), self.pad());
-        if let Some(p) = self.inner.scroll_memo.get()
-            && p.scroll_left == m.scroll_left
-            && p.scroll_top == m.scroll_top
-            && p.scroll_width == m.scroll_width
-            && p.scroll_height == m.scroll_height
-            && p.client_width == m.client_width
-            && p.client_height == m.client_height
+        let metrics = sc::scroll_metrics(self.camera(), bounds, self.viewport(), self.padding());
+        if let Some(previous) = self.inner.last_metrics.get()
+            && previous.scroll_left == metrics.scroll_left
+            && previous.scroll_top == metrics.scroll_top
+            && previous.scroll_width == metrics.scroll_width
+            && previous.scroll_height == metrics.scroll_height
+            && previous.client_width == metrics.client_width
+            && previous.client_height == metrics.client_height
         {
-            return p;
+            return previous;
         }
-        self.inner.scroll_memo.set(Some(m));
-        m
+        self.inner.last_metrics.set(Some(metrics));
+        metrics
     }
 
-    pub(crate) fn visible_pages_now(&self) -> Rc<Vec<VisiblePage>> {
+    /// The visible pages, memoized on everything they depend on (compared
+    /// with `Object.is`), so the read is reference-stable. Paged flow
+    /// renders only the slice's item; continuous flow the camera's window.
+    pub(crate) fn visible_pages(&self) -> Rc<Vec<VisiblePage>> {
         if !self.st().placed {
-            return Rc::new(Vec::new());
+            return self.inner.no_visible_pages.clone();
         }
-        let c = self.cam();
-        let v = self.vp();
+        let current = self.camera();
+        let size = self.viewport();
+        self.build_scene(); // keys the scene cache that `scene_cache_key` reads
+        let state = self.st();
+        let inputs = VisibleInputs {
+            scene_key: self.scene_cache_key(),
+            flow: state.settings.flow,
+            numbers: [
+                JsNumber(current.x),
+                JsNumber(current.y),
+                JsNumber(current.zoom),
+                JsNumber(size.width),
+                JsNumber(size.height),
+                JsNumber(self.dpr()),
+            ],
+            resting: state.camera_resting,
+        };
+        if let Some((last, pages)) = self.inner.visible_memo.borrow().as_ref()
+            && *last == inputs
+        {
+            return pages.clone();
+        }
         let scene = self.build_scene();
         let items: Vec<&SceneItem> = if self.paged() {
             scene.items.iter().take(1).collect()
         } else {
-            scene.query(sc::camera_world_rect(c, v))
+            scene.query(sc::camera_world_rect(current, size))
         };
-        let st = self.st();
-        let sig = format!(
-            "{}|{}|{},{},{}|{}x{}|{}|r{}",
-            self.scene_cache_key(),
-            serde_str(&st.settings.flow),
-            num(c.x),
-            num(c.y),
-            num(c.zoom),
-            num(v.width),
-            num(v.height),
-            num(self.dpr()),
-            if st.camera_resting { 1 } else { 0 }
-        );
-        if self.inner.vis.borrow().0 == sig {
-            return self.inner.vis.borrow().1.clone();
-        }
-        let vis: Vec<VisiblePage> =
-            items.iter().flat_map(|it| it.pages.iter()).map(|b| self.with_transform(b)).collect();
-        let vis = Rc::new(vis);
-        *self.inner.vis.borrow_mut() = (sig, vis.clone());
-        vis
+        let pages: Vec<VisiblePage> = items
+            .iter()
+            .flat_map(|item| item.pages.iter())
+            .filter_map(|b| self.with_transform(b))
+            .collect();
+        let pages = Rc::new(pages);
+        *self.inner.visible_memo.borrow_mut() = Some((inputs, pages.clone()));
+        pages
+    }
+
+    /// The visible entry of a page given by its ref or its index; `None`
+    /// when it is off screen or not in the document.
+    fn visible_page_of(&self, page: PageTarget) -> Option<VisiblePage> {
+        let page = self.get_page(page)?.get("ref").and_then(PageRef::from_json)?;
+        self.visible_pages().iter().find(|visible| visible.page_ref == page).cloned()
     }
 }
 
-// ── the area's api ────────────────────────────────────────────────────────────
+// ── the area's api ──
 
 impl StageCapability {
     /// Camera origin (world units) and zoom.
     pub fn get_camera(&self) -> Camera {
-        self.cam()
+        self.camera()
     }
 
     /// The container size the stage was told about.
     pub fn get_viewport_size(&self) -> Size {
-        self.vp()
+        self.viewport()
     }
 
-    /// The camera as a native scroller, in viewport px, over the pan
-    /// clamp's travel range. Equal to the previous answer until a field
-    /// moves.
+    /// The camera as a native scroller, in viewport px. Equal to the
+    /// previous answer until a field moves.
     pub fn get_scroll_metrics(&self) -> ScrollMetrics {
         self.scroll_metrics_now()
     }
 
-    /// The laid-out pages on screen (paged: the slice's). The same `Rc`
-    /// until the camera, scene, viewport, ratio or rest state changes.
+    /// Pages on screen, with their viewport rects and visible page-space
+    /// rect. The same `Rc` until the camera, scene, viewport, ratio or rest
+    /// state changes.
     pub fn list_visible_pages(&self) -> Rc<Vec<VisiblePage>> {
-        self.visible_pages_now()
+        self.visible_pages()
     }
 
-    /// Is any part of the page on screen.
-    pub fn is_page_visible(&self, page: PageRef) -> bool {
-        self.visible_pages_now().iter().any(|p| p.page_ref == page)
+    /// Is any part of the page (its ref or its index) on screen. False for
+    /// a page that isn't in the document.
+    pub fn is_page_visible(&self, page: impl Into<PageTarget>) -> bool {
+        self.visible_page_of(page.into()).is_some()
     }
 
-    /// The cursor page's display index.
+    /// The current page's display index, from 0.
     pub fn get_current_page_index(&self) -> usize {
         self.st().cursor
     }
 
-    /// The cursor page's registry row, `None` before the document has
-    /// pages.
-    pub fn get_current_page(&self) -> Option<PageInfo> {
+    /// The current page's ref, `None` before the document has pages.
+    pub fn get_current_page(&self) -> Option<PageRef> {
         let cursor = self.st().cursor;
-        self.ctx.document()?.pages.as_array()?.get(cursor).cloned()
+        let rows = self.registry_rows();
+        rows.as_array()?.get(cursor)?.get("ref").and_then(PageRef::from_json)
+    }
+
+    /// How many pages the document has.
+    pub fn get_page_count(&self) -> usize {
+        self.page_count()
     }
 
     /// The registry rows of the current item's pages (one page, or a
     /// spread or grid row).
     pub fn list_current_item_pages(&self) -> Vec<PageInfo> {
         let Some(item) = self.cursor_item() else { return Vec::new() };
-        let pages = self.ctx.document().map(|d| d.pages).unwrap_or_default();
-        let pages = pages.as_array().map(Vec::as_slice).unwrap_or_default();
+        let rows = self.registry_rows();
+        let pages = rows.as_array().map(Vec::as_slice).unwrap_or_default();
         item.page_indexes.iter().filter_map(|&i| pages.get(i).cloned()).collect()
     }
 
-    /// The laid-out box for a page, `None` before placement or for a page
-    /// the document does not have.
-    pub fn get_page_frame(&self, page: PageRef) -> Option<VisiblePage> {
+    /// The laid-out box for a page (its ref or its index), on screen or
+    /// not; `None` before placement or for a page the document lacks.
+    pub fn get_page_frame(&self, page: impl Into<PageTarget>) -> Option<VisiblePage> {
         if !self.st().placed {
             return None;
         }
-        let index = self.index_of_page(page)?;
+        let index = self.index_of(page.into())?;
         let scene = self.build_scene();
         if scene.item_count == 0 {
             return None;
         }
+        // `scene.items[scene.itemOfPage(index)]`: an index past the scene's
+        // pages reads `undefined` there and throws; here it answers `None`.
         let item = &scene.items[scene.item_of_page(index)?];
         let b = item.pages.iter().find(|p| p.page_index == index)?;
-        Some(self.with_transform(b))
+        self.with_transform(b)
     }
 
     /// The page under a viewport point and the page-space point on it;
     /// `None` over a gap.
     pub fn get_page_at(&self, point: ViewportPoint) -> Option<PageHit> {
-        for p in self.visible_pages_now().iter() {
-            let lx = point.x - p.screen_x;
-            let ly = point.y - p.screen_y;
-            if lx >= 0.0
-                && ly >= 0.0
-                && lx <= p.transform.view_width
-                && ly <= p.transform.view_height
+        for page in self.visible_pages().iter() {
+            let local_x = point.x - page.screen_x;
+            let local_y = point.y - page.screen_y;
+            if local_x >= 0.0
+                && local_y >= 0.0
+                && local_x <= page.transform.view_width
+                && local_y <= page.transform.view_height
             {
                 return Some(PageHit {
-                    page_ref: p.page_ref,
-                    point: p.transform.view_to_content(Point { x: lx, y: ly }),
-                    scale: p.transform.view_scale,
-                    rotation: p.page.rotation,
-                    zoom: p.transform.zoom,
+                    page_ref: page.page_ref,
+                    point: page.transform.view_to_page(Point { x: local_x, y: local_y }),
+                    scale: page.transform.view_scale,
+                    rotation: page.page.rotation,
+                    zoom: page.transform.zoom,
                 });
             }
         }
         None
     }
 
-    /// Project a viewport point onto one page's frame, unclamped; `None`
-    /// when the page is not laid out on screen.
-    pub fn viewport_to_page(&self, page: PageRef, point: ViewportPoint) -> Option<Point> {
-        let vis = self.visible_pages_now();
-        let p = vis.iter().find(|v| v.page_ref == page)?;
+    /// Project a viewport point onto one page (its ref or its index),
+    /// unclamped; `None` when the page is not on screen or not in the
+    /// document.
+    pub fn viewport_to_page(
+        &self,
+        page: impl Into<PageTarget>,
+        point: ViewportPoint,
+    ) -> Option<Point> {
+        let target = self.visible_page_of(page.into())?;
         Some(
-            p.transform.view_to_content(Point { x: point.x - p.screen_x, y: point.y - p.screen_y }),
+            target
+                .transform
+                .view_to_page(Point { x: point.x - target.screen_x, y: point.y - target.screen_y }),
         )
     }
 
-    /// Page space (intrinsic PDF points) to world space.
-    pub fn page_to_world(&self, page: PageRef, point: Point) -> Option<Point> {
-        let pr = self.get_page_frame(page)?;
-        let b = pr.page;
+    /// A page-space point to world space; `None` when the page is not laid
+    /// out.
+    pub fn page_to_world(&self, page: impl Into<PageTarget>, point: Point) -> Option<Point> {
+        let frame = self.get_page_frame(page)?;
+        let b = frame.page;
         let content = display_size(Size { width: b.width, height: b.height }, b.rotation);
-        let m = rotate_scale_matrix(b.content_scale, content.width, content.height, b.rotation);
-        let offset = apply_point(m, point);
+        let matrix =
+            rotate_scale_matrix(b.content_scale, content.width, content.height, b.rotation);
+        let offset = apply_point(matrix, point);
         Some(Point { x: b.x + offset.x, y: b.y + offset.y })
     }
 
-    /// A page-space rect to its viewport-space bounding box.
-    pub fn page_rect_to_viewport(&self, page: PageRef, rect: Rect) -> Option<ViewportRect> {
-        let pr = self.get_page_frame(page)?;
-        let b = pr.page;
+    /// A page-space rect to its viewport-space bounding box; `None` when the
+    /// page is not laid out.
+    pub fn page_rect_to_viewport(
+        &self,
+        page: impl Into<PageTarget>,
+        rect: Rect,
+    ) -> Option<ViewportRect> {
+        let frame = self.get_page_frame(page)?;
+        let b = frame.page;
         let content = display_size(Size { width: b.width, height: b.height }, b.rotation);
-        let m = rotate_scale_matrix(b.content_scale, content.width, content.height, b.rotation);
-        let wr = apply_rect(m, rect);
-        let c = self.cam();
-        let tl = sc::to_screen(c, Point { x: b.x + wr.x, y: b.y + wr.y });
-        Some(Rect { x: tl.x, y: tl.y, width: wr.width * c.zoom, height: wr.height * c.zoom })
+        let matrix =
+            rotate_scale_matrix(b.content_scale, content.width, content.height, b.rotation);
+        let world = apply_rect(matrix, rect);
+        let current = self.camera();
+        let top_left = sc::to_screen(current, Point { x: b.x + world.x, y: b.y + world.y });
+        Some(Rect {
+            x: top_left.x,
+            y: top_left.y,
+            width: world.width * current.zoom,
+            height: world.height * current.zoom,
+        })
     }
 
     pub fn world_to_viewport(&self, world: Point) -> ViewportPoint {
-        sc::to_screen(self.cam(), world)
+        sc::to_screen(self.camera(), world)
     }
 
     pub fn viewport_to_world(&self, point: ViewportPoint) -> Point {
-        sc::to_world(self.cam(), point)
+        sc::to_world(self.camera(), point)
     }
 
-    /// A page-space point to this stage's viewport.
-    pub fn page_to_viewport(&self, page: PageRef, point: Point) -> Option<ViewportPoint> {
+    /// A page-space point to this stage's viewport; `None` when the page is
+    /// not laid out.
+    pub fn page_to_viewport(
+        &self,
+        page: impl Into<PageTarget>,
+        point: Point,
+    ) -> Option<ViewportPoint> {
         let world = self.page_to_world(page, point)?;
-        Some(sc::to_screen(self.cam(), world))
+        Some(sc::to_screen(self.camera(), world))
     }
 
-    /// The lens's non-persistent view rotation.
+    /// The lens's view rotation.
     pub fn get_view_rotation(&self) -> PageRotation {
         self.st().settings.view_rotation
     }
 
     /// Resolved zoom factor.
     pub fn get_zoom_level(&self) -> f64 {
-        self.cam().zoom
+        self.camera().zoom
     }
 
     /// The active zoom intent: a fit mode, or custom for a fixed level.
@@ -294,5 +363,42 @@ impl StageCapability {
     /// anchor point.
     pub fn get_viewpoint(&self) -> Result<Viewpoint, Error> {
         Ok(Viewpoint { anchor: self.current_anchor()?, zoom: self.st().settings.zoom })
+    }
+
+    /// Where the view is, as a destination: the first page on screen, the
+    /// point of it at the viewport's top-left corner (a padding in), and no
+    /// zoom. `None` before a page is on screen.
+    pub fn get_current_destination(&self) -> Option<PageDestination> {
+        let inset = self.padding();
+        let current = self.camera();
+        let visible = self.visible_pages();
+        // `.filter(...).sort((l, r) => l.pageIndex - r.pageIndex)[0]`: the
+        // first of the lowest index, a stable sort.
+        let first = visible
+            .iter()
+            .filter(|page| {
+                let corner = sc::to_screen(
+                    current,
+                    Point { x: page.page.x + page.page.width, y: page.page.y + page.page.height },
+                );
+                corner.x > inset && corner.y > inset
+            })
+            .fold(None::<&VisiblePage>, |best, page| match best {
+                Some(best) if best.page.page_index <= page.page.page_index => Some(best),
+                _ => Some(page),
+            })?;
+        let row = self.get_page(PageTarget::Ref(first.page_ref))?;
+        let size: Size = serde_json::from_value(row.get("size")?.clone()).ok()?;
+        let corner = first
+            .transform
+            .view_to_page(Point { x: inset - first.screen_x, y: inset - first.screen_y });
+        let clamp =
+            |value: f64, max: f64| js::round(js::min(js::max(value, 0.0), max) * 100.0) / 100.0;
+        Some(PageDestination::Xyz {
+            page: first.page_ref,
+            x: Some(clamp(corner.x, size.width)),
+            y: Some(clamp(corner.y, size.height)),
+            zoom: None,
+        })
     }
 }

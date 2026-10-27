@@ -1,276 +1,326 @@
 //! `comments/comments.ts`: the conversation plane's verbs. Every one
-//! compiles down to plain annotation creates, patches and deletes (one
-//! optimistic pipeline, no second write path), and each announces the
-//! thread it touched (its root, as it was before the change).
+//! compiles down to plain annotation creates, patches and deletes (one write
+//! path), and each announces the thread it touched (its root, as it was
+//! before the change).
 
-use epdf_annotation_core::measure::is_dimension;
-use epdf_annotation_core::{AnnotationRef, Msg, PageObjectNumber, Source, annot_contents_editable};
+use epdf_annotation_core::engine::measure::is_dimension;
+use epdf_annotation_core::flags::annot_contents_editable;
+use epdf_kernel::Error;
+use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{Error, Unsubscribe};
-use serde_json::{Value, json};
+use epdf_kernel::signal::AbortSignal;
+use serde_json::{Map, Value, json};
 
-use crate::comments::build::CommentThread;
-use crate::comments::threads::member_refs_of;
-use crate::contract::*;
-use crate::controller::AnnotationCapability;
-use crate::promise::{self, await_engine};
-use crate::repository::annotation_key;
-use crate::value::{get, str_of};
+use crate::controller::{CAPABILITY, Core};
+use crate::engine::to_page_ref;
+use crate::js::{Object, key_or_none, page_object_number};
+use crate::services::staging::StoreChange;
+use crate::write::outcomes::{applied_annotation_of, applied_or_throw, applied_ref_of};
 
-fn ref_of(v: &Value) -> Option<AnnotationRef> {
-    serde_json::from_value(v.clone()).ok()
+/// Where a reply or a state sits: the usual 20x20 icon at its root's top-left corner.
+fn reply_rect(root: &Value) -> Value {
+    let rect = root.get("rect").cloned().unwrap_or(Value::Null);
+    json!({ "x": rect.get("x").cloned().unwrap_or(Value::Null), "y": rect.get("y").cloned().unwrap_or(Value::Null), "width": 20, "height": 20 })
 }
 
-fn thread_pon(t: &CommentThread) -> PageObjectNumber {
-    get(&t.page, "pageObjectNumber").and_then(Value::as_f64).map_or(0, |p| p as PageObjectNumber)
+fn object(value: Value) -> Object {
+    value.as_object().cloned().unwrap_or_default()
 }
 
-fn root_rect(t: &CommentThread) -> Value {
-    get(&t.root, "rect").cloned().unwrap_or(Value::Null)
-}
-
-fn root_ref(t: &CommentThread) -> Value {
-    get(&t.root, "ref").cloned().unwrap_or(Value::Null)
-}
-
-fn dimension_dto(d: &Value) -> bool {
-    is_dimension(str_of(d, "subtype").unwrap_or_default(), str_of(d, "intent").unwrap_or_default())
-}
-
-/// `annotation.comments`: the conversation lens.
-#[derive(Clone)]
-pub struct CommentsLens(pub(crate) AnnotationCapability);
-
-impl AnnotationCapability {
-    /// `comments`.
-    pub fn comments(&self) -> CommentsLens {
-        CommentsLens(self.clone())
+impl Core {
+    fn announce_thread(&self, root: &Value, change: &str) {
+        self.events.thread_changed.emit(&json!({ "rootRef": root, "change": change }));
     }
 
-    /// `createConversationAnnot(pon, draft)`: they never paint, so the
-    /// render source is immaterial ('baked').
-    fn create_conversation_annot(&self, pon: PageObjectNumber, draft: Value) -> Promise<Value> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let doc = this.doc().ok_or_else(|| Error::new("[annotation] no document bound"))?;
-            doc.page_index(pon)?;
-            let res =
-                await_engine(doc.call("page.annotations.create", Some(pon), vec![draft])).await?;
-            let created = get(&res, "created").cloned().unwrap_or(Value::Null);
-            this.sync(&created, Source::Baked, false)?;
-            Ok(created)
+    /// `createConversationAnnot(page, draft)`.
+    fn create_conversation_annot(&self, page: f64, draft: Object) -> Promise<Value> {
+        let applied = self.apply_when_numbered(
+            vec![StoreChange::Create { page: to_page_ref(page), draft, resources: None }],
+            false,
+        );
+        Promise::spawn(async move {
+            let applied = applied.await?;
+            applied_ref_of(&applied, 0).await
         })
     }
 
-    /// `deleteOne(ref)`.
-    fn delete_one(&self, r: AnnotationRef) -> Promise<()> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let doc = this.doc().ok_or_else(|| Error::new("[annotation] no document bound"))?;
-            let pon = match &r {
-                AnnotationRef::ObjectNumber { page, .. }
-                | AnnotationRef::Nm { page, .. }
-                | AnnotationRef::Index { page, .. } => page.page_object_number,
+    fn delete_one(&self, reference: &Value, signal: Option<AbortSignal>) -> Promise<()> {
+        let applied =
+            match self.apply(&[StoreChange::Delete { reference: reference.clone() }], false) {
+                Ok(a) => a,
+                Err(e) => return Promise::rejected(e),
             };
-            doc.page_index(pon)?;
-            await_engine(doc.call(
-                "page.annotations.delete",
-                Some(pon),
-                vec![serde_json::to_value(&r).unwrap_or_default()],
-            ))
-            .await?;
-            this.commit(Msg::Remove { ids: vec![annotation_key(&r)] });
+        let done = self.cancellable(signal, applied_or_throw(&applied));
+        Promise::spawn(async move {
+            done.await?;
             Ok(())
         })
     }
 
-    fn announce_thread(&self, root: AnnotationRef, change: ThreadChange) {
-        self.0.events.thread_changed.emit(&CommentThreadChangedEvent { root_ref: root, change });
-    }
-}
-
-// Screen-anchored like a sticky note; `print` for Acrobat parity.
-fn reply_flags() -> Value {
-    json!({ "print": true, "noZoom": true, "noRotate": true })
-}
-
-// Status annotations are metadata: hidden everywhere.
-fn status_flags() -> Value {
-    json!({ "hidden": true, "noZoom": true, "noRotate": true })
-}
-
-impl CommentsLens {
-    /// `listThreads()`: every thread, display-ordered.
-    pub fn list_threads(&self) -> Vec<CommentThread> {
-        self.0.threads_index().threads.clone()
+    /// `comments.listThreads()`.
+    pub fn comments_list_threads(&self) -> Value {
+        Value::Array((*self.threads_index().threads).clone())
     }
 
-    /// `getThread(ref)`: the thread containing a member.
-    pub fn get_thread(&self, r: &AnnotationRef) -> Option<CommentThread> {
-        self.0.threads_index().by_member(&annotation_key(r)).cloned()
+    /// `comments.getThread(ref)`.
+    pub fn comments_get_thread(&self, reference: &Value) -> Value {
+        self.thread_of_member(reference).unwrap_or(Value::Null)
     }
 
-    /// `onThreadChanged(listener)`.
-    pub fn on_thread_changed(
+    /// `comments.canSetText(ref)`.
+    pub fn comments_can_set_text(&self, reference: &Value) -> bool {
+        let model = self.model();
+        model.by_id.get(&key_or_none(reference)).is_some_and(|r| {
+            let subtype = r.subtype();
+            let intent = r.annotation.get("intent").and_then(Value::as_str);
+            !is_dimension(subtype, intent) && annot_contents_editable(&**r)
+        })
+    }
+
+    /// `comments.canDeleteThread(ref)`.
+    pub fn comments_can_delete_thread(&self, reference: &Value) -> bool {
+        match self.thread_of_member(reference) {
+            Some(thread) => Core::member_refs_of(&thread).iter().all(|r| self.can_delete(r)),
+            None => false,
+        }
+    }
+
+    /// `comments.reply(ref, text, options)`.
+    pub fn comments_reply(
         &self,
-        listener: impl Fn(&CommentThreadChangedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.0.events.thread_changed.on(listener)
+        reference: &Value,
+        text: &str,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        if let Err(e) = self.assert_allowed("annotations:create", "annotation.comments.reply") {
+            return Promise::rejected(e);
+        }
+        let root = self.root_ref_of(reference);
+        let thread = match self.thread_of(reference) {
+            Ok(t) => t,
+            Err(e) => return Promise::rejected(e),
+        };
+        let page = page_object_number(thread.get("page").unwrap_or(&Value::Null));
+        let draft = object(json!({
+            "subtype": "text",
+            "rect": reply_rect(&thread["root"]),
+            "icon": "comment",
+            "contents": text,
+            "reply": { "to": thread.pointer("/root/ref").cloned().unwrap_or(Value::Null) },
+            "noZoom": true,
+            "noRotate": true,
+        }));
+        let applied = self.apply_when_numbered(
+            vec![StoreChange::Create { page: to_page_ref(page), draft, resources: None }],
+            false,
+        );
+        let me = self.weak();
+        Promise::spawn(async move {
+            let applied = applied.await?;
+            let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
+            let annotation = core.cancellable(signal, applied_annotation_of(&applied, 0));
+            drop(core);
+            let annotation = annotation.await?;
+            if let Some(core) = me.upgrade() {
+                core.announce_thread(&root, "reply");
+            }
+            match annotation {
+                Some(annotation) => Ok(json!({ "annotation": annotation })),
+                None => Err(plugin_error(
+                    code::OPERATION_FAILED,
+                    CAPABILITY,
+                    "the reply could not be created",
+                    None,
+                    None,
+                )),
+            }
+        })
     }
 
-    /// `reply(ref, text)`: flat, to the root, whatever member was passed.
-    pub fn reply(&self, r: AnnotationRef, text: String) -> Promise<AnnotationRef> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            let t = this.thread_of(&r)?;
-            let draft = json!({
-                "subtype": "text",
-                "rect": root_rect(&t),
-                "icon": "comment",
-                "contents": text,
-                "inReplyTo": root_ref(&t),
-                "flags": reply_flags(),
-            });
-            let created = this.create_conversation_annot(thread_pon(&t), draft).await?;
-            this.announce_thread(root, ThreadChange::Reply);
-            get(&created, "ref").and_then(ref_of).ok_or_else(|| {
-                Error::named("TypeError", "Cannot read properties of undefined (reading 'ref')")
+    /// `comments.setText(ref, text, options)`.
+    pub fn comments_set_text(
+        &self,
+        reference: &Value,
+        text: &str,
+        signal: Option<AbortSignal>,
+    ) -> Promise<()> {
+        let root = self.root_ref_of(reference);
+        let model = self.model();
+        let record = model.by_id.get(&key_or_none(reference)).cloned();
+        if let Some(r) = &record
+            && is_dimension(r.subtype(), r.annotation.get("intent").and_then(Value::as_str))
+        {
+            return Promise::rejected(plugin_error(
+                code::INVALID_INPUT,
+                CAPABILITY,
+                "a measurement's text is worked out from its points",
+                None,
+                None,
+            ));
+        }
+        let Some(record) = record.filter(|r| r.annotation.get("ref").is_some_and(|x| !x.is_null()))
+        else {
+            return Promise::rejected(plugin_error(
+                code::NOT_FOUND,
+                CAPABILITY,
+                format!("no annotation {}", key_or_none(reference)),
+                None,
+                None,
+            ));
+        };
+        let mut patch = Map::new();
+        patch.insert("subtype".into(), json!(record.subtype()));
+        patch.insert("contents".into(), json!(text));
+        let updated = self.update(reference, &patch, None, signal);
+        let me = self.weak();
+        Promise::spawn(async move {
+            updated.await?;
+            if let Some(core) = me.upgrade() {
+                core.announce_thread(&root, "text");
+            }
+            Ok(())
+        })
+    }
+
+    fn set_state(
+        &self,
+        reference: &Value,
+        operation: &str,
+        draft_of: impl FnOnce(&Value, Option<Value>) -> Object,
+        change: &'static str,
+        signal: Option<AbortSignal>,
+    ) -> Promise<()> {
+        if let Err(e) = self.assert_allowed("annotations:create", operation) {
+            return Promise::rejected(e);
+        }
+        let root = self.root_ref_of(reference);
+        let thread = match self.thread_of(reference) {
+            Ok(t) => t,
+            Err(e) => return Promise::rejected(e),
+        };
+        let user = self.current_user_id();
+        let previous = user.and_then(|u| {
+            thread
+                .pointer(&format!("/review/byReviewer/{}", u.replace('~', "~0").replace('/', "~1")))
+                .and_then(|s| s.get("ref").cloned())
+        });
+        let page = page_object_number(thread.get("page").unwrap_or(&Value::Null));
+        let created = self
+            .cancellable(signal, self.create_conversation_annot(page, draft_of(&thread, previous)));
+        let me = self.weak();
+        Promise::spawn(async move {
+            created.await?;
+            if let Some(core) = me.upgrade() {
+                core.announce_thread(&root, change);
+            }
+            Ok(())
+        })
+    }
+
+    /// `comments.setStatus(ref, state, options)`: a reply to the user's
+    /// previous state annotation when there is one, else to the root.
+    pub fn comments_set_status(
+        &self,
+        reference: &Value,
+        state: &str,
+        signal: Option<AbortSignal>,
+    ) -> Promise<()> {
+        let state = state.to_string();
+        self.set_state(
+            reference,
+            "annotation.comments.setStatus",
+            move |thread, previous| {
+                object(json!({
+                    "subtype": "text",
+                    "rect": reply_rect(&thread["root"]),
+                    "reply": { "to": previous.unwrap_or_else(|| thread.pointer("/root/ref").cloned().unwrap_or(Value::Null)) },
+                    "state": state,
+                    "stateModel": "review",
+                    "hidden": true,
+                    "noZoom": true,
+                    "noRotate": true,
+                }))
+            },
+            "status",
+            signal,
+        )
+    }
+
+    /// `comments.setMarked(ref, marked, options)`.
+    pub fn comments_set_marked(
+        &self,
+        reference: &Value,
+        marked: bool,
+        signal: Option<AbortSignal>,
+    ) -> Promise<()> {
+        self.set_state(
+            reference,
+            "annotation.comments.setMarked",
+            move |thread, _| {
+                object(json!({
+                    "subtype": "text",
+                    "rect": reply_rect(&thread["root"]),
+                    "reply": { "to": thread.pointer("/root/ref").cloned().unwrap_or(Value::Null) },
+                    "state": if marked { "marked" } else { "unmarked" },
+                    "stateModel": "marked",
+                    "hidden": true,
+                    "noZoom": true,
+                    "noRotate": true,
+                }))
+            },
+            "marked",
+            signal,
+        )
+    }
+
+    /// `comments.delete(ref, options)`.
+    pub fn comments_delete(&self, reference: &Value, signal: Option<AbortSignal>) -> Promise<()> {
+        let root = self.root_ref_of(reference);
+        let deleted = self.delete_one(reference, signal);
+        let me = self.weak();
+        Promise::spawn(async move {
+            deleted.await?;
+            if let Some(core) = me.upgrade() {
+                core.announce_thread(&root, "deleted");
+            }
+            Ok(())
+        })
+    }
+
+    /// `comments.deleteThread(ref, options)`: all of it or none.
+    pub fn comments_delete_thread(
+        &self,
+        reference: &Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let root = self.root_ref_of(reference);
+        let thread = match self.thread_of(reference) {
+            Ok(t) => t,
+            Err(e) => return Promise::rejected(e),
+        };
+        let members = Core::member_refs_of(&thread);
+        let blocked: Vec<Value> = members.iter().filter(|r| !self.can_delete(r)).cloned().collect();
+        if !blocked.is_empty() {
+            self.announce_thread(&root, "deleted");
+            let failed: Vec<Value> = blocked
+                .iter()
+                .map(|r| json!({ "ref": r, "error": Error::new("delete not permitted").to_canonical() }))
+                .collect();
+            return Promise::resolved(json!({ "deleted": [], "failed": failed }));
+        }
+        let deleted = self.delete_one(&root, signal);
+        let me = self.weak();
+        Promise::spawn(async move {
+            let outcome = deleted.await;
+            if let Some(core) = me.upgrade() {
+                core.announce_thread(&root, "deleted");
+            }
+            Ok(match outcome {
+                Ok(()) => json!({ "deleted": members, "failed": [] }),
+                Err(error) => {
+                    json!({ "deleted": [], "failed": [{ "ref": root, "error": error.to_canonical() }] })
+                }
             })
         })
-    }
-
-    /// `setText(ref, text)`: a measurement's contents are derived.
-    pub fn set_text(&self, r: AnnotationRef, text: String) -> Promise<()> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            let data = this.model().by_id.get(&annotation_key(&r)).and_then(|a| a.data.clone());
-            if data.as_ref().is_some_and(dimension_dto) {
-                return Err(Error::new("[annotation] measurement contents are derived"));
-            }
-            let subtype =
-                data.as_ref().and_then(|d| str_of(d, "subtype")).filter(|s| !s.is_empty());
-            let Some(subtype) = subtype else {
-                return Err(Error::new("[annotation] cannot edit an uncommitted annotation"));
-            };
-            this.update_raw(r, json!({ "subtype": subtype, "contents": text })).await?;
-            this.announce_thread(root, ThreadChange::Text);
-            Ok(())
-        })
-    }
-
-    /// `setStatus(ref, state)`: this session's review status, chained to
-    /// its previous one.
-    pub fn set_status(&self, r: AnnotationRef, state: String) -> Promise<()> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            let t = this.thread_of(&r)?;
-            let user = this.current_user_id();
-            let previous =
-                user.as_deref().and_then(|u| t.review.by_reviewer.get(u).map(|s| s.ref_.clone()));
-            let draft = json!({
-                "subtype": "text",
-                "rect": root_rect(&t),
-                "inReplyTo": previous.unwrap_or_else(|| root_ref(&t)),
-                "state": state,
-                "stateModel": "review",
-                "flags": status_flags(),
-            });
-            this.create_conversation_annot(thread_pon(&t), draft).await?;
-            this.announce_thread(root, ThreadChange::Status);
-            Ok(())
-        })
-    }
-
-    /// `setMarked(ref, marked)`: this session's checkmark.
-    pub fn set_marked(&self, r: AnnotationRef, marked: bool) -> Promise<()> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            let t = this.thread_of(&r)?;
-            let draft = json!({
-                "subtype": "text",
-                "rect": root_rect(&t),
-                "inReplyTo": root_ref(&t),
-                "state": if marked { "marked" } else { "unmarked" },
-                "stateModel": "marked",
-                "flags": status_flags(),
-            });
-            this.create_conversation_annot(thread_pon(&t), draft).await?;
-            this.announce_thread(root, ThreadChange::Marked);
-            Ok(())
-        })
-    }
-
-    /// `delete(ref)`: exactly one annotation.
-    pub fn delete(&self, r: AnnotationRef) -> Promise<()> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            this.delete_one(r).await?;
-            this.announce_thread(root, ThreadChange::Deleted);
-            Ok(())
-        })
-    }
-
-    /// `deleteThread(ref)`: children first, preflighted all-or-nothing.
-    pub fn delete_thread(&self, r: AnnotationRef) -> Promise<ThreadDeleteResult> {
-        let this = self.0.clone();
-        promise::spawn(async move {
-            let root = this.root_ref_of(&r);
-            let t = this.thread_of(&r)?;
-            let members: Vec<AnnotationRef> =
-                member_refs_of(&t).iter().filter_map(ref_of).collect();
-            let blocked: Vec<AnnotationRef> =
-                members.iter().filter(|m| !this.can_delete(m)).cloned().collect();
-            if !blocked.is_empty() {
-                this.announce_thread(root, ThreadChange::Deleted);
-                return Ok(ThreadDeleteResult {
-                    deleted: Vec::new(),
-                    failed: blocked
-                        .into_iter()
-                        .map(|r| ThreadDeleteFailure {
-                            ref_: r,
-                            error: Error::new("delete not permitted"),
-                        })
-                        .collect(),
-                });
-            }
-            let mut deleted = Vec::new();
-            let mut failed = Vec::new();
-            for member in members {
-                if !failed.is_empty() {
-                    break;
-                }
-                match this.delete_one(member.clone()).await {
-                    Ok(()) => deleted.push(member),
-                    Err(error) => failed.push(ThreadDeleteFailure { ref_: member, error }),
-                }
-            }
-            this.announce_thread(root, ThreadChange::Deleted);
-            Ok(ThreadDeleteResult { deleted, failed })
-        })
-    }
-
-    /// `getPermissions(ref)`: per-thread action gates for this session.
-    pub fn get_permissions(&self, r: &AnnotationRef) -> CommentPermissions {
-        let this = &self.0;
-        let index = this.threads_index();
-        let t = index.by_member(&annotation_key(r));
-        let m = this.model();
-        let a = m.by_id.get(&annotation_key(r));
-        CommentPermissions {
-            can_reply: this.can_create(),
-            can_set_status: this.can_create(),
-            can_edit_text: a.is_some_and(|a| {
-                !a.data.as_ref().is_some_and(dimension_dto) && annot_contents_editable(a)
-            }),
-            can_delete: this.can_delete(r),
-            can_delete_thread: t.is_some_and(|t| {
-                member_refs_of(t).iter().all(|m| ref_of(m).is_some_and(|m| this.can_delete(&m)))
-            }),
-        }
     }
 }

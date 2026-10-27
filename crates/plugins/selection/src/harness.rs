@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_geometry::Point;
+use epdf_geometry::{PdfRect, Point, Quad, page_quad_of};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined};
@@ -24,11 +24,12 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::geometry::{
-    build_selection_page_geometry, content_point_to_pdf, to_content_segment, to_content_text_quad,
-};
 use crate::handles::*;
-use crate::text_layout::*;
+use crate::model::{clear_selection, set_highlight_hidden, set_selecting, set_selection};
+use crate::text_layout::{
+    self, PageGeometrySnapshot, PageTextSnapshot, PdfCoordinates, PdfTextSegment, TextLayout,
+    create_text_layout, page_geometry_of, page_text_segment_of, slice_text,
+};
 use crate::*;
 
 fn arg<T: DeserializeOwned>(args: &[Value], i: usize) -> Result<T, Error> {
@@ -51,6 +52,14 @@ fn page_arg(args: &[Value], i: usize) -> Result<PageRef, Error> {
     present(args, i)
         .and_then(PageRef::from_json)
         .ok_or_else(|| Error::named("TypeError", "[selection] not a PageRef"))
+}
+
+/// A `PageRef | number` argument.
+fn target_arg(args: &[Value], i: usize) -> Result<PageTarget, Error> {
+    match present(args, i) {
+        Some(Value::Number(n)) => Ok(PageTarget::Index(n.as_f64().unwrap_or(f64::NAN))),
+        _ => page_arg(args, i).map(PageTarget::Ref),
+    }
 }
 
 /// A `select` argument: a span when it has a `page` member, else a range.
@@ -98,8 +107,13 @@ pub static SIGNALS: LazyLock<Token<Signals>> =
 
 pub struct Selection;
 
-/// The TypeScript object literal's member order.
+/// The TypeScript object literal's member order: the settings api spread
+/// first, then the public lens, then the host lens.
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "canSelect",
     "canCopy",
     "select",
@@ -110,6 +124,7 @@ const MEMBERS: &[&str] = &[
     "extendTo",
     "clear",
     "hasSelection",
+    "isSelecting",
     "getSnapshot",
     "getRange",
     "listSelectedPages",
@@ -127,7 +142,6 @@ const MEMBERS: &[&str] = &[
     "beginGesture",
     "beginGestureAt",
     "endGesture",
-    "isGestureActive",
     "setHighlightVisible",
     "isHighlightVisible",
 ];
@@ -163,32 +177,45 @@ fn call_selection(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     let page = || page_arg(args, 0);
+    let target = || target_arg(args, 0);
     let point = || arg::<Point>(args, 1);
     Ok(match method {
+        "getSettings" => Outcome::Returned(to_value(&cap.get_settings())),
+        "updateSettings" => {
+            cap.update_settings(&SelectionConfig::from_json(args.first().unwrap_or(&Value::Null)));
+            Outcome::undefined()
+        }
+        "resetSettings" => {
+            cap.reset_settings();
+            Outcome::undefined()
+        }
+        "onSettingsChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_settings_changed(f))
+        }
         "canSelect" => Outcome::Returned(json!(cap.can_select())),
         "canCopy" => Outcome::Returned(json!(cap.can_copy())),
         "select" => unit(cap.select(range_input(args.first().unwrap_or(&Value::Null))?)),
         "selectAll" => unit(cap.select_all()),
-        "selectPage" => unit(cap.select_page(page()?)),
+        "selectPage" => unit(cap.select_page(target()?)),
         "selectWordAt" => {
-            Outcome::from_result(cap.select_word_at(page()?, point()?).map(|b| json!(b)))
+            Outcome::from_result(cap.select_word_at(target()?, point()?).map(|b| json!(b)))
         }
         "selectLineAt" => {
-            Outcome::from_result(cap.select_line_at(page()?, point()?).map(|b| json!(b)))
+            Outcome::from_result(cap.select_line_at(target()?, point()?).map(|b| json!(b)))
         }
-        "extendTo" => unit(cap.extend_to(page()?, point()?)),
+        "extendTo" => unit(cap.extend_to(target()?, point()?)),
         "clear" => {
             cap.clear();
             Outcome::undefined()
         }
         "hasSelection" => Outcome::Returned(json!(cap.has_selection())),
+        "isSelecting" => Outcome::Returned(json!(cap.is_selecting())),
         "getSnapshot" => Outcome::Returned(to_value(&cap.get_snapshot())),
         "getRange" => Outcome::Returned(to_value(&cap.get_range())),
-        "listSelectedPages" => Outcome::Returned(json!(
-            cap.list_selected_pages().into_iter().map(PageRef::to_json).collect::<Vec<_>>()
-        )),
-        "listSegments" => Outcome::Returned(to_value(&cap.list_segments(page()?))),
-        "listRects" => Outcome::Returned(to_value(&cap.list_rects(page()?))),
+        "listSelectedPages" => Outcome::Returned(to_value(&cap.list_selected_pages())),
+        "listSegments" => Outcome::Returned(to_value(&cap.list_segments(target()?))),
+        "listRects" => Outcome::Returned(to_value(&cap.list_rects(target()?))),
         "getAnchor" => Outcome::Returned(to_value(&cap.get_anchor())),
         "readText" => Outcome::promise(cap.read_text(options_of(present(args, 0)))),
         "readTextInRange" => {
@@ -219,7 +246,6 @@ fn call_selection(
             cap.end_gesture();
             Outcome::undefined()
         }
-        "isGestureActive" => Outcome::Returned(json!(cap.is_gesture_active())),
         "setHighlightVisible" => {
             cap.set_highlight_visible(arg::<bool>(args, 0)?);
             Outcome::undefined()
@@ -241,11 +267,10 @@ impl HarnessPlugin for Selection {
                 .build());
         }
         CONTROLLERS.with(|c| c.borrow_mut().clear());
-        let config: SelectionConfig = if is_undefined(config) || config.is_null() {
+        let config = if is_undefined(config) || config.is_null() {
             SelectionConfig::default()
         } else {
-            serde_json::from_value(config.clone())
-                .map_err(|e| Error::new(format!("[selection] bad config: {e}")))?
+            SelectionConfig::from_json(config)
         };
         Ok(selection_plugin(config))
     }
@@ -265,7 +290,9 @@ impl HarnessPlugin for Selection {
             return Some(match method {
                 "abort" => {
                     let name = args.first().and_then(Value::as_str).unwrap_or_default();
-                    controller_named(name).abort(Error::abort(None));
+                    // `controller.abort()` with no reason: the platform's DOMException.
+                    controller_named(name)
+                        .abort(Error::named("AbortError", "This operation was aborted"));
                     Outcome::undefined()
                 }
                 other => {
@@ -288,91 +315,122 @@ impl HarnessPlugin for Selection {
 
 // ── plugins/selection-geometry.json ───────────────────────────────────────────
 
-/// The generator's `geomOf`: `{snapshot, crop, rotation, userUnit}`.
-fn geom_of(value: &Value) -> Result<SelectionPageGeometry, Error> {
-    let field = |name: &str| value.get(name).cloned().unwrap_or(Value::Null);
-    build_page_geometry(&[field("snapshot"), field("crop"), field("rotation"), field("userUnit")])
-}
-
-fn build_page_geometry(args: &[Value]) -> Result<SelectionPageGeometry, Error> {
+/// `buildPageTextLayout(snap)`: `createTextLayout` over a page-space snapshot.
+fn layout_arg(args: &[Value]) -> Result<TextLayout, Error> {
     let snapshot: PageGeometrySnapshot = arg(args, 0)?;
-    build_selection_page_geometry(&snapshot, arg(args, 1)?, arg(args, 2)?, arg(args, 3)?)
-        .map_err(|e| Error::new(e.to_string()))
+    Ok(create_text_layout(snapshot))
 }
 
-fn layout_arg(args: &[Value]) -> Result<PageTextLayout, Error> {
-    Ok(build_page_text_layout(&arg(args, 0)?))
+/// A glyph argument: a whole number, or `None` for one no character has
+/// (`Number.isInteger(at)` fails), which answers as no character.
+fn glyph_arg(args: &[Value], i: usize) -> Result<Option<i64>, Error> {
+    let n: f64 = arg(args, i)?;
+    Ok((n.fract() == 0.0 && n.is_finite()).then_some(n as i64))
 }
 
-fn build_selection_page_geometry_fn(args: &[Value]) -> Result<Value, Error> {
-    out(build_page_geometry(args)?)
+fn word_of(layout: &TextLayout, glyph: Option<i64>) -> Option<text_layout::TextRange> {
+    glyph.and_then(|g| layout.word_at(g))
 }
 
-fn content_point_to_pdf_fn(args: &[Value]) -> Result<Value, Error> {
-    out(content_point_to_pdf(&geom_of(&args[0])?, arg(args, 1)?))
+fn line_of(layout: &TextLayout, glyph: Option<i64>) -> Option<text_layout::TextRange> {
+    glyph.and_then(|g| layout.line_at(g))
 }
 
-fn to_content_text_quad_fn(args: &[Value]) -> Result<Value, Error> {
-    out(to_content_text_quad(&geom_of(&args[0])?, &arg(args, 1)?))
-}
-
-fn to_content_segment_fn(args: &[Value]) -> Result<Value, Error> {
-    out(to_content_segment(&geom_of(&args[0])?, &arg(args, 1)?))
-}
-
-fn build_page_text_layout_fn(args: &[Value]) -> Result<Value, Error> {
-    out(layout_arg(args)?)
+fn segments_of(layout: &TextLayout, start: i64, count: i64) -> Value {
+    to_value(&layout.segments(text_layout::TextRange { start, count }))
 }
 
 fn text_glyph_at_fn(args: &[Value]) -> Result<Value, Error> {
-    let tolerance: Option<f64> = arg(args, 2)?;
-    let tolerance = tolerance.unwrap_or(DEFAULT_TOLERANCE_FACTOR);
-    out(text_glyph_at(&layout_arg(args)?, arg(args, 1)?, tolerance))
+    // The tolerance argument is the old signature's; `charAt` takes none.
+    out(layout_arg(args)?.char_at(arg(args, 1)?))
 }
 
 fn expand_word_fn(args: &[Value]) -> Result<Value, Error> {
-    let (from, to) = expand_text_range_to_word(&layout_arg(args)?, arg(args, 1)?);
-    out([from, to])
+    out(word_of(&layout_arg(args)?, glyph_arg(args, 1)?))
 }
 
 fn expand_line_fn(args: &[Value]) -> Result<Value, Error> {
-    let (from, to) = expand_text_range_to_line(&layout_arg(args)?, arg(args, 1)?);
-    out([from, to])
+    out(line_of(&layout_arg(args)?, glyph_arg(args, 1)?))
 }
 
 fn text_glyph_quad_fn(args: &[Value]) -> Result<Value, Error> {
-    out(text_glyph_quad(&layout_arg(args)?, arg(args, 1)?))
+    let layout = layout_arg(args)?;
+    out(glyph_arg(args, 1)?.and_then(|g| layout.char_quad(g)))
 }
 
 fn text_segments_fn(args: &[Value]) -> Result<Value, Error> {
-    out(text_segments_for_range(&layout_arg(args)?, arg(args, 1)?, arg(args, 2)?))
+    Ok(segments_of(&layout_arg(args)?, arg(args, 1)?, arg(args, 2)?))
 }
 
+/// `sliceTextByChars(snap, from, to)`: `sliceText(snap, { start: from, count: to - from })`.
 fn slice_text_fn(args: &[Value]) -> Result<Value, Error> {
     let snapshot: PageTextSnapshot = arg(args, 0)?;
-    out(slice_text_by_chars(&snapshot, arg(args, 1)?, arg(args, 2)?))
+    let (from, to): (f64, f64) = (arg(args, 1)?, arg(args, 2)?);
+    out(slice_text(&snapshot, from, to - from))
+}
+
+fn state_arg(args: &[Value], i: usize) -> Result<Rc<SelectionState>, Error> {
+    // Integer-keyed records: plain serde_json reads their string keys.
+    let plain = args.get(i).cloned().unwrap_or(Value::Null);
+    serde_json::from_value(plain).map(Rc::new).map_err(|e| Error::new(e.to_string()))
 }
 
 fn initial_state_fn(_: &[Value]) -> Result<Value, Error> {
     out(initial_selection_state())
 }
 
-fn reducer_fn(args: &[Value]) -> Result<Value, Error> {
-    // Integer-keyed records: plain serde_json reads their string keys.
-    let plain = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
-    let state: SelectionState =
-        serde_json::from_value(plain(0)).map_err(|e| Error::new(e.to_string()))?;
-    let action: SelectionAction =
-        serde_json::from_value(plain(1)).map_err(|e| Error::new(e.to_string()))?;
-    out(reduce_selection(&state, &action).unwrap_or(state))
+fn set_selection_fn(args: &[Value]) -> Result<Value, Error> {
+    let state = state_arg(args, 0)?;
+    let selection: SelectionRange = arg(args, 1)?;
+    let segments = state_arg(
+        &[json!({ "selection": null, "segments": args.get(2).cloned().unwrap_or(Value::Null),
+            "highlightHidden": false, "selecting": false })],
+        0,
+    )?
+    .segments
+    .clone();
+    out(&*set_selection(&state, selection, segments))
+}
+
+fn clear_selection_fn(args: &[Value]) -> Result<Value, Error> {
+    out(&*clear_selection(&state_arg(args, 0)?))
+}
+
+fn set_highlight_hidden_fn(args: &[Value]) -> Result<Value, Error> {
+    out(&*set_highlight_hidden(&state_arg(args, 0)?, arg(args, 1)?))
+}
+
+fn set_selecting_fn(args: &[Value]) -> Result<Value, Error> {
+    out(&*set_selecting(&state_arg(args, 0)?, arg(args, 1)?))
+}
+
+fn page_geometry_of_fn(args: &[Value]) -> Result<Value, Error> {
+    let snapshot: PageGeometrySnapshot<PdfCoordinates> = arg(args, 0)?;
+    let visible: PdfRect = arg(args, 1)?;
+    out(page_geometry_of(&snapshot, visible))
+}
+
+fn pdf_point_of_fn(args: &[Value]) -> Result<Value, Error> {
+    out(text_layout::pdf_point_of(arg(args, 0)?, arg(args, 1)?))
+}
+
+fn page_quad_of_fn(args: &[Value]) -> Result<Value, Error> {
+    let quad: Quad = arg(args, 0)?;
+    out(page_quad_of(quad, arg(args, 1)?))
+}
+
+fn page_text_segment_of_fn(args: &[Value]) -> Result<Value, Error> {
+    let segment: PdfTextSegment<PdfCoordinates> = arg(args, 0)?;
+    out(page_text_segment_of(&segment, arg(args, 1)?))
 }
 
 /// The generator's `layoutSweep`: segments from every start in `[-1, n]`
 /// for the counts `{0, 1, 2, 3, 5, 8, n - from, n + 1 - from}` (a `Set`,
-/// so in that order, once each), then word, line and quad per glyph.
+/// so in that order, once each), then word, line and quad per glyph in
+/// `[-1, n]`.
 fn layout_sweep_fn(args: &[Value]) -> Result<Value, Error> {
     let layout = layout_arg(args)?;
-    let n = layout.glyphs.len() as i64;
+    let n = layout.char_count() as i64;
     let mut segments = Vec::new();
     for from in -1..=n {
         let mut counts: Vec<i64> = Vec::new();
@@ -382,28 +440,14 @@ fn layout_sweep_fn(args: &[Value]) -> Result<Value, Error> {
             }
         }
         for count in counts {
-            segments.push(to_value(&text_segments_for_range(&layout, from, count)));
+            segments.push(segments_of(&layout, from, count));
         }
     }
     let glyphs = -1..=n;
-    let words: Vec<[i64; 2]> = glyphs
-        .clone()
-        .map(|g| {
-            let (a, b) = expand_text_range_to_word(&layout, g);
-            [a, b]
-        })
-        .collect();
-    let lines: Vec<[i64; 2]> = glyphs
-        .clone()
-        .map(|g| {
-            let (a, b) = expand_text_range_to_line(&layout, g);
-            [a, b]
-        })
-        .collect();
-    let quads: Vec<Option<PdfQuad>> = glyphs.map(|g| text_glyph_quad(&layout, g)).collect();
-    Ok(
-        json!({ "segments": segments, "words": to_value(&words), "lines": to_value(&lines), "quads": to_value(&quads) }),
-    )
+    let words: Vec<Value> = glyphs.clone().map(|g| to_value(&layout.word_at(g))).collect();
+    let lines: Vec<Value> = glyphs.clone().map(|g| to_value(&layout.line_at(g))).collect();
+    let quads: Vec<Value> = glyphs.map(|g| to_value(&layout.char_quad(g))).collect();
+    Ok(json!({ "segments": segments, "words": words, "lines": lines, "quads": quads }))
 }
 
 /// The generator's `glyphAtGrid`: row-major, the steps accumulated as the
@@ -412,14 +456,12 @@ fn glyph_at_grid_fn(args: &[Value]) -> Result<Value, Error> {
     let layout = layout_arg(args)?;
     let grid = args.get(1).cloned().unwrap_or(Value::Null);
     let n = |k: &str| grid[k].as_f64().unwrap_or(f64::NAN);
-    let tolerance: Option<f64> = arg(args, 2)?;
-    let tolerance = tolerance.unwrap_or(DEFAULT_TOLERANCE_FACTOR);
     let mut hits = Vec::new();
     let mut y = n("y0");
     while y <= n("y1") {
         let mut x = n("x0");
         while x <= n("x1") {
-            hits.push(text_glyph_at(&layout, Point { x, y }, tolerance));
+            hits.push(layout.char_at(Point { x, y }));
             x += n("step");
         }
         y += n("step");
@@ -430,13 +472,11 @@ fn glyph_at_grid_fn(args: &[Value]) -> Result<Value, Error> {
 /// The generator's `pairProbe`.
 fn pair_probe_fn(args: &[Value]) -> Result<Value, Error> {
     let layout = layout_arg(args)?;
-    let n = layout.glyphs.len() as i64;
-    let (a, b) = expand_text_range_to_line(&layout, 0);
-    let (c, d) = expand_text_range_to_line(&layout, n - 1);
+    let n = layout.char_count() as i64;
     Ok(json!({
-        "segments": to_value(&text_segments_for_range(&layout, 0, n)),
-        "first": [a, b],
-        "last": [c, d],
+        "segments": segments_of(&layout, 0, n),
+        "first": to_value(&layout.line_at(0)),
+        "last": to_value(&layout.line_at(n - 1)),
     }))
 }
 
@@ -448,7 +488,7 @@ fn slice_sweep_fn(args: &[Value]) -> Result<Value, Error> {
     while from <= snapshot.char_count + 1.0 {
         let mut to = from;
         while to <= snapshot.char_count + 1.0 {
-            out.push(slice_text_by_chars(&snapshot, from, to));
+            out.push(slice_text(&snapshot, from, to - from));
             to += 1.0;
         }
         from += 1.0;
@@ -458,11 +498,6 @@ fn slice_sweep_fn(args: &[Value]) -> Result<Value, Error> {
 
 pub fn geometry_functions() -> FunctionTable {
     vec![
-        ("buildSelectionPageGeometry", build_selection_page_geometry_fn),
-        ("contentPointToPdf", content_point_to_pdf_fn),
-        ("toContentTextQuad", to_content_text_quad_fn),
-        ("toContentSegment", to_content_segment_fn),
-        ("buildPageTextLayout", build_page_text_layout_fn),
         ("textGlyphAt", text_glyph_at_fn),
         ("expandTextRangeToWord", expand_word_fn),
         ("expandTextRangeToLine", expand_line_fn),
@@ -474,7 +509,14 @@ pub fn geometry_functions() -> FunctionTable {
         ("pairProbe", pair_probe_fn),
         ("sliceSweep", slice_sweep_fn),
         ("initialSelectionState", initial_state_fn),
-        ("reduceSelection", reducer_fn),
+        ("setSelection", set_selection_fn),
+        ("clearSelection", clear_selection_fn),
+        ("setHighlightHidden", set_highlight_hidden_fn),
+        ("setSelecting", set_selecting_fn),
+        ("pageGeometryOf", page_geometry_of_fn),
+        ("pdfPointOf", pdf_point_of_fn),
+        ("pageQuadOf", page_quad_of_fn),
+        ("pageTextSegmentOf", page_text_segment_of_fn),
     ]
 }
 

@@ -1,0 +1,59 @@
+(node:67418) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ relative rotation uses current refs and stages an actual apply transaction (577.458708ms)
+✔ permission selectors keep assemble/download independent and wildcard grants both (1.877083ms)
+✔ relative turns see confirmed rotations and remote layouts (2.62025ms)
+✔ absolute rotate, reorder and delete expose actual successful order/count and void results (1.136333ms)
+✔ deferred changes send in staging order and deliver confirmed document event before promise settlement (0.970542ms)
+✔ blank defaults use actual neighbour size, preserve explicit count/size and return new refs (1.580416ms)
+✔ bytes stay byte-exact; insert positions name current refs and public result names pages (1.072458ms)
+✔ empty registry inserts Letter; missing refs never become implicit zero rotation (0.791125ms)
+✔ mixed rotations group in first-seen order within one transaction and return void (1.643167ms)
+✔ reorder retains neighbour positions and final order (0.994541ms)
+✔ subset insertion uses scratch full scope, selected order, extraction bytes and guaranteed close (1.733042ms)
+✔ clock-named scratch sources close for each malformed source index (2.005417ms)
+✔ cross-document refs resolve in source registry, bytes insert in destination and only source extracts (1.301291ms)
+✔ duplicate copies selected order after last page and extraction returns original bytes (1.2005ms)
+✔ scope absence and captured authority after close are distinct; selection resolves indexes and deduplicates (1.489833ms)
+✔ two quick turns see pending rotation, retain undo predictions and label one history step each (1.098708ms)
+✔ extract waits for earlier changes to settle; labels/counts distinguish all write verbs (0.390709ms)
+✔ blank positions choose each anchor or edge size and explicit count/size wins (0.859959ms)
+✔ pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download (0.548458ms)
+✔ cancelling staged write rejects caller while the change still confirms; deleting all pages is refused (0.370458ms)
+✔ closing rejects pending writes, removes subscribers and leaves late confirmation silent (0.310708ms)
+✔ selection drops deleted pages by registry read and remains stable for identical resolved selections (0.258ms)
+✔ every negative channel is exact and named; no unused promises, unmatched calls, diagnostics or reports are hidden (17.510583ms)
+✔ prior actions160, commands79, link37 and metadata17 retain complete inputs and every output channel (642.449875ms)
+✔ reorder and whole-PDF insert label the exact history scope, and returned answers alone cannot change registry (0.323958ms)
+✔ nineteen current inputs and complete schema2 outcomes remain exact and replayable (23.719625ms)
+✔ nineteen immutable original occurrences retain full definitions/outcomes, source hashes and exact mappings (9.788ms)
+✔ each staged fixture answer/event names its exact current request opId and full transaction order (14.4755ms)
+✔ all blank/byte/empty/reorder/duplicate placements preserve complete registry geometry (6.574ms)
+✔ subset and valid-index copies confirm complete destination layouts (2.94475ms)
+✔ both cross-document placements preserve every source page and confirm complete destination layouts (1.882292ms)
+✖ direct immediate and deferred multi-item confirmations belong to actual request ids and ordered local transactions (1.958125ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 31
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1652.681167
+
+✖ failing tests:
+
+test at test/page-edit-current.test.ts:1:32665
+✖ direct immediate and deferred multi-item confirmations belong to actual request ids and ordered local transactions (1.958125ms)
+  AssertionError [ERR_ASSERTION]: result belongs to actual request
+      at assertDirectIdentity (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:1063:64)
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/page-edit-current.test.ts:1076:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

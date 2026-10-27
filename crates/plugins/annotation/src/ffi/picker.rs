@@ -17,15 +17,19 @@ pub struct AnnotationFilePromptRequest {
     pub point: Point,
 }
 
-impl From<crate::FilePromptRequest> for AnnotationFilePromptRequest {
-    fn from(r: crate::FilePromptRequest) -> Self {
-        AnnotationFilePromptRequest {
-            tool_id: r.tool_id,
-            subtype: r.subtype,
-            accept: r.accept,
-            page: r.page.into(),
-            point: r.point.into(),
-        }
+impl AnnotationFilePromptRequest {
+    /// A `FilePromptRequest` the plugin wrote as JSON.
+    fn read(r: &Value) -> Result<Self, epdf_kernel::Error> {
+        let s = |k: &str| r.get(k).and_then(Value::as_str).map(str::to_string);
+        let n = |p: &Value, k: &str| p.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+        let point = r.get("point").unwrap_or(&Value::Null);
+        Ok(AnnotationFilePromptRequest {
+            tool_id: s("toolId").unwrap_or_default(),
+            subtype: s("subtype").unwrap_or_default(),
+            accept: s("accept"),
+            page: super::page_out(r.get("page").unwrap_or(&Value::Null))?,
+            point: Point { x: n(point, "x"), y: n(point, "y") },
+        })
     }
 }
 
@@ -50,17 +54,20 @@ pub(crate) fn provider(
     picker: Arc<dyn AnnotationFilePicker>,
     post: KernelPost,
 ) -> crate::FilePickerProvider {
-    Rc::new(move |request: crate::FilePromptRequest| {
-        let (promise, resolver) = Promise::<Value>::pending();
+    Rc::new(move |request: Value| {
+        let request = match AnnotationFilePromptRequest::read(&request) {
+            Ok(request) => request,
+            Err(error) => return Promise::rejected(error),
+        };
+        let (promise, resolver) = Promise::<Option<Value>>::pending();
         let settle = epdf_ffi::ForeignSettle::new(resolver, post.clone(), "the file picker");
         let picker = picker.clone();
-        let request = AnnotationFilePromptRequest::from(request);
         std::thread::spawn(move || {
             let picked = futures::executor::block_on(picker.pick(request));
             // `settle` posts to the kernel thread, where the JSON is built.
             settle.settle(move || {
                 Ok(match picked {
-                    None => Value::Null,
+                    None => None,
                     Some(file) => {
                         let mut source = json!({ "data": Bytes(file.bytes).to_json() });
                         if let Some(name) = file.name {
@@ -69,7 +76,7 @@ pub(crate) fn provider(
                         if let Some(mime) = file.mime_type {
                             source["mimeType"] = mime.into();
                         }
-                        source
+                        Some(source)
                     }
                 })
             });

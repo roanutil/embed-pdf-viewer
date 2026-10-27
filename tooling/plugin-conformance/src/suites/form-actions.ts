@@ -1,85 +1,80 @@
-/**
- * `packages/plugin/form` beside the actions plugin, scripting off: the
- * `reset-form` executor, the submit dataset resolver and the script commit
- * sink it registers, the host-lens doors (`resetFormAction`,
- * `resolveSubmitDataset`, `commitScriptFormEffects`), widget activation and
- * the widget DOM-event feed. Replayed by
- * `crates/plugins/form/tests/conformance.rs`.
- */
-import type { ResponseSpec } from '../fake-engine';
+/** Current form ownership of action reset, submit, script effects and widget events. */
 import type { ScenarioCase, Step } from '../scenario';
 import type { Suite } from '../vectors';
-
+import type { SubmitIntent, ActionContext } from '../../../../packages/plugin/actions/src/contract';
+import type { PdfActionNode, PdfActionTargetRef } from '@embedpdf/engine-core/runtime';
 import {
-  FORM_ONLY,
-  SNAP,
+  formScenario,
+  text,
+  checkbox,
+  pushbutton,
+  signature,
+  ref,
+  placed,
+  row,
+  snapshot,
+  call,
   act,
-  annotations,
-  aref,
-  boot,
+  fnSpec,
+  tree,
+  js,
+  resetNode,
   byName,
   byNumber,
-  call,
-  checkbox,
-  doc,
-  effectsOk,
-  fnSpec,
-  js,
-  list,
-  pushbutton,
-  ref,
-  resetNode,
-  signature,
-  text,
-  tree,
-  widgetAnnot,
+  objRef,
   pr,
-  v3Widget,
-} from './form-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins how the form answers the actions plugin's reset, submit, commit and activation doors, through call outcomes, settled results and engine calls. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const OFF = { openSequence: 'off' };
-const HYDRATE: ResponseSpec = { path: 'annotations.listRawAll', value: { pages: [] } };
-const WITH_ACTIONS = [{ factory: 'interaction' }, { factory: 'actions', config: OFF }, { factory: 'form' }];
-const WITH_BOTH = [{ factory: 'interaction' }, { factory: 'actions', config: OFF }, { factory: 'annotation' }, { factory: 'form' }];
-
-const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
-const LIFECYCLE = { origin: 'lifecycle', source: { kind: 'api' }, event: { scope: 'document', name: 'open' } };
-
-const C1 = text(1, 'parent.c1', 'one');
-const C2 = text(2, 'parent.c2', 'two');
-const OTHER = text(3, 'other', 'three');
-const BUTTON = pushbutton(4, 'button');
-const SIG = signature(5, 'sig');
-const AGREE = checkbox(6, 'agree', true);
+  resetAnswer,
+  valuesAnswer,
+  apply,
+  refused,
+  FORM_ONLY,
+  boot,
+  doc,
+  list,
+} from './form-script-fixtures';
+const USER = {
+  origin: 'user',
+  source: { kind: 'api' },
+  event: { scope: 'activate' },
+} satisfies ActionContext;
+const LIFECYCLE = {
+  origin: 'lifecycle',
+  source: { kind: 'api' },
+  event: { scope: 'document', name: 'open' },
+} satisfies ActionContext;
+const C1 = text(1, 'parent.c1', 'one'),
+  C2 = text(2, 'parent.c2', 'two'),
+  OTHER = text(3, 'other', 'three');
+const BUTTON = pushbutton(4, 'button'),
+  SIG = signature(5, 'sig'),
+  AGREE = checkbox(6, 'agree', true);
 const FIELDS = [C1, C2, OTHER, BUTTON, SIG, AGREE];
-
-const SUBMIT_FLAGS = {
-  raw: 0,
-  exclude: false,
-  includeNoValueFields: false,
-  format: 'fdf',
-  method: 'post',
-  submitCoordinates: false,
-  includeAppendSaves: false,
-  includeAnnotations: false,
-  canonicalFormat: false,
-  exclNonUserAnnots: false,
-  exclFKey: false,
-  embedForm: false,
-};
-const submitNode = (payload: Record<string, unknown>) => ({
-  type: 'submit-form',
-  subtype: 'SubmitForm',
-  payload: { url: 'https://home.test/submit', fields: null, flags: SUBMIT_FLAGS, ...payload },
-  next: [],
-});
-const intent = (over: Record<string, unknown> = {}) => ({
+const ROWS = FIELDS.map((field) =>
+  row(field.widgets[0]!.objectNumber, field.ref, 1, undefined, { fieldFamily: field.family }),
+);
+const FORM = snapshot(FIELDS, ROWS);
+const cleared = [
+  text(1, 'parent.c1', ''),
+  text(2, 'parent.c2', ''),
+  text(3, 'other', ''),
+  checkbox(6, 'agree', false, { valueEntry: { kind: 'scalar', value: 'Off' } }),
+];
+const reset = (n: number, numbers: number[]) =>
+  apply(
+    resetAnswer(
+      n,
+      cleared.filter(
+        (field) => field.ref.kind === 'objectNumber' && numbers.includes(field.ref.objectNumber),
+      ),
+      ROWS.filter(
+        (widget) =>
+          widget.field?.kind === 'objectNumber' && numbers.includes(widget.field.objectNumber),
+      ),
+    ),
+  );
+const execute = (node: PdfActionNode, context: ActionContext = USER): Step =>
+  act('execute', [tree(node), context]);
+const intent = (over: Partial<SubmitIntent> = {}): SubmitIntent => ({
   url: 'https://home.test/x',
   fields: null,
   exclude: false,
@@ -89,311 +84,287 @@ const intent = (over: Record<string, unknown> = {}) => ({
   flagsRaw: 0,
   ...over,
 });
-
-const execute = (node: Record<string, unknown>, ctx: unknown = USER): Step => act('execute', [tree(node), ctx]);
-
-const executorCases: ScenarioCase[] = [
-  {
-    name: 'the-reset-form-executor',
-    covers:
-      'A ResetForm node resets through the form: a parent name selects its descendants, exclude takes the complement without buttons or signatures, null takes every resettable field, and the batch is one engine call followed by a re-read.',
-    plugins: WITH_ACTIONS,
-    engine: { documents: { a: doc([list(FIELDS), { path: 'forms.applyEffects', value: effectsOk(1) }]) } },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      execute(resetNode([byName('parent')])),
-      execute(resetNode([byName('parent'), byNumber(6)], true)),
-      execute(resetNode(null)),
-      execute(resetNode([byNumber(3)])),
-    ],
-  },
-  {
-    name: 'an-inert-reset',
-    covers:
-      "A selection with nothing resettable never reaches the engine and the node is inert with 'reset-form resolved no fields'; an engine with no batch door surfaces an unsupported-api diagnostic and the node is inert with its message.",
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([list(FIELDS)]),
-        b: doc([list(FIELDS)], { lacks: ['forms.applyEffects'] }),
-      },
+const submit = (fields: PdfActionTargetRef[] | null = null, charSet?: string): PdfActionNode => ({
+  type: 'submit-form',
+  subtype: 'SubmitForm',
+  payload: {
+    url: 'https://home.test/submit',
+    fields,
+    flags: {
+      raw: 0,
+      exclude: false,
+      includeNoValueFields: false,
+      format: 'fdf',
+      method: 'post',
+      submitCoordinates: false,
+      includeAppendSaves: false,
+      includeAnnotations: false,
+      canonicalFormat: false,
+      exclNonUserAnnots: false,
+      exclFKey: false,
+      embedForm: false,
     },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      act('onScriptDiagnostic', [fnSpec('onScriptDiagnostic')], 'b'),
+    ...(charSet ? { charSet } : {}),
+  },
+  next: [],
+});
+const observe = [
+  act('onDiagnosticReported', [fnSpec('onDiagnostic')]),
+  act('onExecuted', [fnSpec('onAction')]),
+];
+const W1 = objRef(101);
+const withDeniedDocument = (input: ScenarioCase): ScenarioCase => ({
+  ...input,
+  engine: {
+    ...input.engine,
+    documents: {
+      ...input.engine?.documents,
+      b: doc(
+        [
+          { path: 'forms.list', value: FORM },
+          { path: 'annotations.list', value: { annotations: [] } },
+        ],
+        {
+          security: {
+            allows: ['doc.forms.read', 'doc.annotate.read'],
+            allowsField: { fill: false },
+          },
+        },
+      ),
+    },
+  },
+});
+const cases: ScenarioCase[] = [
+  formScenario(
+    'the-reset-form-executor',
+    'The real reset executor selects a name subtree, an exclusion complement, all resettable fields and an object-number field. Each reset is one current atomic op.',
+    FORM,
+    [
+      ...observe,
+      execute(resetNode([byName('parent')])),
+      call('getValue', [ref(1)]),
+      call('getValue', [ref(2)]),
+      execute(resetNode([byName('parent'), byNumber(6)], true)),
+      call('getValue', [ref(3)]),
+      execute(resetNode(null)),
+      call('getValue', [ref(6)]),
+      execute(resetNode([byNumber(3)])),
+      call('getSnapshot'),
+    ],
+    [reset(1, [1, 2]), reset(2, [3]), reset(3, [6]), apply(resetAnswer(4, [], [], false))],
+  ),
+  formScenario(
+    'an-inert-reset',
+    'Empty or valueless selections are inert. A real atomic engine refusal fails a selected reset and leaves every public value unchanged.',
+    FORM,
+    [
+      ...observe,
       execute(resetNode([])),
       execute(resetNode([byName('button'), byName('sig')])),
-      act('execute', [tree(resetNode(null)), USER], 'b'),
+      execute(resetNode(null)),
+      call('exportValues'),
     ],
-  },
-  {
-    name: 'a-failed-reset-fails-the-node',
-    covers: "A batch whose reset entry failed or was rejected fails the node with 'reset failed'; a thrown batch fails it with the engine error.",
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.applyEffects', times: 1, value: { results: [{ index: 0, status: 'rejected', fields: [], changedWidgets: [] }], changedWidgets: [], meta: null } },
-          { path: 'forms.applyEffects', error: { name: 'EngineError', message: 'batch refused', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, act('onDiagnostic', [fnSpec('onDiagnostic')]), execute(resetNode(null)), execute(resetNode(null))],
-  },
-  {
-    name: 'reset-form-action-door',
-    covers:
-      "resetFormAction reads the snapshot fresh, resets the selection as one batch and resolves the commit result; the origin defaults to 'user'. A failed list rejects.",
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS, { times: 5 }),
-          { path: 'forms.list', times: 1, error: { name: 'EngineError', message: 'gone', code: 'Io' } },
-          list(FIELDS),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    [refused('reset unavailable', 'Unsupported')],
+  ),
+  formScenario(
+    'a-failed-reset-fails-the-node',
+    'Atomic reset refusal fails the action node with the engine message; no selected field changes and a later refused reset remains observable.',
+    FORM,
+    [
+      ...observe,
+      execute(resetNode(null)),
+      call('exportValues'),
+      execute(resetNode(null)),
+      call('exportValues'),
+    ],
+    [refused('reset rejected', 'Refused'), refused('batch refused', 'InvalidArg')],
+  ),
+  formScenario(
+    'reset-form-action-door',
+    'The host reset uses the current mirrored form, defaults origin to user and does not force engine reads. Failed atomic reset rejects and preserves confirmed fields.',
+    FORM,
+    [
       call('resetFormAction', [[byName('other')], false]),
+      call('getValue', [ref(3)]),
       call('resetFormAction', [null, false, 'lifecycle']),
+      call('exportValues'),
       call('resetFormAction', [[], true, 'hover']),
+      call('exportValues'),
     ],
-  },
-];
-
-const submitCases: ScenarioCase[] = [
-  {
-    name: 'the-submit-resolver',
-    covers:
-      'A SubmitForm node resolves its dataset through the form: a fresh read, the ISO selection and value rules, and the explicit-listing diagnostics; charSet rides along only when the intent has one.',
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([
-          list([C1, C2, OTHER, BUTTON, { ...text(7, 'secret', 's'), flags: { readOnly: false, required: false, noExport: true, raw: 4 } }]),
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      act('onDiagnostic', [fnSpec('onDiagnostic')]),
+    [reset(1, [3]), refused('gone', 'Io'), reset(3, [1, 2, 6])],
+  ),
+  formScenario(
+    'the-submit-resolver',
+    'SubmitForm resolves its post-fill dataset through the registered form reader. Unsupported explicit buttons and NoExport fields are diagnosed; charSet is forwarded.',
+    snapshot([...FIELDS, text(7, 'secret', 's', { noExport: true })], ROWS),
+    [
+      ...observe,
       act('setSubmitHandler', [fnSpec('submitHandler')]),
-      execute(submitNode({ fields: [byName('parent'), byName('button'), byName('secret')] })),
-      execute(submitNode({ charSet: 'utf-8' })),
+      execute(submit([byName('parent'), byName('button'), byName('secret')])),
+      execute(submit(null, 'utf-8')),
     ],
-  },
-  {
-    name: 'resolve-submit-dataset-door',
-    covers:
-      "resolveSubmitDataset builds the request from the intent and the action context's origin and event; diagnostics go to the given sink; a failed read rejects.",
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([list([C1, BUTTON], { times: 3 }), { path: 'forms.list', error: { name: 'EngineError', message: 'gone', code: 'Io' } }]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('resolveSubmitDataset', [intent({ fields: [byName('button')] }), USER, fnSpec('diagnose')]),
-      call('resolveSubmitDataset', [intent({ charSet: 'utf-16', includeNoValueFields: true }), LIFECYCLE, fnSpec('diagnose')]),
+  ),
+  formScenario(
+    'resolve-submit-dataset-door',
+    'The host dataset uses current values and provenance, forwards charSet and explicit diagnostics, and reads no new engine snapshot after hydration.',
+    FORM,
+    [
+      call('resolveSubmitDataset', [
+        intent({ fields: [byName('button')] }),
+        USER,
+        fnSpec('diagnose'),
+      ]),
+      call('resolveSubmitDataset', [
+        intent({ charSet: 'utf-16', includeNoValueFields: true }),
+        LIFECYCLE,
+        fnSpec('diagnose'),
+      ]),
       call('resolveSubmitDataset', [intent(), USER, fnSpec('diagnose')]),
     ],
-  },
-];
-
-const sinkCases: ScenarioCase[] = [
-  {
-    name: 'commit-script-form-effects',
-    covers:
-      "The script commit sink applies the batch, re-reads, and reloads each annotation page a changed widget is on (once, direct widgets skipped); a refused batch and an engine with no batch door both resolve as all-failed, never a throw.",
-    plugins: WITH_BOTH,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          HYDRATE,
-          annotations(1, [widgetAnnot(1, 101)]),
-          annotations(2, []),
-          {
-            path: 'forms.applyEffects',
-            times: 1,
-            value: effectsOk(2, [
-              v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 }),
-              v3Widget({ annotObjectNumber: 102, pageObjectNumber: 2 }),
-              v3Widget({ annotObjectNumber: 103, pageObjectNumber: 1 }),
-              v3Widget({ annotObjectNumber: 0, pageObjectNumber: 0 }),
-            ]),
-          },
-          { path: 'forms.applyEffects', error: { name: 'PermissionDenied', message: 'permission denied: doc.forms.fill', required: 'doc.forms.fill' } },
+  ),
+  withDeniedDocument(
+    formScenario(
+      'commit-script-form-effects',
+      'The script sink stages current ops immediately. Native refusal is reported by the queue; per-field authority refuses staging synchronously with a failed sink result.',
+      snapshot([C1, { ...C2, readOnly: true }], ROWS.slice(0, 2)),
+      [
+        ...observe,
+        {
+          op: 'call',
+          target: 'documents',
+          method: 'open',
+          args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }],
+        },
+        call('commitScriptFormEffects', [
+          [{ kind: 'setValue', ref: ref(1), value: { value: 'x' } }],
         ]),
-        b: doc([list(FIELDS), HYDRATE], { lacks: ['forms.applyEffects'] }),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      call('commitScriptFormEffects', [[{ kind: 'setValue', ref: ref(1), value: { type: 'text', value: 'x' } }, { kind: 'setDisplay', ref: ref(2), display: 'hidden' }]]),
-      call('commitScriptFormEffects', [[{ kind: 'setValue', ref: ref(1), value: { type: 'text', value: 'y' } }]]),
-      call('commitScriptFormEffects', [[{ kind: 'setDisplay', ref: ref(1), display: 'hidden' }, { kind: 'reset', refs: [ref(2)] }]], 'b'),
+        call('getValue', [ref(1)]),
+        call('commitScriptFormEffects', [
+          [{ kind: 'setValue', ref: ref(1), value: { value: 'y' } }],
+        ]),
+        call('getValue', [ref(1)]),
+        call(
+          'commitScriptFormEffects',
+          [
+            [
+              { kind: 'setDisplay', ref: ref(2), display: 'hidden' },
+              { kind: 'reset', refs: [ref(1)] },
+            ],
+          ],
+          'b',
+        ),
+        call('getValue', [ref(1)]),
+      ],
+      [
+        apply(valuesAnswer(1, [text(1, 'parent.c1', 'x')], [ROWS[0]!])),
+        refused('script write refused', 'Refused'),
+      ],
+      undefined,
+      true,
+    ),
+  ),
+  formScenario(
+    'commit-sink-without-annotation',
+    'The same native sink confirms through form events without annotation and never reloads annotation pages.',
+    FORM,
+    [
+      call('commitScriptFormEffects', [[{ kind: 'setValue', ref: ref(1), value: { value: 'x' } }]]),
+      call('getValue', [ref(1)]),
+      call('getSnapshot'),
     ],
-  },
-  {
-    name: 'commit-sink-without-annotation',
-    covers: 'Without the annotation plugin the sink re-reads and has no plane to reload.',
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([list(FIELDS), { path: 'forms.applyEffects', value: effectsOk(1, [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })]) }]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('commitScriptFormEffects', [[{ kind: 'setValue', ref: ref(1), value: { type: 'text', value: 'x' } }]])],
-  },
-];
-
-const W1 = aref(1, 101);
-const activation = (pon: number, n: number, trees: Record<string, unknown>) => widgetAnnot(pon, n, undefined, { actions: trees });
-
-const widgetCases: ScenarioCase[] = [
+    [apply(valuesAnswer(1, [text(1, 'parent.c1', 'x')], [ROWS[0]!]))],
+  ),
   {
     name: 'activation-without-actions',
-    covers: "Without the actions plugin activateWidget takes the form path, which is an unscripted no-op: kind 'form', status unchanged.",
+    covers:
+      'Without actions the current activateWidget door resolves its field from the object-number relationship and returns an unscripted unchanged form result; DOM events are inert.',
     plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('activateWidget', ['obj:1', W1]), call('notifyWidgetEvent', ['obj:1', W1, 'mouseDown'])],
-  },
-  {
-    name: 'activation-is-delegated',
-    covers:
-      "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs, and a rootless tree counts as none.",
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
-          annotations(1, [
-            activation(1, 101, { activate: tree(resetNode([byName('other')])) }),
-            widgetAnnot(1, 102),
-            activation(1, 103, { activate: tree(null) }),
-          ]),
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
+    engine: { documents: { a: doc([{ path: 'forms.list', value: FORM }]) } },
+    snapshot: ['form::a'],
     steps: [
       ...boot,
-      act('onAction', [fnSpec('onAction')]),
-      call('activateWidget', ['obj:1', W1]),
-      call('activateWidget', ['obj:2', aref(1, 102)]),
-      call('activateWidget', ['obj:3', aref(1, 103)]),
+      call('activateWidget', [W1]),
+      call('notifyWidgetEvent', [ref(1), W1, 'mouseDown']),
     ],
   },
-  {
-    name: 'a-refused-activation-is-dispatched',
-    covers: 'A tree the dispatcher refuses (an incomplete one) still counts as dispatched: only a tree-less inert result falls back.',
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([list(FIELDS), annotations(1, [activation(1, 101, { activate: tree(js('x()'), true) })])]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('activateWidget', ['obj:1', W1])],
-  },
-  {
-    name: 'the-widget-event-feed',
-    covers:
-      'Without the annotation plugin a cursor enter hovers with unknown flags and the dispatcher resolves the tree; cursor exit hovers nothing; down, up, focus and blur dispatch directly with a widget source.',
-    plugins: WITH_ACTIONS,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          annotations(1, [
-            activation(1, 101, {
-              cursorEnter: tree(resetNode([byName('other')])),
-              mouseDown: tree(resetNode([byName('other')])),
-              focus: tree(resetNode([byName('other')])),
-            }),
-          ]),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      act('onAction', [fnSpec('onAction')]),
-      call('notifyWidgetEvent', ['obj:1', W1, 'cursorEnter']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'cursorExit']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'mouseDown']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'mouseUp']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'focus']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'blur']),
+  formScenario(
+    'activation-is-delegated',
+    'Activation dispatches the current form row action; absent or rootless actions fall back to the form owner, without extra page reads.',
+    snapshot(FIELDS, [
+      row(101, ref(1), 1, undefined, { actions: { activate: tree(resetNode([byName('other')])) } }),
+      row(102, ref(2)),
+      row(103, ref(3), 1, undefined, { actions: { activate: tree(null) } }),
+      ...ROWS.slice(3),
+    ]),
+    [
+      ...observe,
+      call('activateWidget', [W1]),
+      call('activateWidget', [objRef(102)]),
+      call('activateWidget', [objRef(103)]),
+      call('getValue', [ref(3)]),
     ],
-  },
-  {
-    name: 'hover-pre-checks-the-folded-annotation',
-    covers:
-      "With the annotation plugin a cursor enter on a loaded widget without enter or exit trees costs no dispatch; one with a tree hovers with its flags; an annotation that isn't a widget, or isn't loaded, hovers with unknown flags.",
-    plugins: WITH_BOTH,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          {
-            path: 'annotations.listRawAll',
-            value: {
-              pages: [
-                {
-                  pageState: { page: pr(1) },
-                  annotations: [
-                    activation(1, 101, { cursorExit: tree(resetNode([byName('other')])) }),
-                    widgetAnnot(1, 102),
-                    { ...widgetAnnot(1, 103), subtype: 'square', color: { r: 1, g: 2, b: 3 }, interiorColor: null, opacity: 1, cloudyIntensity: null, rectDifferences: null },
-                  ],
-                },
-              ],
-            },
-          },
-          annotations(1, [activation(1, 101, { cursorExit: tree(resetNode([byName('other')])) }), widgetAnnot(1, 102)]),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      act('onAction', [fnSpec('onAction')]),
-      call('notifyWidgetEvent', ['obj:2', aref(1, 102), 'cursorEnter']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'cursorEnter']),
-      call('notifyWidgetEvent', ['obj:1', W1, 'cursorExit']),
-      call('notifyWidgetEvent', ['obj:3', aref(1, 103), 'cursorEnter']),
-      call('notifyWidgetEvent', ['obj:9', aref(1, 404), 'cursorEnter']),
-      call('notifyWidgetEvent', ['obj:9', aref(1, 404), 'cursorExit']),
+    [reset(1, [3])],
+  ),
+  formScenario(
+    'a-refused-activation-is-dispatched',
+    'An incomplete current widget action is refused by the dispatcher and still returns kind dispatched; the form fallback never runs.',
+    snapshot(FIELDS, [
+      row(101, ref(1), 1, undefined, { actions: { activate: tree(js('x()'), true) } }),
+      ...ROWS.slice(1),
+    ]),
+    [call('activateWidget', [W1])],
+  ),
+  formScenario(
+    'the-widget-event-feed',
+    'Current form rows supply hover flags and action trees. Enter, exit, down, up, focus and blur carry the real widget source through the actions queue.',
+    snapshot(FIELDS, [
+      row(101, ref(1), 1, undefined, {
+        actions: {
+          cursorEnter: tree(resetNode([byName('other')])),
+          mouseDown: tree(resetNode([byName('other')])),
+          focus: tree(resetNode([byName('other')])),
+        },
+      }),
+      ...ROWS.slice(1),
+    ]),
+    [
+      ...observe,
+      ...(['cursorEnter', 'cursorExit', 'mouseDown', 'mouseUp', 'focus', 'blur'] as const).map(
+        (event) => call('notifyWidgetEvent', [ref(1), W1, event]),
+      ),
+      call('getValue', [ref(3)]),
     ],
-  },
+    [reset(1, [3]), apply(resetAnswer(2, [], [], false)), apply(resetAnswer(3, [], [], false))],
+  ),
+  formScenario(
+    'hover-pre-checks-the-folded-annotation',
+    'The current form-row mirror owns hover flags even with annotation lending. Rows without trees skip dispatch; an exit tree dispatches on hover exit; unknown rows read the page.',
+    snapshot(FIELDS, [
+      row(101, ref(1), 1, undefined, {
+        actions: { cursorExit: tree(resetNode([byName('other')])) },
+      }),
+      ...ROWS.slice(1),
+    ]),
+    [
+      ...observe,
+      call('notifyWidgetEvent', [ref(2), objRef(102), 'cursorEnter']),
+      call('notifyWidgetEvent', [ref(1), W1, 'cursorEnter']),
+      call('notifyWidgetEvent', [ref(1), W1, 'cursorExit']),
+      call('notifyWidgetEvent', [ref(3), objRef(103), 'cursorEnter']),
+      call('notifyWidgetEvent', [ref(3), objRef(404), 'cursorEnter']),
+      call('notifyWidgetEvent', [ref(3), objRef(404), 'cursorExit']),
+      call('getValue', [ref(3)]),
+    ],
+    [reset(1, [3])],
+    undefined,
+    true,
+  ),
 ];
-
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/form-actions.json',
-    describes: 'packages/plugin/form beside the actions plugin, scripting off: the reset-form executor, the submit resolver, the script commit sink, widget activation and the widget event feed.',
-    cases: [...executorCases, ...submitCases, ...sinkCases, ...widgetCases],
+    describes: 'Current native form/action integration and exact public effects.',
+    cases,
   },
 ];

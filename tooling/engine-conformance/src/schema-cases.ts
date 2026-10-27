@@ -18,7 +18,7 @@
  */
 
 /** Types the parity harness covers. One vector file each. */
-export type SchemaName = 'MetadataPatch';
+export type SchemaName = 'MetadataPatch' | 'CustomMetadataPatch';
 
 export interface SchemaCase {
   /** Stable slug, and what a failure names. */
@@ -78,69 +78,90 @@ export const SCHEMA_CASES: Readonly<Record<SchemaName, readonly SchemaCase[]>> =
       input: { trapped: 'maybe' },
     },
     {
-      name: 'custom-empty',
-      covers: 'An empty map is a present map, not an absent one.',
-      input: { custom: {} },
-    },
-    {
-      name: 'custom-per-key-three-state',
-      covers: 'A key set, a key removed, and every other key left alone.',
-      input: { custom: { Department: 'Legal', Obsolete: null } },
-    },
-    {
-      name: 'custom-null',
-      covers: 'The map itself is two-state: there is no "clear the concept of custom entries".',
-      input: { custom: null },
-    },
-    {
-      name: 'custom-empty-key',
-      covers: 'An empty key is a key. Whether the engine then rejects it is a different gate.',
-      input: { custom: { '': 'empty key' } },
+      name: 'custom-is-its-own-patch',
+      covers:
+        'Custom keys left MetadataPatch for their own patch in a4b8259f7, and the schema is strict, so a custom map here is an unknown key.',
+      input: { custom: { Department: 'Legal' } },
     },
     {
       name: 'created-millisecond-precision',
       covers: 'The form iso_8601 emits.',
-      input: { created: '2026-09-22T08:00:00.000Z' },
+      input: { createdAt: '2026-09-22T08:00:00.000Z' },
     },
     {
       name: 'created-second-precision',
       covers: 'No fractional part.',
-      input: { created: '2026-09-22T08:00:00Z' },
+      input: { createdAt: '2026-09-22T08:00:00Z' },
     },
     {
       name: 'created-microsecond-precision',
       covers: 'zod allows any number of fractional digits.',
-      input: { created: '2026-09-22T08:00:00.123456Z' },
+      input: { createdAt: '2026-09-22T08:00:00.123456Z' },
     },
     {
       name: 'created-leap-day',
       covers: 'February 29th in a leap year is a real date.',
-      input: { created: '2024-02-29T00:00:00Z' },
+      input: { createdAt: '2024-02-29T00:00:00Z' },
     },
     {
       name: 'created-impossible-date',
       covers: 'February 30th is not, in any year.',
-      input: { created: '2025-02-30T00:00:00Z' },
+      input: { createdAt: '2025-02-30T00:00:00Z' },
     },
     {
       name: 'created-offset',
-      covers: 'zod datetime() defaults to offset: false, so only Z is accepted.',
-      input: { created: '2026-09-22T08:00:00+02:00' },
+      covers:
+        'An explicit offset. IsoDateTime takes Z, an offset, or none since fd175ba50 (datetime with offset and local).',
+      input: { createdAt: '2026-09-22T08:00:00+02:00' },
     },
     {
       name: 'created-not-a-date',
       covers: 'An arbitrary string. A Patch<String> would take it; the schema does not.',
-      input: { created: 'not-a-date' },
+      input: { createdAt: 'not-a-date' },
     },
     {
       name: 'created-null',
       covers: 'A date field is nullable, so null clears it.',
-      input: { created: null },
+      input: { createdAt: null },
+    },
+    {
+      name: 'created-without-offset',
+      covers: 'A local time with no offset at all, which the local: true rule admits.',
+      input: { createdAt: '2026-09-22T08:00:00' },
+    },
+    {
+      name: 'created-pre-v3-spelling',
+      covers:
+        'The field was created until fd175ba50. Under the strict schema the old spelling is an unknown key, not an alias.',
+      input: { created: '2026-09-22T08:00:00Z' },
     },
     {
       name: 'modified-not-a-date',
       covers: 'The same rule on the second date field, in case only one was wired.',
-      input: { modified: 'yesterday' },
+      input: { modifiedAt: 'yesterday' },
+    },
+  ],
+  CustomMetadataPatch: [
+    {
+      name: 'custom-empty',
+      covers: 'An empty patch is a present map: it changes nothing and is still well formed.',
+      input: {},
+    },
+    {
+      name: 'custom-per-key-three-state',
+      covers: 'A key set, a key removed, and every other key left alone.',
+      input: { Department: 'Legal', Obsolete: null },
+    },
+    {
+      name: 'custom-null',
+      covers:
+        'The patch itself is a map: there is no "clear the concept of custom entries", so null is refused.',
+      input: null,
+    },
+    {
+      name: 'custom-empty-key',
+      covers: 'An empty key is a key. Whether the engine then rejects it is a different gate.',
+      input: { '': 'empty key' },
     },
   ],
 };

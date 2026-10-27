@@ -1,0 +1,52 @@
+[package]
+name = "epdf-plugin-outline"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/outline in Rust: the document's outline (bookmarks) as a lazy kernel mirror with this session's pending edits shown, expanded and selected items, the item for the reading position, activation, and create, update, move and delete as undoable changes."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = [
+  "dep:plugin-conformance",
+  "epdf-plugin-actions/harness",
+  "epdf-plugin-i18n/harness",
+  "epdf-plugin-link/harness",
+  "epdf-plugin-selection/harness",
+  "epdf-plugin-stage/harness",
+]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+# The optional plugins `outline.plugin.ts` lists. None is required at run
+# time; their tokens and capability types are what the controller looks up.
+epdf-plugin-actions = { path = "../actions", default-features = false }
+epdf-plugin-i18n = { path = "../i18n", default-features = false }
+epdf-plugin-link = { path = "../link", default-features = false }
+epdf-plugin-selection = { path = "../selection", default-features = false }
+epdf-plugin-stage = { path = "../stage", default-features = false }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[dev-dependencies]
+epdf-plugin-history = { path = "../history" }
+epdf-plugin-interaction = { path = "../interaction" }
+plugin-conformance = { path = "../../plugin-conformance" }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }
+
+[[test]]
+name = "conformance"
+required-features = ["harness"]
+
+[[test]]
+name = "behavior"
+required-features = ["harness"]

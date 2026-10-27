@@ -27,3 +27,12 @@ indexmap = { version = "2", features = ["serde"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 epdf-kernel = { path = "../../epdf-kernel", optional = true }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }
+
+# The engine's own copies of the measurement rules, for the cross-check of
+# `src/engine/` (`tests/engine_cross_check.rs`, Task 14.3). Native only:
+# epdf-engine links PDFium, and this crate builds for wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+epdf-engine = { path = "../../epdf-engine" }

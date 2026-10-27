@@ -4,7 +4,7 @@ Apply changes through a capability, then serialize the document and write the re
 
 ## Before you begin
 
-Enable the relevant plugins before starting the viewer. Metadata editing needs `metadata: true`. Annotation editing needs `interaction: true` and `AnnotationConfig()`. Form filling needs interaction and `FormConfig()`. See <doc:ConfiguringPlugins> for the full dependency table.
+Enable the relevant plugins before starting the viewer. Metadata editing needs `metadata: true`. Annotation editing needs `interaction: true` and `annotation: ""` (settings JSON over the defaults). Form filling needs interaction and `FormConfig()`. See <doc:ConfiguringPlugins> for the full dependency table.
 
 Your access scope must allow the mutation and `doc.download` for saving. To derive editing authority from embedded PDF permission bits, configure `pdf.permissions` instead of the default wildcard; explicit operation grants bypass those bits for the granted operation. Signature protection can refuse an operation regardless of its scope grant. Installing a capability or showing a control does not change these rules.
 
@@ -25,7 +25,7 @@ func saveWithTitle(
 }
 ```
 
-`canEdit()` can help decide whether to enable a metadata editor. Still handle failure from `update`, because state or policy can change. The metadata update returns after the confirmed change reaches its snapshot and events. Cancellation is not a promise to undo a write that already reached the engine.
+`canUpdate()` can help decide whether to enable a metadata editor. Still handle failure from `update`, because state or policy can change. The metadata update returns after the confirmed change reaches its snapshot and events. Cancellation is not a promise to undo a write that already reached the engine.
 
 For annotation and form workflows, use their capability methods and inspect returned batch failures when present. Refresh page layout after page edits. Refresh or invalidate the rendering state your custom UI depends on rather than assuming saved bytes automatically redraw an image.
 

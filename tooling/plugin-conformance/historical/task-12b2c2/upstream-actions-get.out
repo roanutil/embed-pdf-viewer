@@ -1,0 +1,41 @@
+commit 83f6598d22d86e454e7f9110b078d8e0124cbba1
+Author: Bob Singor <bob@singor.com>
+Date:   Sat Sep 26 02:53:23 2026 +0300
+
+    Engine API v3, round 3a: annotation names and shapes
+
+    - doc.annotations.list({ pages? }) replaces listRaw/listRawAll. One
+      AnnotationList { annotations, pages, auditHead? } on every layer: both
+      engines, the worker's one annotations.list job, and both REST list
+      endpoints. The page list is a raw read. Snapshot types removed.
+    - get/list names: metadata.get, text.get, actions.get,
+      pieceInfo.get/list/delete, render.getPolicy, measure.listViewports,
+      signatures.getContents/getDigest/downloadRevision/cancel.
+    - Write results: { annotation } for create/update, { annotations } for
+      move and import, { meta } for delete on every layer; the
+      annotation.deleted event names what went (deletedAnnotationOf).
+    - REST contract declares the real annotation results, and names
+      Annotation, AnnotationList, AnnotationMutationMeta and PageState once
+      (AnnotationWireComponents); openapi.json, SDKs and API reference
+      regenerated.
+    - downloadResource, beginEdit, session close().
+    - renderAppearances() is the encoded render on both engines,
+      renderAppearancesRaw() the pixels; both take a viewport. Width
+      viewports are off an enforced appearance lattice.
+    - Annotation flatten items are 'applied' | 'unchanged'.
+    - Kebab-case intents (line-dimension, …) and measure subtypes
+      (rectilinear, geospatial); the file keeps PDF names.
+    - Plugins, tests, conformance, server, runtime demo, docs and API
+      snapshots follow.
+
+diff --git a/packages/engine/core/src/engine/DocumentActionsService.ts b/packages/engine/core/src/engine/DocumentActionsService.ts
+index 1a5097a29..95c37f00a 100644
+--- a/packages/engine/core/src/engine/DocumentActionsService.ts
++++ b/packages/engine/core/src/engine/DocumentActionsService.ts
+@@ -3,5 +3,5 @@ import type { AbortablePromise } from '../promise/AbortablePromise';
+
+ /** Lazy, catalog-owned PDF action read. This API extracts; it never executes. */
+ export interface DocumentActionsService {
+-  read(): AbortablePromise<DocumentActionsSnapshot>;
++  get(): AbortablePromise<DocumentActionsSnapshot>;
+ }

@@ -1,0 +1,2 @@
+src/suites/metadata.ts(27,322): error TS2740: Type '{}' is missing the following properties from type 'NamedPageEntry[]': length, pop, push, concat, and 29 more.
+test/metadata-current.test.ts(241,32): error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.

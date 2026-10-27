@@ -20,9 +20,9 @@
 //! and what it does is decided by the mutation's KIND rather than by the
 //! caller remembering.
 //!
-//! # Three families bump their own sequence
+//! # Two families bump their own sequence
 //!
-//! The form mutators, the page flattener and the redaction applier all
+//! The form mutators and the redaction applier both
 //! re-read through a model or a listing before they return, and a read that
 //! happened before the bump would be the stale one. So they bump first and
 //! this skips them, rather than bumping twice per write and rebuilding
@@ -46,7 +46,7 @@ pub enum MutationFamily {
     /// They do not re-read through a version-keyed cache, so the sequence
     /// bumps here.
     Ordinary,
-    /// The form writers, the page flattener and the redaction applier.
+    /// The form writers.
     /// Each re-reads after its own bump, so bumping again would rebuild
     /// every version-keyed cache for nothing.
     SelfSequenced,
@@ -58,30 +58,47 @@ pub struct MutationFinalization {
     /// The session's sequence after the mutation. A consumer keying a
     /// cache on it re-reads when it moves.
     pub mutation_sequence: u64,
-    /// The layer artifact, for a layer session. `None` for a base session,
-    /// which has nothing to persist separately: its writes are in the
-    /// document and go out with the next save.
+    /// The layer artifact, for a layer session that persists one. `None` for
+    /// a session opened from bytes (`open.fatMem`), whose caller holds the
+    /// document: its writes go out with the next save.
     pub artifact: Option<Vec<u8>>,
+    /// The layer's last object number as the artifact saved it: every object
+    /// it has is at or below it (`LayerArtifactWorkerPayload.lastObjectNumber`).
+    /// `None` when there is no artifact.
+    pub last_object_number: Option<u32>,
 }
 
-/// Finish a mutation.
+/// Finish a mutation (`finishMutation`): keep the write's transaction, if
+/// one is open, before anything is saved, so nothing after this point can
+/// abort it; bump the sequence; and save a layer session's artifact.
+///
+/// A failure after the commit (the layer save) leaves a committed write
+/// that the caller must not mistake for a refused one.
 pub fn finish_mutation(
-    session: &DocumentSession,
+    session: &mut DocumentSession,
     family: MutationFamily,
     cancel: &crate::cancel::CancelToken,
 ) -> Result<MutationFinalization, EngineError> {
+    if session.in_transaction() {
+        session.commit_transaction()?;
+    }
     if family == MutationFamily::Ordinary {
         session.note_mutation();
     }
 
-    let artifact = match session.kind() {
-        Some(super::document::OpenKind::Layer) => {
-            Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?)
-        }
-        _ => None,
+    // `saveLayerArtifact`: only a layer session that persists one.
+    let (artifact, last_object_number) = if session.persists_layer_artifact() {
+        let last = session.last_object_number()?;
+        (Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?), last)
+    } else {
+        (None, None)
     };
 
-    Ok(MutationFinalization { mutation_sequence: session.mutation_sequence(), artifact })
+    Ok(MutationFinalization {
+        mutation_sequence: session.mutation_sequence(),
+        artifact,
+        last_object_number,
+    })
 }
 
 /// Who caused a mutation.
@@ -105,6 +122,25 @@ pub struct EventOrigin {
     /// monotonic per document. `None` until the mutation has a server
     /// identity, which for a local engine is never.
     pub server_id: Option<i64>,
+    /// The write this event is one fact of: its `opId`, and where the event
+    /// stands among the write's events. Set on the writes that run as a
+    /// change, and on every other write and notice: `publishWrite` stamps
+    /// each event it publishes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx: Option<EventTx>,
+    /// Set on the events of an undo: the `opId` of the change it undid.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub undo_of: Option<String>,
+}
+
+/// `origin.tx`: the write an event belongs to, and its place among the
+/// write's events, counting from 0 to `count - 1` in the order they were
+/// published.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EventTx {
+    pub id: String,
+    pub index: usize,
+    pub count: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -126,81 +162,32 @@ pub enum OriginKind {
 ///
 /// Some events add what the CALL named beside the result, as the
 /// TypeScript's `packages/engine/main` services publish them: the page an
-/// annotation write addressed, the pages a page-structure write took, a
-/// move's insertion point, a rotation. Those are the struct variants, with
-/// the result flattened beside the added fields.
+/// annotation write addressed, the name a page name write took. Those are
+/// the struct variants, with the result flattened beside the added fields.
+/// The page-structure writes are ops of a change now, whose events the
+/// change's items make (`features::changes::item::ChangeItem::events`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum DocumentEventInit {
     /// `LocalPageAnnotationsService.create`: the page the write addressed.
-    #[serde(rename = "annotation.created")]
+    #[serde(rename = "annotations.created")]
     AnnotationCreated {
         #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    #[serde(rename = "annotation.updated")]
+    #[serde(rename = "annotations.updated")]
     AnnotationUpdated {
         #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    #[serde(rename = "annotation.deleted")]
-    AnnotationDeleted {
-        #[serde(rename = "page", with = "crate::identity::page_ref")]
-        page_object_number: PageObjectNumber,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    #[serde(rename = "annotation.moved")]
-    AnnotationMoved {
-        #[serde(rename = "page", with = "crate::identity::page_ref")]
-        page_object_number: PageObjectNumber,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// `annotations.flatten`, published only when something was applied.
+    /// `annotations.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "annotations.flattened")]
     AnnotationsFlattened(serde_json::Value),
-    /// `LocalDocumentPagesService.move`: the moved block, in the caller's
-    /// order, and the insertion point it named.
-    #[serde(rename = "pages.moved", rename_all = "camelCase")]
-    PagesMoved {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        dest_index: u32,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    #[serde(rename = "pages.rotated")]
-    PagesRotated {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        rotation: crate::geom::PdfRotation,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// The RETIRED pages, which the surviving layout cannot say.
-    #[serde(rename = "pages.deleted")]
-    PagesDeleted {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// The insertion point the call named. Absent when it named none, as
-    /// the TypeScript's `destIndex: undefined` leaves it off the wire.
-    #[serde(rename = "pages.inserted", rename_all = "camelCase")]
-    PagesInserted {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        dest_index: Option<u32>,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// `pages.flatten`, published only when a page was applied or failed
-    /// (`meta` is not null).
+    /// `pages.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
     /// `pages.setName` and `pages.removeName`. The event names the key and
@@ -214,52 +201,40 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    /// `redaction.apply`, published only when `meta` is not null.
+    /// `redaction.apply`, published only when it wrote (`wrote`).
     #[serde(rename = "redaction.applied")]
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
     MetadataUpdated(serde_json::Value),
-    #[serde(rename = "attachment.created")]
-    AttachmentCreated(serde_json::Value),
-    #[serde(rename = "attachment.deleted")]
-    AttachmentDeleted(serde_json::Value),
-    #[serde(rename = "form.valueChanged")]
-    FormValueChanged(serde_json::Value),
-    #[serde(rename = "form.imported")]
-    FormImported(serde_json::Value),
-    #[serde(rename = "form.repaired")]
+    /// `metadata.updateCustom` (a4b8259f7).
+    #[serde(rename = "metadata.customUpdated")]
+    MetadataCustomUpdated(serde_json::Value),
+    /// `forms.repair` (`publishWrite(opId, { type: 'forms.repaired' })`).
+    #[serde(rename = "forms.repaired")]
     FormRepaired(serde_json::Value),
-    #[serde(rename = "form.fieldCreated")]
-    FormFieldCreated(serde_json::Value),
-    #[serde(rename = "form.fieldUpdated")]
-    FormFieldUpdated(serde_json::Value),
-    #[serde(rename = "form.fieldDeleted")]
-    FormFieldDeleted(serde_json::Value),
-    #[serde(rename = "form.widgetAttached")]
-    FormWidgetAttached(serde_json::Value),
-    #[serde(rename = "form.widgetDetached")]
-    FormWidgetDetached(serde_json::Value),
-    /// `forms.applyEffects`, published only when the batch wrote something
-    /// (`meta` is not null).
-    #[serde(rename = "form.effectsApplied")]
-    FormEffectsApplied(serde_json::Value),
     /// `measure.setScale`. The TypeScript publishes it from
     /// `LocalPageMeasureService` rather than the worker, with the same
     /// `PageScaleResult` the call answers.
-    #[serde(rename = "page.viewportsChanged")]
-    PageViewportsChanged(serde_json::Value),
+    #[serde(rename = "pages.scaleSet")]
+    PagesScaleSet(serde_json::Value),
     /// A signing candidate was parked: the document is read-only until it
-    /// completes or aborts. A notice rather than a mutation result, so it
-    /// carries what the call named and no result.
-    #[serde(rename = "signature.prepared", rename_all = "camelCase")]
-    SignaturePrepared { signing_id: String, field: serde_json::Value },
+    /// completes or is cancelled. `LocalDocumentSignaturesService.prepare`
+    /// publishes the field the call named beside the prepared candidate
+    /// (`{field, ...SignaturePrepared}`), its digest named as the answer
+    /// names it.
+    #[serde(rename = "signatures.prepared")]
+    SignaturesPrepared {
+        field: serde_json::Value,
+        #[serde(flatten)]
+        prepared: serde_json::Value,
+    },
     /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
-    #[serde(rename = "signature.completed")]
-    SignatureCompleted(serde_json::Value),
-    /// A parked signing was aborted (`status: "aborted"` only). A notice,
-    /// with no result.
-    #[serde(rename = "signature.aborted", rename_all = "camelCase")]
-    SignatureAborted { signing_id: String },
+    #[serde(rename = "signatures.completed")]
+    SignaturesCompleted(serde_json::Value),
+    /// A parked signing was cancelled (`signatures.cancel` answering
+    /// `status: "cancelled"` only). A notice, with no result.
+    #[serde(rename = "signatures.cancelled", rename_all = "camelCase")]
+    SignaturesCancelled { signing_id: String },
 }
 
 impl DocumentEventInit {
@@ -276,64 +251,48 @@ impl DocumentEventInit {
             | Self::PagesFlattened(v)
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
-            | Self::AttachmentCreated(v)
-            | Self::AttachmentDeleted(v)
-            | Self::FormValueChanged(v)
-            | Self::FormImported(v)
+            | Self::MetadataCustomUpdated(v)
             | Self::FormRepaired(v)
-            | Self::FormFieldCreated(v)
-            | Self::FormFieldUpdated(v)
-            | Self::FormFieldDeleted(v)
-            | Self::FormWidgetAttached(v)
-            | Self::FormWidgetDetached(v)
-            | Self::FormEffectsApplied(v)
-            | Self::PageViewportsChanged(v)
-            | Self::SignatureCompleted(v) => Some(v),
+            | Self::PagesScaleSet(v)
+            | Self::SignaturesCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
             | Self::AnnotationUpdated { result, .. }
-            | Self::AnnotationDeleted { result, .. }
-            | Self::AnnotationMoved { result, .. }
-            | Self::PagesMoved { result, .. }
-            | Self::PagesRotated { result, .. }
-            | Self::PagesDeleted { result, .. }
-            | Self::PagesInserted { result, .. }
             | Self::PagesNamed { result, .. } => Some(result),
-            Self::SignaturePrepared { .. } | Self::SignatureAborted { .. } => None,
+            Self::SignaturesPrepared { .. } | Self::SignaturesCancelled { .. } => None,
         }
     }
 
     /// The wire `type`, which is also the tag a consumer switches on.
     pub fn type_name(&self) -> &'static str {
         match self {
-            Self::AnnotationCreated { .. } => "annotation.created",
-            Self::AnnotationUpdated { .. } => "annotation.updated",
-            Self::AnnotationDeleted { .. } => "annotation.deleted",
-            Self::AnnotationMoved { .. } => "annotation.moved",
+            Self::AnnotationCreated { .. } => "annotations.created",
+            Self::AnnotationUpdated { .. } => "annotations.updated",
             Self::AnnotationsFlattened(_) => "annotations.flattened",
-            Self::PagesMoved { .. } => "pages.moved",
-            Self::PagesRotated { .. } => "pages.rotated",
-            Self::PagesDeleted { .. } => "pages.deleted",
-            Self::PagesInserted { .. } => "pages.inserted",
             Self::PagesFlattened(_) => "pages.flattened",
             Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
-            Self::AttachmentCreated(_) => "attachment.created",
-            Self::AttachmentDeleted(_) => "attachment.deleted",
-            Self::FormValueChanged(_) => "form.valueChanged",
-            Self::FormImported(_) => "form.imported",
-            Self::FormRepaired(_) => "form.repaired",
-            Self::FormFieldCreated(_) => "form.fieldCreated",
-            Self::FormFieldUpdated(_) => "form.fieldUpdated",
-            Self::FormFieldDeleted(_) => "form.fieldDeleted",
-            Self::FormWidgetAttached(_) => "form.widgetAttached",
-            Self::FormWidgetDetached(_) => "form.widgetDetached",
-            Self::FormEffectsApplied(_) => "form.effectsApplied",
-            Self::PageViewportsChanged(_) => "page.viewportsChanged",
-            Self::SignaturePrepared { .. } => "signature.prepared",
-            Self::SignatureCompleted(_) => "signature.completed",
-            Self::SignatureAborted { .. } => "signature.aborted",
+            Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
+            Self::FormRepaired(_) => "forms.repaired",
+            Self::PagesScaleSet(_) => "pages.scaleSet",
+            Self::SignaturesPrepared { .. } => "signatures.prepared",
+            Self::SignaturesCompleted(_) => "signatures.completed",
+            Self::SignaturesCancelled { .. } => "signatures.cancelled",
         }
+    }
+
+    /// Whether the write behind this event is a final change
+    /// (`FINAL_CHANGES` in `WorkerHost.ts`): what it destroys or seals
+    /// can't be put back, so it ends undo for every change before it.
+    pub fn ends_undo(&self) -> bool {
+        matches!(
+            self,
+            Self::RedactionApplied(_)
+                | Self::PagesFlattened(_)
+                | Self::AnnotationsFlattened(_)
+                | Self::FormRepaired(_)
+                | Self::SignaturesCompleted(_)
+        )
     }
 
     /// Which family the mutation behind this event belongs to.
@@ -344,19 +303,8 @@ impl DocumentEventInit {
     /// only so the question has an answer.
     pub fn family(&self) -> MutationFamily {
         match self {
-            Self::PagesFlattened(_)
-            | Self::RedactionApplied(_)
-            | Self::FormValueChanged(_)
-            | Self::FormImported(_)
-            | Self::FormRepaired(_)
-            | Self::FormFieldCreated(_)
-            | Self::FormFieldUpdated(_)
-            | Self::FormFieldDeleted(_)
-            | Self::FormWidgetAttached(_)
-            | Self::FormWidgetDetached(_)
-            | Self::FormEffectsApplied(_)
             // The install already advanced the sequence.
-            | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
+            Self::SignaturesCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,
         }
     }

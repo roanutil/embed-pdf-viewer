@@ -1,527 +1,761 @@
-//! What a caller may change.
+//! What an update writes: the patch checked against the annotation it
+//! changes and stated whole.
 //!
-//! G11. Ports `core/src/annotation/patch-base.ts` and the `kinds/*/patch.ts`
-//! files for the families whose writers exist.
+//! G11. Ports `core/src/annotation/resolve/resolveAnnotationPatch.ts`
+//! (`pdfPrepareAnnotationPatch`, `pdfDeriveAnnotationPatch`),
+//! `resolve/sentBack.ts`, `resolve/text.ts` (`noteStateFollows`,
+//! `assertRichTextAgreement`), `resolve/freeText.ts` (`freeTextFollows`,
+//! `calloutEndFollows`), `calloutEnd.ts`, `resolve/measurement.ts`
+//! (`measurementFollows`) and
+//! `checkWrite.ts` (`assertAnnotationPatch`, `pdfResolveAnnotationPatch`).
 //!
-//! # Every field is tri-state and the three states are not two
-//!
-//! Absent leaves the entry alone. `null` removes it. A value sets it. That
-//! is why every such field is a [`Patch<T>`] rather than an
-//! `Option<Option<T>>`: serde decodes a present `null` into the OUTER `None`,
-//! so the nested option collapses the two states back together and "I did not
-//! mention the subject" becomes "remove the subject". The first draft of this
-//! module used the nested option and the vector caught it.
-//!
-//! Every field is also omitted from the wire when it is absent, and that is
-//! not tidiness. [`super::appearance::appearance_impact_of`] reads the
-//! SERIALIZED patch by key, so a field emitted as `null` is a key it has to
-//! consider, and an update that touched nothing would be classified as an
-//! edit of everything. The vector caught that one too.
-//!
-//! # Authorial identity is not patchable
-//!
-//! `/T`, `/EMBD_Metadata /UserID` and `/CreatedBy` are bound at creation. The
-//! reason is not tidiness: Acrobat and every other viewer display `/T` as the
-//! author, so a patchable `/T` would let anyone with update authority rewrite
-//! who appears to have written an annotation. `/GroupID` IS patchable,
-//! because organizational ownership legitimately changes.
-//!
-//! There is no `nm`. A stable id a caller can rename mid-session is not a
-//! stable id, so the type makes it unsayable rather than the writer refusing
-//! it.
+//! A patch arrives in the file's coordinates as the JSON object the caller
+//! sent, and the annotation it changes as its read, the same way. It is
+//! prepared (its subtype filled in, a drawn kind's `rect` resolved into the
+//! shape, what it sends back as it reads dropped), checked field by field
+//! against its kind's update schema, then what follows from it is stated.
+//! The writers write what this resolves and nothing more.
 
-use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
-use crate::dto::Patch;
-
-use super::draft::{AnnotationFlagsPatch, LinkTargetDraft, ResourceRef, StampFitDraft};
-use crate::features::annotation::intent::{
-    CaretIntent, FreeTextIntent, InkIntent, StrikeoutIntent,
+use super::appearance::semantic_equal;
+use super::prepare::{DraftFields, FieldOwner, owner_of, read_field, standard_state_model_of};
+use super::shape_for_rect::pdf_resolve_rect_command;
+use crate::error::{EngineError, EngineErrorCode};
+use crate::features::annotation::rich_text::{
+    RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text, plain_text,
 };
-use crate::features::annotation::read::shape::PdfRectDifferences;
-use crate::features::annotation::read::style::Color;
-use crate::features::annotation::vocabulary::{
-    AnnotationBorderStyle, AnnotationReplyType, BlendMode, FileAttachmentIcon, LineEnding,
-    LineEndings, NoteIcon, StandardFont, TextAlignment,
-};
-use crate::geom::{CalloutLine, InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
+use crate::features::annotation::subtype::AnnotationSubtype;
+use crate::geom::{PdfPoint, PdfPointTurn, PdfRect, pdf_point_turned, pdf_point_unturned};
 use crate::identity::AnnotationRef;
 
-/// The fields every patch carries.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct AnnotationPatchBase {
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub contents: Patch<String>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub subject: Patch<String>,
-    /// The blend mode to bake. Absent PRESERVES the current effective one,
-    /// which is why the updater reads it before re-baking: it lives in the
-    /// appearance stream's graphics state rather than in the dictionary, so
-    /// a re-bake would otherwise reset it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blend_mode: Option<BlendMode>,
-    /// Reassign `/EMBD_Metadata /GroupID`. No clear form: group attribution
-    /// is either present or absent, and the only mutation is a reassignment.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub group_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub flags: Option<AnnotationFlagsPatch>,
-    /// Re-target or clear `/IRT`.
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub in_reply_to: Patch<AnnotationRef>,
-    /// Change `/RT` without re-linking.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reply_type: Option<AnnotationReplyType>,
+/// A patch the writers take: its kind, the resolved patch as JSON (what the
+/// appearance verdict and the undo read), and its data fields read into
+/// their types.
+#[derive(Debug, Clone)]
+pub struct ResolvedPatch {
+    pub subtype: AnnotationSubtype,
+    pub data: Map<String, Value>,
+    pub fields: DraftFields,
+    /// A popup's new `parent`, when the patch names one.
+    pub parent: Option<AnnotationRef>,
 }
 
-/// The family-specific half.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "subtype", rename_all = "kebab-case")]
-#[serde(rename_all_fields = "camelCase")]
-pub enum AnnotationPatchKind {
-    Highlight {
-        #[serde(flatten)]
-        fields: TextMarkupPatchFields,
-    },
-    Underline {
-        #[serde(flatten)]
-        fields: TextMarkupPatchFields,
-    },
-    Squiggly {
-        #[serde(flatten)]
-        fields: TextMarkupPatchFields,
-    },
-    Strikeout {
-        #[serde(flatten)]
-        fields: TextMarkupPatchFields,
-        intent: Option<StrikeoutIntent>,
-    },
-    Square {
-        #[serde(flatten)]
-        fields: ShapePatchFields,
-    },
-    Circle {
-        #[serde(flatten)]
-        fields: ShapePatchFields,
-    },
-    Polygon {
-        #[serde(flatten)]
-        fields: VertexPatchFields,
-        #[serde(default, skip_serializing_if = "Patch::is_keep")]
-        cloudy_intensity: Patch<f64>,
-    },
-    Polyline {
-        #[serde(flatten)]
-        fields: VertexPatchFields,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        line_endings: Option<LineEndings>,
-    },
-    Line {
-        #[serde(flatten)]
-        fields: GeometryPatchFields,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        line_points: Option<LinePoints>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        line_endings: Option<LineEndings>,
-    },
-    Ink {
-        #[serde(flatten)]
-        fields: StrokePatchFields,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        ink_list: Option<InkList>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        intent: Option<InkIntent>,
-    },
-    Text {
-        #[serde(flatten)]
-        fields: TextPatchFields,
-    },
-    Caret {
-        #[serde(flatten)]
-        fields: CaretPatchFields,
-    },
-    FreeText {
-        #[serde(flatten)]
-        fields: FreeTextPatchFields,
-    },
-    Redact {
-        #[serde(flatten)]
-        fields: RedactPatchFields,
-    },
-    Link {
-        #[serde(flatten)]
-        fields: LinkPatchFields,
-    },
-    FileAttachment {
-        #[serde(flatten)]
-        fields: FileAttachmentPatchFields,
-    },
-    Stamp {
-        #[serde(flatten)]
-        fields: StampPatchFields,
-    },
-    Widget {
-        #[serde(flatten)]
-        fields: WidgetPatchFields,
-    },
+fn invalid(message: impl Into<String>) -> EngineError {
+    EngineError::with_message(EngineErrorCode::InvalidArg, message)
 }
 
-/// What a sticky-note patch may change.
-///
-/// `state` and `state_model` are tri-state INDEPENDENTLY, and unlike a draft
-/// there is no rule tying them. A draft is a whole annotation, so a state
-/// without a model is a state nothing can interpret; a patch touches what it
-/// states, and the other half may already be on the annotation.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct TextPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub icon: Option<NoteIcon>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub state: Patch<String>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub state_model: Patch<String>,
+fn subtype_of(current: &Map<String, Value>) -> Result<AnnotationSubtype, EngineError> {
+    let named = current.get("subtype").and_then(Value::as_str).unwrap_or_default();
+    serde_json::from_value(Value::String(named.to_owned()))
+        .map_err(|_| invalid(format!("an annotation of kind '{named}' reads as no kind")))
 }
 
-/// What a caret patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct CaretPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub intent: Option<CaretIntent>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rect_differences: Patch<PdfRectDifferences>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rotation: Patch<f64>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub unrotated_rect: Patch<PdfRect>,
-}
-
-/// What a free-text patch may change.
-///
-/// `/DA` packs the font, the size and the colour into ONE string, so a patch
-/// naming any of the three has to read the other two rather than defaulting
-/// them. There is one caveat the read cannot fix: a registered font reads
-/// back as a font CODE, so preserving one across a size change means
-/// restating `font_family`.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct FreeTextPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub intent: Option<FreeTextIntent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_family: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_size: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_align: Option<TextAlignment>,
-    /// The `/DA` colour: the border and the default text.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    /// The `TextColor` override. Setting one is supported; clearing it back
-    /// to "follow the `/DA` colour" is not, so there is no tri-state here.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_color: Option<Color>,
-    /// `/C`, the box background.
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub interior_color: Patch<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke_width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub border_style: Option<AnnotationBorderStyle>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dash_array: Option<Vec<f64>>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rect_differences: Patch<PdfRectDifferences>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub callout_line: Option<CalloutLine>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub line_ending: Option<LineEnding>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rotation: Patch<f64>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub unrotated_rect: Patch<PdfRect>,
-    /// A rich replacement of the text. With `contents` too, `contents` must
-    /// be its plain projection. Boxed so it does not size every other
-    /// `AnnotationPatchKind` variant to fit.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rich_text: Option<Box<crate::features::annotation::rich_text::RichTextDocumentInput>>,
-}
-
-/// What a redaction patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct RedactPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    /// New quads. On the same terms as text markup: PDFium can grow the list
-    /// and not shrink it, so a shorter one is refused.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub quad_points: Option<Vec<PdfQuad>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub interior_color: Patch<Color>,
-    /// `/OverlayText`. `Clear` removes the label, which also removes the
-    /// reason the `/DA` beside it existed.
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub overlay_text: Patch<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub repeat: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_family: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_size: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_align: Option<TextAlignment>,
-}
-
-/// What a link patch may change.
-///
-/// `target` is tri-state and the three states are three different links.
-/// Absent leaves it alone, a value REPLACES the `/A`, and `Clear` removes
-/// both `/A` and `/Dest`, which is a dead link. The clear touches both
-/// because the model treats the target as one concept with two spellings:
-/// removing only `/A` would resurrect a stale direct `/Dest` as the live
-/// target.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct LinkPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub target: Patch<LinkTargetDraft>,
-}
-
-/// What a file-attachment patch may change.
-///
-/// The FILE is not on this list, and that is deliberate. Bytes enter once at
-/// creation; replacing them is a different attachment, which is a delete and
-/// a create rather than an edit.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct FileAttachmentPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub icon: Option<FileAttachmentIcon>,
-}
-
-/// What a stamp patch may change.
-///
-/// Supplying a `source` replaces the picture, which means dropping the
-/// existing appearance objects and authoring new ones. Without one, a patch
-/// is geometry and the existing appearance is re-fitted into it.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct StampPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<ResourceRef>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fit: Option<StampFitDraft>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rotation: Patch<f64>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub unrotated_rect: Patch<PdfRect>,
-}
-
-/// What a widget patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct WidgetPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub color: Patch<Color>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub interior_color: Patch<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke_width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub border_style: Option<AnnotationBorderStyle>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_family: Option<StandardFont>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_size: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_align: Option<TextAlignment>,
-}
-
-impl WidgetPatchFields {
-    /// Whether this patch says anything about the border.
-    pub fn touches_border(&self) -> bool {
-        self.stroke_width.is_some() || self.border_style.is_some()
+/// `assertDeclaredFields`: a write names only fields its kind declares.
+fn assert_declared_fields(
+    subtype: AnnotationSubtype,
+    patch: &Map<String, Value>,
+) -> Result<(), EngineError> {
+    let unknown: Vec<String> = patch
+        .keys()
+        .filter(|name| *name != "subtype" && owner_of(subtype, name).is_none())
+        .map(|name| format!("'{name}'"))
+        .collect();
+    if unknown.is_empty() {
+        return Ok(());
     }
+    Err(invalid(format!("{} has no field {}", subtype.as_str(), unknown.join(", "))))
+}
 
-    /// Whether it says anything about the text.
-    pub fn touches_text_style(&self) -> bool {
-        self.font_family.is_some() || self.font_size.is_some() || self.font_color.is_some()
+/// `annotationPatchForTarget`: the patch as the target's kind. A different
+/// subtype, a changed name, a field the kind doesn't declare, or any change
+/// to an annotation of a type the engine doesn't model is refused.
+fn patch_for_target(
+    current: &Map<String, Value>,
+    mut patch: Map<String, Value>,
+) -> Result<(AnnotationSubtype, Map<String, Value>), EngineError> {
+    let subtype = subtype_of(current)?;
+    if let Some(named) = patch.get("subtype")
+        && named.as_str() != Some(subtype.as_str())
+    {
+        return Err(invalid("Annotation subtype cannot change"));
+    }
+    if subtype == AnnotationSubtype::Unsupported {
+        return Err(invalid("an annotation of a type the engine doesn't model can't be updated"));
+    }
+    if let Some(nm) = patch.get("nm")
+        && nm != current.get("nm").unwrap_or(&Value::Null)
+    {
+        return Err(invalid("an annotation's nm can't change after create"));
+    }
+    assert_declared_fields(subtype, &patch)?;
+    patch.insert("subtype".into(), Value::String(subtype.as_str().to_owned()));
+    Ok((subtype, patch))
+}
+
+/// The colour fields a kind declares (`kindFacts.colors`).
+const COLORS: [&str; 3] = ["color", "interiorColor", "fontColor"];
+
+/// `withoutUnchangedColors`: a colour sent back as it reads is left out, so
+/// a gray or CMYK colour the file holds stays as it is rather than turning
+/// into the sRGB value it reads as. Compared without case.
+fn without_unchanged_colors(current: &Map<String, Value>, patch: &mut Map<String, Value>) {
+    patch.retain(|name, value| {
+        if name == "subtype" || !COLORS.contains(&name.as_str()) {
+            return true;
+        }
+        match (value.as_str(), current.get(name).and_then(Value::as_str)) {
+            (Some(sent), Some(read)) => !sent.eq_ignore_ascii_case(read),
+            _ => true,
+        }
+    });
+}
+
+/// `withoutUnchangedFields`: every field sent back as it reads is left out,
+/// as `semanticEqual` judges it (`null` and absent the same, numbers within
+/// what a round trip through page space keeps).
+fn without_unchanged_fields(current: &Map<String, Value>, patch: &mut Map<String, Value>) {
+    patch
+        .retain(|name, value| name == "subtype" || !semantic_equal(Some(value), current.get(name)));
+}
+
+/// `pdfPrepareAnnotationPatch`: the patch an update writes before anything
+/// follows from it, in the file's coordinates.
+pub fn pdf_prepare_annotation_patch(
+    current: &Map<String, Value>,
+    patch: Map<String, Value>,
+) -> Result<(AnnotationSubtype, Map<String, Value>), EngineError> {
+    let (subtype, targeted) = patch_for_target(current, patch)?;
+    let mut prepared = pdf_resolve_rect_command(current, targeted)?;
+    without_unchanged_colors(current, &mut prepared);
+    without_unchanged_fields(current, &mut prepared);
+    Ok((subtype, prepared))
+}
+
+/// The data fields whose read holds values a write can't make
+/// (`readBack()`): sent back unchanged they were left out by preparation,
+/// any other such value is refused.
+fn read_back_fields(subtype: AnnotationSubtype) -> &'static [&'static str] {
+    use AnnotationSubtype as S;
+    match subtype {
+        S::Square | S::Circle | S::Line => &["borderStyle"],
+        S::Polygon | S::Polyline => &["borderStyle", "vertices"],
+        S::Ink => &["borderStyle", "strokeWidth", "inkList"],
+        S::FreeText => &["borderStyle", "intent"],
+        S::Link => &["target"],
+        S::Popup => &["parent"],
+        S::Widget => &["actions"],
+        _ => &[],
     }
 }
 
-/// The styling every geometric patch may change, with a fill.
-///
-/// `rect` is here rather than derived. A vertex kind's box is the caller's
-/// arithmetic over its points, the same as on a draft: a patch that moved the
-/// points and left the box would be describing two different annotations.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct GeometryPatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke_width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub border_style: Option<AnnotationBorderStyle>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dash_array: Option<Vec<f64>>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub interior_color: Patch<Color>,
-    /// The advisory scalar. `Clear`, and a zero, both remove the key.
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rotation: Patch<f64>,
+/// A popup's `parent` as a write takes it: an annotation, never `null`.
+fn read_parent(value: &Value) -> Result<AnnotationRef, EngineError> {
+    serde_json::from_value(value.clone()).map_err(|e| {
+        invalid(format!("popup update field 'parent': {e}"))
+            .with_details(serde_json::json!({ "field": "parent" }))
+    })
 }
 
-/// The same without a fill, for ink.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct StrokePatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke_width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub border_style: Option<AnnotationBorderStyle>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dash_array: Option<Vec<f64>>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rotation: Patch<f64>,
-}
-
-/// What a polygon or polyline patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct VertexPatchFields {
-    #[serde(flatten)]
-    pub geometry: GeometryPatchFields,
-    /// A replacement `/Vertices`. Unlike `/QuadPoints`, this one CAN shrink:
-    /// `EPDFAnnot_SetVertices` replaces the array rather than appending to
-    /// it, so a shorter path is an ordinary edit.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vertices: Option<Vec<PdfPoint>>,
-}
-
-impl AnnotationPatchKind {
-    pub fn subtype(&self) -> crate::features::annotation::subtype::AnnotationSubtype {
-        use crate::features::annotation::subtype::AnnotationSubtype as S;
-        match self {
-            Self::Highlight { .. } => S::Highlight,
-            Self::Underline { .. } => S::Underline,
-            Self::Squiggly { .. } => S::Squiggly,
-            Self::Strikeout { .. } => S::Strikeout,
-            Self::Square { .. } => S::Square,
-            Self::Circle { .. } => S::Circle,
-            Self::Polygon { .. } => S::Polygon,
-            Self::Polyline { .. } => S::Polyline,
-            Self::Line { .. } => S::Line,
-            Self::Ink { .. } => S::Ink,
-            Self::Text { .. } => S::Text,
-            Self::Caret { .. } => S::Caret,
-            Self::FreeText { .. } => S::FreeText,
-            Self::Redact { .. } => S::Redact,
-            Self::Link { .. } => S::Link,
-            Self::FileAttachment { .. } => S::FileAttachment,
-            Self::Stamp { .. } => S::Stamp,
-            Self::Widget { .. } => S::Widget,
+/// `assertAnnotationPatch`: a prepared update's data checked against its
+/// kind. A read-only value still in it is refused, naming the field; the
+/// rest is checked against the kind's update schema, each field read into
+/// its type. Fields the engine works out, stamps or keeps as found are
+/// accepted and ignored.
+pub fn assert_annotation_patch(
+    subtype: AnnotationSubtype,
+    prepared: &Map<String, Value>,
+) -> Result<(), EngineError> {
+    let kind = subtype.as_str();
+    for name in read_back_fields(subtype) {
+        let Some(value) = prepared.get(*name) else { continue };
+        let writable = match *name {
+            "parent" => read_parent(value).is_ok(),
+            // A widget's actions write as a patch by event; a read's trees
+            // sent back unchanged were left out by preparation.
+            "actions" => value.is_null()
+                || serde_json::from_value::<crate::features::actions::write::WidgetActionsPatch>(
+                    value.clone(),
+                )
+                .is_ok(),
+            _ => read_field("update", subtype, name, value, &mut DraftFields::default()).is_ok(),
+        };
+        if !writable {
+            return Err(invalid(format!(
+                "{kind} update field '{name}': this value can be read but not written; send it back unchanged or replace it"
+            ))
+            .with_details(serde_json::json!({ "field": name })));
         }
     }
+    read_patch_fields(subtype, prepared).map(|_| ())
 }
 
-/// What a text-markup patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct TextMarkupPatchFields {
-    /// New quads. `/Rect` is recomputed from them, so the two cannot drift.
-    ///
-    /// PDFium can GROW `/QuadPoints` and cannot shrink it, so a patch with
-    /// fewer quads than the annotation has is refused rather than leaving
-    /// stale ones behind.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub quad_points: Option<Vec<PdfQuad>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
+/// A patch's data fields read into their types, as the writers take them.
+/// Fields the engine works out, stamps or keeps as found are left out.
+fn read_patch_fields(
+    subtype: AnnotationSubtype,
+    patch: &Map<String, Value>,
+) -> Result<(DraftFields, Option<AnnotationRef>), EngineError> {
+    let mut fields = DraftFields::default();
+    let mut parent = None;
+    for (name, value) in patch {
+        if name == "subtype" {
+            continue;
+        }
+        match owner_of(subtype, name) {
+            Some(FieldOwner::Data) if name == "parent" => parent = Some(read_parent(value)?),
+            Some(FieldOwner::Data) => read_field("update", subtype, name, value, &mut fields)?,
+            // Accepted so a read can be sent back; the engine decides what
+            // happens to them.
+            _ => {}
+        }
+    }
+    Ok((fields, parent))
 }
 
-/// What a shape patch may change.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct ShapePatchFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rect: Option<PdfRect>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<Color>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke_width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub border_style: Option<AnnotationBorderStyle>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dash_array: Option<Vec<f64>>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub interior_color: Patch<Color>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub cloudy_intensity: Patch<f64>,
-    #[serde(skip_serializing_if = "Patch::is_keep")]
-    pub rect_differences: Patch<PdfRectDifferences>,
+/// `noteStateFollows`: a note's new standard state sets its model; a custom
+/// one keeps the annotation's, and needs one.
+fn note_state_follows(
+    current: &Map<String, Value>,
+    patch: &mut Map<String, Value>,
+) -> Result<(), EngineError> {
+    let Some(state) = patch.get("state").and_then(Value::as_str).map(str::to_owned) else {
+        return Ok(());
+    };
+    if patch.contains_key("stateModel") {
+        return Ok(());
+    }
+    if let Some(model) = standard_state_model_of(&state) {
+        patch.insert("stateModel".into(), Value::String(model.to_owned()));
+        return Ok(());
+    }
+    if current.get("stateModel").and_then(Value::as_str).is_none_or(str::is_empty) {
+        return Err(invalid(format!("text: the custom state '{state}' needs a stateModel"))
+            .with_details(serde_json::json!({ "field": "stateModel" })));
+    }
+    Ok(())
 }
 
-/// One annotation to change.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AnnotationPatch {
-    #[serde(flatten)]
-    pub base: AnnotationPatchBase,
-    #[serde(flatten)]
-    pub kind: AnnotationPatchKind,
+fn paragraphs_of(value: Option<&Value>) -> Option<Vec<RichTextParagraph>> {
+    serde_json::from_value(value?.clone()).ok()
+}
+
+/// `assertRichTextAgreement`: `contents` beside `richText` is its plain
+/// projection.
+fn assert_rich_text_agreement(patch: &Map<String, Value>) -> Result<(), EngineError> {
+    let (Some(contents), Some(rich)) =
+        (patch.get("contents").and_then(Value::as_str), patch.get("richText"))
+    else {
+        return Ok(());
+    };
+    let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
+    if contents != plain_text(&paragraphs) {
+        return Err(invalid(
+            "free-text: `contents` must equal the plain projection of `richText` when both are given",
+        ));
+    }
+    Ok(())
+}
+
+/// `freeTextFollows`: a free text's text lives in its rich text. New
+/// `richText` brings its `contents`; new `contents` becomes body-style
+/// paragraphs; a new font, size, text colour or alignment moves the body;
+/// whatever moves the body states the complete rich text, and the size,
+/// text colour and alignment it reads back with. A callout line needs the
+/// callout intent.
+fn free_text_follows(
+    current: &Map<String, Value>,
+    patch: &mut Map<String, Value>,
+    describe: Option<crate::features::annotation::rich_text::DescribeFont<'_>>,
+) -> Result<(), EngineError> {
+    if patch.contains_key("intent") || patch.contains_key("calloutLine") {
+        let intent = patch
+            .get("intent")
+            .or_else(|| current.get("intent"))
+            .and_then(Value::as_str)
+            .unwrap_or("free-text")
+            .to_owned();
+        let callout = patch.get("calloutLine").or_else(|| current.get("calloutLine"));
+        if callout.is_some_and(|line| !line.is_null()) && intent != "free-text-callout" {
+            return Err(invalid(format!(
+                "free-text: a callout line needs intent 'free-text-callout', not '{intent}'"
+            ))
+            .with_details(serde_json::json!({ "field": "intent" })));
+        }
+    }
+    // `bodyWithStyle({}, text)`: what the patch's style asks of the body.
+    let mut changes = Map::new();
+    if let Some(family) = patch.get("fontFamily").and_then(Value::as_str) {
+        let face = face_for_free_text_font(family, describe);
+        changes.insert("family".into(), Value::String(face.family));
+        if let Some(weight) = face.weight {
+            changes.insert("weight".into(), Value::from(weight));
+        }
+        if let Some(italic) = face.italic {
+            changes.insert("italic".into(), Value::Bool(italic));
+        }
+    }
+    if let Some(size) = patch.get("fontSize") {
+        changes.insert("size".into(), size.clone());
+    }
+    if let Some(color) = patch.get("fontColor").filter(|c| !c.is_null()) {
+        changes.insert("color".into(), color.clone());
+    }
+    if let Some(align) = patch.get("textAlign") {
+        changes.insert("align".into(), align.clone());
+    }
+    let text_changed = patch.contains_key("richText") || patch.contains_key("contents");
+    if !text_changed && changes.is_empty() {
+        return Ok(());
+    }
+    let read_rich = current.get("richText");
+    let mut body = read_rich
+        .and_then(|rich| rich.get("body"))
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    if let Some(given) =
+        patch.get("richText").and_then(|rich| rich.get("body")).and_then(Value::as_object)
+    {
+        body.extend(given.clone());
+    }
+    body.extend(changes);
+    let paragraphs = match patch.get("richText").and_then(|rich| rich.get("paragraphs")) {
+        Some(paragraphs) => paragraphs.clone(),
+        None => match patch.get("contents") {
+            Some(contents) => serde_json::to_value(paragraphs_from_plain_text(
+                contents.as_str().unwrap_or_default(),
+            ))
+            .unwrap_or_default(),
+            None => read_rich.and_then(|rich| rich.get("paragraphs")).cloned().unwrap_or_default(),
+        },
+    };
+    // `styleOfBody`: the style fields a new body brings, beside it, where
+    // they differ from the read and the patch doesn't state its own.
+    if !patch.contains_key("fontSize")
+        && let Some(size) = body.get("size")
+        && !semantic_equal(Some(size), current.get("fontSize"))
+    {
+        patch.insert("fontSize".into(), size.clone());
+    }
+    if !patch.contains_key("fontColor")
+        && let Some(color) = body.get("color").and_then(Value::as_str)
+        && Some(color.to_ascii_lowercase())
+            != current.get("fontColor").and_then(Value::as_str).map(str::to_ascii_lowercase)
+    {
+        patch.insert("fontColor".into(), Value::String(color.to_ascii_lowercase()));
+    }
+    if !patch.contains_key("textAlign")
+        && let Some(align) = body.get("align")
+        && Some(align) != current.get("textAlign")
+    {
+        patch.insert("textAlign".into(), align.clone());
+    }
+    if text_changed {
+        let projected = paragraphs_of(Some(&paragraphs)).unwrap_or_default();
+        // The engine writes `/Contents` from the rich text: a line break
+        // reads back as `\r`.
+        patch.insert("contents".into(), Value::String(plain_text(&projected)));
+    }
+    patch.insert(
+        "richText".into(),
+        serde_json::json!({ "body": Value::Object(body), "paragraphs": paragraphs }),
+    );
+    Ok(())
+}
+
+/// `pdfCalloutEnd`: where a callout's line meets its text box, the middle of
+/// the side `toward` lies beyond, decided in the box's own frame when it is
+/// turned.
+pub fn pdf_callout_end(content_box: PdfRect, toward: PdfPoint, rotation: f64) -> PdfPoint {
+    let center = PdfPoint {
+        x: (content_box.left + content_box.right) / 2.0,
+        y: (content_box.bottom + content_box.top) / 2.0,
+    };
+    let turn = PdfPointTurn { degrees: rotation, center };
+    let local = if rotation != 0.0 { pdf_point_unturned(toward, turn) } else { toward };
+    let dx = local.x - center.x;
+    let dy = local.y - center.y;
+    let end = if dx.abs() >= dy.abs() {
+        PdfPoint { x: if dx >= 0.0 { content_box.right } else { content_box.left }, y: center.y }
+    } else {
+        PdfPoint { x: center.x, y: if dy > 0.0 { content_box.top } else { content_box.bottom } }
+    };
+    if rotation != 0.0 { pdf_point_turned(end, turn) } else { end }
+}
+
+/// `calloutEndFollows`: when a callout's box moves or turns and the patch
+/// doesn't state its own line, the line's end moves to where it now meets
+/// the box.
+fn callout_end_follows(current: &Map<String, Value>, patch: &mut Map<String, Value>) {
+    let Some(line) = current.get("calloutLine").and_then(|line| {
+        serde_json::from_value::<Vec<PdfPoint>>(line.clone()).ok().filter(|l| l.len() >= 2)
+    }) else {
+        return;
+    };
+    if patch.contains_key("calloutLine")
+        || (!patch.contains_key("box") && !patch.contains_key("rotation"))
+    {
+        return;
+    }
+    let Some(content_box) = patch
+        .get("box")
+        .or_else(|| current.get("box"))
+        .and_then(|b| serde_json::from_value::<PdfRect>(b.clone()).ok())
+    else {
+        return;
+    };
+    let rotation = match patch.get("rotation") {
+        Some(value) => value.as_f64(),
+        None => current.get("rotation").and_then(Value::as_f64),
+    }
+    .unwrap_or(0.0);
+    let knee = (line.len() == 3).then(|| line[1]);
+    let end = pdf_callout_end(content_box, knee.unwrap_or(line[0]), rotation);
+    let points = match knee {
+        Some(knee) => vec![line[0], knee, end],
+        None => vec![line[0], end],
+    };
+    patch.insert("calloutLine".into(), serde_json::to_value(points).unwrap_or_default());
+}
+
+/// Whether a write names any of a caption's fields (`touchesCaption`).
+pub fn touches_caption(value: &Map<String, Value>) -> bool {
+    ["captionEnabled", "captionPosition", "captionOffset", "captionCenter"]
+        .iter()
+        .any(|name| value.contains_key(*name))
+}
+
+fn point_of(value: Option<&Value>) -> Option<PdfPoint> {
+    value.filter(|v| !v.is_null()).and_then(|v| serde_json::from_value(v.clone()).ok())
+}
+
+fn points_of(value: Option<&Value>) -> Option<Vec<PdfPoint>> {
+    value.filter(|v| !v.is_null()).and_then(|v| serde_json::from_value(v.clone()).ok())
+}
+
+/// `moveCenter`: a manual caption centre carried along by a rigid move of
+/// the vertices, inferred only when every vertex agrees. A vertex edit
+/// leaves the centre where it is (`None`).
+fn move_center(before: &[PdfPoint], after: &[PdfPoint], center: PdfPoint) -> Option<PdfPoint> {
+    use crate::features::measure::derive::js_hypot as hypot;
+    if before.len() != after.len() || before.len() < 2 {
+        return None;
+    }
+    let origin = before[0];
+    let moved = after[0];
+    let index =
+        before.iter().position(|point| hypot(point.x - origin.x, point.y - origin.y) > 1e-6)?;
+    let from = PdfPoint { x: before[index].x - origin.x, y: before[index].y - origin.y };
+    let to = PdfPoint { x: after[index].x - moved.x, y: after[index].y - moved.y };
+    let length = from.x * from.x + from.y * from.y;
+    let cos = (from.x * to.x + from.y * to.y) / length;
+    let sin = (from.x * to.y - from.y * to.x) / length;
+    if (cos * cos + sin * sin - 1.0).abs() > 1e-5 {
+        return None;
+    }
+    let transform = |point: PdfPoint| PdfPoint {
+        x: moved.x + cos * (point.x - origin.x) - sin * (point.y - origin.y),
+        y: moved.y + sin * (point.x - origin.x) + cos * (point.y - origin.y),
+    };
+    let rigid = before.iter().zip(after).all(|(point, at)| {
+        let placed = transform(*point);
+        hypot(placed.x - at.x, placed.y - at.y) <= 1e-3
+    });
+    rigid.then(|| transform(center))
+}
+
+/// `measurementFollows`: a dimension patch with what follows from it. A
+/// foreign measure's marker sent back keeps the measure as it is (another
+/// foreign one is refused); caption fields merge with the current caption
+/// into a complete caption; a whole-shape move carries a manual caption
+/// centre along; and the label is worked out from the resulting points and
+/// scale.
+fn measurement_follows(
+    subtype: AnnotationSubtype,
+    current: &Map<String, Value>,
+    patch: &mut Map<String, Value>,
+) -> Result<(), EngineError> {
+    use AnnotationSubtype as S;
+    if !matches!(subtype, S::Line | S::Polygon | S::Polyline) {
+        return Ok(());
+    }
+    let subtype_of = |measure: Option<&Value>| {
+        measure.and_then(|m| m.get("subtype")).and_then(Value::as_str).map(str::to_owned)
+    };
+    if let Some(foreign) = subtype_of(patch.get("measure")).filter(|s| s != "rectilinear") {
+        if subtype_of(current.get("measure")).as_deref() != Some(foreign.as_str()) {
+            let what = if foreign == "geospatial" { "geospatial" } else { "foreign" };
+            return Err(invalid(format!("A {what} measure can't be written; leave measure out")));
+        }
+        // The marker a read returned, sent back: the measure stays as it is.
+        patch.remove("measure");
+    }
+    // A member the current annotation doesn't have is `undefined` in the
+    // TypeScript's spread, which the wire leaves out: it is dropped, not
+    // written as `null` (which would clear it).
+    let current_of = |name: &str| current.get(name).cloned();
+    let set_or_drop = |patch: &mut Map<String, Value>, name: &str, value: Option<Value>| {
+        match value {
+            Some(value) => patch.insert(name.into(), value),
+            None => patch.remove(name),
+        };
+    };
+    if subtype == S::Line {
+        if touches_caption(patch) {
+            let enabled =
+                patch.get("captionEnabled").cloned().or_else(|| current_of("captionEnabled"));
+            let position = patch
+                .get("captionPosition")
+                .filter(|p| !p.is_null())
+                .cloned()
+                .or_else(|| current_of("captionPosition"));
+            let offset =
+                patch.get("captionOffset").cloned().or_else(|| current_of("captionOffset"));
+            set_or_drop(patch, "captionEnabled", enabled);
+            set_or_drop(patch, "captionPosition", position);
+            set_or_drop(patch, "captionOffset", offset);
+        }
+    } else {
+        if let (Some(after), Some(before), Some(center)) = (
+            points_of(patch.get("vertices")),
+            points_of(current.get("vertices")),
+            point_of(current.get("captionCenter")),
+        ) && patch.get("captionEnabled") != Some(&Value::Null)
+            && !patch.contains_key("captionCenter")
+            && let Some(moved) = move_center(&before, &after, center)
+        {
+            patch.insert("captionCenter".into(), serde_json::to_value(moved).unwrap_or_default());
+        }
+        if touches_caption(patch) {
+            if patch.get("captionEnabled") == Some(&Value::Null) {
+                // No caption flag: the caption and its placement go together.
+                patch.insert("captionCenter".into(), Value::Null);
+            } else {
+                let enabled = patch
+                    .get("captionEnabled")
+                    .filter(|e| !e.is_null())
+                    .or_else(|| current.get("captionEnabled").filter(|e| !e.is_null()))
+                    .cloned()
+                    .unwrap_or(Value::Bool(false));
+                let center =
+                    patch.get("captionCenter").cloned().or_else(|| current_of("captionCenter"));
+                patch.insert("captionEnabled".into(), enabled);
+                set_or_drop(patch, "captionCenter", center);
+            }
+        }
+    }
+    // The label, from the resulting points and scale (`measurementReadout`
+    // over the annotation as the patch leaves it).
+    let label_inputs = ["linePoints", "vertices", "measure", "intent", "contents"];
+    if label_inputs.iter().any(|name| patch.contains_key(*name)) {
+        let after = |name: &str| patch.get(name).or_else(|| current.get(name));
+        let line_points = after("linePoints")
+            .and_then(|line| Some((point_of(line.get("start"))?, point_of(line.get("end"))?)));
+        let readout = crate::features::measure::derive::measurement_readout(
+            &crate::features::measure::derive::DimensionInput {
+                subtype: subtype.as_str(),
+                intent: after("intent").and_then(Value::as_str),
+                measure: after("measure"),
+                line_points,
+                vertices: points_of(after("vertices")),
+            },
+        );
+        if let Ok(readout) = readout {
+            patch.insert("contents".into(), Value::String(readout.label));
+        }
+    }
+    Ok(())
+}
+
+/// `pdfDeriveAnnotationPatch`: a prepared patch with every field that
+/// follows from it stated. Pure: it reads nothing but its arguments.
+pub fn pdf_derive_annotation_patch(
+    subtype: AnnotationSubtype,
+    current: &Map<String, Value>,
+    mut patch: Map<String, Value>,
+    describe: Option<crate::features::annotation::rich_text::DescribeFont<'_>>,
+) -> Result<Map<String, Value>, EngineError> {
+    if subtype == AnnotationSubtype::Text {
+        note_state_follows(current, &mut patch)?;
+    }
+    if subtype == AnnotationSubtype::FreeText {
+        assert_rich_text_agreement(&patch)?;
+        free_text_follows(current, &mut patch, describe)?;
+        callout_end_follows(current, &mut patch);
+    }
+    measurement_follows(subtype, current, &mut patch)?;
+    Ok(patch)
+}
+
+/// `pdfResolveAnnotationPatch`: the patch the engine writes for `patch` on
+/// `current`, in the file's coordinates: prepared, checked against its kind,
+/// and every field that follows from it stated. Throws `InvalidArg` for a
+/// patch the engine refuses.
+pub fn pdf_resolve_annotation_patch(
+    current: &Map<String, Value>,
+    patch: Map<String, Value>,
+    describe: Option<crate::features::annotation::rich_text::DescribeFont<'_>>,
+) -> Result<ResolvedPatch, EngineError> {
+    let (subtype, prepared) = pdf_prepare_annotation_patch(current, patch)?;
+    assert_annotation_patch(subtype, &prepared)?;
+    let data = pdf_derive_annotation_patch(subtype, current, prepared, describe)?;
+    // The writers take the derived patch typed: read, not checked again
+    // (the check ran on the prepared patch, as upstream's does).
+    let (fields, parent) = read_patch_fields(subtype, &data)?;
+    Ok(ResolvedPatch { subtype, data, fields, parent })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn map(value: Value) -> Map<String, Value> {
+        value.as_object().unwrap().clone()
+    }
+
+    fn square() -> Map<String, Value> {
+        map(json!({ "subtype": "square", "nm": "s",
+            "rect": { "left": 0, "bottom": 0, "right": 10, "top": 10 },
+            "box": { "left": 0, "bottom": 0, "right": 10, "top": 10 },
+            "color": "#808080", "interiorColor": null, "borderStyle": "beveled",
+            "strokeWidth": 1, "rotation": null }))
+    }
+
+    #[test]
+    fn a_read_sent_back_is_no_change() {
+        let mut sent = square();
+        sent.insert("color".into(), json!("#808080".to_uppercase()));
+        let (_, prepared) = pdf_prepare_annotation_patch(&square(), sent).unwrap();
+        assert_eq!(prepared, map(json!({ "subtype": "square" })));
+    }
+
+    #[test]
+    fn a_subtype_or_name_change_is_refused() {
+        for patch in [json!({ "subtype": "circle" }), json!({ "nm": "other" })] {
+            let refused = pdf_prepare_annotation_patch(&square(), map(patch)).unwrap_err();
+            assert_eq!(refused.code, EngineErrorCode::InvalidArg);
+        }
+        let unknown =
+            pdf_prepare_annotation_patch(&square(), map(json!({ "vertices": [] }))).unwrap_err();
+        assert!(unknown.message.contains("square has no field 'vertices'"), "{unknown}");
+    }
+
+    #[test]
+    fn a_read_only_value_changed_is_refused_and_sent_back_kept() {
+        let refused =
+            pdf_resolve_annotation_patch(&square(), map(json!({ "borderStyle": "inset" })), None)
+                .unwrap_err();
+        assert!(refused.message.contains("can be read but not written"), "{refused}");
+        assert_eq!(refused.details.unwrap()["field"], "borderStyle");
+        let kept =
+            pdf_resolve_annotation_patch(&square(), map(json!({ "borderStyle": "beveled" })), None)
+                .unwrap();
+        assert!(!kept.data.contains_key("borderStyle"));
+    }
+
+    #[test]
+    fn a_custom_state_keeps_the_notes_model_and_needs_one() {
+        let note = map(json!({ "subtype": "text", "stateModel": null }));
+        let refused = pdf_resolve_annotation_patch(&note, map(json!({ "state": "Pending" })), None)
+            .unwrap_err();
+        assert_eq!(refused.details.unwrap()["field"], "stateModel");
+        let standard =
+            pdf_resolve_annotation_patch(&note, map(json!({ "state": "accepted" })), None).unwrap();
+        assert_eq!(standard.data["stateModel"], "review");
+    }
+
+    #[test]
+    fn a_free_text_style_change_moves_its_body_and_keeps_its_text() {
+        let current = map(json!({ "subtype": "free-text", "intent": "free-text",
+            "fontSize": 12, "fontColor": "#000000", "textAlign": "left", "contents": "Hi",
+            "richText": { "body": { "family": "Helvetica", "size": 12, "color": "#000000",
+                "align": "left" }, "paragraphs": [{ "runs": [{ "text": "Hi" }] }] } }));
+        let resolved =
+            pdf_resolve_annotation_patch(&current, map(json!({ "fontSize": 20 })), None).unwrap();
+        assert_eq!(resolved.data["richText"]["body"]["size"], 20);
+        assert_eq!(resolved.data["richText"]["paragraphs"][0]["runs"][0]["text"], "Hi");
+        assert!(!resolved.data.contains_key("contents"), "the text isn't rewritten");
+        let text = pdf_resolve_annotation_patch(&current, map(json!({ "contents": "a\nb" })), None)
+            .unwrap();
+        assert_eq!(text.data["contents"], "a\rb");
+    }
+
+    #[test]
+    fn a_callout_line_stays_attached_when_its_box_moves() {
+        let current = map(json!({ "subtype": "free-text", "intent": "free-text-callout",
+            "box": { "left": 100, "bottom": 100, "right": 200, "top": 150 }, "rotation": null,
+            "calloutLine": [{ "x": 10, "y": 10 }, { "x": 100, "y": 125 }] }));
+        let resolved = pdf_resolve_annotation_patch(
+            &current,
+            map(json!({ "box": { "left": 120, "bottom": 100, "right": 220, "top": 150 } })),
+            None,
+        )
+        .unwrap();
+        assert_eq!(resolved.data["calloutLine"][1], json!({ "x": 120.0, "y": 125.0 }));
+    }
+
+    #[test]
+    fn a_caption_merges_with_the_lines_and_a_scaled_dimension_relabels_itself() {
+        let line = map(json!({ "subtype": "line", "intent": "line-dimension",
+            "measure": { "subtype": "rectilinear",
+                "x": [{ "unit": "m", "conversion": 1 }],
+                "distance": [{ "unit": "m", "conversion": 1, "precision": 100 }], "area": [] },
+            "captionEnabled": null, "captionPosition": "top",
+            "captionOffset": { "along": 1, "perpendicular": 2 },
+            "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 3, "y": 4 } } }));
+        let shown =
+            pdf_resolve_annotation_patch(&line, map(json!({ "captionEnabled": true })), None)
+                .unwrap();
+        assert_eq!(shown.data["captionEnabled"], true);
+        assert_eq!(shown.data["captionPosition"], "top", "kept from the line");
+        assert_eq!(shown.data["captionOffset"], json!({ "along": 1, "perpendicular": 2 }));
+        assert!(!shown.data.contains_key("contents"), "no label input: {:?}", shown.data);
+        let moved = pdf_resolve_annotation_patch(
+            &line,
+            map(
+                json!({ "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 6, "y": 8 } } }),
+            ),
+            None,
+        )
+        .unwrap();
+        assert_eq!(moved.data["contents"], "10.00 m");
+        let foreign = pdf_resolve_annotation_patch(
+            &line,
+            map(json!({ "measure": { "subtype": "geospatial" } })),
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(foreign.code, EngineErrorCode::InvalidArg, "{foreign}");
+    }
+
+    #[test]
+    fn a_caption_member_the_annotation_lacks_is_left_out_not_cleared() {
+        // `measurementFollows` spreads `current.captionPosition` and the
+        // rest, `undefined` when the annotation has none, and the wire
+        // drops an `undefined` member: `{"captionEnabled":true,
+        // "subtype":"line"}` in the TypeScript. A `null` would clear it.
+        let follows = |subtype, current: Value, patch: Value| {
+            let mut patch = map(patch);
+            measurement_follows(subtype, &map(current), &mut patch).unwrap();
+            patch
+        };
+        let line = json!({ "subtype": "line", "intent": "line-dimension",
+            "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 3, "y": 4 } } });
+        assert_eq!(
+            follows(AnnotationSubtype::Line, line.clone(), json!({ "captionEnabled": true })),
+            map(json!({ "captionEnabled": true }))
+        );
+        assert_eq!(
+            follows(AnnotationSubtype::Line, line, json!({ "captionPosition": null })),
+            map(json!({}))
+        );
+        let polygon = json!({ "subtype": "polygon", "intent": "polygon-dimension",
+            "vertices": [{ "x": 0, "y": 0 }, { "x": 4, "y": 0 }, { "x": 4, "y": 3 }] });
+        assert_eq!(
+            follows(AnnotationSubtype::Polygon, polygon, json!({ "captionEnabled": true })),
+            map(json!({ "captionEnabled": true }))
+        );
+    }
 }

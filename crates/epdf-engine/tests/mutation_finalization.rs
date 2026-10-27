@@ -7,9 +7,9 @@
 
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::create_annotation;
-use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
-use epdf_engine::geom::PdfRotation;
+use epdf_engine::features::annotation::write::create::{
+    CreateRequest, CreateServices, create_annotation,
+};
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -36,15 +36,16 @@ fn an_ordinary_mutation_bumps_the_sequence_and_a_self_sequenced_one_does_not() {
     // The whole judgement the finalizer makes. A form write re-reads
     // through a version-keyed model before it returns, so it bumps first
     // and a second bump here would rebuild every such cache for nothing.
-    let session = open();
+    let mut session = open();
     let before = session.mutation_sequence();
 
-    let ordinary = finish_mutation(&session, MutationFamily::Ordinary, &CancelToken::never())
+    let ordinary = finish_mutation(&mut session, MutationFamily::Ordinary, &CancelToken::never())
         .expect("finalize");
     assert_eq!(ordinary.mutation_sequence, before + 1, "an ordinary mutation did not bump");
 
-    let already = finish_mutation(&session, MutationFamily::SelfSequenced, &CancelToken::never())
-        .expect("finalize");
+    let already =
+        finish_mutation(&mut session, MutationFamily::SelfSequenced, &CancelToken::never())
+            .expect("finalize");
     assert_eq!(
         already.mutation_sequence,
         before + 1,
@@ -58,17 +59,18 @@ fn a_base_session_has_no_artifact_to_persist() {
     // save. Only a layer has something to persist separately, and reporting
     // an empty artifact for a base one would give a host bytes to write
     // that mean nothing.
-    let session = open();
-    let finished = finish_mutation(&session, MutationFamily::Ordinary, &CancelToken::never())
+    let mut session = open();
+    let finished = finish_mutation(&mut session, MutationFamily::Ordinary, &CancelToken::never())
         .expect("finalize");
     assert!(finished.artifact.is_none(), "a base session produced an artifact");
+    assert!(finished.last_object_number.is_none(), "no artifact names a last object number");
 }
 
 #[test]
 fn the_family_comes_from_the_event_rather_than_from_the_caller() {
     // Derived rather than passed, so a caller cannot finalize a form write
-    // as an ordinary one. Ten event types are self-sequenced and the rest
-    // are not, and getting one wrong is a stale cache nobody notices.
+    // as an ordinary one. A completed signing is self-sequenced and the
+    // rest are not, and getting one wrong is a stale cache nobody notices.
     let nothing = serde_json::Value::Null;
     for (event, expected) in [
         (
@@ -79,21 +81,20 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
             MutationFamily::Ordinary,
         ),
         (
-            DocumentEventInit::PagesMoved {
-                page_object_numbers: vec![page(3)],
-                dest_index: 0,
+            DocumentEventInit::PagesNamed {
+                name: String::from("cover"),
+                page_object_number: Some(page(3)),
                 result: serde_json::json!({}),
             },
             MutationFamily::Ordinary,
         ),
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::AttachmentCreated(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormValueChanged(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormFieldCreated(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormWidgetDetached(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormEffectsApplied(nothing.clone()), MutationFamily::SelfSequenced),
+        (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::Ordinary),
+        (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::Ordinary),
+        (DocumentEventInit::SignaturesCompleted(nothing.clone()), MutationFamily::SelfSequenced),
+        // A repair is counted once, after its commit (`noteEdit` in
+        // `finishMutation`).
+        (DocumentEventInit::FormRepaired(nothing.clone()), MutationFamily::Ordinary),
     ] {
         assert_eq!(event.family(), expected, "{}", event.type_name());
     }
@@ -110,21 +111,7 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     let every: Vec<DocumentEventInit> = vec![
         DocumentEventInit::AnnotationCreated { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationUpdated { page_object_number: page(3), result: empty() },
-        DocumentEventInit::AnnotationDeleted { page_object_number: page(3), result: empty() },
-        DocumentEventInit::AnnotationMoved { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationsFlattened(nothing.clone()),
-        DocumentEventInit::PagesMoved {
-            page_object_numbers: vec![page(3)],
-            dest_index: 0,
-            result: empty(),
-        },
-        DocumentEventInit::PagesRotated {
-            page_object_numbers: vec![page(3)],
-            rotation: PdfRotation::Clockwise90,
-            result: empty(),
-        },
-        DocumentEventInit::PagesDeleted { page_object_numbers: vec![page(3)], result: empty() },
-        DocumentEventInit::PagesInserted { dest_index: None, result: empty() },
         DocumentEventInit::PagesFlattened(nothing.clone()),
         DocumentEventInit::PagesNamed {
             name: String::from("cover"),
@@ -133,28 +120,40 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         },
         DocumentEventInit::RedactionApplied(nothing.clone()),
         DocumentEventInit::MetadataUpdated(nothing.clone()),
-        DocumentEventInit::AttachmentCreated(nothing.clone()),
-        DocumentEventInit::AttachmentDeleted(nothing.clone()),
-        DocumentEventInit::FormValueChanged(nothing.clone()),
-        DocumentEventInit::FormImported(nothing.clone()),
+        DocumentEventInit::MetadataCustomUpdated(nothing.clone()),
         DocumentEventInit::FormRepaired(nothing.clone()),
-        DocumentEventInit::FormFieldCreated(nothing.clone()),
-        DocumentEventInit::FormFieldUpdated(nothing.clone()),
-        DocumentEventInit::FormFieldDeleted(nothing.clone()),
-        DocumentEventInit::FormWidgetAttached(nothing.clone()),
-        DocumentEventInit::FormWidgetDetached(nothing.clone()),
-        DocumentEventInit::FormEffectsApplied(nothing.clone()),
-        DocumentEventInit::PageViewportsChanged(nothing.clone()),
-        DocumentEventInit::SignaturePrepared { signing_id: String::from("s"), field: empty() },
-        DocumentEventInit::SignatureCompleted(nothing),
-        DocumentEventInit::SignatureAborted { signing_id: String::from("s") },
+        DocumentEventInit::PagesScaleSet(nothing.clone()),
+        DocumentEventInit::SignaturesPrepared { field: empty(), prepared: empty() },
+        DocumentEventInit::SignaturesCompleted(nothing),
+        DocumentEventInit::SignaturesCancelled { signing_id: String::from("s") },
     ];
-    // The TypeScript union (`core/src/events/DocumentEvent.ts`) has thirty
+    // The TypeScript union (`core/src/events/DocumentEvent.ts`) had thirty
     // members. Two are not here: `stream.desynced` is a transport notice no
     // engine publishes locally, and `document.versioned` follows
-    // `signature.completed` from `epdf-viewer-host`'s publisher, because a
-    // host answer carries one event.
-    assert_eq!(every.len(), 28, "the event list and the TypeScript union disagree");
+    // `signatures.completed` from `epdf-viewer-host`'s publisher, because a
+    // host answer carries one event. The attachment events are not here
+    // either: they are a change's (`ChangeItem::events`), since attachment
+    // writes run only as `document.apply` ops (c2d7a5194). Nor are the
+    // annotation delete and reorder events, for the same reason (8.16), nor
+    // the page structure events, `pages.rotated`, `pages.reordered`,
+    // `pages.deleted`, `pages.inserted` and `pages.restored`, whose writes
+    // are `document.apply` ops (8.18), nor the form value events,
+    // `forms.valueSet` and `forms.updated`, a change's too (8.20), which
+    // also retired `form.effectsApplied` with `forms.applyEffects`, nor the
+    // field and widget events (`forms.created`, `forms.deleted`,
+    // `forms.widgetAdded` and the rest), whose writes run as changes too
+    // (8.21), which retired `forms.attachWidget`'s.
+    assert_eq!(every.len(), 13, "the event list and the TypeScript union disagree");
+
+    // Every name is one the union spells.
+    let union = std::fs::read_to_string(
+        test_support::workspace_root().join("packages/engine/core/src/events/DocumentEvent.ts"),
+    )
+    .expect("the TypeScript union");
+    for event in &every {
+        let spelled = format!("type: '{}'", event.type_name());
+        assert!(union.contains(&spelled), "{} is not an upstream event", event.type_name());
+    }
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");
@@ -174,32 +173,30 @@ fn an_event_carries_its_result_verbatim() {
     let session = open();
     let owned = session.document().expect("open");
     let page = PageObjectNumber::new(3).expect("a page object number");
-    let listed = epdf_engine::features::annotation::read::page::read_page_annotations(
-        owned.document(),
-        0,
-        page,
-        &epdf_engine::revision::RevisionToken::new("<session>", page, 0),
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists");
-
-    let draft: AnnotationDraft = serde_json::from_value(serde_json::json!({
+    let draft = serde_json::json!({
         "subtype": "square",
-        "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-    }))
-    .expect("the draft decodes");
-    let view = owned.document().page(0).expect("page");
+        "box": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
+    });
+    let drawings = std::cell::RefCell::default();
     let created = create_annotation(
         owned.document(),
-        &view,
-        page,
-        &listed.page_state,
-        &listed.page_state,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
-        &epdf_engine::clock::FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
+        0,
+        &epdf_engine::session::document::WriteStamp { op_id: "op".into(), undoable: false },
+        CreateRequest {
+            page,
+            draft: draft.as_object().expect("an object").clone(),
+            resources: Default::default(),
+            object_number: None,
+            actor: None,
+        },
+        &CreateServices {
+            context: &AnnotationWriteContext::empty(),
+            drawings: &drawings,
+            clock: &epdf_engine::clock::FixedClock(epdf_engine::clock::Timestamp::utc(
+                1_700_000_000_000,
+            )),
+            ids: &epdf_engine::ids::SeededIdSource::new(1),
+        },
         &CancelToken::never(),
     )
     .expect("the annotation is created");
@@ -213,11 +210,13 @@ fn an_event_carries_its_result_verbatim() {
             sub: None,
             ts: 1_700_000_000_000,
             server_id: None,
+            tx: None,
+            undo_of: None,
         },
     );
 
     let wire = serde_json::to_value(&event).expect("serialize");
-    assert_eq!(wire["type"], "annotation.created", "the tag is not on the envelope");
+    assert_eq!(wire["type"], "annotations.created", "the tag is not on the envelope");
     assert_eq!(wire["origin"]["kind"], "local", "the provenance is not on the envelope");
     // The result, unchanged. Every field the operation returned is on the
     // envelope beside the tag and the provenance, which is what lets a
@@ -241,6 +240,8 @@ fn a_local_origin_has_no_subject_and_no_server_id() {
         sub: None,
         ts: 0,
         server_id: None,
+        tx: None,
+        undo_of: None,
     };
     let wire = serde_json::to_value(&origin).expect("serialize");
     assert_eq!(wire["sub"], serde_json::Value::Null);

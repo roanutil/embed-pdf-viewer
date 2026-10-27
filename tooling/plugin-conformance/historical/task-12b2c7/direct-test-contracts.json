@@ -1,0 +1,18 @@
+{
+  "file": "test/metadata-current.test.ts",
+  "trackedAdditionalWitnesses": [
+    "Callbacks see new snapshots before immediate/deferred write resolution",
+    "Pre-aborted standard/custom writes make no engine calls; permission precedence",
+    "One cancelled load waiter leaves shared standard/custom reads running",
+    "Caller cancellation rejects both deferred writes without projecting results",
+    "Close rejects in-flight write, removes all subscribers and suppresses late confirmations"
+  ],
+  "negativeChannels": [
+    "operation-cancelled: metadata.update was cancelled",
+    "operation-cancelled: metadata.custom.update was cancelled",
+    "operation-cancelled: operation cancelled",
+    "permission-denied: metadata.update requires doc.metadata.modify",
+    "permission-denied: metadata.custom.update requires doc.metadata.modify",
+    "instance-closed: document instance a#<instance> was closed"
+  ]
+}

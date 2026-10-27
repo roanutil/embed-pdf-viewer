@@ -1,0 +1,126 @@
+commit 5da4ca52ad31040143d5f272a451d5dd4e2eec53
+Author: Bob Singor <bob@singor.com>
+Date:   Sun Oct 11 10:11:48 2026 +0300
+
+    Forms: every fill is one change on the queue, scripts against the view
+
+    - plugin-form: the fields mirror predicts form ops (predictFormOp), and
+      every read (getSnapshot, get, getValue, listWidgets) comes from the
+      view. A fill shows at once and fields stay editable while it's on its
+      way; FormState.writing and the disabled-while-writing controls are gone.
+    - One fill path (write/fill.ts): hold the user's ops, run the scripts
+      against the view in one realm transaction, set every op inside it and
+      send. setValue, setValues/importValues (one change, one recalculation),
+      reset, widget activation and script/action effects all use it. Undo
+      shows forms.restore of the fields as they were.
+    - A fill the engine refuses runs the calculations again, outside the
+      history. A hold sent before its scripts finished (an undo, another
+      plugin's change) never stages stale results: the calculations run
+      again against the view instead.
+    - Scripting controller reads the form it's given and returns
+      FormScriptResult; transaction(body) and warm(form). Name refs
+      (toFieldRef) now reach their field's scripts.
+    - QuickJS starts on the first field focus, and never for a form without
+      field scripts; a one-time hint when a form has scripts and no realm.
+    - Submit waits for the fills on their way, then reads the view.
+    - plugin-actions: registerFormReader(); script worlds, widget events,
+      field trees and Hide read the form plugin's view instead of
+      forms.list(). The form sink answers once the effects are staged.
+    - core: PredictedOp forms.restore carries widget rows; forms.restoreWidget.
+    - core-acrojs: scripts read a field's display from its first widget
+      (it was always 'visible', so showing a hidden field did nothing).
+    - web: the text field editor keeps the typed text after blur until the
+      field shows it; a value refused by validation stays typed.
+      TextFieldDrafts.commitDraftText resolves { status } | null.
+    - angular: controlOf follows the field without a write counter.
+    - stamp: dynamic stamps write their scripts' effects to the asset copy
+      inside the transaction.
+    - Tests: predictions, a seeded fill interleavings suite and an undo/redo
+      suite on a real engine with real scripts, realm warming. plugin-form
+      dev-depends on plugin-history.
+    - Changesets, API snapshots and the headless forms docs updated.
+
+diff --git a/packages/plugin/actions/src/host-contract.ts b/packages/plugin/actions/src/host-contract.ts
+index adf6d836e..cb0c92e5c 100644
+--- a/packages/plugin/actions/src/host-contract.ts
++++ b/packages/plugin/actions/src/host-contract.ts
+@@ -13,7 +13,12 @@ import type {
+   ScriptTransaction,
+   ScriptUiEffect,
+ } from '@embedpdf/core-acrojs';
+-import type { DocumentHandle, FormEffect, PageRef } from '@embedpdf/engine-core/runtime';
++import type {
++  DocumentHandle,
++  FormEffect,
++  FormSnapshot,
++  PageRef,
++} from '@embedpdf/engine-core/runtime';
+
+ import type {
+   ActionContext,
+@@ -71,15 +76,25 @@ export interface AnnotCommitResult {
+ }
+ export type AnnotCommitSink = (entries: AnnotCommitEntry[]) => Promise<AnnotCommitResult>;
+
+-/** What the form plugin's commit did: every effect written as one change, or none of them. */
++/**
++ * What the form plugin's commit did: `applied`, the effects are one change on its way (shown at
++ * once; the engine's refusal comes through the change queue); `failed`, none of them is.
++ */
+ export interface FormCommitSinkResult {
+   status: 'applied' | 'failed';
+-  /** Why the change was refused, when it was. */
++  /** Why the change couldn't be made, when it couldn't. */
+   error?: string;
+ }
+ /** The form plugin's document commit: a script run's form effects, written as one change. */
+ export type FormCommitSink = (effects: FormEffect[]) => Promise<FormCommitSinkResult>;
+
++/**
++ * The form as the user sees it: the form plugin's fields and widgets with this session's pending
++ * fills, or `null` before it has read the form. What scripts and dispatch read instead of the
++ * engine, so they see a fill before the engine answers it.
++ */
++export type FormReader = () => FormSnapshot | null;
++
+ /**
+  * Which realm produced a script result. `'document'` = this document's own
+  * realm: every effect targets the viewer document. `'detached'` = a realm
+@@ -161,6 +176,8 @@ export interface ActionsHostCapability extends ActionsCapability {
+   registerAnnotCommitSink(sink: AnnotCommitSink): Unsubscribe;
+   /** The form plugin's commit sink for script and Hide form effects. Identity-safe. */
+   registerFormCommitSink(sink: FormCommitSink): Unsubscribe;
++  /** The form plugin's form, which scripts and dispatch read; without one they read the engine. Identity-safe. */
++  registerFormReader(reader: FormReader): Unsubscribe;
+   /**
+    * This document's realm, present only when `javascript.enabled` (its
+    * presence is the form plugin's "scripting on" signal).
+diff --git a/packages/plugin/actions/src/services/form.ts b/packages/plugin/actions/src/services/form.ts
+new file mode 100644
+index 000000000..8d646656f
+--- /dev/null
++++ b/packages/plugin/actions/src/services/form.ts
+@@ -0,0 +1,23 @@
++/**
++ * The form, as scripts and dispatch read it: the form plugin's view, its fields with this
++ * session's pending fills, when it registered one (`registerFormReader`); the engine's
++ * otherwise.
++ */
++import type { FormSnapshot } from '@embedpdf/engine-core/runtime';
++
++import type { ActionsContext } from './context';
++import type { ActionPorts } from './ports';
++
++export interface ActionsForm {
++  /** The form now. `read` wraps an engine read, so the caller's signal can stop it. */
++  read(read?: <T>(task: Promise<T>) => Promise<T>): Promise<FormSnapshot>;
++}
++
++export function createForm(ctx: ActionsContext, ports: ActionPorts): ActionsForm {
++  return {
++    read: (read = (task) => task) => {
++      const shown = ports.formReader?.();
++      return shown ? Promise.resolve(shown) : read(ctx.doc.forms.list());
++    },
++  };
++}

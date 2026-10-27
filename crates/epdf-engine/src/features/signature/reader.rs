@@ -11,8 +11,8 @@ use pdfium::{Document, SignatureModel, field_list, string_key};
 
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_snapshot};
-use crate::session::document::{DocumentSession, OpenKind};
+use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_fields};
+use crate::session::document::DocumentSession;
 
 use super::analysis::types::{RevisionField, RevisionStructure};
 use super::protection::derive_protection;
@@ -141,7 +141,7 @@ pub fn read_signatures_from_model(
                 reason: s(i, string_key::REASON)?,
                 location: s(i, string_key::LOCATION)?,
                 contact_info: s(i, string_key::CONTACT_INFO)?,
-                claimed_time: s(i, string_key::M)?,
+                signed_at: s(i, string_key::M)?.and_then(|m| crate::clock::pdf_date_to_iso(&m)),
             },
             doc_mdp: permission(model.doc_mdp_permission(i)),
             catalog_certification: model.is_catalog_certification(i),
@@ -327,8 +327,9 @@ pub fn loaded_bytes(doc: &Document) -> Result<Vec<u8>, EngineError> {
 }
 
 /// `SignatureReader.version`: SHA-256 and length of the base the session
-/// is on. A layer reports its base's hash; a plain session hashes its
-/// loaded bytes.
+/// is on, which a layer reports. Every session is a layer (`OpenKind`), so
+/// upstream's plain-session branch, hashing the loaded bytes, has no
+/// counterpart.
 pub fn version(session: &DocumentSession) -> Result<BaseVersionInfo, EngineError> {
     let doc = session.document()?.document();
     let byte_length = doc.base_bytes_size();
@@ -338,14 +339,10 @@ pub fn version(session: &DocumentSession) -> Result<BaseVersionInfo, EngineError
             "document has no loaded bytes",
         ));
     }
-    if session.kind() == Some(OpenKind::Layer) {
-        let sha = doc.layer_base_sha256().ok_or_else(|| {
-            EngineError::with_message(EngineErrorCode::Unknown, "failed to read the base hash")
-        })?;
-        return Ok(BaseVersionInfo { sha256: to_hex(&sha), byte_length });
-    }
-    let digest = digest_range(doc, [0, byte_length, byte_length, 0], DigestAlgorithm::Sha256)?;
-    Ok(BaseVersionInfo { sha256: to_hex(&digest), byte_length })
+    let sha = doc.layer_base_sha256().ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "failed to read the base hash")
+    })?;
+    Ok(BaseVersionInfo { sha256: to_hex(&sha), byte_length })
 }
 
 /// `SignatureReader.digestRange`.
@@ -433,14 +430,16 @@ pub fn read_structure(doc: &Document) -> Result<RevisionStructure, EngineError> 
     let pages = (0..doc.page_count()).map(|i| doc.page_object_number_by_index(i)).collect();
     let mut fields = Vec::new();
     if let Some(model) = doc.form_model() {
-        let snapshot = read_form_snapshot(&model, &CancelToken::never())?;
-        for f in snapshot.fields {
+        let snapshot = read_form_fields(&model, &CancelToken::never())?;
+        // The snapshot lists the model's fields in model order; the raw
+        // `/Ff` word is the model's, as `readStructure` reads it.
+        for (index, f) in (0u32..).zip(snapshot.fields) {
             fields.push(RevisionField {
-                object_number: f.base.field_object_number,
+                object_number: f.base.field_object_number(),
                 name: f.base.name,
                 family: f.base.family,
                 widgets: widget_refs(&f.kind).into_iter().map(|(annot, _)| annot).collect(),
-                flags: Some(f.base.flags.raw),
+                flags: model.field(index).map(|field| field.flags()),
             });
         }
     }

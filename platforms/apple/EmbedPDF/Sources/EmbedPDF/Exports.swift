@@ -54,13 +54,14 @@ public typealias Size = EmbedPDFBindings.Size
 /// Page rectangles use unrotated, crop-relative, y-down PDF-point coordinates.
 /// A stage conversion can return a rectangle in viewport units instead.
 public typealias Rect = EmbedPDFBindings.Rect
-/// Four page-space corners oriented in the text's own reading frame.
+/// Four page-space corners named in the text's own upright frame.
 ///
-/// `upperStart` and `upperEnd` follow the ascent edge; `lowerStart` and
-/// `lowerEnd` follow the opposite edge. Start and end follow reading direction,
-/// which need not align with the page's horizontal axis.
-public typealias TextQuad = EmbedPDFBindings.TextQuad
-/// An error snapshot with a stable `code`, human-readable `message`, and optional capability.
+/// `upperLeft` and `upperRight` follow the ascent edge; `lowerLeft` and
+/// `lowerRight` follow the opposite edge. Left to right follows reading
+/// direction, which need not align with the page's horizontal axis.
+public typealias Quad = EmbedPDFBindings.Quad
+/// An error snapshot with a stable `code`, human-readable `message`, the
+/// reporting `capability`, and an optional `permission` the session lacks.
 public typealias PluginErrorInfo = EmbedPDFBindings.PluginErrorInfo
 /// A failure returned by an application-provided host callback.
 ///

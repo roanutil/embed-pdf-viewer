@@ -3,7 +3,7 @@ name = "epdf-plugin-stamp"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/plugin/stamp in Rust: workspace stamp libraries, each a PDF whose pages are its stamps, over an asset engine; marks authored into assets; dynamic stamps evaluated in a detached script realm; and placement through the annotation plugin."
+description = "packages/plugin/stamp in Rust: workspace stamp libraries, each a PDF whose pages are its stamps, over a local asset engine; marks authored into assets; dynamic stamps evaluated in a detached script realm; placement through the annotation plugin; and the persistence helpers."
 
 [lib]
 crate-type = ["rlib"]
@@ -26,8 +26,6 @@ uniffi = ["dep:uniffi", "dep:epdf-ffi"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
-epdf-geometry = { path = "../geometry", default-features = false }
-epdf-annotation-core = { path = "../annotation-core", default-features = false }
 epdf-acrojs = { path = "../acrojs", default-features = false }
 epdf-plugin-interaction = { path = "../interaction", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
@@ -49,5 +47,12 @@ name = "conformance"
 required-features = ["harness"]
 
 [[test]]
+name = "behavior"
+required-features = ["harness"]
+
+[[test]]
 name = "ffi"
 required-features = ["uniffi"]
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

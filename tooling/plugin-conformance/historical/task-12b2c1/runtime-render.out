@@ -1,0 +1,31 @@
+rendered 1 suites
+render OK core/acrojs.json cases=75
+(node:20628) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+rendered 1 suites
+render OK core/acrojs-host.json cases=20
+{
+  "originals": 92,
+  "current": 95,
+  "pure": 75,
+  "scenarios": 20,
+  "retiredWholeCases": 0,
+  "changedOriginalInputs": 7,
+  "retainedOriginalInputs": 85,
+  "additions": 3,
+  "authoredSteps": 62,
+  "constructionRefusals": 0,
+  "stepThrows": 0,
+  "unmatched": 0,
+  "reports": 0,
+  "pureThrows": [
+    "sources-incomplete-throws",
+    "sources-incomplete-is-truthiness",
+    "sources-incomplete-string",
+    "program-incomplete-throws"
+  ],
+  "settlements": 53,
+  "rejectedSettlements": 9,
+  "callbacks": 79,
+  "consoleCallbacks": 0
+}

@@ -22,12 +22,12 @@ extension BaseSuite {
       expectNoDifference(pages[0].rotation, 180)
     }
 
-    @Test func movingAPageToTheEndReordersTheList() async throws {
+    @Test func movingAPageAfterTheLastReordersTheList() async throws {
       let (viewer, document, edit) = try await opened()
-      let first = try await viewer.pages(of: document)[0].page
-      // An index in the post-removal space: 13 pages remain once the first
-      // is detached.
-      let layout = try await edit.movePages([first], to: .index(index: 13))
+      let pages = try await viewer.pages(of: document).map(\.page)
+      let first = pages[0]
+      // Placement names a neighbour page, not an index.
+      let layout = try await edit.movePages([first], to: .after(page: try #require(pages.last)))
       expectNoDifference(layout.pages.last?.page, first)
       expectNoDifference(layout.pages.map(\.index), Array(0..<14))
     }
@@ -73,7 +73,7 @@ extension BaseSuite {
       let (viewer, _, edit) = try await opened()
       let other = try await viewer.open(Fixture.data("colors"))
       let source = try await viewer.pages(of: other).map(\.page)
-      let insertion = try await edit.insert(source, from: other, at: .index(index: 0))
+      let insertion = try await edit.insert(source, from: other, at: .start)
       expectNoDifference(insertion.inserted.count, source.count)
       expectNoDifference(insertion.pages.count, 14 + source.count)
     }

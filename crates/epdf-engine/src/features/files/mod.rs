@@ -7,16 +7,16 @@
 //!
 //! Operations: `attachments.list`, `attachments.readFile`,
 //! `annotations.readFile`, `pieceInfo.read`, `pieceInfo.applications`,
-//! `attachments.create`, `attachments.delete`, `pieceInfo.update`,
-//! `pieceInfo.clear`. Gate: `annotations.readFile` is byte-equal to the
-//! TypeScript path.
+//! `pieceInfo.update`, `pieceInfo.delete`, and the `attachments.create` and
+//! `attachments.delete` change ops (`features::changes::attachments`). Gate:
+//! `annotations.readFile` is byte-equal to the TypeScript path.
 //!
 //! # What is here
 //!
-//! [`attachments`], the read half: the catalog's `/EmbeddedFiles` name tree
-//! and the bytes-out call, over the same metadata projection G7's
-//! file-attachment annotation already uses, and [`piece_info`], the read
-//! half of /PieceInfo on both of the holders that can carry it.
+//! [`attachments`]: the catalog's `/EmbeddedFiles` name tree, the bytes-out
+//! call and the writes, over the same metadata projection G7's
+//! file-attachment annotation already uses; and [`piece_info`], /PieceInfo
+//! on both of the holders that can carry it.
 
 pub mod attachments;
 pub mod piece_info;

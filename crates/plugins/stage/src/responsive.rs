@@ -2,17 +2,17 @@
 //! What a box is, when a query matches, and what the effective settings
 //! are. The capability owns the driver.
 
-use epdf_geometry::Size;
+use epdf_geometry::{NO_FRAME, PageFrame, Size};
 
 use crate::contract::*;
 use crate::for_each_setting;
 
 /// The reported viewport as a queryable box. A square box is portrait.
-pub fn box_of(vp: Size) -> StageBox {
+pub fn box_of(size: Size) -> StageBox {
     StageBox {
-        width: vp.width,
-        height: vp.height,
-        orientation: if vp.height >= vp.width {
+        width: size.width,
+        height: size.height,
+        orientation: if size.height >= size.width {
             Orientation::Portrait
         } else {
             Orientation::Landscape
@@ -36,18 +36,35 @@ fn rule_matches(rule: &ResponsiveRule, bx: &StageBox) -> bool {
     }
 }
 
-/// Merge a patch over settings, skipping absent values.
-pub fn merge_settings(into: &StageSettings, patch: &PartialSettings) -> StageSettings {
-    let mut out = into.clone();
+/// Merge a patch over settings, skipping absent values. Each value
+/// replaces the setting whole; a `pageFrame` that names only some sides
+/// reserves 0 on the others.
+pub fn merge_settings(into: &StageSettings, patch: &StageSettingsPatch) -> StageSettings {
+    let mut merged = into.clone();
     macro_rules! arm {
+        (PageFrame, $field:ident, $effect:ident) => {
+            if let Some(frame) = &patch.$field {
+                merged.$field = frame_of(frame);
+            }
+        };
         ($key:ident, $field:ident, $effect:ident) => {
             if let Some(value) = &patch.$field {
-                out.$field = value.clone();
+                merged.$field = value.clone();
             }
         };
     }
     for_each_setting!(arm);
-    out
+    merged
+}
+
+/// `{ ...NO_FRAME, ...frame }`.
+pub fn frame_of(frame: &PartialPageFrame) -> PageFrame {
+    PageFrame {
+        top: frame.top.unwrap_or(NO_FRAME.top),
+        right: frame.right.unwrap_or(NO_FRAME.right),
+        bottom: frame.bottom.unwrap_or(NO_FRAME.bottom),
+        left: frame.left.unwrap_or(NO_FRAME.left),
+    }
 }
 
 /// Setting-value equality. The TypeScript compares primitives by identity

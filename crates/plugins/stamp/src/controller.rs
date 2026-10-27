@@ -1,175 +1,235 @@
 //! `controller.ts`: the composition root. It builds the plugin's services
-//! once and assembles the capability from the areas' slices.
-//!
-//! The TypeScript builds each area as a closure over the services it
-//! declares and composes their API objects. Here the areas are `impl`
-//! blocks on one [`StampCapability`], one per TypeScript file (`read/`,
-//! `write/`, `services/`), and their private state sits in [`Core`].
+//! once and holds them in one [`StampCapability`]; every verb and read has
+//! a home in `read/` or `write/` as an `impl` block on it. The one
+//! state-change event (`onArmChanged`) is derived here.
 
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::rc::Rc;
 
-use epdf_kernel::rt::{self, Promise};
-use epdf_kernel::scope::Teardown;
-use epdf_kernel::{Controller, Error};
+use epdf_kernel::settings::InstanceSettings;
+use epdf_kernel::{Controller, Error, Unsubscribe};
+use serde_json::Value;
 
 use crate::contract::*;
-use crate::model::{StampAction, StampState};
-use crate::services::binaries::AssetBinary;
-use crate::services::events::StampEvents;
+use crate::model::StampState;
+use crate::services::asset_engine::AssetEngineState;
+use crate::services::binaries::Binaries;
+use crate::services::events::{StampEvents, create_events};
+use crate::services::settings::EngineTable;
 
-/// Ghost renders per size bucket, per asset.
-pub(crate) type GhostCache = Rc<RefCell<HashMap<u64, Promise<Option<StampAssetPreview>>>>>;
+/// `StampContext`: the plugin context every area receives, typed to the
+/// stamp state.
+pub type StampContext = Controller<StampState, Value>;
 
-/// The plugin's private state, by the service or area that owns it.
-pub(crate) struct Core {
-    pub(crate) cx: Controller<StampState, StampAction>,
-    pub(crate) config: StampConfig,
-    // services/events
+/// The plugin's services, by the TypeScript file that owns each.
+pub struct Core {
+    pub(crate) cx: StampContext,
+    /// `ctx.settings()`: the instance's view of the registration's store.
+    pub(crate) settings: InstanceSettings,
+    /// The registration's asset engine handles (`services/settings.rs`).
+    pub(crate) table: Rc<EngineTable>,
     pub(crate) events: StampEvents,
-    // services/binaries
-    /// Asset bytes and cached previews, keyed by asset id.
-    pub(crate) binaries: RefCell<HashMap<String, AssetBinary>>,
-    /// The canonical library PDFs. `None` is a save that answered no bytes.
-    pub(crate) library_binaries: RefCell<HashMap<String, Option<Vec<u8>>>>,
-    /// Whole-PDF rewrites are serialized per library.
-    pub(crate) library_mutation_tails: RefCell<HashMap<String, Promise<()>>>,
-    pub(crate) ghost_renders: RefCell<HashMap<String, GhostCache>>,
-    // services/asset-engine
-    pub(crate) asset_engine_ref: RefCell<Option<AssetEngineRef>>,
-    pub(crate) import_supported: Cell<Option<bool>>,
-    // write/placement
-    pub(crate) armed_by_document: RefCell<HashMap<String, String>>,
+    pub(crate) binaries: Rc<Binaries>,
+    pub(crate) asset_engine: Rc<AssetEngineState>,
 }
 
-/// `StampHostCapability`, which equals the public `StampCapability`. Cheap
-/// to clone; clones share state.
+/// `StampCapability`. Cheap to clone; clones share state.
 #[derive(Clone)]
 pub struct StampCapability(pub(crate) Rc<Core>);
 
-/// `StampHostCapability`.
-pub type StampHostCapability = StampCapability;
-
-/// `createStampController(ctx, config)`.
+/// `createStampController(ctx)`. `table` is the registration's asset
+/// engine table, which the store's JSON names engines by.
 pub fn create_stamp_controller(
-    cx: Controller<StampState, StampAction>,
-    config: StampConfig,
-) -> StampCapability {
-    let events = StampEvents::new(&cx, config.host.console_error.clone());
-    let core = Core {
+    cx: StampContext,
+    table: Rc<EngineTable>,
+) -> Result<StampCapability, Error> {
+    // `createServices(ctx)`, in its order: the binaries, the asset engine
+    // (which reads the settings), the events.
+    let binaries = Rc::new(Binaries::default());
+    let cleared = binaries.clone();
+    cx.defer(Box::new(move || {
+        cleared.clear();
+        Ok(None)
+    }));
+    let settings = cx.settings()?;
+    table.attach(&settings.store);
+    let asset_engine = Rc::new(AssetEngineState::default());
+    let released = asset_engine.clone();
+    cx.defer(Box::new(move || {
+        released.release();
+        Ok(None)
+    }));
+    let events = create_events(&cx);
+    let api = StampCapability(Rc::new(Core {
         cx: cx.clone(),
-        config,
+        settings,
+        table,
         events,
-        binaries: RefCell::default(),
-        library_binaries: RefCell::default(),
-        library_mutation_tails: RefCell::default(),
-        ghost_renders: RefCell::default(),
-        asset_engine_ref: RefCell::new(None),
-        import_supported: Cell::new(None),
-        armed_by_document: RefCell::default(),
-    };
-    let api = StampCapability(Rc::new(core));
-    // `createBinaries`' cleanup, then `createAssetEngine`'s.
-    let inner = api.0.clone();
-    let teardown: Teardown = Box::new(move || {
-        inner.binaries.borrow_mut().clear();
-        inner.ghost_renders.borrow_mut().clear();
-        inner.library_binaries.borrow_mut().clear();
-        inner.library_mutation_tails.borrow_mut().clear();
-        Ok(None)
-    });
-    cx.defer(teardown);
-    let inner = api.0.clone();
-    let teardown: Teardown = Box::new(move || {
-        let owned = match inner.config.asset_engine {
-            Some(AssetEngine::Factory(_)) => inner.asset_engine_ref.borrow().clone(),
-            _ => None,
-        };
-        *inner.asset_engine_ref.borrow_mut() = None;
-        if let Some(owned) = owned {
-            // `void Promise.resolve(owned).then((e) => e.destroy()).catch(() => {})`
-            rt::spawn(async move {
-                let engine = match owned {
-                    AssetEngineRef::Ready(engine) => {
-                        rt::tick().await;
-                        engine
-                    }
-                    AssetEngineRef::Pending(promise) => match promise.await {
-                        Ok(engine) => engine,
-                        Err(_) => return,
-                    },
-                };
-                engine.destroy().ignore();
-            });
+        binaries,
+        asset_engine,
+    }));
+
+    // What is armed on a document is state: the event follows it, whichever
+    // verb, tool switch or closed document changed it.
+    let emitter = api.clone();
+    cx.on_state_change(move |next, previous| {
+        if next.armed == previous.armed {
+            return Ok(());
         }
-        Ok(None)
+        let mut seen = HashSet::new();
+        let ids: Vec<String> = previous
+            .armed
+            .keys()
+            .chain(next.armed.keys())
+            .filter(|id| seen.insert((*id).clone()))
+            .cloned()
+            .collect();
+        for document_id in ids {
+            let asset_id = next.armed.get(&document_id);
+            if previous.armed.get(&document_id) == asset_id {
+                continue;
+            }
+            let asset = asset_id.and_then(|id| next.assets.get(id)).cloned();
+            emitter.0.events.arm_changed.emit(&StampArmChangedEvent { document_id, asset });
+        }
+        Ok(())
     });
-    cx.defer(teardown);
-    api
+
+    // Placement forgets the arms the annotation plugin dropped on its own.
+    api.watch_dropped_arms()?;
+    Ok(api)
 }
 
 impl StampCapability {
-    pub(crate) fn cx(&self) -> &Controller<StampState, StampAction> {
+    pub(crate) fn cx(&self) -> &StampContext {
         &self.0.cx
     }
 
-    /// `ctx.getState()`.
+    /// `ctx.state.get()`.
     pub(crate) fn state(&self) -> Rc<StampState> {
         self.0.cx.state()
     }
 
-    pub(crate) fn dispatch(&self, action: StampAction) {
-        self.0.cx.dispatch(action);
+    /// `ctx.state.update(transition)`.
+    pub(crate) fn update_state(&self, transition: impl FnOnce(&Rc<StampState>) -> Rc<StampState>) {
+        self.0.cx.update_state(|state| transition(&state));
     }
 
-    pub(crate) fn warn(&self, message: &str, error: Option<&Error>) {
-        if let Some(sink) = &self.0.config.host.console_warn {
-            sink(message, error);
-        }
+    // ── settings (`SettingsApi<StampSettings>`) ──
+
+    /// The settings as the kernel's JSON store holds them.
+    pub fn settings_json(&self) -> Rc<Value> {
+        self.0.settings.get()
     }
 
-    /// `Math.random()`.
-    pub(crate) fn random(&self) -> f64 {
-        match &self.0.config.host.random {
-            Some(random) => random(),
-            None => clock_random(),
-        }
+    /// `getSettings()`: the settings in effect.
+    pub fn get_settings(&self) -> StampSettings {
+        self.0.table.decode(&self.0.settings.get())
     }
-}
 
-/// The default `random`: a small xorshift, seeded from the clock. The
-/// default host has no better entropy to offer without a dependency.
-fn clock_random() -> f64 {
-    thread_local! {
-        static STATE: Cell<u64> = const { Cell::new(0x9E37_79B9_7F4A_7C15) };
+    /// `updateSettings(changes)`: change the settings for the workspace.
+    pub fn update_settings(&self, changes: &StampConfig) {
+        self.0.settings.store.update_settings(&self.0.table.encode(changes));
+        self.0.table.release_unnamed(&self.0.settings.store);
     }
-    STATE.with(|s| {
-        let mut x = s.get() ^ (rt::now() as u64);
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        s.set(x);
-        (x >> 11) as f64 / (1u64 << 53) as f64
-    })
-}
 
-#[cfg(test)]
-mod tests {
-    use super::clock_random;
+    /// How many engines the registration's table holds (M37's guard).
+    #[doc(hidden)]
+    pub fn retained_engines(&self) -> usize {
+        self.0.table.retained()
+    }
 
-    /// The vectors always answer `random`, so the default is pinned here:
-    /// `Math.random`'s contract, draws in [0, 1), spread over the interval.
-    #[test]
-    fn the_default_random_spreads_over_the_unit_interval() {
-        let draws: Vec<f64> = (0..10_000).map(|_| clock_random()).collect();
-        assert!(draws.iter().all(|x| (0.0..1.0).contains(x)), "a draw left [0, 1)");
-        let mean = draws.iter().sum::<f64>() / draws.len() as f64;
-        assert!((0.45..0.55).contains(&mean), "mean {mean}");
-        let mut tenths = [0usize; 10];
-        for x in &draws {
-            tenths[(x * 10.0) as usize] += 1;
-        }
-        assert!(tenths.iter().all(|&n| n > 800), "{tenths:?}");
+    /// `resetSettings()`: back to the registered settings.
+    pub fn reset_settings(&self) {
+        self.0.settings.store.reset_settings();
+        self.0.table.release_unnamed(&self.0.settings.store);
+    }
+
+    /// `onSettingsChanged(listener)`.
+    pub fn on_settings_changed(
+        &self,
+        listener: impl Fn(&StampSettingsChanged) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        let table = self.0.table.clone();
+        self.0.settings.events.on(move |event| {
+            listener(&StampSettingsChanged {
+                settings: table.decode(&event.settings),
+                changed: event.changed.clone(),
+            })
+        })
+    }
+
+    /// The raw store event, for a caller that prints the settings JSON.
+    pub fn on_settings_changed_json(
+        &self,
+        listener: impl Fn(&Value, &[String]) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.settings.events.on(move |event| listener(&event.settings, &event.changed))
+    }
+
+    // ── events (services, not areas) ──
+
+    /// `onLibraryChanged`: a library's bytes changed (subscribe to persist).
+    pub fn on_library_changed(
+        &self,
+        listener: impl Fn(&StampLibraryChangedEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.library_changed.on(listener)
+    }
+
+    /// `onLibraryCreated`.
+    pub fn on_library_created(
+        &self,
+        listener: impl Fn(&StampLibraryEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.library_created.on(listener)
+    }
+
+    /// `onLibraryUpdated`.
+    pub fn on_library_updated(
+        &self,
+        listener: impl Fn(&StampLibraryEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.library_updated.on(listener)
+    }
+
+    /// `onLibraryDeleted` (`library: null`).
+    pub fn on_library_deleted(
+        &self,
+        listener: impl Fn(&StampLibraryEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.library_deleted.on(listener)
+    }
+
+    /// `onAssetCreated`.
+    pub fn on_asset_created(
+        &self,
+        listener: impl Fn(&StampAssetEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.asset_created.on(listener)
+    }
+
+    /// `onAssetUpdated`.
+    pub fn on_asset_updated(
+        &self,
+        listener: impl Fn(&StampAssetEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.asset_updated.on(listener)
+    }
+
+    /// `onAssetDeleted` (`asset: null`).
+    pub fn on_asset_deleted(
+        &self,
+        listener: impl Fn(&StampAssetEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.asset_deleted.on(listener)
+    }
+
+    /// `onArmChanged`: a stamp was armed or disarmed on a document.
+    pub fn on_arm_changed(
+        &self,
+        listener: impl Fn(&StampArmChangedEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.events.arm_changed.on(listener)
     }
 }

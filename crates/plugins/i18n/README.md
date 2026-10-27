@@ -1,86 +1,87 @@
 # epdf-plugin-i18n
 
-`packages/plugin/i18n` in Rust, at the v3 contract. Every case replays identically
-(`cargo test -p epdf-plugin-i18n`): 79 in `vectors/plugins/i18n/core.json` (translate,
-interpolate, negotiateLocale, the reducer and initial state), 532 in
-`vectors/plugins/i18n/plurals.json`, and 24 scenarios in `vectors/plugins/i18n/plugin.json`.
+`packages/plugin/i18n` in Rust, at the current contract. Every case replays identically
+(`cargo test -p epdf-plugin-i18n`): 86 in `vectors/plugins/i18n/core.json` (translate,
+interpolate, negotiateLocale, the seed and the named transitions), 532 in
+`vectors/plugins/i18n/plurals.json`, and 24 scenarios in `vectors/plugins/i18n/plugin.json`. No
+member-order allowance or outcome exception applies to them. `tests/behavior.rs` covers what no
+vector prints, including the turns each switch settles on, measured on the TypeScript with `tsx`.
 
-The plugin is workspace-scoped, and its capability works before `start`, while documents open and
+The plugin is workspace-scoped. Its capability works before `start`, while documents open and
 close, and stops resolving after `destroy` (`alive-before-start-and-across-documents`).
 
-The modules follow the TypeScript files: `contract.rs`, `model.rs`, `controller.rs` and
-`loaders.rs` (`sync/loaders.ts`). `create_i18n_controller` returns the api and a `connect` that
-starts the loader watch and the `onLocaleChanged` announcer. `set_locale` returns a `Promise<()>`
-that rejects `not-found`, `operation-failed` or `operation-cancelled` as the TypeScript's does, and
-`register_locale` returns a remover that dispatches `UNREGISTER_LOCALE` on every call, as the
-TypeScript's closure does. `listLocales` rebuilds its list on every call; the TypeScript caches it
-per `locales` object, which only reference identity could observe. A failing event listener goes to
-stderr, where the TypeScript writes to `console.error`; neither reaches a trace.
+The modules follow the TypeScript files: `contract.rs`, `model.rs` (pure transitions over an
+`Rc<I18nState>`, returning the same `Rc` when nothing changes), `controller.rs`, `loaders.rs`
+(`sync/loaders.ts`), `translate.rs`, `negotiate.rs` and `strings/` (EmbedPDF's own strings, each
+language the TypeScript module printed as JSON). The settings live in the kernel's settings store:
+`settings.rs` keeps each loader there as a handle, `{"$i18nLoader": n}`, into a table the
+registration owns, so giving a code the loader it has is no change. `set_locale` rejects
+`not-found`, `operation-failed` or `operation-cancelled` as the TypeScript's does. Superseding or
+cancelling a switch rejects its waiter and never aborts the fetch; a pack that lands late registers
+without switching. `get_translator` and `list_locales` return the same `Rc` until their inputs
+change. Their memos hold the inputs they compare, as the TypeScript's `memo` does, so a freed map's
+address can't pass for a new one (`a_new_language_is_never_mistaken_for_a_freed_one`).
+`register_locale` returns a remover that unregisters the code on every call, as the TypeScript's
+closure does, which is why it is an `Rc<dyn Fn()>` and not a run-once `Unsubscribe`.
 
 ## What the TypeScript gets from its runtime
 
-`translate.ts` calls `new Intl.PluralRules(locale).select(count)`, and that is most of this crate.
-`src/plural.rs` reproduces it in three steps. The tag is checked against ECMA-402's
-`IsStructurallyValidLanguageTag`, and an invalid one takes the TypeScript's `count === 1` catch
-arm. The canonical language is matched against the languages V8 supports, and an unsupported one
-resolves to the default locale, `en-US`. Then the number is formatted the way `select` formats it
-(shortest digits, at most three fraction digits, half away from zero) and the locale's CLDR rules
-are evaluated over ICU4C's operands, including its truncation of the integer operand to the lowest
-18 digits, which is why `1e21` is `one` in French.
+`translate.ts` calls `new Intl.PluralRules(locale).select(count)`. `src/plural.rs` reproduces it:
+the tag is checked against ECMA-402's `IsStructurallyValidLanguageTag`, the canonical language is
+matched against the languages V8 supports (an unsupported one resolves to `en-US`), and the
+locale's CLDR rules are evaluated over ICU4C's operands. `src/plural_data.rs` is generated from Node
+24.20.0 (ICU 78.3, CLDR 48.0), the environment `vectors/environment.json` records. We tried ICU4X's
+`icu_plurals` 2.3.0 first; it failed 171 of the 528 cases the file had then, so it was dropped.
 
-`src/plural_data.rs` is generated, not written: the alias and support tables come from enumerating
-every two- and three-letter language subtag under Node 24.20.0 (ICU 78.3, CLDR 48.0), and the rules
-are CLDR 48.0.0's `supplemental/plurals.json` from `cldr-core`. `plurals.json` pins all 424 language
-codes V8 accepts plus scripts, regions, extensions, unsupported tags and 36 invalid ones, across 50
-counts each. We tried ICU4X's `icu_plurals` 2.3.0 first. It failed 171 of the 528 cases the file
-had then, mostly languages its compiled data leaves out (it ships the modern CLDR locales only) and
-the rest the `1e21` operand, so it was dropped. The cost of our own table is that it has to be
-regenerated when Node's ICU moves, and `vectors:check` is what will say so.
+`negotiate.ts` reads `new Intl.Locale(code).maximize().script`. `src/script.rs` reproduces it over
+`src/script_data.rs`, generated from the same Node: the script of every two- and three-letter
+language subtag alone and with every two-letter and three-digit region, and where the unknown
+script `Zzzz` breaks the simple rule. A cross-check of 40,000 random tags (scripts, regions,
+variants, extensions, mixed case) against Node found no difference.
+
+Both tables must be regenerated when the ICU in `vectors/environment.json` moves. For the plural
+table, `vectors:check` will say so, because `plurals.json` pins all 424 language codes. For the
+script table it may not: `core.json` has 13 `negotiateLocale` cases, so most of the likely-subtag
+entries are pinned by nothing but the generator. Regenerate it with Node built against that ICU
+(today Node 24.20.0, ICU 78.3), which the script checks before it starts:
+
+```sh
+node crates/plugins/i18n/scripts/script-data.mjs   # about 12 minutes
+cargo fmt -p epdf-plugin-i18n
+```
 
 `src/js.rs` is the rest: `String(number)` for interpolated numbers, a record that enumerates
-integer-like keys first (`locales()` order), and the `Object.prototype` members a record lookup
-finds. `setLocale('toString')` really does switch locale in the TypeScript, and
-`t('toString.name')` really does return `"toString"`, so both are ported and pinned.
+integer-like keys first, and the `Object.prototype` members a record lookup finds.
+`setLocale('toString')` really does switch locale in the TypeScript, and `t('toString.name')`
+really does return `"toString"`, so both are ported.
 
-## Config
+## What is not ported
 
-A vector's config is JSON, so `loaders` are `$fn` specs and the warn-once signal, which the
-TypeScript sends to `console.warn`, goes to `I18nConfig::warn`; the harness logs it as the callback
-`console.warn`, where the generator records the TypeScript's. The Rust runner reads objects in key
-order, so the generator refuses a vector whose `loaders` aren't written in key order.
+Each of these is outside the TypeScript types or unreached by a vector, and is a Rust-only
+divergence:
 
-## Coverage and what is not ported
+- A settings change compares `locales` by value. `followSettings` registers a language that was
+  not in the previous list by identity (`previous.locales.includes(locale)`); the store holds JSON,
+  so Rust treats an equal language as the same one and does not re-register it.
+- `script_of` does not apply the legacy aliases keyed by a language and a variant together. Only
+  `art-lojban` changes the answer: ICU says `Latn` (as `jbo`), Rust says no script, which
+  negotiation reads as "can't tell".
+- `addTranslations` for a code naming an `Object.prototype` member passes the check in both, and the
+  TypeScript merges into a pack made from that member; the Rust transition leaves the state as it
+  is.
+- A `__proto__` locale code sets the record's prototype in the TypeScript. A dotted key that walks
+  past a function member further than `.name` reads as absent here. `params` values other than
+  strings and numbers aren't accepted. A loader that resolves to something that isn't a locale
+  fails the load in Rust, where the TypeScript throws inside its `then`.
+- The function `get_translator` returns holds the plugin weakly and answers the key once the plugin
+  is gone; the TypeScript's closure keeps the controller alive. (The remover `register_locale`
+  returns does not: it holds the instance's context, so a call after close is dropped and reported
+  `instance-closed` once, as the TypeScript's is.)
+- A settings value that doesn't decode (one no `update_settings` wrote) is reported to the kernel
+  and read as empty, where the TypeScript carries on with whatever the member holds.
 
-The i18n suites reach 618 of the package's 625 statements and 153 of its 154 branches. What they
-don't reach:
+The harness replays every member a vector calls. `getSettings`, `onSettingsChanged` and
+`getTranslator` answer with functions the replay does not print, so the harness refuses them by
+name; `tests/behavior.rs` covers them through the typed API.
 
-- `controller.ts:168-174`, `createI18nCapability`, the helper the TypeScript's unit tests build a
-  capability with. No plugin calls it. It is ported as `create_i18n_capability` and not replayed.
-- `sync/loaders.ts:25`, the `if (!loader) return` guard: `loading` only ever names a code with a
-  loader.
-
-Some inputs are outside the port, each outside the TypeScript types. A `__proto__` locale code in
-`config.locales` sets the record's prototype in the TypeScript. A dotted key that walks past a
-function member further than `.name` (`toString.call.name`, `constructor.keys.name`) reads as
-absent here. `params` values other than strings and numbers aren't accepted. A loader that resolves
-to something that isn't a locale rejects in Rust and is dispatched as `LOAD_FAILED`, where the
-TypeScript throws inside its `then`. `addTranslations('toString', ...)` passes the TypeScript's
-registered check and merges into a pack made from a function; the Rust reducer ignores it.
-
-`scripts/mutants.sh -p epdf-plugin-i18n --test-package epdf-plugin-i18n --file <file>`, file by file
-over every module but `harness.rs`, catches 298 of 303 viable mutants (295 caught, 3 timeouts,
-which are loops the mutant makes infinite; 36 unviable). No new cases were needed. The five
-survivors are equivalent:
-
-- `src/controller.rs:162`: `==` to `!=` in `set_locale`'s search of the pending loads.
-  `supersede()` empties the list on the line before, so the search never finds anything and the
-  `Some` arm is unreachable under either operator. The TypeScript's `pending.set` has the same
-  shape.
-- `src/js.rs:191`: `>` to `>=` in `number_to_string`'s infinity arm, where `n` is never 0.
-- `src/js.rs:193`: `<` to `<=` for the sign, after the `n == 0.0` return.
-- `src/js.rs:206`: `<` to `<=` for the exponent's sign. That branch only runs with an exponent of
-  at least 21 or at most -7, never 0.
-- `src/js.rs:167`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
-  words a serde error for a non-object, which surfaces only as an `[i18n harness]` error. The one
-  route from a plugin flow is a loader resolving to something that isn't a locale, the divergence
-  described above, which no vector records.
+`src/ffi.rs` and `tests/ffi.rs` are migrated by hand, and compiled and tested since Task 13.33.

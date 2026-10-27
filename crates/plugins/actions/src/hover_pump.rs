@@ -11,7 +11,6 @@ use std::rc::Rc;
 
 use epdf_kernel::rt::{self, Promise};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use epdf_kernel::geometry::PageRef;
 
@@ -19,6 +18,7 @@ use crate::contract::{
     ActionSource, ActionTrigger, ActionTriggerResult, AnnotationRef, PdfAnnotationEventKind,
     page_ref_json,
 };
+use crate::services::annotation_key;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct HoverEvents {
@@ -42,30 +42,11 @@ pub struct HoverTarget {
     pub events: Option<HoverEvents>,
 }
 
-fn member<'a>(value: &'a Value, key: &str) -> &'a Value {
-    value.get(key).unwrap_or(&Value::Null)
-}
-
-/// `sameTarget`. The TypeScript compares an index ref's `revision` with
-/// `===`, which for a `RevisionToken` object is reference identity; Rust
-/// compares it by value, which is what a feed holding one token object means.
+/// `sameTarget`: the same page and the same `annotationKey`.
 fn same_target(a: Option<&HoverTarget>, b: Option<&HoverTarget>) -> bool {
     let (Some(a), Some(b)) = (a, b) else { return a.is_none() && b.is_none() };
-    let (x, y) = (&a.annotation_ref, &b.annotation_ref);
-    let kind = |v: &Value| member(v, "kind").as_str().map(str::to_string);
-    if kind(x) != kind(y) || a.page.page_object_number != b.page.page_object_number {
-        return false;
-    }
-    let number = |v: &Value, key: &str| member(v, key).as_f64();
-    match kind(x).as_deref() {
-        Some("objectNumber") => number(x, "annotObjectNumber") == number(y, "annotObjectNumber"),
-        Some("nm") => member(x, "nm") == member(y, "nm"),
-        Some("index") => {
-            number(x, "index") == number(y, "index")
-                && member(x, "revision") == member(y, "revision")
-        }
-        _ => false,
-    }
+    a.page.page_object_number == b.page.page_object_number
+        && annotation_key(&a.annotation_ref) == annotation_key(&b.annotation_ref)
 }
 
 type Dispatch = Rc<dyn Fn(ActionTrigger) -> Promise<ActionTriggerResult>>;

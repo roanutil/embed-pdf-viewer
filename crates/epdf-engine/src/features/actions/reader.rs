@@ -68,12 +68,15 @@ pub struct SubmitFormPayload {
 // where the TypeScript writes `isMap`, which the corpus comparison catches
 // and a hand-written test would not.
 #[serde(tag = "type", rename_all = "kebab-case", rename_all_fields = "camelCase")]
-pub enum ActionNodeKind {
+pub enum ActionNodeKind<D = PdfDestination> {
     Javascript {
         script: String,
     },
+    /// `D` is the destination's space: [`PdfDestination`] as the reader
+    /// makes it, a page-space destination at the wire
+    /// (`crate::page_space::destinations`).
     Goto {
-        destination: PdfDestination,
+        destination: D,
     },
     Uri {
         uri: String,
@@ -127,27 +130,85 @@ pub enum ActionNodeKind {
 /// A node, its raw subtype and its children.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ActionNode {
+pub struct ActionNode<D = PdfDestination> {
     #[serde(flatten)]
-    pub kind: ActionNodeKind,
+    pub kind: ActionNodeKind<D>,
     /// The raw `/S` name, kept for unknown and future action types.
     pub subtype: String,
     /// Normalized `/Next` children, in PDF order.
-    pub next: Vec<ActionNode>,
+    pub next: Vec<ActionNode<D>>,
+}
+
+impl<D> ActionNode<D> {
+    /// The node with every destination in it converted, down its `/Next`
+    /// chain (`mapActionNode`). Everything else is kept.
+    pub fn try_map_destinations<E, Err>(
+        self,
+        convert: &mut impl FnMut(D) -> Result<E, Err>,
+    ) -> Result<ActionNode<E>, Err> {
+        let next = self
+            .next
+            .into_iter()
+            .map(|child| child.try_map_destinations(convert))
+            .collect::<Result<Vec<_>, Err>>()?;
+        let kind = match self.kind {
+            ActionNodeKind::Goto { destination } => {
+                ActionNodeKind::Goto { destination: convert(destination)? }
+            }
+            ActionNodeKind::Javascript { script } => ActionNodeKind::Javascript { script },
+            ActionNodeKind::Uri { uri, is_map } => ActionNodeKind::Uri { uri, is_map },
+            ActionNodeKind::Named { name } => ActionNodeKind::Named { name },
+            ActionNodeKind::Hide { targets, hide } => ActionNodeKind::Hide { targets, hide },
+            ActionNodeKind::ResetForm { fields, exclude } => {
+                ActionNodeKind::ResetForm { fields, exclude }
+            }
+            ActionNodeKind::GotoRemote { file_path } => ActionNodeKind::GotoRemote { file_path },
+            ActionNodeKind::GotoEmbedded { file_path } => {
+                ActionNodeKind::GotoEmbedded { file_path }
+            }
+            ActionNodeKind::Launch { file_path } => ActionNodeKind::Launch { file_path },
+            ActionNodeKind::Rendition { script } => ActionNodeKind::Rendition { script },
+            ActionNodeKind::SubmitForm { payload } => ActionNodeKind::SubmitForm { payload },
+            ActionNodeKind::Thread => ActionNodeKind::Thread,
+            ActionNodeKind::Sound => ActionNodeKind::Sound,
+            ActionNodeKind::Movie => ActionNodeKind::Movie,
+            ActionNodeKind::ImportData => ActionNodeKind::ImportData,
+            ActionNodeKind::SetOcgState => ActionNodeKind::SetOcgState,
+            ActionNodeKind::Transition => ActionNodeKind::Transition,
+            ActionNodeKind::Goto3dView => ActionNodeKind::Goto3dView,
+            ActionNodeKind::Unknown => ActionNodeKind::Unknown,
+        };
+        Ok(ActionNode { kind, subtype: self.subtype, next })
+    }
 }
 
 /// One extracted action root plus the reader's safety verdict.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ActionTree {
+pub struct ActionTree<D = PdfDestination> {
     /// `None` when the model was valid but its root exceeded a bound.
-    pub root: Option<ActionNode>,
+    pub root: Option<ActionNode<D>>,
     /// A consumer must never execute a tree whose `incomplete` is true.
     pub incomplete: bool,
     /// The raw native bits, so a newer runtime's warnings survive an older
     /// SDK.
     pub warning_flags: ActionWarningFlags,
     pub warnings: Vec<ActionWarning>,
+}
+
+impl<D> ActionTree<D> {
+    /// The tree with every destination in it converted (`mapActionTree`).
+    pub fn try_map_destinations<E, Err>(
+        self,
+        convert: &mut impl FnMut(D) -> Result<E, Err>,
+    ) -> Result<ActionTree<E>, Err> {
+        Ok(ActionTree {
+            root: self.root.map(|root| root.try_map_destinations(convert)).transpose()?,
+            incomplete: self.incomplete,
+            warning_flags: self.warning_flags,
+            warnings: self.warnings,
+        })
+    }
 }
 
 fn malformed(message: impl Into<String>) -> EngineError {

@@ -1,1743 +1,922 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/stage/src/destination.ts: PDF destinations onto reveal options.",
   "cases": [
     {
       "name": "destinationToReveal/xyz-all",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 100,
-          "top": 700,
-          "zoom": 1.5
+          "zoom": 1.5,
+          "x": 100,
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 92,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": {
-              "level": 1.5
-            }
+          "rect": {
+            "x": 100,
+            "y": 92,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": {
+            "level": 1.5
           }
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-null-left-zero-zoom",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": null,
-          "top": 700,
-          "zoom": 0
+          "zoom": 0,
+          "x": null,
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 92,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "keep",
-              "y": "start"
-            },
-            "zoom": "keep"
-          }
+          "rect": {
+            "x": 0,
+            "y": 92,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "keep",
+            "y": "start"
+          },
+          "zoom": "keep"
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-null-top",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 100,
-          "top": null,
-          "zoom": null
+          "zoom": null,
+          "x": 100,
+          "y": null
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 0,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "keep"
-            },
-            "zoom": "keep"
-          }
+          "rect": {
+            "x": 100,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "keep"
+          },
+          "zoom": "keep"
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-absent",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "keep",
-              "y": "keep"
-            },
-            "zoom": "keep"
-          }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "keep",
+            "y": "keep"
+          },
+          "zoom": "keep"
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-cropped",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 110,
-          "top": 708,
-          "zoom": 2
+          "zoom": 2,
+          "x": 100,
+          "y": 80
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 80,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": {
-              "level": 2
-            }
+          "rect": {
+            "x": 100,
+            "y": 80,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": {
+            "level": 2
           }
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-rotated",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 100,
-          "top": 700,
-          "zoom": 1
+          "zoom": 1,
+          "x": 100,
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 90,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 92,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": {
-              "level": 1
-            }
+          "rect": {
+            "x": 100,
+            "y": 92,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": {
+            "level": 1
           }
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-user-unit",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 100,
-          "top": 700
+          "x": 100,
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 2,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 92,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": "keep"
-          }
+          "rect": {
+            "x": 100,
+            "y": 92,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": "keep"
         }
       }
     },
     {
       "name": "destinationToReveal/xyz-negative-zoom",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 0,
-          "top": 0,
-          "zoom": -1
+          "zoom": -1,
+          "x": 0,
+          "y": 792
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 792,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": {
-              "level": -1
-            }
+          "rect": {
+            "x": 0,
+            "y": 792,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": {
+            "level": -1
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fit",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fit",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "zoom": "fit"
-          }
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fit-with-bbox",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fit",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "zoom": "fit"
-          }
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fitH",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "top": 700
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 92,
-              "width": 612,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "start"
-            }
+          "rect": {
+            "x": 0,
+            "y": 92,
+            "width": 612,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitH-null",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "top": null
+          "y": null
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 612,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 612,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitH-absent-cropped",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 600,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitH-cropped",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "top": 500
+          "y": 288
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 288,
-              "width": 600,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "start"
-            }
+          "rect": {
+            "x": 0,
+            "y": 288,
+            "width": 600,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitV",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 200
+          "x": 200
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 200,
-              "y": 0,
-              "width": 0,
-              "height": 792
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "start"
-            }
+          "rect": {
+            "x": 200,
+            "y": 0,
+            "width": 0,
+            "height": 792
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitV-null",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": null
+          "x": null
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 0,
-              "height": 780
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 780
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitV-cropped",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 200
+          "x": 190
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 190,
-              "y": 0,
-              "width": 0,
-              "height": 780
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "start"
-            }
+          "rect": {
+            "x": 190,
+            "y": 0,
+            "width": 0,
+            "height": 780
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitR",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitR",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 100,
-          "bottom": 200,
-          "right": 300,
-          "top": 600
+          "x": 100,
+          "y": 192,
+          "width": 200,
+          "height": 400
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 100,
-              "y": 192,
-              "width": 200,
-              "height": 400
-            },
-            "zoom": "fit"
-          }
+          "rect": {
+            "x": 100,
+            "y": 192,
+            "width": 200,
+            "height": 400
+          },
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fitR-inverted",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitR",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 300,
-          "bottom": 600,
-          "right": 100,
-          "top": 200
+          "x": 90,
+          "y": 188,
+          "width": 200,
+          "height": 400
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 90,
-              "y": 188,
-              "width": 200,
-              "height": 400
-            },
-            "zoom": "fit"
-          }
+          "rect": {
+            "x": 90,
+            "y": 188,
+            "width": 200,
+            "height": 400
+          },
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fitB",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitB",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 612,
-              "height": 792
-            },
-            "zoom": "fit"
-          }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 612,
+            "height": 792
+          },
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fitB-bbox",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitB",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 50,
-              "y": 60,
-              "width": 400,
-              "height": 500
-            },
-            "zoom": "fit"
-          }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 612,
+            "height": 792
+          },
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/fitBH",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "top": 700
+          "y": 92
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 50,
-              "y": 92,
-              "width": 400,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "start"
-            }
+          "rect": {
+            "x": 0,
+            "y": 92,
+            "width": 612,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitBH-null-bbox",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "top": null
+          "y": null
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 50,
-              "y": 60,
-              "width": 400,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 612,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitBH-absent-page",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBH",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 612,
-              "height": 0
-            },
-            "zoom": "fit-width",
-            "anchor": {
-              "y": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 612,
+            "height": 0
+          },
+          "zoom": "fit-width",
+          "anchor": {
+            "y": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitBV",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 150
+          "x": 140
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 600,
-            "height": 780
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 10,
-              "bottom": 8,
-              "right": 610,
-              "top": 788
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 600,
+          "height": 780
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 140,
-              "y": 60,
-              "width": 0,
-              "height": 500
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "start"
-            }
+          "rect": {
+            "x": 140,
+            "y": 0,
+            "width": 0,
+            "height": 780
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "start"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitBV-null-bbox",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": null
+          "x": null
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
-        },
-        {
-          "x": 50,
-          "y": 60,
-          "width": 400,
-          "height": 500
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 50,
-              "y": 60,
-              "width": 0,
-              "height": 500
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 792
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "keep"
           }
         }
       }
     },
     {
       "name": "destinationToReveal/fitBV-absent-page",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fitBV",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 1,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 0,
-              "height": 792
-            },
-            "zoom": "fit-height",
-            "anchor": {
-              "x": "keep"
-            }
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 792
+          },
+          "zoom": "fit-height",
+          "anchor": {
+            "x": "keep"
           }
         }
       }
     },
     {
-      "name": "destinationToReveal/zero-user-unit-throws",
-      "fn": "destinationToReveal",
+      "name": "destinationToReveal/zero-user-unit-does-not-affect-page-space",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "fit",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           }
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": 0,
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
-        "threw": {
-          "$error": {
-            "name": "Error",
-            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
-          }
+        "returned": {
+          "zoom": "fit"
         }
       }
     },
     {
       "name": "destinationToReveal/absent-user-unit",
-      "fn": "destinationToReveal",
+      "fn": "revealOfDestination",
       "args": [
         {
           "kind": "xyz",
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 12
+            "objectNumber": 12
           },
-          "left": 5,
-          "top": 6
+          "x": 5,
+          "y": 786
         },
         {
-          "index": 3,
-          "ref": {
-            "kind": "objectNumber",
-            "pageObjectNumber": 12
-          },
-          "label": null,
-          "size": {
-            "width": 612,
-            "height": 792
-          },
-          "rotation": 0,
-          "userUnit": {
-            "$undefined": true
-          },
-          "boxes": {
-            "media": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            },
-            "crop": {
-              "left": 0,
-              "bottom": 0,
-              "right": 612,
-              "top": 792
-            }
-          }
+          "width": 612,
+          "height": 792
         }
       ],
       "outcome": {
         "returned": {
-          "pageIndex": 3,
-          "options": {
-            "rect": {
-              "x": 5,
-              "y": 786,
-              "width": 0,
-              "height": 0
-            },
-            "anchor": {
-              "x": "start",
-              "y": "start"
-            },
-            "zoom": "keep"
-          }
+          "rect": {
+            "x": 5,
+            "y": 786,
+            "width": 0,
+            "height": 0
+          },
+          "anchor": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoom": "keep"
         }
       }
     }

@@ -1,35 +1,50 @@
-//! `contract.ts` and `host-contract.ts`: the public link vocabulary.
-//! `Link` is the annotation plugin's `LinkNavItem`; `PdfDestination` and
-//! `PdfLinkTarget` are re-exported, as the TypeScript re-exports them.
+//! `contract.ts` and `host-contract.ts`: the public link vocabulary, and
+//! `resolveLinkTarget`, the rule every link and outline item follows.
+//!
+//! A link, its target, its destination and its `/A` tree are the engine's
+//! records as JSON (`Value`), as the annotation plugin carries them since
+//! Task 13.17: the annotation plugin's `listLinkItems` builds the same
+//! `Link` this plugin's stand-alone source does.
 
 use std::rc::Rc;
 
-use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
+use epdf_kernel::signal::AbortSignal;
 use epdf_plugin_actions::ActionDispatchResult;
-use epdf_plugin_stage::RevealOptions;
-use serde::{Deserialize, Deserializer, Serialize};
+use epdf_plugin_stage::StageCapability;
 use serde_json::{Value, json};
 
-pub use epdf_annotation_core::{AnnotationRef, PageRef, PdfDestination, PdfLinkTarget};
-pub use epdf_plugin_annotation::{HoverFlags, LinkNavItem};
+pub use epdf_kernel::geometry::PageRef;
+pub use epdf_kernel::mirror::ResourceStatus;
+pub use epdf_plugin_stage::PageTarget;
 
-/// A clickable link area: page-space `bounds`, its target, and its
-/// annotation (when it is one).
-pub type Link = LinkNavItem;
+/// `Link` (`LinkNavItem`): `{id, bounds, target, activate?, hoverEvents?,
+/// ref?, attached}`, page space.
+pub type Link = Value;
+/// `PdfLinkTarget`: `{kind: 'goto' | 'uri' | 'named' | ..., ...}`.
+pub type PdfLinkTarget = Value;
+/// `PageDestination`: a destination in page space.
+pub type PageDestination = Value;
+/// `PdfActionTree`.
+pub type PdfActionTree = Value;
+/// `AnnotationRef`.
+pub type AnnotationRef = Value;
 
-/// `ChangeOrigin`, as JSON.
-pub type ChangeOrigin = Value;
+/// `OperationOptions`: what the loading calls take.
+#[derive(Clone, Default)]
+pub struct OperationOptions {
+    pub signal: Option<AbortSignal>,
+}
 
-/// What activation did, or hands to the host to do (a `Uri` or `Named`
-/// outcome is the host's). `Dispatched` carries the action engine's
-/// in-flight result. `None` is in the TypeScript union and never produced.
+/// What activation did. `Destination`, `Named` and a `Uri` with no
+/// framework to open it are handed to the caller to perform. `None` is in
+/// the TypeScript union and never produced.
 #[derive(Clone)]
 pub enum LinkActivation {
     Revealed,
-    Destination { destination: PdfDestination },
-    Uri { uri: String },
-    Named { name: String },
+    Destination { destination: PageDestination },
+    Uri { uri: Value },
+    Named { name: Value },
     Reported { target: PdfLinkTarget },
     Dispatched { dispatch: Promise<ActionDispatchResult> },
     None,
@@ -59,13 +74,11 @@ impl LinkActivation {
         match self {
             LinkActivation::Revealed | LinkActivation::None => json!({ "outcome": outcome }),
             LinkActivation::Destination { destination } => {
-                json!({ "outcome": outcome, "destination": epdf_kernel::js::to_value(destination) })
+                json!({ "outcome": outcome, "destination": destination })
             }
             LinkActivation::Uri { uri } => json!({ "outcome": outcome, "uri": uri }),
             LinkActivation::Named { name } => json!({ "outcome": outcome, "name": name }),
-            LinkActivation::Reported { target } => {
-                json!({ "outcome": outcome, "target": epdf_kernel::js::to_value(target) })
-            }
+            LinkActivation::Reported { target } => json!({ "outcome": outcome, "target": target }),
             LinkActivation::Dispatched { dispatch } => {
                 json!({ "outcome": outcome, "dispatch": promise(dispatch) })
             }
@@ -73,56 +86,74 @@ impl LinkActivation {
     }
 }
 
-/// What activating a target would do, with no side effect.
+/// What activating a target would do, with no side effect. A `goto` to a
+/// page of this document is its destination, ready for
+/// `stage.goToDestination`; one to a page the document doesn't have is
+/// reported.
 #[derive(Clone, Debug, PartialEq)]
 pub enum LinkResolution {
-    Reveal { page: PageRef, page_index: usize, options: RevealOptions },
-    Destination { destination: PdfDestination },
-    Uri { uri: String },
-    Named { name: String },
+    Destination { destination: PageDestination },
+    Uri { uri: Value },
+    Named { name: Value },
     Reported { target: PdfLinkTarget },
 }
 
 impl LinkResolution {
     pub fn to_json(&self) -> Value {
-        use epdf_kernel::js::to_value;
         match self {
-            LinkResolution::Reveal { page, page_index, options } => json!({
-                "kind": "reveal",
-                "page": to_value(page),
-                "pageIndex": page_index,
-                "options": to_value(options),
-            }),
             LinkResolution::Destination { destination } => {
-                json!({ "kind": "destination", "destination": to_value(destination) })
+                json!({ "kind": "destination", "destination": destination })
             }
             LinkResolution::Uri { uri } => json!({ "kind": "uri", "uri": uri }),
             LinkResolution::Named { name } => json!({ "kind": "named", "name": name }),
-            LinkResolution::Reported { target } => {
-                json!({ "kind": "reported", "target": to_value(target) })
-            }
+            LinkResolution::Reported { target } => json!({ "kind": "reported", "target": target }),
         }
     }
 }
 
-/// A member that is present, `null` included: a spread copies it over.
-fn present<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Value>, D::Error> {
-    Value::deserialize(d).map(Some)
+/// `target.member`: absent reads as `undefined`.
+fn member(target: &Value, key: &str) -> Value {
+    target.get(key).cloned().unwrap_or_else(epdf_kernel::undefined)
+}
+
+/// `resolveLinkTarget(target, hasPage)`: a `goto` to a page `has_page`
+/// knows is its destination, one to a page the document doesn't have is
+/// reported; a website and a named verb are handed on; anything else is
+/// reported. `has_page` gets the destination's `page` as the target holds
+/// it (`undefined` when it has none).
+pub fn resolve_link_target(
+    target: &PdfLinkTarget,
+    has_page: impl FnOnce(&Value) -> bool,
+) -> LinkResolution {
+    match target.get("kind").and_then(Value::as_str) {
+        Some("goto") => {
+            let destination = member(target, "destination");
+            if has_page(&member(&destination, "page")) {
+                LinkResolution::Destination { destination }
+            } else {
+                LinkResolution::Reported { target: target.clone() }
+            }
+        }
+        Some("uri") => LinkResolution::Uri { uri: member(target, "uri") },
+        Some("named") => LinkResolution::Named { name: member(target, "name") },
+        _ => LinkResolution::Reported { target: target.clone() },
+    }
 }
 
 /// `LinkActivateContext`. Each member is `None` when absent and `Some`
-/// (possibly `null`) when present, because activation spreads the context
-/// over the link's own members and a present `null` wins.
-#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+/// (possibly `null` or `undefined`) when present, because activation
+/// spreads the context over the link's own members and a present member
+/// wins whatever its value.
+#[derive(Clone, Default)]
 pub struct LinkActivateContext {
-    /// The link's `/A` tree; the actions plugin runs it instead of the
-    /// target.
-    #[serde(default, deserialize_with = "present")]
+    /// The link's `/A` tree when it has one; the actions plugin runs it
+    /// instead of the target.
     pub activate: Option<Value>,
-    #[serde(default, rename = "ref", deserialize_with = "present")]
     pub ref_: Option<Value>,
-    #[serde(default, deserialize_with = "present")]
     pub page: Option<Value>,
+    /// The view the link was followed in: a page destination moves this
+    /// Stage. Defaults to the document's own stage.
+    pub stage: Option<StageCapability>,
 }
 
 impl LinkActivateContext {
@@ -132,43 +163,47 @@ impl LinkActivateContext {
             activate: over.activate.clone().or_else(|| self.activate.clone()),
             ref_: over.ref_.clone().or_else(|| self.ref_.clone()),
             page: over.page.clone().or_else(|| self.page.clone()),
+            stage: over.stage.clone().or_else(|| self.stage.clone()),
+        }
+    }
+
+    /// The JSON members of a context object, as a spread copies them.
+    pub fn from_json(value: &Value) -> LinkActivateContext {
+        LinkActivateContext {
+            activate: value.get("activate").cloned(),
+            ref_: value.get("ref").cloned(),
+            page: value.get("page").cloned(),
+            stage: None,
         }
     }
 }
 
-/// What `activate`, `get_label` and `activate_at` take: a bare target or a
-/// whole link.
-#[derive(Clone, Debug, PartialEq)]
-pub enum LinkInput {
-    Target(PdfLinkTarget),
-    Link(Box<Link>),
+/// `isLink`: `'target' in value && 'bounds' in value`.
+pub fn is_link(value: &Value) -> bool {
+    value.get("target").is_some() && value.get("bounds").is_some()
 }
 
-/// `LinkActivatedEvent`: after the built-in handling of any activation.
+/// `LinkActivatedEvent`: a link target was activated through this
+/// capability.
 #[derive(Clone)]
 pub struct LinkActivatedEvent {
     pub target: PdfLinkTarget,
     pub activation: LinkActivation,
-    pub origin: ChangeOrigin,
 }
 
-/// `LinkLoadedEvent`: a page's links arrived.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+/// `LinkLoadedEvent`: a page's links were read from the engine.
+#[derive(Clone, Debug, PartialEq)]
 pub struct LinkLoadedEvent {
-    pub page: PageRef,
+    pub page: Value,
 }
 
-/// The one ambient value the TypeScript reads from the global scope.
-#[derive(Clone, Default)]
-pub struct LinkHost {
-    /// `console.error(message, error)`: receives a throwing event
-    /// listener's error. `None` drops it.
-    pub console_error: Option<Rc<dyn Fn(&str, &Error)>>,
+impl LinkLoadedEvent {
+    pub fn to_json(&self) -> Value {
+        json!({ "page": self.page })
+    }
 }
 
-/// `linkPlugin()` takes no config; `host` is the Rust port's way in for
-/// what the TypeScript reads from the global scope.
-#[derive(Clone, Default)]
-pub struct LinkConfig {
-    pub host: LinkHost,
-}
+/// `UriOpener`: opens a website for `activate()`, in the user's gesture.
+/// Returns whether it opened: false for an address it won't open (a
+/// `javascript:` or `file:` URI), which activation then reports.
+pub type UriOpener = Rc<dyn Fn(&Value) -> bool>;

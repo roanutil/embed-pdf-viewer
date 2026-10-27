@@ -1,0 +1,1 @@
+src/suites/link.ts(221,60): error TS2739: Type '{ pages: PageLayout<PageCoordinates>[]; }' is missing the following properties from type 'PageListSnapshot<PageCoordinates>': pageCount, namedPages

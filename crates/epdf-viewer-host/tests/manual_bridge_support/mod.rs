@@ -200,8 +200,8 @@ pub fn copy_uniffi_hit(h: &epdf_plugin_search::ffi::SearchHit) -> CopiedHit {
     CopiedHit {
         page_object_number: h.page.page_object_number,
         page_index: h.page_index,
-        char_start: h.char_start,
-        char_count: h.char_count,
+        char_start: h.start,
+        char_count: h.count,
         bounds: h.bounds.map(|b| [b.x, b.y, b.width, b.height]),
         segments: h
             .segments
@@ -210,21 +210,29 @@ pub fn copy_uniffi_hit(h: &epdf_plugin_search::ffi::SearchHit) -> CopiedHit {
                 let q = &s.quad;
                 (
                     [
-                        q.upper_start.x,
-                        q.upper_start.y,
-                        q.upper_end.x,
-                        q.upper_end.y,
-                        q.lower_start.x,
-                        q.lower_start.y,
-                        q.lower_end.x,
-                        q.lower_end.y,
+                        q.upper_left.x,
+                        q.upper_left.y,
+                        q.upper_right.x,
+                        q.upper_right.y,
+                        q.lower_left.x,
+                        q.lower_left.y,
+                        q.lower_right.x,
+                        q.lower_right.y,
                     ],
                     [s.rect.x, s.rect.y, s.rect.width, s.rect.height],
                     s.advance,
                 )
             })
             .collect(),
-        snippet: h.snippet.as_ref().map(|s| (s.text.clone(), s.match_start, s.match_length)),
+        // The C bridge joins the snippet and names the match by UTF-16
+        // offset and length.
+        snippet: h.snippet.as_ref().map(|s| {
+            (
+                format!("{}{}{}", s.before, s.matched, s.after),
+                s.before.encode_utf16().count() as f64,
+                s.matched.encode_utf16().count() as f64,
+            )
+        }),
     }
 }
 

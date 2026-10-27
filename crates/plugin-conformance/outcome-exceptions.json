@@ -1,0 +1,10 @@
+[
+  {
+    "file": "core/acrojs-host.json",
+    "case": "dispose-pending-factory",
+    "callback": { "fn": "sandbox.dispose", "args": [1] },
+    "actualStep": 3,
+    "expectedStep": 4,
+    "reason": "Kept divergence M13 (22ca510e6, USER DECISIONS 2026-10-23): Rust releases a realm built after dispose() when the last admitted transaction settles. The TypeScript builds it lazily with no disposed check (packages/core/acrojs/src/host.ts:130), refuses only new transactions (:216), and releases only the realm held at each dispose() call (:231-238), so it keeps that realm until the repeated dispose(). Pinned by crates/plugins/acrojs/src/host.rs a_realm_built_after_dispose_is_released_when_the_queue_drains."
+  }
+]

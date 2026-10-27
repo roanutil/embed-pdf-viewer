@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/annotation richtext.ts: the rich text run algebra over plain-projection offsets.",
   "cases": [

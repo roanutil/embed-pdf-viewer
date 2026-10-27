@@ -1,0 +1,913 @@
+[
+  {
+    "file": "plugins/commands/functions.json",
+    "name": "duplicate-throws-and-keeps-the-first",
+    "path": "$.returned.error",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "duplicate command 'a'",
+        "code": "conflict",
+        "capability": "commands",
+        "permission": null
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/functions.json",
+    "name": "bad-modifier-throws-and-registers-nothing",
+    "path": "$.returned.error",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[ui-core] unknown modifier \"Hyper\" in \"Hyper+B\""
+      }
+    },
+    "sourceOwner": "packages/core/ui/src/shortcuts.ts"
+  },
+  {
+    "file": "plugins/commands/functions.json",
+    "name": "bad-modifier-in-a-string",
+    "path": "$.returned.error",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[ui-core] unknown modifier \"Hyper\" in \"Mod+Hyper+K\""
+      }
+    },
+    "sourceOwner": "packages/core/ui/src/shortcuts.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[4].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "hidden"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[5].outcome.returned",
+    "kind": "returned-refusal",
+    "value": {
+      "reason": "not-allowed",
+      "message": "Print isn't allowed"
+    },
+    "sourceOwner": "packages/plugin/commands/src/services/availability.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[8].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "disabled"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[9].outcome.returned.refusal",
+    "kind": "returned-refusal",
+    "value": {
+      "reason": "not-allowed",
+      "message": "Print isn't allowed"
+    },
+    "sourceOwner": "packages/plugin/commands/src/services/availability.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[10].outcome.returned",
+    "kind": "returned-refusal",
+    "value": {
+      "reason": "not-allowed",
+      "message": "custom isn't allowed"
+    },
+    "sourceOwner": "packages/plugin/commands/src/services/availability.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "current-settings-permission-refusals",
+    "path": "$.trace[12].outcome.returned",
+    "kind": "returned-refusal",
+    "value": {
+      "reason": "turned-off",
+      "message": "Print isn't available"
+    },
+    "sourceOwner": "packages/plugin/commands/src/services/availability.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "registry",
+    "path": "$.trace[5].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "duplicate command 'a'",
+        "code": "conflict",
+        "capability": "commands",
+        "permission": null
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "registry",
+    "path": "$.trace[6].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[ui-core] unknown modifier \"Hyper\" in \"Hyper+D\""
+      }
+    },
+    "sourceOwner": "packages/core/ui/src/shortcuts.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "registry",
+    "path": "$.trace[8].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[ui-core] unknown modifier \"Nope\" in \"Nope+E\""
+      }
+    },
+    "sourceOwner": "packages/core/ui/src/shortcuts.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "categories",
+    "path": "$.trace[4].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "hidden"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "categories",
+    "path": "$.trace[9].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "hidden"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "i18n-labels",
+    "path": "$.trace[1].callbacks[0]",
+    "kind": "console",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"missing\" or \"commands.nope\" (locale: en)"
+      ]
+    },
+    "sourceOwner": "packages/plugin/i18n/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-routing",
+    "path": "$.trace[18].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "not-found"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[3].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "disabled"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[4].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "hidden"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[8].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "run failed",
+        "code": "operation-failed",
+        "capability": "commands",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "Error",
+            "message": "run failed"
+          }
+        }
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[8].settled[0].rejected.$error.cause",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "run failed"
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[9].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "async run failed",
+        "code": "operation-failed",
+        "capability": "commands",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "Error",
+            "message": "async run failed"
+          }
+        }
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-guards-and-run",
+    "path": "$.trace[9].settled[0].rejected.$error.cause",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "async run failed"
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[0]",
+    "kind": "console",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"probe\" or \"probe\" (locale: en)"
+      ]
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[2].args[0].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" requires an active document."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[2].args[2].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" requires an active document."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[2].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[2].args[7].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"broken\" requires an active document."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[0].callbacks[2].args[9].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" requires an active document."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[4].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[5].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[6].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[7].callbacks[1].args[0].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: no document \"zzz\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[7].callbacks[1].args[2].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: no document \"zzz\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[7].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[7].callbacks[1].args[7].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"broken\" unavailable: no document \"zzz\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[7].callbacks[1].args[9].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: no document \"zzz\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[9].callbacks[1].args[0].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: document \"slow\" is loading."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[9].callbacks[1].args[2].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: document \"slow\" is loading."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[9].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[9].callbacks[1].args[7].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"broken\" unavailable: document \"slow\" is loading."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[9].callbacks[1].args[9].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "Capability \"shell\" unavailable: document \"slow\" is loading."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[11].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[12].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "command-ctx",
+    "path": "$.trace[13].callbacks[1].args[5].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "No capability \"nope\"."
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "registered-functions",
+    "path": "$.trace[4].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "disabled"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "re-entrant-registry",
+    "path": "$.trace[3].callbacks[1].args[1].threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "duplicate command 'late'",
+        "code": "conflict",
+        "capability": "commands",
+        "permission": null
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "register-many-shortcuts-and-can-execute",
+    "path": "$.trace[11].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "duplicate command 'a'",
+        "code": "conflict",
+        "capability": "commands",
+        "permission": null
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[4].reports[0]",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/event-hook.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[7].reports[0]",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/event-hook.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[8].reports[0]",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/event-hook.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[9].reports[0]",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/event-hook.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[10].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "run failed",
+        "code": "operation-failed",
+        "capability": "commands",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "Error",
+            "message": "run failed"
+          }
+        }
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[10].settled[0].rejected.$error.cause",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "run failed"
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[11].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "async run failed",
+        "code": "operation-failed",
+        "capability": "commands",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "TypeError",
+            "message": "async run failed"
+          }
+        }
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[11].settled[0].rejected.$error.cause",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "TypeError",
+        "message": "async run failed"
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[12].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "disabled"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[13].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "not-found"
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[18].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "run failed",
+        "code": "operation-failed",
+        "capability": "commands",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "Error",
+            "message": "run failed"
+          }
+        }
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "execute-events",
+    "path": "$.trace[18].settled[0].rejected.$error.cause",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "run failed"
+      }
+    },
+    "sourceOwner": "packages/plugin/commands/src/controller.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "a-bad-config-shortcut-refuses-the-kernel",
+    "path": "$.trace[0].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[ui-core] unknown modifier \"Hyper\" in \"Hyper+A\""
+      }
+    },
+    "sourceOwner": "packages/core/ui/src/shortcuts.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[6].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[9].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[11].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[12].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[14].settled[0].rejected",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[15].settled[0].resolved",
+    "kind": "returned-refusal",
+    "value": {
+      "status": "rejected",
+      "reason": "not-found"
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[16].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "name": "after-destroy",
+    "path": "$.trace[23].outcome.threw",
+    "kind": "error",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"documents\") on a destroyed kernel"
+      }
+    },
+    "sourceOwner": "packages/core/main/src/kernel.ts"
+  }
+]

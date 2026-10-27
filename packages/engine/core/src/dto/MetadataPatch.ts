@@ -1,14 +1,34 @@
+import type { DocumentMetadataTrapped } from './DocumentMetadata';
+import type { DateInput } from './IsoDateTime';
+
 /**
- * Three-state metadata patch.
+ * Three-state metadata patch, consistent with annotation patches
+ * ({@link AnnotationPatchBase}):
  *
- * The shape is generated from the Rust definition in
- * `crates/epdf-engine/src/dto.rs`, which is canonical for internal wire DTOs
- * (`multiplatform-plan.md` Section 2). Regenerate with `cargo test -p
- * epdf-engine`; CI fails on a dirty diff. The zod schema in
- * `wire/schemas.ts` stays handwritten and is held against the Rust type by
- * `crates/epdf-engine/tests/schema_parity.rs`.
+ *   undefined -> don't touch the field
+ *   null      -> clear the field
+ *   "..."     -> set the field to this value
  *
- * This file stays as the import path so nothing downstream has to know where
- * the type is written.
+ * Standard Info-dict fields map to PDF keys (`title` -> /Title,
+ * `createdAt` -> /CreationDate, `modifiedAt` -> /ModDate, ...). The dates
+ * take an ISO 8601 string or a `Date`; the engine writes them as PDF dates
+ * (`D:YYYYMMDD...`), keeping a string's offset.
+ *
+ * `trapped` has no clear-form (it is a tri-valued enum, always present);
+ * omit it to leave it untouched. `''` is a value everywhere: it reads back
+ * `''`, not `null`. The dict's other keys change through
+ * {@link CustomMetadataPatch}.
  */
-export type { MetadataPatch } from './generated/MetadataPatch';
+export interface MetadataPatch {
+  title?: string | null;
+  author?: string | null;
+  subject?: string | null;
+  keywords?: string | null;
+  producer?: string | null;
+  creator?: string | null;
+  /** `/CreationDate`. */
+  createdAt?: DateInput | null;
+  /** `/ModDate`. */
+  modifiedAt?: DateInput | null;
+  trapped?: DocumentMetadataTrapped;
+}

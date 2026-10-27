@@ -1,5 +1,10 @@
 //! G6: the page listing agrees with the TypeScript engine.
 //!
+//! The vectors record page space, as the TypeScript engine API answers
+//! (`pageListOf`): every box measured from the crop box's top-left, y down,
+//! and `pdfCropBox` in the file's coordinates. The listing is read in the
+//! file's coordinates and compared through the host's conversion.
+//!
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run metadata
 //!
@@ -10,8 +15,10 @@
 //! ones the session's registry produces by a different route.
 
 use epdf_engine::cancel::CancelToken;
-use epdf_engine::features::pages::{PageListSnapshot, list_pages};
-use epdf_engine::geom::PdfRotation;
+use epdf_engine::features::pages::{PageListSnapshot, PageTabOrder, list_pages};
+use epdf_engine::geom::{PageRect, PdfRect, PdfRotation, PdfSize};
+use epdf_engine::page_space::PageCoordinates;
+use epdf_engine::page_space::pages::page_list_of;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use pdfium::{Document, Library};
@@ -57,9 +64,11 @@ fn open(case: &Case) -> Document {
         .unwrap_or_else(|e| panic!("{}: open: {e}", case.name))
 }
 
-fn listed(case: &Case) -> PageListSnapshot {
-    list_pages(&open(case), &CancelToken::never())
-        .unwrap_or_else(|e| panic!("{}: list: {e}", case.name))
+/// The listing as the wire answers it, in page space.
+fn listed(case: &Case) -> PageListSnapshot<PageCoordinates> {
+    let read = list_pages(&open(case), &CancelToken::never())
+        .unwrap_or_else(|e| panic!("{}: list: {e}", case.name));
+    page_list_of(read).unwrap_or_else(|e| panic!("{}: in page space: {e}", case.name))
 }
 
 #[test]
@@ -193,4 +202,120 @@ fn a_cancelled_listing_reports_aborted() {
         list_pages(&document, &cancel).expect_err("cancelled").code,
         EngineErrorCode::Aborted,
     );
+}
+
+#[test]
+fn the_wire_answers_the_listing_the_typescript_engine_did() {
+    // Through `Host::call`, so the boundary is the one doing the converting.
+    use epdf_engine::host::Host;
+
+    let file = load();
+    for case in file.cases.iter().filter(|c| c.password.is_none()) {
+        let mut host = Host::new();
+        let opened = host.call_filled(
+            &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+            vec![bytes(case)],
+        );
+        assert!(!opened.json.contains("\"error\""), "{}: {}", case.name, opened.json);
+        let answer = host.call_filled(
+            &serde_json::json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }).to_string(),
+            Vec::new(),
+        );
+        let envelope: serde_json::Value = serde_json::from_str(&answer.json).expect("JSON");
+        let actual = test_support::corpus::quantized(&envelope["result"]);
+        let expected = test_support::corpus::quantized(&case.pages);
+        if let Some(difference) = test_support::corpus::first_difference(&expected, &actual) {
+            panic!("{}: {difference} ({})", case.name, case.covers);
+        }
+    }
+}
+
+/// A PDF whose pages are these page dictionaries' bodies, without `/Type`
+/// and `/Parent`. Cross-reference offsets are computed, so PDFium reads it
+/// as written.
+fn pdf(pages: &[&str]) -> Vec<u8> {
+    let kids: Vec<String> = (0..pages.len()).map(|i| format!("{} 0 R", 3 + i)).collect();
+    let mut objects = vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+        format!("<< /Type /Pages /Kids [{}] /Count {} >>", kids.join(" "), pages.len()),
+    ];
+    objects.extend(pages.iter().map(|body| format!("<< /Type /Page /Parent 2 0 R {body} >>")));
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn the_boxes_follow_iso_32000_and_the_crop_box_is_the_origin() {
+    // `pageBoxesOf`: the media box the file writes, the crop box cut to it,
+    // bleed, trim and art defaulting to the crop box; then page space from
+    // the crop box's top-left.
+    let document = Document::from_bytes(
+        Library::acquire(),
+        &pdf(&[
+            "/MediaBox [0 0 612 792] /CropBox [50 60 700 732] /TrimBox [100 100 300 400] /Tabs /R",
+        ]),
+        None,
+    )
+    .expect("open");
+    let read = list_pages(&document, &CancelToken::never()).expect("list");
+    let page = &read.pages[0];
+    // In the file's coordinates, cut to the media box.
+    assert_eq!(page.boxes.crop, PdfRect { left: 50.0, bottom: 60.0, right: 612.0, top: 732.0 });
+    assert_eq!(page.boxes.bleed, page.boxes.crop);
+    assert_eq!(page.size, PdfSize { width: 562.0, height: 672.0 });
+    assert_eq!(page.tab_order, Some(PageTabOrder::Rows));
+
+    let listed = page_list_of(read).expect("in page space");
+    let page = &listed.pages[0];
+    assert_eq!(page.boxes.crop, PageRect { x: 0.0, y: 0.0, width: 562.0, height: 672.0 });
+    assert_eq!(page.boxes.media, PageRect { x: -50.0, y: -60.0, width: 612.0, height: 792.0 });
+    assert_eq!(page.boxes.trim, PageRect { x: 50.0, y: 332.0, width: 200.0, height: 300.0 });
+    assert_eq!(page.pdf_crop_box, PdfRect { left: 50.0, bottom: 60.0, right: 612.0, top: 732.0 });
+    let json = serde_json::to_value(page).expect("serialize");
+    assert_eq!(json["tabOrder"], "rows");
+}
+
+#[test]
+fn a_page_without_a_media_box_is_letter_and_a_rotate_off_the_quarter_turns_is_none() {
+    // The engine's defaults now, not the wrapper's (Task 6 carried item):
+    // no media box is US Letter, and `/Rotate 45` reads as no turn where the
+    // old reduction truncated, and -90 as 270.
+    let document = Document::from_bytes(
+        Library::acquire(),
+        &pdf(&[
+            "/Rotate 45",
+            "/MediaBox [0 0 100 200] /Rotate -90",
+            "/MediaBox [0 0 100 200] /CropBox [200 0 300 200]",
+        ]),
+        None,
+    )
+    .expect("open");
+    let read = list_pages(&document, &CancelToken::never()).expect("list");
+    assert_eq!(
+        read.pages[0].boxes.media,
+        PdfRect { left: 0.0, bottom: 0.0, right: 612.0, top: 792.0 }
+    );
+    assert_eq!(read.pages[0].size, PdfSize { width: 612.0, height: 792.0 });
+    assert_eq!(read.pages[0].rotation, PdfRotation::None);
+    assert_eq!(read.pages[0].tab_order, None);
+    assert_eq!(read.pages[1].rotation, PdfRotation::Clockwise270);
+    // A crop box off the page leaves a page with no size.
+    assert_eq!(read.pages[2].size, PdfSize { width: 0.0, height: 0.0 });
 }

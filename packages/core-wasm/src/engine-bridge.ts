@@ -41,6 +41,7 @@
  * `rt::Promise::abort`.
  */
 import { toPageRef } from '@embedpdf/engine-core';
+import { isLocalDocument, isLocalEngine } from '@embedpdf/engine-core/runtime';
 import type { DocumentHandle, Engine } from '@embedpdf/engine-core/runtime';
 
 /** A bridge promise: every one resolves with canonical JSON text. */
@@ -64,6 +65,27 @@ export interface EngineBridge {
   lastServerId(docId: string): string | null;
   /** `doc.events.subscribe`, each event as canonical JSON text. */
   subscribe(docId: string, listener: (eventJson: string) => void): () => void;
+  /** `isLocalEngine(engine)`: whether the engine carries the local brand
+   *  (a symbol, which `has` cannot read). */
+  isLocal(): boolean;
+  /** `isLocalDocument(doc)`. Throws for a document the bridge does not hold. */
+  isLocalDocument(docId: string): boolean;
+  /** `doc.objectNumbers.held`. */
+  heldObjectNumbers(docId: string): number;
+  /** `doc.objectNumbers.take()`: synchronous, `null` when none is held. */
+  takeObjectNumber(docId: string): number | null;
+  /** `doc.objectNumbers.onLost`, each loss (`{numbers, reason}`) as
+   *  canonical JSON text. Answers the unsubscriber. */
+  onLostObjectNumbers(docId: string, listener: (lostJson: string) => void): () => void;
+  /** `doc.with(facts)` then the call: [`call`] on the handle that carries
+   *  `factsJson` (`CallFacts`, as JSON text). */
+  callWith(
+    docId: string,
+    factsJson: string,
+    path: string,
+    pon: number | null | undefined,
+    argsJson: string,
+  ): BridgeCall;
   /** `engine.destroy()`. */
   destroy(): BridgeCall;
   /** The live value behind a `{"$host": n}` this bridge holds; throws for
@@ -563,6 +585,30 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     return { root: doc.page(toPageRef(pon)) as unknown, segments: segments.slice(1) };
   }
 
+  /** One asynchronous call on the handle `handle()` answers (resolved
+   *  inside the bridged call, so a throw rejects it), or on its page `pon`. */
+  function invoke(
+    handle: () => DocumentHandle,
+    path: string,
+    pon: number | null | undefined,
+    argsJson: string,
+  ): BridgeCall {
+    return bridged(
+      () => {
+        const { root, segments } = resolve(handle(), path, pon);
+        let target = root as Record<string, unknown>;
+        for (const segment of segments.slice(0, -1))
+          target = target[segment] as Record<string, unknown>;
+        const method = segments[segments.length - 1];
+        const fn = target?.[method];
+        if (typeof fn !== 'function')
+          throw new TypeError(`[engine-bridge] ${path} is not a function`);
+        return (fn as (...a: unknown[]) => unknown).apply(target, decodeArgs(argsJson));
+      },
+      (value) => encode(value),
+    );
+  }
+
   return {
     open(inputJson, optionsJson) {
       const input = decode(JSON.parse(inputJson), host);
@@ -578,20 +624,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     call(docId, path, pon, argsJson) {
-      const out = bridged(
-        () => {
-          const { root, segments } = resolve(document(docId), path, pon);
-          let target = root as Record<string, unknown>;
-          for (const segment of segments.slice(0, -1))
-            target = target[segment] as Record<string, unknown>;
-          const method = segments[segments.length - 1];
-          const fn = target?.[method];
-          if (typeof fn !== 'function')
-            throw new TypeError(`[engine-bridge] ${path} is not a function`);
-          return (fn as (...a: unknown[]) => unknown).apply(target, decodeArgs(argsJson));
-        },
-        (value) => encode(value),
-      );
+      const out = invoke(() => document(docId), path, pon, argsJson);
       // A closed handle leaves the table once its close settles, either way,
       // so it does not live until kernel destroy. Only the handle the close
       // was issued on: a reopen under the same id may have replaced it.
@@ -603,6 +636,38 @@ export function createEngineBridge(engine: Engine): EngineBridge {
         out.then(forget, forget);
       }
       return out;
+    },
+
+    callWith(docId, factsJson, path, pon, argsJson) {
+      // `doc.with(facts)` returns a handle carrying the facts; the chain
+      // runs on that, never on the table's own handle. A throw from `with`
+      // (or a bad `factsJson`) rejects like any other call's.
+      return invoke(
+        () => document(docId).with(JSON.parse(factsJson) as Parameters<DocumentHandle['with']>[0]),
+        path,
+        pon,
+        argsJson,
+      );
+    },
+
+    isLocal() {
+      return isLocalEngine(engine);
+    },
+
+    isLocalDocument(docId) {
+      return isLocalDocument(document(docId));
+    },
+
+    heldObjectNumbers(docId) {
+      return document(docId).objectNumbers.held;
+    },
+
+    takeObjectNumber(docId) {
+      return document(docId).objectNumbers.take();
+    },
+
+    onLostObjectNumbers(docId, listener) {
+      return document(docId).objectNumbers.onLost((lost) => listener(encode(lost)));
     },
 
     has(docId, member) {

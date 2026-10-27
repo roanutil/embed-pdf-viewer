@@ -1,0 +1,3 @@
+{"original": 76, "current": 79, "mapped": 76, "wholeRetirements": 0, "partialRetirements": 25, "additions": 3, "changedInputs": 39}
+{"cases": 79, "pure": 54, "scenarios": 25, "steps": 333, "pureThrows": 0, "stepThrows": 11, "rejections": 6, "reports": 4, "callbacks": 168, "console": 2, "unmatched": 0, "namedDiagnostics": 68}
+preserved 437 source owners 17

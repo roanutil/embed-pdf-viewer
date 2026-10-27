@@ -97,6 +97,11 @@ impl<V> JsRecord<V> {
     pub fn keys(&self) -> impl Iterator<Item = &str> {
         self.iter().map(|(k, _)| k)
     }
+
+    /// `Object.values(record)`.
+    pub fn values(&self) -> impl Iterator<Item = &V> {
+        self.iter().map(|(_, v)| v)
+    }
 }
 
 impl<V> FromIterator<(String, V)> for JsRecord<V> {

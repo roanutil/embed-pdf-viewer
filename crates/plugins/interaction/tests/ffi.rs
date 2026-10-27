@@ -10,7 +10,7 @@ use epdf_ffi::{
 };
 use epdf_plugin_interaction::ffi::{
     InteractionEvent, InteractionEventListener, InteractionHandle, InteractionHandler,
-    InteractionTool,
+    InteractionTool, InteractionToolTouch,
 };
 use epdf_plugin_interaction::{INTERACTION, InteractionConfig, interaction_plugin};
 use futures::executor::block_on;
@@ -169,7 +169,7 @@ fn a_registered_tool_conflicts_until_replaced_and_unregisters() {
         cursor: "crosshair".into(),
         gap_cursor: None,
         enables: vec!["annotation-create".into()],
-        touch_direct: Some(true),
+        touch: Some(InteractionToolTouch::Draw),
     };
     let registration = block_on(interaction.register_tool(tool.clone(), false)).unwrap();
     let error = block_on(interaction.register_tool(tool.clone(), false)).err().unwrap();
@@ -240,7 +240,7 @@ fn a_foreign_handler_captures_a_gesture() {
     assert_eq!(kinds, ["started", "ended"]);
     assert!(matches!(&seen.iter().find(|e| matches!(e, InteractionEvent::GestureStarted { .. })),
         Some(InteractionEvent::GestureStarted { event })
-            if event.handler_id == "recording"
+            if event.tool_id == "pointer"
                 && event.page == Some(PageRef { page_object_number: 1 })
                 && event.pointer_type == PointerKind::Touch));
 }

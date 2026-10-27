@@ -19,5 +19,5 @@ fn prelude_is_the_generated_file() {
     let on_disk =
         std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/prelude.js")).unwrap();
     assert_eq!(epdf_acrojs::PRELUDE_SOURCE, on_disk);
-    assert!(epdf_acrojs::PRELUDE_SOURCE.starts_with("(function installAcroJs(g)"));
+    assert!(epdf_acrojs::PRELUDE_SOURCE.starts_with("(function installAcroJs(globalObject)"));
 }

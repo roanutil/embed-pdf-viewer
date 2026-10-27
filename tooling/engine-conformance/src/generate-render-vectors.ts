@@ -1,6 +1,7 @@
 /**
  * Emits `vectors/render/geometry.json`: what `deviceSize`,
- * `pdfRectToDisplayRect` and `displayRectToDeviceMatrix` produce.
+ * `pdfRectToDisplayRect` and `renderMatrix` (formerly
+ * `displayRectToDeviceMatrix`) produce.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run render
  *   pnpm --filter @embedpdf/tooling-engine-conformance run render:check
@@ -13,10 +14,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  deviceSize,
-  displayRectToDeviceMatrix,
-} from '../../../packages/engine/services/src/features/render/deviceRaster';
+import { renderMatrix } from '../../../packages/engine/core/src/geometry/pageTransform';
+import { deviceSize } from '../../../packages/engine/services/src/features/render/deviceRaster';
 
 import { RENDER_CASES, type RenderCase } from './render-cases';
 import { quantize } from './quantize';
@@ -43,10 +42,30 @@ function pdfRectToDisplayRect(rect: RenderCase['rect'], pageHeight: number) {
   };
 }
 
+/**
+ * Upstream replaced `displayRectToDeviceMatrix` with engine-core's
+ * `renderMatrix` over a page-space box (771342379). The rasterizer converts
+ * the display rect with a private `pageBoxOfDisplayRect`; this is that
+ * conversion, repeated for the same reason as `pdfRectToDisplayRect` above.
+ */
+function pageBoxOfDisplayRect(rect: RenderCase['rect']) {
+  return {
+    x: rect.left,
+    y: rect.bottom,
+    width: rect.right - rect.left,
+    height: rect.top - rect.bottom,
+  };
+}
+
 function runCase(entry: RenderCase) {
   const displayRect = pdfRectToDisplayRect(entry.rect, entry.pageHeight);
   const size = deviceSize(displayRect, entry.rotation, entry.viewport);
-  const matrix = displayRectToDeviceMatrix(displayRect, entry.rotation, size.width, size.height);
+  const matrix = renderMatrix(
+    pageBoxOfDisplayRect(displayRect),
+    entry.rotation,
+    size.width,
+    size.height,
+  );
   return {
     ...entry,
     displayRect,

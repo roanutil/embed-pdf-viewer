@@ -1,157 +1,123 @@
-//! `services/events.ts`: the confirmed-change events, one emit per
-//! confirmed fact. A failing listener is reported through `console.error`
-//! (`[annotation] event listener failed:`), never to its siblings.
+//! `services/events.ts`: the plugin's events. Record events (created,
+//! updated, deleted, reordered, resynced) fire when the records mirror
+//! confirms a change (`sync/confirmed.rs`); selection, draft, editing and
+//! hover events are derived from state changes in the store; `writeFailed`
+//! fires when the engine refuses a change the user made; the rest fire where
+//! their operation completes. `records_changed` is internal. Payloads are
+//! the TypeScript's event objects, as JSON.
 
-use std::rc::Rc;
-
+use epdf_kernel::ControllerContext;
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::{Controller, Error};
-use serde_json::{Value, json};
+use epdf_kernel::mirror::MirrorChange;
+use serde_json::Value;
 
-use crate::contract::*;
-use crate::controller::DeferFn;
-use crate::host_contract::CapturedAnnotationDraft;
-use crate::model::{AnnotationAction, AnnotationState};
-
-/// `ORIGIN_API`: a change this session made through the public API.
-pub fn origin_api() -> Value {
-    json!({ "locality": "local", "trigger": "api", "sessionId": null, "actorId": null })
+pub struct Events {
+    pub created: EventHookSource<Value>,
+    pub updated: EventHookSource<Value>,
+    pub deleted: EventHookSource<Value>,
+    pub reordered: EventHookSource<Value>,
+    pub resynced: EventHookSource<Value>,
+    pub selection_changed: EventHookSource<Value>,
+    pub draft_changed: EventHookSource<Value>,
+    pub editing_changed: EventHookSource<Value>,
+    pub hover_changed: EventHookSource<Value>,
+    pub tool_defaults_changed: EventHookSource<Value>,
+    pub thread_changed: EventHookSource<Value>,
+    pub draft_captured: EventHookSource<Value>,
+    pub write_failed: EventHookSource<Value>,
+    pub records_changed: EventHookSource<MirrorChange>,
 }
 
-/// `ORIGIN_UNKNOWN`: a change this session made through a gesture or an
-/// internal path.
-pub fn origin_unknown() -> Value {
-    json!({ "locality": "local", "trigger": "unknown", "sessionId": null, "actorId": null })
-}
-
-/// `originOf(event)`. `sessionId` is the event's own member, so a missing
-/// one stays missing, as the TypeScript's object literal leaves it.
-pub fn origin_of(event: &Value) -> Value {
-    let origin = event.get("origin").cloned().unwrap_or(Value::Null);
-    let remote = origin.get("kind").and_then(Value::as_str) == Some("remote");
-    let mut out = serde_json::Map::new();
-    out.insert("locality".into(), json!(if remote { "remote" } else { "local" }));
-    out.insert("trigger".into(), json!("unknown"));
-    if let Some(session) = origin.get("sessionId").filter(|s| !epdf_kernel::is_undefined(s)) {
-        out.insert("sessionId".into(), session.clone());
-    }
-    out.insert(
-        "actorId".into(),
-        origin
-            .get("sub")
-            .filter(|s| !s.is_null() && !epdf_kernel::is_undefined(s))
-            .cloned()
-            .unwrap_or(Value::Null),
-    );
-    Value::Object(out)
-}
-
-/// `createAnnotationEvents(ctx)`.
-pub(crate) struct AnnotationEvents {
-    pub created: EventHookSource<AnnotationCreatedEvent>,
-    pub updated: EventHookSource<AnnotationUpdatedEvent>,
-    pub deleted: EventHookSource<AnnotationDeletedEvent>,
-    pub resynced: EventHookSource<AnnotationResyncedEvent>,
-    pub selection_changed: EventHookSource<AnnotationSelectionChangedEvent>,
-    pub draft_changed: EventHookSource<AnnotationDraftChangedEvent>,
-    pub editing_changed: EventHookSource<AnnotationEditingChangedEvent>,
-    pub thread_changed: EventHookSource<CommentThreadChangedEvent>,
-    pub draft_captured: EventHookSource<CapturedAnnotationDraft>,
-}
-
-impl AnnotationEvents {
-    pub fn new(
-        cx: &Controller<AnnotationState, AnnotationAction>,
-        console_error: Option<Rc<dyn Fn(&str, Option<&Error>)>>,
-    ) -> Self {
-        let report: Rc<dyn Fn(&Error)> = Rc::new(move |error: &Error| {
-            if let Some(sink) = &console_error {
-                sink("[annotation] event listener failed:", Some(error));
-            }
-        });
-        let events = AnnotationEvents {
-            created: EventHookSource::new(Some(report.clone())),
-            updated: EventHookSource::new(Some(report.clone())),
-            deleted: EventHookSource::new(Some(report.clone())),
-            resynced: EventHookSource::new(Some(report.clone())),
-            selection_changed: EventHookSource::new(Some(report.clone())),
-            draft_changed: EventHookSource::new(Some(report.clone())),
-            editing_changed: EventHookSource::new(Some(report.clone())),
-            thread_changed: EventHookSource::new(Some(report.clone())),
-            draft_captured: EventHookSource::new(Some(report)),
-        };
-        let all = (
-            events.created.clone(),
-            events.updated.clone(),
-            events.deleted.clone(),
-            events.resynced.clone(),
-            events.selection_changed.clone(),
-            events.draft_changed.clone(),
-            events.editing_changed.clone(),
-            events.thread_changed.clone(),
-            events.draft_captured.clone(),
-        );
-        cx.defer_fn(move || {
-            all.0.dispose();
-            all.1.dispose();
-            all.2.dispose();
-            all.3.dispose();
-            all.4.dispose();
-            all.5.dispose();
-            all.6.dispose();
-            all.7.dispose();
-            all.8.dispose();
-        });
-        events
+impl Events {
+    /// `createAnnotationEvents(ctx)`.
+    pub fn new(cx: &ControllerContext) -> Events {
+        Events {
+            created: cx.event_source(),
+            updated: cx.event_source(),
+            deleted: cx.event_source(),
+            reordered: cx.event_source(),
+            resynced: cx.event_source(),
+            selection_changed: cx.event_source(),
+            draft_changed: cx.event_source(),
+            editing_changed: cx.event_source(),
+            hover_changed: cx.event_source(),
+            tool_defaults_changed: cx.event_source(),
+            thread_changed: cx.event_source(),
+            draft_captured: cx.event_source(),
+            write_failed: cx.event_source(),
+            records_changed: cx.event_source(),
+        }
     }
 }
 
-impl crate::controller::AnnotationCapability {
-    /// `onCreated(listener)`: a confirmed creation, whoever caused it.
-    pub fn on_created(
-        &self,
-        listener: impl Fn(&AnnotationCreatedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.created.on(listener)
+// ── the capability's event hooks and mirror verbs ──────────────────────────
+
+// Each `on_*` is the TypeScript's `EventHook<T>`: the listener gets the
+// event object as JSON, an `Err` is reported as a throwing listener is, and
+// the return unsubscribes.
+
+macro_rules! hooks {
+    ($($(#[$doc:meta])* $name:ident => $source:ident;)*) => {
+        impl crate::controller::Core {
+            $(
+                $(#[$doc])*
+                pub fn $name(
+                    &self,
+                    listener: impl Fn(&Value) -> Result<(), epdf_kernel::Error> + 'static,
+                ) -> epdf_kernel::Unsubscribe {
+                    self.events.$source.on(listener)
+                }
+            )*
+        }
+    };
+}
+
+hooks! {
+    /// `onCreated`: an annotation was added, once the engine saved it.
+    on_created => created;
+    /// `onUpdated`: an annotation was changed, once the engine saved it.
+    on_updated => updated;
+    /// `onDeleted`: annotations were deleted, one plus its popup and replies.
+    on_deleted => deleted;
+    /// `onReordered`: the drawing order on a page changed.
+    on_reordered => reordered;
+    /// `onResynced`: annotations were read again, as after loading a document.
+    on_resynced => resynced;
+    /// `onWriteFailed`: the engine refused a change the user made.
+    on_write_failed => write_failed;
+    /// `onSelectionChanged`.
+    on_selection_changed => selection_changed;
+    /// `onDraftChanged`: a polygon or polyline is being drawn, or ended.
+    on_draft_changed => draft_changed;
+    /// `onEditingChanged`: typing in a text box started or ended.
+    on_editing_changed => editing_changed;
+    /// `onHoverChanged`: the pointer moved onto an annotation, or off it.
+    on_hover_changed => hover_changed;
+    /// `tools.onDefaultsChanged`: a tool's defaults changed.
+    tools_on_defaults_changed => tool_defaults_changed;
+    /// `comments.onThreadChanged`: a comment thread changed.
+    comments_on_thread_changed => thread_changed;
+    /// `onDraftCaptured` (host lens): a capture tool's line, for the
+    /// measurement plugin's calibration.
+    on_draft_captured => draft_captured;
+}
+
+impl crate::controller::Core {
+    /// `getStatus()`: the records mirror's status.
+    pub fn get_status(&self) -> epdf_kernel::mirror::ResourceStatus {
+        self.records.get_status()
     }
 
-    /// `onUpdated(listener)`.
-    pub fn on_updated(
+    /// `refresh(options)`: read every annotation again.
+    pub fn refresh(
         &self,
-        listener: impl Fn(&AnnotationUpdatedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.updated.on(listener)
+        signal: Option<epdf_kernel::signal::AbortSignal>,
+    ) -> epdf_kernel::rt::Promise<()> {
+        self.cancellable(signal, self.records.refresh())
     }
 
-    /// `onDeleted(listener)`.
-    pub fn on_deleted(
-        &self,
-        listener: impl Fn(&AnnotationDeletedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.deleted.on(listener)
-    }
-
-    /// `onSelectionChanged(listener)`.
-    pub fn on_selection_changed(
-        &self,
-        listener: impl Fn(&AnnotationSelectionChangedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.selection_changed.on(listener)
-    }
-
-    /// `onDraftChanged(listener)`.
-    pub fn on_draft_changed(
-        &self,
-        listener: impl Fn(&AnnotationDraftChangedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.draft_changed.on(listener)
-    }
-
-    /// `onEditingChanged(listener)`.
-    pub fn on_editing_changed(
-        &self,
-        listener: impl Fn(&AnnotationEditingChangedEvent) -> Result<(), Error> + 'static,
-    ) -> epdf_kernel::Unsubscribe {
-        self.0.events.editing_changed.on(listener)
+    /// `whenSynced()` (host lens): every load and page reload in flight has settled.
+    pub fn when_synced(&self) -> epdf_kernel::rt::Promise<()> {
+        self.records.settled()
     }
 }

@@ -38,9 +38,9 @@ fn a_call_reaches_a_non_send_value() {
 #[test]
 fn a_kernel_error_keeps_its_code() {
     let (_thread, bound) = bound();
-    let error = block_on(bound.call(|_| -> Result<(), _> {
-        Err(epdf_kernel::Error::engine("not-found", "gone"))
-    }))
+    let error = block_on(
+        bound.call(|_| -> Result<(), _> { Err(epdf_kernel::Error::engine("not-found", "gone")) }),
+    )
     .unwrap_err();
     assert!(matches!(error, ViewerError::Kernel { code: Some(ref c), .. } if c == "not-found"));
 }

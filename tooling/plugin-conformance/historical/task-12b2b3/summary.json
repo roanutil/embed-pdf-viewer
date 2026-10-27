@@ -1,0 +1,669 @@
+{
+  "base": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "archive": [
+    {
+      "name": "measurement",
+      "lines": 851,
+      "sha256": "67abea55de6a7ea9f354044b84970eb9026736096d37e2014e8d67d956f3a538"
+    },
+    {
+      "name": "redaction",
+      "lines": 851,
+      "sha256": "f33e56cab373dbd4c788b068212f00a94f43a605c716bd397b92f3ef23464f31"
+    },
+    {
+      "name": "stamp-api",
+      "lines": 555,
+      "sha256": "5d0b14af04188af4a0f931f318fbf353dfc347e0d250c884f77cb83d20f490be"
+    },
+    {
+      "name": "stamp-assets",
+      "lines": 507,
+      "sha256": "ec322d02378e6223f8ee916ac16b4d78dfecd566e79f1ce622e765d25d4aa723"
+    },
+    {
+      "name": "stamp-library",
+      "lines": 424,
+      "sha256": "066c918d96cf21fea6f4e77db24ffdff80f489bb05e1d19125649bea4eb5c4e6"
+    },
+    {
+      "name": "stamp-placement",
+      "lines": 477,
+      "sha256": "9db6a15b6a4113d9fff97900fef6a8b5f17250e57915cc30f520dba4b6ede58f"
+    },
+    {
+      "name": "stamp-functions",
+      "lines": 145,
+      "sha256": "9ec8a89ad7234310ba6694b6db47d1d85d63b7624992cd80cf11172c02d7d0a7"
+    },
+    {
+      "name": "stamp-fixtures",
+      "lines": 484,
+      "sha256": "b7b4506be876d6d71da57c38040ec970c41bdf0982608ac867eaa270cc7dad86"
+    }
+  ],
+  "summaries": [
+    {
+      "source": "measurement",
+      "file": "plugins/measurement.json",
+      "kind": "scenario",
+      "cases": 19,
+      "steps": 177,
+      "runnerExceptions": [
+        {
+          "name": "viewport-reads-fail-refresh-and-rehydrate",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"v1\""
+            }
+          }
+        },
+        {
+          "name": "refresh-epochs",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"first\""
+            }
+          }
+        },
+        {
+          "name": "set-scale-on-one-page",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"write\""
+            }
+          }
+        },
+        {
+          "name": "service-writes-and-foreign-scales",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"set1\""
+            }
+          }
+        },
+        {
+          "name": "pages-inserted-and-removed",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"late\""
+            }
+          }
+        },
+        {
+          "name": "page-removed-while-a-change-waits",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"write\""
+            }
+          }
+        }
+      ],
+      "functionThrows": [],
+      "stepThrows": 149,
+      "rejections": 13,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 13,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/measurement.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[plugins/measurement.json] reads-without-a-measure-service: unanswered engine calls:\n  a: annotations.list []"
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 0,
+      "outcomePromises": 27
+    },
+    {
+      "source": "measurement",
+      "file": "plugins/measurement-functions.json",
+      "kind": "function",
+      "cases": 42,
+      "steps": 0,
+      "runnerExceptions": [],
+      "functionThrows": [
+        {
+          "name": "reduce-page-scale",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "measurementReducer 'PAGE_SCALE' was removed upstream in 4fc1a32af"
+            }
+          }
+        },
+        {
+          "name": "with-unit-unknown-base",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "This scale has an unknown base unit; calibrate it first"
+            }
+          }
+        },
+        {
+          "name": "with-unit-no-x",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "This scale has an unknown base unit; calibrate it first"
+            }
+          }
+        },
+        {
+          "name": "with-area-unit-unknown-base",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "This scale has an unknown base unit; calibrate it first"
+            }
+          }
+        },
+        {
+          "name": "with-area-unit-no-x",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "This scale has an unknown base unit; calibrate it first"
+            }
+          }
+        },
+        {
+          "name": "with-precision-too-big",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "Invalid decimal precision"
+            }
+          }
+        },
+        {
+          "name": "with-precision-not-power",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "Invalid decimal precision"
+            }
+          }
+        },
+        {
+          "name": "with-precision-fraction",
+          "error": {
+            "$error": {
+              "name": "RangeError",
+              "message": "Invalid decimal precision"
+            }
+          }
+        }
+      ],
+      "stepThrows": 0,
+      "rejections": 0,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 0,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/measurement-functions.json",
+        "ok": true
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 0,
+      "outcomePromises": 0
+    },
+    {
+      "source": "redaction",
+      "file": "plugins/redaction.json",
+      "kind": "scenario",
+      "cases": 22,
+      "steps": 182,
+      "runnerExceptions": [
+        {
+          "name": "apply-named-marks",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"apply\""
+            }
+          }
+        }
+      ],
+      "functionThrows": [],
+      "stepThrows": 121,
+      "rejections": 31,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 31,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/redaction.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[plugins/redaction.json] initial-state-and-twins: unanswered engine calls:\n  a: annotations.list []\n  b: annotations.list []\n  c: annotations.list []\n  d: annotations.list []\n  e: annotations.list []\n  f: annotations.list []"
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 3,
+      "outcomePromises": 55
+    },
+    {
+      "source": "redaction",
+      "file": "plugins/redaction-functions.json",
+      "kind": "function",
+      "cases": 28,
+      "steps": 0,
+      "runnerExceptions": [],
+      "functionThrows": [
+        {
+          "name": "no-document",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "no-pages",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "no-marks",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "rect-mark-overlaps",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "touching-edges-do-not-count",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "contained-and-containing",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "sliver-overlap",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "quads-replace-the-rect",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "tilted-quad-box",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "one-annotation-counts-once",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "marks-are-never-collateral",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "filter-by-id",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "filter-matches-nothing",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "empty-filter",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "null-filter-is-all",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "filter-by-nm-and-index",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "pages-in-document-order",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "nan-geometry-never-intersects",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        },
+        {
+          "name": "negative-and-fractional",
+          "error": {
+            "$error": {
+              "name": "TypeError",
+              "message": "Cannot destructure property 'store' of 'undefined' as it is undefined."
+            }
+          }
+        }
+      ],
+      "stepThrows": 0,
+      "rejections": 0,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 0,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/redaction-functions.json",
+        "ok": true
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 0,
+      "outcomePromises": 0
+    },
+    {
+      "source": "stamp-api",
+      "file": "plugins/stamp-api.json",
+      "kind": "scenario",
+      "cases": 21,
+      "steps": 155,
+      "runnerExceptions": [
+        {
+          "name": "edits-queued-behind-removals",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"reopen\""
+            }
+          }
+        }
+      ],
+      "functionThrows": [],
+      "stepThrows": 136,
+      "rejections": 0,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 3,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/stamp-api.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[scenario] nothing pending as \"reopen\""
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 1,
+      "outcomePromises": 18
+    },
+    {
+      "source": "stamp-assets",
+      "file": "plugins/stamp-assets.json",
+      "kind": "scenario",
+      "cases": 20,
+      "steps": 107,
+      "runnerExceptions": [
+        {
+          "name": "removals-are-serialized-per-library",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"reopen\""
+            }
+          }
+        },
+        {
+          "name": "an-append-queued-behind-a-removed-library",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"reopen\""
+            }
+          }
+        },
+        {
+          "name": "a-loose-append-queued-behind-a-removed-library",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"reopen\""
+            }
+          }
+        },
+        {
+          "name": "a-loose-append-finds-its-library-canonical",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"save-first\""
+            }
+          }
+        },
+        {
+          "name": "a-loose-asset-under-a-canonical-id",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"save\""
+            }
+          }
+        },
+        {
+          "name": "a-queued-mutation-after-destroy",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"reopen\""
+            }
+          }
+        }
+      ],
+      "functionThrows": [],
+      "stepThrows": 93,
+      "rejections": 0,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 0,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/stamp-assets.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[scenario] nothing pending as \"reopen\""
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 0,
+      "outcomePromises": 14
+    },
+    {
+      "source": "stamp-library",
+      "file": "plugins/stamp-library.json",
+      "kind": "scenario",
+      "cases": 21,
+      "steps": 103,
+      "runnerExceptions": [
+        {
+          "name": "concurrent-imports-read-the-store-before-either-lands",
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[scenario] nothing pending as \"save-first\""
+            }
+          }
+        }
+      ],
+      "functionThrows": [],
+      "stepThrows": 75,
+      "rejections": 1,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 0,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/stamp-library.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[scenario] nothing pending as \"save-first\""
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 1,
+      "outcomePromises": 26
+    },
+    {
+      "source": "stamp-placement",
+      "file": "plugins/stamp-placement.json",
+      "kind": "scenario",
+      "cases": 19,
+      "steps": 104,
+      "runnerExceptions": [],
+      "functionThrows": [],
+      "stepThrows": 64,
+      "rejections": 4,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 18,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/stamp-placement.json",
+        "error": {
+          "$error": {
+            "name": "Error",
+            "message": "[plugins/stamp-placement.json] arm-delegates-to-the-annotation-plugin: unanswered engine calls:\n  a: annotations.list []"
+          }
+        }
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 1,
+      "outcomePromises": 39
+    },
+    {
+      "source": "stamp-functions",
+      "file": "plugins/stamp-functions.json",
+      "kind": "function",
+      "cases": 19,
+      "steps": 0,
+      "runnerExceptions": [],
+      "functionThrows": [],
+      "stepThrows": 0,
+      "rejections": 0,
+      "reports": 0,
+      "callbacks": 0,
+      "consoleCallbacks": 0,
+      "unmatched": 0,
+      "returnedDiagnostics": [],
+      "render": {
+        "file": "plugins/stamp-functions.json",
+        "ok": true
+      },
+      "trackedPendingPromises": 0,
+      "outcomeReturns": 0,
+      "outcomePromises": 0
+    }
+  ]
+}

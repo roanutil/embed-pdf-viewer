@@ -3,42 +3,33 @@ import type { DocumentMetadataTrapped } from "./DocumentMetadataTrapped";
 
 /**
  * Three-state patch over the document Info dictionary, consistent with the
- * annotation patches:
+ * annotation patches. `core/src/dto/MetadataPatch.ts`, held against
+ * `MetadataPatchSchema` (`wire/schemas.ts`) by `tests/schema_parity.rs`:
  *
  * - field absent: leave the stored value alone
  * - `null`: clear the field
  * - a value: set the field to it
  *
- * Standard fields map to PDF keys (`title` to `/Title`, `created` to
- * `/CreationDate`). `created` and `modified` are ISO 8601 on the wire and the
- * engine formats them into PDF date syntax on write
- * (`crate::clock::format_pdf_date`).
+ * Standard fields map to PDF keys (`title` to `/Title`, `createdAt` to
+ * `/CreationDate`, `modifiedAt` to `/ModDate`). The dates are ISO 8601 on
+ * the wire, with or without an offset, and the engine writes them as PDF
+ * dates keeping that offset ([`crate::clock::format_pdf_date`]).
  *
  * `trapped` has no clear form, because it is a tri-valued enum that is always
- * present. Omit it to leave it untouched.
- *
- * `custom` is a per-key three-state map over non-standard Info entries: a
- * string sets the key, `null` removes it, and an absent key leaves it. The
- * map itself is two-state, absent or present, because there is no meaning for
- * "clear the concept of custom entries" distinct from clearing each key.
- * `BTreeMap` rather than `HashMap` so the serialized order is the same on
- * every run, which the corpus needs.
+ * present. Omit it to leave it untouched. `''` is a value everywhere: it
+ * reads back `''`, not `null`. The dict's other keys change through
+ * [`CustomMetadataPatch`], and a `custom` field here is refused.
  */
 export type MetadataPatch = { title?: string | null, author?: string | null, subject?: string | null, keywords?: string | null, producer?: string | null, creator?: string | null, 
 /**
- * ISO 8601 for `/CreationDate`.
+ * `/CreationDate`.
  */
-created?: string | null, 
+createdAt?: string | null, 
 /**
- * ISO 8601 for `/ModDate`.
+ * `/ModDate`.
  */
-modified?: string | null, 
+modifiedAt?: string | null, 
 /**
  * Two-state: `/Trapped` has no clear form.
  */
-trapped?: DocumentMetadataTrapped, 
-/**
- * Per-key three-state: `None` removes the key. The map itself is
- * two-state, so `"custom": null` is rejected rather than read as absent.
- */
-custom?: Record<string, string | null>, };
+trapped?: DocumentMetadataTrapped, };

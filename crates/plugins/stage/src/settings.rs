@@ -15,10 +15,11 @@ use epdf_stage_core::{
 use serde::{Deserialize, Serialize};
 
 use crate::contract::*;
+use crate::model::object_is;
 
 pub mod area;
 
-/// Out-of-the-box defaults: a document-reading feel.
+/// `DEFAULT_SETTINGS`: a document-reading feel.
 pub fn default_settings() -> StageSettings {
     StageSettings {
         flow: FlowMode::Continuous,
@@ -47,6 +48,9 @@ pub fn default_settings() -> StageSettings {
         view_rotation: PageRotation::DEG_0,
         zoom: ZoomSpec::Mode { mode: ZoomMode::Automatic },
         scroll_behavior: ScrollBehaviorKind::Smooth,
+        interaction: true,
+        pan_fallback: true,
+        zoom_gestures: true,
         // Web: 1 PDF point is 96/72 CSS px.
         view_units_per_point: 96.0 / 72.0,
     }
@@ -58,7 +62,7 @@ pub fn default_responsive() -> Vec<ResponsiveRule> {
     vec![ResponsiveRule {
         name: Some("compact".into()),
         when: RuleWhen::Query(BoxQuery { max_width: Some(600.0), ..Default::default() }),
-        settings: Some(PartialSettings { padding: Some(4.0), ..Default::default() }),
+        settings: Some(StageSettingsPatch { padding: Some(4.0), ..Default::default() }),
     }]
 }
 
@@ -67,7 +71,7 @@ pub fn default_responsive() -> Vec<ResponsiveRule> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SettingEffect {
-    /// Guides future verbs only.
+    /// Guides future verbs and the surface binding only.
     None,
     /// Pure clamp policy: re-clamp the current camera in place.
     Reclamp,
@@ -101,6 +105,9 @@ macro_rules! for_each_setting {
         $m!(ViewRotation, view_rotation, Scene);
         $m!(Zoom, zoom, Refit);
         $m!(ScrollBehavior, scroll_behavior, None);
+        $m!(Interaction, interaction, None);
+        $m!(PanFallback, pan_fallback, None);
+        $m!(ZoomGestures, zoom_gestures, None);
         $m!(ViewUnitsPerPoint, view_units_per_point, Scene);
     };
 }
@@ -126,11 +133,14 @@ pub enum SettingKey {
     ViewRotation,
     Zoom,
     ScrollBehavior,
+    Interaction,
+    PanFallback,
+    ZoomGestures,
     ViewUnitsPerPoint,
 }
 
 /// `SETTING_KEYS`.
-pub const SETTING_KEYS: [SettingKey; 18] = [
+pub const SETTING_KEYS: [SettingKey; 21] = [
     SettingKey::Flow,
     SettingKey::Layout,
     SettingKey::Spread,
@@ -148,6 +158,9 @@ pub const SETTING_KEYS: [SettingKey; 18] = [
     SettingKey::ViewRotation,
     SettingKey::Zoom,
     SettingKey::ScrollBehavior,
+    SettingKey::Interaction,
+    SettingKey::PanFallback,
+    SettingKey::ZoomGestures,
     SettingKey::ViewUnitsPerPoint,
 ];
 
@@ -165,7 +178,7 @@ pub fn settings_effect(key: SettingKey) -> SettingEffect {
 }
 
 /// Whether a patch carries `key` (`patch[key] !== undefined`).
-pub fn patch_has(patch: &PartialSettings, key: SettingKey) -> bool {
+pub fn patch_has(patch: &StageSettingsPatch, key: SettingKey) -> bool {
     macro_rules! arm {
         ($key:ident, $field:ident, $effect:ident) => {
             if key == SettingKey::$key {
@@ -178,8 +191,103 @@ pub fn patch_has(patch: &PartialSettings, key: SettingKey) -> bool {
 }
 
 /// The keys a patch carries, in `SETTING_KEYS` order.
-pub fn patch_keys(patch: &PartialSettings) -> Vec<SettingKey> {
+pub fn patch_keys(patch: &StageSettingsPatch) -> Vec<SettingKey> {
     SETTING_KEYS.iter().copied().filter(|&k| patch_has(patch, k)).collect()
+}
+
+/// `!Object.is(current, value)` for one setting value. A setting that is a
+/// JavaScript object is never the same as the one a patch carries.
+pub(crate) trait Identity {
+    fn same_object(&self, other: &Self) -> bool;
+}
+
+macro_rules! primitive_identity {
+    ($($t:ty),*) => {$(
+        impl Identity for $t {
+            fn same_object(&self, other: &Self) -> bool {
+                self == other
+            }
+        }
+    )*};
+}
+primitive_identity!(
+    FlowMode,
+    LayoutKind,
+    SpreadMode,
+    SizingMode,
+    Direction,
+    ScrollBehaviorKind,
+    bool
+);
+
+impl Identity for f64 {
+    fn same_object(&self, other: &Self) -> bool {
+        object_is(*self, *other)
+    }
+}
+
+impl Identity for PageRotation {
+    fn same_object(&self, other: &Self) -> bool {
+        object_is(self.0, other.0)
+    }
+}
+
+impl Identity for GridColumns {
+    fn same_object(&self, other: &Self) -> bool {
+        match (self, other) {
+            (GridColumns::Count(a), GridColumns::Count(b)) => object_is(*a, *b),
+            (GridColumns::Policy(a), GridColumns::Policy(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Identity for Gap {
+    fn same_object(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Gap::World(a), Gap::World(b)) => object_is(*a, *b),
+            _ => false,
+        }
+    }
+}
+
+macro_rules! object_identity {
+    ($($t:ty),*) => {$(
+        impl Identity for $t {
+            fn same_object(&self, _other: &Self) -> bool {
+                false
+            }
+        }
+    )*};
+}
+object_identity!(
+    epdf_geometry::PageFrame,
+    PartialPageFrame,
+    Alignment,
+    ArrivalAlignment,
+    AlignmentValue,
+    ZoomSpec
+);
+
+/// Whether `patchSettings(state, patch)` lands anything: some carried key
+/// is not `Object.is` the current value.
+pub(crate) fn patch_changes(current: &StageSettings, patch: &StageSettingsPatch) -> bool {
+    macro_rules! arm {
+        (PageFrame, $field:ident, $effect:ident) => {
+            if patch.$field.is_some() {
+                return true;
+            }
+        };
+        ($key:ident, $field:ident, $effect:ident) => {
+            if let Some(value) = &patch.$field
+                && !current.$field.same_object(value)
+            {
+                return true;
+            }
+        };
+    }
+    for_each_setting!(arm);
+    false
 }
 
 /// `settingsEqual`: field by field, one level of structural equality, which

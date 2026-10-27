@@ -10,7 +10,7 @@ use crate::identity::PageObjectNumber;
 /// `(page, index)`.
 ///
 /// The engine validates strict equality against its own revision store; a
-/// mismatch is [`crate::error::EngineErrorCode::InvalidReference`], never a
+/// mismatch is `InvalidArg` (upstream retired `InvalidReference`), never a
 /// silent retarget. `doc_session_id` ties a token to one open session, so a
 /// token minted before a close-and-reopen is rejected by the new session
 /// rather than bleeding across.

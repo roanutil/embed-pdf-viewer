@@ -48,11 +48,17 @@ pub struct TestSpec {
     pub engine: Value,
     responders: Vec<(String, Responder)>,
     page_responders: Vec<(String, PageResponder)>,
+    lacking: Vec<String>,
 }
 
 impl TestSpec {
     pub fn new(engine: Value) -> Self {
-        TestSpec { engine, responders: Vec::new(), page_responders: Vec::new() }
+        TestSpec {
+            engine,
+            responders: Vec::new(),
+            page_responders: Vec::new(),
+            lacking: Vec::new(),
+        }
     }
 
     /// Answer the document call `path` (not a page call) with `responder`.
@@ -75,6 +81,16 @@ impl TestSpec {
         responder: impl Fn(u32, &[Value]) -> Result<Reply, Error> + 'static,
     ) -> Self {
         self.page_responders.push((path.to_string(), Rc::new(responder)));
+        self
+    }
+}
+
+impl TestSpec {
+    /// A handle without the optional member `member` (`doc.has(member)` is
+    /// false), for an engine that doesn't have it: a plugin's defensive
+    /// absent-service branch. The fake's tables still answer a call to it.
+    pub fn lacking(mut self, member: &str) -> Self {
+        self.lacking.push(member.to_string());
         self
     }
 }
@@ -118,11 +134,23 @@ impl TestKernel {
         spec: impl Into<TestSpec>,
         options: KernelOptions,
     ) -> Result<Self, Error> {
-        let TestSpec { engine: spec, responders, page_responders } = spec.into();
+        TestKernel::open_with_clock(plugins, spec, options, Rc::new(epdf_kernel::clock::TimerClock))
+    }
+
+    /// [`open_with`](Self::open_with) on the host clock `clock`: one with
+    /// frames, for a plugin whose motion runs on them.
+    pub fn open_with_clock(
+        plugins: Vec<AnyPlugin>,
+        spec: impl Into<TestSpec>,
+        options: KernelOptions,
+        clock: Rc<dyn epdf_kernel::clock::HostClock>,
+    ) -> Result<Self, Error> {
+        let TestSpec { engine: spec, responders, page_responders, lacking } = spec.into();
         let fake = FakeEngine::new(spec);
-        let responders = Rc::new(Responders { document: responders, page: page_responders });
+        let responders =
+            Rc::new(Responders { document: responders, page: page_responders, lacking });
         let engine = Rc::new(TestEngine { fake: fake.clone(), responders });
-        let kernel = Kernel::new(engine, plugins, options)?;
+        let kernel = Kernel::new_with_clock(engine, plugins, options, clock)?;
         settle(&kernel.start())?;
         let opened = kernel.documents().open(
             OpenSource::Input(
@@ -130,9 +158,10 @@ impl TestKernel {
             ),
             OpenOptions::default(),
         );
-        let document_id = settle(&opened)?
+        // `documents.open` answers `{ document: { id, ... } }`.
+        let document_id = settle(&opened)?["document"]["id"]
             .as_str()
-            .ok_or_else(|| Error::new("[test-kernel] open answered something that is not an id"))?
+            .ok_or_else(|| Error::new("[test-kernel] open answered no document id"))?
             .to_string();
         Ok(TestKernel { kernel, engine: fake, document_id })
     }
@@ -170,6 +199,8 @@ pub fn settle<T: Clone + 'static>(promise: &Promise<T>) -> Result<T, Error> {
 struct Responders {
     document: Vec<(String, Responder)>,
     page: Vec<(String, PageResponder)>,
+    /// Members `has` answers false for ([`TestSpec::lacking`]).
+    lacking: Vec<String>,
 }
 
 impl Responders {
@@ -226,6 +257,31 @@ impl DocumentHandle for TestHandle {
         self.inner.id()
     }
 
+    // The fake's object-number pool and locality, as the engine's handle
+    // has them (the trait's defaults would hold no numbers).
+    fn is_local(&self) -> bool {
+        self.inner.is_local()
+    }
+
+    fn held_object_numbers(&self) -> usize {
+        self.inner.held_object_numbers()
+    }
+
+    fn take_object_number(&self) -> Result<Option<u32>, Error> {
+        self.inner.take_object_number()
+    }
+
+    fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
+        self.inner.reserve_object_numbers(count)
+    }
+
+    fn on_lost_object_numbers(
+        &self,
+        listener: Rc<dyn Fn(&epdf_kernel::engine::ObjectNumbersLost)>,
+    ) -> Unsubscribe {
+        self.inner.on_lost_object_numbers(listener)
+    }
+
     fn capabilities(&self) -> Value {
         self.inner.capabilities()
     }
@@ -235,7 +291,7 @@ impl DocumentHandle for TestHandle {
     }
 
     fn has(&self, member: &str) -> bool {
-        self.inner.has(member)
+        !self.responders.lacking.iter().any(|m| m == member) && self.inner.has(member)
     }
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
@@ -273,63 +329,84 @@ impl DocumentHandle for TestHandle {
 
 /// The Info-dict keys `DocumentMetadata` always carries (`null` when unset).
 const METADATA_TEXT_KEYS: [&str; 8] =
-    ["title", "author", "subject", "keywords", "producer", "creator", "created", "modified"];
+    ["title", "author", "subject", "keywords", "producer", "creator", "createdAt", "modifiedAt"];
 
-/// [`one_document`] whose `metadata.read` answers `metadata` and whose
+/// The `meta` of a metadata write's result and event.
+fn metadata_meta() -> Value {
+    json!({ "affectedPages": [], "cacheDelta": null, "opId": "metadata-write", "undoable": true })
+}
+
+/// [`one_document`] whose `metadata.get` answers `metadata` and whose
 /// `metadata.update` applies the patch as the engine does (absent leaves,
-/// `null` clears, a value sets; `custom` per key), publishes
-/// `metadata.updated`, then answers `{metadata}`. `metadata` is completed to
-/// the engine's full shape: every text key, `trapped`, `custom`.
+/// `null` clears, a value sets), publishes `metadata.updated`, then answers
+/// `{metadata, meta}`; `metadata.custom.get` and `metadata.custom.update`
+/// do the same for the custom keys (`metadata.customUpdated`, `{custom,
+/// meta}`). `metadata` is completed to the engine's full `DocumentMetadata`:
+/// every text key and `trapped`; a `custom` member seeds the custom keys.
 pub fn spec_with_metadata(metadata: Value) -> TestSpec {
     let mut full = Map::new();
     for key in METADATA_TEXT_KEYS {
         full.insert(key.into(), Value::Null);
     }
     full.insert("trapped".into(), json!("unknown"));
-    full.insert("custom".into(), json!({}));
+    let mut custom = Map::new();
     if let Value::Object(given) = metadata {
-        full.extend(given);
+        for (key, value) in given {
+            match (key.as_str(), value) {
+                ("custom", Value::Object(keys)) => custom.extend(keys),
+                (_, value) => {
+                    full.insert(key, value);
+                }
+            }
+        }
     }
     let stored = Rc::new(RefCell::new(full));
-    let read = stored.clone();
+    let custom = Rc::new(RefCell::new(custom));
+    let (read, read_custom, write_custom) = (stored.clone(), custom.clone(), custom);
     TestSpec::new(one_document())
-        .respond("metadata.read", move |_| Ok(Reply::value(Value::Object(read.borrow().clone()))))
+        .respond("metadata.get", move |_| Ok(Reply::value(Value::Object(read.borrow().clone()))))
         .respond("metadata.update", move |args| {
             let patch = args.first().and_then(Value::as_object).ok_or_else(|| {
                 Error::engine("InvalidArg", "metadata.update takes a patch object")
             })?;
             let mut metadata = stored.borrow_mut();
             for (key, value) in patch {
-                match key.as_str() {
-                    "custom" => {
-                        let Some(Value::Object(custom)) = metadata.get_mut("custom") else {
-                            unreachable!("completed above")
-                        };
-                        for (name, value) in value.as_object().into_iter().flatten() {
-                            match value {
-                                Value::Null => custom.remove(name),
-                                value => custom.insert(name.clone(), value.clone()),
-                            };
-                        }
-                    }
-                    "trapped" => {
-                        metadata.insert(key.clone(), value.clone());
-                    }
-                    key if METADATA_TEXT_KEYS.contains(&key) => {
-                        metadata.insert(key.into(), value.clone());
-                    }
-                    other => {
-                        return Err(Error::engine(
-                            "InvalidArg",
-                            format!("unknown metadata key \"{other}\""),
-                        ));
-                    }
+                if key != "trapped" && !METADATA_TEXT_KEYS.contains(&key.as_str()) {
+                    return Err(Error::engine(
+                        "InvalidArg",
+                        format!("unknown metadata key \"{key}\""),
+                    ));
                 }
+                metadata.insert(key.clone(), value.clone());
             }
             let metadata = Value::Object(metadata.clone());
             Ok(Reply {
-                value: json!({ "metadata": metadata }),
-                events: vec![json!({ "type": "metadata.updated", "metadata": metadata })],
+                value: json!({ "metadata": metadata, "meta": metadata_meta() }),
+                events: vec![json!({
+                    "type": "metadata.updated", "metadata": metadata, "meta": metadata_meta()
+                })],
+            })
+        })
+        .respond("metadata.custom.get", move |_| {
+            Ok(Reply::value(Value::Object(read_custom.borrow().clone())))
+        })
+        .respond("metadata.custom.update", move |args| {
+            let patch = args.first().and_then(Value::as_object).ok_or_else(|| {
+                Error::engine("InvalidArg", "metadata.custom.update takes a patch object")
+            })?;
+            let mut custom = write_custom.borrow_mut();
+            for (name, value) in patch {
+                match value {
+                    Value::Null => custom.remove(name),
+                    value => custom.insert(name.clone(), value.clone()),
+                };
+            }
+            let custom = Value::Object(custom.clone());
+            Ok(Reply {
+                value: json!({ "custom": custom, "meta": metadata_meta() }),
+                events: vec![json!({
+                    "type": "metadata.customUpdated", "custom": custom, "meta": metadata_meta()
+                })],
             })
         })
 }

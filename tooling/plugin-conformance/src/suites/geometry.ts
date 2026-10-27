@@ -7,18 +7,83 @@
  * each method on the probe points and rects the case supplies.
  */
 import * as g from '../../../../packages/core/geometry/src/index';
-import type { Point, Quad, Rect, TextQuad } from '../../../../packages/core/geometry/src/index';
+import type { Point, Rect } from '../../../../packages/core/geometry/src/index';
+
+import {
+  normalizePdfQuad,
+  pdfQuadBounds,
+} from '../../../../packages/engine/core/src/geometry/convert';
+import {
+  pagePointOf,
+  pdfPointOf,
+  pageBoxOf,
+  pdfRectOf,
+  pageQuadOf,
+  pdfQuadOf,
+  unmirroredBox,
+  mirroredPoint,
+} from '../../../../packages/engine/core/src/geometry/pageSpace';
 
 import type { FunctionCase, Suite } from '../vectors';
 
 type Fn = (...args: never[]) => unknown;
 
 /** A case whose name is `<fn>/<label>`. */
-const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
+const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => {
+  const name = `${fn}/${label}`;
+  if (fn === 'normalizeQuad')
+    return {
+      name,
+      fn: 'normalizePdfQuad',
+      args: [g.quadCorners(args[0] as g.Quad).map(mirroredPoint)],
+    };
+  if (fn === 'positionalQuad') return { name, fn: 'quadCorners', args };
+  if (fn === 'edgesOfQuad') return { name, fn: 'pdfQuadBounds', args };
+  if (fn === 'edgesOverlap')
+    return { name, fn: 'rectsOverlap', args: args.map((v) => unmirroredBox(v as PdfEdges)) };
+  if (fn === 'pageSpace') return { name, fn: 'enginePageSpace', args };
+  if (fn === 'pageGeometry') {
+    const { crop, rotation, userUnit } = args[0] as {
+      crop: PdfEdges;
+      rotation: number;
+      userUnit: number;
+    };
+    return {
+      name,
+      fn: 'pageTransform',
+      args: [
+        {
+          pageSize: { width: crop.right - crop.left, height: crop.top - crop.bottom },
+          rotation,
+          scale: (args[1] as number) * userUnit,
+          dpr: 1,
+        },
+      ],
+    };
+  }
+  return {
+    name,
+    fn,
+    args: fn === 'textQuadEdge' ? [args[0], args[1] === 'start' ? 'left' : 'right'] : args,
+  };
+};
+// Removed viewer PDF bridges (c053c3d33) and obsolete quad normalization
+// (00d2c8760); historical definitions remain at 6bba125f9:src/suites/geometry.ts.
+const RETIRED = new Set(['pdfToContentMatrix']);
 
 const pt = (x: number, y: number): Point => ({ x, y });
 const rc = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
-const quad = (p1: Point, p2: Point, p3: Point, p4: Point): Quad => ({ p1, p2, p3, p4 });
+/** One semantic quad shape for affine and text operations. */
+type Quad = g.Quad;
+type TextQuad = g.Quad;
+/** `pageSpace`'s edges type, removed with it in c053c3d33. */
+type PdfEdges = { left: number; bottom: number; right: number; top: number };
+const quad = (upperLeft: Point, upperRight: Point, lowerLeft: Point, lowerRight: Point): Quad => ({
+  upperLeft,
+  upperRight,
+  lowerLeft,
+  lowerRight,
+});
 
 const ROTATIONS = [0, 90, 180, 270];
 const ODD_ROTATIONS = [45, -90, 360, 450, 90.5, NaN, Infinity];
@@ -137,7 +202,9 @@ const basics: FunctionCase[] = [
   c('snapToDevice', 'zero', 0, 1),
   c('snapToDevice', 'negative', -7.3, 2),
 
-  ...[...ROTATIONS, ...ODD_ROTATIONS].map((r) => c('displaySize', `r${r}`, { width: 600, height: 800 }, r)),
+  ...[...ROTATIONS, ...ODD_ROTATIONS].map((r) =>
+    c('displaySize', `r${r}`, { width: 600, height: 800 }, r),
+  ),
   c('displaySize', 'zero-size-quarter-turn', { width: 0, height: 5 }, 90),
   c('displaySize', 'nan-size', { width: NaN, height: 5 }, 270),
 
@@ -296,14 +363,21 @@ const affine: FunctionCase[] = [
   c('applyRect', 'nan-matrix-offset', [1, 0, 0, 1, 0, NaN], rc(0, 0, 1, 1)),
   c('applyRect', 'infinite', m1, rc(0, 0, Infinity, 1)),
 
-  c('applyQuad', 'quarter-turn', [0, 1, -1, 0, 200, 0], quad(pt(0, 200), pt(100, 200), pt(100, 0), pt(0, 0))),
+  c(
+    'applyQuad',
+    'quarter-turn',
+    [0, 1, -1, 0, 200, 0],
+    quad(pt(0, 200), pt(100, 200), pt(100, 0), pt(0, 0)),
+  ),
   c('applyQuad', 'shear', shear, quad(pt(0, 0), pt(10, 0), pt(10, 10), pt(0, 10))),
   c('applyQuad', 'every-slot', [2, 3, 5, 7, 11, 13], quad(pt(1, 2), pt(3, 4), pt(5, 6), pt(7, 8))),
 
   c('matrixToCss', 'identity', [1, 0, 0, 1, 0, 0]),
   c('matrixToCss', 'quarter-turn', [0, 1, -1, 0, 200, 0]),
   c('matrixToCss', 'mixed', [1.5, -0.25, 3e-7, -0, 1e21, -1234.5]),
-  ...cssNumbers.map(([label, n]) => c('matrixToCss', `number-${label}`, [n, -n, n * 3, n / 7, 0, 1])),
+  ...cssNumbers.map(([label, n]) =>
+    c('matrixToCss', `number-${label}`, [n, -n, n * 3, n / 7, 0, 1]),
+  ),
 ];
 
 // ── page matrices and transforms ────────────────────────────────────────────
@@ -331,42 +405,36 @@ function pageTransformProbe(
     cssMatrix: t.cssMatrix,
     toPixels: points.map(t.toPixels),
     fromPixels: points.map(t.fromPixels),
-    contentToView: points.map(t.contentToView),
-    viewToContent: points.map(t.viewToContent),
-    contentToViewRect: rects.map(t.contentToViewRect),
-    viewToContentRect: rects.map(t.viewToContentRect),
+    // 81bdc82ec renamed content space to page space in these methods.
+    contentToView: points.map(t.pageToView),
+    viewToContent: points.map(t.viewToPage),
+    contentToViewRect: rects.map(t.pageToViewRect),
+    viewToContentRect: rects.map(t.viewToPageRect),
   };
 }
 
-/** `pageSpace` with its methods exercised on the probes. */
-function pageSpaceProbe(
-  crop: g.PdfEdges,
-  probe: { points?: Point[]; rects?: Rect[]; edges?: g.PdfEdges[]; quads?: Quad[] } = {},
+/** Current engine seam: call each shipping conversion on the recorded probes. */
+function enginePageSpace(
+  crop: PdfEdges,
+  probe: { points?: Point[]; rects?: Rect[]; edges?: PdfEdges[]; quads?: Quad[] } = {},
 ) {
-  const s = g.pageSpace(crop);
-  const points = probe.points ?? [];
-  const quads = probe.quads ?? [];
   return {
-    crop: s.crop,
-    width: s.width,
-    height: s.height,
-    pdfToPage: points.map(s.pdfToPage),
-    pageToPdf: points.map(s.pageToPdf),
-    pdfRectToPage: (probe.edges ?? []).map(s.pdfRectToPage),
-    pageRectToPdf: (probe.rects ?? []).map(s.pageRectToPdf),
-    pdfQuadToPage: quads.map(s.pdfQuadToPage),
-    pageQuadToPdf: quads.map(s.pageQuadToPdf),
+    pdfToPage: (probe.points ?? []).map((point) => pagePointOf(point, crop)),
+    pageToPdf: (probe.points ?? []).map((point) => pdfPointOf(point, crop)),
+    pdfRectToPage: (probe.edges ?? []).map((rect) => pageBoxOf(rect, crop)),
+    pageRectToPdf: (probe.rects ?? []).map((rect) => pdfRectOf(rect, crop)),
+    pdfQuadToPage: (probe.quads ?? []).map((quad) => pageQuadOf(quad, crop)),
+    pageQuadToPdf: (probe.quads ?? []).map((quad) => pdfQuadOf(quad, crop)),
   };
 }
 
 const pageFns: Record<string, Fn> = {
   rotateScaleMatrix: g.rotateScaleMatrix,
-  pdfToContentMatrix: g.pdfToContentMatrix,
-  pageGeometry: g.pageGeometry,
+
   pageTransform: pageTransformProbe,
-  pageSpace: pageSpaceProbe,
-  edgesOverlap: g.edgesOverlap,
-  edgesOfQuad: g.edgesOfQuad,
+  enginePageSpace,
+  rectsOverlap: g.rectsOverlap,
+  pdfQuadBounds,
 };
 
 const probe = {
@@ -382,7 +450,10 @@ const spaceProbe = {
     { left: 10, bottom: 20, right: 40, top: 60 },
     { left: 5, bottom: 5, right: 5, top: 5 },
   ],
-  quads: [quad(pt(10, 30), pt(40, 30), pt(10, 20), pt(40, 20)), quad(pt(0, 5), pt(5, 10), pt(10, 5), pt(5, 0))],
+  quads: [
+    quad(pt(10, 30), pt(40, 30), pt(10, 20), pt(40, 20)),
+    quad(pt(0, 5), pt(5, 10), pt(10, 5), pt(5, 0)),
+  ],
 };
 const crop = { left: 0, bottom: 0, right: 100, top: 200 };
 
@@ -392,55 +463,206 @@ const page: FunctionCase[] = [
   c('rotateScaleMatrix', 'zero-scale', 0, 0, 0, 180),
   c('rotateScaleMatrix', 'negative-scale', -1, 10, 20, 270),
 
-  c('pdfToContentMatrix', 'origin', { left: 0, top: 792 }),
-  c('pdfToContentMatrix', 'offset', { left: 10, top: 220 }),
-  c('pdfToContentMatrix', 'negative', { left: -50, top: 170 }),
-  c('pdfToContentMatrix', 'extra-members-ignored', { left: 3, bottom: 1, right: 9, top: 4 }),
+  // Historical removed bridge: c('pdfToContentMatrix', 'origin', { left: 0, top: 792 }),
+  // Historical removed bridge: c('pdfToContentMatrix', 'offset', { left: 10, top: 220 }),
+  // Historical removed bridge: c('pdfToContentMatrix', 'negative', { left: -50, top: 170 }),
+  // Historical removed bridge: c('pdfToContentMatrix', 'extra-members-ignored', { left: 3, bottom: 1, right: 9, top: 4 }),
 
   ...ROTATIONS.map((r) => c('pageGeometry', `crop-r${r}`, { crop, rotation: r, userUnit: 1 }, 1)),
   ...ROTATIONS.map((r) =>
-    c('pageGeometry', `offset-userunit-r${r}`, { crop: { left: 12, bottom: -8, right: 312, top: 392 }, rotation: r, userUnit: 1.5 }, 1.25),
-  ),
-  c('pageGeometry', 'negative-origin', { crop: { left: -50, bottom: -30, right: 50, top: 170 }, rotation: 0, userUnit: 1 }, 1),
-  c('pageGeometry', 'zoom-1.7-r90', { crop, rotation: 90, userUnit: 1 }, 1.7),
-  c('pageGeometry', 'letter-zoom-2-r90', { crop: { left: 0, bottom: 0, right: 612, top: 792 }, rotation: 90, userUnit: 1 }, 2),
-  c('pageGeometry', 'odd-rotation', { crop, rotation: 45, userUnit: 1 }, 1),
-  c('pageGeometry', 'inverted-crop', { crop: { left: 100, bottom: 200, right: 0, top: 0 }, rotation: 90, userUnit: 1 }, 1),
-  c('pageGeometry', 'zero-zoom-throws', { crop, rotation: 0, userUnit: 1 }, 0),
-  c('pageGeometry', 'zero-userunit-throws', { crop, rotation: 90, userUnit: 0 }, 2),
-  c('pageGeometry', 'zero-area-crop', { crop: { left: 5, bottom: 5, right: 5, top: 5 }, rotation: 180, userUnit: 1 }, 1),
-  c('pageGeometry', 'nan-zoom', { crop, rotation: 270, userUnit: 1 }, NaN),
-
-  c('pageTransform', 'identity', { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 1, dpr: 1 }, probe),
-  c('pageTransform', 'zoom-2', { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 2, dpr: 1 }, probe),
-  c('pageTransform', 'dpr-2', { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 1, dpr: 2 }, probe),
-  c('pageTransform', 'r90-dpr-2', { pageSize: { width: 100, height: 200 }, rotation: 90, scale: 1, dpr: 2 }, probe),
-  c('pageTransform', 'snaps-device', { pageSize: { width: 100, height: 100 }, rotation: 0, scale: 1.337, dpr: 1 }, probe),
-  c('pageTransform', 'engine-width-rule', { pageSize: letter, rotation: 0, scale: 739 / 612, dpr: 1 }, probe),
-  ...ROTATIONS.flatMap((r) =>
-    [1, 0.5, 1.333].flatMap((s) =>
-      [1, 2, 1.25].map((dpr) => c('pageTransform', `letter-r${r}-s${s}-dpr${dpr}`, { pageSize: letter, rotation: r, scale: s, dpr }, probe)),
+    c(
+      'pageGeometry',
+      `offset-userunit-r${r}`,
+      { crop: { left: 12, bottom: -8, right: 312, top: 392 }, rotation: r, userUnit: 1.5 },
+      1.25,
     ),
   ),
-  ...ODD_ROTATIONS.map((r) => c('pageTransform', `odd-rotation-${r}`, { pageSize: letter, rotation: r, scale: 1, dpr: 1 }, probe)),
-  c('pageTransform', 'base-scale-96-72', { pageSize: letter, rotation: 0, scale: 96 / 72, baseScale: 96 / 72, dpr: 1 }, probe),
-  c('pageTransform', 'base-scale-userunit-5', { pageSize: letter, rotation: 0, scale: (96 / 72) * 5, baseScale: (96 / 72) * 5, dpr: 1 }),
-  c('pageTransform', 'base-scale-200-percent', { pageSize: letter, rotation: 90, scale: (96 / 72) * 10, baseScale: (96 / 72) * 5, dpr: 1 }),
+  c(
+    'pageGeometry',
+    'negative-origin',
+    { crop: { left: -50, bottom: -30, right: 50, top: 170 }, rotation: 0, userUnit: 1 },
+    1,
+  ),
+  c('pageGeometry', 'zoom-1.7-r90', { crop, rotation: 90, userUnit: 1 }, 1.7),
+  c(
+    'pageGeometry',
+    'letter-zoom-2-r90',
+    { crop: { left: 0, bottom: 0, right: 612, top: 792 }, rotation: 90, userUnit: 1 },
+    2,
+  ),
+  c('pageGeometry', 'odd-rotation', { crop, rotation: 45, userUnit: 1 }, 1),
+  c(
+    'pageGeometry',
+    'inverted-crop',
+    { crop: { left: 100, bottom: 200, right: 0, top: 0 }, rotation: 90, userUnit: 1 },
+    1,
+  ),
+  c('pageGeometry', 'zero-zoom-now-clamped', { crop, rotation: 0, userUnit: 1 }, 0),
+  c('pageGeometry', 'zero-userunit-now-clamped', { crop, rotation: 90, userUnit: 0 }, 2),
+  c(
+    'pageGeometry',
+    'zero-area-crop',
+    { crop: { left: 5, bottom: 5, right: 5, top: 5 }, rotation: 180, userUnit: 1 },
+    1,
+  ),
+  c('pageGeometry', 'nan-zoom', { crop, rotation: 270, userUnit: 1 }, NaN),
+
+  c(
+    'pageTransform',
+    'identity',
+    { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 1, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'zoom-2',
+    { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 2, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'dpr-2',
+    { pageSize: { width: 100, height: 200 }, rotation: 0, scale: 1, dpr: 2 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'r90-dpr-2',
+    { pageSize: { width: 100, height: 200 }, rotation: 90, scale: 1, dpr: 2 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'snaps-device',
+    { pageSize: { width: 100, height: 100 }, rotation: 0, scale: 1.337, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'engine-width-rule',
+    { pageSize: letter, rotation: 0, scale: 739 / 612, dpr: 1 },
+    probe,
+  ),
+  ...ROTATIONS.flatMap((r) =>
+    [1, 0.5, 1.333].flatMap((s) =>
+      [1, 2, 1.25].map((dpr) =>
+        c(
+          'pageTransform',
+          `letter-r${r}-s${s}-dpr${dpr}`,
+          { pageSize: letter, rotation: r, scale: s, dpr },
+          probe,
+        ),
+      ),
+    ),
+  ),
+  ...ODD_ROTATIONS.map((r) =>
+    c(
+      'pageTransform',
+      `odd-rotation-${r}`,
+      { pageSize: letter, rotation: r, scale: 1, dpr: 1 },
+      probe,
+    ),
+  ),
+  c(
+    'pageTransform',
+    'base-scale-96-72',
+    { pageSize: letter, rotation: 0, scale: 96 / 72, baseScale: 96 / 72, dpr: 1 },
+    probe,
+  ),
+  c('pageTransform', 'base-scale-userunit-5', {
+    pageSize: letter,
+    rotation: 0,
+    scale: (96 / 72) * 5,
+    baseScale: (96 / 72) * 5,
+    dpr: 1,
+  }),
+  c('pageTransform', 'base-scale-200-percent', {
+    pageSize: letter,
+    rotation: 90,
+    scale: (96 / 72) * 10,
+    baseScale: (96 / 72) * 5,
+    dpr: 1,
+  }),
   c('pageTransform', 'base-scale-default', { pageSize: letter, rotation: 0, scale: 0.42, dpr: 2 }),
-  c('pageTransform', 'base-scale-null', { pageSize: letter, rotation: 0, scale: 0.42, baseScale: null, dpr: 2 }),
-  c('pageTransform', 'base-scale-zero', { pageSize: letter, rotation: 0, scale: 1, baseScale: 0, dpr: 1 }),
-  c('pageTransform', 'base-scale-negative', { pageSize: letter, rotation: 0, scale: 1, baseScale: -2, dpr: 1 }),
-  c('pageTransform', 'base-scale-nan', { pageSize: letter, rotation: 0, scale: 1, baseScale: NaN, dpr: 1 }),
-  c('pageTransform', 'base-scale-tiny', { pageSize: letter, rotation: 0, scale: 1, baseScale: 5e-324, dpr: 1 }),
-  c('pageTransform', 'scale-zero-clamps-device', { pageSize: letter, rotation: 90, scale: 0, dpr: 1 }, probe),
-  c('pageTransform', 'scale-negative', { pageSize: letter, rotation: 180, scale: -1, dpr: 1 }, probe),
-  c('pageTransform', 'tiny-page', { pageSize: { width: 0.3, height: 0.2 }, rotation: 270, scale: 1, dpr: 1 }, probe),
-  c('pageTransform', 'device-tie-rounds-up', { pageSize: { width: 5, height: 3 }, rotation: 0, scale: 0.5, dpr: 1 }, probe),
-  c('pageTransform', 'zero-width-page', { pageSize: { width: 0, height: 100 }, rotation: 0, scale: 1, dpr: 1 }, probe),
+  c('pageTransform', 'base-scale-null', {
+    pageSize: letter,
+    rotation: 0,
+    scale: 0.42,
+    baseScale: null,
+    dpr: 2,
+  }),
+  c('pageTransform', 'base-scale-zero', {
+    pageSize: letter,
+    rotation: 0,
+    scale: 1,
+    baseScale: 0,
+    dpr: 1,
+  }),
+  c('pageTransform', 'base-scale-negative', {
+    pageSize: letter,
+    rotation: 0,
+    scale: 1,
+    baseScale: -2,
+    dpr: 1,
+  }),
+  c('pageTransform', 'base-scale-nan', {
+    pageSize: letter,
+    rotation: 0,
+    scale: 1,
+    baseScale: NaN,
+    dpr: 1,
+  }),
+  c('pageTransform', 'base-scale-tiny', {
+    pageSize: letter,
+    rotation: 0,
+    scale: 1,
+    baseScale: 5e-324,
+    dpr: 1,
+  }),
+  c(
+    'pageTransform',
+    'scale-zero-clamps-device',
+    { pageSize: letter, rotation: 90, scale: 0, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'scale-negative',
+    { pageSize: letter, rotation: 180, scale: -1, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'tiny-page',
+    { pageSize: { width: 0.3, height: 0.2 }, rotation: 270, scale: 1, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'device-tie-rounds-up',
+    { pageSize: { width: 5, height: 3 }, rotation: 0, scale: 0.5, dpr: 1 },
+    probe,
+  ),
+  c(
+    'pageTransform',
+    'zero-width-page',
+    { pageSize: { width: 0, height: 100 }, rotation: 0, scale: 1, dpr: 1 },
+    probe,
+  ),
   c('pageTransform', 'zero-dpr', { pageSize: letter, rotation: 0, scale: 1, dpr: 0 }, probe),
-  c('pageTransform', 'infinite-dpr', { pageSize: letter, rotation: 90, scale: 1, dpr: Infinity }, probe),
+  c(
+    'pageTransform',
+    'infinite-dpr',
+    { pageSize: letter, rotation: 90, scale: 1, dpr: Infinity },
+    probe,
+  ),
   c('pageTransform', 'nan-scale', { pageSize: letter, rotation: 0, scale: NaN, dpr: 1 }, probe),
-  c('pageTransform', 'singular-throws', { pageSize: { width: 1e300, height: 1e300 }, rotation: 0, scale: 1e-300, dpr: 1 }, probe),
+  c(
+    'pageTransform',
+    'singular-throws',
+    { pageSize: { width: 1e300, height: 1e300 }, rotation: 0, scale: 1e-300, dpr: 1 },
+    probe,
+  ),
   c('pageTransform', 'no-probes', { pageSize: letter, rotation: 270, scale: 2, dpr: 3 }),
   ...[
     ['letter', { left: 0, bottom: 0, right: 612, top: 792 }],
@@ -452,39 +674,97 @@ const page: FunctionCase[] = [
   c('pageSpace', 'no-probes', crop),
   c('pageSpace', 'nan-crop', { left: NaN, bottom: 0, right: 10, top: 10 }, spaceProbe),
 
-  c('edgesOverlap', 'overlap', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 5, bottom: 5, right: 15, top: 15 }),
-  c('edgesOverlap', 'touching-x', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 10, bottom: 0, right: 20, top: 10 }),
-  c('edgesOverlap', 'touching-y', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 0, bottom: 10, right: 10, top: 20 }),
-  c('edgesOverlap', 'disjoint-x', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 20, bottom: 0, right: 30, top: 10 }),
-  c('edgesOverlap', 'disjoint-y-only', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 2, bottom: 20, right: 8, top: 30 }),
-  c('edgesOverlap', 'contained', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 2, bottom: 2, right: 3, top: 3 }),
-  c('edgesOverlap', 'nan', { left: NaN, bottom: 0, right: 10, top: 10 }, { left: 0, bottom: 0, right: 10, top: 10 }),
+  c(
+    'edgesOverlap',
+    'overlap',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 5, bottom: 5, right: 15, top: 15 },
+  ),
+  c(
+    'edgesOverlap',
+    'touching-x',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 10, bottom: 0, right: 20, top: 10 },
+  ),
+  c(
+    'edgesOverlap',
+    'touching-y',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 0, bottom: 10, right: 10, top: 20 },
+  ),
+  c(
+    'edgesOverlap',
+    'disjoint-x',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 20, bottom: 0, right: 30, top: 10 },
+  ),
+  c(
+    'edgesOverlap',
+    'disjoint-y-only',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 2, bottom: 20, right: 8, top: 30 },
+  ),
+  c(
+    'edgesOverlap',
+    'contained',
+    { left: 0, bottom: 0, right: 10, top: 10 },
+    { left: 2, bottom: 2, right: 3, top: 3 },
+  ),
+  c(
+    'edgesOverlap',
+    'nan',
+    { left: NaN, bottom: 0, right: 10, top: 10 },
+    { left: 0, bottom: 0, right: 10, top: 10 },
+  ),
 
   c('edgesOfQuad', 'axis-aligned', quad(pt(10, 30), pt(40, 30), pt(10, 20), pt(40, 20))),
   c('edgesOfQuad', 'rotated', quad(pt(0, 5), pt(5, 10), pt(10, 5), pt(5, 0))),
   c('edgesOfQuad', 'scattered', quad(pt(5, -1), pt(-2, 7), pt(9, 3), pt(0, -4))),
   c('edgesOfQuad', 'nan', quad(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
 
-  c('pageTransform', 'huge-page', { pageSize: { width: 14400, height: 14400 }, rotation: 90, scale: 4, dpr: 3 }, probe),
+  c(
+    'pageTransform',
+    'huge-page',
+    { pageSize: { width: 14400, height: 14400 }, rotation: 90, scale: 4, dpr: 3 },
+    probe,
+  ),
 ];
 
 // ── text quads ──────────────────────────────────────────────────────────────
 
+// 00d2c8760 dropped "text" from the quad helpers (`textQuadPoints` is
+// `quadCorners`, `textQuadEdge` takes 'left' | 'right'), and removed
+// `positionalQuad` and `normalizeQuad`.
 const textQuadFns: Record<string, Fn> = {
-  textQuadFromRect: g.textQuadFromRect,
-  textQuadPoints: g.textQuadPoints,
-  textQuadRing: g.textQuadRing,
-  textQuadEdge: g.textQuadEdge,
-  textQuadEquals: g.textQuadEquals,
-  textQuadBounds: g.textQuadBounds,
-  applyTextQuad: g.applyTextQuad,
-  positionalQuad: g.positionalQuad,
-  normalizeQuad: g.normalizeQuad,
+  textQuadFromRect: g.quadFromRect,
+  textQuadPoints: g.quadCorners,
+  textQuadRing: g.quadRing,
+  textQuadEdge: g.quadEdge,
+  textQuadEquals: g.quadEquals,
+  textQuadBounds: g.quadBounds,
+  applyTextQuad: g.applyQuad,
+  quadCorners: g.quadCorners,
+  normalizePdfQuad,
 };
 
-const cell = g.textQuadFromRect(rc(100, 200, 60, 16));
-const tilted = g.applyTextQuad(g.rotate(0.7), cell);
-const tq = (us: Point, ue: Point, ls: Point, le: Point): TextQuad => ({ upperStart: us, upperEnd: ue, lowerStart: ls, lowerEnd: le });
+// Fixture construction uses the same current shipping quad helpers.
+const textQuadFromRect = g.quadFromRect;
+const applyTextQuad = g.applyQuad;
+const positionalQuad = (t: TextQuad): Quad => ({
+  upperLeft: t.upperLeft,
+  upperRight: t.upperRight,
+  lowerLeft: t.lowerLeft,
+  lowerRight: t.lowerRight,
+});
+
+const cell = textQuadFromRect(rc(100, 200, 60, 16));
+const tilted = applyTextQuad(g.rotate(0.7), cell);
+const tq = (us: Point, ue: Point, ls: Point, le: Point): TextQuad => ({
+  upperLeft: us,
+  upperRight: ue,
+  lowerLeft: ls,
+  lowerRight: le,
+});
 
 const textQuads: FunctionCase[] = [
   c('textQuadFromRect', 'basic', rc(10, 20, 30, 12)),
@@ -498,16 +778,31 @@ const textQuads: FunctionCase[] = [
   c('textQuadEdge', 'tilted-start', tilted, 'start'),
   c('textQuadEdge', 'tilted-end', tilted, 'end'),
 
-  c('textQuadEquals', 'same', cell, g.textQuadFromRect(rc(100, 200, 60, 16))),
-  c('textQuadEquals', 'moved-lower-end-x', cell, { ...cell, lowerEnd: pt(161, 216) }),
-  c('textQuadEquals', 'moved-lower-end-y', cell, { ...cell, lowerEnd: pt(160, 217) }),
-  c('textQuadEquals', 'moved-upper-start-x', cell, { ...cell, upperStart: pt(99, 200) }),
-  c('textQuadEquals', 'moved-upper-start-y', cell, { ...cell, upperStart: pt(100, 201) }),
-  c('textQuadEquals', 'moved-upper-end', cell, { ...cell, upperEnd: pt(160, 199) }),
-  c('textQuadEquals', 'moved-lower-start', cell, { ...cell, lowerStart: pt(101, 216) }),
-  c('textQuadEquals', 'rotated-in-place', cell, g.applyTextQuad(g.rotateAbout(pt(130, 208), Math.PI / 6), cell)),
-  c('textQuadEquals', 'nan-never-equal', tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1)), tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
-  c('textQuadEquals', 'negative-zero-equal', tq(pt(-0, 0), pt(1, 0), pt(0, 1), pt(1, 1)), tq(pt(0, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
+  c('textQuadEquals', 'same', cell, textQuadFromRect(rc(100, 200, 60, 16))),
+  c('textQuadEquals', 'moved-lower-end-x', cell, { ...cell, lowerRight: pt(161, 216) }),
+  c('textQuadEquals', 'moved-lower-end-y', cell, { ...cell, lowerRight: pt(160, 217) }),
+  c('textQuadEquals', 'moved-upper-start-x', cell, { ...cell, upperLeft: pt(99, 200) }),
+  c('textQuadEquals', 'moved-upper-start-y', cell, { ...cell, upperLeft: pt(100, 201) }),
+  c('textQuadEquals', 'moved-upper-end', cell, { ...cell, upperRight: pt(160, 199) }),
+  c('textQuadEquals', 'moved-lower-start', cell, { ...cell, lowerLeft: pt(101, 216) }),
+  c(
+    'textQuadEquals',
+    'rotated-in-place',
+    cell,
+    applyTextQuad(g.rotateAbout(pt(130, 208), Math.PI / 6), cell),
+  ),
+  c(
+    'textQuadEquals',
+    'nan-never-equal',
+    tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1)),
+    tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1)),
+  ),
+  c(
+    'textQuadEquals',
+    'negative-zero-equal',
+    tq(pt(-0, 0), pt(1, 0), pt(0, 1), pt(1, 1)),
+    tq(pt(0, 0), pt(1, 0), pt(0, 1), pt(1, 1)),
+  ),
 
   c('textQuadBounds', 'cell', cell),
   c('textQuadBounds', 'tilted', tilted),
@@ -515,21 +810,25 @@ const textQuads: FunctionCase[] = [
   c('textQuadBounds', 'nan', tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
   c('textQuadBounds', 'nan-y', tq(pt(0, 0), pt(1, 0), pt(0, NaN), pt(1, 1))),
 
-  c('applyTextQuad', 'quarter-turn', [0, 1, -1, 0, 0, 0], g.textQuadFromRect(rc(0, 0, 10, 4))),
+  c('applyTextQuad', 'quarter-turn', [0, 1, -1, 0, 0, 0], textQuadFromRect(rc(0, 0, 10, 4))),
   c('applyTextQuad', 'every-slot', [2, 3, 5, 7, 11, 13], cell),
 
   c('positionalQuad', 'cell', cell),
   c('positionalQuad', 'tilted', tilted),
 
   // normalizeQuad: zigzag pass-through.
-  c('normalizeQuad', 'rect-round-trip', g.positionalQuad(g.textQuadFromRect(rc(10, 20, 30, 12)))),
+  c('normalizeQuad', 'rect-round-trip', positionalQuad(textQuadFromRect(rc(10, 20, 30, 12)))),
   c('normalizeQuad', 'rotated-zigzag', quad(pt(50, 10), pt(50, 40), pt(38, 10), pt(38, 40))),
-  c('normalizeQuad', 'tilted-zigzag', g.positionalQuad(tilted)),
-  c('normalizeQuad', 'upside-down-zigzag', g.positionalQuad(g.applyTextQuad(g.rotate(Math.PI), cell))),
+  c('normalizeQuad', 'tilted-zigzag', positionalQuad(tilted)),
+  c('normalizeQuad', 'upside-down-zigzag', positionalQuad(applyTextQuad(g.rotate(Math.PI), cell))),
   c('normalizeQuad', 'mirrored-zigzag', quad(pt(10, 0), pt(0, 0), pt(10, 5), pt(0, 5))),
   // Ring order, repaired.
   c('normalizeQuad', 'ring-order', quad(pt(10, 20), pt(40, 20), pt(40, 32), pt(10, 32))),
-  c('normalizeQuad', 'ring-order-tilted', quad(tilted.upperStart, tilted.upperEnd, tilted.lowerEnd, tilted.lowerStart)),
+  c(
+    'normalizeQuad',
+    'ring-order-tilted',
+    quad(tilted.upperLeft, tilted.upperRight, tilted.lowerRight, tilted.lowerLeft),
+  ),
   // Each zigzag rejection, one at a time.
   c('normalizeQuad', 'non-finite-x', quad(pt(NaN, 0), pt(10, 0), pt(0, 10), pt(10, 10))),
   c('normalizeQuad', 'non-finite-y', quad(pt(0, 0), pt(10, Infinity), pt(0, 10), pt(10, 10))),
@@ -539,29 +838,49 @@ const textQuads: FunctionCase[] = [
   c('normalizeQuad', 'zero-start-side', quad(pt(0, 0), pt(10, 0), pt(0, 0), pt(10, 10))),
   c('normalizeQuad', 'zero-end-side', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(10, 0))),
   c('normalizeQuad', 'edge-at-epsilon', quad(pt(0, 0), pt(1e-6, 0), pt(0, 10), pt(1e-6, 10))),
-  c('normalizeQuad', 'edge-just-above-epsilon', quad(pt(0, 0), pt(1.1e-6, 0), pt(0, 10), pt(1.1e-6, 10))),
+  c(
+    'normalizeQuad',
+    'edge-just-above-epsilon',
+    quad(pt(0, 0), pt(1.1e-6, 0), pt(0, 10), pt(1.1e-6, 10)),
+  ),
   c('normalizeQuad', 'lower-reversed', quad(pt(0, 0), pt(10, 0), pt(10, 10), pt(0, 10))),
   c('normalizeQuad', 'lower-perpendicular', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(0, 20))),
   c('normalizeQuad', 'sides-opposed', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(10, -10))),
-  c('normalizeQuad', 'sides-perpendicular', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(20, 0.0000001))),
+  c(
+    'normalizeQuad',
+    'sides-perpendicular',
+    quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(20, 0.0000001)),
+  ),
   c('normalizeQuad', 'collinear', quad(pt(0, 0), pt(10, 0), pt(1, 0), pt(11, 0))),
   c('normalizeQuad', 'end-area-zero', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(5, 5))),
   c('normalizeQuad', 'winding-mismatch', quad(pt(0, 0), pt(10, 0), pt(0, 10), pt(4, 4))),
   c('normalizeQuad', 'thin-sliver', quad(pt(0, 0), pt(1000, 0), pt(0, 1e-6), pt(1000, 1e-6))),
-  c('normalizeQuad', 'thin-sliver-accepted', quad(pt(0, 0), pt(1000, 0), pt(0, 1e-3), pt(1000, 1e-3))),
+  c(
+    'normalizeQuad',
+    'thin-sliver-accepted',
+    quad(pt(0, 0), pt(1000, 0), pt(0, 1e-3), pt(1000, 1e-3)),
+  ),
   // The geometric fallback.
   c('normalizeQuad', 'garbage-self-intersecting', quad(pt(0, 0), pt(10, 12), pt(10, 0), pt(0, 12))),
   c('normalizeQuad', 'all-one-point', quad(pt(3, 3), pt(3, 3), pt(3, 3), pt(3, 3))),
   c('normalizeQuad', 'all-nan', quad(pt(NaN, NaN), pt(NaN, NaN), pt(NaN, NaN), pt(NaN, NaN))),
   c('normalizeQuad', 'one-nan-becomes-origin', quad(pt(NaN, 5), pt(10, 12), pt(10, 0), pt(0, 12))),
-  c('normalizeQuad', 'infinite-becomes-origin', quad(pt(Infinity, 5), pt(10, 12), pt(10, 0), pt(-Infinity, 12))),
+  c(
+    'normalizeQuad',
+    'infinite-becomes-origin',
+    quad(pt(Infinity, 5), pt(10, 12), pt(10, 0), pt(-Infinity, 12)),
+  ),
   c('normalizeQuad', 'start-first-false', quad(pt(-9, 1), pt(10, 1.5), pt(-10, -1), pt(10, 1.6))),
   c('normalizeQuad', 'duplicate-corners', quad(pt(0, 0), pt(10, 0), pt(0, 0), pt(0, 10))),
   c('normalizeQuad', 'two-pairs', quad(pt(0, 0), pt(5, 5), pt(0, 0), pt(5, 5))),
   c('normalizeQuad', 'triangle', quad(pt(0, 0), pt(10, 0), pt(5, 8), pt(5, 8))),
   c('normalizeQuad', 'collinear-horizontal', quad(pt(0, 0), pt(3, 0), pt(1, 0), pt(2, 0))),
   c('normalizeQuad', 'collinear-vertical', quad(pt(0, 0), pt(0, 3), pt(0, 1), pt(0, 2))),
-  c('normalizeQuad', 'huge-coordinates', quad(pt(1e308, 1e308), pt(1.5e308, 1e308), pt(1e308, 1.7e308), pt(-1e308, 1e308))),
+  c(
+    'normalizeQuad',
+    'huge-coordinates',
+    quad(pt(1e308, 1e308), pt(1.5e308, 1e308), pt(1e308, 1.7e308), pt(-1e308, 1e308)),
+  ),
   c('normalizeQuad', 'diamond-bowtie', quad(pt(0, -5), pt(0, 5), pt(5, 0), pt(-5, 0))),
   c('normalizeQuad', 'tie-on-top-edge', quad(pt(0, 0), pt(10, 10), pt(10, 0), pt(0, 10))),
   c('normalizeQuad', 'tie-rotated-square', quad(pt(0, -1), pt(0, 1), pt(1, 0), pt(-1, 0))),
@@ -585,13 +904,22 @@ const thresholdBases: [string, Quad][] = [
   ]),
   ['diagonal-upper-below-epsilon', q4([0, 0], [7e-7, 7e-7], [0, 10], [10, 10])],
   ['diagonal-upper-above-epsilon', q4([0, 0], [7.2e-7, 7.2e-7], [0, 10], [10, 10])],
-  ...[5e-7, 2e-6].map((t): [string, Quad] => [`start-area-${t}`, q4([0, 0], [100, 0], [10, 10 * t], [120, 50])]),
+  ...[5e-7, 2e-6].map((t): [string, Quad] => [
+    `start-area-${t}`,
+    q4([0, 0], [100, 0], [10, 10 * t], [120, 50]),
+  ]),
   ...[-1.3e-4, -3e-5, 3e-5, 1.3e-4].map((d): [string, Quad] => [
     `end-area-${d}`,
     q4([0, 0], [100, 0], [-20, 50], [40 + (d * 50) / 130, 25 + (d * 120) / 130]),
   ]),
-  ...[-0.1, 0.1].map((e): [string, Quad] => [`upper-lower-dot-${e}`, q4([0, 0], [10, 0], [0, 10], [e, 20])]),
-  ...[-0.1, 0.1].map((e): [string, Quad] => [`side-dot-${e}`, q4([0, 0], [10, 0], [0, 10], [20, e])]),
+  ...[-0.1, 0.1].map((e): [string, Quad] => [
+    `upper-lower-dot-${e}`,
+    q4([0, 0], [10, 0], [0, 10], [e, 20]),
+  ]),
+  ...[-0.1, 0.1].map((e): [string, Quad] => [
+    `side-dot-${e}`,
+    q4([0, 0], [10, 0], [0, 10], [20, e]),
+  ]),
   ['winding-start-positive', q4([0, 0], [10, 0], [0, 10], [4, 4])],
   ['winding-start-negative', q4([0, 0], [-10, 0], [0, 10], [-4, 4])],
   ['mirrored-both-negative', q4([10, 0], [0, 0], [10, 5], [0, 5])],
@@ -607,7 +935,8 @@ const turns: [string, (p: Point) => Point][] = [
   ['tilt-2', (p) => g.applyPoint(g.compose(g.translate(-21, 45), g.rotate(2)), p)],
   ['tilt--2.5', (p) => g.applyPoint(g.compose(g.translate(8, 8), g.rotate(-2.5)), p)],
 ];
-const mapQuad = (q: Quad, f: (p: Point) => Point): Quad => quad(f(q.p1), f(q.p2), f(q.p3), f(q.p4));
+const mapQuad = (q: Quad, f: (p: Point) => Point): Quad =>
+  quad(f(q.upperLeft), f(q.upperRight), f(q.lowerLeft), f(q.lowerRight));
 textQuads.push(
   ...thresholdBases.flatMap(([label, base]) => [
     c('normalizeQuad', `${label}-upright`, base),
@@ -618,15 +947,24 @@ textQuads.push(
   // Edge midpoints near the top of the double range: the fallback's
   // midpoint is a half-sum, which does not overflow where a sum times two
   // would, so the highest edge is still told apart.
-  c('normalizeQuad', 'midpoints-near-overflow', q4([0, 5e307], [0, 6e307], [0, 4.6e307], [0, 4.7e307])),
-  c('normalizeQuad', 'nan-areas', q4([-1e308, -1e308], [1e308, 1e308], [-1e308, -9e307], [1e308, 1.1e308])),
+  c(
+    'normalizeQuad',
+    'midpoints-near-overflow',
+    q4([0, 5e307], [0, 6e307], [0, 4.6e307], [0, 4.7e307]),
+  ),
+  c(
+    'normalizeQuad',
+    'nan-areas',
+    q4([-1e308, -1e308], [1e308, 1e308], [-1e308, -9e307], [1e308, 1.1e308]),
+  ),
 );
 
 export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'core/geometry-basics.json',
-    describes: 'packages/core/geometry: rect bounds, intersection, corners, containment and overlap, quarter-turn rotations, device rounding.',
+    describes:
+      'packages/core/geometry: rect bounds, intersection, corners, containment and overlap, quarter-turn rotations, device rounding.',
     functions: basicsFns,
     cases: basics,
   },
@@ -640,15 +978,16 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'core/geometry-page.json',
-    describes: 'packages/core/geometry: rotateScaleMatrix, pageGeometry, pageTransform and pageSpace (methods exercised on probes), PdfEdges helpers.',
+    describes:
+      'packages/core/geometry: rotateScaleMatrix, pageGeometry, pageTransform and pageSpace (methods exercised on probes), PdfEdges helpers.',
     functions: pageFns,
-    cases: page,
+    cases: page.filter((entry) => !RETIRED.has(entry.fn)),
   },
   {
     kind: 'function',
     file: 'core/geometry-text-quad.json',
     describes: 'packages/core/geometry: TextQuad helpers and normalizeQuad.',
     functions: textQuadFns,
-    cases: textQuads,
+    cases: textQuads.filter((entry) => !RETIRED.has(entry.fn)),
   },
 ];

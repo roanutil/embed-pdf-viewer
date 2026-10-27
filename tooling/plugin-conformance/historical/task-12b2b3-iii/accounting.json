@@ -1,0 +1,985 @@
+{
+  "base": "eb80f0e8b93161c01e27c10c110ab0a1791fbba6",
+  "originalArchiveBase": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "original": 40,
+  "originalScenarios": 21,
+  "originalPure": 19,
+  "current": 43,
+  "currentScenarios": 23,
+  "currentPure": 20,
+  "mapped": 39,
+  "renamed": 0,
+  "wholeCaseRetirements": 1,
+  "added": 4,
+  "netAdditions": 3,
+  "changedMappedInputs": 38,
+  "task11InputDiff": 1,
+  "task11Disposition": "Only library-added-to-empty adds armed:{} from actual initialStampState between frozen and d803; current addLibrary receives that complete state. Later hardcoded state/ref/named-transition migrations are distinct. Exact frozen/d803 comparison remains immutable historical/task-12b2b3/task11-stamp-drift.json; model owners 4fc1a32af/cdf4586c7.",
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "imports-every-page-as-a-vector-asset",
+        "inputSha256": "ff94769d543e1bd904170d0804efad52aa3f27ffcb9f5c1c4ed7d83f9d2b1081"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "imports-every-page-as-a-vector-asset",
+        "inputSha256": "ae9d1adaa2dd44cbc16e5f1a26ea929cb8f2293dfad13d143895acaa5f2932e0"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "reads-ids-and-display-metadata-from-pieceinfo",
+        "inputSha256": "19a22b0ce9cf0716fff40fb8db7388855f79a1b5b8af382ccf97b32f022906ca"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "reads-ids-and-display-metadata-from-pieceinfo",
+        "inputSha256": "11f8c86fa16815c7bbba0f7fe43be32a9688abaa352a4127c1810390a6ea4378"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Current named registry/legacy file Name and Subject own identifier/label; Page PieceInfo Id is ignored, SubjectOverride owns explicit subject. Current derived ids and exact normalized writes replace independent old asset ids.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-name-kind-and-stamp-kinds-read-back",
+        "inputSha256": "09acb36189dbe1a66433c155332adef28b1992aa3026a03293d4615e9cad3c89"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-name-kind-and-stamp-kinds-read-back",
+        "inputSha256": "26ff4dc1896b0d4aa52f8babc133169d2036759f05418b9edd588e18ca960922"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "import-options-override-the-pdf",
+        "inputSha256": "c28fb6fa06099d5f050099fe32a8ef8ab027c5f9ed0fe22e86396f86bd3ff69c"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "import-options-override-the-pdf",
+        "inputSha256": "949675b5a3dcd597d6fb94c0064fbb72bc299431dfc97ef99717f4c907e9c9e8"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Current embedded title/fallback Name precedes caller name; caller categories/kind and typed assetName labels retained. Replace obsolete null callback return with current typed undefined; preserve original exact callback in immutable archive.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-payload-source-and-its-errors",
+        "inputSha256": "05ab2e6f64be18c88c14a5927016a0b95049b41df553d27cfa8a1a978c223642"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-payload-source-and-its-errors",
+        "inputSha256": "7201338ece2d6619f0d8eb6ccd102f24e5d72d3dbd4040a1386f3ada0f7a1ea5"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-cloud-kernel-engine-names-the-fix",
+        "inputSha256": "e05b4ff3be3f8db4774def31122e19cb5089ddee7371b73ca1e74855a5da54eb"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-cloud-kernel-engine-names-the-fix",
+        "inputSha256": "2fbbd3f8a8686023d7f31a3379d2c1b005fef7f9bb92eec9c8165507491116f0"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Brand-based current remote refusal precedes open, replacing old InvalidArg-based cloud detection; obsolete unused open response answers are removed.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-configured-engine-keeps-its-invalid-arg",
+        "inputSha256": "30190dfdce246c988424f7282d14d0cdf7820888235a9c07606e81f8b40af969"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-configured-engine-keeps-its-invalid-arg",
+        "inputSha256": "99abe3a9e543179c619f602e1b5c84760d19ac17744d55ba88d929c2fc90f66f"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "missing-services-refuse-before-any-write",
+        "inputSha256": "806179304c2ebdfeef80edcf187b29bb93990aeba70135626400ca268d168821"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "missing-services-refuse-before-any-write",
+        "inputSha256": "202343e7b072343c77cda3a95852a88a541c4603924cc0c90b3158bfd909cbff"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Required local PieceInfo replaces optional-service absent NotImplemented substeps with exact actual engine Unsupported .get refusals; retain empty/unknown page errors and close/no-state. Source libraries.ts + LocalDocumentHandle/LocalPageHandle; root-approved.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-engine-failure-mid-import-adds-nothing",
+        "inputSha256": "69e74fbcd6a8a5e2fcb54912919a0279631add5800d4a756ff9e83a7626c96da"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-engine-failure-mid-import-adds-nothing",
+        "inputSha256": "7b6a1b75b65f513f7889336f64ec6758a010c498426c3a3fd0028f96f1415568"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-failed-close-fails-the-import",
+        "inputSha256": "fea39f444376ea544315e4ac74ae85093f70b1262bbdbc4e61e668838e57e4a7"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-failed-close-fails-the-import",
+        "inputSha256": "c56e81e09eee72c7b363c4fd0c2c085000ef8526d07da87713f477d3b7ac0ded"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "previews-must-be-inline-bytes",
+        "inputSha256": "4f0c1c8bf75084f31a29a3baf959503673b250c00c6b3296531830d13b5dfd40"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "previews-must-be-inline-bytes",
+        "inputSha256": "bb7f7ef8d022221df49b1b38796576520f9bef92cffdd3147765c36ab725d3bd"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-render-with-no-image-throws",
+        "inputSha256": "56dc3c00902ba2cc4e864c37a28d2094bdcb557c1973a4f6565091c18cc821af"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-render-with-no-image-throws",
+        "inputSha256": "189c0218a66020e5ffcfadd8b53503aefe02c64157dd898a250e2ef947e4ae37"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-second-import-allocates-fresh-ids",
+        "inputSha256": "6df05eaf76a86c81cf421443cdea6a72e06d69700dadb145abf88e1c08ff8beb"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-second-import-allocates-fresh-ids",
+        "inputSha256": "a715ef7491f52f57122973add178d314c326b2d462dc3c2a38181f8a283d773f"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Library uid collision remains actual allocation; asset identities now derive. Change preferred collision input to the current next fallback stamp-lib-0-5 to exercise retry, yielding stamp-lib-0-6.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "ids-carry-the-clock",
+        "inputSha256": "670e5894d98d033bb65304a683b5950d1a4f4eb4f43f67490d234d2aa8b25fe7"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "ids-carry-the-clock",
+        "inputSha256": "9f9b2a85d8c4f981ef90a113e51822e4241b2785fe6a904a3701a9a8ec97d5bb"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "concurrent-imports-read-the-store-before-either-lands",
+        "inputSha256": "82f65ce3fd29776cb9fe35ed1a106a0858c8333ba2f78d9f6e972a29752c1fab"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "concurrent-imports-read-the-store-before-either-lands",
+        "inputSha256": "40ed658046001c9668e6bf3c16f498ebe120f7e12c993527c47c97ba5cf38a0f"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Current assetIdFor derives ids from library+identifier; cross-library shared-asset overwrite/removal no longer exists. Use actual deleteLibrary for the first imported library; preserve concurrent same-library duplicate order plus full delete cleanup. Asset mutation belongs to iv.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-asset-engine-factory-is-called-once",
+        "inputSha256": "39341b75750a6bb8bae67dc2a69129e7b16bd9bd1131fbbc318c546653326a0c"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-asset-engine-factory-is-called-once",
+        "inputSha256": "486e197db9fb33f3e0499f6e29a1fdac71b35386b11b75f1f4769dab481e6020"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-async-asset-engine-factory",
+        "inputSha256": "6104c4e70e802572ab138a309b7b6b4d8e31b4086b200d0e7f4cbb54012c2263"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-async-asset-engine-factory",
+        "inputSha256": "ff605ca62009c1bad631b616a10e960d6524359bd096af32537ef5b47342fa3a"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-throwing-asset-engine-factory-is-retried",
+        "inputSha256": "55c57e4e1c9d8e9446b23693a745a0b775c62e60a07af367d72f975ef2e35bd0"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-throwing-asset-engine-factory-is-retried",
+        "inputSha256": "35fc7c04de1e2d99c84d70ac5a60fdfa923859be1185cc884e8669eb74deb80c"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-rejecting-asset-engine-factory-is-memoized",
+        "inputSha256": "5c695c86ff7401c04abc3ad3fe584f453e0d3f6f335d28c330705b3d1365db41"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "a-rejecting-asset-engine-factory-is-memoized",
+        "inputSha256": "bb69b12505c31796c69af7d2c4609f853482d98764607f539202fc73f2bdad3f"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-engine-instance-is-not-destroyed",
+        "inputSha256": "2ae03ede65d9619d44a8becbef69f578218d7dd698ca5d9860b365db2d665ab4"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "an-engine-instance-is-not-destroyed",
+        "inputSha256": "55fb507a810fb3c65cc3c72c581c412d952a2d6bc5144d3f7a4cd4965e5b8d85"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Actual shipping settings/create/state/inScope registration, typed local asset port and complete current engine data replace obsolete helper shape and methods. Independent successful results and exact negative channels are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-library.json",
+        "name": "the-plugin-factory-defaults",
+        "inputSha256": "25b4fdfc84d2caf8b36078a173f316e6d1d1706dbd3db2c5250ba686f6886341"
+      },
+      "after": {
+        "file": "plugins/stamp-library.json",
+        "name": "the-plugin-factory-defaults",
+        "inputSha256": "0da946222c49c9da43d814ffbed46efb31f1395ddc9f85e7d727708b0499721e"
+      },
+      "target": "current stampPlugin workspace controller APIs",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Unconfigured current kernel is remote: exact pre-open unsupported refusal replaces invalid old success; direct official local TestContext defaults success is independently checked.",
+      "source": [
+        "packages/plugin/stamp/src/stamp.plugin.ts",
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/asset-engine.ts"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "initial-state",
+        "inputSha256": "6338067768590ca1ba04cd789ea429f2186fd522a12954ef02a1a770774bc6c5"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "initial-state",
+        "inputSha256": "6338067768590ca1ba04cd789ea429f2186fd522a12954ef02a1a770774bc6c5"
+      },
+      "target": "initialStampState",
+      "disposition": "mapped",
+      "inputChanged": false,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-to-empty",
+        "inputSha256": "9ddd4b52c058987bac4ee1d19ed197f5bd73084d49be41136e891e071542371a"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-to-empty",
+        "inputSha256": "c469e615ef69dd485b6d65b8da356e4275228f6f82a420e1f0783c63e258cf3a"
+      },
+      "target": "addLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-appends-order",
+        "inputSha256": "0563d05aefb3955253c6432a4fec161d934432fc8cc20cca2b854d2c7775c85d"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-appends-order",
+        "inputSha256": "0cbeaba5d2e360e1e0daca371baf02790bc34dcf1ceafdb8724256e0a4b2c9b2"
+      },
+      "target": "addLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-with-a-taken-id",
+        "inputSha256": "f53919ae8bde347cb14cf5e6d0801365eab60fa45c17cd4191c6cefea2f5f0cd"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-added-with-a-taken-id",
+        "inputSha256": "5517b89085da8c18f70567ad470577270ef9cc203c7089aefe2b404cf619818f"
+      },
+      "target": "addLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed",
+        "inputSha256": "3dc4a5184ba7b64e9a705ee39ff4c6b89ad466f34809c9f5bac520a7d651254c"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed",
+        "inputSha256": "6d38dde611910b062ec25126905bbdfc90d30cff70612ecc2231c4afecce76a7"
+      },
+      "target": "removeLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-unknown",
+        "inputSha256": "bb6ce5d80069dc7d225b549c863c01c49183835bac2861e914a289a98d90ba48"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-unknown",
+        "inputSha256": "84d991fc79d918cb706db782575caf103da12fe6e78e2d3238226edce9e25834"
+      },
+      "target": "removeLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-with-missing-assets",
+        "inputSha256": "26752d797a0c2e5c4b8a9075dc57dd63e8ce809b9045ee09adf8596002b3f63b"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-with-missing-assets",
+        "inputSha256": "717afb3244adb2968f0ec2177f0ac8a6323fe261d23a0a1fb6f518097c919b7f"
+      },
+      "target": "removeLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-duplicate-order",
+        "inputSha256": "2096488c8e3923e003a52278d00a17ff98e2a3cf2587dfffa62240ff10c9f4a2"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-removed-duplicate-order",
+        "inputSha256": "df79b15139e0c54db1ef075cccb00db384388ac0d89c28a4633e1ac61d71cd03"
+      },
+      "target": "removeLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added",
+        "inputSha256": "79605226723caf79b6b05b2c734a99e336e3fc841f5214a101e5ce0f56ce8043"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added",
+        "inputSha256": "f2eec48be0b9228d32386231732c9038824ada4874ebe42b606c157faf378c73"
+      },
+      "target": "addAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added-to-unknown-library",
+        "inputSha256": "058b0edf94283624df8650a13978ad3b64420bd280d026c99af110f7017ff9f9"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added-to-unknown-library",
+        "inputSha256": "d077f01d9c6e2ff50680114e4c6685dbe5532782215a6a38bf8aa0ee33fef90d"
+      },
+      "target": "addAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added-twice",
+        "inputSha256": "6def13041834849ab5eddd0da2b7dd84fa885fd225baf4e1b195317503f69c55"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-added-twice",
+        "inputSha256": "7478499c75b29f67ec609a97586893d5939146e01a1c73943d1632c446e5c5cf"
+      },
+      "target": "addAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed",
+        "inputSha256": "6cee6dbe0e538869f4ef1ea3a80665fc2158dbad6f6c6a064a663aa36cfae59e"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed",
+        "inputSha256": "d117e8bca1af97e621d83fc62663d3f54341859a75602235eb33552b856a2b18"
+      },
+      "target": "removeAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed-unknown",
+        "inputSha256": "b1033d769a3ee5216a9bb532db11afcc8e282a570de41f7f2dc162a7899924d0"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed-unknown",
+        "inputSha256": "a120781efe686cd9a1babb5c58dd67304ea8ae2894b2734707a00d979e1918ab"
+      },
+      "target": "removeAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed-without-its-library",
+        "inputSha256": "f2ba9541e1fddde0e49411849c81e1c2c524e664d02f5a19b167bb26e368bd1c"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-removed-without-its-library",
+        "inputSha256": "2edf9a1cbff90b046284496f2f7bd40fd7efc853ef1f9e9ee4aa5a74bbc79590"
+      },
+      "target": "removeAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-updated",
+        "inputSha256": "bc832aaae53462906b9299f6a1dbcb5014a0d63256fb79339180a56e309aaadc"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-updated",
+        "inputSha256": "c278bbf85173bfa30f5fba140fe15443e8c53e10ed03c1ea976c3ca2ab49e47a"
+      },
+      "target": "setLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-updated-unknown",
+        "inputSha256": "13561a81431acb21f70d785039dd5a7d1caaea242c851c8c733e836bae9f6def"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "library-updated-unknown",
+        "inputSha256": "793a27e3f70b5697f105856e811442806f40a862a8ad827a7aceaa3a3f21f388"
+      },
+      "target": "setLibrary",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-updated",
+        "inputSha256": "c0bf824ceb5050d0ea4b273fb1ca8973bf760181223bf79d2ef62b2de5faaf49"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-updated",
+        "inputSha256": "0625b61da6852d1b4522037303bce21ef085ee885797d7d197a10dcfccaa2a5b"
+      },
+      "target": "setAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-updated-unknown",
+        "inputSha256": "394ed30689d728c9c13a0e62fed5c22a1393f93b25cdadbeae57285199efd3e4"
+      },
+      "after": {
+        "file": "plugins/stamp-functions.json",
+        "name": "asset-updated-unknown",
+        "inputSha256": "edc19a8a27beac4664124f51320611de1ff663af969221f8ce7c5f4935d1a9d2"
+      },
+      "target": "setAsset",
+      "disposition": "mapped",
+      "inputChanged": true,
+      "reason": "Complete current StampState/armed/ref and actual named-transition arguments replace removed StampAction inputs.",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-functions.json",
+        "name": "unknown-action",
+        "inputSha256": "e565cbe11b47560e5b3385ddf5685d51aebff5e0c4122a417dcb5466b7c389c6"
+      },
+      "disposition": "retired",
+      "reason": "The StampAction dispatcher and unknown-action branch were removed by 4fc1a32af. There is no shipping named transition for arbitrary action dispatch; exact original definition/input remains in original B3 archive. The distinct current arm no-op probe is counted as an addition.",
+      "source": ["packages/plugin/stamp/src/model.ts"],
+      "removalCommit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/stamp-library.json",
+      "name": "named-registry-order-filters-and-preview-cache",
+      "inputSha256": "998acbe282eae5f2ae42b4b5c18582daca1274df004aa7938d19d9a107bf0339",
+      "target": "current shipping stamp/persistence APIs",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/ghosts.ts",
+        "packages/plugin/stamp/src/persistence.ts"
+      ]
+    },
+    {
+      "file": "plugins/stamp-library.json",
+      "name": "persistence-restores-canonical-bytes-and-unsubscribes",
+      "inputSha256": "63e2bfdd778d838b1aa16440e04d7386b30ab8683ef072a35549b67ace56d5fa",
+      "target": "current shipping stamp/persistence APIs",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/ghosts.ts",
+        "packages/plugin/stamp/src/persistence.ts"
+      ]
+    },
+    {
+      "file": "plugins/stamp-functions.json",
+      "name": "already-armed-is-stable",
+      "inputSha256": "60573186056b31f920af4c4fdc22c8807e853d91ee611bd75938031340516401",
+      "target": "armAsset",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    },
+    {
+      "file": "plugins/stamp-functions.json",
+      "name": "disarm-documents",
+      "inputSha256": "690729573e203e9ac612134f4f4c6cefe2a1c1b325d78f977471d7f3a0a2954a",
+      "target": "disarmDocuments",
+      "source": ["packages/plugin/stamp/src/model.ts"]
+    }
+  ],
+  "sourceEvidence": [
+    {
+      "path": "packages/plugin/stamp/src/stamp.plugin.ts",
+      "sha256": "f45c6b3e5eedd53fc970fbe9ad0550a1cd4c51c5ec2404a07e10ffaf4532b013",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/controller.ts",
+      "sha256": "136016e00e714a4d4e100d9738ba1110e885b5e5c9eabe0f5bc791d11b72522f",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/model.ts",
+      "sha256": "247b19ca9007f69e64223238a85b7aada2f307d89c62caebb4582cb359e308e9",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/contract.ts",
+      "sha256": "eb79ee0c63acd2f652048455273f33ff7d1992b2f7024a79d2970dd149ea2fb6",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/token.ts",
+      "sha256": "edce71570e2b2ba8ebfbf4366246b56149f0f0105b7fa94baf2e570793e6be95",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/convention.ts",
+      "sha256": "2a33349c2099b67bacfcff63a57897061ae9f6e5ee85a9cd32725b00bd902439",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/persistence.ts",
+      "sha256": "b1d55990e1187731037fd339ddbe5a82d62a9562f78f49ae662cb9f09175ba1f",
+      "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d"
+    },
+    {
+      "path": "packages/plugin/stamp/src/read/catalog.ts",
+      "sha256": "a32006c95141f2b49bb3c0f507801049377acdc0f734ccd9072c173914abff73",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/libraries.ts",
+      "sha256": "61068dfbcd99992bacbcf0e5697c3fe355d1c106d2b794dc95c3a25fd09c57fc",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/assets.ts",
+      "sha256": "c2a214fc32854193e54233ff6ee01c539ec23006d70ff0b668fa10b173a2abaa",
+      "commit": "b32fdf584c5600b347ce3997d4cd7e43d53a0946"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/placement.ts",
+      "sha256": "5bfe38a1ccf7c4432b2ffbb7dab7c61f8d0c7f2f7768ce11e889ce65ed9b6692",
+      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/asset-engine.ts",
+      "sha256": "04afd933a1b385b17cd4a2d2f707297e1225c43682149063a07a5aa4e9432562",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/binaries.ts",
+      "sha256": "2382d17a47243734c98df9dac95ebab061c74ebeb7cd040921774097f2d2e095",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/ghosts.ts",
+      "sha256": "0dcd9060b1dbdf38c116711a2079f64dd5f0cce0bf55e2d766354ce2f6ccbfad",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/events.ts",
+      "sha256": "4e3eddcef50d831a8aa960b2493259d7dc44dd337d7a2c74bcbebe93a2981fba",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalEngine.ts",
+      "sha256": "26c49891387a11f668687eb41c17e960c6f4fe568d1b2737f338f1a0964cc0fb",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalDocumentHandle.ts",
+      "sha256": "6aaf591e462f97f71ab85615a43c534e03506c17e947bace741e6568d801dba0",
+      "commit": "91404cfcb36167f72b620e65a83511eed485d95c"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalPageHandle.ts",
+      "sha256": "2965e842ba022cd45cca975ad0fd41f6f1a203565089e324982b948d1a5d4478",
+      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+    },
+    {
+      "path": "packages/engine/core/src/engine/localEngineBrand.ts",
+      "sha256": "dcb7227fac784fca57e06a0151f7fba9f5fbb03469af1ac1c6f0923ffe62c7ce",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PieceInfo.ts",
+      "sha256": "f77b32fdad6aab44cf3556e5ee0b154997e03b6426755a1932d90485517cd8bb",
+      "commit": "fd175ba5082e2cfdb7a839945e92280d5ed4bae7"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageRender.ts",
+      "sha256": "59e748481f9b6bf62840c8772de8e649e8d64a2e64462df0de5807a217ae0bb1",
+      "commit": "7e0d96c1cc8a6440b37ae1071f68d0f17c2535bd"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageListSnapshot.ts",
+      "sha256": "547e65db0c9e26bce218f2e1aa7cd9d0955ce694cbb12fec9ea9d1bcbc29c429",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/dto/NamedPage.ts",
+      "sha256": "1a1e2bcc48f170cc418b1cad4f619d20930880a9eca0d9a23bb4021286057fe5",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/engine/core/src/identity/PageRef.ts",
+      "sha256": "14b0278760d50aa1c0eb121902b271e3c7555854e9ea54ee80dc462484f69da9",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/core/main/src/settings.ts",
+      "sha256": "aa3032d4911ce7b4574d70d75af1d14dfd94ca304ab08bce2d534ad1f0024af1",
+      "commit": "7ebe12c2415a1a532383553622d3b2b2f6950e40"
+    },
+    {
+      "path": "packages/core/main/src/types.ts",
+      "sha256": "b584eef26358085af12a750f42c565ae839a8b792acbd4cf47b508be3651c5c4",
+      "commit": "070cc50bfc6b9d8a503711ef437da29a69238942"
+    },
+    {
+      "path": "packages/core/main/src/testing.ts",
+      "sha256": "8c46e5851adbfe10f62ccbda83fcf1bb98c0029c2bef57e5c0d59ec3dbe2805f",
+      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+    }
+  ],
+  "partialRetirements": {
+    "missing-services-refuse-before-any-write": "Required local PieceInfo replaces optional-service absent NotImplemented substeps with exact actual engine Unsupported .get refusals; retain empty/unknown page errors and close/no-state. Source libraries.ts + LocalDocumentHandle/LocalPageHandle; root-approved.",
+    "the-plugin-factory-defaults": "Unconfigured current kernel is remote: exact pre-open unsupported refusal replaces invalid old success; direct official local TestContext defaults success is independently checked.",
+    "concurrent-imports-read-the-store-before-either-lands": "Current assetIdFor derives ids from library+identifier; cross-library shared-asset overwrite/removal no longer exists. Use actual deleteLibrary for the first imported library; preserve concurrent same-library duplicate order plus full delete cleanup. Asset mutation belongs to iv.",
+    "reads-ids-and-display-metadata-from-pieceinfo": "Current named registry/legacy file Name and Subject own identifier/label; Page PieceInfo Id is ignored, SubjectOverride owns explicit subject. Current derived ids and exact normalized writes replace independent old asset ids.",
+    "import-options-override-the-pdf": "Current embedded title/fallback Name precedes caller name; caller categories/kind and typed assetName labels retained. Replace obsolete null callback return with current typed undefined; preserve original exact callback in immutable archive.",
+    "a-second-import-allocates-fresh-ids": "Library uid collision remains actual allocation; asset identities now derive. Change preferred collision input to the current next fallback stamp-lib-0-5 to exercise retry, yielding stamp-lib-0-6.",
+    "a-cloud-kernel-engine-names-the-fix": "Brand-based current remote refusal precedes open, replacing old InvalidArg-based cloud detection; obsolete unused open response answers are removed."
+  }
+}

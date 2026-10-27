@@ -1,0 +1,28 @@
+[package]
+name = "epdf-plugin-history"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/history in Rust: undo and redo per open document, built on the document's change queue."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[dev-dependencies]
+plugin-conformance = { path = "../../plugin-conformance" }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

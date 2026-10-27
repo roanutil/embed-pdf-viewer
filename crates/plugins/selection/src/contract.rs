@@ -1,45 +1,138 @@
-//! `contract.ts` and `token.ts`: the public range and read vocabulary, the
-//! events, the configuration and the token.
+//! `contract.ts` and `token.ts`: the settings, the public range and read
+//! vocabulary, the events and the token.
 //!
 //! Selection ranges live in character space (half-open [`TextRange`], the
 //! space search hits address). Segments, endpoints and anchors are in page
 //! space (y-down, PDF units, crop-relative).
 
+use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_geometry::{Rect, TextQuad};
+use epdf_geometry::{Quad, Rect};
 use epdf_kernel::Token;
 use epdf_kernel::geometry::PageRef;
-use epdf_plugin_interaction::page_ref_json;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value, json};
 
 use crate::controller::SelectionCapability;
 pub use crate::geometry::SelectionSegment;
 
-// ── configuration ─────────────────────────────────────────────────────────────
+// ── settings ──────────────────────────────────────────────────────────────────
 
-/// `SelectionConfig`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+/// The grips at the selection's ends, on touch screens.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SelectionHandleSettings {
+    /// A CSS color, or `None` for the viewer's accent.
+    pub color: Option<String>,
+    /// A CSS `box-shadow`.
+    pub shadow: String,
+}
+
+/// `SelectionSettings`: what `selection_plugin(config)` registers over
+/// [`selection_defaults`], and `update_settings` changes for every document.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SelectionSettings {
+    /// Viewport px the pointer travels before a press becomes a drag that selects.
+    pub drag_threshold: f64,
+    /// The color of selected text, or `None` for the viewer's accent at 35%.
+    pub color: Option<String>,
+    pub handles: SelectionHandleSettings,
+}
+
+/// `SELECTION_DEFAULTS`.
+pub fn selection_defaults() -> SelectionSettings {
+    SelectionSettings {
+        drag_threshold: 4.0,
+        color: None,
+        handles: SelectionHandleSettings {
+            color: None,
+            shadow: "0 1px 4px rgb(0 0 0 / 0.35)".to_string(),
+        },
+    }
+}
+
+/// A `DeepPartial<SelectionSettings['handles']>`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SelectionHandleConfig {
+    /// `Some(None)` sets the color back to the accent.
+    pub color: Option<Option<String>>,
+    pub shadow: Option<String>,
+}
+
+/// `SelectionConfig`: any of the settings, merged over the defaults.
+/// `Some(None)` for a color is the `null` that means the accent.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SelectionConfig {
-    /// Viewport px the pointer must travel before a press becomes a drag-select (default 4).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub drag_threshold: Option<f64>,
+    pub color: Option<Option<String>>,
+    pub handles: Option<SelectionHandleConfig>,
+}
+
+impl SelectionConfig {
+    /// The members it names, as the settings store keeps them.
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        if let Some(threshold) = self.drag_threshold {
+            out.insert("dragThreshold".into(), json!(threshold));
+        }
+        if let Some(color) = &self.color {
+            out.insert("color".into(), json!(color));
+        }
+        if let Some(handles) = &self.handles {
+            let mut h = Map::new();
+            if let Some(color) = &handles.color {
+                h.insert("color".into(), json!(color));
+            }
+            if let Some(shadow) = &handles.shadow {
+                h.insert("shadow".into(), json!(shadow));
+            }
+            out.insert("handles".into(), Value::Object(h));
+        }
+        Value::Object(out)
+    }
+
+    /// Read a `DeepPartial<SelectionSettings>`: members of the wrong type
+    /// are ignored.
+    pub fn from_json(value: &Value) -> Self {
+        let text = |v: &Value| match v {
+            Value::Null => Some(None),
+            Value::String(s) => Some(Some(s.clone())),
+            _ => None,
+        };
+        let handles =
+            value.get("handles").filter(|h| h.is_object()).map(|h| SelectionHandleConfig {
+                color: h.get("color").and_then(text),
+                shadow: h.get("shadow").and_then(Value::as_str).map(str::to_string),
+            });
+        SelectionConfig {
+            drag_threshold: value.get("dragThreshold").and_then(Value::as_f64),
+            color: value.get("color").and_then(text),
+            handles,
+        }
+    }
+}
+
+/// `SettingsChanged<SelectionSettings>`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SelectionSettingsChanged {
+    pub settings: SelectionSettings,
+    pub changed: Vec<String>,
 }
 
 // ── the range vocabulary ──────────────────────────────────────────────────────
 
-/// A position in a page's character space. Indices are `i64`: `selectAll`
-/// parks its open end at `Number.MAX_SAFE_INTEGER` and `select` accepts a
-/// negative start.
+/// A position in a page's character space. `i64`: `select_all` parks its
+/// open end at `Number.MAX_SAFE_INTEGER` and `select` accepts a negative
+/// start.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TextPosition {
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
     pub index: i64,
 }
 
-/// A half-open range in character space, in document order.
+/// A half-open range in character space, in document order. `end.index`
+/// may be 0 to end a range exactly at a page boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TextRange {
     pub start: TextPosition,
@@ -66,24 +159,44 @@ impl SelectionRangeInput {
     }
 }
 
+/// A page argument: a `PageRef`, or a zero-based index into the document's
+/// page list (`PageRef | number`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PageTarget {
+    Ref(PageRef),
+    Index(f64),
+}
+
+impl From<PageRef> for PageTarget {
+    fn from(page: PageRef) -> Self {
+        PageTarget::Ref(page)
+    }
+}
+
+impl From<usize> for PageTarget {
+    fn from(index: usize) -> Self {
+        PageTarget::Index(index as f64)
+    }
+}
+
 // ── the read model ────────────────────────────────────────────────────────────
 
-/// A selection boundary on its boundary glyph's own oriented cell.
+/// A selection boundary, on its boundary glyph's own oriented cell.
 /// `advance` is the reading direction of its segment (1 is the frame's +x).
+/// `rect` is the cell's bounds.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectionEndpoint {
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
-    pub glyph_quad: TextQuad,
+    pub glyph_quad: Quad,
     pub advance: i32,
     pub rect: Rect,
 }
 
-/// Where selection-scoped floating UI attaches.
+/// Where selection-scoped floating UI attaches: a page and the selection's
+/// union box on it.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SelectionAnchor {
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
     pub bounds: Rect,
 }
@@ -95,85 +208,53 @@ pub enum SelectionDirection {
     Backward,
 }
 
+/// One page of a snapshot: its segments, the same list the state holds.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SnapshotPage {
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
-    pub segments: Vec<SelectionSegment>,
+    pub segments: Rc<Vec<SelectionSegment>>,
 }
 
+/// `SelectionSnapshot`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SelectionSnapshot {
     pub pages: Vec<SnapshotPage>,
     pub start: Option<SelectionEndpoint>,
     pub end: Option<SelectionEndpoint>,
     pub direction: SelectionDirection,
-    /// A valid `select` input; `None` with nothing selected.
+    /// A valid `select` input; `None` with nothing selected. A boundary
+    /// page's index may exceed its character count until its geometry
+    /// loads; `select` and `read_text_in_range` clamp.
     pub range: Option<TextRange>,
 }
 
 // ── events ────────────────────────────────────────────────────────────────────
 
-/// `ChangeOrigin['trigger']`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ChangeTrigger {
-    User,
-    Api,
-    Script,
-    System,
-    Unknown,
-}
-
-/// `ChangeOrigin`. Selection only ever reports local changes, with no
-/// session or actor.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ChangeOrigin {
-    pub locality: String,
-    pub trigger: ChangeTrigger,
-    pub session_id: Option<String>,
-    pub actor_id: Option<String>,
-}
-
-impl ChangeOrigin {
-    /// `localOrigin(trigger)`.
-    pub fn local(trigger: ChangeTrigger) -> Self {
-        ChangeOrigin { locality: "local".to_string(), trigger, session_id: None, actor_id: None }
-    }
-}
-
-fn ser_pages<S: serde::Serializer>(pages: &[PageRef], s: S) -> Result<S::Ok, S::Error> {
-    pages.iter().map(|p| p.to_json()).collect::<Vec<_>>().serialize(s)
-}
-
-/// Any change to the selection: a gesture step, a programmatic select, a
-/// derived recompute, or a clear.
+/// The range or its segments changed. Selection is session state, so the
+/// event carries no document origin.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SelectionChangedEvent {
     pub range: Option<TextRange>,
     /// The pages that carry a segment right now.
-    #[serde(serialize_with = "ser_pages")]
     pub pages: Vec<PageRef>,
-    pub origin: ChangeOrigin,
 }
 
-/// A selection gesture ended with a selection in place.
+/// A selection gesture ended with a selection in place. Never fires for a
+/// selection made from code.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SelectionCommittedEvent {
     pub range: TextRange,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct SelectionClearedEvent {
-    pub origin: ChangeOrigin,
-}
+/// The selection went from a range to nothing.
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct SelectionClearedEvent {}
 
 // ── the token ─────────────────────────────────────────────────────────────────
 
-/// The selection token. The TypeScript types it twice (the public lens from
-/// the package root, the host lens from `/contract/host` and `/internal`)
-/// over one runtime object; here it is one token and one type.
+/// The selection token. The TypeScript types it twice (the public lens and
+/// the host lens from `/contract/host`) over one runtime object; here it is
+/// one token and one type.
 pub static SELECTION: LazyLock<Token<SelectionCapability>> = LazyLock::new(|| {
     Token::with_hint(
         "selection",

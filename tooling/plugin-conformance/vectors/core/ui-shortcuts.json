@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/ui/src/shortcuts.ts: parse, match and format, isMac as an input.",
   "cases": [
@@ -1239,7 +1239,7 @@
         }
       ],
       "outcome": {
-        "returned": "Escape"
+        "returned": "Esc"
       }
     },
     {
@@ -1252,7 +1252,7 @@
         }
       ],
       "outcome": {
-        "returned": "Escape"
+        "returned": "Esc"
       }
     },
     {
@@ -1265,7 +1265,7 @@
         }
       ],
       "outcome": {
-        "returned": "Arrowleft"
+        "returned": "←"
       }
     },
     {
@@ -1278,7 +1278,7 @@
         }
       ],
       "outcome": {
-        "returned": "Arrowleft"
+        "returned": "←"
       }
     },
     {
@@ -1291,7 +1291,7 @@
         }
       ],
       "outcome": {
-        "returned": "Numpadadd"
+        "returned": "Num +"
       }
     },
     {
@@ -1304,7 +1304,7 @@
         }
       ],
       "outcome": {
-        "returned": "Numpadadd"
+        "returned": "Num +"
       }
     },
     {
@@ -11438,7 +11438,7 @@
         true
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
@@ -11456,7 +11456,7 @@
         false
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
@@ -12944,7 +12944,7 @@
         true
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
@@ -12962,7 +12962,7 @@
         false
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
@@ -15150,7 +15150,7 @@
         }
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     }
   ]

@@ -47,8 +47,11 @@ pub struct Created {
 }
 /// `create`: the controller hook, run once per instance.
 pub type CreateFn = Rc<dyn Fn(ControllerContext) -> Result<Created, Error>>;
+/// `inScope`: a workspace capability as a document's scope sees it.
+pub type InScopeFn = Rc<dyn Fn(&Rc<dyn Any>, &str) -> Rc<dyn Any>>;
 
 pub struct PluginDef {
+    pub settings: Option<crate::settings::SettingsDeclaration>,
     pub id: String,
     pub token: Option<AnyToken>,
     pub scope: PluginScope,
@@ -65,6 +68,12 @@ pub struct PluginDef {
     /// The v3 controller hook. A plugin declares either `create` or
     /// `capability` and `effects`.
     pub create: Option<CreateFn>,
+    /// `resolvesAnyCapability`: the development guard lets the plugin
+    /// resolve tokens it did not declare.
+    pub resolves_any_capability: bool,
+    /// `inScope`, for a workspace plugin: its capability as a document's
+    /// scope sees it.
+    pub in_scope: Option<InScopeFn>,
 }
 
 pub type AnyPlugin = Rc<PluginDef>;
@@ -72,6 +81,8 @@ pub type AnyPlugin = Rc<PluginDef>;
 // ── what a context needs from the kernel ──────────────────────────────────────
 
 pub(crate) trait Services {
+    fn clock(&self) -> Rc<dyn crate::clock::HostClock>;
+    fn settings(&self, plugin_id: &str) -> Option<crate::settings::Settings>;
     fn engine(&self) -> Rc<dyn Engine>;
     fn store(&self) -> Rc<Store>;
     fn workspace_scope(&self) -> Scope;
@@ -89,11 +100,16 @@ pub(crate) trait Services {
 
 /// The slice of a document session a context needs.
 pub(crate) trait SessionView {
+    fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe;
+    fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe;
+    fn around_print(&self, wrap: crate::settle::PrintWrap) -> Unsubscribe;
+    fn changes(&self) -> crate::changes::DocumentChanges;
+    fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
     fn id(&self) -> String;
     /// Unique per open; a reopened id gets a new one.
     fn instance_id(&self) -> String;
     fn handle(&self) -> Option<Rc<dyn DocumentHandle>>;
-    fn staged_meta(&self) -> Option<DocumentMeta>;
+    fn staged_meta(&self) -> Option<Rc<DocumentMeta>>;
     fn scope(&self) -> Scope;
     fn lease(&self, plugin: &PluginDef) -> Option<SliceLease>;
 }
@@ -122,6 +138,7 @@ pub struct PluginContext {
     session: Option<Rc<dyn SessionView>>,
     lease: SliceLease,
     declared: Rc<Vec<AnyToken>>,
+    resolves_any: bool,
     reported_closed: Rc<Cell<bool>>,
 }
 
@@ -175,6 +192,7 @@ impl PluginContext {
             session,
             lease,
             declared: Rc::new(declared_tokens(plugin)),
+            resolves_any: plugin.resolves_any_capability,
             reported_closed: Rc::new(Cell::new(false)),
         })
     }
@@ -183,7 +201,7 @@ impl PluginContext {
     /// is refused. The Rust kernel always runs it, as the vectors were
     /// generated in development.
     fn guard(&self, token: &AnyToken) -> Result<(), Error> {
-        if self.declared.contains(token) {
+        if self.resolves_any || self.declared.contains(token) {
             return Ok(());
         }
         Err(Error::new(format!(
@@ -280,6 +298,13 @@ impl PluginContext {
     /// `ctx.document()`: the bound document's meta (staged during bring-up),
     /// or for a workspace plugin the active document's.
     pub fn document(&self) -> Option<DocumentMeta> {
+        self.document_rc().map(|meta| (*meta).clone())
+    }
+
+    /// [`document`](Self::document) as the core holds it: the same `Rc`
+    /// while the document's record is unchanged, so a memo can compare it
+    /// by identity as the TypeScript compares `ctx.document()`.
+    pub fn document_rc(&self) -> Option<Rc<DocumentMeta>> {
         let core = self.core();
         match &self.session {
             Some(session) => {
@@ -404,27 +429,22 @@ impl std::ops::Deref for EffectContext {
 }
 
 impl EffectContext {
-    /// `ctx.watch(select, handler, isEqual)`: `handler(next, previous)` after
-    /// any state change that moves `select()` by `is_equal`. The TypeScript
-    /// default is `Object.is`; a port picks the comparison that fires on the
-    /// same changes (value equality for primitives, `Rc::ptr_eq` for a
-    /// state object the reducer replaces).
+    /// The effects-era `watch`, which the TypeScript no longer has (its one
+    /// member is `ctx.watch` on the controller context, which
+    /// [`ControllerContext::watch`] is). It runs the same [`watch_store`]; it
+    /// keeps its `(select, is_equal, handler)` order and infallible `select`
+    /// because the conformance probe calls it (`plugin-conformance`
+    /// `probe.rs`, `watchActive`).
     pub fn watch<R: Clone + 'static>(
         &self,
         select: impl Fn() -> R + 'static,
         is_equal: impl Fn(&R, &R) -> bool + 'static,
         handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        let previous = std::cell::RefCell::new(select());
-        let unsubscribe = self.ctx.subscribe(Rc::new(move || {
-            let next = select();
-            let prior = previous.borrow().clone();
-            if !is_equal(&prior, &next) {
-                *previous.borrow_mut() = next.clone();
-                handler(&next, &prior)?;
-            }
-            Ok(())
-        }));
+        let Ok(unsubscribe) = watch_store(&self.ctx, move || Ok(select()), handler, is_equal)
+        else {
+            unreachable!("an infallible select")
+        };
         if let Some(scope) = self.ctx.own_scope() {
             let release = unsubscribe.clone();
             scope.defer_fn(move || release.call());
@@ -470,6 +490,7 @@ struct ControllerInner {
     guarded: RefCell<Option<Rc<dyn DocumentHandle>>>,
     queues: RefCell<HashMap<String, SerialQueue>>,
     lanes: RefCell<HashMap<String, LatestLane>>,
+    clock: crate::clock::PluginClock,
 }
 
 impl std::ops::Deref for ControllerContext {
@@ -495,9 +516,13 @@ impl ControllerContext {
         };
         Ok(ControllerContext(Rc::new(ControllerInner {
             ctx,
-            services,
+            services: services.clone(),
             instance_id,
             capability: plugin.id.clone(),
+            clock: crate::clock::PluginClock::new(
+                services.upgrade().ok_or_else(gone)?.clock(),
+                lifetime.clone(),
+            ),
             lifetime,
             scope,
             session,
@@ -527,6 +552,14 @@ impl ControllerContext {
             Some(services) => services.report(),
             None => Rc::new(|_: &Error| {}),
         }
+    }
+
+    /// Hand an error to the kernel's report. The TypeScript context has no
+    /// such member; a Rust plugin uses it for a failure only its typed
+    /// boundary can have (a member that does not decode), which the
+    /// TypeScript would carry on with.
+    pub fn report_error(&self, error: &Error) {
+        (self.report())(error);
     }
 
     /// `ctx.doc`: the guarded handle. A workspace plugin has no bound
@@ -563,6 +596,187 @@ impl ControllerContext {
             .clone())
     }
 
+    pub fn clock(&self) -> crate::clock::PluginClock {
+        self.0.clock.clone()
+    }
+
+    pub fn allows(&self, permission: &str) -> bool {
+        self.doc().is_ok_and(|d| {
+            if permission == "annotations:create" {
+                d.security().allows_annotation_create()
+            } else {
+                d.security().allows(permission)
+            }
+        })
+    }
+    pub fn assert_allowed(&self, permission: &str, operation: &str) -> Result<(), Error> {
+        if self.allows(permission) {
+            Ok(())
+        } else {
+            Err(plugin_error(
+                "permission-denied",
+                &self.0.capability,
+                format!("{operation} requires {permission}"),
+                None,
+                None,
+            )
+            .with("permission", permission))
+        }
+    }
+    pub fn allows_field(&self, action: &str, field: &Value) -> bool {
+        self.doc().is_ok_and(|d| {
+            d.security().allows_field(action, &serde_json::json!({"groupId":field["groupId"]}))
+        })
+    }
+    pub fn assert_allowed_field(
+        &self,
+        action: &str,
+        field: &Value,
+        operation: &str,
+    ) -> Result<(), Error> {
+        if self.allows_field(action, field) {
+            return Ok(());
+        }
+        let permission = if let Some(group) = field["groupId"].as_str() {
+            format!("fields:{action}:group={group}")
+        } else if action == "fill" {
+            "doc.forms.fill".into()
+        } else {
+            "doc.sign".into()
+        };
+        Err(plugin_error(
+            "permission-denied",
+            &self.0.capability,
+            format!("{operation} requires {permission}"),
+            None,
+            None,
+        )
+        .with("permission", permission))
+    }
+
+    pub fn notify(&self) {
+        if self.0.ctx.lease.live()
+            && let Some(s) = self.0.services.upgrade()
+        {
+            s.store().notify();
+        }
+    }
+
+    pub fn settings(&self) -> Result<crate::settings::InstanceSettings, Error> {
+        self.0
+            .services
+            .upgrade()
+            .and_then(|s| s.settings(&self.0.capability))
+            .map(|s| s.for_instance(&self.0.scope))
+            .ok_or_else(|| {
+                Error::new(format!(
+                    "[kernel] plugin \"{}\" declares no settings",
+                    self.0.capability
+                ))
+            })
+    }
+
+    /// Register deferred document work, owned by this instance.
+    pub fn on_settle(&self, flush: crate::settle::SettleFlush) -> Result<(), Error> {
+        let session = self
+            .0
+            .session
+            .as_ref()
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document to settle"))?;
+        self.listen(session.on_settle(flush));
+        Ok(())
+    }
+
+    /// Register document save actions; first registered runs outermost.
+    pub fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Result<(), Error> {
+        let session =
+            self.0.session.as_ref().ok_or_else(|| {
+                Error::new("[kernel] workspace plugin has no document to download")
+            })?;
+        self.listen(session.around_download(wrap));
+        Ok(())
+    }
+
+    /// `ctx.aroundPrint(wrap)`: run `wrap` around each print of the
+    /// document (`documents.print()`, a prepared print's `print()`); first
+    /// registered runs outermost. Removed with the instance.
+    pub fn around_print(&self, wrap: crate::settle::PrintWrap) -> Result<(), Error> {
+        let session = self
+            .0
+            .session
+            .as_ref()
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document to print"))?;
+        self.listen(session.around_print(wrap));
+        Ok(())
+    }
+
+    pub fn changes(&self) -> Result<crate::changes::ChangeQueue, Error> {
+        self.0
+            .session
+            .as_ref()
+            .map(|s| s.changes().for_plugin(&self.0.capability))
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document changes"))
+    }
+
+    fn mirror_environment(&self) -> Result<crate::mirror::MirrorEnvironment, Error> {
+        let doc = self.doc()?;
+        let session = self.0.session.as_ref().ok_or_else(gone)?;
+        let services = self.0.services.upgrade().ok_or_else(gone)?;
+        let store = services.store();
+        let prefix = self.0.ctx.slice_key().to_string();
+        let scope = self.0.scope.clone();
+        let lifetime = self.0.lifetime.clone();
+        let instance = self.0.instance_id.clone();
+        let notify = self.clone();
+        // `onDocumentEvent`: each mirror subscribes to the guarded handle
+        // itself (context.ts:216), unsubscribed with the instance.
+        let events = crate::event_hook::EventHookSource::new(Some(services.report()));
+        let feed = events.clone();
+        self.listen(doc.subscribe(Rc::new(move |event| feed.emit(event))));
+        Ok(crate::mirror::MirrorEnvironment {
+            doc: Some(doc),
+            lifetime: lifetime.clone(),
+            changes: session.changes(),
+            events,
+            cell: Rc::new(move |name, initial| {
+                let lease = store.lease_with_text(
+                    &format!("{prefix}/{name}"),
+                    Rc::new(|_, _| None),
+                    Rc::new(initial),
+                    Rc::new(crate::mirror::cell_json),
+                    Some(Rc::new(crate::mirror::cell_text)),
+                    Some(instance.clone()),
+                );
+                let revoke = lease.clone();
+                scope.defer_fn(move || revoke.revoke());
+                if lifetime.aborted() {
+                    lease.revoke();
+                }
+                lease
+            }),
+            notify: Rc::new(move || notify.notify()),
+            report: services.report(),
+        })
+    }
+
+    pub fn mirror(&self, spec: crate::mirror::MirrorSpec) -> Result<crate::mirror::Mirror, Error> {
+        let mirror = crate::mirror::Mirror::new(spec, self.mirror_environment()?);
+        let start = mirror.clone();
+        self.0
+            .session
+            .as_ref()
+            .unwrap()
+            .add_mirror(&self.0.capability, Rc::new(move || start.start()));
+        Ok(mirror)
+    }
+
+    pub fn page_mirror(
+        &self,
+        spec: crate::page_mirror::PageMirrorSpec,
+    ) -> Result<crate::page_mirror::PageMirror, Error> {
+        Ok(crate::page_mirror::PageMirror::new(spec, self.mirror_environment()?))
+    }
+
     /// `ctx.events.source()`: a capability event, disposed with the instance.
     pub fn event_source<T: 'static>(&self) -> EventHookSource<T> {
         let hook = EventHookSource::new(Some(self.report()));
@@ -575,6 +789,25 @@ impl ControllerContext {
     /// the unsubscribe, which the instance runs when it closes.
     pub fn listen(&self, unsubscribe: Unsubscribe) {
         self.0.scope.defer_fn(move || unsubscribe.call());
+    }
+
+    /// `ctx.watch(select, handler, isEqual)` (`context.ts`): run `handler(next,
+    /// previous)` after any store change that moves `select()`. `select` runs
+    /// once now; the subscription goes when the instance closes, or earlier
+    /// through the returned unsubscribe.
+    ///
+    /// The TypeScript's default `isEqual` is `Object.is`; a Rust caller passes
+    /// the comparison that is `Object.is` for its value: `==` for a string or
+    /// a number, `Rc::ptr_eq` for a value held by reference.
+    pub fn watch<R: Clone + 'static>(
+        &self,
+        select: impl Fn() -> Result<R, Error> + 'static,
+        handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
+        is_equal: impl Fn(&R, &R) -> bool + 'static,
+    ) -> Result<Unsubscribe, Error> {
+        let unsubscribe = watch_store(self, select, handler, is_equal)?;
+        self.listen(unsubscribe.clone());
+        Ok(unsubscribe)
     }
 
     /// `ctx.waitFor(predicate, {signal})`: resolves when the predicate holds,
@@ -669,7 +902,12 @@ impl ControllerContext {
 
     /// `ctx.serialQueue(key)`: one queue per key, per instance.
     pub fn serial_queue(&self, key: &str) -> SerialQueue {
-        self.0.queues.borrow_mut().entry(key.to_string()).or_default().clone()
+        self.0
+            .queues
+            .borrow_mut()
+            .entry(key.to_string())
+            .or_insert_with(|| SerialQueue::for_capability(&self.0.capability))
+            .clone()
     }
 
     /// `ctx.latest(key)`: one lane per key, per instance.
@@ -713,7 +951,7 @@ impl ControllerContext {
         })
     }
 
-    fn meta(&self) -> Option<DocumentMeta> {
+    fn meta(&self) -> Option<Rc<DocumentMeta>> {
         let session = self.0.session.as_ref()?;
         let core = self.0.ctx.core();
         core.documents.get(&session.id()).cloned().or_else(|| session.staged_meta())
@@ -799,6 +1037,32 @@ impl<S: 'static, A: Action> Controller<S, A> {
             .unwrap_or_else(|| panic!("[{}] state is not the type its plugin names", self.cx.id()))
     }
 
+    /// Apply a pure session transition without dispatching a reducer action.
+    pub fn update_state(&self, transition: impl FnOnce(Rc<S>) -> Rc<S>) -> bool {
+        self.cx.lease().write(transition(self.state()))
+    }
+
+    pub fn on_state_change(
+        &self,
+        listener: impl Fn(Rc<S>, Rc<S>) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        let off = self.cx.lease().on_change(move |change| {
+            let next = change
+                .next
+                .clone()
+                .downcast::<S>()
+                .map_err(|_| Error::new("state type changed"))?;
+            let previous = change
+                .previous
+                .clone()
+                .downcast::<S>()
+                .map_err(|_| Error::new("state type changed"))?;
+            listener(next, previous)
+        });
+        self.cx.listen(off.clone());
+        off
+    }
+
     pub fn dispatch(&self, action: A) {
         self.cx.dispatch_any(&action);
     }
@@ -848,6 +1112,28 @@ impl<S: 'static, A: Action> Ctx<S, A> {
     }
 }
 
+/// The body of `ctx.watch` (`context.ts:305-315`), shared by every kernel
+/// `watch`: `select` runs once now; after a store change that moves it by
+/// `is_equal(previous, next)`, `previous` becomes `next` and then
+/// `handler(next, previous)` runs. The caller defers the returned
+/// unsubscribe to its scope.
+fn watch_store<R: Clone + 'static>(
+    ctx: &PluginContext,
+    select: impl Fn() -> Result<R, Error> + 'static,
+    handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
+    is_equal: impl Fn(&R, &R) -> bool + 'static,
+) -> Result<Unsubscribe, Error> {
+    let previous = RefCell::new(select()?);
+    Ok(ctx.subscribe(Rc::new(move || {
+        let next = select()?;
+        if is_equal(&previous.borrow(), &next) {
+            return Ok(());
+        }
+        let prior = previous.replace(next.clone());
+        handler(&next, &prior)
+    })))
+}
+
 /// An effect context typed over the plugin's state and action.
 pub struct EffectCtx<S, A> {
     pub fx: EffectContext,
@@ -868,6 +1154,7 @@ impl<S, A> std::ops::Deref for EffectCtx<S, A> {
 }
 
 impl<S: 'static, A: Action> EffectCtx<S, A> {
+    /// [`EffectContext::watch`], typed.
     pub fn watch<R: Clone + 'static>(
         &self,
         select: impl Fn() -> R + 'static,
@@ -902,6 +1189,9 @@ pub struct PluginBuilder<S, A> {
     init: Option<InitFn>,
     effects: Option<EffectsFn>,
     create: Option<CreateFn>,
+    settings: Option<crate::settings::SettingsDeclaration>,
+    resolves_any_capability: bool,
+    in_scope: Option<InScopeFn>,
 }
 
 pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
@@ -918,10 +1208,18 @@ pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
         init: None,
         effects: None,
         create: None,
+        settings: None,
+        resolves_any_capability: false,
+        in_scope: None,
     }
 }
 
 impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
+    pub fn settings(mut self, declaration: crate::settings::SettingsDeclaration) -> Self {
+        self.settings = Some(declaration);
+        self
+    }
+
     pub fn scope(mut self, scope: PluginScope) -> Self {
         self.scope = scope;
         self
@@ -929,6 +1227,27 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
 
     pub fn document_scoped(self) -> Self {
         self.scope(PluginScope::Document)
+    }
+
+    /// `resolvesAnyCapability: true`.
+    pub fn resolves_any_capability(mut self) -> Self {
+        self.resolves_any_capability = true;
+        self
+    }
+
+    /// `inScope(api, documentId)`: how the workspace capability looks from
+    /// a document's scope.
+    pub fn in_scope<C: 'static>(mut self, view: impl Fn(&C, &str) -> C + 'static) -> Self {
+        self.in_scope = Some(Rc::new(move |api: &Rc<dyn Any>, document_id: &str| {
+            match api.downcast_ref::<C>() {
+                Some(api) => Rc::new(view(api, document_id)) as Rc<dyn Any>,
+                None => {
+                    debug_assert!(false, "inScope declared for a capability of another type");
+                    api.clone()
+                }
+            }
+        }));
+        self
     }
 
     pub fn requires(mut self, token: &AnyToken) -> Self {
@@ -1044,6 +1363,7 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
                 as SliceText
         });
         Rc::new(PluginDef {
+            settings: self.settings,
             id: self.id,
             token: self.token,
             scope: self.scope,
@@ -1057,6 +1377,8 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
             init: self.init,
             effects: self.effects,
             create: self.create,
+            resolves_any_capability: self.resolves_any_capability,
+            in_scope: self.in_scope,
         })
     }
 }

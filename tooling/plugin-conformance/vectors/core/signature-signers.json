@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/core/signature: the signer ports and WebCrypto adapters, against a scripted WebCrypto.",
   "cases": [
@@ -59,7 +59,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -71,7 +72,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -87,7 +89,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -184,7 +187,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -196,7 +200,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -225,7 +230,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -294,7 +300,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -306,7 +313,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -332,7 +340,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -430,7 +439,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -442,7 +452,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -468,7 +479,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -566,7 +578,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -578,7 +591,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -604,7 +618,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -702,7 +717,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -714,7 +730,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -740,7 +757,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -839,7 +857,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -851,7 +870,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -877,7 +897,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -970,7 +991,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -982,7 +1004,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1008,7 +1031,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1096,7 +1120,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1108,7 +1133,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1127,7 +1153,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1194,7 +1221,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1206,7 +1234,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1225,7 +1254,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1281,7 +1311,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1293,7 +1324,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1342,7 +1374,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1417,7 +1450,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1429,7 +1463,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1478,7 +1513,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1553,7 +1589,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1565,7 +1602,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1602,7 +1640,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1681,7 +1720,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1693,7 +1733,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1709,7 +1750,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1835,7 +1877,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1847,7 +1890,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1863,7 +1907,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1988,7 +2033,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2000,7 +2046,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2016,7 +2063,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2142,7 +2190,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2154,7 +2203,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2170,7 +2220,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2295,7 +2346,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2307,7 +2359,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2323,7 +2376,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2447,7 +2501,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2459,7 +2514,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2475,7 +2531,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2587,7 +2644,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2599,7 +2657,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2615,7 +2674,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2728,7 +2788,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2740,7 +2801,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2756,7 +2818,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2881,7 +2944,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2893,7 +2957,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2909,7 +2974,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3015,7 +3081,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3027,7 +3094,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3073,7 +3141,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3238,7 +3307,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3250,7 +3320,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3287,7 +3358,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3407,7 +3479,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3419,7 +3492,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3462,7 +3536,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3599,7 +3674,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3611,7 +3687,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3654,7 +3731,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3809,7 +3887,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3821,7 +3900,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3850,7 +3930,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4006,7 +4087,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4018,7 +4100,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4037,7 +4120,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {

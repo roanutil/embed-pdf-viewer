@@ -1,0 +1,35 @@
+
+node:internal/modules/run_main:111
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/packages/plugin/actions/src/controller' imported from /Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-lifecycle-current.test.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:241:11)
+    at moduleResolve (node:internal/modules/esm/resolve:846:10)
+    at defaultResolve (node:internal/modules/esm/resolve:973:11)
+    at nextResolve (node:internal/modules/esm/hooks:769:28)
+    at resolveBase (file:///Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1792724308845:2:3744)
+    at async resolveDirectory (file:///Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1792724308845:2:4237)
+    at async resolve (file:///Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1792724308845:2:5355)
+    at async nextResolve (node:internal/modules/esm/hooks:769:22)
+    at async AsyncLoaderHooksOnLoaderHookWorker.resolve (node:internal/modules/esm/hooks:265:24)
+    at async handleMessage (node:internal/modules/esm/worker:251:18) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/packages/plugin/actions/src/controller'
+}
+
+Node.js v26.12.1
+✖ test/actions-lifecycle-current.test.ts (642.318625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 645.663917
+
+✖ failing tests:
+
+test at test/actions-lifecycle-current.test.ts:1:1
+✖ test/actions-lifecycle-current.test.ts (642.318625ms)
+  'test failed'

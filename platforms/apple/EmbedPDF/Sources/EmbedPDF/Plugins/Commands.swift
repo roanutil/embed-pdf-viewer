@@ -29,6 +29,12 @@ public typealias CommandShortcutBinding = EmbedPDFBindings.CommandShortcutBindin
 public typealias CommandMenuTarget = EmbedPDFBindings.CommandMenuTarget
 /// A key and modifier state to match against command shortcuts.
 public typealias CommandKeyStroke = EmbedPDFBindings.CommandKeyStroke
+/// The command a keystroke names, and its refusal when it won't run.
+public typealias CommandShortcutMatch = EmbedPDFBindings.CommandShortcutMatch
+/// Why a matched command won't run, with a human-readable message.
+public typealias CommandRefusalInfo = EmbedPDFBindings.CommandRefusalInfo
+/// The category of a command refusal: turned off, or not allowed.
+public typealias CommandRefusalReason = EmbedPDFBindings.CommandRefusalReason
 /// An event describing command registry and execution changes.
 public typealias CommandsEvent = EmbedPDFBindings.CommandsEvent
 /// An event describing a command execution.
@@ -252,10 +258,20 @@ public struct CommandsCapability: Sendable {
     try await bridged { try await handle.setDisabledCategories(categories: categories) }
   }
 
-  /// Returns the matching command identifier, or nil when no shortcut matches; isMac selects
-  /// macOS modifier interpretation.
-  public func matchStroke(_ stroke: CommandKeyStroke, isMac: Bool) async throws(PDFError) -> String? {
-    try await bridged { try await handle.matchStroke(stroke: stroke, isMac: isMac) }
+  /// Returns the command whose shortcut the stroke matches for the active document, or nil
+  /// when no shortcut matches.
+  ///
+  /// A command that may run wins; a refused one counts only while it would show, and comes
+  /// with its refusal.
+  ///
+  /// - Parameters:
+  ///   - stroke: The key and modifier state to match.
+  ///   - isMac: Selects macOS modifier interpretation.
+  ///   - inTextField: Whether focus is in a text field.
+  public func matchStroke(_ stroke: CommandKeyStroke, isMac: Bool, inTextField: Bool = false)
+    async throws(PDFError) -> CommandShortcutMatch?
+  {
+    try await bridged { try await handle.matchStroke(stroke: stroke, isMac: isMac, inTextField: inTextField) }
   }
 
   /// Returns a command's menu routing target, or nil when it has none.

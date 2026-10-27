@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 fn page(index: u32, pon: u32) -> Value {
     json!({
         "index": index,
-        "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+        "ref": { "kind": "objectNumber", "objectNumber": pon },
         "label": null,
         "size": { "width": 600, "height": 800 },
         "rotation": 0,
@@ -29,20 +29,22 @@ fn page(index: u32, pon: u32) -> Value {
     })
 }
 
-fn hit(pon: u32, char_start: u32) -> Value {
+/// A match in page space, as the engine answers it: PDF y-up 20..40 on an
+/// 800pt page is y-down 760..780.
+fn hit(pon: u32, start: u32) -> Value {
     json!({
-        "page": { "kind": "objectNumber", "pageObjectNumber": pon },
-        "charStart": char_start,
-        "charCount": 5,
+        "page": { "kind": "objectNumber", "objectNumber": pon },
+        "start": start,
+        "count": 5,
         "segments": [{
             "quad": {
-                "p1": { "x": 10, "y": 40 }, "p2": { "x": 50, "y": 40 },
-                "p3": { "x": 10, "y": 20 }, "p4": { "x": 50, "y": 20 }
+                "upperLeft": { "x": 10, "y": 760 }, "upperRight": { "x": 50, "y": 760 },
+                "lowerLeft": { "x": 10, "y": 780 }, "lowerRight": { "x": 50, "y": 780 }
             },
-            "rect": { "left": 10, "bottom": 20, "right": 50, "top": 40 },
+            "rect": { "x": 10, "y": 760, "width": 40, "height": 20 },
             "advance": 1
         }],
-        "snippet": { "text": "the alpha test", "matchStart": 4, "matchLength": 5 }
+        "snippet": { "before": "the ", "match": "alpha", "after": " test" }
     })
 }
 
@@ -54,8 +56,8 @@ pub fn answering() -> Value {
         "value": {
             "matches": [hit(11, 0), hit(11, 9), hit(22, 3)],
             "nextCursor": null,
-            "scannedPages": 2,
-            "totalPages": 2
+            "pagesSearched": 2,
+            "pageCount": 2
         }
     })
 }

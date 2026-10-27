@@ -1,0 +1,7339 @@
+[
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "initial-state",
+    "input": {
+      "name": "initial-state",
+      "fn": "initialCommandsState",
+      "args": []
+    },
+    "inputSha256": "0a5379626a55df55bfb7c726f2d6f5a3e9fb1749805163d015ca670017563f19"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "disable-new",
+    "input": {
+      "name": "disable-new",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "b"
+        }
+      ]
+    },
+    "inputSha256": "3c5c46b26c9c24ada4b879677fbd62c0199ca857939ab1e00212918c624b3e35"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "disable-into-empty",
+    "input": {
+      "name": "disable-into-empty",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": []
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "a"
+        }
+      ]
+    },
+    "inputSha256": "9166fab954a2d183847869401f005315e5cdedcfe33815fd4b3fb0ab38d2277e"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "disable-existing-is-ignored",
+    "input": {
+      "name": "disable-existing-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "b"
+        }
+      ]
+    },
+    "inputSha256": "d304aca3091bfd69e8a8ca0f35fb46da312fcf408c63d73850c996ac728ab06f"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "enable-removes-every-copy",
+    "input": {
+      "name": "enable-removes-every-copy",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a",
+            "b",
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "a"
+        }
+      ]
+    },
+    "inputSha256": "631b5f3869ad48012ad136da8848d6a436f33d43c2f798a014dc4cef1e34c596"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "enable-missing-is-ignored",
+    "input": {
+      "name": "enable-missing-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "z"
+        }
+      ]
+    },
+    "inputSha256": "d8d5f27bd167e3358b69e6ec0f908190522521072c23a363e7ab6f67f50c2c01"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "enable-last",
+    "input": {
+      "name": "enable-last",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "a"
+        }
+      ]
+    },
+    "inputSha256": "7effaf6f6438af19ae7468e96eaf2de66b1e8f4e97622c139dd3a0cfbc977ef6"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "set-replaces",
+    "input": {
+      "name": "set-replaces",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": [
+            "b",
+            "b",
+            "c"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "9c1e3f37bd15cf4dd1cfef9283e8b790e19eb9d1d2cf90d869a36ddc6f738632"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "set-equal-is-a-new-state",
+    "input": {
+      "name": "set-equal-is-a-new-state",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": [
+            "a"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "7c58fbbb41ec2fc4913a9383e934acfc3aeeb2c1bcac495f359b121e70ffd6f8"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "set-empty",
+    "input": {
+      "name": "set-empty",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": []
+        }
+      ]
+    },
+    "inputSha256": "3e601becf18dda6d25c2369f3ab3127443669871c1aa8c896684366a87bcbc8d"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "unknown-action-is-ignored",
+    "input": {
+      "name": "unknown-action-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/NOPE",
+          "category": "a"
+        }
+      ]
+    },
+    "inputSha256": "ce3a7f4e8cf194d4b427f20618a6451efb1c104563ad91b6f2236ce14cd24469"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "both-null",
+    "input": {
+      "name": "both-null",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        null,
+        null
+      ]
+    },
+    "inputSha256": "ad39d0c910e271e63caa6c178dcecda0299db0c47c4116db6a01ba65794dc6f5"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "null-left",
+    "input": {
+      "name": "null-left",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        null,
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "44d374307b1310f0c946f63eecc0aec5326df635bb847aac1313df9068a746a2"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "null-right",
+    "input": {
+      "name": "null-right",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        null
+      ]
+    },
+    "inputSha256": "b9475b5eeb8cd783c4417812fba2c5a92ca1f804ee37742db9832f26df898da1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "equal-values",
+    "input": {
+      "name": "equal-values",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "17db988ce6cd50df3b8117aa348e5153ea6ef380c46f0f2fc42fc668818e3910"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "same-object",
+    "input": {
+      "name": "same-object",
+      "fn": "resolvedCommandsEqualSelf",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "6a516d4dc456656d9c43ae42c97748322322fdb9bcd54fecc1e2d2fecd5d449f"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "id-differs",
+    "input": {
+      "name": "id-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:out",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "d2bfe92541cc8a338bc63fe209a2f56c1fc88e3889d85b1229b5c8719e7997cf"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "label-differs",
+    "input": {
+      "name": "label-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom in",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "4bd0ad4e485155534fe4d7d144742b3ab878f9daea83339bfee4b98c72e2e280"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "icon-differs",
+    "input": {
+      "name": "icon-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomOut",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "f502b444ca2aaf301c22e97b8429063603d6fb14dbc0fd8829d64acd04e96daf"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "icon-absent-on-one-side",
+    "input": {
+      "name": "icon-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "8d2d771a31df24d39f5d8f1db9181fa6960a2c03ec74d21a76d3a3decabd2a49"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "icon-absent-on-both",
+    "input": {
+      "name": "icon-absent-on-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "0456d0cc495670d1c8a9f16eda79308f0e6eb40da0a974f3ae83f7aee12fc393"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "accent-primary-differs",
+    "input": {
+      "name": "accent-primary-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#111",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "bbb832026c296d36b566853d90ee9516f622857263915cc5fcd991838cf2002f"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "accent-secondary-differs",
+    "input": {
+      "name": "accent-secondary-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#eee"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "50ac4ec3a5766b4596fdb3e9db65d990c6807008c95e68304669c33b1bfb83b8"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "accent-absent-on-one-side",
+    "input": {
+      "name": "accent-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "c01dc24bf0b4cba2dffeaf891e89499375f155302feeceac505ffc7b8cf081d1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "accent-absent-vs-empty",
+    "input": {
+      "name": "accent-absent-vs-empty",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {},
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "f85ca42b668feb3eefb99600f340762a9ae3466d6189d6b39cded5384b049de1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "accent-primary-only-both",
+    "input": {
+      "name": "accent-primary-only-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "5ad0fa522108f17c05f5a4e29ae8219ee85d2d4f3379aaf4fbf85dbb566e7a51"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "menu-differs",
+    "input": {
+      "name": "menu-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "other",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "2a6adc6a4965f7edfa6aff303506fd7b4726896a4c1286bc653e3226cd5d8c35"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "menu-absent-on-one-side",
+    "input": {
+      "name": "menu-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "00392f1183447d7463300bc5b78adb982bfa719fe2b9965e38580b33c73120e5"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "enabled-differs",
+    "input": {
+      "name": "enabled-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": false,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "233f0255d198252306f5a7dea0b4f510fdc510ad2a899efe7ab16cbf872a1421"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "active-differs",
+    "input": {
+      "name": "active-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": true,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "1847e8a6ecceddb9ca2154a1565af63719484d1d5ebdb8da9e832c4ebef199c1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "visible-differs",
+    "input": {
+      "name": "visible-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": false,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "cd790fde510b8417b6d3bbf756c7a5cc8700bcea94c0f9986bbfaab4a31331c9"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "shortcut-count-differs",
+    "input": {
+      "name": "shortcut-count-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+="
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "ce7e7fd220bbd9fbd339b6de097987e0248a9d524b2246e0f3c2fdf2b6c2cc58"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "shortcut-differs",
+    "input": {
+      "name": "shortcut-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Add"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "b413256403c85758dd6d78d281072c2117b40b923a32e51a219a8c5d4e81988e"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "shortcut-order-differs",
+    "input": {
+      "name": "shortcut-order-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+Plus",
+            "Mod+="
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "46bf7c4918096fa0b860b8a18ab88b0dc97d4f734f9f1f109b40f8b500aee189"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "no-shortcuts-both",
+    "input": {
+      "name": "no-shortcuts-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "16836849cba36203bfb25b0333fd76a63f89407d18efc09a4b6012ffc9ea2f9b"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "categories-are-not-compared",
+    "input": {
+      "name": "categories-are-not-compared",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "other",
+            "more"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "8ac7c5e398ab2316dd6d58406ee949c96d6b9954ff926f622cfd8a8e41629220"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "none",
+    "input": {
+      "name": "none",
+      "fn": "registerCommand",
+      "args": [
+        []
+      ]
+    },
+    "inputSha256": "5c2ac136a9b2d3f41dab2c042fcd8e47122a019e2b2ed91d3cd44142fa14d144"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "no-shortcut",
+    "input": {
+      "name": "no-shortcut",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "db6427ffe785b87c3d941f9e131ac29c2d9de99c0701b5955fcd4e0811357282"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "one-shortcut",
+    "input": {
+      "name": "one-shortcut",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "Mod+K"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "e4914cfdeef496e2a3c93ff2bb41ea016b6d1465d10dae7348ae2151eafa8df1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "many-shortcuts",
+    "input": {
+      "name": "many-shortcuts",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": [
+              "Ctrl+=",
+              "Shift+Alt+D",
+              "Meta+NumpadAdd",
+              "Ctrl++",
+              "Escape"
+            ]
+          }
+        ]
+      ]
+    },
+    "inputSha256": "2266135907dba016d5c4f70a4b14a17fb5fc91316c0b49ae77d62b51e7a41d88"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "empty-shortcut-list",
+    "input": {
+      "name": "empty-shortcut-list",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": []
+          }
+        ]
+      ]
+    },
+    "inputSha256": "164a41663b5a3fff75eb68061b2be9b854935726032d23279653c0ec6306ba06"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "empty-shortcut-is-plus",
+    "input": {
+      "name": "empty-shortcut-is-plus",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": ""
+          }
+        ]
+      ]
+    },
+    "inputSha256": "7bbbb0eeb99e18b2804d278adcd6fa61d9f82c62288c89716f1159f705f36b05"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "insertion-order",
+    "input": {
+      "name": "insertion-order",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "z",
+            "labelKey": "z"
+          },
+          {
+            "id": "m",
+            "labelKey": "m",
+            "shortcut": "M"
+          },
+          {
+            "id": "a",
+            "labelKey": "a"
+          },
+          {
+            "id": "10",
+            "labelKey": "10"
+          },
+          {
+            "id": "2",
+            "labelKey": "2"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "f30fd4c5637a192b2c9ac68591186d1417956415e498d6c6434488418552196f"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "duplicate-throws-and-keeps-the-first",
+    "input": {
+      "name": "duplicate-throws-and-keeps-the-first",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "A"
+          },
+          {
+            "id": "b",
+            "labelKey": "b"
+          },
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "B"
+          },
+          {
+            "id": "c",
+            "labelKey": "c"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "072278ac7d060ff572c867c8823a2b9f9f5912a22332562312aeac0914c244e3"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "bad-modifier-throws-and-registers-nothing",
+    "input": {
+      "name": "bad-modifier-throws-and-registers-nothing",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a"
+          },
+          {
+            "id": "b",
+            "labelKey": "b",
+            "shortcut": [
+              "Ctrl+B",
+              "Hyper+B"
+            ]
+          },
+          {
+            "id": "c",
+            "labelKey": "c"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "fd8abc8d76ab58ad181d4d59abde2d8a3abad99533a8c0601059777a90f6e44b"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "bad-modifier-in-a-string",
+    "input": {
+      "name": "bad-modifier-in-a-string",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "Mod+Hyper+K"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "2c4e1ad06da863138358b7c9c33791ce2098465af0b883ca609b95921da6e0ba"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-no-config",
+    "input": {
+      "name": "plugin-no-config",
+      "fn": "commandsPlugin",
+      "args": []
+    },
+    "inputSha256": "14017315177b7c2598393ebc27b25a81d901c6d55fe3f99b4b93cb1c832addeb"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-empty-config",
+    "input": {
+      "name": "plugin-empty-config",
+      "fn": "commandsPlugin",
+      "args": [
+        {}
+      ]
+    },
+    "inputSha256": "71abd708e4333fc171e3e3399d8c2b54d0aa08badb4f0f556af2528d0a2067a7"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-disabled-categories",
+    "input": {
+      "name": "plugin-disabled-categories",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "disabledCategories": [
+            "pro",
+            "beta",
+            "pro"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "235724127c100aee2166eb36d0041cc242a88992c510cc07b50810c056c6460f"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-commands",
+    "input": {
+      "name": "plugin-commands",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a",
+              "shortcut": "Mod+A"
+            },
+            {
+              "id": "b",
+              "labelKey": "b"
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "c897555c344e2b20377d99ed1ae695e8309044dc1983be24eb05200f15d61d93"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-duplicate-command-is-not-checked-here",
+    "input": {
+      "name": "plugin-duplicate-command-is-not-checked-here",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a"
+            },
+            {
+              "id": "a",
+              "labelKey": "a"
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "00e1d602dc6675c1c1cedb4607dd8d2c7a150d17551c24deb2ee04dcd879cf20"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/functions.json",
+    "kind": "function",
+    "name": "plugin-bad-shortcut-is-not-checked-here",
+    "input": {
+      "name": "plugin-bad-shortcut-is-not-checked-here",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a",
+              "shortcut": "Super+A"
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "851e3502197182383ffda2ab19969990e03e0448e35353524ce971ba8ddb5b97"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "capability-shape",
+    "input": {
+      "name": "capability-shape",
+      "covers": "The capability is workspace-scoped and exists from createKernel(); its members, in the object literal order; the slice holds only disabledCategories.",
+      "plugins": [
+        {
+          "factory": "commands"
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "capability",
+          "args": [
+            {
+              "$token": "commands"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "scopeOf",
+          "args": [
+            {
+              "$token": "commands"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getDisabledCategories",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 4
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 11
+          }
+        }
+      ]
+    },
+    "inputSha256": "d5b35cc53aa82834914fa222d2b5e75f604054e99f60718b94c38290a7bfe459"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "registry",
+    "input": {
+      "name": "registry",
+      "covers": "Config commands register in order; registerCommand appends and throws on a duplicate or an unparsable shortcut (registering nothing); its remover removes (a second call is a no-op), and re-registering moves an id to the end; hasCommand, listCommandIds and getMenuTarget read the registry.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "b",
+                "labelKey": "b",
+                "menu": "zoom"
+              },
+              {
+                "id": "a",
+                "labelKey": "a",
+                "shortcut": "Mod+A"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "hasCommand",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "hasCommand",
+          "args": [
+            "z"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "c",
+              "labelKey": "c",
+              "shortcut": [
+                "Ctrl+C",
+                "Meta+C"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "a",
+              "labelKey": "again"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "d",
+              "labelKey": "d",
+              "shortcut": [
+                "Ctrl+D",
+                "Hyper+D"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "hasCommand",
+          "args": [
+            "d"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "e",
+              "labelKey": "e",
+              "shortcut": "Nope+E"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "hasCommand",
+          "args": [
+            "c"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "c",
+              "labelKey": "c"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getMenuTarget",
+          "args": [
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "m",
+              "labelKey": "m",
+              "menu": "file"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getMenuTarget",
+          "args": [
+            "m"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getMenuTarget",
+          "args": [
+            "nope"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "",
+              "labelKey": "empty id"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "hasCommand",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        }
+      ]
+    },
+    "inputSha256": "bb3e0b6ef9e69f65c5953d866d472752edf4e426d7cc463c21b863756c43d749"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "resolve-defaults",
+    "input": {
+      "name": "resolve-defaults",
+      "covers": "With no i18n and no shell, a command resolves to its labelKey verbatim, enabled and visible, not active, with no accent, categories [] and its shortcuts as written; a missing id resolves to null. Surface targets without a shell are inactive.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "plain",
+                "labelKey": "plain"
+              },
+              {
+                "id": "full",
+                "labelKey": "commands.full",
+                "icon": "star",
+                "shortcut": "Mod+F",
+                "menu": "more",
+                "categories": [
+                  "x",
+                  "y"
+                ]
+              },
+              {
+                "id": "many",
+                "labelKey": "many",
+                "shortcut": [
+                  "Ctrl+=",
+                  "Ctrl+Plus"
+                ]
+              },
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search"
+              },
+              {
+                "id": "panel-object",
+                "labelKey": "panel-object",
+                "panel": {
+                  "id": "thumbs",
+                  "exclusive": "left"
+                }
+              },
+              {
+                "id": "modal",
+                "labelKey": "modal",
+                "modal": "print"
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "plain"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "full"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "many"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-object"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "full",
+            "a"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "aaa8b96be37d7f0f9505ea56f903be0fa17f2ea8f5a8f3e0f8b2da87f8016995"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "derivations",
+    "input": {
+      "name": "derivations",
+      "covers": "resolve() calls active, then iconAccent, then enabled, then visible, each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "d",
+                "labelKey": "d",
+                "active": {
+                  "$fn": "active",
+                  "seq": [
+                    {
+                      "returns": true
+                    },
+                    {
+                      "returns": false
+                    }
+                  ]
+                },
+                "iconAccent": {
+                  "$fn": "accent",
+                  "returns": {
+                    "primary": "#e5484d",
+                    "secondary": "#ffffff"
+                  }
+                },
+                "enabled": {
+                  "$fn": "enabled",
+                  "seq": [
+                    {
+                      "returns": false
+                    },
+                    {
+                      "returns": true
+                    }
+                  ]
+                },
+                "visible": {
+                  "$fn": "visible",
+                  "seq": [
+                    {
+                      "returns": true
+                    },
+                    {
+                      "returns": false
+                    },
+                    {
+                      "returns": true
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d",
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d",
+            "zzz"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d",
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "d",
+            null
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "missing",
+            "a"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "02a89c58efb580f32a38c93f38a44113ec8cfb8bf3d640c92b40590859f3bb74"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "throwing-derivations-fall-back",
+    "input": {
+      "name": "throwing-derivations-fall-back",
+      "covers": "A derivation that throws falls back: enabled and visible to true, active to false, iconAccent to none. The command still resolves, and execute still runs it.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "t",
+                "labelKey": "t",
+                "active": {
+                  "$fn": "active",
+                  "throws": {
+                    "name": "Error",
+                    "message": "active failed"
+                  }
+                },
+                "iconAccent": {
+                  "$fn": "accent",
+                  "throws": {
+                    "name": "Error",
+                    "message": "accent failed"
+                  }
+                },
+                "enabled": {
+                  "$fn": "enabled",
+                  "throws": {
+                    "name": "Error",
+                    "message": "enabled failed"
+                  }
+                },
+                "visible": {
+                  "$fn": "visible",
+                  "throws": {
+                    "name": "Error",
+                    "message": "visible failed"
+                  }
+                },
+                "run": {
+                  "$fn": "run"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "t"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "t"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "t"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "b07399abb9ee485a9a910bf9b58ff359e8119bc9c1516dc5ca6d18ee81363345"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "icon-accent",
+    "input": {
+      "name": "icon-accent",
+      "covers": "iconAccent carries what the derivation returns: both colours, one, an empty object; null and undefined mean no accent; a throw means no accent; an absent derivation is never called.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "both",
+                "labelKey": "both",
+                "icon": "square",
+                "iconAccent": {
+                  "$fn": "both",
+                  "returns": {
+                    "primary": "#e5484d",
+                    "secondary": "#ffffff"
+                  }
+                }
+              },
+              {
+                "id": "primary",
+                "labelKey": "primary",
+                "iconAccent": {
+                  "$fn": "primary",
+                  "returns": {
+                    "primary": "#000"
+                  }
+                }
+              },
+              {
+                "id": "secondary",
+                "labelKey": "secondary",
+                "iconAccent": {
+                  "$fn": "secondary",
+                  "returns": {
+                    "secondary": "#fff"
+                  }
+                }
+              },
+              {
+                "id": "empty",
+                "labelKey": "empty",
+                "iconAccent": {
+                  "$fn": "empty",
+                  "returns": {}
+                }
+              },
+              {
+                "id": "null",
+                "labelKey": "null",
+                "iconAccent": {
+                  "$fn": "null",
+                  "returns": null
+                }
+              },
+              {
+                "id": "undefined",
+                "labelKey": "undefined",
+                "iconAccent": {
+                  "$fn": "undefined",
+                  "returns": {
+                    "$undefined": true
+                  }
+                }
+              },
+              {
+                "id": "throws",
+                "labelKey": "throws",
+                "iconAccent": {
+                  "$fn": "throws",
+                  "throws": {
+                    "name": "Error",
+                    "message": "no provider"
+                  }
+                }
+              },
+              {
+                "id": "absent",
+                "labelKey": "absent"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "both"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "primary"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "secondary"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "null"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "undefined"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "throws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "absent"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "9ad6b4207d72d12105967ab8bdce5c2baee97524610395c4c6e3cccd70a25c42"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "categories",
+    "input": {
+      "name": "categories",
+      "covers": "config.disabledCategories seeds the slice (copied); a command in a disabled category is disabled and hidden though its derivations still run; disable, enable and set dispatch every time, and the reducer ignores what changes nothing; execute refuses a hidden command.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "pro",
+                "labelKey": "pro",
+                "categories": [
+                  "pro"
+                ],
+                "enabled": {
+                  "$fn": "pro.enabled",
+                  "returns": true
+                },
+                "visible": {
+                  "$fn": "pro.visible",
+                  "returns": true
+                },
+                "run": {
+                  "$fn": "pro.run"
+                }
+              },
+              {
+                "id": "both",
+                "labelKey": "both",
+                "categories": [
+                  "free",
+                  "beta"
+                ],
+                "run": {
+                  "$fn": "both.run"
+                }
+              },
+              {
+                "id": "none",
+                "labelKey": "none",
+                "run": {
+                  "$fn": "none.run"
+                }
+              }
+            ],
+            "disabledCategories": [
+              "pro"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getDisabledCategories",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "isCategoryDisabled",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "isCategoryDisabled",
+          "args": [
+            "free"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "disableCategory",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "disableCategory",
+          "args": [
+            "beta"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "both"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "both"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "enableCategory",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "enableCategory",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "pro"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "setDisabledCategories",
+          "args": [
+            [
+              "free",
+              "free"
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getDisabledCategories",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "both"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "enableCategory",
+          "args": [
+            "free"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getDisabledCategories",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "both"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "setDisabledCategories",
+          "args": [
+            []
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "2708d63b6362e2c9458b43ed23c6011d2b7299cb68cd6e92eef4a19c08c530ef"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "i18n-labels",
+    "input": {
+      "name": "i18n-labels",
+      "covers": "With i18n present the label is t(labelKey), following the locale; a missing key comes back as the key (and i18n warns once); search matches the translated label.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Zoom In",
+                    "zoomOut": "Zoom Out",
+                    "search": "Search Document",
+                    "print": "Print"
+                  }
+                }
+              },
+              {
+                "code": "es",
+                "name": "Espa\u00f1ol",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Acercar",
+                    "zoomOut": "Alejar",
+                    "search": "Buscar"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "zoom:in",
+                "labelKey": "commands.zoomIn"
+              },
+              {
+                "id": "zoom:out",
+                "labelKey": "commands.zoomOut"
+              },
+              {
+                "id": "print",
+                "labelKey": "commands.print"
+              },
+              {
+                "id": "missing",
+                "labelKey": "commands.nope"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "zoom:in"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "zoom"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "es"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "zoom:in"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "acer"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "zoom"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "print"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "e187e7ccd20f3a58629c2c55fa77ac3667feb9a20fbb9069df3fa29ea2c375b3"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "shell-derived-active",
+    "input": {
+      "name": "shell-derived-active",
+      "covers": "Without an active override, a menu command is active while its menu is open, a panel (string or object) or modal command while its surface is open; a menu wins over a panel, a panel over a modal; an empty menu or modal id is no target, an empty panel id is one; an active derivation overrides the shell; the shell is the target document's.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "menu",
+                "labelKey": "menu",
+                "menu": "file"
+              },
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search"
+              },
+              {
+                "id": "panel-object",
+                "labelKey": "panel-object",
+                "panel": {
+                  "id": "thumbs",
+                  "exclusive": "left"
+                }
+              },
+              {
+                "id": "modal",
+                "labelKey": "modal",
+                "modal": "print"
+              },
+              {
+                "id": "menu-and-panel",
+                "labelKey": "menu-and-panel",
+                "menu": "file",
+                "panel": "search"
+              },
+              {
+                "id": "panel-and-modal",
+                "labelKey": "panel-and-modal",
+                "panel": "thumbs",
+                "modal": "print"
+              },
+              {
+                "id": "empty-menu",
+                "labelKey": "empty-menu",
+                "menu": "",
+                "panel": "search"
+              },
+              {
+                "id": "empty-modal",
+                "labelKey": "empty-modal",
+                "modal": ""
+              },
+              {
+                "id": "empty-panel",
+                "labelKey": "empty-panel",
+                "panel": ""
+              },
+              {
+                "id": "override",
+                "labelKey": "override",
+                "menu": "file",
+                "active": {
+                  "$fn": "override.active",
+                  "returns": false
+                }
+              },
+              {
+                "id": "none",
+                "labelKey": "none"
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "setActive",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-object"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu-and-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-and-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "override"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "none"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "openMenu",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "search"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "thumbs"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-object"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu-and-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-and-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "override"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "none"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu",
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel",
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "closeMenu",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu-and-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu",
+            "zzz"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "9eca78b3ed84e8c8b7d73a0219c2056173d2f81684a0145d63edcd4f5a8b78a1"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "execute-routing",
+    "input": {
+      "name": "execute-routing",
+      "covers": "Without run, execute routes a surface target through the target document's shell: toggleMenu for a menu, toggle with the panel's exclusive tag (or none), toggle exclusive \"modal\" for a modal; a menu wins over a panel and a panel over a modal; empty menu and modal ids are no target. Without a shell, or a target, nothing happens.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "menu",
+                "labelKey": "menu",
+                "menu": "file"
+              },
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search"
+              },
+              {
+                "id": "panel-object",
+                "labelKey": "panel-object",
+                "panel": {
+                  "id": "thumbs",
+                  "exclusive": "left"
+                }
+              },
+              {
+                "id": "panel-object-bare",
+                "labelKey": "panel-object-bare",
+                "panel": {
+                  "id": "outline"
+                }
+              },
+              {
+                "id": "modal",
+                "labelKey": "modal",
+                "modal": "print"
+              },
+              {
+                "id": "menu-and-panel",
+                "labelKey": "menu-and-panel",
+                "menu": "view",
+                "panel": "search"
+              },
+              {
+                "id": "panel-and-modal",
+                "labelKey": "panel-and-modal",
+                "panel": "layers",
+                "modal": "print"
+              },
+              {
+                "id": "empty-menu",
+                "labelKey": "empty-menu",
+                "menu": "",
+                "panel": "search"
+              },
+              {
+                "id": "empty-modal",
+                "labelKey": "empty-modal",
+                "modal": ""
+              },
+              {
+                "id": "empty-panel",
+                "labelKey": "empty-panel",
+                "panel": ""
+              },
+              {
+                "id": "none",
+                "labelKey": "none"
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "setActive",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel-object"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel-object-bare"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "menu-and-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel-and-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "empty-menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "empty-modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "empty-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "none"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel-object",
+            {
+              "documentId": "b"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "menu",
+            {
+              "documentId": "zzz"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "listOpenSurfaces",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "b"
+          },
+          "method": "listOpenSurfaces",
+          "args": []
+        }
+      ]
+    },
+    "inputSha256": "d3957dbbe32e42a9059b4dd31e53a79010983a42f1c6ddcb641cb48711d3a5bb"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "execute-guards-and-run",
+    "input": {
+      "name": "execute-guards-and-run",
+      "covers": "execute resolves first (every derivation runs), then refuses a disabled or hidden command with a rejected result; otherwise it calls run with a fresh CommandCtx and skips the surface routing. It awaits the run: a run that throws or rejects makes execute reject with an operation-failed PluginError, and a pending run keeps execute pending until it settles.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "disabled",
+                "labelKey": "disabled",
+                "enabled": {
+                  "$fn": "disabled.enabled",
+                  "returns": false
+                },
+                "run": {
+                  "$fn": "disabled.run"
+                }
+              },
+              {
+                "id": "hidden",
+                "labelKey": "hidden",
+                "visible": {
+                  "$fn": "hidden.visible",
+                  "returns": false
+                },
+                "run": {
+                  "$fn": "hidden.run"
+                }
+              },
+              {
+                "id": "runs",
+                "labelKey": "runs",
+                "menu": "file",
+                "run": {
+                  "$fn": "runs.run",
+                  "returns": "ignored"
+                }
+              },
+              {
+                "id": "throws",
+                "labelKey": "throws",
+                "run": {
+                  "$fn": "throws.run",
+                  "throws": {
+                    "name": "Error",
+                    "message": "run failed"
+                  }
+                }
+              },
+              {
+                "id": "rejects",
+                "labelKey": "rejects",
+                "run": {
+                  "$fn": "rejects.run",
+                  "rejects": {
+                    "name": "Error",
+                    "message": "async run failed"
+                  }
+                }
+              },
+              {
+                "id": "defers",
+                "labelKey": "defers",
+                "run": {
+                  "$fn": "defers.run",
+                  "defer": "run"
+                }
+              },
+              {
+                "id": "resolves",
+                "labelKey": "resolves",
+                "run": {
+                  "$fn": "resolves.run",
+                  "resolves": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "disabled"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "hidden"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "runs"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "runs",
+            {
+              "documentId": "a"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "listOpenMenus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "throws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "rejects"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "defers"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "run",
+          "value": "late"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "resolves"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "9f5ef2bec5bd8db6f08be0e020a033cfe6daeba820b31989375d02ab0db1aa54"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "command-ctx",
+    "input": {
+      "name": "command-ctx",
+      "covers": "What a command function can do with its CommandCtx: get resolves a document-scoped token for the target document and throws the kernel's refusal when it cannot; tryGet answers null instead; workspace tokens resolve whatever the target; an empty target falls back to the active document; core() is the kernel's core state.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Zoom In",
+                    "zoomOut": "Zoom Out",
+                    "search": "Search Document",
+                    "print": "Print"
+                  }
+                }
+              },
+              {
+                "code": "es",
+                "name": "Espa\u00f1ol",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Acercar",
+                    "zoomOut": "Alejar",
+                    "search": "Buscar"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "probe",
+          "config": {
+            "id": "broken",
+            "scope": "document",
+            "token": "broken",
+            "capabilityThrows": {
+              "name": "Error",
+              "message": "broken capability"
+            }
+          }
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "probe",
+                "labelKey": "probe",
+                "run": {
+                  "$fn": "probe.run",
+                  "uses": [
+                    {
+                      "get": "shell",
+                      "call": "isOpen",
+                      "args": [
+                        "left"
+                      ]
+                    },
+                    {
+                      "tryGet": "shell",
+                      "call": "listOpenMenus"
+                    },
+                    {
+                      "get": "shell"
+                    },
+                    {
+                      "get": "i18n",
+                      "call": "getLocale"
+                    },
+                    {
+                      "tryGet": "i18n",
+                      "call": "t",
+                      "args": [
+                        "commands.zoomIn"
+                      ]
+                    },
+                    {
+                      "get": "nope"
+                    },
+                    {
+                      "tryGet": "nope"
+                    },
+                    {
+                      "get": "broken"
+                    },
+                    {
+                      "tryGet": "broken"
+                    },
+                    {
+                      "get": "shell",
+                      "call": "open",
+                      "args": [
+                        "left",
+                        {
+                          "exclusive": "side"
+                        }
+                      ]
+                    },
+                    {
+                      "core": "activeId"
+                    },
+                    {
+                      "core": "order"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "slow": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "args": [
+              {
+                "kind": "bytes",
+                "id": "slow",
+                "bytes": {
+                  "$bytes": ""
+                }
+              },
+              {}
+            ],
+            "defer": "open-slow"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe",
+            {
+              "documentId": "a"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe",
+            {
+              "documentId": ""
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe",
+            {
+              "documentId": "zzz"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "slow",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe",
+            {
+              "documentId": "slow"
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "open-slow",
+          "value": {
+            "$document": "slow"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "probe",
+            {
+              "documentId": "slow"
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "6eab287fb08d97ce845171d705bcde25b4e436acc954f837d943374a397a91a0"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "follows-the-active-document",
+    "input": {
+      "name": "follows-the-active-document",
+      "covers": "An unaddressed resolve or execute binds to whichever document is active at the call, and to none once the last one closes.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search",
+                "visible": {
+                  "$fn": "visible",
+                  "returns": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "setActive",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "f27790bb985bcf44dfbee66e3e3d70930219041f962f92726ff27922d1f3ca96"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "search",
+    "input": {
+      "name": "search",
+      "covers": "search trims and lowercases the query, then keeps visible commands, in registry order, whose lowercased label contains it or whose id (not lowercased) does; an empty query keeps every visible command; every command is resolved, hidden ones included.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "zoom:in",
+                "labelKey": "Zoom In"
+              },
+              {
+                "id": "Zoom:Out",
+                "labelKey": "Shrink"
+              },
+              {
+                "id": "panel:search",
+                "labelKey": "Find"
+              },
+              {
+                "id": "hidden",
+                "labelKey": "Zoom Hidden",
+                "visible": {
+                  "$fn": "hidden.visible",
+                  "returns": false
+                }
+              },
+              {
+                "id": "gated",
+                "labelKey": "Zoom Gated",
+                "categories": [
+                  "pro"
+                ]
+              },
+              {
+                "id": "\u00fcmlaut",
+                "labelKey": "\u00dcBER Stra\u00dfe"
+              }
+            ],
+            "disabledCategories": [
+              "pro"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "   "
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "zoom"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "  ZOOM\t\n"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "zoom:o"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "Zoom:O"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "Out"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            ":"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "\u00fcber"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "STRASSE"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "stra\u00dfe"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "nothing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "\ufefffind\u00a0"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "4f1bdca19bbfe14f3127c9eb6021b0e1951b5da610c427caf582928abecfedd7"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "match-stroke",
+    "input": {
+      "name": "match-stroke",
+      "covers": "matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; it ignores enablement. The palette is registered last through the capability, so its remover can take it out.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "zoom:in",
+                "labelKey": "zoom:in",
+                "shortcut": [
+                  "Mod+=",
+                  "Mod+Shift+=",
+                  "Ctrl+NumpadAdd"
+                ]
+              },
+              {
+                "id": "other-k",
+                "labelKey": "other-k",
+                "shortcut": "Ctrl+K"
+              },
+              {
+                "id": "escape",
+                "labelKey": "escape",
+                "shortcut": "Escape"
+              },
+              {
+                "id": "none",
+                "labelKey": "none"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "palette",
+              "labelKey": "palette",
+              "shortcut": "Mod+K",
+              "enabled": {
+                "$fn": "palette.enabled",
+                "returns": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": false,
+              "metaKey": true,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "K",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": true
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "=",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "+",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": true
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "=",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": true
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "+",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false,
+              "code": "NumpadAdd"
+            },
+            {
+              "isMac": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "Escape",
+              "ctrlKey": false,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false,
+              "code": "Escape"
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "Escape",
+              "ctrlKey": false,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": true
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "x",
+              "ctrlKey": false,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "palette",
+              "labelKey": "palette",
+              "shortcut": "Mod+K"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "matchStroke",
+          "args": [
+            {
+              "key": "k",
+              "ctrlKey": false,
+              "metaKey": true,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": true
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "32dcd25607f484f3a45125105a5fa5b81c9e04c060ba27aadde0d977aa3379d8"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "registered-functions",
+    "input": {
+      "name": "registered-functions",
+      "covers": "A command registered through the capability carries its functions like a configured one: derivations and run are called with the CommandCtx.",
+      "plugins": [
+        {
+          "factory": "commands"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "live",
+              "labelKey": "live",
+              "icon": "bolt",
+              "iconAccent": {
+                "$fn": "live.accent",
+                "returns": {
+                  "primary": "red"
+                }
+              },
+              "active": {
+                "$fn": "live.active",
+                "returns": true
+              },
+              "enabled": {
+                "$fn": "live.enabled",
+                "seq": [
+                  {
+                    "returns": true
+                  },
+                  {
+                    "returns": false
+                  }
+                ]
+              },
+              "visible": {
+                "$fn": "live.visible",
+                "returns": true
+              },
+              "run": {
+                "$fn": "live.run"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "live"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "live"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "live"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "d0129c437a98aa02a2ea2fe62862bc0661000b59fce9b18abfaa6ad0e2f9f761"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "re-entrant-registry",
+    "input": {
+      "name": "re-entrant-registry",
+      "covers": "A command function may use the commands capability itself: a run that executes another command, and a visible derivation that, mid-search, removes a command not yet visited and registers a new one; the second time, the registration is a duplicate. Commands a derivation removes are registered through the capability by a setup command, which keeps their removers.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "first",
+                "labelKey": "x first",
+                "visible": {
+                  "$fn": "first.visible",
+                  "returns": true,
+                  "uses": [
+                    {
+                      "forget": "second"
+                    },
+                    {
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "late",
+                          "labelKey": "x late",
+                          "visible": {
+                            "$fn": "late.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "get": "commands",
+                      "call": "listCommandIds"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "chain",
+                "labelKey": "chain",
+                "run": {
+                  "$fn": "chain.run",
+                  "uses": [
+                    {
+                      "get": "commands",
+                      "call": "execute",
+                      "args": [
+                        "target"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "target",
+                "labelKey": "target",
+                "run": {
+                  "$fn": "target.run"
+                }
+              },
+              {
+                "id": "setup",
+                "labelKey": "setup",
+                "run": {
+                  "$fn": "setup.run",
+                  "uses": [
+                    {
+                      "remember": "second",
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "second",
+                          "labelKey": "x second",
+                          "visible": {
+                            "$fn": "second.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "third",
+                          "labelKey": "x third",
+                          "visible": {
+                            "$fn": "third.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "setup"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "chain"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "986e14236e689bebac00aa32d0c99e011ff32618f6f279d63d46dd4b0dcc3426"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "unregister-behind-a-search",
+    "input": {
+      "name": "unregister-behind-a-search",
+      "covers": "A derivation that removes a command the search already visited changes nothing about the rest of the walk: every later command is still visited once. The commands are registered by a setup command, which keeps the remover of `a`.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "setup",
+                "labelKey": "setup",
+                "run": {
+                  "$fn": "setup.run",
+                  "uses": [
+                    {
+                      "remember": "a",
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "a",
+                          "labelKey": "a",
+                          "visible": {
+                            "$fn": "a.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "b",
+                          "labelKey": "b",
+                          "visible": {
+                            "$fn": "b.visible",
+                            "returns": true,
+                            "uses": [
+                              {
+                                "forget": "a"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "c",
+                          "labelKey": "c",
+                          "visible": {
+                            "$fn": "c.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "get": "commands",
+                      "call": "registerCommand",
+                      "args": [
+                        {
+                          "id": "d",
+                          "labelKey": "d",
+                          "visible": {
+                            "$fn": "d.visible",
+                            "returns": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "setup"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            ""
+          ]
+        }
+      ]
+    },
+    "inputSha256": "29efb1905f448c370f925abc30f9c703f74cb0283461c6ae5359dc1c7cbd6308"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "register-many-shortcuts-and-can-execute",
+    "input": {
+      "name": "register-many-shortcuts-and-can-execute",
+      "covers": "registerCommands registers each definition in order and returns one remover for all of them (a definition replaced since is left alone); replace: true swaps a definition in place of a duplicate. listShortcuts lists every binding in registry order. canExecute is enabled and visible for the target, false for a missing id.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "a",
+                "labelKey": "a",
+                "shortcut": [
+                  "Mod+A",
+                  "Ctrl+Shift+A"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommands",
+          "args": [
+            [
+              {
+                "id": "b",
+                "labelKey": "b",
+                "shortcut": "Mod+B"
+              },
+              {
+                "id": "c",
+                "labelKey": "c",
+                "enabled": {
+                  "$fn": "c.enabled",
+                  "returns": false
+                }
+              },
+              {
+                "id": "d",
+                "labelKey": "d",
+                "visible": {
+                  "$fn": "d.visible",
+                  "returns": false
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listShortcuts",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "canExecute",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "canExecute",
+          "args": [
+            "c"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "canExecute",
+          "args": [
+            "d"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "canExecute",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "canExecute",
+          "args": [
+            "a",
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommand",
+          "args": [
+            {
+              "id": "b",
+              "labelKey": "b again",
+              "shortcut": "Mod+Shift+B"
+            },
+            {
+              "replace": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommands",
+          "args": [
+            [
+              {
+                "id": "a",
+                "labelKey": "a"
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "registerCommands",
+          "args": [
+            [
+              {
+                "id": "e",
+                "labelKey": "e"
+              },
+              {
+                "id": "a",
+                "labelKey": "a replaced"
+              }
+            ],
+            {
+              "replace": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listShortcuts",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 2
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listShortcuts",
+          "args": []
+        }
+      ]
+    },
+    "inputSha256": "1103f940ccbb124aba0605d29b18cbf82689f89bc46b0aacb2b41059608ade84"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "execute-events",
+    "input": {
+      "name": "execute-events",
+      "covers": "onExecuted fires after a command ran, with its id, target document and the args as given; onExecutionFailed fires when run throws or rejects, with the failure as PluginErrorInfo, and execute rejects with the mapped PluginError. The run sees the args on its CommandCtx. A refused command fires neither. A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "go",
+                "labelKey": "go",
+                "run": {
+                  "$fn": "go.run"
+                }
+              },
+              {
+                "id": "fails",
+                "labelKey": "fails",
+                "run": {
+                  "$fn": "fails.run",
+                  "throws": {
+                    "name": "Error",
+                    "message": "run failed"
+                  }
+                }
+              },
+              {
+                "id": "rejects",
+                "labelKey": "rejects",
+                "run": {
+                  "$fn": "rejects.run",
+                  "rejects": {
+                    "name": "TypeError",
+                    "message": "async run failed"
+                  }
+                }
+              },
+              {
+                "id": "off",
+                "labelKey": "off",
+                "enabled": {
+                  "$fn": "off.enabled",
+                  "returns": false
+                }
+              },
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search"
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "onExecuted",
+          "args": [
+            {
+              "$fn": "executed",
+              "throws": {
+                "name": "Error",
+                "message": "listener broke"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "onExecuted",
+          "args": [
+            {
+              "$fn": "executed-2",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "onExecutionFailed",
+          "args": [
+            {
+              "$fn": "failed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "go"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "go",
+            {
+              "args": {
+                "zoom": 2
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "go",
+            {
+              "documentId": "b",
+              "args": [
+                1,
+                "two"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "panel",
+            {
+              "args": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "fails",
+            {
+              "args": "x"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "rejects"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "off"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 2
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "go"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "fails"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "87352c01908923c19abb624059c8fee9e74298b4c9fac8e8454c5af15b9c2b12"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "get-and-list-commands",
+    "input": {
+      "name": "get-and-list-commands",
+      "covers": "getCommand hands back the definition as registered (null for an unknown id); listCommands resolves every command in registry order for the target document.",
+      "plugins": [
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "a",
+                "labelKey": "a",
+                "icon": "star",
+                "shortcut": [
+                  "Mod+A"
+                ],
+                "categories": [
+                  "pro"
+                ],
+                "menu": "file"
+              },
+              {
+                "id": "b",
+                "labelKey": "b",
+                "panel": {
+                  "id": "search",
+                  "exclusive": "left"
+                },
+                "modal": "print"
+              },
+              {
+                "id": "c",
+                "labelKey": "Label C"
+              }
+            ],
+            "disabledCategories": [
+              "pro"
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getCommand",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getCommand",
+          "args": [
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getCommand",
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommands",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "search"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommands",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommands",
+          "args": [
+            "a"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "9562d558dabdd12a2a4165178e338bd5c47aac10fb6b9643e0b3ea64b4937505"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "a-bad-config-refuses-the-kernel",
+    "input": {
+      "name": "a-bad-config-refuses-the-kernel",
+      "covers": "config.commands are registered when the controller is created, so a duplicate id makes createKernel throw the conflict.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "a",
+                "labelKey": "a"
+              },
+              {
+                "id": "a",
+                "labelKey": "a"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        }
+      ]
+    },
+    "inputSha256": "1d526d9da2301a2b8dbd93da5aac4266ad8cf2dbfc4c659f45aa0d0e3536161d"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "a-bad-config-shortcut-refuses-the-kernel",
+    "input": {
+      "name": "a-bad-config-shortcut-refuses-the-kernel",
+      "covers": "An unparsable shortcut in config.commands makes createKernel throw the parse error.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "a",
+                "labelKey": "a",
+                "shortcut": "Hyper+A"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "listCommandIds",
+          "args": []
+        }
+      ]
+    },
+    "inputSha256": "1f8ab167bd69078be9f96ec48ce232752bd9e16e207873c68dfe18f864439541"
+  },
+  {
+    "source": "commands",
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "name": "after-destroy",
+    "input": {
+      "name": "after-destroy",
+      "covers": "A capability reference kept past destroy still reads and changes the registry, matches strokes, resolves and executes against the last state (i18n no longer resolves, so labels are their keys); category intents are dropped, and the first is reported instance-closed.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Zoom In",
+                    "zoomOut": "Zoom Out",
+                    "search": "Search Document",
+                    "print": "Print"
+                  }
+                }
+              },
+              {
+                "code": "es",
+                "name": "Espa\u00f1ol",
+                "translations": {
+                  "commands": {
+                    "zoomIn": "Acercar",
+                    "zoomOut": "Alejar",
+                    "search": "Buscar"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "menu",
+                "labelKey": "commands.zoomIn",
+                "menu": "file",
+                "shortcut": "Mod+M",
+                "run": {
+                  "$fn": "menu.run",
+                  "uses": [
+                    {
+                      "tryGet": "i18n",
+                      "call": "getLocale"
+                    },
+                    {
+                      "core": "activeId"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "capability",
+          "args": [
+            {
+              "$token": "commands"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 5
+          },
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 9
+          },
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy"
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 4
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 2
+          },
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 19
+          },
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 18
+          },
+          "args": [
+            {
+              "key": "m",
+              "ctrlKey": true,
+              "metaKey": false,
+              "altKey": false,
+              "shiftKey": false
+            },
+            {
+              "isMac": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          },
+          "args": [
+            {
+              "id": "late",
+              "labelKey": "late"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 4
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 5
+          },
+          "args": [
+            "late"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 5
+          },
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 9
+          },
+          "args": [
+            "late"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 9
+          },
+          "args": [
+            "missing"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 7
+          },
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 11
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 12
+          },
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 13
+          },
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 14
+          },
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 15
+          },
+          "args": [
+            [
+              "x"
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 20
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 4
+          }
+        }
+      ]
+    },
+    "inputSha256": "ab5b92ca1e70cb246ede8be4fc9eac3f2a56282b2244a15c2984315caf920061"
+  }
+]

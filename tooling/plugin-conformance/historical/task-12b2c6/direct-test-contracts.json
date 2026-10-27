@@ -1,0 +1,12 @@
+{
+  "uriOpeners": "latest opener wins; false reports target; removing stale first never removes second; double unsubscribe inert; absent opener yields uri",
+  "listenerIsolation": "listener-isolated Error reported once; sibling sees exact target/activation; unsubscribed observer never called",
+  "lifetime": "close aborts guarded handle; pageMirror suppresses instance-closed then resolves ensureLoaded; late engine settlement never emits loaded; subscribers 0",
+  "callerCancellation": {
+    "name": "PluginError",
+    "code": "operation-cancelled",
+    "capability": "link",
+    "message": "operation cancelled"
+  },
+  "sharedReadAfterCancellation": "caller signal rejects only caller; other waiter sees ready and obj:1 after explicit engine settlement"
+}

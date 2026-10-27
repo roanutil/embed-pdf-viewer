@@ -1,42 +1,45 @@
-//! `buildCommentThreads` from `engine-core` (`annotation/comments.ts`), the
-//! conversation-plane view the `comments` lens memoizes. The plugin layer
-//! links no engine, so the composer is transcribed here; DTOs stay JSON.
+//! `buildCommentThreads` from `engine-core` (`annotation/comments.ts`): the
+//! conversation-plane view over the flat annotation list. The plugin links
+//! no engine, so the composer is transcribed here; annotations stay JSON.
+//!
+//! Relation keys are `annotationKey` (`obj:<n>`, `base:<page>:<i>`), so two
+//! inline annotations on one page key apart. Replies sort by
+//! `createdAt ?? modifiedAt`, compared as `Date.parse` does, undated last,
+//! z-order (place in the input) as the tiebreak.
 
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use epdf_annotation_core::js::{Record, sort_by_ordering};
 use serde_json::{Map, Value, json};
 
-use crate::value::{get, str_of};
+use crate::engine::compare_iso_date_time;
+use crate::js::key_or_none;
 
-/// `annotationKey(ref)` (engine-core), over a wire ref: `obj:<n>`,
-/// `nm:<page>:<name>`, `idx:<page>:<i>`.
-fn rel_key(r: &Value) -> String {
-    let pon =
-        get(r, "page").and_then(|p| get(p, "pageObjectNumber")).map(num_text).unwrap_or_default();
-    match str_of(r, "kind") {
-        Some("objectNumber") => {
-            format!("obj:{}", get(r, "annotObjectNumber").map(num_text).unwrap_or_default())
-        }
-        Some("nm") => format!("nm:{pon}:{}", str_of(r, "nm").unwrap_or_default()),
-        _ => format!("idx:{pon}:{}", get(r, "index").map(num_text).unwrap_or_default()),
-    }
-}
-
-fn num_text(v: &Value) -> String {
-    match v {
-        Value::Number(n) => n.as_f64().map(epdf_geometry::js::number_to_string).unwrap_or_default(),
-        Value::String(s) => s.clone(),
-        other => other.to_string(),
-    }
-}
-
+const EXCLUDED_SUBTYPES: [&str; 4] = ["widget", "link", "popup", "unsupported"];
 const REVIEW_STATES: [&str; 5] = ["accepted", "rejected", "cancelled", "completed", "none"];
 const MARKED_STATES: [&str; 2] = ["marked", "unmarked"];
 
-fn non_empty<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
-    str_of(v, key).filter(|s| !s.is_empty())
+fn str_of<'a>(a: &'a Value, key: &str) -> Option<&'a str> {
+    a.get(key).and_then(Value::as_str)
+}
+
+fn non_empty<'a>(a: &'a Value, key: &str) -> Option<&'a str> {
+    str_of(a, key).filter(|s| !s.is_empty())
+}
+
+fn key(a: &Value) -> String {
+    key_or_none(a.get("ref").unwrap_or(&Value::Null))
+}
+
+/// `standardStateModelOf(state)`.
+pub fn standard_state_model_of(state: &str) -> Option<&'static str> {
+    if REVIEW_STATES.contains(&state) {
+        Some("review")
+    } else if MARKED_STATES.contains(&state) {
+        Some("marked")
+    } else {
+        None
+    }
 }
 
 /// `isStateAnnotation(a)`.
@@ -45,105 +48,54 @@ pub fn is_state_annotation(a: &Value) -> bool {
         && (non_empty(a, "state").is_some() || non_empty(a, "stateModel").is_some())
 }
 
-fn ref_of(a: &Value) -> Value {
-    get(a, "ref").cloned().unwrap_or(Value::Null)
+fn has_reply(a: &Value) -> bool {
+    a.get("reply")
+        .is_some_and(|r| !r.is_null() && !epdf_kernel::is_undefined(r) && r != &Value::Bool(false))
+}
+
+/// `classifyRelation(a) === 'grouped-subordinate'`.
+fn is_grouped_subordinate(a: &Value) -> bool {
+    has_reply(a) && a.pointer("/reply/type").and_then(Value::as_str) == Some("group")
+}
+
+/// A date member, `null` as absent (`a.createdAt ?? a.modifiedAt`).
+fn date_of<'a>(a: &'a Value, key: &str) -> Option<&'a str> {
+    a.get(key).and_then(Value::as_str)
+}
+
+fn chronological(z: &HashMap<String, usize>) -> impl Fn(&Value, &Value) -> Ordering + '_ {
+    move |a, b| {
+        let at = date_of(a, "createdAt").or_else(|| date_of(a, "modifiedAt"));
+        let bt = date_of(b, "createdAt").or_else(|| date_of(b, "modifiedAt"));
+        let order = match (at, bt) {
+            (Some(x), Some(y)) => compare_iso_date_time(x, y),
+            _ => 0.0,
+        };
+        if order != 0.0 {
+            return if order < 0.0 { Ordering::Less } else { Ordering::Greater };
+        }
+        match (at, bt) {
+            (Some(_), None) => return Ordering::Less,
+            (None, Some(_)) => return Ordering::Greater,
+            _ => {}
+        }
+        z.get(&key(a)).copied().unwrap_or(0).cmp(&z.get(&key(b)).copied().unwrap_or(0))
+    }
 }
 
 /// One reviewer's status.
-#[derive(Clone, Debug, PartialEq)]
-pub struct ReviewStatus {
-    pub state: String,
-    pub state_model: String,
-    pub by: Option<String>,
-    pub at: Option<String>,
-    pub ref_: Value,
+#[derive(Clone, Debug)]
+struct ReviewStatus {
+    state: String,
+    state_model: String,
+    by: Option<String>,
+    at: Option<String>,
+    reference: Value,
 }
 
 impl ReviewStatus {
     fn to_json(&self) -> Value {
-        json!({
-            "state": self.state,
-            "stateModel": self.state_model,
-            "by": self.by,
-            "at": self.at,
-            "ref": self.ref_,
-        })
-    }
-}
-
-/// `CommentThreadReview`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct CommentThreadReview {
-    pub by_reviewer: Record<ReviewStatus>,
-    pub last_change: Option<ReviewStatus>,
-    pub marked_by: Vec<String>,
-    pub status_refs: Vec<Value>,
-    /// `Some` only when a current user id was given.
-    pub mine: Option<Option<ReviewStatus>>,
-}
-
-/// `CommentThread`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct CommentThread {
-    pub root: Value,
-    pub page: Value,
-    pub replies: Vec<Value>,
-    pub grouped_parts: Vec<Value>,
-    pub review: CommentThreadReview,
-}
-
-impl CommentThread {
-    pub fn to_json(&self) -> Value {
-        let mut by = Map::new();
-        for (k, v) in self.review.by_reviewer.iter() {
-            by.insert(k.to_string(), v.to_json());
-        }
-        let mut review = Map::new();
-        review.insert("byReviewer".into(), Value::Object(by));
-        review.insert(
-            "lastChange".into(),
-            self.review.last_change.as_ref().map_or(Value::Null, ReviewStatus::to_json),
-        );
-        review.insert("markedBy".into(), json!(self.review.marked_by));
-        review.insert("statusRefs".into(), Value::Array(self.review.status_refs.clone()));
-        if let Some(mine) = &self.review.mine {
-            review.insert("mine".into(), mine.as_ref().map_or(Value::Null, ReviewStatus::to_json));
-        }
-        json!({
-            "root": self.root,
-            "page": self.page,
-            "replies": self.replies,
-            "groupedParts": self.grouped_parts,
-            "review": Value::Object(review),
-        })
-    }
-}
-
-fn date(a: &Value, key: &str) -> Option<String> {
-    str_of(a, key).map(str::to_string)
-}
-
-/// `created ?? modified` ascending; undated last; z-order tiebreak.
-fn chronological(a: &Value, b: &Value) -> Ordering {
-    let at = date(a, "created").or_else(|| date(a, "modified"));
-    let bt = date(b, "created").or_else(|| date(b, "modified"));
-    match (&at, &bt) {
-        (Some(x), Some(y)) if x != y => {
-            return if x < y { Ordering::Less } else { Ordering::Greater };
-        }
-        (Some(_), None) => return Ordering::Less,
-        (None, Some(_)) => return Ordering::Greater,
-        _ => {}
-    }
-    let ia = get(a, "index").and_then(Value::as_f64).unwrap_or(f64::NAN);
-    let ib = get(b, "index").and_then(Value::as_f64).unwrap_or(f64::NAN);
-    let d = ia - ib;
-    if d < 0.0 {
-        Ordering::Less
-    } else if d > 0.0 {
-        Ordering::Greater
-    } else {
-        Ordering::Equal
+        json!({ "state": self.state, "stateModel": self.state_model, "by": self.by, "at": self.at, "ref": self.reference })
     }
 }
 
@@ -157,13 +109,7 @@ fn to_review_status(a: &Value) -> Option<ReviewStatus> {
     if state_model.is_none()
         && let Some(s) = raw_state
     {
-        if REVIEW_STATES.contains(&s) {
-            state_model = Some("review".into());
-        } else if MARKED_STATES.contains(&s) {
-            state_model = Some("marked".into());
-        } else {
-            return None;
-        }
+        state_model = Some(standard_state_model_of(s)?.to_string());
     }
     let state = match raw_state {
         Some(s) => s.to_string(),
@@ -174,120 +120,140 @@ fn to_review_status(a: &Value) -> Option<ReviewStatus> {
         },
     };
     let state_model = state_model?;
-    let by = str_of(a, "userId")
+    let by = a
+        .get("userId")
+        .and_then(Value::as_str)
         .map(str::to_string)
         .or_else(|| non_empty(a, "author").map(str::to_string));
+    let at = date_of(a, "modifiedAt").or_else(|| date_of(a, "createdAt")).map(str::to_string);
     Some(ReviewStatus {
         state,
         state_model,
         by,
-        at: date(a, "modified").or_else(|| date(a, "created")),
-        ref_: ref_of(a),
+        at,
+        reference: a.get("ref").cloned().unwrap_or(Value::Null),
     })
 }
 
+/// `isNewer(a, b)`: `at` decides; dated beats undated; otherwise the later entry wins.
 fn is_newer(a: &ReviewStatus, b: Option<&ReviewStatus>) -> bool {
     let Some(b) = b else { return true };
     match (&a.at, &b.at) {
-        (Some(x), Some(y)) => x >= y,
+        (Some(x), Some(y)) => compare_iso_date_time(x, y) >= 0.0,
         (Some(_), None) => true,
         (None, Some(_)) => false,
         (None, None) => true,
     }
 }
 
-fn compute_review(states: &[Value], current_user_id: Option<&str>) -> CommentThreadReview {
-    let mut by_reviewer: Record<ReviewStatus> = Record::new();
-    let mut marked_latest: Record<ReviewStatus> = Record::new();
+fn compute_review(states: &[Value], current_user_id: Option<&str>) -> Value {
+    let mut by_reviewer: Vec<(String, ReviewStatus)> = Vec::new();
+    let mut marked_latest: Vec<(String, ReviewStatus)> = Vec::new();
     let mut last_change: Option<ReviewStatus> = None;
+    let upsert = |list: &mut Vec<(String, ReviewStatus)>, by: &str, status: &ReviewStatus| {
+        let current = list.iter().position(|(k, _)| k == by);
+        if is_newer(status, current.map(|i| &list[i].1)) {
+            match current {
+                Some(i) => list[i].1 = status.clone(),
+                None => list.push((by.to_string(), status.clone())),
+            }
+        }
+    };
     for a in states {
         let Some(status) = to_review_status(a) else { continue };
         if status.state_model == "marked" {
-            if let Some(by) = status.by.clone()
-                && is_newer(&status, marked_latest.get(&by))
-            {
-                marked_latest.insert(by, status);
+            if let Some(by) = &status.by {
+                upsert(&mut marked_latest, by, &status);
             }
             continue;
         }
-        if let Some(by) = status.by.clone()
-            && is_newer(&status, by_reviewer.get(&by))
-        {
-            by_reviewer.insert(by, status.clone());
+        if let Some(by) = &status.by {
+            upsert(&mut by_reviewer, by, &status);
         }
         if is_newer(&status, last_change.as_ref()) {
-            last_change = Some(status);
+            last_change = Some(status.clone());
         }
     }
-    let mut marked_by: Vec<String> = marked_latest
-        .iter()
-        .filter(|(_, s)| s.state == "marked")
-        .map(|(k, _)| k.to_string())
-        .collect();
-    marked_by.sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()));
-    let mine = current_user_id.map(|id| by_reviewer.get(id).cloned());
-    CommentThreadReview {
-        by_reviewer,
-        last_change,
-        marked_by,
-        status_refs: states.iter().map(ref_of).collect(),
-        mine,
+    let mut marked_by: Vec<String> =
+        marked_latest.iter().filter(|(_, s)| s.state == "marked").map(|(k, _)| k.clone()).collect();
+    marked_by.sort();
+    let mut reviewers = Map::new();
+    for (k, s) in record_order(&by_reviewer) {
+        reviewers.insert(k, s.to_json());
     }
+    let mut review = Map::new();
+    review.insert("byReviewer".into(), Value::Object(reviewers));
+    review.insert(
+        "lastChange".into(),
+        last_change.as_ref().map_or(Value::Null, ReviewStatus::to_json),
+    );
+    review.insert("markedBy".into(), json!(marked_by));
+    review.insert(
+        "statusRefs".into(),
+        Value::Array(states.iter().map(|a| a.get("ref").cloned().unwrap_or(Value::Null)).collect()),
+    );
+    if let Some(user) = current_user_id {
+        let mine =
+            by_reviewer.iter().find(|(k, _)| k == user).map_or(Value::Null, |(_, s)| s.to_json());
+        review.insert("mine".into(), mine);
+    }
+    Value::Object(review)
 }
 
-fn is_grouped_subordinate(a: &Value) -> bool {
-    crate::value::truthy(get(a, "inReplyTo")) && str_of(a, "replyType") == Some("group")
+/// A JavaScript object's key order: integer-like keys first, ascending,
+/// then the rest in insertion order.
+fn record_order(list: &[(String, ReviewStatus)]) -> Vec<(String, ReviewStatus)> {
+    let index = |k: &str| -> Option<u64> {
+        if k == "0"
+            || (!k.starts_with('0') && !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit()))
+        {
+            k.parse::<u64>().ok().filter(|n| *n < 4_294_967_295)
+        } else {
+            None
+        }
+    };
+    let mut ints: Vec<(u64, (String, ReviewStatus))> =
+        list.iter().filter_map(|(k, s)| index(k).map(|n| (n, (k.clone(), s.clone())))).collect();
+    ints.sort_by_key(|(n, _)| *n);
+    let mut out: Vec<(String, ReviewStatus)> = ints.into_iter().map(|(_, e)| e).collect();
+    out.extend(list.iter().filter(|(k, _)| index(k).is_none()).cloned());
+    out
 }
 
 /// `buildCommentThreads(annotations, { currentUserId })`.
-pub fn build_comment_threads(
-    annotations: &[Value],
-    current_user_id: Option<&str>,
-) -> Vec<CommentThread> {
+pub fn build_comment_threads(annotations: &[Value], current_user_id: Option<&str>) -> Vec<Value> {
     let eligible: Vec<&Value> = annotations
         .iter()
-        .filter(|a| !matches!(str_of(a, "subtype"), Some("widget" | "link" | "unsupported")))
+        .filter(|a| !EXCLUDED_SUBTYPES.contains(&str_of(a, "subtype").unwrap_or("undefined")))
         .collect();
-
-    // First writer wins for each key, as `if (!byKey.has(k))` does.
-    let mut by_key: HashMap<String, &Value> = HashMap::new();
-    for a in &eligible {
-        let key = rel_key(&ref_of(a));
-        by_key.entry(key).or_insert(a);
-        if let Some(nm) = non_empty(a, "nm") {
-            let alias = rel_key(&json!({
-                "kind": "nm",
-                "page": get(a, "page").cloned().unwrap_or(Value::Null),
-                "nm": nm,
-            }));
-            by_key.entry(alias).or_insert(a);
-        }
-    }
-
+    let by_key: HashMap<String, &Value> = eligible.iter().map(|a| (key(a), *a)).collect();
+    let z: HashMap<String, usize> = eligible.iter().enumerate().map(|(i, a)| (key(a), i)).collect();
     let mut children: HashMap<String, Vec<&Value>> = HashMap::new();
     for a in &eligible {
-        let Some(irt) = get(a, "inReplyTo").filter(|v| crate::value::truthy(Some(v))) else {
+        if !has_reply(a) {
+            continue;
+        }
+        let Some(parent) = by_key.get(&key_or_none(a.pointer("/reply/to").unwrap_or(&Value::Null)))
+        else {
             continue;
         };
-        let Some(parent) = by_key.get(&rel_key(irt)) else { continue };
-        children.entry(rel_key(&ref_of(parent))).or_default().push(a);
+        children.entry(key(parent)).or_default().push(a);
     }
-    let children_of = |key: &str| -> Vec<&Value> { children.get(key).cloned().unwrap_or_default() };
-
     let mut visited: HashSet<String> = HashSet::new();
-    let mut threads: Vec<CommentThread> = Vec::new();
-    let walk = |root: &Value, visited: &mut HashSet<String>, threads: &mut Vec<CommentThread>| {
+    let mut threads: Vec<Value> = Vec::new();
+    let order = chronological(&z);
+    let mut walk = |root: &Value, visited: &mut HashSet<String>| {
         let mut replies: Vec<Value> = Vec::new();
         let mut grouped: Vec<Value> = Vec::new();
         let mut states: Vec<Value> = Vec::new();
-        let root_key = rel_key(&ref_of(root));
-        visited.insert(root_key.clone());
-        let mut stack: Vec<&Value> = children_of(&root_key);
+        visited.insert(key(root));
+        let mut stack: Vec<&Value> = children.get(&key(root)).cloned().unwrap_or_default();
         while let Some(a) = stack.pop() {
-            let key = rel_key(&ref_of(a));
-            if !visited.insert(key.clone()) {
+            let k = key(a);
+            if visited.contains(&k) {
                 continue;
             }
+            visited.insert(k.clone());
             if is_state_annotation(a) {
                 states.push(a.clone());
             } else if is_grouped_subordinate(a) {
@@ -295,29 +261,28 @@ pub fn build_comment_threads(
             } else {
                 replies.push(a.clone());
             }
-            stack.extend(children_of(&key));
+            stack.extend(children.get(&k).cloned().unwrap_or_default());
         }
-        sort_by_ordering(&mut replies, chronological);
-        sort_by_ordering(&mut states, chronological);
-        threads.push(CommentThread {
-            root: root.clone(),
-            page: get(root, "page").cloned().unwrap_or(Value::Null),
-            replies,
-            grouped_parts: grouped,
-            review: compute_review(&states, current_user_id),
-        });
+        epdf_annotation_core::js::sort_by_ordering(&mut replies, &order);
+        epdf_annotation_core::js::sort_by_ordering(&mut states, &order);
+        threads.push(json!({
+            "root": root,
+            "page": root.get("page").cloned().unwrap_or(Value::Null),
+            "replies": replies,
+            "groupedParts": grouped,
+            "review": compute_review(&states, current_user_id),
+        }));
     };
-
     for a in &eligible {
-        if !crate::value::truthy(get(a, "inReplyTo")) && !is_state_annotation(a) {
-            walk(a, &mut visited, &mut threads);
+        if !has_reply(a) && !is_state_annotation(a) {
+            walk(a, &mut visited);
         }
     }
     for a in &eligible {
-        if visited.contains(&rel_key(&ref_of(a))) || is_state_annotation(a) {
+        if visited.contains(&key(a)) || is_state_annotation(a) {
             continue;
         }
-        walk(a, &mut visited, &mut threads);
+        walk(a, &mut visited);
     }
     threads
 }

@@ -202,6 +202,33 @@ impl<'page> Viewport<'page> {
     }
 }
 
+impl<'page> crate::Annotation<'page> {
+    /// The annotation's `/Measure`, or `None` when it has none
+    /// (`EPDFAnnot_GetMeasure`). Reading never changes the document.
+    pub fn measure(&self) -> Option<Measure<'page>> {
+        // SAFETY: the annotation handle is live for the page borrow.
+        let handle = unsafe { pdfium_sys::EPDFAnnot_GetMeasure(self.as_raw()) };
+        Measure::wrap(handle)
+    }
+
+    /// `/Measure` reset to an EMPTY rectilinear measure, replacing any
+    /// existing rectilinear one (`EPDFAnnot_AddMeasure`). `None` when the
+    /// existing measure has another subtype (it is never overwritten).
+    pub fn add_measure(&self) -> Option<Measure<'page>> {
+        // SAFETY: the annotation handle is live for the page borrow.
+        let handle = unsafe { pdfium_sys::EPDFAnnot_AddMeasure(self.as_raw()) };
+        Measure::wrap(handle)
+    }
+
+    /// Remove `/Measure` (`EPDFAnnot_RemoveMeasure`): true for a valid
+    /// annotation, whether or not it had one. Every handle taken from the
+    /// removed measure is stale.
+    pub fn remove_measure(&self) -> bool {
+        // SAFETY: the annotation handle is live for the page borrow.
+        unsafe { pdfium_sys::EPDFAnnot_RemoveMeasure(self.as_raw()) != 0 }
+    }
+}
+
 impl<'page> Measure<'page> {
     fn wrap(handle: pdfium_sys::EPDF_MEASURE) -> Option<Self> {
         (!handle.is_null()).then_some(Measure {

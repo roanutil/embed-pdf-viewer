@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/geometry: rotateScaleMatrix, pageGeometry, pageTransform and pageSpace (methods exercised on probes), PdfEdges helpers.",
   "cases": [
@@ -288,961 +288,663 @@
       }
     },
     {
-      "name": "pdfToContentMatrix/origin",
-      "fn": "pdfToContentMatrix",
-      "args": [
-        {
-          "left": 0,
-          "top": 792
-        }
-      ],
-      "outcome": {
-        "returned": [
-          1,
-          0,
-          0,
-          -1,
-          0,
-          792
-        ]
-      }
-    },
-    {
-      "name": "pdfToContentMatrix/offset",
-      "fn": "pdfToContentMatrix",
-      "args": [
-        {
-          "left": 10,
-          "top": 220
-        }
-      ],
-      "outcome": {
-        "returned": [
-          1,
-          0,
-          0,
-          -1,
-          -10,
-          220
-        ]
-      }
-    },
-    {
-      "name": "pdfToContentMatrix/negative",
-      "fn": "pdfToContentMatrix",
-      "args": [
-        {
-          "left": -50,
-          "top": 170
-        }
-      ],
-      "outcome": {
-        "returned": [
-          1,
-          0,
-          0,
-          -1,
-          50,
-          170
-        ]
-      }
-    },
-    {
-      "name": "pdfToContentMatrix/extra-members-ignored",
-      "fn": "pdfToContentMatrix",
-      "args": [
-        {
-          "left": 3,
-          "bottom": 1,
-          "right": 9,
-          "top": 4
-        }
-      ],
-      "outcome": {
-        "returned": [
-          1,
-          0,
-          0,
-          -1,
-          -3,
-          4
-        ]
-      }
-    },
-    {
       "name": "pageGeometry/crop-r0",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 0,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            1,
-            0,
-            0,
-            1,
-            0,
-            0
-          ],
-          "pdfToView": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "viewToPdf": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ]
+          "rotation": 0,
+          "viewWidth": 100,
+          "viewHeight": 200,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(1, 0, 0, 1, 0, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/crop-r90",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 90,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            0,
-            1,
-            -1,
-            0,
-            200,
-            0
-          ],
-          "pdfToView": [
-            0,
-            1,
-            1,
-            0,
-            0,
-            0
-          ],
-          "viewToPdf": [
-            0,
-            1,
-            1,
-            0,
-            0,
-            0
-          ]
+          "rotation": 90,
+          "viewWidth": 200,
+          "viewHeight": 100,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(0, 1, -1, 0, 200, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/crop-r180",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 180,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            -1,
-            0,
-            0,
-            -1,
-            100,
-            200
-          ],
-          "pdfToView": [
-            -1,
-            0,
-            0,
-            1,
-            100,
-            0
-          ],
-          "viewToPdf": [
-            -1,
-            0,
-            0,
-            1,
-            100,
-            0
-          ]
+          "rotation": 180,
+          "viewWidth": 100,
+          "viewHeight": 200,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(-1, 0, 0, -1, 100, 200)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/crop-r270",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 270,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            0,
-            -1,
-            1,
-            0,
-            0,
-            100
-          ],
-          "pdfToView": [
-            0,
-            -1,
-            -1,
-            0,
-            200,
-            100
-          ],
-          "viewToPdf": [
-            0,
-            -1,
-            -1,
-            0,
-            100,
-            200
-          ]
+          "rotation": 270,
+          "viewWidth": 200,
+          "viewHeight": 100,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(0, -1, 1, 0, 0, 100)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/offset-userunit-r0",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 12,
-            "bottom": -8,
-            "right": 312,
-            "top": 392
+          "pageSize": {
+            "width": 300,
+            "height": 400
           },
           "rotation": 0,
-          "userUnit": 1.5
-        },
-        1.25
+          "scale": 1.875,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -12,
-            392
-          ],
-          "contentToView": [
-            1.875,
-            0,
-            0,
-            1.875,
-            0,
-            0
-          ],
-          "pdfToView": [
-            1.875,
-            0,
-            0,
-            -1.875,
-            -22.5,
-            735
-          ],
-          "viewToPdf": [
-            0.5333333333333333,
-            0,
-            0,
-            -0.5333333333333333,
-            12,
-            392
-          ]
+          "rotation": 0,
+          "viewWidth": 563,
+          "viewHeight": 751,
+          "contentWidth": 563,
+          "contentHeight": 751,
+          "deviceWidth": 563,
+          "deviceHeight": 751,
+          "renderScale": 1.8766666666666667,
+          "viewScale": 1.8766666666666667,
+          "baseScale": 1.875,
+          "zoom": 1.000888888888889,
+          "cssMatrix": "matrix(1.8766666666666667, 0, 0, 1.8766666666666667, 0, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/offset-userunit-r90",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 12,
-            "bottom": -8,
-            "right": 312,
-            "top": 392
+          "pageSize": {
+            "width": 300,
+            "height": 400
           },
           "rotation": 90,
-          "userUnit": 1.5
-        },
-        1.25
+          "scale": 1.875,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -12,
-            392
-          ],
-          "contentToView": [
-            0,
-            1.875,
-            -1.875,
-            0,
-            750,
-            0
-          ],
-          "pdfToView": [
-            0,
-            1.875,
-            1.875,
-            0,
-            15,
-            -22.5
-          ],
-          "viewToPdf": [
-            0,
-            0.5333333333333333,
-            0.5333333333333333,
-            0,
-            12,
-            -8
-          ]
+          "rotation": 90,
+          "viewWidth": 751,
+          "viewHeight": 563,
+          "contentWidth": 563,
+          "contentHeight": 751,
+          "deviceWidth": 563,
+          "deviceHeight": 751,
+          "renderScale": 1.8766666666666667,
+          "viewScale": 1.8766666666666667,
+          "baseScale": 1.875,
+          "zoom": 1.000888888888889,
+          "cssMatrix": "matrix(0, 1.8766666666666667, -1.8766666666666667, 0, 751, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/offset-userunit-r180",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 12,
-            "bottom": -8,
-            "right": 312,
-            "top": 392
+          "pageSize": {
+            "width": 300,
+            "height": 400
           },
           "rotation": 180,
-          "userUnit": 1.5
-        },
-        1.25
+          "scale": 1.875,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -12,
-            392
-          ],
-          "contentToView": [
-            -1.875,
-            0,
-            0,
-            -1.875,
-            562.5,
-            750
-          ],
-          "pdfToView": [
-            -1.875,
-            0,
-            0,
-            1.875,
-            585,
-            15
-          ],
-          "viewToPdf": [
-            -0.5333333333333333,
-            0,
-            0,
-            0.5333333333333333,
-            312,
-            -8
-          ]
+          "rotation": 180,
+          "viewWidth": 563,
+          "viewHeight": 751,
+          "contentWidth": 563,
+          "contentHeight": 751,
+          "deviceWidth": 563,
+          "deviceHeight": 751,
+          "renderScale": 1.8766666666666667,
+          "viewScale": 1.8766666666666667,
+          "baseScale": 1.875,
+          "zoom": 1.000888888888889,
+          "cssMatrix": "matrix(-1.8766666666666667, 0, 0, -1.8766666666666667, 563, 751)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/offset-userunit-r270",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 12,
-            "bottom": -8,
-            "right": 312,
-            "top": 392
+          "pageSize": {
+            "width": 300,
+            "height": 400
           },
           "rotation": 270,
-          "userUnit": 1.5
-        },
-        1.25
+          "scale": 1.875,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -12,
-            392
-          ],
-          "contentToView": [
-            0,
-            -1.875,
-            1.875,
-            0,
-            0,
-            562.5
-          ],
-          "pdfToView": [
-            0,
-            -1.875,
-            -1.875,
-            0,
-            735,
-            585
-          ],
-          "viewToPdf": [
-            0,
-            -0.5333333333333333,
-            -0.5333333333333333,
-            0,
-            312,
-            392
-          ]
+          "rotation": 270,
+          "viewWidth": 751,
+          "viewHeight": 563,
+          "contentWidth": 563,
+          "contentHeight": 751,
+          "deviceWidth": 563,
+          "deviceHeight": 751,
+          "renderScale": 1.8766666666666667,
+          "viewScale": 1.8766666666666667,
+          "baseScale": 1.875,
+          "zoom": 1.000888888888889,
+          "cssMatrix": "matrix(0, -1.8766666666666667, 1.8766666666666667, 0, 0, 563)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/negative-origin",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": -50,
-            "bottom": -30,
-            "right": 50,
-            "top": 170
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 0,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            50,
-            170
-          ],
-          "contentToView": [
-            1,
-            0,
-            0,
-            1,
-            0,
-            0
-          ],
-          "pdfToView": [
-            1,
-            0,
-            0,
-            -1,
-            50,
-            170
-          ],
-          "viewToPdf": [
-            1,
-            0,
-            0,
-            -1,
-            -50,
-            170
-          ]
+          "rotation": 0,
+          "viewWidth": 100,
+          "viewHeight": 200,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(1, 0, 0, 1, 0, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/zoom-1.7-r90",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 90,
-          "userUnit": 1
-        },
-        1.7
+          "scale": 1.7,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            0,
-            1.7,
-            -1.7,
-            0,
-            340,
-            0
-          ],
-          "pdfToView": [
-            0,
-            1.7,
-            1.7,
-            0,
-            0,
-            0
-          ],
-          "viewToPdf": [
-            0,
-            0.5882352941176471,
-            0.5882352941176471,
-            0,
-            0,
-            0
-          ]
+          "rotation": 90,
+          "viewWidth": 340,
+          "viewHeight": 170,
+          "contentWidth": 170,
+          "contentHeight": 340,
+          "deviceWidth": 170,
+          "deviceHeight": 340,
+          "renderScale": 1.7,
+          "viewScale": 1.7,
+          "baseScale": 1.7,
+          "zoom": 1,
+          "cssMatrix": "matrix(0, 1.7, -1.7, 0, 340, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/letter-zoom-2-r90",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 612,
-            "top": 792
+          "pageSize": {
+            "width": 612,
+            "height": 792
           },
           "rotation": 90,
-          "userUnit": 1
-        },
-        2
+          "scale": 2,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            792
-          ],
-          "contentToView": [
-            0,
-            2,
-            -2,
-            0,
-            1584,
-            0
-          ],
-          "pdfToView": [
-            0,
-            2,
-            2,
-            0,
-            0,
-            0
-          ],
-          "viewToPdf": [
-            0,
-            0.5,
-            0.5,
-            0,
-            0,
-            0
-          ]
+          "rotation": 90,
+          "viewWidth": 1584,
+          "viewHeight": 1224,
+          "contentWidth": 1224,
+          "contentHeight": 1584,
+          "deviceWidth": 1224,
+          "deviceHeight": 1584,
+          "renderScale": 2,
+          "viewScale": 2,
+          "baseScale": 2,
+          "zoom": 1,
+          "cssMatrix": "matrix(0, 2, -2, 0, 1584, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/odd-rotation",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 45,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            1,
-            0,
-            0,
-            1,
-            0,
-            0
-          ],
-          "pdfToView": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "viewToPdf": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ]
+          "rotation": 45,
+          "viewWidth": 100,
+          "viewHeight": 200,
+          "contentWidth": 100,
+          "contentHeight": 200,
+          "deviceWidth": 100,
+          "deviceHeight": 200,
+          "renderScale": 1,
+          "viewScale": 1,
+          "baseScale": 1,
+          "zoom": 1,
+          "cssMatrix": "matrix(1, 0, 0, 1, 0, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/inverted-crop",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 100,
-            "bottom": 200,
-            "right": 0,
-            "top": 0
+          "pageSize": {
+            "width": -100,
+            "height": -200
           },
           "rotation": 90,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -100,
-            0
-          ],
-          "contentToView": [
-            0,
-            1,
-            -1,
-            0,
-            -200,
-            0
-          ],
-          "pdfToView": [
-            0,
-            1,
-            1,
-            0,
-            -200,
-            -100
-          ],
-          "viewToPdf": [
-            0,
-            1,
-            1,
-            0,
-            100,
-            200
-          ]
+          "rotation": 90,
+          "viewWidth": 2,
+          "viewHeight": 1,
+          "contentWidth": 1,
+          "contentHeight": 2,
+          "deviceWidth": 1,
+          "deviceHeight": 2,
+          "renderScale": -0.01,
+          "viewScale": -0.01,
+          "baseScale": 1,
+          "zoom": -0.01,
+          "cssMatrix": "matrix(0, -0.01, 0.01, 0, 2, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
-      "name": "pageGeometry/zero-zoom-throws",
-      "fn": "pageGeometry",
+      "name": "pageGeometry/zero-zoom-now-clamped",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 0,
-          "userUnit": 1
-        },
-        0
+          "scale": 0,
+          "dpr": 1
+        }
       ],
       "outcome": {
-        "threw": {
-          "$error": {
-            "name": "Error",
-            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
-          }
+        "returned": {
+          "rotation": 0,
+          "viewWidth": 1,
+          "viewHeight": 2,
+          "contentWidth": 1,
+          "contentHeight": 2,
+          "deviceWidth": 1,
+          "deviceHeight": 2,
+          "renderScale": 0.01,
+          "viewScale": 0.01,
+          "baseScale": 0,
+          "zoom": 1,
+          "cssMatrix": "matrix(0.01, 0, 0, 0.01, 0, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
-      "name": "pageGeometry/zero-userunit-throws",
-      "fn": "pageGeometry",
+      "name": "pageGeometry/zero-userunit-now-clamped",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 90,
-          "userUnit": 0
-        },
-        2
+          "scale": 0,
+          "dpr": 1
+        }
       ],
       "outcome": {
-        "threw": {
-          "$error": {
-            "name": "Error",
-            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
-          }
+        "returned": {
+          "rotation": 90,
+          "viewWidth": 2,
+          "viewHeight": 1,
+          "contentWidth": 1,
+          "contentHeight": 2,
+          "deviceWidth": 1,
+          "deviceHeight": 2,
+          "renderScale": 0.01,
+          "viewScale": 0.01,
+          "baseScale": 0,
+          "zoom": 1,
+          "cssMatrix": "matrix(0, 0.01, -0.01, 0, 2, 0)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/zero-area-crop",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 5,
-            "bottom": 5,
-            "right": 5,
-            "top": 5
+          "pageSize": {
+            "width": 0,
+            "height": 0
           },
           "rotation": 180,
-          "userUnit": 1
-        },
-        1
+          "scale": 1,
+          "dpr": 1
+        }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            -5,
-            5
-          ],
-          "contentToView": [
-            -1,
-            0,
-            0,
-            -1,
-            0,
-            0
-          ],
-          "pdfToView": [
-            -1,
-            0,
-            0,
-            1,
-            5,
-            -5
-          ],
-          "viewToPdf": [
-            -1,
-            0,
-            0,
-            1,
-            5,
-            5
-          ]
+          "rotation": 180,
+          "viewWidth": 1,
+          "viewHeight": {
+            "$number": "NaN"
+          },
+          "contentWidth": 1,
+          "contentHeight": {
+            "$number": "NaN"
+          },
+          "deviceWidth": 1,
+          "deviceHeight": {
+            "$number": "NaN"
+          },
+          "renderScale": {
+            "$number": "Infinity"
+          },
+          "viewScale": {
+            "$number": "Infinity"
+          },
+          "baseScale": 1,
+          "zoom": {
+            "$number": "Infinity"
+          },
+          "cssMatrix": "matrix(-Infinity, 0, 0, -Infinity, 1, NaN)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
     {
       "name": "pageGeometry/nan-zoom",
-      "fn": "pageGeometry",
+      "fn": "pageTransform",
       "args": [
         {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
+          "pageSize": {
+            "width": 100,
+            "height": 200
           },
           "rotation": 270,
-          "userUnit": 1
-        },
-        {
-          "$number": "NaN"
+          "scale": {
+            "$number": "NaN"
+          },
+          "dpr": 1
         }
       ],
       "outcome": {
         "returned": {
-          "pdfToContent": [
-            1,
-            0,
-            0,
-            -1,
-            0,
-            200
-          ],
-          "contentToView": [
-            0,
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            0,
-            0,
-            {
-              "$number": "NaN"
-            }
-          ],
-          "pdfToView": [
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            }
-          ],
-          "viewToPdf": [
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            },
-            {
-              "$number": "NaN"
-            }
-          ]
+          "rotation": 270,
+          "viewWidth": {
+            "$number": "NaN"
+          },
+          "viewHeight": {
+            "$number": "NaN"
+          },
+          "contentWidth": {
+            "$number": "NaN"
+          },
+          "contentHeight": {
+            "$number": "NaN"
+          },
+          "deviceWidth": {
+            "$number": "NaN"
+          },
+          "deviceHeight": {
+            "$number": "NaN"
+          },
+          "renderScale": {
+            "$number": "NaN"
+          },
+          "viewScale": {
+            "$number": "NaN"
+          },
+          "baseScale": {
+            "$number": "NaN"
+          },
+          "zoom": 1,
+          "cssMatrix": "matrix(0, NaN, NaN, 0, 0, NaN)",
+          "toPixels": [],
+          "fromPixels": [],
+          "contentToView": [],
+          "viewToContent": [],
+          "contentToViewRect": [],
+          "viewToContentRect": []
         }
       }
     },
@@ -14020,7 +13722,7 @@
     },
     {
       "name": "pageSpace/letter",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": 0,
@@ -14089,37 +13791,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -14129,14 +13831,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 612,
-            "top": 792
-          },
-          "width": 612,
-          "height": 792,
           "pdfToPage": [
             {
               "x": 0,
@@ -14197,55 +13891,55 @@
             {
               "left": 0,
               "right": 100,
-              "top": 792,
-              "bottom": 592
+              "bottom": 592,
+              "top": 792
             },
             {
               "left": 10,
               "right": 40,
-              "top": 772,
-              "bottom": 732
+              "bottom": 732,
+              "top": 772
             },
             {
               "left": -4,
               "right": -4,
-              "top": 785,
-              "bottom": 785
+              "bottom": 785,
+              "top": 785
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 762
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 762
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 772
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 772
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 787
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 782
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 787
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 792
               }
@@ -14253,37 +13947,37 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 762
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 762
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 772
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 772
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 787
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 782
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 787
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 792
               }
@@ -14294,7 +13988,7 @@
     },
     {
       "name": "pageSpace/offset",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": 12,
@@ -14363,37 +14057,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -14403,14 +14097,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": 12,
-            "bottom": -8,
-            "right": 312,
-            "top": 392
-          },
-          "width": 300,
-          "height": 400,
           "pdfToPage": [
             {
               "x": -12,
@@ -14471,55 +14157,55 @@
             {
               "left": 12,
               "right": 112,
-              "top": 392,
-              "bottom": 192
+              "bottom": 192,
+              "top": 392
             },
             {
               "left": 22,
               "right": 52,
-              "top": 372,
-              "bottom": 332
+              "bottom": 332,
+              "top": 372
             },
             {
               "left": 8,
               "right": 8,
-              "top": 385,
-              "bottom": 385
+              "bottom": 385,
+              "top": 385
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": -2,
                 "y": 362
               },
-              "p2": {
+              "upperRight": {
                 "x": 28,
                 "y": 362
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -2,
                 "y": 372
               },
-              "p4": {
+              "lowerRight": {
                 "x": 28,
                 "y": 372
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": -12,
                 "y": 387
               },
-              "p2": {
+              "upperRight": {
                 "x": -7,
                 "y": 382
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -2,
                 "y": 387
               },
-              "p4": {
+              "lowerRight": {
                 "x": -7,
                 "y": 392
               }
@@ -14527,37 +14213,37 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 22,
                 "y": 362
               },
-              "p2": {
+              "upperRight": {
                 "x": 52,
                 "y": 362
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 22,
                 "y": 372
               },
-              "p4": {
+              "lowerRight": {
                 "x": 52,
                 "y": 372
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 12,
                 "y": 387
               },
-              "p2": {
+              "upperRight": {
                 "x": 17,
                 "y": 382
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 22,
                 "y": 387
               },
-              "p4": {
+              "lowerRight": {
                 "x": 17,
                 "y": 392
               }
@@ -14568,7 +14254,7 @@
     },
     {
       "name": "pageSpace/negative-origin",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": -50,
@@ -14637,37 +14323,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -14677,14 +14363,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": -50,
-            "bottom": -30,
-            "right": 50,
-            "top": 170
-          },
-          "width": 100,
-          "height": 200,
           "pdfToPage": [
             {
               "x": 50,
@@ -14745,55 +14423,55 @@
             {
               "left": -50,
               "right": 50,
-              "top": 170,
-              "bottom": -30
+              "bottom": -30,
+              "top": 170
             },
             {
               "left": -40,
               "right": -10,
-              "top": 150,
-              "bottom": 110
+              "bottom": 110,
+              "top": 150
             },
             {
               "left": -54,
               "right": -54,
-              "top": 163,
-              "bottom": 163
+              "bottom": 163,
+              "top": 163
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 60,
                 "y": 140
               },
-              "p2": {
+              "upperRight": {
                 "x": 90,
                 "y": 140
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 60,
                 "y": 150
               },
-              "p4": {
+              "lowerRight": {
                 "x": 90,
                 "y": 150
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 50,
                 "y": 165
               },
-              "p2": {
+              "upperRight": {
                 "x": 55,
                 "y": 160
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 60,
                 "y": 165
               },
-              "p4": {
+              "lowerRight": {
                 "x": 55,
                 "y": 170
               }
@@ -14801,37 +14479,37 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": -40,
                 "y": 140
               },
-              "p2": {
+              "upperRight": {
                 "x": -10,
                 "y": 140
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -40,
                 "y": 150
               },
-              "p4": {
+              "lowerRight": {
                 "x": -10,
                 "y": 150
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": -50,
                 "y": 165
               },
-              "p2": {
+              "upperRight": {
                 "x": -45,
                 "y": 160
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -40,
                 "y": 165
               },
-              "p4": {
+              "lowerRight": {
                 "x": -45,
                 "y": 170
               }
@@ -14842,7 +14520,7 @@
     },
     {
       "name": "pageSpace/inverted",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": 100,
@@ -14911,37 +14589,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -14951,14 +14629,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": 100,
-            "bottom": 200,
-            "right": 0,
-            "top": 0
-          },
-          "width": -100,
-          "height": -200,
           "pdfToPage": [
             {
               "x": -100,
@@ -15019,55 +14689,55 @@
             {
               "left": 100,
               "right": 200,
-              "top": 0,
-              "bottom": -200
+              "bottom": -200,
+              "top": 0
             },
             {
               "left": 110,
               "right": 140,
-              "top": -20,
-              "bottom": -60
+              "bottom": -60,
+              "top": -20
             },
             {
               "left": 96,
               "right": 96,
-              "top": -7,
-              "bottom": -7
+              "bottom": -7,
+              "top": -7
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": -90,
                 "y": -30
               },
-              "p2": {
+              "upperRight": {
                 "x": -60,
                 "y": -30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -90,
                 "y": -20
               },
-              "p4": {
+              "lowerRight": {
                 "x": -60,
                 "y": -20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": -100,
                 "y": -5
               },
-              "p2": {
+              "upperRight": {
                 "x": -95,
                 "y": -10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": -90,
                 "y": -5
               },
-              "p4": {
+              "lowerRight": {
                 "x": -95,
                 "y": 0
               }
@@ -15075,37 +14745,37 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 110,
                 "y": -30
               },
-              "p2": {
+              "upperRight": {
                 "x": 140,
                 "y": -30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 110,
                 "y": -20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 140,
                 "y": -20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 100,
                 "y": -5
               },
-              "p2": {
+              "upperRight": {
                 "x": 105,
                 "y": -10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 110,
                 "y": -5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 105,
                 "y": 0
               }
@@ -15116,7 +14786,7 @@
     },
     {
       "name": "pageSpace/zero-area",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": 5,
@@ -15185,37 +14855,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -15225,14 +14895,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": 5,
-            "bottom": 5,
-            "right": 5,
-            "top": 5
-          },
-          "width": 0,
-          "height": 0,
           "pdfToPage": [
             {
               "x": -5,
@@ -15293,55 +14955,55 @@
             {
               "left": 5,
               "right": 105,
-              "top": 5,
-              "bottom": -195
+              "bottom": -195,
+              "top": 5
             },
             {
               "left": 15,
               "right": 45,
-              "top": -15,
-              "bottom": -55
+              "bottom": -55,
+              "top": -15
             },
             {
               "left": 1,
               "right": 1,
-              "top": -2,
-              "bottom": -2
+              "bottom": -2,
+              "top": -2
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 5,
                 "y": -25
               },
-              "p2": {
+              "upperRight": {
                 "x": 35,
                 "y": -25
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 5,
                 "y": -15
               },
-              "p4": {
+              "lowerRight": {
                 "x": 35,
                 "y": -15
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": -5,
                 "y": 0
               },
-              "p2": {
+              "upperRight": {
                 "x": 0,
                 "y": -5
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 5,
                 "y": 0
               },
-              "p4": {
+              "lowerRight": {
                 "x": 0,
                 "y": 5
               }
@@ -15349,37 +15011,37 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 15,
                 "y": -25
               },
-              "p2": {
+              "upperRight": {
                 "x": 45,
                 "y": -25
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 15,
                 "y": -15
               },
-              "p4": {
+              "lowerRight": {
                 "x": 45,
                 "y": -15
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 5,
                 "y": 0
               },
-              "p2": {
+              "upperRight": {
                 "x": 10,
                 "y": -5
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 15,
                 "y": 0
               },
-              "p4": {
+              "lowerRight": {
                 "x": 10,
                 "y": 5
               }
@@ -15390,7 +15052,7 @@
     },
     {
       "name": "pageSpace/no-probes",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": 0,
@@ -15401,14 +15063,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": 0,
-            "bottom": 0,
-            "right": 100,
-            "top": 200
-          },
-          "width": 100,
-          "height": 200,
           "pdfToPage": [],
           "pageToPdf": [],
           "pdfRectToPage": [],
@@ -15420,7 +15074,7 @@
     },
     {
       "name": "pageSpace/nan-crop",
-      "fn": "pageSpace",
+      "fn": "enginePageSpace",
       "args": [
         {
           "left": {
@@ -15491,37 +15145,37 @@
           ],
           "quads": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": 10,
                 "y": 30
               },
-              "p2": {
+              "upperRight": {
                 "x": 40,
                 "y": 30
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 20
               },
-              "p4": {
+              "lowerRight": {
                 "x": 40,
                 "y": 20
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": 0,
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": 5,
                 "y": 10
               },
-              "p3": {
+              "lowerLeft": {
                 "x": 10,
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": 5,
                 "y": 0
               }
@@ -15531,18 +15185,6 @@
       ],
       "outcome": {
         "returned": {
-          "crop": {
-            "left": {
-              "$number": "NaN"
-            },
-            "bottom": 0,
-            "right": 10,
-            "top": 10
-          },
-          "width": {
-            "$number": "NaN"
-          },
-          "height": 10,
           "pdfToPage": [
             {
               "x": {
@@ -15574,33 +15216,25 @@
               "x": {
                 "$number": "NaN"
               },
-              "y": {
-                "$number": "NaN"
-              }
+              "y": 10
             },
             {
               "x": {
                 "$number": "NaN"
               },
-              "y": {
-                "$number": "NaN"
-              }
+              "y": -10
             },
             {
               "x": {
                 "$number": "NaN"
               },
-              "y": {
-                "$number": "NaN"
-              }
+              "y": 6.5
             },
             {
               "x": {
                 "$number": "NaN"
               },
-              "y": {
-                "$number": "NaN"
-              }
+              "y": -781
             }
           ],
           "pdfRectToPage": [
@@ -15637,8 +15271,8 @@
               "right": {
                 "$number": "NaN"
               },
-              "top": 10,
-              "bottom": -190
+              "bottom": -190,
+              "top": 10
             },
             {
               "left": {
@@ -15647,8 +15281,8 @@
               "right": {
                 "$number": "NaN"
               },
-              "top": -10,
-              "bottom": -50
+              "bottom": -50,
+              "top": -10
             },
             {
               "left": {
@@ -15657,31 +15291,31 @@
               "right": {
                 "$number": "NaN"
               },
-              "top": 3,
-              "bottom": 3
+              "bottom": 3,
+              "top": 3
             }
           ],
           "pdfQuadToPage": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": -20
               },
-              "p2": {
+              "upperRight": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": -20
               },
-              "p3": {
+              "lowerLeft": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": -10
               },
-              "p4": {
+              "lowerRight": {
                 "x": {
                   "$number": "NaN"
                 },
@@ -15689,25 +15323,25 @@
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": 0
               },
-              "p3": {
+              "lowerLeft": {
                 "x": {
                   "$number": "NaN"
                 },
                 "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": {
                   "$number": "NaN"
                 },
@@ -15717,71 +15351,55 @@
           ],
           "pageQuadToPdf": [
             {
-              "p1": {
+              "upperLeft": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": -20
               },
-              "p2": {
+              "upperRight": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": -20
               },
-              "p3": {
+              "lowerLeft": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": -10
               },
-              "p4": {
+              "lowerRight": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": -10
               }
             },
             {
-              "p1": {
+              "upperLeft": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": 5
               },
-              "p2": {
+              "upperRight": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": 0
               },
-              "p3": {
+              "lowerLeft": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": 5
               },
-              "p4": {
+              "lowerRight": {
                 "x": {
                   "$number": "NaN"
                 },
-                "y": {
-                  "$number": "NaN"
-                }
+                "y": 10
               }
             }
           ]
@@ -15790,19 +15408,19 @@
     },
     {
       "name": "edgesOverlap/overlap",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 5,
-          "bottom": 5,
-          "right": 15,
-          "top": 15
+          "x": 5,
+          "y": -15,
+          "width": 10,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15811,19 +15429,19 @@
     },
     {
       "name": "edgesOverlap/touching-x",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 10,
-          "bottom": 0,
-          "right": 20,
-          "top": 10
+          "x": 10,
+          "y": -10,
+          "width": 10,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15832,19 +15450,19 @@
     },
     {
       "name": "edgesOverlap/touching-y",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 0,
-          "bottom": 10,
-          "right": 10,
-          "top": 20
+          "x": 0,
+          "y": -20,
+          "width": 10,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15853,19 +15471,19 @@
     },
     {
       "name": "edgesOverlap/disjoint-x",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 20,
-          "bottom": 0,
-          "right": 30,
-          "top": 10
+          "x": 20,
+          "y": -10,
+          "width": 10,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15874,19 +15492,19 @@
     },
     {
       "name": "edgesOverlap/disjoint-y-only",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 2,
-          "bottom": 20,
-          "right": 8,
-          "top": 30
+          "x": 2,
+          "y": -30,
+          "width": 6,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15895,19 +15513,19 @@
     },
     {
       "name": "edgesOverlap/contained",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         },
         {
-          "left": 2,
-          "bottom": 2,
-          "right": 3,
-          "top": 3
+          "x": 2,
+          "y": -3,
+          "width": 1,
+          "height": 1
         }
       ],
       "outcome": {
@@ -15916,21 +15534,23 @@
     },
     {
       "name": "edgesOverlap/nan",
-      "fn": "edgesOverlap",
+      "fn": "rectsOverlap",
       "args": [
         {
-          "left": {
+          "x": {
             "$number": "NaN"
           },
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "y": -10,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 10
         },
         {
-          "left": 0,
-          "bottom": 0,
-          "right": 10,
-          "top": 10
+          "x": 0,
+          "y": -10,
+          "width": 10,
+          "height": 10
         }
       ],
       "outcome": {
@@ -15939,22 +15559,22 @@
     },
     {
       "name": "edgesOfQuad/axis-aligned",
-      "fn": "edgesOfQuad",
+      "fn": "pdfQuadBounds",
       "args": [
         {
-          "p1": {
+          "upperLeft": {
             "x": 10,
             "y": 30
           },
-          "p2": {
+          "upperRight": {
             "x": 40,
             "y": 30
           },
-          "p3": {
+          "lowerLeft": {
             "x": 10,
             "y": 20
           },
-          "p4": {
+          "lowerRight": {
             "x": 40,
             "y": 20
           }
@@ -15971,22 +15591,22 @@
     },
     {
       "name": "edgesOfQuad/rotated",
-      "fn": "edgesOfQuad",
+      "fn": "pdfQuadBounds",
       "args": [
         {
-          "p1": {
+          "upperLeft": {
             "x": 0,
             "y": 5
           },
-          "p2": {
+          "upperRight": {
             "x": 5,
             "y": 10
           },
-          "p3": {
+          "lowerLeft": {
             "x": 10,
             "y": 5
           },
-          "p4": {
+          "lowerRight": {
             "x": 5,
             "y": 0
           }
@@ -16003,22 +15623,22 @@
     },
     {
       "name": "edgesOfQuad/scattered",
-      "fn": "edgesOfQuad",
+      "fn": "pdfQuadBounds",
       "args": [
         {
-          "p1": {
+          "upperLeft": {
             "x": 5,
             "y": -1
           },
-          "p2": {
+          "upperRight": {
             "x": -2,
             "y": 7
           },
-          "p3": {
+          "lowerLeft": {
             "x": 9,
             "y": 3
           },
-          "p4": {
+          "lowerRight": {
             "x": 0,
             "y": -4
           }
@@ -16035,24 +15655,24 @@
     },
     {
       "name": "edgesOfQuad/nan",
-      "fn": "edgesOfQuad",
+      "fn": "pdfQuadBounds",
       "args": [
         {
-          "p1": {
+          "upperLeft": {
             "x": {
               "$number": "NaN"
             },
             "y": 0
           },
-          "p2": {
+          "upperRight": {
             "x": 1,
             "y": 0
           },
-          "p3": {
+          "lowerLeft": {
             "x": 0,
             "y": 1
           },
-          "p4": {
+          "lowerRight": {
             "x": 1,
             "y": 1
           }

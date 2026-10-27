@@ -1,47 +1,50 @@
-//! `sync/loaders.ts`: the plugin's one side effect, fetching lazy locale
-//! packs. State-driven: a load is `state.loading`, set by `set_locale` (a
-//! switch to a lazy pack) or by the initial state (a lazy startup locale),
-//! so a load requested before `connect` ran is picked up here and nothing is
-//! lost to boot ordering.
+//! `sync/loaders.ts`: the plugin's only side effect, fetching languages
+//! from `loaders`. Driven by state: a load is `state.loading`, set by
+//! `set_locale` (a switch to a language still to load) or by the seeded
+//! state (a start language still to load), so a load asked for before
+//! `connect` ran is picked up here.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
+use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
-use epdf_kernel::{Controller, Error};
 
-use crate::contract::I18nConfig;
-use crate::model::{I18nAction, I18nState};
+use crate::controller::I18nContext;
+use crate::model::{end_locale_load, register_locale, set_locale};
 
-/// A load finished: the locale is usable (`Ok`) or the pack failed (`Err`).
+/// `LoadSettlers.settle`: a load finished, the language shows (`Ok`) or it
+/// failed (`Err`).
 pub type Settle = Rc<dyn Fn(&str, Result<(), Error>)>;
-/// A pack failed to load: the code and what the loader rejected with.
+/// `onFailed(locale, error)`: what the loader rejected with.
 pub type OnFailed = Rc<dyn Fn(&str, &Error)>;
+/// `settings.get().loaders[code]`, the loader in effect now.
+pub type LoaderOf = Rc<dyn Fn(&str) -> Option<crate::contract::LocaleLoader>>;
 
 pub struct Loaders {
-    cx: Controller<I18nState, I18nAction>,
-    config: Rc<I18nConfig>,
+    cx: I18nContext,
+    loader_of: LoaderOf,
     settle: Settle,
     on_failed: OnFailed,
 }
 
 impl Loaders {
-    /// `createLoaders(ctx, config, {settle}, onFailed)`.
+    /// `createLoaders(ctx, settings, {settle}, onFailed)`.
     pub fn new(
-        cx: Controller<I18nState, I18nAction>,
-        config: Rc<I18nConfig>,
+        cx: I18nContext,
+        loader_of: LoaderOf,
         settle: Settle,
         on_failed: OnFailed,
     ) -> Rc<Self> {
-        Rc::new(Loaders { cx, config, settle, on_failed })
+        Rc::new(Loaders { cx, loader_of, settle, on_failed })
     }
 
+    /// `load(code)`. A loader that throws synchronously throws out of here.
     fn load(&self, code: &str) -> Result<(), Error> {
-        // Unreachable through the controller; guards bad dispatches. (An
-        // `Object.prototype` member never gets here: the controller and the
-        // initial state treat those codes as registered, so `loading` never
-        // names one.)
-        let Some(loader) = self.config.loader(code) else { return Ok(()) };
+        let Some(loader) = (self.loader_of)(code) else {
+            // The loader went away after the switch asked for it.
+            self.cx.update_state(|state| end_locale_load(&state, code));
+            return Ok(());
+        };
         let pending = loader()?;
         let cx = self.cx.clone();
         let code = code.to_string();
@@ -51,17 +54,17 @@ impl Loaders {
         epdf_kernel::rt::spawn(async move {
             match pending.await {
                 Ok(locale) => {
-                    let wanted = locale.code.clone();
-                    cx.dispatch(I18nAction::RegisterLocale { locale });
-                    // Complete the switch only if this load is still the
-                    // wanted one: the user may have switched again meanwhile.
+                    cx.update_state(|state| register_locale(&state, &locale));
+                    // Switch only if this load is still the wanted one: the
+                    // user may have switched again while the language was on
+                    // its way.
                     if cx.state().loading.as_deref() == Some(code.as_str()) {
-                        cx.dispatch(I18nAction::SetLocale { locale: wanted });
+                        cx.update_state(|state| set_locale(&state, &locale.code));
                         settle(&code, Ok(()));
                     }
                 }
                 Err(error) => {
-                    cx.dispatch(I18nAction::LoadFailed { locale: code.clone() });
+                    cx.update_state(|state| end_locale_load(&state, &code));
                     on_failed(&code, &error);
                     settle(
                         &code,
@@ -79,26 +82,25 @@ impl Loaders {
         Ok(())
     }
 
-    /// Watch `loading` and fetch each newly requested pack. A loader that
-    /// throws synchronously throws out of here (failing the start) or out of
-    /// the store listener (reported by the store).
+    /// `connect()`: fetch the language `loading` names now, and each one
+    /// asked for after (`ctx.watch` over `loading`). A loader that throws
+    /// synchronously throws out of here (failing the start) or out of the
+    /// store listener (which the store reports).
     pub fn connect(self: &Rc<Self>) -> Result<(), Error> {
-        let last: Rc<RefCell<Option<String>>> = Rc::default();
-        let this = self.clone();
-        let check: Rc<dyn Fn() -> Result<(), Error>> = Rc::new(move || {
-            let code = this.cx.state().loading.clone();
-            if *last.borrow() == code {
-                return Ok(());
-            }
-            *last.borrow_mut() = code.clone();
-            match code {
-                Some(code) if !code.is_empty() => this.load(&code),
+        let load_requested = {
+            let this = self.clone();
+            move |code: &Option<String>| match code.as_deref() {
+                Some(code) if !code.is_empty() => this.load(code),
                 _ => Ok(()),
             }
-        });
-        check()?;
-        let unsubscribe = self.cx.subscribe(check);
-        self.cx.cleanup_fn(move || unsubscribe.call());
+        };
+        load_requested(&self.cx.state().loading)?;
+        let this = self.clone();
+        self.cx.watch(
+            move || Ok(this.cx.state().loading.clone()),
+            move |next, _| load_requested(next),
+            |a, b| a == b,
+        )?;
         Ok(())
     }
 }

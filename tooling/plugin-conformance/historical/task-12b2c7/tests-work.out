@@ -1,0 +1,22 @@
+(node:58365) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ metadata opens idle, loads both mirrors on demand and returns complete current fields (573.364542ms)
+✔ lazy load stays pending until both mirrors resync and loaded ensureLoaded does no extra work (1.788417ms)
+✔ standard write has an exact patch/result and confirmed previous/keys/local origin (1.148333ms)
+✔ custom deferred write retains old value until confirmation and leaves standard data intact (1.210458ms)
+✔ unconfirmed write results cannot mutate the mirror or emit updated (1.071083ms)
+✔ loads emit only resynced; facts keep both origins, shallow keys, and unsubscribe silence (1.343375ms)
+✔ custom comparison preserves equal/changed values and witnesses added and removed keys (0.732542ms)
+✔ concurrent loads deduplicate and explicit in-flight refresh queues exactly one re-read (0.936125ms)
+✔ both newer confirmed values win over stale load answers (0.871083ms)
+✔ close suppresses late reads and all callbacks; reopen starts fresh idle mirrors (2.199792ms)
+✔ permissions are synchronous selectors and local refusal never reaches either write service (1.493708ms)
+✔ failed reads/refusals preserve snapshots and refresh recovers each independent mirror (3.302792ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 900.5605

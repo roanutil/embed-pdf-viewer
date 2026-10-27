@@ -23,9 +23,9 @@ use serde_json::Value;
 
 use crate::ActionsCapability;
 use crate::contract::{
-    self as plugin, ActionDiagnostic, ActionNodeStatus, ActionOrigin, ActionPolicy,
-    ActionPolicyPatch, ActionResultStatus, ActionTriggerEvent, DocumentTriggerEvent, OpenSequence,
-    PageEventKind, PdfAnnotationEventKind, PdfFieldEventKind, TriggerGates,
+    self as plugin, ActionDiagnostic, ActionDiagnosticCode, ActionNodeStatus, ActionOrigin,
+    ActionPolicy, ActionPolicyPatch, ActionResultStatus, ActionTriggerEvent, DocumentTriggerEvent,
+    OpenSequence, PageEventKind, PdfAnnotationEventKind, PdfFieldEventKind, TriggerGates,
 };
 
 fn invalid(message: String) -> Error {
@@ -113,10 +113,26 @@ impl PdfObjectRef {
 /// Who initiated a dispatch. Provenance only: policy never reads it.
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum ActionSource {
-    Widget { field: Arc<PdfObjectRef>, annotation: Arc<PdfObjectRef>, page: PageRef },
-    Link { annotation: Option<Arc<PdfObjectRef>>, page: Option<PageRef> },
-    Annotation { annotation: Arc<PdfObjectRef>, page: PageRef },
-    Page { page: PageRef },
+    Widget {
+        field: Arc<PdfObjectRef>,
+        annotation: Arc<PdfObjectRef>,
+        page: PageRef,
+    },
+    Link {
+        annotation: Option<Arc<PdfObjectRef>>,
+        page: Option<PageRef>,
+    },
+    /// An outline item the user followed (its `OutlineItemRef`).
+    Outline {
+        item: Arc<PdfObjectRef>,
+    },
+    Annotation {
+        annotation: Arc<PdfObjectRef>,
+        page: PageRef,
+    },
+    Page {
+        page: PageRef,
+    },
     Document,
     Api,
 }
@@ -133,6 +149,9 @@ impl From<&plugin::ActionSource> for ActionSource {
                 annotation: annotation.as_ref().map(PdfObjectRef::wrap),
                 page: page.map(PageRef::from),
             },
+            plugin::ActionSource::Outline { item } => {
+                ActionSource::Outline { item: PdfObjectRef::wrap(item) }
+            }
             plugin::ActionSource::Annotation { annotation, page } => ActionSource::Annotation {
                 annotation: PdfObjectRef::wrap(annotation),
                 page: (*page).into(),
@@ -156,6 +175,9 @@ impl From<ActionSource> for plugin::ActionSource {
                 annotation: annotation.map(|a| a.0.clone()),
                 page: page.map(Into::into),
             },
+            ActionSource::Outline { item } => {
+                plugin::ActionSource::Outline { item: item.0.clone() }
+            }
             ActionSource::Annotation { annotation, page } => plugin::ActionSource::Annotation {
                 annotation: annotation.0.clone(),
                 page: page.into(),
@@ -284,6 +306,10 @@ pub enum ActionTreeSource {
     Document {
         event: Option<DocumentTriggerEvent>,
     },
+    /// An outline item's /A.
+    Outline {
+        item: Arc<PdfObjectRef>,
+    },
 }
 
 impl From<ActionTreeSource> for plugin::ActionTreeSource {
@@ -310,6 +336,9 @@ impl From<ActionTreeSource> for plugin::ActionTreeSource {
                 plugin::ActionTreeSource::Page { page: page.into(), event }
             }
             ActionTreeSource::Document { event } => plugin::ActionTreeSource::Document { event },
+            ActionTreeSource::Outline { item } => {
+                plugin::ActionTreeSource::Outline { item: item.0.clone() }
+            }
         }
     }
 }
@@ -383,11 +412,21 @@ impl From<&plugin::ActionTriggerResult> for ActionTriggerResult {
     }
 }
 
+/// One tree ran, whatever started it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct ActionDispatchEvent {
-    pub context: ActionContext,
+pub struct ActionExecutedEvent {
     pub tree: Arc<PdfActionTree>,
     pub result: ActionDispatchResult,
+    pub source: ActionSource,
+}
+
+/// An action was blocked, reported or couldn't run. `action` and `source`
+/// are `None` for a diagnostic about no one action.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct ActionDiagnosticReported {
+    pub code: ActionDiagnosticCode,
+    pub action: Option<String>,
+    pub source: Option<ActionSource>,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -460,20 +499,27 @@ impl From<&acrojs::ScriptExecutionError> for ScriptExecutionError {
     }
 }
 
+/// A script threw. `source` is `None` for a script no action started.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct ScriptFailed {
+    pub error: ScriptExecutionError,
+    pub source: Option<ActionSource>,
+}
+
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum ActionsEvent {
     /// Every executed tree: dispatch-driven, verb-driven and lifecycle-driven.
     Executed {
-        event: ActionDispatchEvent,
+        event: ActionExecutedEvent,
     },
-    Diagnostic {
-        event: ActionDiagnostic,
+    DiagnosticReported {
+        event: ActionDiagnosticReported,
     },
-    ScriptDiagnostic {
+    ScriptDiagnosticReported {
         event: ScriptDiagnostic,
     },
-    ScriptError {
-        event: ScriptExecutionError,
+    ScriptFailed {
+        event: ScriptFailed,
     },
     OpenSequenceCompleted {
         event: OpenSequenceCompleted,
@@ -522,22 +568,28 @@ impl ActionsHandle {
 
 #[uniffi::export]
 impl ActionsHandle {
-    /// The live policy.
+    /// The `policy` setting, for every document of the registration.
     pub async fn policy(&self) -> Result<ActionPolicy, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_policy())).await
+        self.cap.call(|c| Ok(open(c)?.get_settings().policy)).await
     }
 
-    /// Row-wise: a row names only the origins it changes.
+    /// Change the `policy` setting row-wise: a row names only the origins it
+    /// changes. Reaches every open document.
     pub async fn update_policy(&self, patch: ActionPolicyPatch) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.update_policy(&patch);
+                open(c)?.update_settings(&plugin::ActionsSettingsPatch {
+                    policy: Some(patch),
+                    ..Default::default()
+                });
                 Ok(())
             })
             .await
     }
 
-    /// True when the config enables JavaScript and supplies an engine.
+    /// True when the `javascript.enabled` setting was on as the document
+    /// opened: a script realm exists. Without an engine every script run
+    /// fails.
     pub async fn is_scripting_enabled(&self) -> Result<bool, ViewerError> {
         self.cap.call(|c| Ok(open(c)?.is_scripting_enabled())).await
     }
@@ -550,7 +602,7 @@ impl ActionsHandle {
     ) -> Result<ActionDispatchResult, ViewerError> {
         self.cap
             .call_promise(
-                move |c| Ok(open(c)?.execute(tree.0.clone(), context.into())),
+                move |c| Ok(open(c)?.execute(tree.0.clone(), context.into(), None)),
                 |result: plugin::ActionDispatchResult| ActionDispatchResult::from(&result),
             )
             .await
@@ -573,7 +625,7 @@ impl ActionsHandle {
     ) -> Result<ActionDispatchResult, ViewerError> {
         self.cap
             .call_promise(
-                move |c| Ok(open(c)?.execute_named(&name, context.map(Into::into))),
+                move |c| Ok(open(c)?.execute_named(&name, context.map(Into::into), None)),
                 |result: plugin::ActionDispatchResult| ActionDispatchResult::from(&result),
             )
             .await
@@ -585,7 +637,7 @@ impl ActionsHandle {
         source: ActionTreeSource,
     ) -> Result<Option<Arc<PdfActionTree>>, ViewerError> {
         self.cap
-            .call_promise(move |c| Ok(open(c)?.get_action_tree(source.into())), tree_or_none)
+            .call_promise(move |c| Ok(open(c)?.get_action_tree(source.into(), None)), tree_or_none)
             .await
     }
 
@@ -597,7 +649,7 @@ impl ActionsHandle {
     ) -> Result<ActionTriggerResult, ViewerError> {
         self.cap
             .call_promise(
-                move |c| Ok(open(c)?.dispatch(trigger.into())),
+                move |c| Ok(open(c)?.dispatch(trigger.into(), None)),
                 |result: plugin::ActionTriggerResult| ActionTriggerResult::from(&result),
             )
             .await
@@ -611,7 +663,7 @@ impl ActionsHandle {
     pub async fn prepare_close(&self) -> Result<ActionTriggerResult, ViewerError> {
         self.cap
             .call_promise(
-                |c| Ok(open(c)?.prepare_close()),
+                |c| Ok(open(c)?.prepare_close(None)),
                 |result: plugin::ActionTriggerResult| ActionTriggerResult::from(&result),
             )
             .await
@@ -631,10 +683,10 @@ impl ActionsHandle {
                             let l = listener.clone();
                             c.on_executed(move |e| {
                                 l.on_event(ActionsEvent::Executed {
-                                    event: ActionDispatchEvent {
-                                        context: (&e.ctx).into(),
+                                    event: ActionExecutedEvent {
                                         tree: PdfActionTree::wrap(&e.tree),
                                         result: (&e.result).into(),
+                                        source: (&e.source).into(),
                                     },
                                 });
                                 Ok(())
@@ -642,22 +694,35 @@ impl ActionsHandle {
                         },
                         {
                             let l = listener.clone();
-                            c.on_diagnostic(move |e| {
-                                l.on_event(ActionsEvent::Diagnostic { event: e.clone() });
+                            c.on_diagnostic_reported(move |e| {
+                                l.on_event(ActionsEvent::DiagnosticReported {
+                                    event: ActionDiagnosticReported {
+                                        code: e.code,
+                                        action: e.action.clone(),
+                                        source: e.source.as_ref().map(Into::into),
+                                    },
+                                });
                                 Ok(())
                             })
                         },
                         {
                             let l = listener.clone();
-                            c.on_script_diagnostic(move |e| {
-                                l.on_event(ActionsEvent::ScriptDiagnostic { event: e.into() });
+                            c.on_script_diagnostic_reported(move |e| {
+                                l.on_event(ActionsEvent::ScriptDiagnosticReported {
+                                    event: e.into(),
+                                });
                                 Ok(())
                             })
                         },
                         {
                             let l = listener.clone();
-                            c.on_script_error(move |e| {
-                                l.on_event(ActionsEvent::ScriptError { event: e.into() });
+                            c.on_script_failed(move |e| {
+                                l.on_event(ActionsEvent::ScriptFailed {
+                                    event: ScriptFailed {
+                                        error: (&e.error).into(),
+                                        source: e.source.as_ref().map(Into::into),
+                                    },
+                                });
                                 Ok(())
                             })
                         },
@@ -697,8 +762,8 @@ pub struct ActionsConfig {
     /// adapter installs or on the first user dispatch.
     #[uniffi(default = None)]
     pub open_sequence: Option<OpenSequence>,
-    /// PDF JavaScript. `None`, or `enabled` without an engine, leaves
-    /// scripting off.
+    /// PDF JavaScript. `None` leaves scripting off; `enabled` without an
+    /// engine gives the document a realm whose every run fails.
     #[uniffi(default = None)]
     pub javascript: Option<sandbox::ActionsJavaScriptConfig>,
     /// Local minus UTC, in minutes, for script dates. Fixed for the
@@ -730,20 +795,19 @@ impl Hash for ActionsConfig {
 }
 
 impl ActionsConfig {
-    /// `observer_error` is where a throwing observer on one of the five hooks
-    /// goes.
-    pub fn into_plugin_config(
-        self,
-        observer_error: Option<Rc<dyn Fn(&str, &Error)>>,
-    ) -> crate::ActionsConfig {
+    /// The plugin's config. A throwing observer is reported through the
+    /// kernel, as every capability event's is.
+    pub fn into_plugin_config(self) -> crate::ActionsConfig {
+        let offset = self.utc_offset_minutes;
         crate::ActionsConfig {
             policy: self.policy,
             triggers: self.triggers,
             open_sequence: self.open_sequence,
-            javascript: self.javascript.map(Into::into),
-            observer_error,
-            host_utc_offset_minutes: self.utc_offset_minutes.map(|minutes| {
-                Rc::new(move |_now: f64| f64::from(minutes)) as Rc<dyn Fn(f64) -> f64>
+            javascript: self.javascript.map(|js| crate::JavaScriptConfig {
+                host_utc_offset_minutes: offset.map(|minutes| {
+                    Rc::new(move |_now: f64| f64::from(minutes)) as Rc<dyn Fn(f64) -> f64>
+                }),
+                ..crate::JavaScriptConfig::from(js)
             }),
         }
     }

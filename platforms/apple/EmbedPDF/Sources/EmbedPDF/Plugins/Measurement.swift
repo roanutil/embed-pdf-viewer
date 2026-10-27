@@ -15,7 +15,7 @@ public typealias MeasureLabelPosition = EmbedPDFBindings.MeasureLabelPosition
 /// A named paper-to-real-world ratio offered in a scale picker.
 public typealias ScalePreset = EmbedPDFBindings.ScalePreset
 /// Controls whether changing a page scale recalculates its measurement annotations.
-public typealias ScaleChangeOptions = EmbedPDFBindings.ScaleChangeOptions
+public typealias MeasurementScaleChangeOptions = EmbedPDFBindings.MeasurementScaleChangeOptions
 /// One page, a list of pages or every page to receive a scale change.
 public typealias MeasurementPageTarget = EmbedPDFBindings.MeasurementPageTarget
 /// A page's resolved scale, its source, loading readiness and persistence support.
@@ -57,8 +57,8 @@ public typealias MeasurementEvent = EmbedPDFBindings.MeasurementEvent
 
 /// A document's page scales, calibration and measurement readouts. Get one
 /// with `PDFViewer.measurement(for:)`; the viewer needs
-/// `ViewerConfig(interaction: true, annotation: AnnotationConfig(),
-/// measurement: MeasurementConfig())`. It keeps the viewer alive. After its
+/// `ViewerConfig(interaction: true, annotation: "", measurement:
+/// MeasurementConfig())`. It keeps the viewer alive. After its
 /// document closes, every call throws `instance-closed`.
 public struct MeasurementCapability: Sendable {
   let handle: MeasurementHandle
@@ -99,9 +99,13 @@ public struct MeasurementCapability: Sendable {
     try await bridged { try await handle.areaUnits() }
   }
 
-  /// Calculates a measurement annotation's readout, or returns the reason it is unavailable.
-  public func readout(_ annotation: AnnotationRef) async throws(PDFError) -> MeasurementReading {
-    try await bridged { try await handle.readout(annotation: annotation) }
+  /// Calculates a measurement annotation's readout in its own scale, or returns the reason
+  /// it is unavailable.
+  ///
+  /// - Parameter annotationJSON: The engine's `AnnotationRef` record as JSON, such as the
+  ///   string ``createMeasurement(_:)`` returns.
+  public func readout(annotationJSON: String) async throws(PDFError) -> MeasurementReading {
+    try await bridged { try await handle.readout(annotationJson: annotationJSON) }
   }
 
   /// Calculates the real-world distance between two page-space points using the page's resolved scale.
@@ -131,7 +135,7 @@ public struct MeasurementCapability: Sendable {
   /// already sent still lands.
   public func setScale(
     _ pages: MeasurementPageTarget, measure: PdfMeasurement,
-    options: ScaleChangeOptions = ScaleChangeOptions()
+    options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.setScale(pages: pages, measure: measure, options: options, cancel: token)
@@ -154,7 +158,7 @@ public struct MeasurementCapability: Sendable {
   ///
   /// Use an identifier returned by `units()`.
   public func setUnit(
-    _ pages: MeasurementPageTarget, unit: String, options: ScaleChangeOptions = ScaleChangeOptions()
+    _ pages: MeasurementPageTarget, unit: String, options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.setUnit(pages: pages, unit: unit, options: options, cancel: token)
@@ -165,7 +169,7 @@ public struct MeasurementCapability: Sendable {
   ///
   /// Use an identifier returned by `areaUnits()`.
   public func setAreaUnit(
-    _ pages: MeasurementPageTarget, unit: String, options: ScaleChangeOptions = ScaleChangeOptions()
+    _ pages: MeasurementPageTarget, unit: String, options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.setAreaUnit(pages: pages, unit: unit, options: options, cancel: token)
@@ -181,7 +185,7 @@ public struct MeasurementCapability: Sendable {
   ///   - options: Controls recalculation of existing measurements after the scale change.
   public func setPrecision(
     _ pages: MeasurementPageTarget, precision: Double,
-    options: ScaleChangeOptions = ScaleChangeOptions()
+    options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.setPrecision(pages: pages, precision: precision, options: options, cancel: token)
@@ -191,7 +195,7 @@ public struct MeasurementCapability: Sendable {
   /// Applies the preset identified by `presetId` to target pages and returns per-page outcomes.
   public func setPreset(
     _ pages: MeasurementPageTarget, presetId: String,
-    options: ScaleChangeOptions = ScaleChangeOptions()
+    options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.setPreset(pages: pages, presetId: presetId, options: options, cancel: token)
@@ -200,7 +204,7 @@ public struct MeasurementCapability: Sendable {
 
   /// Removes EmbedPDF's scale; another producer's stays.
   public func clearScale(
-    _ pages: MeasurementPageTarget, options: ScaleChangeOptions = ScaleChangeOptions()
+    _ pages: MeasurementPageTarget, options: MeasurementScaleChangeOptions = MeasurementScaleChangeOptions()
   ) async throws(PDFError) -> [ScaleChangeReport] {
     try await bridgedCancellable { token in
       try await handle.clearScale(pages: pages, options: options, cancel: token)
@@ -220,12 +224,13 @@ public struct MeasurementCapability: Sendable {
     try await bridged { try await handle.dismissCalibration() }
   }
 
-  /// Creates a distance, perimeter or area annotation and returns its reference.
+  /// Creates a distance, perimeter or area annotation through the annotation plugin.
   ///
   /// Load the page scale with `ensureLoaded(_:)` first; an unavailable scale throws `not-ready`.
-  /// The native engine does not yet persist all dimension metadata, so a created annotation's
-  /// subsequent `readout(_:)` can report `.notDimension`.
-  public func createMeasurement(_ input: CreateMeasurementInput) async throws(PDFError) -> AnnotationRef {
+  ///
+  /// - Returns: The new annotation's `AnnotationRef` record as the engine's JSON; pass it to
+  ///   ``readout(annotationJSON:)``.
+  public func createMeasurement(_ input: CreateMeasurementInput) async throws(PDFError) -> String {
     try await bridgedCancellable { token in
       try await handle.createMeasurement(input: input, cancel: token)
     }

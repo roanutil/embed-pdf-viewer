@@ -20,7 +20,12 @@ fn a_definition_holding_a_weak_capability_drops_with_the_kernel() {
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
         vec![commands_plugin(CommandsConfig::default())],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();

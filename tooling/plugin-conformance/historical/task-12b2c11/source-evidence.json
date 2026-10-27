@@ -1,0 +1,56 @@
+{
+  "base": "e4f60a19960b68c0e7ec60631bf30d102dbccf33",
+  "commits": {
+    "namedTransitions": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411",
+    "currentContract": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+  },
+  "owners": [
+    {
+      "path": "packages/plugin/view-manager/src/model.ts",
+      "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/controller.ts",
+      "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/contract.ts",
+      "sha256": "7510f569ae0fd9e4c18cfb184e5f7a45bf9e32650125aadfe10a38538af5c7a0"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
+      "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/state.ts",
+      "sha256": "a265539530f88a73ab62b168d480b852c3c77c35a95451da5c10935932ad12cb"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/token.ts",
+      "sha256": "8027b4bcb19f793576aaf5be44248405b90d46add00cd3f4c7cc95725c0b931a"
+    },
+    {
+      "path": "packages/plugin/view-manager/src/index.ts",
+      "sha256": "a86a1d11eb0e81f56834b2b4df935655bd3ec010513277aaf5b60bc56af566b3"
+    },
+    {
+      "path": "packages/plugin/view-manager/test/controller.test.ts",
+      "sha256": "6e1017b72e05478a4435b2be1f85f1eb1da8088c278f23e95b4c63a1c6524215"
+    },
+    {
+      "path": "packages/plugin/view-manager/test/partition.test.ts",
+      "sha256": "12a24b9d3488ff8df3845895f18b3120571b67dc351a67e0c8f8f59d763f7089"
+    }
+  ],
+  "contracts": {
+    "construction": "view-manager.plugin.ts: workspace definePlugin state initialViewManagerState/create createViewManagerController; no proxy or old context spread",
+    "generatedCreation": "model.ts createPane/nextPaneId: monotonic seq, generated pane-N, empty pane, insertion index and focus; contract.ts CreatePaneOptions has documentIds only, no injected pane/id",
+    "paneMovement": "model.ts movePane filters one id and clamps insertion index; controller passes positional id/toIndex; no whole-order replacement",
+    "partition": "paneOfDocument walks explicit state.order; addDocument removes from first holder and retains target active unless null; between-pane movement focuses destination and activates moved doc",
+    "removal": "removePane model drops pane and uses last remaining focus; capability first moves each doc to explicit/focused/last valid target; invalid/self target drops rather than emulates a different policy",
+    "renameReconcile": "renameDocument replaces previous id in place/active slot; connect detects equal-length disjoint replacement positions, renames before reconcile; reconcile prunes, validates active and appends unassigned in registry order using preferred/focused/first/new fallback",
+    "identity": "same-focus/same-active/absent-remove operations return identical state; move same index is still a new state; memoByKey keeps unaffected pane reference and list is stable until panes/order changes",
+    "events": "created in next order, removed in previous order, focus next, document moved in previous+next object enumeration; same-pane tab movement has no document-moved event; throwing listeners report and siblings still run; teardown unsubscribes watch",
+    "retirement": "3 removed pane-message occurrences: 2 CREATE_PANE arbitrary supplied panes and1 REORDER_PANES full order. Explicit partial scope retained with evidence; unknown dispatcher is a whole retirement/replacement. Full originals remain immutable."
+  }
+}

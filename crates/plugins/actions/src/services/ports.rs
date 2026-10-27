@@ -12,7 +12,8 @@ use crate::contract::{
     ActionDiagnostic, ActionDiagnosticCode, ActionExecutor, ActionSubmitHandler, ActionUiAdapter,
     Disposer,
 };
-use crate::host_contract::{AnnotCommitSink, FormCommitSink, SubmitResolver};
+use crate::host_contract::{AnnotCommitSink, FormCommitSink, FormReader, SubmitResolver};
+use crate::services::DiagnosticPlace;
 
 pub(crate) enum ExecutorKind {
     Registered(ActionExecutor),
@@ -31,6 +32,8 @@ pub(crate) struct Ports {
     pub(crate) next_id: Cell<u64>,
     pub(crate) annot_commit_sink: RefCell<Option<AnnotCommitSink>>,
     pub(crate) form_commit_sink: RefCell<Option<FormCommitSink>>,
+    /// The form plugin's form, as the user sees it.
+    pub(crate) form_reader: RefCell<Option<FormReader>>,
     pub(crate) ui_adapter: RefCell<Option<Rc<ActionUiAdapter>>>,
     /// Sink 1 of the submit chain (consent is installation).
     pub(crate) submit_handler: RefCell<Option<ActionSubmitHandler>>,
@@ -78,10 +81,13 @@ impl ActionsCapability {
     /// removes the entry only while it is still the current one.
     pub fn register_executor(&self, action_type: &str, executor: ActionExecutor) -> Disposer {
         if self.0.ports.executors.borrow().contains_key(action_type) {
-            self.emit_diagnostic(ActionDiagnostic::new(
-                ActionDiagnosticCode::DuplicateExecutor,
-                format!("executor for '{action_type}' replaced (last-wins)"),
-            ));
+            self.report_diagnostic(
+                &ActionDiagnostic::new(
+                    ActionDiagnosticCode::DuplicateExecutor,
+                    format!("executor for '{action_type}' replaced (last-wins)"),
+                ),
+                &DiagnosticPlace { action: Some(action_type.to_string()), source: None },
+            );
         }
         let id = self.install_executor(action_type, ExecutorKind::Registered(executor));
         let (weak, action_type) = (self.weak(), action_type.to_string());
@@ -105,6 +111,13 @@ impl ActionsCapability {
     pub fn register_form_commit_sink(&self, sink: FormCommitSink) -> Disposer {
         *self.0.ports.form_commit_sink.borrow_mut() = Some(sink.clone());
         slot_disposer(self, sink, |p| &p.form_commit_sink)
+    }
+
+    /// Host lens: the form plugin's form, which scripts and dispatch read;
+    /// without one they read the engine.
+    pub fn register_form_reader(&self, reader: FormReader) -> Disposer {
+        *self.0.ports.form_reader.borrow_mut() = Some(reader.clone());
+        slot_disposer(self, reader, |p| &p.form_reader)
     }
 
     /// Sink 1 of the submit chain. Installing it does not release the open

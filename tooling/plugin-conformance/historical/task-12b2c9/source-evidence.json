@@ -1,0 +1,48 @@
+{
+  "base": "ca63bf57a31ce722cefc8e03944390c4c7f5e745",
+  "commits": {
+    "namedTransitions": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411",
+    "settingsContract": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719",
+    "translationFallbackKeyAndBundles": "3ea7cb1f3e5b11e1e75f1f4649fae4f07004e3fa",
+    "scriptAwareNegotiation": "277961ad3f9a01195824f2bffa1340ca5f44fcde"
+  },
+  "currentOwners": [
+    {
+      "path": "packages/plugin/i18n/src/controller.ts",
+      "sha256": "1d2541e81fa00066a7893fff888de39fb009ec1a819645fe593fac25c43697a6"
+    },
+    {
+      "path": "packages/plugin/i18n/src/contract.ts",
+      "sha256": "f4cb5989f5c27107470ce11856daf373795f83d7c9b0ccd20b7771b471752b46"
+    },
+    {
+      "path": "packages/plugin/i18n/src/model.ts",
+      "sha256": "16e427447c6117210eee3ed8a4d28a9848c9fece7c1dfb2b07ec79d29c77cfb8"
+    },
+    {
+      "path": "packages/plugin/i18n/src/translate.ts",
+      "sha256": "bf9b0efa03272c5da9205edb012b1e0d6e29c874aec4c26fe7e45e75e8aa6a22"
+    },
+    {
+      "path": "packages/plugin/i18n/src/negotiate.ts",
+      "sha256": "db9a9e1820b56edbe2c5ac41d3ba2eb7b0934fbcb400e60ca7169fe15422684d"
+    },
+    {
+      "path": "packages/plugin/i18n/src/sync/loaders.ts",
+      "sha256": "18c8d4b1c236dcd097305aa13342242ab1ab59e9b9019d0c7f1e5784d1f5db72"
+    },
+    {
+      "path": "packages/plugin/i18n/src/i18n.plugin.ts",
+      "sha256": "92c38fdb64ade03135974dfa78d1fbfc4753170bd15fff486d8831f71c66b526"
+    }
+  ],
+  "contracts": {
+    "state": "model.ts: initial empty locale/locales/loading/waitingTranslations; seedFromSettings, named transitions, no reducer",
+    "translation": "translate.ts: TranslationSources carries fallbackLocale separately, app then bundled current language then fallback language; fallbackKey tried inside each language",
+    "settings": "controller.ts: immutable settings read, follows locales and locale updates; loaders built before plugin registration",
+    "direction": "Locale.direction, default ltr; no old rtl boolean",
+    "loaders": "sync/loaders.ts: watch loading identity dedups same code; late other-code pack registers without switching; synchronous throws report/start failure, rejected loads emit exact PluginErrorInfo",
+    "disposal": "after teardown watch removed and closed state rejects writes; no fake late completion of captured waiter",
+    "boundary": "explicit current inputs are the authority, no copied translation/plural rules; scripted JSON loader decoding is private transport only"
+  }
+}

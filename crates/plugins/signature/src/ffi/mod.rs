@@ -1,6 +1,10 @@
 //! The signature plugin through uniffi: typed records decoded from the
 //! plugin's JSON ([`records`]), one handle, one event enum. Every method
 //! hops to the kernel thread through `KernelBound`.
+//!
+//! Migrated by hand to the Task 13.25 plugin (settings, per-field authority,
+//! `cancelPending`, verbs taking `OperationOptions`); compiled and tested
+//! since Task 13.33.
 
 pub mod ports;
 pub mod records;
@@ -13,6 +17,7 @@ use epdf_ffi::{
 use epdf_kernel::Error;
 use epdf_kernel::bytes::Bytes;
 use epdf_kernel::error::{code, plugin_error};
+use epdf_kernel::mirror::ResourceStatus as CoreStatus;
 use serde_json::{Value, json};
 
 pub use ports::{
@@ -36,14 +41,20 @@ fn open(cap: &SignatureCapability) -> Result<&SignatureCapability, Error> {
     Ok(cap)
 }
 
-fn status(s: crate::ResourceStatus) -> ResourceStatus {
+fn status(s: CoreStatus) -> ResourceStatus {
     match s {
-        crate::ResourceStatus::Idle => ResourceStatus::Idle,
-        crate::ResourceStatus::Loading => ResourceStatus::Loading,
-        crate::ResourceStatus::Ready => ResourceStatus::Ready,
-        crate::ResourceStatus::Forbidden => ResourceStatus::Forbidden,
-        crate::ResourceStatus::Error => ResourceStatus::Error,
+        CoreStatus::Idle => ResourceStatus::Idle,
+        CoreStatus::Loading => ResourceStatus::Loading,
+        CoreStatus::Ready => ResourceStatus::Ready,
+        CoreStatus::Forbidden => ResourceStatus::Forbidden,
+        CoreStatus::Error => ResourceStatus::Error,
     }
+}
+
+/// `OperationOptions` without a signal: a `CancelToken` aborts the verb's
+/// promise itself (`KernelBound::call_promise_cancellable`).
+fn none() -> crate::OperationOptions {
+    crate::OperationOptions::default()
 }
 
 /// One document's signature fields: reading, validating, signing and
@@ -61,11 +72,15 @@ impl SignatureHandle {
     }
 }
 
-/// The plugin's options a host sets. The signer and the trust anchors are
-/// set on the host (`ViewerHost::set_signature_signer`, `set_signature_trust`).
+/// The plugin's settings a host registers. The signer and the trust anchors
+/// are set on the host (`ViewerHost::set_signature_signer`,
+/// `set_signature_trust`).
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct SignatureConfig {
-    /// `None` is `Sign` while a signer is set, else `Visual`.
+    /// `None` is `Sign` while the `key` setting is set, else `Visual`. The
+    /// host's key is a function over its signer slot, so with a host plugin
+    /// the default is `Sign`; a host that wants `Visual` until a signer is
+    /// set registers the mode, or updates it when the slot fills.
     #[uniffi(default = None)]
     pub mode: Option<SignatureMode>,
     /// Let the UI offer a certification. `None` is false.
@@ -73,9 +88,9 @@ pub struct SignatureConfig {
     pub allow_certify: Option<bool>,
 }
 
-/// `signaturePlugin(config)` for a host: the signer is a thunk over
-/// `signer` (resolved per signing, `invalid-input` while empty) and the
-/// trust a port over `trust` (no anchors while empty).
+/// `signaturePlugin(config)` for a host: the `key` setting is a function
+/// over `signer` (resolved per signing, `invalid-input` while empty) and the
+/// `trust` setting a port over `trust` (no anchors while empty).
 pub fn host_plugin(
     config: SignatureConfig,
     signer: ports::SignatureSignerSlot,
@@ -101,14 +116,11 @@ pub fn host_plugin(
             )),
         }
     });
-    let available: std::rc::Rc<dyn Fn() -> bool> =
-        std::rc::Rc::new(move || signer.lock().unwrap().is_some());
     crate::signature_plugin(crate::SignatureConfig {
-        mode: config.mode.map(Into::into),
-        signer: Some(crate::SignerSource::Host { resolve, available }),
-        trust: Some(std::rc::Rc::new(ports::SlotTrust(trust))),
+        mode: config.mode.map(|mode| Some(mode.into())),
+        key: Some(Some(crate::SignatureKey::Thunk(resolve))),
+        trust: Some(Some(std::rc::Rc::new(ports::SlotTrust(trust)))),
         allow_certify: config.allow_certify,
-        host: Default::default(),
     })
 }
 
@@ -138,6 +150,7 @@ impl SignatureHandle {
             .call(|c| {
                 let cap = open(c)?;
                 let fields = cap.list_unsigned_fields();
+                let fields = fields.as_slice();
                 fields
                     .iter()
                     .map(|f| {
@@ -170,7 +183,11 @@ impl SignatureHandle {
     pub async fn verdicts(&self) -> Result<Option<Vec<SignatureVerdict>>, ViewerError> {
         self.cap
             .call(|c| {
-                open(c)?.list_verdicts().as_ref().map(SignatureVerdict::list_from_json).transpose()
+                open(c)?
+                    .list_verdicts()
+                    .as_deref()
+                    .map(SignatureVerdict::list_from_json)
+                    .transpose()
             })
             .await
     }
@@ -227,7 +244,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                |c| Ok(open(c)?.refresh()),
+                |c| Ok(open(c)?.refresh(none())),
                 |s: Option<Value>| {
                     s.as_ref()
                         .map(SignatureSnapshot::from_json)
@@ -248,8 +265,10 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.validate(request.into())),
-                |v: Value| SignatureVerdict::list_from_json(&v).map_err(ViewerError::from),
+                move |c| Ok(open(c)?.validate(request.into_core(None))),
+                |v: std::rc::Rc<Value>| {
+                    SignatureVerdict::list_from_json(&v).map_err(ViewerError::from)
+                },
             )
             .await?
     }
@@ -264,7 +283,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.validate_field(field_json(&field), request.into())),
+                move |c| Ok(open(c)?.validate_field(field_json(&field), request.into_core(None))),
                 |v: Value| SignatureVerdict::from_json(&v).map_err(ViewerError::from),
             )
             .await?
@@ -284,7 +303,7 @@ impl SignatureHandle {
                 move |c| {
                     let input =
                         json!({ "since": { "signatureIndex": since }, "until": until.as_str() });
-                    open(c)?.analyze_changes(input)
+                    Ok(open(c)?.analyze_changes(input, none()))
                 },
                 |v: Value| SignatureChangeAnalysis::from_json(&v).map_err(ViewerError::from),
             )
@@ -301,7 +320,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| open(c)?.read_revision(&field_json(&field)),
+                move |c| Ok(open(c)?.read_revision(field_json(&field), none())),
                 |v: Value| {
                     Bytes::from_json(&v)
                         .map(|b| b.0)
@@ -331,9 +350,9 @@ impl SignatureHandle {
             .await
     }
 
-    /// Seal `input.field` with `signer`, or the signer the viewer has.
-    /// Fails with the signer's own error if it throws, and leaves nothing
-    /// pending.
+    /// Seal `input.field` with `signer`, or the `key` setting (the signer
+    /// the viewer has). Fails with the signer's own error as the cause of an
+    /// `operation-failed` if it throws, and leaves nothing pending.
     pub async fn sign(
         &self,
         input: SignatureSignInput,
@@ -345,11 +364,11 @@ impl SignatureHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let signer = signer
+                    let key = signer
                         .map(|signer| ports::signer_port(signer, post))
                         .transpose()?
-                        .map(crate::SignerSource::Port);
-                    Ok(open(c)?.sign(input.into_core(signer)))
+                        .map(crate::SignatureKey::port);
+                    Ok(open(c)?.sign(input.into_core(key), none()))
                 },
                 |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),
             )
@@ -357,7 +376,7 @@ impl SignatureHandle {
     }
 
     /// Phase one of an external signing: the digest to sign elsewhere. The
-    /// document is read-only until `complete_signature` or `abort_pending`.
+    /// document is read-only until `complete_signature` or `cancel_pending`.
     pub async fn prepare_signature(
         &self,
         input: SignaturePrepareInput,
@@ -366,7 +385,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.prepare_signature(input.into_core())),
+                move |c| Ok(open(c)?.prepare_signature(input.into_core(), none())),
                 |v: Value| SignaturePrepared::from_json(&v).map_err(ViewerError::from),
             )
             .await?
@@ -382,15 +401,17 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.complete_signature(signing_id, cms)),
+                move |c| Ok(open(c)?.complete_signature(signing_id, cms, none())),
                 |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),
             )
             .await?
     }
 
-    /// Cancel the parked signing, if any.
-    pub async fn abort_pending(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
-        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.abort_pending()), |()| ()).await
+    /// Give up the parked signing, if any (`cancelPending`).
+    pub async fn cancel_pending(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
+        self.cap
+            .call_promise_cancellable(cancel, |c| Ok(open(c)?.cancel_pending(none())), |()| ())
+            .await
     }
 
     /// Draw `mark` into an unsigned field without sealing it.
@@ -403,7 +424,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.fill_field(field_json(&field), mark.into())),
+                move |c| Ok(open(c)?.fill_field(field_json(&field), mark.into(), none())),
                 |()| (),
             )
             .await
@@ -418,7 +439,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.clear_field(field_json(&field))),
+                move |c| Ok(open(c)?.clear_field(field_json(&field), none())),
                 |()| (),
             )
             .await
@@ -435,7 +456,7 @@ impl SignatureHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.place_mark(mark.into(), target.try_into()?)),
+                move |c| Ok(open(c)?.place_mark(mark.into(), target.try_into()?, none())),
                 |r: crate::PlaceMarkResult| {
                     SignaturePlaceResult::try_from(r).map_err(ViewerError::from)
                 },
@@ -443,19 +464,27 @@ impl SignatureHandle {
             .await?
     }
 
-    /// `doc.sign` is granted and a signer is configured.
-    pub async fn can_sign(&self) -> Result<bool, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.can_sign())).await
+    /// Whether signing `field` is allowed: `doc.sign`, or `fields:sign`
+    /// for its group. `false` for a field the form doesn't have.
+    pub async fn can_sign(&self, field: FormFieldRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_sign(&field_json(&field)))).await
     }
 
-    /// `doc.forms.fill` is granted and the engine draws into signature fields.
-    pub async fn can_fill(&self) -> Result<bool, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.can_fill())).await
+    /// Whether drawing a mark into `field` is allowed: `doc.forms.fill`, or
+    /// `fields:fill` for its group.
+    pub async fn can_fill(&self, field: FormFieldRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_fill(&field_json(&field)))).await
     }
 
-    /// Certification is allowed by the config and `doc.sign.certify`.
+    /// Certification is allowed by the `allowCertify` setting and
+    /// `doc.sign.certify`.
     pub async fn can_certify(&self) -> Result<bool, ViewerError> {
         self.cap.call(|c| Ok(open(c)?.can_certify())).await
+    }
+
+    /// The signed bytes may be read: `doc.download`.
+    pub async fn can_read_revision(&self) -> Result<bool, ViewerError> {
+        self.cap.call(|c| Ok(open(c)?.can_read_revision())).await
     }
 
     /// The nine change hooks as one stream, ended when the document closes.

@@ -1,0 +1,22 @@
+{
+  "base": "79b16091b9950935e5df77966f4207a1eddcce07",
+  "originalSourceSha256": "bda6411c1a1485796e1a3cac95651d9376f17ca5d12fe888ae64b9dd60faeaea",
+  "currentSourceSha256": "c579ef2e705f4a5c1e27ff17cbcda612b29b5ef946dc473f809cfe5490c9137a",
+  "originalInputsSha256": "74e5afd06bcc4afb9b27d9e6e08659e3eeac6afd1385f63f71652126c93d23f0",
+  "currentInputsRuntimeSha256": "6a06e90943445594daf59ce77b4c304012bd6f36e28b329896060c7e0dc6caeb",
+  "deferredInputsSha256": "2bd907722ffda148bb5da6f8376fa950dcf3348385b81159f4fb74c6d05f9382",
+  "task11": {
+    "paths": [
+      "core/acrojs.json",
+      "core/acrojs-host.json"
+    ],
+    "inputDiff": 0,
+    "disposition": "Neither is one of the 31 inherited Task11 drift cases. Seven fresh input migrations are explicitly mapped here."
+  },
+  "upstream": {
+    "identity": "c78997346647b0e53f7c8d1b98b80865f05a299e packages/core/acrojs/src/host.ts:91-104",
+    "flags": "c3b90c3a4c22c547d45fca2fe0b4de5936478241 packages/core/acrojs/src/input.ts",
+    "snapshot": "5da4ca52a packages/core/acrojs/src/input.ts:21-71",
+    "plugin": "packages/core/main/src/types.ts create/returned api/connect; packages/core/acrojs/src/host.ts:130-239 actual realm lifetime"
+  }
+}

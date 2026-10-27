@@ -8,7 +8,7 @@ use serde::de::{self, Deserializer};
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
-use crate::contract::RenderConfig;
+use crate::contract::{RenderConfig, TilesSetting};
 use crate::raster_store::PageImageHandle;
 
 /// Scroll velocity in page points per second: prefetch direction only.
@@ -30,6 +30,22 @@ pub struct PageViewDemand {
     pub visible_rect: Option<Rect>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub velocity: Option<Velocity>,
+}
+
+/// `samePageViewDemand`: whether two demands ask for the same thing. A host
+/// builds a new demand on every camera frame; a layer that compares with
+/// this sets it again (and plans again) only when it changed.
+pub fn same_page_view_demand(left: &PageViewDemand, right: &PageViewDemand) -> bool {
+    left.desired_device_width == right.desired_device_width
+        && left.velocity.map(|v| v.dx) == right.velocity.map(|v| v.dx)
+        && left.velocity.map(|v| v.dy) == right.velocity.map(|v| v.dy)
+        && match (left.visible_rect, right.visible_rect) {
+            (None, None) => true,
+            (Some(a), Some(b)) => {
+                a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height
+            }
+            _ => false,
+        }
 }
 
 /// `TilePaintSource`: one tile the layer keeps in the DOM.
@@ -127,18 +143,18 @@ impl RenderFormat {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FullPageOptions {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_width: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quantize: Option<Quantize>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrefetchOptions {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub margin: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub velocity_bias: Option<bool>,
 }
 
@@ -146,45 +162,20 @@ pub struct PrefetchOptions {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TilesOptions {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quantize: Option<Quantize>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_scale: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bleed: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub engage_at: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prefetch: Option<PrefetchOptions>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub settle_ms: Option<f64>,
-    #[serde(default)]
-    pub fade_ms: Option<f64>,
-}
-
-/// `tiles?: TilesOptions | false`.
-#[derive(Clone, Debug, PartialEq)]
-pub enum TilesSetting {
-    Off,
-    On(TilesOptions),
-}
-
-impl<'de> Deserialize<'de> for TilesSetting {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Raw {
-            Flag(bool),
-            Options(TilesOptions),
-        }
-        match Raw::deserialize(d)? {
-            Raw::Flag(false) => Ok(TilesSetting::Off),
-            Raw::Flag(true) => Ok(TilesSetting::On(TilesOptions::default())),
-            Raw::Options(options) => Ok(TilesSetting::On(options)),
-        }
-    }
 }
 
 /// `DEFAULT_TILE_PYRAMID`: the ×2 client pyramid for lattices without a
@@ -213,7 +204,7 @@ pub struct ResolvedTiles {
     pub prefetch_margin: f64,
     pub velocity_bias: bool,
     pub settle_ms: f64,
-    pub fade_ms: f64,
+    /// Pyramid for lattice deployments that don't advertise tiles yet.
     pub fallback_pyramid: Vec<f64>,
 }
 
@@ -230,7 +221,12 @@ pub struct ResolvedRenderOptions {
     pub debug: bool,
 }
 
-/// `resolveRenderOptions`.
+/// The default pixel budget of a whole-page picture, in device pixels.
+const DEFAULT_BUDGET_PX: f64 = 640.0;
+
+/// `resolveRenderOptions`: the settings as the strategy reads them, every
+/// value filled in. The base budget filters an advertised deployment ladder
+/// only when the app chose a width other than the default 640.
 pub fn resolve_render_options(options: &RenderConfig) -> ResolvedRenderOptions {
     let tiles = match &options.tiles {
         Some(TilesSetting::On(tiles)) => Some(tiles),
@@ -240,8 +236,10 @@ pub fn resolve_render_options(options: &RenderConfig) -> ResolvedRenderOptions {
     let prefetch = tiles.and_then(|t| t.prefetch.as_ref());
     ResolvedRenderOptions {
         full_page: ResolvedFullPage {
-            max_width: full_page.and_then(|f| f.max_width).unwrap_or(640.0),
-            max_width_explicit: full_page.and_then(|f| f.max_width).is_some(),
+            max_width: full_page.and_then(|f| f.max_width).unwrap_or(DEFAULT_BUDGET_PX),
+            max_width_explicit: full_page
+                .and_then(|f| f.max_width)
+                .is_some_and(|width| width != DEFAULT_BUDGET_PX),
             quantize: full_page.and_then(|f| f.quantize.clone()).unwrap_or(Quantize::Exact),
         },
         tiles: ResolvedTiles {
@@ -254,7 +252,6 @@ pub fn resolve_render_options(options: &RenderConfig) -> ResolvedRenderOptions {
             prefetch_margin: prefetch.and_then(|p| p.margin).unwrap_or(0.5),
             velocity_bias: prefetch.and_then(|p| p.velocity_bias).unwrap_or(true),
             settle_ms: tiles.and_then(|t| t.settle_ms).unwrap_or(150.0),
-            fade_ms: tiles.and_then(|t| t.fade_ms).unwrap_or(0.0),
             fallback_pyramid: DEFAULT_TILE_PYRAMID.to_vec(),
         },
         format: options.format,

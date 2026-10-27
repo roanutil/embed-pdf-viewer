@@ -9,7 +9,9 @@ use std::collections::BTreeSet;
 
 use super::parser::{InvalidScope, parse_scope};
 use super::types::{
-    CollabAction, CollabFilter, CollabTarget, DocCapability, IdentityClaims, ParsedScope, PdfBits,
+    CollabAction, CollabEntity, CollabFilter, CollabTarget, DocCapability, FieldAction,
+    FieldFilter, FieldGroupRight, FieldRights, FieldWriteAction, IdentityClaims, ParsedScope,
+    PdfBits,
 };
 
 /// The granted set.
@@ -104,14 +106,16 @@ pub fn check_collab(
 pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capabilities {
     let mut out = Capabilities::new();
     let mut has_annotation_collab = false;
+    let mut has_field_collab = false;
 
     for scope in parsed {
         match scope {
             ParsedScope::Capability(name) => {
                 out.insert(*name);
             }
-            ParsedScope::Virtual => add_pdf_permissions(&mut out, pdf_bits),
+            ParsedScope::Virtual => out.extend(materialize_pdf_permissions(pdf_bits)),
             ParsedScope::Collab { .. } => has_annotation_collab = true,
+            ParsedScope::FieldCollab { .. } => has_field_collab = true,
             ParsedScope::Wildcard => {}
         }
     }
@@ -139,6 +143,11 @@ pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capab
     if has_annotation_collab {
         out.insert(DocCapability::DocAnnotateRead);
     }
+    // Filling in or signing a field means seeing the form: groups limit
+    // writes, never reads.
+    if has_field_collab {
+        out.insert(DocCapability::DocFormsRead);
+    }
 
     out
 }
@@ -148,13 +157,17 @@ pub fn expand_raw_scope(raw: &[String], pdf_bits: PdfBits) -> Result<Capabilitie
     Ok(expanded_capabilities(&parse_all(raw)?, pdf_bits))
 }
 
-/// Authority to assign a specific group to an annotation.
+/// Authority to put a record of `entity` in a specific group: an
+/// annotation, or a form field (`checkSetGroup`).
 ///
-/// Independent of `doc.annotate.modify` and of group membership, both
-/// deliberately: `modify` describes row access and maps to a PDF bit, while
-/// this is a cloud-only assignment authority with no bit behind it, and
+/// Independent of the write capabilities and of group membership, both
+/// deliberately: those describe row access and map to PDF bits, while this
+/// is a cloud-only assignment authority with no bit behind it, and
 /// `set-group:group=legal` is meant to work for someone who is not in legal.
+/// Each entity's set-group is its own: an `annotations:` scope puts no field
+/// in a group, and a `fields:` scope no annotation.
 pub fn check_set_group(
+    entity: CollabEntity,
     new_group_id: &str,
     caller_default_group_id: Option<&str>,
     parsed: &[ParsedScope],
@@ -168,31 +181,155 @@ pub fn check_set_group(
     }
 
     for scope in parsed {
-        let ParsedScope::Collab { action, filter, .. } = scope else {
-            continue;
-        };
-        if !action.covers(CollabAction::SetGroup) {
-            continue;
-        }
-        match filter {
-            CollabFilter::All => return true,
-            CollabFilter::Group(id) if id == new_group_id => return true,
-            // `:self` and `:createdBy` are refused at parse time for an
-            // explicit set-group, so these only arrive through an action
-            // wildcard that is legitimate for other actions. They cannot
-            // satisfy a set-group check, so skip rather than deny: a later
-            // scope in the array may still grant it.
+        match (entity, scope) {
+            (CollabEntity::Annotations, ParsedScope::Collab { action, filter, .. }) => {
+                if !action.covers(CollabAction::SetGroup) {
+                    continue;
+                }
+                match filter {
+                    CollabFilter::All => return true,
+                    CollabFilter::Group(id) if id == new_group_id => return true,
+                    // `:self` and `:createdBy` are refused at parse time for
+                    // an explicit set-group, so these only arrive through an
+                    // action wildcard that is legitimate for other actions.
+                    // They cannot satisfy a set-group check, so skip rather
+                    // than deny: a later scope may still grant it.
+                    _ => {}
+                }
+            }
+            (CollabEntity::Fields, ParsedScope::FieldCollab { action, filter }) => {
+                if !action.covers(FieldAction::SetGroup) {
+                    continue;
+                }
+                match filter {
+                    FieldFilter::All => return true,
+                    FieldFilter::Group(id) if id == new_group_id => return true,
+                    FieldFilter::Group(_) => {}
+                }
+            }
             _ => {}
         }
     }
     false
 }
 
+/// The field scopes that name `action`, explicitly or by the wildcard.
+fn field_filters(parsed: &[ParsedScope], action: FieldAction) -> Vec<&FieldFilter> {
+    parsed
+        .iter()
+        .filter_map(|s| match s {
+            ParsedScope::FieldCollab { action: pattern, filter } if pattern.covers(action) => {
+                Some(filter)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// True iff the scope lets the caller fill in or sign a form field in
+/// `group_id` (`None` for a field in no group) (`checkFieldAction`).
+///
+/// Narrowing, per action, as for annotations: the wildcard allows; if any
+/// `fields:<action>` scope (or `fields:*`) exists, only those decide, and a
+/// field in no group then matches only `:all`; otherwise the broad
+/// capability decides for every field. Nothing here narrows form design
+/// (`doc.forms.modify`).
+///
+/// No `protection` argument, as [`check_capability`] has none: the session
+/// authority removes what the signatures forbid.
+pub fn check_field_action(
+    action: FieldWriteAction,
+    group_id: Option<&str>,
+    parsed: &[ParsedScope],
+    pdf_bits: PdfBits,
+) -> bool {
+    if has_wildcard(parsed) {
+        return true;
+    }
+    let applicable = field_filters(parsed, action.action());
+    if !applicable.is_empty() {
+        return applicable.iter().any(|filter| match filter {
+            FieldFilter::All => true,
+            FieldFilter::Group(id) => group_id == Some(id.as_str()),
+        });
+    }
+    expanded_capabilities(parsed, pdf_bits).contains(&action.broad())
+}
+
+/// Whether the scope lets the caller fill in or sign some form field: the
+/// broad capability, or any `fields:<action>` scope (`checkAnyFieldAction`).
+/// What a form verb checks before its fields are known.
+pub fn check_any_field_action(
+    action: FieldWriteAction,
+    parsed: &[ParsedScope],
+    pdf_bits: PdfBits,
+) -> bool {
+    if has_wildcard(parsed) {
+        return true;
+    }
+    if !field_filters(parsed, action.action()).is_empty() {
+        return true;
+    }
+    expanded_capabilities(parsed, pdf_bits).contains(&action.broad())
+}
+
+/// [`check_field_action`] and [`check_set_group`] for fields as group lists
+/// (`fieldRightsOf`): for each action, every field or the groups the scope
+/// names, so a designer can offer exactly the groups a field may go in.
+pub fn field_rights_of(
+    parsed: &[ParsedScope],
+    pdf_bits: PdfBits,
+    caller_default_group_id: Option<&str>,
+) -> FieldRights {
+    let wildcard = has_wildcard(parsed);
+    // Groups in the order the scopes name them, each once, then `extra`.
+    let from_scopes = |filters: Vec<&FieldFilter>, extra: Option<&str>| -> FieldGroupRight {
+        if filters.iter().any(|f| matches!(f, FieldFilter::All)) {
+            return FieldGroupRight::All;
+        }
+        let mut groups: Vec<String> = Vec::new();
+        let named = filters.iter().filter_map(|f| match f {
+            FieldFilter::Group(id) => Some(id.as_str()),
+            FieldFilter::All => None,
+        });
+        for group in named.chain(extra) {
+            if !groups.iter().any(|g| g == group) {
+                groups.push(group.to_string());
+            }
+        }
+        FieldGroupRight::Groups(groups)
+    };
+    let writing = |action: FieldWriteAction| -> FieldGroupRight {
+        if wildcard {
+            return FieldGroupRight::All;
+        }
+        let filters = field_filters(parsed, action.action());
+        if !filters.is_empty() {
+            return from_scopes(filters, None);
+        }
+        if expanded_capabilities(parsed, pdf_bits).contains(&action.broad()) {
+            FieldGroupRight::All
+        } else {
+            FieldGroupRight::none()
+        }
+    };
+    FieldRights {
+        fill: writing(FieldWriteAction::Fill),
+        sign: writing(FieldWriteAction::Sign),
+        set_group: if wildcard {
+            FieldGroupRight::All
+        } else {
+            from_scopes(field_filters(parsed, FieldAction::SetGroup), caller_default_group_id)
+        },
+    }
+}
+
 /// Test one collab filter against a target and the caller's identity.
 ///
-/// `group=X` checks membership as well as the row's group, which is what
-/// stops a token matching annotations in a group it does not belong to even
-/// when the row carries that group.
+/// Every filter but `self` compares one fact on the record with the value
+/// the scope names. `group=X` matches a record in group X whatever groups
+/// the caller belongs to (upstream 4b2cdb395 dropped the membership test):
+/// the scope is what says the caller may act on X's records.
 pub fn filter_matches(
     filter: &CollabFilter,
     target: &CollabTarget,
@@ -202,29 +339,34 @@ pub fn filter_matches(
         CollabFilter::All => true,
         CollabFilter::SelfOnly => identity.user_id.is_some() && target.user_id == identity.user_id,
         CollabFilter::CreatedBy(user_id) => target.user_id.as_deref() == Some(user_id.as_str()),
-        CollabFilter::Group(group_id) => {
-            target.group_id.as_deref() == Some(group_id.as_str())
-                && identity.groups.iter().any(|g| g == group_id)
-        }
+        CollabFilter::Group(group_id) => target.group_id.as_deref() == Some(group_id.as_str()),
     }
 }
 
-/// Translate `pdf.permissions` into concrete capabilities under these bits.
+/// The capabilities `pdf.permissions` stands for under these bits.
 ///
-/// `doc.open` and `doc.render` are unconditional because the virtual scope
-/// means "give the user a working session", and reads of annotations and form
-/// values are unconditional because ISO 32000 bit 6 governs writing and not
-/// visibility.
-fn add_pdf_permissions(out: &mut Capabilities, b: PdfBits) {
+/// `materializePdfPermissions` (`builders.ts`), the one reading of the bits:
+/// the resolver and the permission advisory
+/// ([`crate::features::security::state::advisory_from_pdf_bits`]) both use
+/// it. It follows what Acrobat allows on a file with these bits, which is
+/// broader than ISO 32000 in two places: bit 4 also allows filling in and
+/// signing, and bit 5 governs taking the text out, not finding or selecting
+/// it.
+pub fn materialize_pdf_permissions(b: PdfBits) -> Capabilities {
+    let mut out = Capabilities::new();
+
+    // A working session, and reading what is there: bit 6 governs writing
+    // annotations and form values, not seeing them, and bit 5 taking text
+    // out, not finding or selecting it.
     out.insert(DocCapability::DocOpen);
     out.insert(DocCapability::DocRender);
     out.insert(DocCapability::DocAnnotateRead);
     out.insert(DocCapability::DocFormsRead);
+    out.insert(DocCapability::DocTextSearch);
+    out.insert(DocCapability::DocTextSelect);
 
     if b.bit5 {
-        out.insert(DocCapability::DocTextSelect);
         out.insert(DocCapability::DocTextCopy);
-        out.insert(DocCapability::DocTextSearch);
         out.insert(DocCapability::DocContentCopy);
     }
     if b.bit3 {
@@ -241,22 +383,28 @@ fn add_pdf_permissions(out: &mut Capabilities, b: PdfBits) {
         out.insert(DocCapability::DocMetadataModify);
         out.insert(DocCapability::DocAttachmentsModify);
     }
-    if b.bit11 {
+    // Bit 11 assembles pages and creates outline items even when bit 4 is
+    // clear; bit 4 includes it.
+    if b.bit4 || b.bit11 {
         out.insert(DocCapability::DocPagesAssemble);
+        out.insert(DocCapability::DocOutlineModify);
     }
     if b.bit6 {
         out.insert(DocCapability::DocAnnotateModify);
     }
-    if b.bit6 || b.bit9 {
+    // Signing a signature field is filling it in, and any of the three bits
+    // lets Acrobat (and PDFium's form filler) fill in.
+    if b.bit4 || b.bit6 || b.bit9 {
         out.insert(DocCapability::DocFormsFill);
         out.insert(DocCapability::DocSign);
     }
+    // Changing existing fields takes both.
     if b.bit6 && b.bit4 {
         out.insert(DocCapability::DocFormsModify);
     }
-    // No bit expands to doc.forms.submit, doc.download,
-    // doc.download.flattened or doc.sign.certify. ISO 32000 defines no
-    // submit permission, the download capabilities are cloud-only, and a
-    // certification is grant-minted only, so they are granted explicitly or
-    // not held at all.
+    // No bit expands to doc.forms.submit, doc.forms.import, doc.forms.script,
+    // doc.annotate.import, doc.download, doc.download.flattened or
+    // doc.sign.certify: they are grant-minted or cloud-only, so they are
+    // granted explicitly or not held at all.
+    out
 }

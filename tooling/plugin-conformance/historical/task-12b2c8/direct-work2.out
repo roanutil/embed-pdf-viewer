@@ -1,0 +1,32 @@
+(node:63277) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ relative rotation uses current refs and stages an actual apply transaction (577.137542ms)
+✔ permission selectors keep assemble/download independent and wildcard grants both (1.744583ms)
+✔ relative turns see confirmed rotations and remote layouts (2.797084ms)
+✔ absolute rotate, reorder and delete expose actual successful order/count and void results (1.116459ms)
+✔ deferred changes send in staging order and deliver confirmed document event before promise settlement (0.963083ms)
+✔ blank defaults use actual neighbour size, preserve explicit count/size and return new refs (1.5615ms)
+✔ bytes stay byte-exact; insert positions name current refs and public result names pages (1.1125ms)
+✔ empty registry inserts Letter; missing refs never become implicit zero rotation (0.8485ms)
+✔ mixed rotations group in first-seen order within one transaction and return void (1.509875ms)
+✔ reorder retains neighbour positions and final order (0.88725ms)
+✔ subset insertion uses scratch full scope, selected order, extraction bytes and guaranteed close (1.663833ms)
+✔ clock-named scratch sources close for each malformed source index (2.091042ms)
+✔ cross-document refs resolve in source registry, bytes insert in destination and only source extracts (1.351375ms)
+✔ duplicate copies selected order after last page and extraction returns original bytes (1.189917ms)
+✔ scope absence and captured authority after close are distinct; selection resolves indexes and deduplicates (1.523917ms)
+✔ two quick turns see pending rotation, retain undo predictions and label one history step each (1.08975ms)
+✔ extract waits for earlier changes to settle; labels/counts distinguish all write verbs (0.384917ms)
+✔ blank positions choose each anchor or edge size and explicit count/size wins (0.811667ms)
+✔ pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download (0.555042ms)
+✔ cancelling staged write rejects caller while the change still confirms; deleting all pages is refused (0.397375ms)
+✔ closing rejects pending writes, removes subscribers and leaves late confirmation silent (0.271167ms)
+✔ selection drops deleted pages by registry read and remains stable for identical resolved selections (0.171042ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 935.6605

@@ -1,29 +1,30 @@
-//! `links.ts`: the attached-link lens. Link children stay first-class
-//! annotations; these derivations present them as the parent's `link`.
+//! `links.ts`: attached link children presented as their parent's `link`.
 
 use serde_json::Value;
 
+use crate::json;
 use crate::plane::is_attached_link;
-use crate::types::{Annot, Model, PdfLinkTarget};
+use crate::record::group_of;
+use crate::types::{Model, ModelAnnotation};
 
-/// Every attached link child of `parent_id`, in z-order.
-pub fn link_children_of<'a>(m: &'a Model, parent_id: &str) -> Vec<&'a Annot> {
-    m.order
+/// `linkChildrenOf(model, parentId)`: in z-order.
+pub fn link_children_of<'a>(model: &'a Model, parent_id: &str) -> Vec<&'a ModelAnnotation> {
+    model
+        .order
         .iter()
-        .filter_map(|id| m.by_id.get(id))
-        .filter(|a| is_attached_link(*a) && a.group.as_deref() == Some(parent_id))
+        .filter_map(|id| model.record(id))
+        .filter(|r| {
+            is_attached_link(&r.annotation) && group_of(&r.annotation).as_deref() == Some(parent_id)
+        })
         .collect()
 }
 
-/// The parent's link target, from its first attached child's DTO; `None`
-/// when there is no child, its DTO is not a link, or it has no target.
-pub fn link_of(m: &Model, parent_id: &str) -> Option<PdfLinkTarget> {
-    let data = link_children_of(m, parent_id).first()?.data.as_ref()?;
-    if data.get("subtype").and_then(Value::as_str) != Some("link") {
-        return None;
-    }
-    match data.get("target") {
-        None | Some(Value::Null) => None,
-        Some(target) => serde_json::from_value(target.clone()).ok(),
+/// `linkOf(model, parentId)`: the target of its first attached child.
+pub fn link_of(model: &Model, parent_id: &str) -> Value {
+    match link_children_of(model, parent_id).first() {
+        Some(child) if json::get_str(&child.annotation, "subtype") == Some("link") => {
+            json::get(&child.annotation, "target").cloned().unwrap_or(Value::Null)
+        }
+        _ => Value::Null,
     }
 }

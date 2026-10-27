@@ -101,19 +101,31 @@ async function readCase(entry: AppearanceCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
       const page = doc.page(first.ref);
-      const result = await page.annotations.renderAppearances({
-        ...(entry.scale !== undefined ? { scale: entry.scale } : {}),
+      // In 83f6598d2 ("Engine API v3, round 3a") `renderAppearances()` became
+      // the encoded render and `renderAppearancesRaw()` the pixels, both
+      // taking a viewport where they took a scale. Widgets left
+      // `page.annotations` for `page.forms` in 1233d1349 ("Read and write
+      // widgets through the form"), so the page's appearances are the two
+      // lists together, annotations first. Rects are page space since
+      // 7f107fd7c ("Page space, render targets and appearances").
+      const options = {
+        ...(entry.scale !== undefined ? { viewport: { kind: 'scale' as const, scale: entry.scale } } : {}),
         ...(entry.modes !== undefined ? { modes: entry.modes } : {}),
-      });
-      const appearances: Placed[] = result.appearances.map((a) => ({
-        ref: a.ref,
-        mode: a.mode,
-        rect: a.rect,
-        width: a.raster.width,
-        height: a.raster.height,
-      }));
-      return { ...entry, pageObjectNumber: first.ref.pageObjectNumber, appearances };
+      };
+      const annotations = await page.annotations.renderAppearancesRaw(options);
+      const widgets = await page.forms.renderAppearancesRaw(options);
+      const appearances: Placed[] = [...annotations.appearances, ...widgets.appearances].map(
+        (a) => ({
+          ref: a.ref,
+          mode: a.mode,
+          rect: a.rect,
+          width: a.raster.width,
+          height: a.raster.height,
+        }),
+      );
+      return { ...entry, pageObjectNumber: first.ref.objectNumber, appearances };
     } finally {
       await doc.close();
     }

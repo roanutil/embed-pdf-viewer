@@ -1,52 +1,78 @@
-//! `controller.ts`: stateless, it turns the engine handle's page service
-//! into a ref-addressed edit capability. The relative-to-absolute rotation
-//! and the placement-to-index resolution live here, once.
+//! `controller.ts`: page edits that take refs or indexes, and the page
+//! selection. Turning a page relative to its own rotation, and fixing a
+//! position's page, live here once instead of in every app's click handler.
 //!
-//! Turn costs follow the TypeScript. `ctx.doc` is the guarded handle, whose
-//! promises are plain ones (awaiting one costs a turn); the raw engine, the
-//! source document it opens and another document's handle answer with
-//! `AbortablePromise`s, which `await` adopts as thenables (three turns).
+//! A verb refuses before anything starts (permission, pages, position), then
+//! stages its edit as one change on the document's queue (`ctx.changes`):
+//! one step of the history, sent after everything staged before it. The page
+//! list shows it once the engine answers; nothing predicts pages yet.
+//!
+//! Every verb is a TypeScript `async` function, so each is a
+//! [`Promise::spawn`] here: the body runs at the call up to its first await,
+//! and a refusal before that is a rejected promise, never a throw.
 
-use std::future::Future;
+use std::cell::RefCell;
+use std::collections::HashSet;
 use std::rc::Rc;
 
 use epdf_geometry::js::number_to_string;
 use epdf_kernel::bytes::Bytes;
+use epdf_kernel::cancellable::cancellable;
+use epdf_kernel::changes::{PendingChange, StagedChange};
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::geometry::PageRef;
-use epdf_kernel::rt::{self, Promise};
-use epdf_kernel::serial_queue::SerialQueue;
-use epdf_kernel::{Controller, Error, undefined};
+use epdf_kernel::js::json_number;
+use epdf_kernel::signal::AbortSignal;
+use epdf_kernel::{Controller, DOCUMENTS, Error, Promise, rt};
 use serde_json::{Value, json};
 
-use crate::contract::{InsertBlankOptions, InsertFromBytesOptions, PagePlacement, PdfSize};
+use crate::contract::{
+    InsertBlankOptions, InsertFromBytesOptions, OperationOptions, PageArg, PageEditInsertResult,
+    PagePosition, PagePositionOptions, PdfSize, ResolvedPosition,
+};
+use crate::model::{PageEditState, selected};
 
 const CAPABILITY: &str = "page-edit";
-/// PDF bit 11 (assemble: insert, rotate, delete pages). The engine enforces it too.
-const ASSEMBLE_CAPABILITY: &str = "doc.pages.assemble";
-/// US Letter: the blank-page size when the registry is empty.
-const LETTER: PdfSize = PdfSize { width: 612.0, height: 792.0 };
+/// Inserting, rotating and deleting pages (PDF permission bit 4 or 11). The engine enforces it too.
+const ASSEMBLE: &str = "doc.pages.assemble";
+/// Copying pages out of a document is a partial download. The engine enforces it too.
+const DOWNLOAD: &str = "doc.download";
+/// The size of a blank page when the document has no page to match: Letter, in points.
+const LETTER_SIZE: PdfSize = PdfSize { width: 612.0, height: 792.0 };
 
-/// A JavaScript number as canonical JSON: the non-finite ones spelled out.
-pub fn js_number(n: f64) -> Value {
-    if n.is_nan() {
-        json!({ "$number": "NaN" })
-    } else if n.is_infinite() {
-        json!({ "$number": if n > 0.0 { "Infinity" } else { "-Infinity" } })
-    } else {
-        json!(n)
+/// What a change is called in history and refusals.
+#[derive(Clone, Copy)]
+enum PageVerb {
+    Rotate,
+    Reorder,
+    Delete,
+    InsertBlank,
+    Insert,
+    Duplicate,
+}
+
+impl PageVerb {
+    fn key(self) -> &'static str {
+        match self {
+            PageVerb::Rotate => "pages.rotate",
+            PageVerb::Reorder => "pages.reorder",
+            PageVerb::Delete => "pages.delete",
+            PageVerb::InsertBlank => "pages.insertBlank",
+            PageVerb::Insert => "pages.insert",
+            PageVerb::Duplicate => "pages.duplicate",
+        }
     }
 }
 
-/// `Math.min(a, b)`: NaN if either is.
-fn js_min(a: f64, b: f64) -> f64 {
-    if a.is_nan() || b.is_nan() { f64::NAN } else { a.min(b) }
-}
-
-/// `Math.max(a, b)`: NaN if either is.
-fn js_max(a: f64, b: f64) -> f64 {
-    if a.is_nan() || b.is_nan() { f64::NAN } else { a.max(b) }
+/// `pages[index]` for a JavaScript number: only a whole, non-negative,
+/// in-range index names an entry (`-0` is `0`).
+fn at_index(pages: &[Value], index: f64) -> Option<&Value> {
+    if index >= 0.0 && index.fract() == 0.0 && index < pages.len() as f64 {
+        pages.get(index as usize)
+    } else {
+        None
+    }
 }
 
 /// `Date.now().toString(36)`.
@@ -57,50 +83,62 @@ fn base36(ms: f64) -> String {
     }
     let mut digits = Vec::new();
     while n > 0 {
-        digits.push(std::char::from_digit((n % 36) as u32, 36).expect("digit"));
+        digits.push(std::char::from_digit((n % 36) as u32, 36).unwrap_or('0'));
         n /= 36;
     }
     digits.iter().rev().collect()
 }
 
 fn refs_json(pages: &[PageRef]) -> Value {
-    Value::Array(pages.iter().map(|p| p.to_json()).collect())
+    Value::Array(pages.iter().map(|page| page.to_json()).collect())
 }
 
-fn size_of(page: &Value) -> Option<PdfSize> {
-    serde_json::from_value(page.get("size")?.clone()).ok()
+/// `TypeError: Cannot read properties of <what> (reading '<member>')`.
+fn type_error_reading(what: &str, member: &str) -> Error {
+    Error::named("TypeError", format!("Cannot read properties of {what} (reading '{member}')"))
 }
 
-/// `await raw` on an `AbortablePromise`: the resolve-thenable job, the
-/// adopted promise's reaction, then the await's own.
-async fn await_adopted<T: Clone + 'static>(raw: Promise<T>) -> Result<T, Error> {
-    rt::tick().await;
-    let result = raw.await;
-    rt::tick().await;
-    result
+fn no_pages() -> Error {
+    plugin_error(code::INVALID_INPUT, CAPABILITY, "no pages given", None, None)
+}
+
+fn not_found(message: String) -> Error {
+    plugin_error(code::NOT_FOUND, CAPABILITY, message, None, None)
 }
 
 /// `return promise` from an `async` function: the resolve-thenable job,
-/// then the reaction that settles the function's own promise.
-async fn returned<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
+/// then the `then` reaction that settles the function's own promise. A
+/// `then` reaction, not an `await`, so an `AbortablePromise` costs no more.
+async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
-/// A registry page, resolved from a placement: its size is what a blank
-/// page inserted beside it defaults to.
-#[derive(Clone)]
-struct Anchor {
-    size: Option<PdfSize>,
+/// `mapErrors(work)`'s body, `return await work()`: an engine call outside
+/// the guarded `ctx.doc` (another document, a scratch document), its failure
+/// mapped through `toPluginError`. A plain `.await` costs what JavaScript's
+/// does: three turns for the `AbortablePromise` the raw engine and its
+/// handles answer, one for the plain promise `ctx.cancellable` returns with
+/// a signal (`rt.rs`, `IntoFuture for Promise`). A caller's `await
+/// mapErrors(...)` is the turn after that, so call sites wrap it in
+/// [`rt::returned`].
+async fn map_errors<T: Clone + 'static>(work: Promise<T>) -> Result<T, Error> {
+    work.await.map_err(|error| to_plugin_error(CAPABILITY, &error))
+}
+
+/// The memo behind `getSelected`: the answer for one registry and one state.
+struct SelectedMemo {
+    pages: Rc<Value>,
+    state: Rc<PageEditState>,
+    selected: Rc<Vec<PageRef>>,
 }
 
 struct Inner {
-    cx: Controller<Value, Value>,
-    /// Read-modify-write verbs serialize per document.
-    queue: SerialQueue,
+    cx: Controller<PageEditState, Value>,
+    selected: RefCell<Option<SelectedMemo>>,
 }
 
-/// `PageEditCapability` (and `PageEditHostCapability`, which equals it).
+/// `PageEditCapability`.
 #[derive(Clone)]
 pub struct PageEditCapability(Rc<Inner>);
 
@@ -108,412 +146,639 @@ impl PageEditCapability {
     /// Aborted when the document closes. The foreign handle, which can
     /// outlive the close, checks it before every call.
     #[cfg(feature = "uniffi")]
-    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+    pub(crate) fn lifetime(&self) -> &AbortSignal {
         self.0.cx.lifetime()
     }
 
-    /// `ctx.doc`: the guarded handle. Errs where the TypeScript getter throws.
-    fn require_doc(&self) -> Result<Rc<dyn DocumentHandle>, Error> {
-        self.0.cx.doc()
+    // ── pages ──
+
+    /// `ctx.document()?.pages ?? []`: the confirmed page list. A verb's
+    /// promise settles after the engine's page fact replaced it.
+    pub(crate) fn registry(&self) -> Rc<Value> {
+        self.0
+            .cx
+            .document()
+            .map(|meta| meta.pages)
+            .unwrap_or_else(|| Rc::new(Value::Array(Vec::new())))
     }
 
-    /// `engine(work)`: an `async` function that awaits the work and maps a
-    /// failure, thrown or rejected, through `toPluginError`.
-    fn engine<T: Clone + 'static>(
-        work: impl FnOnce() -> Result<Promise<T>, Error> + 'static,
-        adopted: bool,
-    ) -> Promise<T> {
-        Promise::spawn(async move {
-            let pending = work().map_err(|e| to_plugin_error(CAPABILITY, &e))?;
-            let result = if adopted { await_adopted(pending).await } else { pending.await };
-            result.map_err(|e| to_plugin_error(CAPABILITY, &e))
-        })
-    }
-
-    /// `ctx.document()?.pages ?? []`.
-    fn registry(&self) -> Vec<Value> {
-        self.0.cx.document().and_then(|meta| meta.pages.as_array().cloned()).unwrap_or_default()
-    }
-
-    fn entry_of(&self, page: PageRef) -> Option<Value> {
-        self.registry().into_iter().find(|p| {
-            p.get("ref").and_then(|r| r.get("pageObjectNumber")).and_then(Value::as_f64)
-                == Some(f64::from(page.page_object_number))
-        })
-    }
-
-    fn require_entry(&self, page: PageRef) -> Result<Value, Error> {
-        self.entry_of(page).ok_or_else(|| {
-            plugin_error(
-                code::NOT_FOUND,
-                CAPABILITY,
-                format!("no page {}", page.page_object_number),
-                None,
-                None,
-            )
-        })
-    }
-
-    /// A placement to the engine's index wire, from the registry at call time.
-    fn resolve_placement(
-        &self,
-        placement: Option<PagePlacement>,
-    ) -> Result<(Option<f64>, Option<Anchor>), Error> {
-        let (page, after) = match placement {
-            None | Some(PagePlacement::End) => return Ok((None, None)),
-            Some(PagePlacement::Index(index)) => return Ok((Some(index), None)),
-            Some(PagePlacement::After(page)) => (page, true),
-            Some(PagePlacement::Before(page)) => (page, false),
-        };
-        let entry = self.require_entry(page)?;
-        let index = entry.get("index").and_then(Value::as_f64).unwrap_or(f64::NAN);
-        let anchor = Anchor { size: size_of(&entry) };
-        Ok((Some(if after { index + 1.0 } else { index }), Some(anchor)))
-    }
-
-    /// Default blank-page size: the insertion point's predecessor, else the
-    /// last page, else US Letter. A predecessor index that names no page is
-    /// the TypeScript's `pages[i].size` on `undefined`.
-    fn neighbour_size(&self, dest_index: Option<f64>) -> Result<Option<PdfSize>, Error> {
-        let pages = self.registry();
-        if pages.is_empty() {
-            return Ok(Some(LETTER));
+    /// `ctx.getPage(page)`: the page's layout, or `None`.
+    fn find_page(&self, page: PageArg) -> Option<Value> {
+        let registry = self.registry();
+        let pages = registry.as_array()?;
+        match page {
+            PageArg::Ref(page) => pages.iter().find(|layout| page.names(layout)).cloned(),
+            PageArg::ForeignRef(_) => None,
+            PageArg::Index(index) => at_index(pages, index).cloned(),
         }
-        let Some(dest_index) = dest_index else {
-            return Ok(pages.last().and_then(size_of));
+    }
+
+    /// `ctx.pageOf(page)`: the page's layout, or `not-found`.
+    fn page_of(&self, page: PageArg) -> Result<Value, Error> {
+        self.find_page(page).ok_or_else(|| not_found(page.not_found_message()))
+    }
+
+    /// `ctx.pageOf(page).ref`.
+    fn ref_of(&self, page: PageArg) -> Result<PageRef, Error> {
+        let layout = self.page_of(page)?;
+        layout
+            .get("ref")
+            .and_then(PageRef::from_json)
+            .ok_or_else(|| not_found(page.not_found_message()))
+    }
+
+    /// `refsOf(pages)`: a verb's pages as refs, checked when it is called. An
+    /// index names the page at that position now, the page the user clicked.
+    fn refs_of(&self, pages: &[PageArg]) -> Result<Vec<PageRef>, Error> {
+        if pages.is_empty() {
+            return Err(no_pages());
+        }
+        pages.iter().map(|page| self.ref_of(*page)).collect()
+    }
+
+    /// `positionOf(position)`: its page checked when the verb is called, like
+    /// the verb's own pages. Default `End`.
+    fn position_of(&self, position: Option<PagePosition>) -> Result<ResolvedPosition, Error> {
+        Ok(match position {
+            None | Some(PagePosition::End) => ResolvedPosition::End,
+            Some(PagePosition::Start) => ResolvedPosition::Start,
+            Some(PagePosition::After(page)) => ResolvedPosition::After(self.ref_of(page)?),
+            Some(PagePosition::Before(page)) => ResolvedPosition::Before(self.ref_of(page)?),
+        })
+    }
+
+    /// `sizeAt(position)`: the page the position names, else the page the new
+    /// ones go next to (the first or the last), else Letter. `None` is the
+    /// TypeScript's `undefined`, a layout without a `size`.
+    fn size_at(&self, position: ResolvedPosition) -> Result<Option<Value>, Error> {
+        let page = match position {
+            ResolvedPosition::After(page) | ResolvedPosition::Before(page) => {
+                return Ok(self.page_of(PageArg::Ref(page))?.get("size").cloned());
+            }
+            ResolvedPosition::Start | ResolvedPosition::End => position,
         };
-        let at = js_max(0.0, js_min(dest_index - 1.0, pages.len() as f64 - 1.0));
-        if at.fract() != 0.0 || at.is_nan() {
-            return Err(Error::named(
-                "TypeError",
-                "Cannot read properties of undefined (reading 'size')",
+        let registry = self.registry();
+        let pages = registry.as_array().map(Vec::as_slice).unwrap_or_default();
+        let neighbour = if page == ResolvedPosition::Start { pages.first() } else { pages.last() };
+        Ok(match neighbour {
+            None => Some(json!(LETTER_SIZE)),
+            Some(layout) => layout.get("size").cloned(),
+        })
+    }
+
+    // ── the selection ──
+
+    /// The selected pages, in the order they were selected; pages the
+    /// document no longer has drop out. The same registry and selection
+    /// answer the same list.
+    pub fn get_selected(&self) -> Rc<Vec<PageRef>> {
+        let pages = self.registry();
+        let state = self.0.cx.state();
+        let mut memo = self.0.selected.borrow_mut();
+        if let Some(memo) = memo.as_ref()
+            && Rc::ptr_eq(&memo.pages, &pages)
+            && Rc::ptr_eq(&memo.state, &state)
+        {
+            return memo.selected.clone();
+        }
+        let selected = Rc::new(if state.selected.is_empty() {
+            Vec::new()
+        } else {
+            let present: HashSet<PageRef> = pages
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|layout| layout.get("ref").and_then(PageRef::from_json))
+                .collect();
+            state.selected.iter().copied().filter(|page| present.contains(page)).collect()
+        });
+        *memo = Some(SelectedMemo { pages, state, selected: selected.clone() });
+        selected
+    }
+
+    /// Make these pages the selection; `[]` clears it. Pages the document
+    /// doesn't have are left out.
+    pub fn select(&self, pages: &[PageArg]) {
+        let refs: Vec<PageRef> = pages
+            .iter()
+            .filter_map(|page| self.find_page(*page)?.get("ref").and_then(PageRef::from_json))
+            .collect();
+        self.0.cx.update_state(|state| selected(state, &refs));
+    }
+
+    // ── writes ──
+
+    /// Whether rotating, reordering, deleting and inserting pages is allowed
+    /// (`doc.pages.assemble`).
+    pub fn can_edit(&self) -> bool {
+        self.0.cx.allows(ASSEMBLE)
+    }
+
+    /// Whether copying pages out is allowed (`doc.download`): `extract()`,
+    /// `duplicate()` and `insert_from_document()` need it.
+    pub fn can_extract(&self) -> bool {
+        self.0.cx.allows(DOWNLOAD)
+    }
+
+    /// `refuse(permission, operation, options)`: refuse before anything
+    /// starts, without the right or once the caller cancelled.
+    fn refuse(
+        &self,
+        permission: &str,
+        operation: &str,
+        signal: Option<&AbortSignal>,
+    ) -> Result<(), Error> {
+        self.0.cx.assert_allowed(permission, operation)?;
+        if signal.is_some_and(AbortSignal::aborted) {
+            return Err(plugin_error(
+                code::OPERATION_CANCELLED,
+                CAPABILITY,
+                format!("{operation} was cancelled"),
+                None,
+                None,
             ));
         }
-        Ok(size_of(&pages[at as usize]))
+        Ok(())
     }
 
-    /// `insertAt(doc, bytes, placement)`.
-    fn insert_at(
+    /// `stageChange(verb, count, ops, undo)`: one user action, one change,
+    /// one step of the history. Its label counts the pages it acts on, when
+    /// the verb knows how many.
+    fn stage_change(
         &self,
-        doc: Rc<dyn DocumentHandle>,
-        bytes: Value,
-        placement: Option<PagePlacement>,
-    ) -> Promise<Value> {
-        let this = self.clone();
-        Self::engine(
-            move || {
-                let (dest, _) = match this.resolve_placement(placement) {
-                    Ok(resolved) => resolved,
-                    Err(error) => {
-                        // An extract's `{"$hostBytes": id}` is parked in the
-                        // host until something reads it; nothing will now,
-                        // so read it here to let it go. Rust-only: the
-                        // TypeScript holds the bytes in memory, not a table.
-                        if bytes.get("$hostBytes").is_some() {
-                            let _ = Bytes::from_json(&bytes);
-                        }
-                        return Err(error);
-                    }
-                };
-                let dest = dest.map_or_else(undefined, js_number);
-                Ok(doc.call("pages.insert", None, vec![bytes, dest]))
-            },
-            false,
+        verb: PageVerb,
+        count: Option<f64>,
+        ops: Vec<Value>,
+        undo: Option<Vec<Value>>,
+    ) -> Result<PendingChange, Error> {
+        let label = match count {
+            None => json!({ "key": verb.key() }),
+            Some(count) => json!({ "key": verb.key(), "count": json_number(count) }),
+        };
+        let mut change = StagedChange::ops(label, ops);
+        if let Some(undo) = undo {
+            change.undo = undo;
+        }
+        self.0.cx.changes()?.stage(change)
+    }
+
+    /// `answer(change, options)`: the engine's answer to a staged change, its
+    /// first item.
+    async fn answer(
+        change: PendingChange,
+        signal: Option<AbortSignal>,
+    ) -> Result<Option<Value>, Error> {
+        let result = cancellable(CAPABILITY, signal, change.result())
+            .await
+            .map_err(|error| to_plugin_error(CAPABILITY, &error))?;
+        // `result.items[0]`, inside the `try`: an answer without `items` is
+        // the TypeError reading `0`, mapped like an engine failure.
+        match result.get("items") {
+            Some(Value::Array(items)) => Ok(items.first().cloned()),
+            Some(Value::Object(items)) => Ok(items.get("0").cloned()),
+            Some(Value::Null) => Err(type_error_reading("null", "0")),
+            Some(_) => Ok(None),
+            None => Err(type_error_reading("undefined", "0")),
+        }
+        .map_err(|error| to_plugin_error(CAPABILITY, &error))
+    }
+
+    /// `inserted(change, options)`: what an insert's answer names, the new
+    /// pages. An answer with no item throws the `in` TypeError, unmapped.
+    fn inserted(
+        change: PendingChange,
+        signal: Option<AbortSignal>,
+    ) -> Promise<PageEditInsertResult> {
+        Promise::spawn(async move {
+            let item = rt::returned(Self::answer(change, signal)).await?;
+            // `'insertedPages' in item`: any object answers, an array too;
+            // `undefined` or a primitive throws.
+            let pages = match item {
+                Some(Value::Object(item)) => match item.get("insertedPages") {
+                    Some(Value::Array(pages)) => pages.clone(),
+                    _ => Vec::new(),
+                },
+                Some(Value::Array(_)) => Vec::new(),
+                other => {
+                    let shown = match other {
+                        Some(Value::String(text)) => text,
+                        Some(value) => value.to_string(),
+                        None => "undefined".to_string(),
+                    };
+                    return Err(Error::named(
+                        "TypeError",
+                        format!(
+                            "Cannot use 'in' operator to search for 'insertedPages' in {shown}"
+                        ),
+                    ));
+                }
+            };
+            Ok(PageEditInsertResult { pages })
+        })
+    }
+
+    /// `rotationOf(ref)`: a page's rotation once this session's changes on
+    /// their way apply, the last rotation one of them gives it, else the
+    /// page's own. What a turn starts from, so two quick quarter turns are a
+    /// half turn. A rotation that is not a number reads as `NaN`, as
+    /// `undefined + delta` does.
+    fn rotation_of(&self, page: PageRef) -> Result<f64, Error> {
+        let rotation_value = |value: Option<&Value>| value.and_then(Value::as_f64);
+        let mut rotation = rotation_value(self.page_of(PageArg::Ref(page))?.get("rotation"));
+        for change in self.0.cx.changes()?.pending() {
+            for op in change.shows() {
+                if op.get("type").and_then(Value::as_str) != Some("pages.rotate") {
+                    continue;
+                }
+                let names = op.get("pages").and_then(Value::as_array).is_some_and(|pages| {
+                    pages.iter().any(|p| {
+                        p.get("objectNumber").and_then(Value::as_f64)
+                            == Some(f64::from(page.page_object_number))
+                    })
+                });
+                if names {
+                    rotation = rotation_value(op.get("rotation"));
+                }
+            }
+        }
+        Ok(rotation.unwrap_or(f64::NAN))
+    }
+
+    /// `rotate(refs, rotationAfter)`: rotate pages as one change, one op per
+    /// rotation they end up with. Undoing it is each page turned back, so a
+    /// turn right after an undo starts from where the undo leaves the page.
+    /// The groups are keyed the way a `Map` keys numbers (`NaN` is one key,
+    /// `-0` is `0`), in first-seen order.
+    fn rotate(
+        &self,
+        refs: &[PageRef],
+        rotation_after: impl Fn(&Self, PageRef) -> Result<f64, Error>,
+    ) -> Result<PendingChange, Error> {
+        fn add(groups: &mut Vec<(f64, Vec<PageRef>)>, rotation: f64, page: PageRef) {
+            let same = |key: f64| key == rotation || (key.is_nan() && rotation.is_nan());
+            match groups.iter_mut().find(|(key, _)| same(*key)) {
+                Some((_, pages)) => pages.push(page),
+                None => groups.push((rotation, vec![page])),
+            }
+        }
+        let mut after = Vec::new();
+        let mut before = Vec::new();
+        for page in refs {
+            add(&mut before, self.rotation_of(*page)?, *page);
+            add(&mut after, rotation_after(self, *page)?, *page);
+        }
+        let ops_of = |groups: Vec<(f64, Vec<PageRef>)>| -> Vec<Value> {
+            groups
+                .into_iter()
+                .map(|(rotation, pages)| {
+                    json!({ "type": "pages.rotate", "pages": refs_json(&pages), "rotation": json_number(rotation) })
+                })
+                .collect()
+        };
+        self.stage_change(
+            PageVerb::Rotate,
+            Some(refs.len() as f64),
+            ops_of(after),
+            Some(ops_of(before)),
         )
     }
 
-    fn enqueue<T: Clone + 'static>(
+    /// `settled(options)`: the pages as they show, every change on its way
+    /// sent and answered first, so a copy holds the edits made before it.
+    async fn settled(&self, signal: Option<AbortSignal>) -> Result<(), Error> {
+        let changes = self.0.cx.changes()?;
+        changes.send_holds();
+        cancellable(CAPABILITY, signal, changes.when_settled()).await
+    }
+
+    /// `extractShown(refs, options)`: copy pages of this document out, as
+    /// they show.
+    async fn extract_shown(
         &self,
-        operation: impl FnOnce(PageEditCapability) -> Result<Promise<T>, Error> + 'static,
-    ) -> Promise<T> {
-        let this = self.clone();
-        self.0.queue.run(move || operation(this))
+        refs: Vec<PageRef>,
+        signal: Option<AbortSignal>,
+    ) -> Result<Value, Error> {
+        rt::returned(self.settled(signal.clone())).await?;
+        let doc = self.0.cx.doc()?;
+        adopt(cancellable(
+            CAPABILITY,
+            signal,
+            doc.call("pages.extract", None, vec![refs_json(&refs)]),
+        ))
+        .await
     }
 
-    fn enqueue_async<T: Clone + 'static, F: Future<Output = Result<T, Error>> + 'static>(
+    /// `insertBytes(verb, count, bytes, position, options)`: stage the insert
+    /// of a PDF's pages; resolves the new pages.
+    fn insert_bytes(
         &self,
-        operation: impl FnOnce(PageEditCapability) -> F + 'static,
-    ) -> Promise<T> {
-        self.enqueue(move |this| Ok(Promise::spawn(operation(this))))
-    }
-
-    /// Whether this caller may make structural page edits: the session
-    /// grants `doc.pages.assemble`. Wildcard-aware, as the engine's own
-    /// enforcement is. Errs only where the TypeScript's `ctx.doc` throws.
-    pub fn can_edit(&self) -> Result<bool, Error> {
-        Ok(self.require_doc()?.security().allows(ASSEMBLE_CAPABILITY))
-    }
-
-    /// Rotate pages by a relative turn. Each page's own rotation is read
-    /// from the registry; pages are grouped by the resulting absolute
-    /// rotation (one engine call per group, in first-seen order), and the
-    /// last group's answer is the result.
-    pub fn rotate_by(&self, pages: Vec<PageRef>, delta: f64) -> Promise<Value> {
-        self.enqueue_async(move |this| async move {
-            let doc = this.require_doc()?;
-            let mut groups: Vec<(f64, Vec<PageRef>)> = Vec::new();
-            for page in pages {
-                let rotation = this
-                    .require_entry(page)?
-                    .get("rotation")
-                    .and_then(Value::as_f64)
-                    .unwrap_or(f64::NAN);
-                // Wrap to [0, 360): the double mod keeps -90 from 0 at 270.
-                let next = (((rotation + delta) % 360.0) + 360.0) % 360.0;
-                // A `Map` key compares by SameValueZero: NaN is one key.
-                match groups.iter_mut().find(|(r, _)| *r == next || (r.is_nan() && next.is_nan())) {
-                    Some(group) => group.1.push(page),
-                    None => groups.push((next, vec![page])),
+        verb: PageVerb,
+        count: Option<f64>,
+        source: Value,
+        position: ResolvedPosition,
+        signal: Option<AbortSignal>,
+    ) -> Promise<PageEditInsertResult> {
+        let op =
+            json!({ "type": "pages.insert", "source": source, "position": position.to_json() });
+        match self.stage_change(verb, count, vec![op], None) {
+            Ok(change) => Self::inserted(change, signal),
+            Err(error) => {
+                // An extract's `{"$hostBytes": n}` is parked in the host until
+                // something reads it; nothing will now, so read it here to let
+                // it go. Rust-only: the TypeScript holds the bytes in memory.
+                if source.get("$hostBytes").is_some() {
+                    let _ = Bytes::from_json(&source);
                 }
+                Promise::rejected(error)
             }
-            let mut result = None;
-            for (rotation, group) in groups {
-                let doc = doc.clone();
-                let call = move || {
-                    Ok(doc.call("pages.rotate", None, vec![refs_json(&group), js_number(rotation)]))
-                };
-                result = Some(Self::engine(call, false).await?);
-            }
-            result.ok_or_else(|| {
-                plugin_error(code::INVALID_INPUT, CAPABILITY, "no pages given", None, None)
-            })
-        })
+        }
     }
 
-    /// Set one absolute rotation on pages.
-    pub fn set_rotation(&self, pages: Vec<PageRef>, rotation: f64) -> Promise<Value> {
-        self.enqueue(move |this| {
-            Ok(Self::engine(
-                move || {
-                    Ok(this.require_doc()?.call(
-                        "pages.rotate",
-                        None,
-                        vec![refs_json(&pages), js_number(rotation)],
-                    ))
-                },
-                false,
-            ))
-        })
-    }
-
-    /// Reorder pages as a contiguous block at the placement (the end when
-    /// there is none).
-    pub fn move_pages(
+    /// `pagesOfBytes(bytes, pageIndexes, signal)`: some pages of a PDF. Open
+    /// the bytes beside the document and extract them, and close the source
+    /// again whatever happened.
+    async fn pages_of_bytes(
         &self,
-        pages: Vec<PageRef>,
-        placement: Option<PagePlacement>,
-    ) -> Promise<Value> {
-        self.enqueue(move |this| {
-            let doc = this.require_doc()?;
-            let (dest, _) = this.resolve_placement(placement)?;
-            Ok(Self::engine(
-                move || {
-                    let dest = dest.unwrap_or_else(|| this.registry().len() as f64);
-                    Ok(doc.call("pages.move", None, vec![refs_json(&pages), js_number(dest)]))
-                },
-                false,
-            ))
+        bytes: &Bytes,
+        page_indexes: &[f64],
+        signal: Option<AbortSignal>,
+    ) -> Result<Value, Error> {
+        let engine = self.0.cx.engine().ok_or_else(|| Error::new("[page-edit] no engine"))?;
+        let input = json!({
+            "kind": "bytes",
+            "id": format!("page-edit-source-{}", base36(rt::now())),
+            "bytes": bytes.to_json(),
+        });
+        let opened = engine.open(input, Some(json!({ "scope": ["*"] })));
+        let source = rt::returned(map_errors(opened)).await?;
+        let copied = async {
+            let listed = source.call("pages.list", None, Vec::new());
+            let layout =
+                rt::returned(map_errors(cancellable(CAPABILITY, signal.clone(), listed))).await?;
+            let pages = layout.get("pages").and_then(Value::as_array).cloned().unwrap_or_default();
+            let mut refs = Vec::with_capacity(page_indexes.len());
+            for index in page_indexes {
+                let page = at_index(&pages, *index).ok_or_else(|| {
+                    not_found(format!("the PDF has no page {}", number_to_string(*index)))
+                })?;
+                refs.push(page.get("ref").cloned().unwrap_or(Value::Null));
+            }
+            let extracted = source.call("pages.extract", None, vec![Value::Array(refs)]);
+            rt::returned(map_errors(cancellable(CAPABILITY, signal, extracted))).await
+        }
+        .await;
+        // `finally { await source.close() }`: a close failure wins, unmapped.
+        source.call("close", None, Vec::new()).await?;
+        copied
+    }
+
+    // ── the verbs ──
+
+    /// Turn each page by a quarter or half turn from its rotation, the one it
+    /// has once the edits on their way apply: two quick quarter turns are a
+    /// half turn. `delta` is any JavaScript number; the wrap is done in
+    /// `f64`, as the TypeScript does it.
+    pub fn rotate_by(
+        &self,
+        pages: Vec<PageArg>,
+        delta: f64,
+        options: OperationOptions,
+    ) -> Promise<()> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.rotateBy", options.signal.as_ref())?;
+            let refs = this.refs_of(&pages)?;
+            // The double modulo keeps -90 from 0 at 270.
+            let change = this.rotate(&refs, |this, page| {
+                Ok((((this.rotation_of(page)? + delta) % 360.0) + 360.0) % 360.0)
+            })?;
+            rt::returned(Self::answer(change, options.signal)).await?;
+            Ok(())
         })
     }
 
-    /// `move_pages` to the end, as Swift's `.end` means it. The engine
-    /// counts its destination in the pages left once the moved ones are
-    /// detached, so TypeScript's `move(pages, 'end')`, which sends the full
-    /// page count, is always refused; this sends that count less the pages
-    /// moving, read from the registry when the queued edit runs.
-    #[cfg(feature = "uniffi")]
-    pub(crate) fn move_pages_to_end(&self, pages: Vec<PageRef>) -> Promise<Value> {
-        self.enqueue(move |this| {
-            let doc = this.require_doc()?;
-            Ok(Self::engine(
-                move || {
-                    let mut moving: Vec<u32> = pages
-                        .iter()
-                        .filter(|page| this.entry_of(**page).is_some())
-                        .map(|page| page.page_object_number)
-                        .collect();
-                    moving.sort_unstable();
-                    moving.dedup();
-                    let dest = this.registry().len().saturating_sub(moving.len()) as f64;
-                    Ok(doc.call("pages.move", None, vec![refs_json(&pages), js_number(dest)]))
-                },
-                false,
-            ))
+    /// Give every page the same rotation.
+    pub fn set_rotation(
+        &self,
+        pages: Vec<PageArg>,
+        rotation: f64,
+        options: OperationOptions,
+    ) -> Promise<()> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.setRotation", options.signal.as_ref())?;
+            let refs = this.refs_of(&pages)?;
+            let change = this.rotate(&refs, |_, _| Ok(rotation))?;
+            rt::returned(Self::answer(change, options.signal)).await?;
+            Ok(())
         })
     }
 
-    /// Delete pages. The engine rejects deleting every page.
-    pub fn delete(&self, pages: Vec<PageRef>) -> Promise<Value> {
-        self.enqueue(move |this| {
-            Ok(Self::engine(
-                move || Ok(this.require_doc()?.call("pages.delete", None, vec![refs_json(&pages)])),
-                false,
-            ))
+    /// Move pages to `position`; several pages keep their order and land
+    /// together.
+    pub fn reorder(
+        &self,
+        pages: Vec<PageArg>,
+        position: PagePosition,
+        options: OperationOptions,
+    ) -> Promise<()> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.reorder", options.signal.as_ref())?;
+            let refs = this.refs_of(&pages)?;
+            let position = this.position_of(Some(position))?;
+            let op = json!({ "type": "pages.reorder", "pages": refs_json(&refs), "position": position.to_json() });
+            let change =
+                this.stage_change(PageVerb::Reorder, Some(refs.len() as f64), vec![op], None)?;
+            rt::returned(Self::answer(change, options.signal)).await?;
+            Ok(())
         })
     }
 
-    /// Blank pages. A ref placement matches the anchor's size; everything
-    /// else matches the neighbour the new page will follow.
-    pub fn insert_blank(&self, options: InsertBlankOptions) -> Promise<Value> {
-        self.enqueue(move |this| {
-            let doc = this.require_doc()?;
-            let (dest, anchor) = this.resolve_placement(options.placement)?;
-            let size = match options.size.or_else(|| anchor.and_then(|a| a.size)) {
-                Some(size) => Some(size),
-                None => this.neighbour_size(dest)?,
+    /// Delete pages. Deleting every page is refused (`invalid-input`): a
+    /// document keeps one.
+    pub fn delete(&self, pages: Vec<PageArg>, options: OperationOptions) -> Promise<()> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.delete", options.signal.as_ref())?;
+            let refs = this.refs_of(&pages)?;
+            let deleting: HashSet<PageRef> = refs.iter().copied().collect();
+            let registry = this.registry();
+            let every = registry.as_array().into_iter().flatten().all(|layout| {
+                layout
+                    .get("ref")
+                    .and_then(PageRef::from_json)
+                    .is_some_and(|r| deleting.contains(&r))
+            });
+            if every {
+                return Err(plugin_error(
+                    code::INVALID_INPUT,
+                    CAPABILITY,
+                    "a document keeps at least one page",
+                    None,
+                    None,
+                ));
+            }
+            let op = json!({ "type": "pages.delete", "pages": refs_json(&refs) });
+            let change =
+                this.stage_change(PageVerb::Delete, Some(refs.len() as f64), vec![op], None)?;
+            rt::returned(Self::answer(change, options.signal)).await?;
+            Ok(())
+        })
+    }
+
+    /// Insert blank pages, one unless `count` says more.
+    pub fn insert_blank(&self, options: InsertBlankOptions) -> Promise<PageEditInsertResult> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.insertBlank", options.signal.as_ref())?;
+            let position = this.position_of(options.position)?;
+            let count = options.count.unwrap_or(1.0);
+            let size = match options.size {
+                Some(size) => Some(json!(size)),
+                None => this.size_at(position)?,
             };
-            Ok(Self::engine(
-                move || {
-                    let mut spec = serde_json::Map::new();
-                    if let Some(size) = size {
-                        spec.insert("size".into(), json!(size));
-                    }
-                    if let Some(count) = options.count {
-                        spec.insert("count".into(), js_number(count));
-                    }
-                    let dest = dest.map_or_else(undefined, js_number);
-                    Ok(doc.call("pages.insertBlank", None, vec![Value::Object(spec), dest]))
-                },
-                false,
-            ))
+            let mut spec = serde_json::Map::new();
+            if let Some(size) = size {
+                spec.insert("size".into(), size);
+            }
+            spec.insert("count".into(), json_number(count));
+            let op = json!({ "type": "pages.insertBlank", "spec": spec, "position": position.to_json() });
+            let change = this.stage_change(PageVerb::InsertBlank, Some(count), vec![op], None)?;
+            adopt(Self::inserted(change, options.signal)).await
         })
     }
 
-    /// Pages of another PDF. A subset by index opens the bytes beside the
-    /// document, extracts the chosen pages, inserts them and closes the
-    /// source again, whatever happened.
+    /// Insert the pages of another PDF, or only the ones at `page_indexes`.
     pub fn insert_from_bytes(
         &self,
         bytes: Bytes,
         options: InsertFromBytesOptions,
-    ) -> Promise<Value> {
-        self.enqueue_async(move |this| async move {
-            let doc = this.require_doc()?;
-            let Some(indexes) = options.page_indexes else {
-                return returned(this.insert_at(doc, bytes.to_json(), options.placement)).await;
-            };
-            let engine = this.0.cx.engine().ok_or_else(|| Error::new("[page-edit] no engine"))?;
-            let input = json!({
-                "kind": "bytes",
-                "id": format!("page-edit-source-{}", base36(rt::now())),
-                "bytes": bytes.to_json(),
-            });
-            let source =
-                Self::engine(move || Ok(engine.open(input, Some(json!({ "scope": ["*"] })))), true)
-                    .await?;
-            let inserted = async {
-                let list = source.clone();
-                let layout =
-                    Self::engine(move || Ok(list.call("pages.list", None, Vec::new())), true)
-                        .await?;
-                let listed =
-                    layout.get("pages").and_then(Value::as_array).cloned().unwrap_or_default();
-                let mut refs = Vec::new();
-                for index in indexes {
-                    let page = (index >= 0.0 && index.fract() == 0.0)
-                        .then(|| listed.get(index as usize))
-                        .flatten()
-                        .ok_or_else(|| {
-                            plugin_error(
-                                code::NOT_FOUND,
-                                CAPABILITY,
-                                format!("the PDF has no page {}", number_to_string(index)),
-                                None,
-                                None,
-                            )
-                        })?;
-                    refs.push(page.get("ref").cloned().unwrap_or(Value::Null));
+    ) -> Promise<PageEditInsertResult> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.insertFromBytes", options.signal.as_ref())?;
+            let position = this.position_of(options.position)?;
+            let signal = options.signal;
+            let (source, count) = match options.page_indexes {
+                Some(indexes) if indexes.is_empty() => return Err(no_pages()),
+                Some(indexes) => {
+                    let pages =
+                        rt::returned(this.pages_of_bytes(&bytes, &indexes, signal.clone())).await?;
+                    (pages, Some(indexes.len() as f64))
                 }
-                let extract = source.clone();
-                let subset = Self::engine(
-                    move || Ok(extract.call("pages.extract", None, vec![Value::Array(refs)])),
-                    true,
-                )
-                .await?;
-                this.insert_at(doc, subset, options.placement).await
-            }
-            .await;
-            // `finally { await source.close() }`: a close failure wins.
-            await_adopted(source.call("close", None, Vec::new())).await?;
-            inserted
+                None => (bytes.to_json(), None),
+            };
+            adopt(this.insert_bytes(PageVerb::Insert, count, source, position, signal)).await
         })
     }
 
-    /// Pages of another open document.
+    /// Insert copies of pages from another document open in the viewer.
+    /// Needs `doc.download` on that document and `doc.pages.assemble` on this
+    /// one. The pages are the other document's, so its page list resolves
+    /// them.
     pub fn insert_from_document(
         &self,
         document_id: String,
-        pages: Vec<PageRef>,
-        placement: Option<PagePlacement>,
-    ) -> Promise<Value> {
-        self.enqueue_async(move |this| async move {
-            let doc = this.require_doc()?;
-            let other = this.0.cx.document_handle(Some(&document_id)).ok_or_else(|| {
-                plugin_error(
-                    code::NOT_FOUND,
-                    CAPABILITY,
-                    format!("document '{document_id}' is not open"),
-                    None,
-                    None,
-                )
-            })?;
-            let bytes = Self::engine(
-                move || Ok(other.call("pages.extract", None, vec![refs_json(&pages)])),
-                true,
-            )
+        pages: Vec<PageArg>,
+        options: PagePositionOptions,
+    ) -> Promise<PageEditInsertResult> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.insertFromDocument", options.signal.as_ref())?;
+            if pages.is_empty() {
+                return Err(no_pages());
+            }
+            let other: Rc<dyn DocumentHandle> = this
+                .0
+                .cx
+                .document_handle(Some(&document_id))
+                .ok_or_else(|| not_found(format!("document '{document_id}' is not open")))?;
+            let other_pages = this.0.cx.get(&DOCUMENTS)?.list_pages(Some(&document_id));
+            let mut refs = Vec::with_capacity(pages.len());
+            for page in &pages {
+                let found = match *page {
+                    PageArg::Index(index) => at_index(&other_pages, index),
+                    PageArg::Ref(page) => other_pages.iter().find(|layout| page.names(layout)),
+                    PageArg::ForeignRef(_) => None,
+                };
+                let found = found
+                    .and_then(|layout| layout.get("ref").and_then(PageRef::from_json))
+                    .ok_or_else(|| {
+                        not_found(format!("document '{document_id}' has no such page"))
+                    })?;
+                refs.push(found);
+            }
+            let position = this.position_of(options.position)?;
+            // The other document's session decides whether its pages may be
+            // copied out: the engine refuses `doc.download` there with the
+            // permission named.
+            let extracted = other.call("pages.extract", None, vec![refs_json(&refs)]);
+            let bytes = rt::returned(map_errors(cancellable(
+                CAPABILITY,
+                options.signal.clone(),
+                extracted,
+            )))
             .await?;
-            returned(this.insert_at(doc, bytes, placement)).await
+            adopt(this.insert_bytes(
+                PageVerb::Insert,
+                Some(refs.len() as f64),
+                bytes,
+                position,
+                options.signal,
+            ))
+            .await
         })
     }
 
-    /// Copy pages within the document; by default right after the last of them.
+    /// Copy pages as they show, with the edits on their way, right after the
+    /// last of them unless `position` says otherwise.
     pub fn duplicate(
         &self,
-        pages: Vec<PageRef>,
-        placement: Option<PagePlacement>,
-    ) -> Promise<Value> {
-        self.enqueue_async(move |this| async move {
-            let doc = this.require_doc()?;
-            let Some(last) = pages.last().copied() else {
-                return Err(plugin_error(
-                    code::INVALID_INPUT,
-                    CAPABILITY,
-                    "no pages given",
-                    None,
-                    None,
-                ));
+        pages: Vec<PageArg>,
+        options: PagePositionOptions,
+    ) -> Promise<PageEditInsertResult> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.refuse(ASSEMBLE, "pageEdit.duplicate", options.signal.as_ref())?;
+            this.0.cx.assert_allowed(DOWNLOAD, "pageEdit.duplicate")?;
+            let refs = this.refs_of(&pages)?;
+            let position = match options.position {
+                Some(position) => this.position_of(Some(position))?,
+                None => ResolvedPosition::After(*refs.last().ok_or_else(no_pages)?),
             };
-            let source = doc.clone();
-            let bytes = Self::engine(
-                move || Ok(source.call("pages.extract", None, vec![refs_json(&pages)])),
-                false,
-            )
-            .await?;
-            let placement = placement.or(Some(PagePlacement::After(last)));
-            returned(this.insert_at(doc, bytes, placement)).await
+            let count = refs.len() as f64;
+            let bytes = rt::returned(this.extract_shown(refs, options.signal.clone())).await?;
+            adopt(this.insert_bytes(
+                PageVerb::Duplicate,
+                Some(count),
+                bytes,
+                position,
+                options.signal,
+            ))
+            .await
         })
     }
 
-    /// A new PDF from a page subset. Not serialized with the edits.
-    pub fn extract(&self, pages: Vec<PageRef>) -> Promise<Bytes> {
+    /// Copy pages into a new PDF, as they show with the edits on their way,
+    /// and resolve its bytes. This document doesn't change.
+    pub fn extract(&self, pages: Vec<PageArg>, options: OperationOptions) -> Promise<Bytes> {
         let this = self.clone();
-        let extracted = Self::engine(
-            move || Ok(this.require_doc()?.call("pages.extract", None, vec![refs_json(&pages)])),
-            false,
-        );
-        // Read as bytes the moment it settles, so the conversion costs no turn.
-        let (promise, resolver) = Promise::pending();
-        extracted.on_settle(move |result| {
-            resolver.settle(result.clone().and_then(|value| {
-                Bytes::from_json(&value)
-                    .ok_or_else(|| Error::new("[page-edit] extract answered no bytes"))
+        Promise::spawn(async move {
+            this.refuse(DOWNLOAD, "pageEdit.extract", options.signal.as_ref())?;
+            let refs = this.refs_of(&pages)?;
+            let value = adopt(Promise::spawn({
+                let this = this.clone();
+                async move { this.extract_shown(refs, options.signal).await }
             }))
-        });
-        promise
+            .await?;
+            Bytes::from_json(&value)
+                .ok_or_else(|| Error::new("[page-edit] extract answered no bytes"))
+        })
     }
 }
 
 /// `createPageEditController(ctx)`: the api; the plugin has no `connect`.
-pub fn create_page_edit_controller(cx: Controller<Value, Value>) -> PageEditCapability {
-    PageEditCapability(Rc::new(Inner { cx, queue: SerialQueue::new() }))
+pub fn create_page_edit_controller(cx: Controller<PageEditState, Value>) -> PageEditCapability {
+    PageEditCapability(Rc::new(Inner { cx, selected: RefCell::new(None) }))
 }

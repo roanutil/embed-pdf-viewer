@@ -1,5 +1,6 @@
 import CustomDump
 import EmbedPDF
+import Foundation
 import Testing
 
 extension BaseSuite {
@@ -22,14 +23,14 @@ extension BaseSuite {
 
     @Test func aBareTargetIsLabelled() async throws {
       let (_, _, link, page) = try await opened()
-      let uri = try await link.label(for: PdfLinkTarget.uri(uri: "https://example.invalid/x"))
+      let uri = try await link.label(forTargetJSON: #"{"kind": "uri", "uri": "https://example.invalid/x"}"#)
       expectNoDifference(uri, "https://example.invalid/x")
-      let named = try await link.label(for: PdfLinkTarget.named(name: "NextPage"))
+      let named = try await link.label(forTargetJSON: #"{"kind": "named", "name": "NextPage"}"#)
       expectNoDifference(named, "NextPage")
       // The same label a listed link gets for its own target.
       let listed = try #require(try await link.links(on: page).first)
       let byLink = try await link.label(for: listed)
-      let byTarget = try await link.label(for: listed.target)
+      let byTarget = try await link.label(forTargetJSON: listed.targetJson)
       expectNoDifference(byTarget, byLink)
     }
 
@@ -48,14 +49,13 @@ extension BaseSuite {
     @Test func aGotoLinkWithoutAStageReportsItsDestination() async throws {
       let (_, _, link, page) = try await opened()
       let activation = try await link.activate(at: Point(x: 100, y: 85), on: page)
-      guard case let .destination(destination) = activation else {
+      guard case let .destination(destinationJSON) = activation else {
         Issue.record("expected a destination, got \(String(describing: activation))")
         return
       }
-      guard case .xyz = destination else {
-        Issue.record("expected an xyz destination, got \(destination)")
-        return
-      }
+      // The page-space `PageDestination` record.
+      let destination = try JSONSerialization.jsonObject(with: Data(destinationJSON.utf8)) as? [String: Any]
+      expectNoDifference(destination?["kind"] as? String, "xyz")
     }
 
     @Test func aTapOnALinkActivatesItOnceTheTapHandlerIsRegistered() async throws {

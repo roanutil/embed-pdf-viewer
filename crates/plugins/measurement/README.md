@@ -1,137 +1,107 @@
 # epdf-plugin-measurement
 
-`packages/plugin/measurement` in Rust, on the v3 controller shape. All 57 cases replay identically
-(`cargo test -p epdf-plugin-measurement`):
+`packages/plugin/measurement` in Rust, ported to the current TypeScript (Task 13.22). `create()`
+builds the controller, each page's viewports are a kernel page mirror of the engine's
+`page.measure.listViewports`, re-read on a confirmed `pages.scaleSet`, and a scale write goes through
+`page.measure.setScale` before the annotation plugin re-measures the page. The settings are
+registered with the kernel (`defaultScale`, replaced whole, and `presets`). 64 cases replay
+(`cargo test -p epdf-plugin-measurement`), with no member-order allowance:
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/measurement.json` | scenario | 18 | page scale with and without the engine's `page.measure` service (owned, foreign and default viewports, refused reads, refresh epochs, `page.viewportsChanged`, `stream.desynced` and `document.versioned`), single- and multi-page scale writes with re-measurement, units, area units, precision and presets, the calibration flow, readouts, `createMeasurement`, authority, a throwing listener, inserted and deleted pages, and closing the document mid-change |
-| `vectors/plugins/measurement-functions.json` | function | 39 | `measurementReducer`, `initialMeasurementState`, `DEFAULT_PRESETS`, `defaultMeasure`, `selectPageScale`, `withUnit`, `withAreaUnit` and `withPrecision` |
+| `vectors/plugins/measurement.json` | scenario | 19 | page scale from owned, foreign and default viewports, refused reads and retries, refresh epochs, `stream.desynced` and `document.versioned`, single- and multi-page writes with re-measurement, the write preflight, units, area units, precision and presets, the calibration flow, readouts, `createMeasurement`, authority, a throwing listener, inserted and deleted pages, and closing the document mid-change |
+| `vectors/plugins/measurement-functions.json` | function | 45 | the named state transitions, `DEFAULT_PRESETS`, `defaultMeasure`, `selectPageScale`, `pageScaleOf`, `withUnit`, `withAreaUnit` and `withPrecision` |
 
 The scenarios run the real interaction and annotation adapters beside this one, because the plugin
 requires both. The generator is `tooling/plugin-conformance/src/suites/measurement.ts`.
 
-## The API
+The conformance fake gives every page a `measure` service, as the TypeScript fake does
+(`fake-engine.ts:678`; Ruling13.22, `83fb65435`).
 
-`measurement_plugin(MeasurementConfig)` builds the plugin, `MEASUREMENT` is its token and
-`MeasurementCapability` its capability, which is also `MeasurementHostCapability`. The members are
-the TypeScript's in snake case: `can_calibrate`, `can_measure`, `get_page_scale`, `ensure_loaded`,
-`is_busy`, `list_last_reports`, `list_presets`, `list_units`, `list_area_units`, `get_readout`,
-`measure_distance`, `measure_area`, `get_calibration_request`, `set_scale`, `calibrate`,
-`set_unit`, `set_area_unit`, `set_precision`, `set_preset`, `clear_scale`, `create_measurement`,
-`start_calibration`, `dismiss_calibration` and the four `on_*` hooks.
+`tests/behavior.rs` covers what the brief asks beyond the printed traces: the three read states
+`pageScaleOf` projects, a calibration capture that ends where the drag's last `move` left it (the
+`up` does not move it, `packages/core/annotation/src/update/draw.ts:203`), `calibrate` refusing
+lengths that are not finite and positive before anything reaches the engine, and a close while
+changes run, where the all-pages change resolves one `scaleError` per page, the queued single-page
+change rejects `instance-closed`, and the closed-state update is reported once.
 
-`set_scale` takes the measure as JSON. The TypeScript runs `assertWritableMeasure` over whatever
-object it was handed, and a malformed member has to fail with its message (`Missing x formats`,
-`Only rectilinear measures can be authored`), not a decode error. `units.rs` ports that preflight
-over JSON, along with the rest of `engine-core`'s measurement helpers that
-`epdf_annotation_core::measure` does not carry: the unit table, `measureFromRatio` and
-`measureFromKnownLength` on the default format, `measurementPoint` and `viewportForPoint`.
+## The public API
 
-Where the TypeScript throws synchronously, the Rust returns `Err`: `measure_distance` and
-`measure_area` on a page not in the document, `ensure_loaded` once the plugin is disposed, and
-`start_calibration` when the hub refuses the tool.
+`measurement_plugin(MeasurementConfig)` builds the plugin (`measurement_plugin_json` takes the
+registered settings as JSON), `MEASUREMENT` is its token and `MeasurementCapability` its capability,
+which is also `MeasurementHostCapability`. The members are the TypeScript's in snake case:
+`get_settings`, `update_settings`, `reset_settings`, `on_settings_changed`, `can_measure`,
+`get_page_scale`, `is_busy`, `list_last_reports`, `list_presets`, `list_units`, `list_area_units`,
+`get_readout`, `measure_distance`, `measure_area`, `get_calibration_request`, `set_scale`,
+`calibrate`, `set_unit`, `set_area_unit`, `set_precision`, `set_preset`, `clear_scale`,
+`start_calibration`, `dismiss_calibration`, `create_measurement`, `can_calibrate`, `ensure_loaded`
+and the four `on_*` events.
 
-A throwing listener goes to `console.error('[measurement] listener failed:', error)`, which comes in
-as `MeasurementConfig::host`. The generator logs it as a `console.error` callback
-(`listener-throws`).
+Measures, viewports, readouts and re-measurement reports are the engine's records as JSON (`Value`),
+so a member the caller wrote survives a round trip, and the write preflight
+(`assertWritableMeasure`, annotation-core's) refuses a malformed measure with the TypeScript's
+message. A page argument is `PageInput`, a `PageRef` or a display index; `PageTarget` adds `All` and a
+list. `get_page_scale` returns an `Rc<PageScale>` that stays the same while the page's viewports,
+read state, layout and default scale do. It is a `Result` because the TypeScript throws there: when
+the `defaultScale` setting cannot be built in the page's user unit, and when the registry still
+names the page after the document handle is gone. A read whose answer has no `viewports` leaves the
+page not ready, as the TypeScript's `undefined` does.
 
-## Turn order
+## Migrating from the pre-13.22 API
 
-`enqueue` is `(previous ?? Promise.resolve()).catch(() => {}).then(action)`. That is one turn for
-the `catch` reaction, one for the `then` reaction that calls the action, and one for adopting the
-promise the action returns, and `write/scale.rs` spends each explicitly. Engine calls go through
-`epdf_plugin_annotation::promise::await_engine` (three turns), and `change` awaits
-`epdf_plugin_annotation::promise::all`, as `await Promise.all(...)` does.
+For the viewer host and `epdf-web` (Task 13.33).
 
-A refresh without the measure service runs its whole `async` body at call time. Its `finally`
-therefore drops the read from `reading` before `refresh` records it, and the settled read stays
-recorded. The port keeps that order, so a later `ensure_loaded` joins the old read.
+| Old | New |
+|---|---|
+| `measurement_plugin(MeasurementConfig { default_scale, presets, host })` | the same without `host`; a throwing listener goes to the kernel's report |
+| `DefaultScale::Measure(Box<PdfMeasurement>)` | `DefaultScale::Measure(Value)` |
+| typed `PdfMeasurement`, `MeasurementViewport`, `RecalibrationReport` | `Value` records |
+| `PageScale { measure: Option<PdfMeasurement>, source: ScaleSource, .. }` | `measure: Value` (`null` for none), `source: &'static str` |
+| `PageTarget::Page(PageRef)`, `Pages(Vec<PageRef>)` | `PageTarget::Page(PageInput)`, `Pages(Vec<PageInput>)` |
+| `get_page_scale(&PageRef) -> PageScale` | `get_page_scale(page) -> Result<Rc<PageScale>, Error>`; `can_measure`, `measure_distance` and `measure_area` are fallible the same way |
+| `ensure_loaded(&PageRef)` | `ensure_loaded(page, OperationOptions)` |
+| `CalibrateOptions { recalculate, apply_to }`, `KnownDistance` | `CalibrateOptions { change: ScaleChangeOptions, apply_to }`, `KnownLength` |
+| `create_measurement(input)` resolving a ref | `create_measurement(input, OperationOptions)` resolving `{ annotation }` |
+| `get_readout(&AnnotationRef) -> Readout` | `get_readout(&Value) -> Value` |
+| `MeasurementState { pages, pending, calibration, reports }`, `MeasurementAction`, `measurement_reducer`, `PageEntry` | `MeasurementState { pending, calibration, reports, load_errors, local_viewports }` and the named transitions in `model`; the viewports live in the page mirror |
+| `units::measure_from_ratio_typed`, `decode_measure`, `range_error` | removed; `units` answers JSON |
+| ffi `ScaleChangeOptions` | ffi `MeasurementScaleChangeOptions` |
+| ffi `AnnotationRef` in readouts and reports | `annotation_json` strings |
 
-## Where the port differs in shape
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task
+13.33. The native host answers `page.measure.listViewports` with `{ viewports }`.
 
-The slice and the page scale hold the measure as the typed `PdfMeasurement`, so a key that type does
-not name is dropped where the TypeScript keeps the caller's object. No vector feeds one.
+## Defensive absent-service branches
 
-An engine event listener cannot return an error in Rust. A synchronous throw from a refresh there
-(the plugin disposed, or the engine not knowing the page) is dropped, where the TypeScript's would
-escape the engine's `emit`. No vector throws there.
+`sync/viewports.ts:47` reads a page's session-only viewports, and `write/scale.ts:81` writes them,
+when `doc.page(page).measure` is undefined. The current engine contract requires the service, and
+the TypeScript fake supplies it on every page, so no vector reaches either branch: the vectors cover
+the required service and its refusals. The port keeps both branches line for line
+(`sync/viewports.rs`, `write/scale.rs::save`) without a case of its own, as the Task 12b ruling on
+malformed absent services asks. `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` runs the
+in-memory branch over a test kernel whose handle answers `has("page.measure")` false
+(`TestSpec::lacking`, Task 13.33).
 
-`createMeasurementCapability`, the build-and-connect helper the unit tests use, is not ported;
-`create_measurement_controller` and `MeasurementCapability::connect` are the same two steps.
+## Where the port differs
 
-## Coverage
+Kept Rust-only divergences, none reached by a vector:
 
-The suite reaches 1,126 of the package's 1,135 statements and 247 of its 259 branches (c8, as
-`src/coverage.ts` counts them). What is left cannot be reached from the public surface:
+- `withUnit` and `withAreaUnit` test the base unit with `basis in METRES`, which also accepts
+  `Object.prototype` keys such as `constructor`. The port looks the unit up in the table.
+- A base unit that is not a string throws a `TypeError` whose message is the port's own; the
+  TypeScript's names its own call site. `withPrecision` over a format list that is not an array does
+  the same.
+- `get_readout` computes the readout per call. The TypeScript caches it per annotation object, which
+  only shows as identity; the annotation plugin hands Rust a fresh record per read.
+- A captured calibration draft whose page is not a `PageRef` makes no request; the TypeScript would
+  store it.
+- A malformed measure is read as annotation-core reads it, loosely, where its README lists the kept
+  differences.
+- The typed `get_settings` and `list_presets` refuse a `presets` setting that is not a list of
+  presets with a `TypeError`; the TypeScript hands back whatever was written, as `settings_json`
+  still does.
 
-- `controller.ts:56-62`, `createMeasurementCapability`, which only the package's unit tests call.
-- `services/store.ts:36`, `sync/viewports.ts:107` and `write/calibration.ts:31`: a document plugin
-  always has `ctx.doc`, so `?? false` and the two `if (!doc) return` never run.
-- `services/store.ts:49` and `sync/viewports.ts:109`, `123` and `126`, the `?? []` after
-  `ctx.document()?.pages`. A document plugin always has its document.
-- `sync/viewports.ts:28`, `publish` on a disposed plugin. Both callers check first.
-- `sync/viewports.ts:71` and `write/scale.ts:79`, the `?? []` for a page with no slice entry.
-  `refresh` dispatches the entry before it reads, and `save` runs after `ensureLoaded`.
-- `write/calibration.ts:44-46`, the `catch` around `toPage`. The annotation plugin only captures a
-  draft on a page whose crop it can read from the same registry.
-- `write/scale.ts:164`, `(error as Error).message ?? error`. The calibration helpers only throw
-  `RangeError`s, which have a message.
+These are registered in `docs/research/rust-plugins-branch-review.md`, "Status".
 
-## TypeScript behavior the vectors pin
-
-`setScale('all')` re-measures nothing (`set-scale-on-several-pages`). Each page calls the
-annotation plugin's `remeasurePage` at once, each call starts a rehydration, and every page reports
-`Annotation hydration is incomplete`. This looks like a bug in how the two plugins meet, not in
-either alone.
-
-The draft listener checks `doc.annotate.modify` again, but the annotation plugin already refuses a
-capture tool without it, so that branch is dead (`calibration-needs-modify` in `annotation-api.json`
-pins the annotation side).
-
-`withUnit` and `withAreaUnit` test the base unit with `basis in METRES`, which also accepts
-`Object.prototype` keys such as `constructor`. The port looks the unit up in the table.
-
-Closing the document while a viewport read is in flight dispatches the error scale after the
-instance closed, because the guarded call rejects before the store's cleanup marks it disposed. The
-kernel drops the dispatch and reports it once (`close-mid-flight`).
-
-## Mutation testing
-
-`scripts/mutants.sh -p epdf-plugin-measurement --test-package epdf-plugin-measurement --file
-<file>`, file by file over every module but `harness.rs`, catches 245 of 248 viable mutants (245
-caught, 0 timeouts; 124 unviable). The run left 27 survivors. 23 of them are killed by new cases
-and one by a unit test, each checked by applying the mutant by hand:
-
-- `set-scale-preflight` sends malformed and edge-case measures through a single-page `setScale`,
-  which rejects with the preflight's message. It kills 18 in `units.rs`. A zero conversion kills
-  `valid_number_format` as `true`, `num_member` as `Some(1.0)` and `||` to `&&` at `:187`. A
-  precision of 1.5 kills `is_integer` as `true` and its `&&` to `||`; `1e10` kills `||` to `&&` at
-  `:193`. A format whose unit is the number 5 fails as a number format, and both `&&` to `||` at
-  `:236` and `:237` let it through to fail as text instead. A non-string `thousands` kills `text_ok`
-  as `true`. A measure without a distance list kills `&&` to `||` at `:228`. An origin at `1e39`
-  kills `assert_pdf_float` as `Ok(())` and its guard as `true`; a finite origin kills the guard as
-  `false`. A decimal format with no precision kills `==` to `!=` at `:192`, whose default of 16 is
-  not a power of ten. A `labelPosition`, a `fixed` flag and a CYX of 1 kill the deleted `!` at
-  `:247` and `:252` and `<=` to `>` at `:269`. A calibration over 7 points writes `1 in =
-  10.285714 m`, which kills `to_precision` as `1.0`: every earlier calibration came out at exactly
-  1.
-- A `plan` preset with a paper length of 2 in `imperial-default-and-custom-presets` kills `/` to
-  `*` for `real / paper` in `measure_from_ratio` (`units.rs:148`). Every other preset has a paper
-  length of 1.
-- `select-beside-the-centre`, a viewport that spans the crop centre's height but not its x, kills
-  both `&&` to `||` in `viewport_for_point` (`units.rs:285`). `select-on-a-raised-crop` kills `+`
-  to `-` for the centre's y in `select_page_scale` (`scale.rs:62`): every earlier crop started at 0.
-- `with-unit-keeps-precision` kills the `kept_precision` guard as `true` (`scale.rs:96`).
-- `tests/api.rs` kills `ScaleChangeReport::page` as `Default::default()` (`contract.rs:213`). The
-  accessor is Rust only, and nothing in the crate calls it.
-
-The 3 survivors:
-
-- `src/contract.rs:28`, the `s == "all"` guard in `PageTarget`'s decoder as `true`. It turns any
-  string into `All`. The TypeScript's `PageTarget` admits no string but `'all'`, and the Rust
-  decoder rejects any other before the plugin sees it, so no vector can carry one.
-- `src/model.rs:63`, `initial_measurement_state` as `Default::default()`. The body is already
-  `MeasurementState::default()`.
-- `src/read/scale.rs:77`, the `!raw.is_null()` guard in `get_readout` as `true`. A null DTO has no
-  subtype, so `readout_of_dto` answers `not-dimension`, the same as the fallback arm.
+`write/scale.rs` keeps each page's queue tail beside the kernel's `SerialQueue`, because a download
+waits on `queue.idle()` (`ctx.onSettle`) and the kernel queue has no `idle`.

@@ -1,8 +1,11 @@
 # epdf-acrojs
 
 `packages/core/acrojs` in Rust: the host side of Acrobat JavaScript. All 75 cases in
-`vectors/core/acrojs.json` and all 17 in `vectors/core/acrojs-host.json` replay identically
-(`cargo test -p epdf-acrojs`).
+`vectors/core/acrojs.json` and all 20 in `vectors/core/acrojs-host.json` pass
+(`cargo test -p epdf-acrojs`). One passes through a named exception:
+`dispose-pending-factory` releases the second realm at the repeated `dispose()`, where this crate
+releases it when the queue drains (M13, `22ca510e6`). The entry is in
+`crates/plugin-conformance/outcome-exceptions.json`.
 
 What ports is `host.ts`, `input.ts`, `color.ts`, `actions.ts` and the contract and constants in
 `types.ts`. What doesn't is `prelude.ts`, the JavaScript that runs inside the sandbox. We ship its
@@ -37,6 +40,10 @@ callback always rejects with one, and Rust has only `Error`.
 
 `vectors/coverage.json` lists `prelude.ts` at 11/1217 statements because the actions plugin imports
 the package index, which loads it. That file doesn't port, so its number is not a gap.
+
+These counts are from the port before Task 13.8, and the line numbers point into it: the field
+view in `input.rs` and the identity members in `host.rs` have changed since. The list is stale
+and the run has not been repeated; not re-run since 172f5369d.
 
 `cargo mutants -p epdf-acrojs --test-package epdf-acrojs` catches 177 of 185 viable mutants (33
 unviable). Each survivor builds the same observable result:

@@ -37,13 +37,14 @@ fn text(value: &Value, key: &str) -> Option<String> {
 }
 
 /// `validateSignatures`: one verdict per signed signature, as JSON.
+///
+/// `signatures` is a required member of the current `DocumentHandle`
+/// (`DocumentHandle.ts:71`), so the TypeScript's `!doc.signatures` guard
+/// never fires; an engine without the service refuses `signatures.list`.
 pub async fn validate_signatures(
     doc: Rc<dyn DocumentHandle>,
     options: ValidateOptions,
 ) -> Result<Value, Error> {
-    if !doc.has("signatures") {
-        return Err(Error::new("this engine does not implement signatures"));
-    }
     let snapshot = doc.call("signatures.list", None, vec![]).await?;
     let mut verdicts = Vec::new();
     for signature in
@@ -78,7 +79,7 @@ async fn validate_one(
         let field = signature.get("field").cloned().unwrap_or(Value::Null);
         let outcome: Result<(), Option<ParseError>> = async {
             let contents = doc
-                .call("signatures.contents", None, vec![field.clone()])
+                .call("signatures.getContents", None, vec![field.clone()])
                 .await
                 .map_err(|_| None)?;
             let bytes = Bytes::from_json(&contents).map(|b| b.0).unwrap_or_default();
@@ -86,7 +87,7 @@ async fn validate_one(
             internal = Some(parsed.clone());
             let digest = doc
                 .call(
-                    "signatures.digest",
+                    "signatures.getDigest",
                     None,
                     vec![field, json!(parsed.parsed.digest_algorithm.name())],
                 )

@@ -11,13 +11,13 @@
  * reducer and the handle policy.
  */
 import {
-  buildPageTextLayout,
-  expandTextRangeToLine,
-  expandTextRangeToWord,
-  sliceTextByChars,
-  textGlyphAt,
-  textGlyphQuad,
-  textSegmentsForRange,
+  createTextLayout,
+  pageGeometryOf,
+  pdfPointOf,
+  pageQuadOf,
+  pageTextSegmentOf,
+  type PdfCoordinates,
+  sliceText,
   type PageGeometrySnapshot,
   type PageTextSnapshot,
   type PageRef,
@@ -32,29 +32,60 @@ import {
   selectionHandleGeom,
   selectionPlugin,
 } from '../../../../packages/plugin/selection/src/index';
-import type { SelectionHandleEndpoint, SelectionHandleView } from '../../../../packages/plugin/selection/src/index';
+import type {
+  SelectionHandleEndpoint,
+  SelectionHandleView,
+} from '../../../../packages/plugin/selection/src/index';
+import { SelectionToken } from '../../../../packages/plugin/selection/src/host-contract';
 import {
-  SelectionToken,
-  buildSelectionPageGeometry,
-  contentPointToPdf,
+  clearSelection,
   initialSelectionState,
-  reduceSelection,
-  toContentSegment,
-  toContentTextQuad,
-} from '../../../../packages/plugin/selection/src/internal';
+  setHighlightHidden,
+  setSelecting,
+  setSelection,
+  type SelectionState,
+} from '../../../../packages/plugin/selection/src/model';
 
 import { createCapabilityToken, type AnyPlugin, type OperationOptions } from '@embedpdf/core';
-import type { SelectionConfig, TextRange } from '../../../../packages/plugin/selection/src/contract';
+import type {
+  SelectionConfig,
+  TextRange,
+} from '../../../../packages/plugin/selection/src/contract';
 import type { SelectionHostCapability } from '../../../../packages/plugin/selection/src/host-contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
+
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
+import { confirmedEvent } from './current-event-fixtures';
+
+// ── upstream's text layout ───────────────────────────────────────────────────
+//
+// a10ed2659 made the free layout functions internal: a page's layout is a
+// `TextLayout` (`createTextLayout`), and words, lines, quads and segments
+// are its methods. `charAt` takes no tolerance any more. `sliceTextByChars`
+// became `sliceText(snapshot, range)`. These reach the same code there.
+
+type Layout = ReturnType<typeof createTextLayout>;
+const buildPageTextLayout = (snap: PageGeometrySnapshot): Layout => createTextLayout(snap);
+const textGlyphAt = (layout: Layout, p: { x: number; y: number }) => layout.charAt(p);
+const expandTextRangeToWord = (layout: Layout, glyph: number) => layout.wordAt(glyph);
+const expandTextRangeToLine = (layout: Layout, glyph: number) => layout.lineAt(glyph);
+const textGlyphQuad = (layout: Layout, glyph: number) => layout.charQuad(glyph);
+const textSegmentsForRange = (layout: Layout, start: number, count: number) =>
+  layout.segments({ start, count });
+const sliceTextByChars = (snap: PageTextSnapshot, from: number, to: number) =>
+  sliceText(snap, { start: from, count: to - from });
+
+// Historical content/PDF bridge targets were removed in 3bad82c8d.
+// Exact pre-migration definitions and case arguments: git show 6bba125f9:tooling/plugin-conformance/src/suites/selection.ts.
+// Their surviving conversions below call engine page/PDF helpers; layout probes consume page-space snapshots directly.
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
   snapshot: 'none',
-  reason: "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
+  reason:
+    'Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its committed stateChanges are compared; full snapshots are omitted.',
 } as const;
 
 // ── harness shims ────────────────────────────────────────────────────────────
@@ -76,7 +107,9 @@ const controllerNamed = (name: string): AbortController => {
 const withSignal = (options: unknown): OperationOptions | undefined => {
   if (!options || typeof options !== 'object') return options as undefined;
   const spec = (options as { signal?: { $abortSignal?: string } }).signal;
-  return spec?.$abortSignal !== undefined ? { ...options, signal: controllerNamed(spec.$abortSignal).signal } : (options as OperationOptions);
+  return spec?.$abortSignal !== undefined
+    ? { ...options, signal: controllerNamed(spec.$abortSignal).signal }
+    : (options as OperationOptions);
 };
 
 registerPlugin('selection', {
@@ -92,7 +125,8 @@ registerPlugin('selection', {
           api: {
             ...cap,
             readText: (options?: unknown) => cap.readText(withSignal(options)),
-            readTextInRange: (range: TextRange, options?: unknown) => cap.readTextInRange(range, withSignal(options)),
+            readTextInRange: (range: TextRange, options?: unknown) =>
+              cap.readTextInRange(range, withSignal(options)),
           },
           connect,
         };
@@ -108,7 +142,7 @@ registerPlugin('selection-signals', {
     ({
       id: 'selection-test/signals',
       token: SignalsToken,
-      capability: () => ({ abort: (name: string) => controllerNamed(name).abort() }),
+      create: () => ({ api: { abort: (name: string) => controllerNamed(name).abort() } }),
     }) as AnyPlugin,
   tokens: [SignalsToken],
 });
@@ -119,59 +153,84 @@ const W = 6;
 const H = 12;
 const ZERO = { left: 0, bottom: 0, right: 0, top: 0 };
 
-type Glyph = { looseBox: PdfRect; flags: number; tightBox?: PdfRect };
+type Glyph = { loose: PdfRect; space?: true; empty?: true; tight?: PdfRect };
+type PdfGeometrySnapshot = PageGeometrySnapshot<PdfCoordinates>;
 
 /** Upright glyphs for `text` from `x`, one 6-wide cell per character;
  *  spaces carry the space flag and no tight box. */
 const glyphs = (text: string, x: number, top: number): Glyph[] =>
   [...text].map((ch, i) => {
     const left = x + i * W;
-    const looseBox = { left, bottom: top - H, right: left + W, top };
-    if (ch === ' ') return { looseBox, flags: 1 };
-    return { looseBox, flags: 0, tightBox: { left: left + 0.5, bottom: top - H + 1, right: left + W - 0.5, top: top - 1 } };
+    const loose = { left, bottom: top - H, right: left + W, top };
+    if (ch === ' ')
+      return {
+        loose,
+        ...(1 & 1 ? { space: true as const } : {}),
+        ...(1 & 2 ? { empty: true as const } : {}),
+      };
+    return {
+      loose,
+      ...(0 & 1 ? { space: true as const } : {}),
+      ...(0 & 2 ? { empty: true as const } : {}),
+      tight: { left: left + 0.5, bottom: top - H + 1, right: left + W - 0.5, top: top - 1 },
+    };
   });
 
 /** A generated line break: PDFium's `\r\n`, two empty characters. */
 const newline: Glyph[] = [
-  { looseBox: ZERO, flags: 2 },
-  { looseBox: ZERO, flags: 2 },
+  {
+    loose: ZERO,
+    ...(2 & 1 ? { space: true as const } : {}),
+    ...(2 & 2 ? { empty: true as const } : {}),
+  },
+  {
+    loose: ZERO,
+    ...(2 & 1 ? { space: true as const } : {}),
+    ...(2 & 2 ? { empty: true as const } : {}),
+  },
 ];
 
-const run = (charStart: number, gs: Glyph[], fontSize = 12) => {
-  const real = gs.filter((g) => !(g.flags & 2));
+const run = (start: number, gs: Glyph[], fontSize = 12) => {
+  const real = gs.filter((g) => !g.empty);
   return {
     rect: {
-      left: Math.min(...real.map((g) => g.looseBox.left)),
-      bottom: Math.min(...real.map((g) => g.looseBox.bottom)),
-      right: Math.max(...real.map((g) => g.looseBox.right)),
-      top: Math.max(...real.map((g) => g.looseBox.top)),
+      left: Math.min(...real.map((g) => g.loose.left)),
+      bottom: Math.min(...real.map((g) => g.loose.bottom)),
+      right: Math.max(...real.map((g) => g.loose.right)),
+      top: Math.max(...real.map((g) => g.loose.top)),
     },
-    charStart,
+    start,
     glyphs: gs,
     fontSize,
   };
 };
 
 /** Page 1: "Hello world\r\nSecond line", two lines. */
-const geo1: PageGeometrySnapshot = {
-  runs: [run(0, [...glyphs('Hello world', 50, 750), ...newline]), run(13, glyphs('Second line', 50, 730))],
+const geo1: PdfGeometrySnapshot = {
+  runs: [
+    run(0, [...glyphs('Hello world', 50, 750), ...newline]),
+    run(13, glyphs('Second line', 50, 730)),
+  ],
 };
 const text1: PageTextSnapshot = { text: 'Hello world\r\nSecond line', charCount: 24 };
 
 /** Page 5: one line, on a page whose crop box is offset. */
-const geo5: PageGeometrySnapshot = { runs: [run(0, glyphs('Page two text', 40, 700))] };
+const geo5: PdfGeometrySnapshot = { runs: [run(0, glyphs('Page two text', 40, 700))] };
 const text5: PageTextSnapshot = { text: 'Page two text', charCount: 13 };
 
 /** Page 9: "A😀B": three characters, four UTF-16 units, so a char map. */
-const geo9: PageGeometrySnapshot = { runs: [run(0, glyphs('AxB', 100, 600))] };
+const geo9: PdfGeometrySnapshot = { runs: [run(0, glyphs('AxB', 100, 600))] };
 const text9: PageTextSnapshot = { text: 'A😀B', charCount: 3, charMap: [[2, 3]] };
 
 /** Page 13: a left-to-right line over a right-to-left one. */
-const geo13: PageGeometrySnapshot = {
+const geo13: PdfGeometrySnapshot = {
   runs: [run(0, glyphs('abc', 50, 750)), run(3, glyphs('fed', 50, 730).reverse())],
 };
 
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+const pr = (pon: number): import('@embedpdf/engine-core/runtime').PageRef => ({
+  kind: 'objectNumber',
+  objectNumber: pon,
+});
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
 const offset = { left: 10, bottom: 20, right: 610, top: 820 };
 const layout = (index: number, pon: number, over: Record<string, unknown> = {}) => ({
@@ -179,23 +238,35 @@ const layout = (index: number, pon: number, over: Record<string, unknown> = {}) 
   ref: pr(pon),
   label: null,
   size: { width: 600, height: 800 },
-  rotation: 0,
+  rotation: 0 as const,
   userUnit: 1,
-  boxes: { media: box, crop: box },
+  boxes: {
+    media: { x: 0, y: 0, width: 600, height: 800 },
+    crop: { x: 0, y: 0, width: 600, height: 800 },
+    bleed: { x: 0, y: 0, width: 600, height: 800 },
+    trim: { x: 0, y: 0, width: 600, height: 800 },
+    art: { x: 0, y: 0, width: 600, height: 800 },
+  },
+  pdfCropBox: box,
+  tabOrder: null,
   ...over,
 });
-const pages = [layout(0, 1), layout(1, 5, { boxes: { media: offset, crop: offset }, rotation: 90 }), layout(2, 9)];
+const pages = [layout(0, 1), layout(1, 5, { pdfCropBox: offset, rotation: 90 }), layout(2, 9)];
+
+const textLayoutFixture = (snapshot: PdfGeometrySnapshot, pon = 1) => ({
+  $textLayout: pageGeometryOf(snapshot, pon === 5 ? offset : box),
+});
 
 const both = ['doc.text.select', 'doc.text.copy'];
 const geometryReads: ResponseSpec[] = [
-  { path: 'page.geometry.read', pon: 1, value: geo1 },
-  { path: 'page.geometry.read', pon: 5, value: geo5 },
-  { path: 'page.geometry.read', pon: 9, value: geo9 },
+  { path: 'page.text.layout', pon: 1, value: textLayoutFixture(geo1, 1) },
+  { path: 'page.text.layout', pon: 5, value: textLayoutFixture(geo5, 5) },
+  { path: 'page.text.layout', pon: 9, value: textLayoutFixture(geo9, 9) },
 ];
 const textReads: ResponseSpec[] = [
-  { path: 'page.text.read', pon: 1, value: text1 },
-  { path: 'page.text.read', pon: 5, value: text5 },
-  { path: 'page.text.read', pon: 9, value: text9 },
+  { path: 'page.text.get', pon: 1, value: text1 },
+  { path: 'page.text.get', pon: 5, value: text5 },
+  { path: 'page.text.get', pon: 9, value: text9 },
 ];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
   pages,
@@ -219,7 +290,7 @@ const RENAMED: Readonly<Record<string, string>> = {
   beginAt: 'beginGestureAt',
   end: 'endGesture',
   ensurePage: 'ensureLoaded',
-  isSelecting: 'isGestureActive',
+  isSelecting: 'isSelecting',
   menuAnchor: 'getAnchor',
   onChange: 'onChanged',
   onCommit: 'onCommitted',
@@ -229,7 +300,17 @@ const RENAMED: Readonly<Record<string, string>> = {
   snapshot: 'getSnapshot',
   highlightVisible: 'isHighlightVisible',
 };
-const PAGE_FIRST = new Set(['beginAt', 'ensurePage', 'isLoaded', 'isOverText', 'rectsForPage', 'segmentsForPage', 'selectWordAt', 'selectLineAt', 'extendTo']);
+const PAGE_FIRST = new Set([
+  'beginAt',
+  'ensurePage',
+  'isLoaded',
+  'isOverText',
+  'rectsForPage',
+  'segmentsForPage',
+  'selectWordAt',
+  'selectLineAt',
+  'extendTo',
+]);
 /** `{pon}` → `{page}` inside a v2 range. */
 const rangeOf = (range: unknown): unknown => {
   if (!range || typeof range !== 'object') return range;
@@ -238,17 +319,27 @@ const rangeOf = (range: unknown): unknown => {
     const { pon, ...rest } = r;
     return { page: pr(pon as number), ...rest };
   }
-  if (r.start && typeof r.start === 'object') return { ...r, start: rangeOf(r.start), end: rangeOf(r.end) };
+  if (r.start && typeof r.start === 'object')
+    return { ...r, start: rangeOf(r.start), end: rangeOf(r.end) };
   return range;
 };
 const selCall = (doc: string, method: string, args: readonly unknown[]): Step => {
   let out = [...args];
-  if (PAGE_FIRST.has(method) && typeof out[0] === 'number') out = [pr(out[0] as number), ...out.slice(1)];
+  if (PAGE_FIRST.has(method) && typeof out[0] === 'number')
+    out = [pr(out[0] as number), ...out.slice(1)];
   if (method === 'select') out = [rangeOf(out[0]), ...out.slice(1)];
-  return { op: 'call', target: { token: 'selection', doc }, method: RENAMED[method] ?? method, args: out };
+  return {
+    op: 'call',
+    target: { token: 'selection', doc },
+    method: RENAMED[method] ?? method,
+    args: out,
+  };
 };
 const sel = (method: string, ...args: unknown[]): Step => selCall('a', method, args);
-const HUB_RENAMED: Readonly<Record<string, string>> = { dispatch: 'dispatchPointer', cursor: 'getCursor' };
+const HUB_RENAMED: Readonly<Record<string, string>> = {
+  dispatch: 'dispatchPointer',
+  cursor: 'getCursor',
+};
 const hub = (method: string, ...args: unknown[]): Step => ({
   op: 'call',
   target: { token: 'interaction', doc: 'a' },
@@ -256,24 +347,70 @@ const hub = (method: string, ...args: unknown[]): Step => ({
   args,
 });
 const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
-const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
+const emit = (input: unknown): Step => {
+  const event = input as {
+    type: Parameters<typeof confirmedEvent>[0] | 'pages.moved';
+    page?: PageRef;
+    layout?: { pages: import('@embedpdf/engine-core/runtime').PageLayout[] };
+  };
+  const next = event.layout?.pages ?? pages;
+  const affected =
+    event.type === 'pages.deleted'
+      ? pages
+          .filter((p) => !next.some((q) => q.ref.objectNumber === p.ref.objectNumber))
+          .map((p) => p.ref)
+      : event.page
+        ? [event.page]
+        : event.layout
+          ? next.map((p) => p.ref)
+          : [...pages.map((p) => p.ref), ...Array.from({ length: 10 }, (_, i) => pr(100 + i))];
+  return {
+    op: 'emit',
+    doc: 'a',
+    event: confirmedEvent(
+      event.type === 'pages.moved' ? 'pages.reordered' : event.type,
+      event.page ?? pr(1),
+      next,
+      affected,
+    ),
+  };
+};
 const settle = (label: string, value?: unknown): Step => ({ op: 'settle', label, value });
-const fail = (label: string): Step => ({ op: 'settle', label, error: { name: 'EngineError', message: 'aborted read', code: 'Aborted' } });
+const fail = (label: string): Step => ({
+  op: 'settle',
+  label,
+  error: { name: 'EngineError', message: 'aborted read', code: 'Aborted' },
+});
 
-const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 /** A pointer sample over page `pon` at content point (x, y); viewport = the
  *  point, so the drag threshold reads in the same units. */
-const at = (phase: string, pon: number, x: number, y: number, over: Record<string, unknown> = {}) => ({
+const at = (
+  phase: string,
+  pon: number,
+  x: number,
+  y: number,
+  over: Record<string, unknown> = {},
+) => ({
   phase,
   viewport: { x, y },
   page: { ref: pr(pon), point: { x, y } },
   modifiers: noMods,
   ...over,
 });
-const offPage = (phase: string, x: number, y: number) => ({ phase, viewport: { x, y }, modifiers: noMods });
-const ptr = (method: string, pon: number, x: number, y: number, over: Record<string, unknown> = {}): Step =>
-  hub('dispatch', at(method, pon, x, y, over));
+const offPage = (phase: string, x: number, y: number) => ({
+  phase,
+  viewport: { x, y },
+  modifiers: noMods,
+});
+const ptr = (
+  method: string,
+  pon: number,
+  x: number,
+  y: number,
+  over: Record<string, unknown> = {},
+): Step => hub('dispatch', at(method, pon, x, y, over));
 
 // Content-space points on page 1 (crop top 800): "Hello" is y 50..62, the
 // second line y 70..82; glyph i of line 1 spans x 50+6i..56+6i.
@@ -291,13 +428,24 @@ const slices = ['selection::a', 'interaction::a'];
 const loadAll = [sel('ensurePage', 1), sel('ensurePage', 5), sel('ensurePage', 9)];
 
 /** A geometry read that waits for `settle(label)`. */
-const deferGeo = (pon: number, label: string): ResponseSpec => ({ path: 'page.geometry.read', pon, defer: label, times: 1 });
-const deferText = (pon: number, label: string): ResponseSpec => ({ path: 'page.text.read', pon, defer: label, times: 1 });
+const deferGeo = (pon: number, label: string): ResponseSpec => ({
+  path: 'page.text.layout',
+  pon,
+  defer: label,
+  times: 1,
+});
+const deferText = (pon: number, label: string): ResponseSpec => ({
+  path: 'page.text.get',
+  pon,
+  defer: label,
+  times: 1,
+});
 
 const cases: ScenarioCase[] = [
   {
     name: 'requires-interaction',
-    covers: 'Selection requires the interaction hub; without it the kernel refuses the plugin list with the token hint.',
+    covers:
+      'Selection requires the interaction hub; without it the kernel refuses the plugin list with the token hint.',
     plugins: [{ factory: 'selection' }],
     engine: { documents: { a: doc() } },
     steps: [start],
@@ -353,7 +501,9 @@ const cases: ScenarioCase[] = [
     covers:
       'The first hover over a page warms its geometry (one read, deduplicated while in flight); once loaded, hover over text claims the I-beam at priority 10, off-text and over a gap release it.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(1, 'geo-1'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: { a: doc({ responses: [deferGeo(1, 'geo-1'), ...geometryReads, ...textReads] }) },
+    },
     snapshot: slices,
     steps: [
       ...opened,
@@ -361,7 +511,7 @@ const cases: ScenarioCase[] = [
       ptr('move', 1, H1.x, H1.y),
       sel('isLoaded', 1),
       sel('isOverText', 1, H1),
-      settle('geo-1', geo1),
+      settle('geo-1', textLayoutFixture(geo1, 1)),
       sel('isLoaded', 1),
       ptr('move', 1, H1.x, H1.y),
       ptr('move', 1, BLANK.x, BLANK.y),
@@ -377,7 +527,18 @@ const cases: ScenarioCase[] = [
     plugins,
     engine: {
       documents: {
-        a: doc({ responses: [deferGeo(5, 'geo-5'), { path: 'page.geometry.read', pon: 9, error: { name: 'EngineError', message: 'gone', code: 'DocClosed' }, times: 1 }, ...geometryReads] }),
+        a: doc({
+          responses: [
+            deferGeo(5, 'geo-5'),
+            {
+              path: 'page.text.layout',
+              pon: 9,
+              error: { name: 'EngineError', message: 'gone', code: 'DocClosed' },
+              times: 1,
+            },
+            ...geometryReads,
+          ],
+        }),
         b: doc({ security: { allows: ['doc.text.copy'] } }),
       },
     },
@@ -393,7 +554,7 @@ const cases: ScenarioCase[] = [
       sel('ensurePage', 42),
       sel('ensurePage', 9),
       sel('ensurePage', 9),
-      settle('geo-5', geo5),
+      settle('geo-5', textLayoutFixture(geo5, 5)),
       selCall('b', 'ensurePage', [1]),
       selCall('b', 'isOverText', [1, H1]),
     ],
@@ -469,7 +630,11 @@ const cases: ScenarioCase[] = [
       sel('readText'),
       ptr('down', 1, O1.x, O1.y, { clickCount: 2, pointerType: 'touch', gesture: 'long-press' }),
       ptr('up', 1, O1.x, O1.y),
-      ptr('down', 1, BLANK.x, BLANK.y, { clickCount: 2, pointerType: 'touch', gesture: 'long-press' }),
+      ptr('down', 1, BLANK.x, BLANK.y, {
+        clickCount: 2,
+        pointerType: 'touch',
+        gesture: 'long-press',
+      }),
       ptr('up', 1, BLANK.x, BLANK.y),
       ptr('down', 1, L2.x, L2.y, { clickCount: 3 }),
       ptr('up', 1, L2.x, L2.y),
@@ -481,7 +646,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'word-click-before-geometry',
-    covers: 'A double-click on a page whose geometry has not loaded selects nothing and no feedback fires.',
+    covers:
+      'A double-click on a page whose geometry has not loaded selects nothing and no feedback fires.',
     plugins: withFeedback,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -500,7 +666,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'cancel-drops-the-drag',
-    covers: 'A cancelled drag clears the in-flight selection and settles the gesture (commit fires with nothing selected).',
+    covers:
+      'A cancelled drag clears the in-flight selection and settles the gesture (commit fires with nothing selected).',
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -519,7 +686,9 @@ const cases: ScenarioCase[] = [
     covers:
       'A drag onto a page that has not loaded warms it and keeps the last focus; when its geometry arrives the selection recomputes across the pages. A backward drag orders the ends by document position.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) },
+    },
     snapshot: slice,
     steps: [
       ...opened,
@@ -528,7 +697,7 @@ const cases: ScenarioCase[] = [
       ptr('down', 1, O1.x, O1.y),
       ptr('move', 1, W1.x, W1.y),
       ptr('move', 5, 70, 130),
-      settle('geo-5', geo5),
+      settle('geo-5', textLayoutFixture(geo5, 5)),
       ptr('move', 5, 70, 130),
       ptr('move', 9, 107, 206),
       ptr('up', 9, 107, 206),
@@ -548,7 +717,9 @@ const cases: ScenarioCase[] = [
     covers:
       'select() takes a cross-page range or a single-page span, clamps a negative start, clears on an empty range, maps an end at index 0 to the previous page, refuses unknown pages, and is born settled. selectAll selects every character and settles its open end as geometry arrives.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(9, 'geo-9'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: { a: doc({ responses: [deferGeo(9, 'geo-9'), ...geometryReads, ...textReads] }) },
+    },
     snapshot: slice,
     steps: [
       ...opened,
@@ -573,7 +744,7 @@ const cases: ScenarioCase[] = [
       sel('select', { start: { pon: 1, index: 0 }, end: { pon: 78, index: 1 } }),
       sel('selectAll'),
       sel('snapshot'),
-      settle('geo-9', geo9),
+      settle('geo-9', textLayoutFixture(geo9, 9)),
       sel('snapshot'),
       sel('readText'),
       sel('clear'),
@@ -612,7 +783,19 @@ const cases: ScenarioCase[] = [
     plugins,
     engine: {
       documents: {
-        a: doc({ responses: [...geometryReads, deferText(1, 'text-1'), { path: 'page.text.read', pon: 9, error: { name: 'EngineError', message: 'gone', code: 'DocClosed' }, times: 1 }, ...textReads] }),
+        a: doc({
+          responses: [
+            ...geometryReads,
+            deferText(1, 'text-1'),
+            {
+              path: 'page.text.get',
+              pon: 9,
+              error: { name: 'EngineError', message: 'gone', code: 'DocClosed' },
+              times: 1,
+            },
+            ...textReads,
+          ],
+        }),
         b: doc({ security: { allows: ['doc.text.select'] } }),
       },
     },
@@ -635,7 +818,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'read-text-batches',
-    covers: 'readText keeps at most eight page reads in flight: the ninth page is read after the first batch lands.',
+    covers:
+      'readText keeps at most eight page reads in flight: the ninth page is read after the first batch lands.',
     plugins,
     engine: {
       documents: {
@@ -644,21 +828,31 @@ const cases: ScenarioCase[] = [
           security: { allows: both },
           responses: [
             deferText(100, 'first'),
-            { path: 'page.geometry.read', value: { runs: [run(0, glyphs('Pn', 50, 750))] } },
-            { path: 'page.text.read', value: { text: 'Pn', charCount: 2 } },
+            {
+              path: 'page.text.layout',
+              value: textLayoutFixture({ runs: [run(0, glyphs('Pn', 50, 750))] }),
+            },
+            { path: 'page.text.get', value: { text: 'Pn', charCount: 2 } },
           ],
         },
       },
     },
     ...UNSNAPSHOTTED,
-    steps: [...opened, sel('selectAll'), sel('readText'), settle('first', { text: 'P0', charCount: 2 })],
+    steps: [
+      ...opened,
+      sel('selectAll'),
+      sel('readText'),
+      settle('first', { text: 'P0', charCount: 2 }),
+    ],
   },
   {
     name: 'endpoints',
     covers:
       'A snapshot endpoint sits on its boundary glyph cell, or on the segment when that glyph is degenerate (a generated line break); an endpoint on a page with no segments yet is null, and the menu anchor falls back to the last page with segments.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) },
+    },
     snapshot: slice,
     steps: [
       ...opened,
@@ -671,21 +865,34 @@ const cases: ScenarioCase[] = [
       sel('select', { start: { pon: 5, index: 0 }, end: { pon: 5, index: 3 } }),
       sel('snapshot'),
       sel('menuAnchor'),
-      settle('geo-5', geo5),
+      settle('geo-5', textLayoutFixture(geo5, 5)),
       sel('menuAnchor'),
     ],
   },
   {
     name: 'endpoints-follow-their-segment',
-    covers: 'The start endpoint takes the first segment\'s reading direction and the end the last\'s: a selection from a left-to-right line into a right-to-left one.',
+    covers:
+      "The start endpoint takes the first segment's reading direction and the end the last's: a selection from a left-to-right line into a right-to-left one.",
     plugins,
     engine: {
       documents: {
-        a: doc({ pages: [...pages, layout(3, 13)], responses: [...geometryReads, { path: 'page.geometry.read', pon: 13, value: geo13 }, ...textReads] }),
+        a: doc({
+          pages: [...pages, layout(3, 13)],
+          responses: [
+            ...geometryReads,
+            { path: 'page.text.layout', pon: 13, value: textLayoutFixture(geo13, 13) },
+            ...textReads,
+          ],
+        }),
       },
     },
     snapshot: slice,
-    steps: [...opened, sel('ensurePage', 13), sel('select', { pon: 13, start: 1, count: 4 }), sel('snapshot')],
+    steps: [
+      ...opened,
+      sel('ensurePage', 13),
+      sel('select', { pon: 13, start: 1, count: 4 }),
+      sel('snapshot'),
+    ],
   },
   {
     name: 'backward-drag-on-one-page',
@@ -693,11 +900,20 @@ const cases: ScenarioCase[] = [
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
-    steps: [...opened, ...loadAll, ptr('down', 1, W1.x, W1.y), ptr('move', 1, H1.x, H1.y), ptr('up', 1, H1.x, H1.y), sel('snapshot'), sel('readText')],
+    steps: [
+      ...opened,
+      ...loadAll,
+      ptr('down', 1, W1.x, W1.y),
+      ptr('move', 1, H1.x, H1.y),
+      ptr('up', 1, H1.x, H1.y),
+      sel('snapshot'),
+      sel('readText'),
+    ],
   },
   {
     name: 'drag-threshold',
-    covers: 'The drag threshold is 4 viewport px, measured from the down: 3.9 is still a click, exactly 4 begins the drag.',
+    covers:
+      'The drag threshold is 4 viewport px, measured from the down: 3.9 is still a click, exactly 4 begins the drag.',
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -713,7 +929,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'handler-priority',
-    covers: "The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines. Each gesture names its handler, the text handler as 'text-select'.",
+    covers:
+      "The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines. Each gesture names its handler, the text handler as 'text-select'.",
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -752,20 +969,29 @@ const cases: ScenarioCase[] = [
         layout: { pageCount: 3, pages: [layout(0, 1, { rotation: 90 }), pages[1], pages[2]] },
       }),
       sel('snapshot'),
-      emit({ type: 'pages.moved', layout: { pageCount: 3, pages: [pages[1], layout(1, 1), pages[2]] } }),
+      emit({
+        type: 'pages.moved',
+        layout: { pageCount: 3, pages: [pages[1], layout(1, 1), pages[2]] },
+      }),
       sel('snapshot'),
-      emit({ type: 'pages.deleted', layout: { pageCount: 2, pages: [layout(0, 1), layout(1, 9)] } }),
+      emit({
+        type: 'pages.deleted',
+        layout: { pageCount: 2, pages: [layout(0, 1), layout(1, 9)] },
+      }),
       sel('hasSelection'),
       sel('select', { pon: 9, start: 0, count: 2 }),
-      emit({ type: 'pages.inserted', layout: { pageCount: 3, pages: [layout(0, 1), layout(1, 5), layout(2, 9)] } }),
+      emit({
+        type: 'pages.inserted',
+        layout: { pageCount: 3, pages: [layout(0, 1), layout(1, 5), layout(2, 9)] },
+      }),
       sel('snapshot'),
       sel('ensurePage', 5),
     ],
   },
   {
-    name: 'a-crop-change-re-derives-the-seam',
+    name: 'layout-metadata-preserves-page-space',
     covers:
-      'The seam is keyed by the rotation, userUnit and crop box: a registry change that moves a page crop box re-derives it from the cached layout, so the recomputed segments land in the new content space.',
+      'Geometry arrives in page space: a registry-only metadata change preserves cached segments and does not refetch text layout.',
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -775,7 +1001,7 @@ const cases: ScenarioCase[] = [
       sel('select', { start: { pon: 1, index: 0 }, end: { pon: 1, index: 5 } }),
       emit({
         type: 'pages.rotated',
-        layout: { pageCount: 3, pages: [layout(0, 1, { boxes: { media: offset, crop: offset } }), pages[1], pages[2]] },
+        layout: { pageCount: 3, pages: [layout(0, 1, { pdfCropBox: offset }), pages[1], pages[2]] },
       }),
       sel('snapshot'),
     ],
@@ -785,7 +1011,11 @@ const cases: ScenarioCase[] = [
     covers:
       'redaction.applied and pages.flattened drop every cache and clear the selection; a geometry read in flight from before is discarded when it lands, and the next warm refetches.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(5, 'geo-5-old'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: {
+        a: doc({ responses: [deferGeo(5, 'geo-5-old'), ...geometryReads, ...textReads] }),
+      },
+    },
     snapshot: slice,
     steps: [
       ...opened,
@@ -796,7 +1026,7 @@ const cases: ScenarioCase[] = [
       emit({ type: 'redaction.applied', page: pr(1), origin: LOCAL }),
       sel('hasSelection'),
       sel('isOverText', 1, H1),
-      settle('geo-5-old', geo5),
+      settle('geo-5-old', textLayoutFixture(geo5, 5)),
       sel('isLoaded', 5),
       sel('ensurePage', 5),
       sel('ensurePage', 1),
@@ -809,11 +1039,23 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'late-geometry-without-selection',
-    covers: 'A page that loads while nothing is selected only marks itself loaded; a failed read is ignored.',
+    covers:
+      'A page that loads while nothing is selected only marks itself loaded; a failed read is ignored.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(1, 'geo-1'), deferGeo(5, 'geo-5'), ...geometryReads] }) } },
+    engine: {
+      documents: {
+        a: doc({ responses: [deferGeo(1, 'geo-1'), deferGeo(5, 'geo-5'), ...geometryReads] }),
+      },
+    },
     snapshot: slice,
-    steps: [...opened, sel('ensurePage', 1), sel('ensurePage', 5), settle('geo-1', geo1), fail('geo-5'), sel('isLoaded', 5)],
+    steps: [
+      ...opened,
+      sel('ensurePage', 1),
+      sel('ensurePage', 5),
+      settle('geo-1', textLayoutFixture(geo1, 1)),
+      fail('geo-5'),
+      sel('isLoaded', 5),
+    ],
   },
   {
     name: 'gesture-verbs',
@@ -853,7 +1095,12 @@ const cases: ScenarioCase[] = [
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slices,
-    steps: [...opened, hub('activateTool', 'pan'), ptr('move', 1, H1.x, H1.y), ptr('down', 1, H1.x, H1.y)],
+    steps: [
+      ...opened,
+      hub('activateTool', 'pan'),
+      ptr('move', 1, H1.x, H1.y),
+      ptr('down', 1, H1.x, H1.y),
+    ],
   },
   {
     name: 'close-releases-subscriptions',
@@ -861,14 +1108,20 @@ const cases: ScenarioCase[] = [
     plugins,
     engine: { documents: { a: doc() } },
     ...UNSNAPSHOTTED,
-    steps: [...opened, sel('ensurePage', 1), { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
+    steps: [
+      ...opened,
+      sel('ensurePage', 1),
+      { op: 'call', target: 'documents', method: 'close', args: ['a'] },
+    ],
   },
   {
     name: 'select-page',
     covers:
       'selectPage selects every character of one page: a loaded page at once, an unloaded one as an open range that warms the page and settles when its geometry lands (a system change); a page outside the document throws not-found.',
     plugins,
-    engine: { documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) } },
+    engine: {
+      documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) },
+    },
     snapshot: slice,
     steps: [
       ...opened,
@@ -878,7 +1131,7 @@ const cases: ScenarioCase[] = [
       sel('getRange'),
       sel('selectPage', pr(5)),
       sel('getSnapshot'),
-      settle('geo-5', geo5),
+      settle('geo-5', textLayoutFixture(geo5, 5)),
       sel('getRange'),
       sel('readText'),
       sel('selectPage', pr(42)),
@@ -925,13 +1178,22 @@ const cases: ScenarioCase[] = [
       sel('readTextInRange', { start: { page: pr(5), index: 0 }, end: { page: pr(1), index: 3 } }),
       sel('readTextInRange', { start: { page: pr(1), index: 13 }, end: { page: pr(5), index: 0 } }),
       sel('readTextInRange', { start: { page: pr(1), index: -2 }, end: { page: pr(1), index: 3 } }),
-      sel('readTextInRange', { start: { page: pr(1), index: 20 }, end: { page: pr(9), index: 2 } }, {}),
+      sel(
+        'readTextInRange',
+        { start: { page: pr(1), index: 20 }, end: { page: pr(9), index: 2 } },
+        {},
+      ),
       sel('readTextInRange', { start: { page: pr(42), index: 0 }, end: { page: pr(1), index: 3 } }),
       sel('readTextInRange', { start: { page: pr(1), index: 0 }, end: { page: pr(43), index: 3 } }),
       sel('hasSelection'),
       sel('select', { pon: 1, start: 0, count: 5 }),
       sel('readText', {}),
-      { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'readTextInRange', args: [{ start: { page: pr(1), index: 0 }, end: { page: pr(1), index: 3 } }] },
+      {
+        op: 'call',
+        target: { token: 'selection', doc: 'b' },
+        method: 'readTextInRange',
+        args: [{ start: { page: pr(1), index: 0 }, end: { page: pr(1), index: 3 } }],
+      },
     ],
   },
   {
@@ -948,8 +1210,11 @@ const cases: ScenarioCase[] = [
             deferText(100, 'first'),
             deferText(109, 'second'),
             deferText(109, 'third'),
-            { path: 'page.geometry.read', value: { runs: [run(0, glyphs('Pn', 50, 750))] } },
-            { path: 'page.text.read', value: { text: 'Pn', charCount: 2 } },
+            {
+              path: 'page.text.layout',
+              value: textLayoutFixture({ runs: [run(0, glyphs('Pn', 50, 750))] }),
+            },
+            { path: 'page.text.get', value: { text: 'Pn', charCount: 2 } },
           ],
         },
       },
@@ -967,14 +1232,19 @@ const cases: ScenarioCase[] = [
       settle('second', { text: 'P9', charCount: 2 }),
       emit({ type: 'pages.flattened' }),
       sel('select', { pon: 109, start: 0, count: 2 }),
-      sel('readTextInRange', { start: { page: pr(109), index: 0 }, end: { page: pr(109), index: 2 } }, { signal: { $abortSignal: 's2' } }),
+      sel(
+        'readTextInRange',
+        { start: { page: pr(109), index: 0 }, end: { page: pr(109), index: 2 } },
+        { signal: { $abortSignal: 's2' } },
+      ),
       { op: 'call', target: { token: 'selection-test/signals' }, method: 'abort', args: ['s2'] },
       settle('third', { text: 'Q9', charCount: 2 }),
     ],
   },
   {
     name: 'drag-threshold-config',
-    covers: 'selectionPlugin({ dragThreshold }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.',
+    covers:
+      'selectionPlugin({ dragThreshold }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.',
     plugins: [{ factory: 'interaction' }, { factory: 'selection', config: { dragThreshold: 10 } }],
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -992,7 +1262,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'events-and-origins',
     covers:
-      'onChanged carries the range, the pages with segments and the origin; onCleared fires only when a selection is actually dropped; writes are the api\'s outside a gesture and the user\'s inside one (beginGesture opens it with no selection); endGesture with nothing selected commits nothing; a content change clears with a system origin. getRange and listRects read the model.',
+      "onChanged carries the range, the pages with segments and the origin; onCleared fires only when a selection is actually dropped; writes are the api's outside a gesture and the user's inside one (beginGesture opens it with no selection); endGesture with nothing selected commits nothing; a content change clears with a system origin. getRange and listRects read the model.",
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
@@ -1011,7 +1281,7 @@ const cases: ScenarioCase[] = [
       sel('clear'),
       sel('getRange'),
       sel('beginGesture'),
-      sel('isGestureActive'),
+      sel('isSelecting'),
       sel('selectWordAt', pr(1), W1),
       sel('endGesture'),
       sel('beginGesture'),
@@ -1027,74 +1297,251 @@ const cases: ScenarioCase[] = [
 
 // ── function suites ──────────────────────────────────────────────────────────
 
-const fc = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
+const fc = (fn: string, label: string, ...args: unknown[]): FunctionCase => {
+  const name = `${fn}/${label}`;
+  if (fn === 'buildPageTextLayout') fn = 'layoutSweep';
+  if (args[0] && typeof args[0] === 'object' && 'runs' in args[0]) {
+    args[0] = pageGeometryOf(args[0] as PdfGeometrySnapshot, {
+      left: 0,
+      bottom: 0,
+      right: 800,
+      top: 800,
+    });
+    if (fn === 'textGlyphAt') {
+      const point = args[1] as { x: number; y: number };
+      args = [args[0], { x: point.x, y: 800 - point.y }];
+    }
+    if (fn === 'glyphAtGrid') {
+      const grid = args[1] as { x0: number; x1: number; y0: number; y1: number; step: number };
+      args = [args[0], { ...grid, y0: 800 - grid.y1, y1: 800 - grid.y0 }];
+    }
+  }
+  return { name, fn, args };
+};
 
 const crop = { left: 0, bottom: 0, right: 200, top: 100 };
-const g8 = (left: number, bottom: number, flags = 0, w = 8, h = 10) => ({ looseBox: { left, bottom, right: left + w, top: bottom + h }, flags });
-const simple = (count: number): PageGeometrySnapshot => ({
-  runs: [{ rect: { left: 10, bottom: 90, right: 10 + count * 8, top: 100 }, charStart: 0, glyphs: Array.from({ length: count }, (_, i) => g8(10 + i * 8, 90)) }],
+const g8 = (left: number, bottom: number, flags = 0, w = 8, h = 10) => ({
+  loose: { left, bottom, right: left + w, top: bottom + h },
+  ...(flags & 1 ? { space: true as const } : {}),
+  ...(flags & 2 ? { empty: true as const } : {}),
+});
+const simple = (count: number): PdfGeometrySnapshot => ({
+  runs: [
+    {
+      rect: { left: 10, bottom: 90, right: 10 + count * 8, top: 100 },
+      start: 0,
+      glyphs: Array.from({ length: count }, (_, i) => g8(10 + i * 8, 90)),
+    },
+  ],
 });
 const columnGlyph = (yBottom: number, yTop: number, flags = 0) => ({
-  looseQuad: { p1: { x: 88, y: yBottom }, p2: { x: 88, y: yTop }, p3: { x: 100, y: yBottom }, p4: { x: 100, y: yTop } },
-  flags,
+  loose: {
+    upperLeft: { x: 88, y: yBottom },
+    upperRight: { x: 88, y: yTop },
+    lowerLeft: { x: 100, y: yBottom },
+    lowerRight: { x: 100, y: yTop },
+  },
+  ...(flags & 1 ? { space: true as const } : {}),
+  ...(flags & 2 ? { empty: true as const } : {}),
 });
-const mixed: PageGeometrySnapshot = {
+const mixed: PdfGeometrySnapshot = {
   runs: [
-    { rect: { left: 10, bottom: 90, right: 26, top: 100 }, charStart: 0, glyphs: [g8(10, 90), g8(18, 90)] },
+    {
+      rect: { left: 10, bottom: 90, right: 26, top: 100 },
+      start: 0,
+      glyphs: [g8(10, 90), g8(18, 90)],
+    },
     {
       rect: { left: 88, bottom: 20, right: 100, top: 44 },
-      charStart: 2,
-      rotation: Math.PI / 2,
+      start: 2,
+      rotation: 270,
       ascentFlip: false,
       glyphs: [columnGlyph(20, 28), columnGlyph(28, 36), columnGlyph(36, 44)],
     },
   ],
 };
 const quad = (x0: number, y0: number, x1: number, y1: number): PdfQuad => ({
-  p1: { x: x0, y: y1 },
-  p2: { x: x1, y: y1 },
-  p3: { x: x0, y: y0 },
-  p4: { x: x1, y: y0 },
+  upperLeft: { x: x0, y: y1 },
+  upperRight: { x: x1, y: y1 },
+  lowerLeft: { x: x0, y: y0 },
+  lowerRight: { x: x1, y: y0 },
 });
 /** Every run variant: upright with gaps and a font change, a rotated column,
  *  a mirrored run, a second column that shares the first one's frame, a
  *  run whose glyphs are all empty, a sheared run, and an RTL line. */
-const varied: PageGeometrySnapshot = {
+const varied: PdfGeometrySnapshot = {
   runs: [
-    { rect: { left: 10, bottom: 90, right: 90, top: 100 }, charStart: 0, fontSize: 10, glyphs: [g8(10, 90), g8(18, 90, 1), g8(26, 90), g8(70, 90), g8(78, 90, 2)] },
-    { rect: { left: 10, bottom: 88, right: 40, top: 102 }, charStart: 5, fontSize: 30, glyphs: [g8(96, 88, 0, 8, 14), g8(104, 88, 0, 8, 14)] },
-    { rect: { left: 10, bottom: 91, right: 30, top: 99 }, charStart: 7, fontSize: 11, glyphs: [g8(120, 91, 0, 8, 8), g8(128, 91, 0, 0, 8)] },
-    { rect: { left: 88, bottom: 20, right: 100, top: 44 }, charStart: 9, rotation: Math.PI / 2, ascentFlip: false, glyphs: [columnGlyph(20, 28), columnGlyph(28, 36, 1), columnGlyph(36, 44)] },
+    {
+      rect: { left: 10, bottom: 90, right: 90, top: 100 },
+      start: 0,
+      fontSize: 10,
+      glyphs: [g8(10, 90), g8(18, 90, 1), g8(26, 90), g8(70, 90), g8(78, 90, 2)],
+    },
+    {
+      rect: { left: 10, bottom: 88, right: 40, top: 102 },
+      start: 5,
+      fontSize: 30,
+      glyphs: [g8(96, 88, 0, 8, 14), g8(104, 88, 0, 8, 14)],
+    },
+    {
+      rect: { left: 10, bottom: 91, right: 30, top: 99 },
+      start: 7,
+      fontSize: 11,
+      glyphs: [g8(120, 91, 0, 8, 8), g8(128, 91, 0, 0, 8)],
+    },
+    {
+      rect: { left: 88, bottom: 20, right: 100, top: 44 },
+      start: 9,
+      rotation: 270,
+      ascentFlip: false,
+      glyphs: [columnGlyph(20, 28), columnGlyph(28, 36, 1), columnGlyph(36, 44)],
+    },
     {
       rect: { left: 150, bottom: 20, right: 162, top: 44 },
-      charStart: 12,
-      rotation: Math.PI / 2,
+      start: 12,
+      rotation: 270,
       ascentFlip: true,
       glyphs: [
-        { looseQuad: { p1: { x: 162, y: 20 }, p2: { x: 162, y: 28 }, p3: { x: 150, y: 20 }, p4: { x: 150, y: 28 } }, flags: 0, tightQuad: { p1: { x: 161, y: 21 }, p2: { x: 161, y: 27 }, p3: { x: 151, y: 21 }, p4: { x: 151, y: 27 } } },
+        {
+          loose: {
+            upperLeft: { x: 162, y: 20 },
+            upperRight: { x: 162, y: 28 },
+            lowerLeft: { x: 150, y: 20 },
+            lowerRight: { x: 150, y: 28 },
+          },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+          tight: {
+            upperLeft: { x: 161, y: 21 },
+            upperRight: { x: 161, y: 27 },
+            lowerLeft: { x: 151, y: 21 },
+            lowerRight: { x: 151, y: 27 },
+          },
+        },
       ],
     },
-    { rect: { left: 60, bottom: 20, right: 72, top: 44 }, charStart: 13, rotation: Math.PI / 2 + 0.001, ascentFlip: false, glyphs: [{ looseQuad: { p1: { x: 60, y: 20 }, p2: { x: 60.008, y: 28 }, p3: { x: 72, y: 19.988 }, p4: { x: 72.008, y: 27.988 } }, flags: 0 }] },
-    { rect: ZERO, charStart: 14, rotation: 1, ascentFlip: false, glyphs: [{ looseQuad: quad(0, 0, 0, 0), flags: 2 }] },
-    { rect: { left: 0, bottom: 0, right: 1e-9, top: 1e-9 }, charStart: 15, rotation: 2, ascentFlip: false, glyphs: [{ looseQuad: quad(5, 5, 5, 5), flags: 0 }] },
-    { rect: { left: 10, bottom: 60, right: 40, top: 70 }, charStart: 16, rotation: 0, ascentFlip: false, glyphs: [{ looseQuad: { p1: { x: 12, y: 70 }, p2: { x: 20, y: 70 }, p3: { x: 10, y: 60 }, p4: { x: 18, y: 60 } }, flags: 0 }, { looseQuad: { p1: { x: 22, y: 70 }, p2: { x: 30, y: 70 }, p3: { x: 20, y: 60 }, p4: { x: 28, y: 60 } }, flags: 0 }] },
-    { rect: { left: 34, bottom: 40, right: 58, top: 50 }, charStart: 18, glyphs: [g8(50, 40), g8(42, 40), g8(34, 40)] },
+    {
+      rect: { left: 60, bottom: 20, right: 72, top: 44 },
+      start: 13,
+      rotation: 269.9427042204869,
+      ascentFlip: false,
+      glyphs: [
+        {
+          loose: {
+            upperLeft: { x: 60, y: 20 },
+            upperRight: { x: 60.008, y: 28 },
+            lowerLeft: { x: 72, y: 19.988 },
+            lowerRight: { x: 72.008, y: 27.988 },
+          },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
+    {
+      rect: ZERO,
+      start: 14,
+      rotation: 1,
+      ascentFlip: false,
+      glyphs: [
+        {
+          loose: quad(0, 0, 0, 0),
+          ...(2 & 1 ? { space: true as const } : {}),
+          ...(2 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
+    {
+      rect: { left: 0, bottom: 0, right: 1e-9, top: 1e-9 },
+      start: 15,
+      rotation: 2,
+      ascentFlip: false,
+      glyphs: [
+        {
+          loose: quad(5, 5, 5, 5),
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
+    {
+      rect: { left: 10, bottom: 60, right: 40, top: 70 },
+      start: 16,
+      rotation: 0 as const,
+      ascentFlip: false,
+      glyphs: [
+        {
+          loose: {
+            upperLeft: { x: 12, y: 70 },
+            upperRight: { x: 20, y: 70 },
+            lowerLeft: { x: 10, y: 60 },
+            lowerRight: { x: 18, y: 60 },
+          },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+        {
+          loose: {
+            upperLeft: { x: 22, y: 70 },
+            upperRight: { x: 30, y: 70 },
+            lowerLeft: { x: 20, y: 60 },
+            lowerRight: { x: 28, y: 60 },
+          },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
+    {
+      rect: { left: 34, bottom: 40, right: 58, top: 50 },
+      start: 18,
+      glyphs: [g8(50, 40), g8(42, 40), g8(34, 40)],
+    },
   ],
 };
-const empty: PageGeometrySnapshot = { runs: [] };
+const empty: PdfGeometrySnapshot = { runs: [] };
 
 /** A run rotated by `angle` (radians CCW): glyph cells 8 along the baseline,
  *  10 up the ascent, starting at `origin`; spaces where `spaces` says. */
-const tiltedRun = (charStart: number, angle: number, origin: { x: number; y: number }, count: number, spaces: number[] = []) => {
+const tiltedRun = (
+  start: number,
+  angle: number,
+  origin: { x: number; y: number },
+  count: number,
+  spaces: number[] = [],
+) => {
   const b = { x: Math.cos(angle), y: Math.sin(angle) };
   const a = { x: -Math.sin(angle), y: Math.cos(angle) };
-  const at = (u: number, v: number) => ({ x: origin.x + b.x * u + a.x * v, y: origin.y + b.y * u + a.y * v });
+  const at = (u: number, v: number) => ({
+    x: origin.x + b.x * u + a.x * v,
+    y: origin.y + b.y * u + a.y * v,
+  });
   const glyphs = Array.from({ length: count }, (_, i) => ({
-    looseQuad: { p1: at(i * 8, 10), p2: at(i * 8 + 8, 10), p3: at(i * 8, 0), p4: at(i * 8 + 8, 0) },
-    flags: spaces.includes(i) ? 1 : 0,
-    ...(spaces.includes(i) ? {} : { tightQuad: { p1: at(i * 8 + 1, 9), p2: at(i * 8 + 7, 9), p3: at(i * 8 + 1, 1), p4: at(i * 8 + 7, 1) } }),
+    loose: {
+      upperLeft: at(i * 8, 10),
+      upperRight: at(i * 8 + 8, 10),
+      lowerLeft: at(i * 8, 0),
+      lowerRight: at(i * 8 + 8, 0),
+    },
+    ...((spaces.includes(i) ? 1 : 0) & 1 ? { space: true as const } : {}),
+    ...((spaces.includes(i) ? 1 : 0) & 2 ? { empty: true as const } : {}),
+    ...(spaces.includes(i)
+      ? {}
+      : {
+          tight: {
+            upperLeft: at(i * 8 + 1, 9),
+            upperRight: at(i * 8 + 7, 9),
+            lowerLeft: at(i * 8 + 1, 1),
+            lowerRight: at(i * 8 + 7, 1),
+          },
+        }),
   }));
-  const pts = glyphs.flatMap((g) => [g.looseQuad.p1, g.looseQuad.p2, g.looseQuad.p3, g.looseQuad.p4]);
+  const pts = glyphs.flatMap((g) => [
+    g.loose.upperLeft,
+    g.loose.upperRight,
+    g.loose.lowerLeft,
+    g.loose.lowerRight,
+  ]);
   return {
     rect: {
       left: Math.min(...pts.map((p) => p.x)),
@@ -1102,15 +1549,15 @@ const tiltedRun = (charStart: number, angle: number, origin: { x: number; y: num
       right: Math.max(...pts.map((p) => p.x)),
       top: Math.max(...pts.map((p) => p.y)),
     },
-    charStart,
-    rotation: angle,
+    start,
+    rotation: (360 - (angle * 180) / Math.PI) % 360,
     ascentFlip: false,
     glyphs,
   };
 };
 /** Text at 30 degrees: a word, a space, a word; then a far run in the same
  *  frame; then a run at 120 degrees, a frame of its own. */
-const tilted: PageGeometrySnapshot = {
+const tilted: PdfGeometrySnapshot = {
   runs: [
     tiltedRun(0, Math.PI / 6, { x: 100, y: 100 }, 5, [2]),
     tiltedRun(5, Math.PI / 6 + 0.001, { x: 300, y: 215 }, 2),
@@ -1118,21 +1565,21 @@ const tilted: PageGeometrySnapshot = {
   ],
 };
 /** One glyph whose baseline runs at `theta` degrees and whose ascent edge
- *  (p3 to p1) runs at `theta + phi`: a heavily sheared cell. With `phi` near
+ *  (lowerLeft to upperLeft) runs at `theta + phi`: a heavily sheared cell. With `phi` near
  *  0 or 180 the ascent is almost parallel to the baseline, so the two terms
  *  of the handedness cross product nearly cancel and have opposite signs; `phi`
  *  past 180 makes the cell left-handed (a mirrored run). */
-const shearedRun = (charStart: number, theta: number, phi: number) => {
+const shearedRun = (start: number, theta: number, phi: number) => {
   const t = (theta * Math.PI) / 180;
   const a = ((theta + phi) * Math.PI) / 180;
-  const origin = { x: 200 + charStart * 20, y: 200 };
+  const origin = { x: 200 + start * 20, y: 200 };
   const b = { x: 8 * Math.cos(t), y: 8 * Math.sin(t) };
   const up = { x: 10 * Math.cos(a), y: 10 * Math.sin(a) };
-  const p3 = origin;
-  const p4 = { x: origin.x + b.x, y: origin.y + b.y };
-  const p1 = { x: origin.x + up.x, y: origin.y + up.y };
-  const p2 = { x: p1.x + b.x, y: p1.y + b.y };
-  const pts = [p1, p2, p3, p4];
+  const lowerLeft = origin;
+  const lowerRight = { x: origin.x + b.x, y: origin.y + b.y };
+  const upperLeft = { x: origin.x + up.x, y: origin.y + up.y };
+  const upperRight = { x: upperLeft.x + b.x, y: upperLeft.y + b.y };
+  const pts = [upperLeft, upperRight, lowerLeft, lowerRight];
   return {
     rect: {
       left: Math.min(...pts.map((p) => p.x)),
@@ -1140,10 +1587,16 @@ const shearedRun = (charStart: number, theta: number, phi: number) => {
       right: Math.max(...pts.map((p) => p.x)),
       top: Math.max(...pts.map((p) => p.y)),
     },
-    charStart,
-    rotation: t,
+    start,
+    rotation: (360 - theta) % 360,
     ascentFlip: phi > 180,
-    glyphs: [{ looseQuad: { p1, p2, p3, p4 }, flags: 0 }],
+    glyphs: [
+      {
+        loose: { upperLeft, upperRight, lowerLeft, lowerRight },
+        ...(0 & 1 ? { space: true as const } : {}),
+        ...(0 & 2 ? { empty: true as const } : {}),
+      },
+    ],
   };
 };
 const HANDEDNESS_THETAS = [30, 100, 200, 300];
@@ -1151,18 +1604,40 @@ const HANDEDNESS_PHIS = [8, 172, 188, 352];
 /** Every (theta, phi) pair on one page: each baseline angle gets a right- and
  *  a left-handed frame, and the second cell of each handedness has to match
  *  the frame the first one made. */
-const handedness: PageGeometrySnapshot = {
-  runs: HANDEDNESS_THETAS.flatMap((theta, i) => HANDEDNESS_PHIS.map((phi, j) => shearedRun(i * 4 + j, theta, phi))),
+const handedness: PdfGeometrySnapshot = {
+  runs: HANDEDNESS_THETAS.flatMap((theta, i) =>
+    HANDEDNESS_PHIS.map((phi, j) => shearedRun(i * 4 + j, theta, phi)),
+  ),
 };
 
 /** Upright lines for the line-expansion walk: overlapping, stacked, a
  *  zero-width run, and an empty-rect run between them. */
-const lines: PageGeometrySnapshot = {
+const lines: PdfGeometrySnapshot = {
   runs: [
     run(0, glyphs('ab', 0, 100)),
-    { rect: { left: 13, bottom: 88, right: 13, top: 100 }, charStart: 2, glyphs: [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }] },
+    {
+      rect: { left: 13, bottom: 88, right: 13, top: 100 },
+      start: 2,
+      glyphs: [
+        {
+          loose: { left: 13, bottom: 88, right: 13, top: 100 },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
     run(3, glyphs('cd', 20, 97)),
-    { rect: ZERO, charStart: 5, glyphs: [{ looseBox: ZERO, flags: 2 }] },
+    {
+      rect: ZERO,
+      start: 5,
+      glyphs: [
+        {
+          loose: ZERO,
+          ...(2 & 1 ? { space: true as const } : {}),
+          ...(2 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
     run(6, glyphs('ef', 40, 94)),
     run(8, glyphs('gh', 60, 80)),
     run(10, glyphs('ij', 0, 60)),
@@ -1170,46 +1645,112 @@ const lines: PageGeometrySnapshot = {
 };
 /** One upright run whose glyph gaps straddle the split threshold (2.5
  *  average widths, 15 here): 13, 15 and 16. */
-const gaps: PageGeometrySnapshot = {
+const gaps: PdfGeometrySnapshot = {
   runs: [
-    run(0, [0, 19, 40, 62].map((left) => ({ looseBox: { left, bottom: 88, right: left + 6, top: 100 }, flags: 0 }))),
+    run(
+      0,
+      [0, 19, 40, 62].map((left) => ({
+        loose: { left, bottom: 88, right: left + 6, top: 100 },
+        ...(0 & 1 ? { space: true as const } : {}),
+        ...(0 & 2 ? { empty: true as const } : {}),
+      })),
+    ),
   ],
 };
 /** A zero-width run first, so a line walk ends on it. */
-const zeroFirst: PageGeometrySnapshot = {
+const zeroFirst: PdfGeometrySnapshot = {
   runs: [
-    { rect: { left: 13, bottom: 88, right: 13, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }] },
+    {
+      rect: { left: 13, bottom: 88, right: 13, top: 100 },
+      start: 0,
+      glyphs: [
+        {
+          loose: { left: 13, bottom: 88, right: 13, top: 100 },
+          ...(0 & 1 ? { space: true as const } : {}),
+          ...(0 & 2 ? { empty: true as const } : {}),
+        },
+      ],
+    },
     run(1, glyphs('cd', 20, 97)),
   ],
 };
 /** A zero-width glyph, then real ones 7pt past it: the average width is 0
  *  when the second glyph is weighed, so the gap never splits the run. */
-const zeroLead: PageGeometrySnapshot = {
-  runs: [run(0, [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }, ...glyphs('cd', 20, 100)])],
+const zeroLead: PdfGeometrySnapshot = {
+  runs: [
+    run(0, [
+      {
+        loose: { left: 13, bottom: 88, right: 13, top: 100 },
+        ...(0 & 1 ? { space: true as const } : {}),
+        ...(0 & 2 ? { empty: true as const } : {}),
+      },
+      ...glyphs('cd', 20, 100),
+    ]),
+  ],
 };
-const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst, handedness, zeroLead };
+const sweepFixtures: Record<string, PdfGeometrySnapshot> = {
+  geo1,
+  tilted,
+  lines,
+  gaps,
+  zeroFirst,
+  handedness,
+  zeroLead,
+};
 
 /** Two upright runs, the second shifted by `dx` past the first's end,
  *  raised by `dy`, `h2` tall, `n2` glyphs, at font size `fs2`: the merge
  *  and line-overlap thresholds. */
-const pair = (dx: number, dy: number, h2: number, n2: number, fs2: number | undefined, fs1 = 12): PageGeometrySnapshot => {
+const pair = (
+  dx: number,
+  dy: number,
+  h2: number,
+  n2: number,
+  fs2: number | undefined,
+  fs1 = 12,
+): PdfGeometrySnapshot => {
   const a = run(0, glyphs('ab', 0, 100), fs1);
   const g2 = Array.from({ length: n2 }, (_, i) => {
     const left = 12 + dx + i * 6;
-    return { looseBox: { left, bottom: 100 + dy - h2, right: left + 6, top: 100 + dy }, flags: 0 };
+    return {
+      loose: { left, bottom: 100 + dy - h2, right: left + 6, top: 100 + dy },
+      ...(0 & 1 ? { space: true as const } : {}),
+      ...(0 & 2 ? { empty: true as const } : {}),
+    };
   });
-  const b: Record<string, unknown> = { ...run(2, g2 as Glyph[]), fontSize: fs2 };
-  if (fs2 === undefined) delete b.fontSize;
-  return { runs: [a, b as never] };
+  const { fontSize: _fontSize, ...b } = run(2, g2);
+  return { runs: [a, { ...b, ...(fs2 === undefined ? {} : { fontSize: fs2 }) }] };
 };
-const pairs: [string, PageGeometrySnapshot][] = [];
-const addPair = (dx: number, dy: number, h2: number, n2: number, fs2: number | undefined, fs1 = 12) =>
-  pairs.push([`dx${dx}-dy${dy}-h${h2}-n${n2}-fs${fs2}${fs1 === 12 ? '' : `-first${fs1}`}`, pair(dx, dy, h2, n2, fs2, fs1)]);
+const pairs: [string, PdfGeometrySnapshot][] = [];
+const addPair = (
+  dx: number,
+  dy: number,
+  h2: number,
+  n2: number,
+  fs2: number | undefined,
+  fs1 = 12,
+) =>
+  pairs.push([
+    `dx${dx}-dy${dy}-h${h2}-n${n2}-fs${fs2}${fs1 === 12 ? '' : `-first${fs1}`}`,
+    pair(dx, dy, h2, n2, fs2, fs1),
+  ]);
 // Offset against overlap: where lines merge and where a triple-click stops.
 for (const dx of [0, 5, 9, 11, 12, 13, 30])
-  for (const [dy, h2] of [[0, 12], [2, 12], [2.4, 12], [3, 12], [6, 12], [0, 9], [-1, 14], [-6, 24], [0, 0]]) addPair(dx, dy, h2, 1, 12);
+  for (const [dy, h2] of [
+    [0, 12],
+    [2, 12],
+    [2.4, 12],
+    [3, 12],
+    [6, 12],
+    [0, 9],
+    [-1, 14],
+    [-6, 24],
+    [0, 0],
+  ])
+    addPair(dx, dy, h2, 1, 12);
 // Font size ratio, either side of 1.5, and the sizes that skip the test.
-for (const dx of [0, 13]) for (const fs2 of [18, 18.5, 7.9, 8.1, 0, undefined]) addPair(dx, 0, 12, 1, fs2);
+for (const dx of [0, 13])
+  for (const fs2 of [18, 18.5, 7.9, 8.1, 0, undefined]) addPair(dx, 0, 12, 1, fs2);
 // The second run left of the first (a reversed line), either side of the
 // padded adjacency edge, and a first run with no usable font size.
 for (const dx of [-31, -30, -29, -20]) for (const n2 of [1, 3]) addPair(dx, 0, 12, n2, 12);
@@ -1222,11 +1763,46 @@ for (const dx of [9, 11, 12, 13, 18, 19]) addPair(dx, 0, 12, 3, 12);
 /** Text snapshots with several char-map anchors: supplementary characters
  *  and dropped ones. */
 const maps: Record<string, PageTextSnapshot> = {
-  emoji: { text: 'a😀b😀c😀d', charCount: 7, charMap: [[2, 3], [4, 6], [6, 9]] },
-  dropped: { text: 'abcd', charCount: 7, charMap: [[2, 1], [4, 2], [6, 3]] },
-  mixed: { text: 'x😀yz', charCount: 6, charMap: [[1, 1], [2, 3], [3, 3], [5, 4]] },
+  emoji: {
+    text: 'a😀b😀c😀d',
+    charCount: 7,
+    charMap: [
+      [2, 3],
+      [4, 6],
+      [6, 9],
+    ],
+  },
+  dropped: {
+    text: 'abcd',
+    charCount: 7,
+    charMap: [
+      [2, 1],
+      [4, 2],
+      [6, 3],
+    ],
+  },
+  mixed: {
+    text: 'x😀yz',
+    charCount: 6,
+    charMap: [
+      [1, 1],
+      [2, 3],
+      [3, 3],
+      [5, 4],
+    ],
+  },
   // Five anchors: enough that the binary search takes a third step.
-  emojiRow: { text: 'a😀b😀c😀d😀e😀f', charCount: 11, charMap: [[2, 3], [4, 6], [6, 9], [8, 12], [10, 15]] },
+  emojiRow: {
+    text: 'a😀b😀c😀d😀e😀f',
+    charCount: 11,
+    charMap: [
+      [2, 3],
+      [4, 6],
+      [6, 9],
+      [8, 12],
+      [10, 15],
+    ],
+  },
 };
 
 /** `textSegmentsForRange` from every start in [-1, n] for a spread of
@@ -1234,10 +1810,11 @@ const maps: Record<string, PageTextSnapshot> = {
  *  glyph. */
 const layoutSweep = (snap: PageGeometrySnapshot) => {
   const layout = buildPageTextLayout(snap);
-  const n = layout.glyphs.length;
+  const n = layout.charCount;
   const segments: unknown[] = [];
   for (let from = -1; from <= n; from++)
-    for (const count of new Set([0, 1, 2, 3, 5, 8, n - from, n + 1 - from])) segments.push(textSegmentsForRange(layout, from, count));
+    for (const count of new Set([0, 1, 2, 3, 5, 8, n - from, n + 1 - from]))
+      segments.push(textSegmentsForRange(layout, from, count));
   const glyphsIn = Array.from({ length: n + 2 }, (_, i) => i - 1);
   return {
     segments,
@@ -1248,19 +1825,27 @@ const layoutSweep = (snap: PageGeometrySnapshot) => {
 };
 
 /** `textGlyphAt` on a grid, row-major. */
-const glyphAtGrid = (snap: PageGeometrySnapshot, grid: { x0: number; x1: number; y0: number; y1: number; step: number }, tolerance?: number) => {
+const glyphAtGrid = (
+  snap: PageGeometrySnapshot,
+  grid: { x0: number; x1: number; y0: number; y1: number; step: number },
+  tolerance?: number,
+) => {
   const layout = buildPageTextLayout(snap);
   const out: (number | null)[] = [];
   for (let y = grid.y0; y <= grid.y1; y += grid.step)
-    for (let x = grid.x0; x <= grid.x1; x += grid.step) out.push(textGlyphAt(layout, { x, y }, tolerance));
+    for (let x = grid.x0; x <= grid.x1; x += grid.step) out.push(textGlyphAt(layout, { x, y }));
   return out;
 };
 
 /** The two runs of a pair, whole: segments, and the line around each end. */
 const pairProbe = (snap: PageGeometrySnapshot) => {
   const layout = buildPageTextLayout(snap);
-  const n = layout.glyphs.length;
-  return { segments: textSegmentsForRange(layout, 0, n), first: expandTextRangeToLine(layout, 0), last: expandTextRangeToLine(layout, n - 1) };
+  const n = layout.charCount;
+  return {
+    segments: textSegmentsForRange(layout, 0, n),
+    first: expandTextRangeToLine(layout, 0),
+    last: expandTextRangeToLine(layout, n - 1),
+  };
 };
 
 /** `sliceTextByChars` over every (from, to) in [-1, charCount + 1]. */
@@ -1271,66 +1856,117 @@ const sliceSweep = (snap: PageTextSnapshot) => {
   return out;
 };
 
-const geomOf = (spec: { snapshot: PageGeometrySnapshot; crop: PdfRect; rotation: 0 | 90 | 180 | 270; userUnit: number }) =>
-  buildSelectionPageGeometry(spec.snapshot, spec.crop, spec.rotation, spec.userUnit);
-type GeomSpec = Parameters<typeof geomOf>[0];
-const spec = (snapshot: PageGeometrySnapshot, c = crop, rotation: 0 | 90 | 180 | 270 = 0, userUnit = 1) => ({
-  snapshot,
-  crop: c,
-  rotation,
-  userUnit,
-});
+const transitions = { setSelection, clearSelection, setHighlightHidden, setSelecting };
+const transition = <K extends keyof typeof transitions>(
+  fn: K,
+  label: string,
+  ...args: Parameters<(typeof transitions)[K]>
+): FunctionCase => ({ name: `reduceSelection/${label}`, fn, args });
 
 const geometryFns = {
-  buildSelectionPageGeometry,
-  contentPointToPdf: (s: GeomSpec, p: { x: number; y: number }) => contentPointToPdf(geomOf(s), p),
-  toContentTextQuad: (s: GeomSpec, q: PdfQuad) => toContentTextQuad(geomOf(s), q),
-  toContentSegment: (s: GeomSpec, segment: Parameters<typeof toContentSegment>[1]) => toContentSegment(geomOf(s), segment),
-  buildPageTextLayout,
-  textGlyphAt: (snap: PageGeometrySnapshot, p: { x: number; y: number }, tolerance?: number) => textGlyphAt(buildPageTextLayout(snap), p, tolerance),
-  expandTextRangeToWord: (snap: PageGeometrySnapshot, glyph: number) => expandTextRangeToWord(buildPageTextLayout(snap), glyph),
-  expandTextRangeToLine: (snap: PageGeometrySnapshot, glyph: number) => expandTextRangeToLine(buildPageTextLayout(snap), glyph),
-  textGlyphQuad: (snap: PageGeometrySnapshot, glyph: number) => textGlyphQuad(buildPageTextLayout(snap), glyph),
-  textSegmentsForRange: (snap: PageGeometrySnapshot, from: number, count: number) => textSegmentsForRange(buildPageTextLayout(snap), from, count),
+  textGlyphAt: (snap: PageGeometrySnapshot, p: { x: number; y: number }, tolerance?: number) =>
+    textGlyphAt(buildPageTextLayout(snap), p),
+  expandTextRangeToWord: (snap: PageGeometrySnapshot, glyph: number) =>
+    expandTextRangeToWord(buildPageTextLayout(snap), glyph),
+  expandTextRangeToLine: (snap: PageGeometrySnapshot, glyph: number) =>
+    expandTextRangeToLine(buildPageTextLayout(snap), glyph),
+  textGlyphQuad: (snap: PageGeometrySnapshot, glyph: number) =>
+    textGlyphQuad(buildPageTextLayout(snap), glyph),
+  textSegmentsForRange: (snap: PageGeometrySnapshot, from: number, count: number) =>
+    textSegmentsForRange(buildPageTextLayout(snap), from, count),
   sliceTextByChars,
   layoutSweep,
   glyphAtGrid,
   pairProbe,
   sliceSweep,
-  initialSelectionState: () => initialSelectionState(),
-  reduceSelection,
+  initialSelectionState,
+  setSelection,
+  clearSelection,
+  setHighlightHidden,
+  setSelecting,
+  pageGeometryOf,
+  pdfPointOf,
+  pageQuadOf,
+  pageTextSegmentOf,
 };
 
-const allGlyphs = (snap: PageGeometrySnapshot) => {
+const allGlyphs = (snap: PdfGeometrySnapshot) => {
   let n = 0;
   for (const r of snap.runs) n += r.glyphs.length;
   return n;
 };
 
-const state = (over: Record<string, unknown> = {}) => ({ ...initialSelectionState(), ...over });
-const segmentsOf = (s: GeomSpec, from: number, to: number) =>
-  textSegmentsForRange(buildPageTextLayout(s.snapshot), from, to - from + 1).map((seg) => toContentSegment(geomOf(s), seg));
+const state = (over: Partial<SelectionState> = {}): SelectionState => ({
+  ...initialSelectionState(),
+  ...over,
+});
+/**
+ * The content-space segments of `simple(3)`'s glyphs 0 to 2, as the old
+ * `toContentSegment` gave them (removed in 3bad82c8d), frozen from the vectors.
+ */
+const SIMPLE3_SEGMENTS_0_2 = createTextLayout(pageGeometryOf(simple(3), crop)).segments({
+  start: 0,
+  count: 3,
+});
 
 const geometryCases: FunctionCase[] = [
-  fc('buildSelectionPageGeometry', 'simple', simple(3), crop, 0, 1),
-  fc('buildSelectionPageGeometry', 'mixed-offset-crop', mixed, { left: 10, bottom: 20, right: 210, top: 120 }, 90, 2),
-  fc('buildSelectionPageGeometry', 'varied', varied, crop, 0, 1),
-  fc('buildSelectionPageGeometry', 'empty', empty, crop, 180, 1),
-  fc('contentPointToPdf', 'identity-crop', spec(simple(1)), { x: 12, y: 5 }),
-  fc('contentPointToPdf', 'offset-crop-user-unit', spec(simple(1), { left: 10, bottom: 20, right: 210, top: 120 }, 270, 2), { x: 12, y: 5 }),
-  fc('toContentTextQuad', 'corners-map-to-names', spec(simple(1)), quad(10, 90, 18, 100)),
-  fc('toContentSegment', 'rect-follows-the-quad', spec(simple(1), { left: 5, bottom: 0, right: 205, top: 150 }), { quad: quad(10, 90, 18, 100), rect: { left: 10, bottom: 90, right: 18, top: 100 }, advance: -1 }),
+  { name: 'buildSelectionPageGeometry/simple', fn: 'pageGeometryOf', args: [simple(3), crop] },
+  {
+    name: 'buildSelectionPageGeometry/mixed-offset-crop',
+    fn: 'pageGeometryOf',
+    args: [mixed, { left: 10, bottom: 20, right: 210, top: 120 }],
+  },
+  { name: 'buildSelectionPageGeometry/varied', fn: 'pageGeometryOf', args: [varied, crop] },
+  { name: 'buildSelectionPageGeometry/empty', fn: 'pageGeometryOf', args: [empty, crop] },
+  { name: 'contentPointToPdf/identity-crop', fn: 'pdfPointOf', args: [{ x: 12, y: 5 }, crop] },
+  {
+    name: 'contentPointToPdf/offset-crop-user-unit',
+    fn: 'pdfPointOf',
+    args: [
+      { x: 12, y: 5 },
+      { left: 10, bottom: 20, right: 210, top: 120 },
+    ],
+  },
+  {
+    name: 'toContentTextQuad/corners-map-to-names',
+    fn: 'pageQuadOf',
+    args: [quad(10, 90, 18, 100), crop],
+  },
+  {
+    name: 'toContentSegment/rect-follows-the-quad',
+    fn: 'pageTextSegmentOf',
+    args: [
+      {
+        quad: quad(10, 90, 18, 100),
+        rect: { left: 10, bottom: 90, right: 18, top: 100 },
+        advance: -1,
+      },
+      { left: 5, bottom: 0, right: 205, top: 150 },
+    ],
+  },
+
   fc('buildPageTextLayout', 'varied', varied),
   fc('buildPageTextLayout', 'mixed', mixed),
   fc('buildPageTextLayout', 'empty', empty),
   fc('buildPageTextLayout', 'rotated-all-empty', { runs: [varied.runs[6]] }),
   ...HANDEDNESS_THETAS.flatMap((theta) =>
-    HANDEDNESS_PHIS.map((phi) => fc('buildPageTextLayout', `handedness-${theta}-${phi}`, { runs: [shearedRun(0, theta, phi)] })),
+    HANDEDNESS_PHIS.map((phi) =>
+      fc('buildPageTextLayout', `handedness-${theta}-${phi}`, {
+        runs: [shearedRun(0, theta, phi)],
+      }),
+    ),
   ),
   fc('buildPageTextLayout', 'handedness-all', handedness),
   // Exactly vertical baselines (cos 90 degrees rounds away against x = 200), so each ascent has
   // y = 0; two cells of each direction still share one frame.
-  fc('buildPageTextLayout', 'vertical-baselines', { runs: [shearedRun(0, 90, 90), shearedRun(1, 90, 90), shearedRun(2, 270, 90), shearedRun(3, 270, 90)] }),
+  fc('buildPageTextLayout', 'vertical-baselines', {
+    runs: [
+      shearedRun(0, 90, 90),
+      shearedRun(1, 90, 90),
+      shearedRun(2, 270, 90),
+      shearedRun(3, 270, 90),
+    ],
+  }),
   ...[
     ['inside-tight', { x: 14, y: 95 }],
     ['gap-between-glyphs-tolerance', { x: 45, y: 95 }],
@@ -1345,7 +1981,26 @@ const geometryCases: FunctionCase[] = [
   fc('textGlyphAt', 'no-tolerance-miss', varied, { x: 45, y: 95 }, 0),
   fc('textGlyphAt', 'wider-tolerance', varied, { x: 10, y: 110 }, 4),
   fc('textGlyphAt', 'empty-layout', empty, { x: 0, y: 0 }),
-  fc('textGlyphAt', 'only-empty-glyphs', { runs: [{ rect: { left: 0, bottom: 0, right: 10, top: 10 }, charStart: 0, glyphs: [{ looseBox: ZERO, flags: 2 }] }] }, { x: 20, y: 5 }),
+  fc(
+    'textGlyphAt',
+    'only-empty-glyphs',
+    {
+      runs: [
+        {
+          rect: { left: 0, bottom: 0, right: 10, top: 10 },
+          start: 0,
+          glyphs: [
+            {
+              loose: ZERO,
+              ...(2 & 1 ? { space: true as const } : {}),
+              ...(2 & 2 ? { empty: true as const } : {}),
+            },
+          ],
+        },
+      ],
+    },
+    { x: 20, y: 5 },
+  ),
   fc('textGlyphAt', 'page-1-line-1', geo1, { x: 53, y: 744 }),
   // A loose-only glyph filling its run: a point exactly half a tolerance outside the run rect is
   // still a candidate (half = 12 * 1 / 2 = 6).
@@ -1353,21 +2008,121 @@ const geometryCases: FunctionCase[] = [
     ['on-the-left-tolerance-edge', { x: 14, y: 94 }],
     ['on-the-right-tolerance-edge', { x: 34, y: 94 }],
   ].map(([label, p]) =>
-    fc('textGlyphAt', label as string, { runs: [{ rect: { left: 20, bottom: 88, right: 28, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 20, bottom: 88, right: 28, top: 100 }, flags: 0 }] }] }, p, 1),
+    fc(
+      'textGlyphAt',
+      label as string,
+      {
+        runs: [
+          {
+            rect: { left: 20, bottom: 88, right: 28, top: 100 },
+            start: 0,
+            glyphs: [
+              {
+                loose: { left: 20, bottom: 88, right: 28, top: 100 },
+                ...(0 & 1 ? { space: true as const } : {}),
+                ...(0 & 2 ? { empty: true as const } : {}),
+              },
+            ],
+          },
+        ],
+      },
+      p,
+      1,
+    ),
   ),
   // A run rect that does not cover its glyph: the run-rect prefilter rejects the point before the
   // glyph test could accept it.
-  fc('textGlyphAt', 'run-rect-prefilters-the-glyph', { runs: [{ rect: { left: 20, bottom: 88, right: 28, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 20, bottom: 50, right: 28, top: 62 }, flags: 0 }] }] }, { x: 24, y: 56 }, 1),
-  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) => fc('expandTextRangeToWord', `varied-${i - 1}`, varied, i - 1)),
-  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) => fc('expandTextRangeToLine', `varied-${i - 1}`, varied, i - 1)),
+  fc(
+    'textGlyphAt',
+    'run-rect-prefilters-the-glyph',
+    {
+      runs: [
+        {
+          rect: { left: 20, bottom: 88, right: 28, top: 100 },
+          start: 0,
+          glyphs: [
+            {
+              loose: { left: 20, bottom: 50, right: 28, top: 62 },
+              ...(0 & 1 ? { space: true as const } : {}),
+              ...(0 & 2 ? { empty: true as const } : {}),
+            },
+          ],
+        },
+      ],
+    },
+    { x: 24, y: 56 },
+    1,
+  ),
+  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) =>
+    fc('expandTextRangeToWord', `varied-${i - 1}`, varied, i - 1),
+  ),
+  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) =>
+    fc('expandTextRangeToLine', `varied-${i - 1}`, varied, i - 1),
+  ),
   fc('expandTextRangeToWord', 'page-1', geo1, 8),
   fc('expandTextRangeToLine', 'page-1', geo1, 15),
   fc('expandTextRangeToLine', 'mixed-column', mixed, 3),
-  fc('expandTextRangeToLine', 'stacked-lines', { runs: [run(0, glyphs('ab', 0, 100)), run(2, glyphs('cd', 20, 100)), run(4, glyphs('ef', 0, 80)), run(6, glyphs('gh', 20, 80))] }, 5),
-  fc('expandTextRangeToLine', 'zero-rect-neighbours', { runs: [run(0, glyphs('ab', 0, 100)), { rect: ZERO, charStart: 2, glyphs: [{ looseBox: ZERO, flags: 2 }] }, run(3, glyphs('cd', 20, 100))] }, 0),
-  fc('expandTextRangeToLine', 'two-flat-runs', { runs: [0, 1].map((i) => ({ rect: { left: i * 20, bottom: 5, right: i * 20 + 10, top: 5 }, charStart: i, glyphs: [g8(i * 20, 5, 0, 8, 0)] })) }, 1),
-  fc('expandTextRangeToLine', 'zero-height-run',{ runs: [{ rect: { left: 0, bottom: 5, right: 10, top: 5 }, charStart: 0, glyphs: [g8(0, 5, 0, 8, 0)] }, run(1, glyphs('ab', 20, 100))] }, 1),
-  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) => fc('textGlyphQuad', `varied-${i - 1}`, varied, i - 1)),
+  fc(
+    'expandTextRangeToLine',
+    'stacked-lines',
+    {
+      runs: [
+        run(0, glyphs('ab', 0, 100)),
+        run(2, glyphs('cd', 20, 100)),
+        run(4, glyphs('ef', 0, 80)),
+        run(6, glyphs('gh', 20, 80)),
+      ],
+    },
+    5,
+  ),
+  fc(
+    'expandTextRangeToLine',
+    'zero-rect-neighbours',
+    {
+      runs: [
+        run(0, glyphs('ab', 0, 100)),
+        {
+          rect: ZERO,
+          start: 2,
+          glyphs: [
+            {
+              loose: ZERO,
+              ...(2 & 1 ? { space: true as const } : {}),
+              ...(2 & 2 ? { empty: true as const } : {}),
+            },
+          ],
+        },
+        run(3, glyphs('cd', 20, 100)),
+      ],
+    },
+    0,
+  ),
+  fc(
+    'expandTextRangeToLine',
+    'two-flat-runs',
+    {
+      runs: [0, 1].map((i) => ({
+        rect: { left: i * 20, bottom: 5, right: i * 20 + 10, top: 5 },
+        start: i,
+        glyphs: [g8(i * 20, 5, 0, 8, 0)],
+      })),
+    },
+    1,
+  ),
+  fc(
+    'expandTextRangeToLine',
+    'zero-height-run',
+    {
+      runs: [
+        { rect: { left: 0, bottom: 5, right: 10, top: 5 }, start: 0, glyphs: [g8(0, 5, 0, 8, 0)] },
+        run(1, glyphs('ab', 20, 100)),
+      ],
+    },
+    1,
+  ),
+  ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) =>
+    fc('textGlyphQuad', `varied-${i - 1}`, varied, i - 1),
+  ),
   ...[
     [0, 5],
     [0, 7],
@@ -1386,20 +2141,108 @@ const geometryCases: FunctionCase[] = [
     [0, 0],
     [4, -1],
     [30, 5],
-  ].map(([from, count]) => fc('textSegmentsForRange', `varied-${from}-${count}`, varied, from, count)),
+  ].map(([from, count]) =>
+    fc('textSegmentsForRange', `varied-${from}-${count}`, varied, from, count),
+  ),
   fc('textSegmentsForRange', 'empty-layout', empty, 0, 3),
   fc('textSegmentsForRange', 'page-1-both-lines', geo1, 6, 12),
-  // A run whose charStart overhangs the glyphs the layout holds: the range clamps to the last glyph.
-  fc('textSegmentsForRange', 'char-start-past-the-glyphs', { runs: [run(1, glyphs('ab', 0, 100))] }, 0, 5),
+  // A run whose start overhangs the glyphs the layout holds: the range clamps to the last glyph.
+  fc(
+    'textSegmentsForRange',
+    'char-start-past-the-glyphs',
+    { runs: [run(1, glyphs('ab', 0, 100))] },
+    0,
+    5,
+  ),
   // Right to left near the float limit: the centres halve sums that doubling would overflow.
-  fc('textSegmentsForRange', 'rtl-near-the-float-limit', { runs: [{ rect: { left: 6e307, bottom: 88, right: 8e307, top: 100 }, charStart: 0, glyphs: [8e307, 6e307].map((x) => ({ looseBox: { left: x, bottom: 88, right: x, top: 100 }, flags: 0 })) }] }, 0, 2),
-  fc('textSegmentsForRange', 'far-glyph-splits-the-run', { runs: [run(0, [...glyphs('ab', 0, 100), ...glyphs('c', 200, 100)])] }, 0, 3),
-  fc('textSegmentsForRange', 'zero-width-glyphs', { runs: [{ rect: { left: 0, bottom: 0, right: 0, top: 10 }, charStart: 0, glyphs: [g8(0, 0, 0, 0, 10), g8(0, 0, 0, 0, 10)] }] }, 0, 2),
+  fc(
+    'textSegmentsForRange',
+    'rtl-near-the-float-limit',
+    {
+      runs: [
+        {
+          rect: { left: 6e307, bottom: 88, right: 8e307, top: 100 },
+          start: 0,
+          glyphs: [8e307, 6e307].map((x) => ({
+            loose: { left: x, bottom: 88, right: x, top: 100 },
+            ...(0 & 1 ? { space: true as const } : {}),
+            ...(0 & 2 ? { empty: true as const } : {}),
+          })),
+        },
+      ],
+    },
+    0,
+    2,
+  ),
+  fc(
+    'textSegmentsForRange',
+    'far-glyph-splits-the-run',
+    { runs: [run(0, [...glyphs('ab', 0, 100), ...glyphs('c', 200, 100)])] },
+    0,
+    3,
+  ),
+  fc(
+    'textSegmentsForRange',
+    'zero-width-glyphs',
+    {
+      runs: [
+        {
+          rect: { left: 0, bottom: 0, right: 0, top: 10 },
+          start: 0,
+          glyphs: [g8(0, 0, 0, 0, 10), g8(0, 0, 0, 0, 10)],
+        },
+      ],
+    },
+    0,
+    2,
+  ),
   fc('textSegmentsForRange', 'mixed-all', mixed, 0, 5),
-  fc('textSegmentsForRange', 'rtl', { runs: [{ rect: { left: 34, bottom: 90, right: 58, top: 100 }, charStart: 0, glyphs: [g8(50, 90), g8(42, 90), g8(34, 90)] }] }, 0, 3),
-  fc('textSegmentsForRange', 'same-height-lines-merge', { runs: [run(0, glyphs('ab', 0, 100)), run(2, glyphs('cd', 13, 100), 0)] }, 0, 4),
-  fc('textSegmentsForRange', 'contained-line-merges', { runs: [run(0, glyphs('ab', 0, 100), 12), { rect: { left: 13, bottom: 90, right: 19, top: 98 }, charStart: 2, fontSize: 12, glyphs: [g8(13, 90, 0, 6, 8)] }] }, 0, 3),
-  fc('textSegmentsForRange', 'distant-lines-split', { runs: [run(0, glyphs('ab', 0, 100)), run(2, glyphs('cd', 100, 100))] }, 0, 4),
+  fc(
+    'textSegmentsForRange',
+    'rtl',
+    {
+      runs: [
+        {
+          rect: { left: 34, bottom: 90, right: 58, top: 100 },
+          start: 0,
+          glyphs: [g8(50, 90), g8(42, 90), g8(34, 90)],
+        },
+      ],
+    },
+    0,
+    3,
+  ),
+  fc(
+    'textSegmentsForRange',
+    'same-height-lines-merge',
+    { runs: [run(0, glyphs('ab', 0, 100)), run(2, glyphs('cd', 13, 100), 0)] },
+    0,
+    4,
+  ),
+  fc(
+    'textSegmentsForRange',
+    'contained-line-merges',
+    {
+      runs: [
+        run(0, glyphs('ab', 0, 100), 12),
+        {
+          rect: { left: 13, bottom: 90, right: 19, top: 98 },
+          start: 2,
+          fontSize: 12,
+          glyphs: [g8(13, 90, 0, 6, 8)],
+        },
+      ],
+    },
+    0,
+    3,
+  ),
+  fc(
+    'textSegmentsForRange',
+    'distant-lines-split',
+    { runs: [run(0, glyphs('ab', 0, 100)), run(2, glyphs('cd', 100, 100))] },
+    0,
+    4,
+  ),
   ...[
     [0, 24],
     [6, 11],
@@ -1420,31 +2263,61 @@ const geometryCases: FunctionCase[] = [
   fc('sliceTextByChars', 'dropped-char', { text: 'AB', charCount: 3, charMap: [[2, 1]] }, 0, 3),
   fc('sliceTextByChars', 'empty-map-is-identity', { text: 'xyz', charCount: 3, charMap: [] }, 1, 3),
   // A map whose first anchor sits at a negative text offset: slice counts it from the end.
-  fc('sliceTextByChars', 'negative-text-offset', { text: 'abcdef', charCount: 6, charMap: [[0, -5], [3, 4]] }, 0, 3),
+  fc(
+    'sliceTextByChars',
+    'negative-text-offset',
+    {
+      text: 'abcdef',
+      charCount: 6,
+      charMap: [
+        [0, -5],
+        [3, 4],
+      ],
+    },
+    0,
+    3,
+  ),
   fc('sliceTextByChars', 'short-text', { text: 'ab', charCount: 5 }, 0, 5),
   fc('initialSelectionState', 'empty'),
-  fc('reduceSelection', 'page-loaded', state(), { type: 'pageLoaded', page: pr(3) }),
-  fc('reduceSelection', 'page-loaded-again', state({ loaded: { 3: true } }), { type: 'pageLoaded', page: pr(3) }),
-  fc('reduceSelection', 'set', state({ gestureActive: true }), {
-    type: 'set',
-    selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 2 } },
-    segments: { 1: segmentsOf(spec(simple(3)), 0, 2) },
-  }),
-  fc('reduceSelection', 'clear', state({ selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 0 } }, segments: {} }), { type: 'clear' }),
-  fc('reduceSelection', 'clear-segments-only', state({ segments: { 2: [] } }), { type: 'clear' }),
-  fc('reduceSelection', 'clear-empty', state(), { type: 'clear' }),
-  fc('reduceSelection', 'hide', state(), { type: 'setHighlightHidden', hidden: true }),
-  fc('reduceSelection', 'hide-again', state({ highlightHidden: true }), { type: 'setHighlightHidden', hidden: true }),
-  fc('reduceSelection', 'selecting', state(), { type: 'setGestureActive', active: true }),
-  fc('reduceSelection', 'selecting-again', state(), { type: 'setGestureActive', active: false }),
-  ...Object.entries({ ...sweepFixtures, varied, mixed }).map(([name, snap]) => fc('layoutSweep', name, snap)),
+  transition(
+    'setSelection',
+    'set',
+    state({ selecting: true }),
+    { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 2 } },
+    { 1: SIMPLE3_SEGMENTS_0_2 },
+  ),
+  transition(
+    'clearSelection',
+    'clear',
+    state({
+      selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 0 } },
+      segments: {},
+    }),
+  ),
+  transition('clearSelection', 'clear-segments-only', state({ segments: { 2: [] } })),
+  transition('clearSelection', 'clear-empty', state()),
+  transition('setHighlightHidden', 'hide', state(), true),
+  transition('setHighlightHidden', 'hide-again', state({ highlightHidden: true }), true),
+  transition('setSelecting', 'selecting', state(), true),
+  transition('setSelecting', 'selecting-again', state(), false),
+  ...Object.entries({ ...sweepFixtures, varied, mixed }).map(([name, snap]) =>
+    fc('layoutSweep', name, snap),
+  ),
   fc('glyphAtGrid', 'varied', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }),
-  fc('glyphAtGrid', 'varied-tight-tolerance', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }, 0.4),
+  fc(
+    'glyphAtGrid',
+    'varied-tight-tolerance',
+    varied,
+    { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 },
+    0.4,
+  ),
   fc('glyphAtGrid', 'tilted', tilted, { x0: 30, x1: 330, y0: 90, y1: 330, step: 4 }),
   fc('glyphAtGrid', 'tilted-wide', tilted, { x0: 30, x1: 330, y0: 90, y1: 330, step: 4 }, 3),
   fc('glyphAtGrid', 'lines', lines, { x0: -10, x1: 80, y0: 40, y1: 110, step: 1.5 }),
   ...pairs.map(([name, snap]) => fc('pairProbe', name, snap)),
-  ...Object.entries({ ...maps, page1: text1, page9: text9 }).map(([name, snap]) => fc('sliceSweep', name, snap)),
+  ...Object.entries({ ...maps, page1: text1, page9: text9 }).map(([name, snap]) =>
+    fc('sliceSweep', name, snap),
+  ),
 ];
 
 // ── handles ──────────────────────────────────────────────────────────────────
@@ -1458,15 +2331,26 @@ interface ViewSpec {
 }
 const viewOf = (v: ViewSpec): SelectionHandleView => ({
   toOverlay: (page, p) => {
-    const m = v.matrices?.[String(page.pageObjectNumber)];
+    const m = v.matrices?.[String(page.objectNumber)];
     return m ? { x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] } : null;
   },
   pageAt: (o) => {
-    const hit = (v.pages ?? []).find((pg) => o.x >= pg.rect.x && o.x < pg.rect.x + pg.rect.width && o.y >= pg.rect.y && o.y < pg.rect.y + pg.rect.height);
-    return hit ? { ref: { kind: 'objectNumber', pageObjectNumber: hit.pon }, point: { x: o.x - hit.rect.x, y: o.y - hit.rect.y } } : null;
+    const hit = (v.pages ?? []).find(
+      (pg) =>
+        o.x >= pg.rect.x &&
+        o.x < pg.rect.x + pg.rect.width &&
+        o.y >= pg.rect.y &&
+        o.y < pg.rect.y + pg.rect.height,
+    );
+    return hit
+      ? {
+          ref: { kind: 'objectNumber', objectNumber: hit.pon },
+          point: { x: o.x - hit.rect.x, y: o.y - hit.rect.y },
+        }
+      : null;
   },
   pointOnPage: (page, o) => {
-    const pg = (v.pages ?? []).find((p) => p.pon === page.pageObjectNumber);
+    const pg = (v.pages ?? []).find((p) => p.pon === page.objectNumber);
     return pg ? { x: o.x - pg.rect.x, y: o.y - pg.rect.y } : null;
   },
 });
@@ -1488,10 +2372,14 @@ const handleDrag = (
       log.push({ beginGestureAt: [page, point], answer });
       return answer;
     },
-    extendTo: (page: PageRef, point: { x: number; y: number }) => void log.push({ extendTo: [page, point] }),
+    extendTo: (page: PageRef, point: { x: number; y: number }) =>
+      void log.push({ extendTo: [page, point] }),
     endGesture: () => void log.push({ endGesture: [] }),
   };
-  const session = createSelectionHandleDrag(target, viewOf(view), opposite, { kind: 'objectNumber', pageObjectNumber: draggedPon });
+  const session = createSelectionHandleDrag(target, viewOf(view), opposite, {
+    kind: 'objectNumber',
+    objectNumber: draggedPon,
+  });
   for (const m of moves) {
     if (m === 'end') session.end();
     else session.move(m);
@@ -1503,22 +2391,49 @@ const handleFns = {
   HANDLE_HEAD: () => HANDLE_HEAD,
   HANDLE_BAR: () => HANDLE_BAR,
   HANDLE_PAD: () => HANDLE_PAD,
-  selectionHandleGeom: (view: ViewSpec, ep: SelectionHandleEndpoint, role: 'start' | 'end') => selectionHandleGeom(viewOf(view), ep, role),
+  selectionHandleGeom: (view: ViewSpec, ep: SelectionHandleEndpoint, role: 'start' | 'end') =>
+    selectionHandleGeom(viewOf(view), ep, role),
   handleDrag,
 };
 
-const upright = { upperStart: { x: 10, y: 20 }, upperEnd: { x: 16, y: 20 }, lowerStart: { x: 10, y: 32 }, lowerEnd: { x: 16, y: 32 } };
-const turned = { upperStart: { x: 20, y: 40 }, upperEnd: { x: 20, y: 34 }, lowerStart: { x: 32, y: 40 }, lowerEnd: { x: 32, y: 34 } };
-const degenerate = { upperStart: { x: 5, y: 5 }, upperEnd: { x: 5, y: 5 }, lowerStart: { x: 5, y: 5 }, lowerEnd: { x: 5, y: 5 } };
+const upright = {
+  upperLeft: { x: 10, y: 20 },
+  upperRight: { x: 16, y: 20 },
+  lowerLeft: { x: 10, y: 32 },
+  lowerRight: { x: 16, y: 32 },
+};
+const turned = {
+  upperLeft: { x: 20, y: 40 },
+  upperRight: { x: 20, y: 34 },
+  lowerLeft: { x: 32, y: 40 },
+  lowerRight: { x: 32, y: 34 },
+};
+const degenerate = {
+  upperLeft: { x: 5, y: 5 },
+  upperRight: { x: 5, y: 5 },
+  lowerLeft: { x: 5, y: 5 },
+  lowerRight: { x: 5, y: 5 },
+};
 const id2: [number, number, number, number, number, number] = [2, 0, 0, 2, 100, 50];
-const tilt: [number, number, number, number, number, number] = [Math.cos(0.0005), Math.sin(0.0005), -Math.sin(0.0005), Math.cos(0.0005), 0, 0];
+const tilt: [number, number, number, number, number, number] = [
+  Math.cos(0.0005),
+  Math.sin(0.0005),
+  -Math.sin(0.0005),
+  Math.cos(0.0005),
+  0,
+  0,
+];
 const views: Record<string, ViewSpec> = {
   scaled: { matrices: { 1: id2 } },
   tilted: { matrices: { 1: tilt } },
   rotated: { matrices: { 1: [0, 1, -1, 0, 500, 0] } },
   none: { matrices: {} },
 };
-const ep = (glyphQuad: typeof upright, advance: 1 | -1, pon = 1) => ({ page: { kind: 'objectNumber' as const, pageObjectNumber: pon }, glyphQuad, advance });
+const ep = (glyphQuad: typeof upright, advance: 1 | -1, pon = 1) => ({
+  page: { kind: 'objectNumber' as const, objectNumber: pon },
+  glyphQuad,
+  advance,
+});
 
 const handleCases: FunctionCase[] = [
   fc('HANDLE_HEAD', 'px'),
@@ -1527,8 +2442,20 @@ const handleCases: FunctionCase[] = [
   ...(['start', 'end'] as const).flatMap((role) =>
     ([1, -1] as const).flatMap((advance) =>
       Object.entries(views).flatMap(([name, view]) => [
-        fc('selectionHandleGeom', `${name}-upright-${role}-${advance}`, view, ep(upright, advance), role),
-        fc('selectionHandleGeom', `${name}-turned-${role}-${advance}`, view, ep(turned, advance), role),
+        fc(
+          'selectionHandleGeom',
+          `${name}-upright-${role}-${advance}`,
+          view,
+          ep(upright, advance),
+          role,
+        ),
+        fc(
+          'selectionHandleGeom',
+          `${name}-turned-${role}-${advance}`,
+          view,
+          ep(turned, advance),
+          role,
+        ),
       ]),
     ),
   ),
@@ -1536,23 +2463,62 @@ const handleCases: FunctionCase[] = [
   fc('selectionHandleGeom', 'no-advance-start', views.scaled, ep(upright, 0 as never), 'start'),
   fc('selectionHandleGeom', 'no-advance-end', views.scaled, ep(upright, 0 as never), 'end'),
   fc('selectionHandleGeom', 'half-projected', { matrices: { 1: id2 } }, ep(upright, 1, 2), 'end'),
-  fc('handleDrag', 'untouched-press-settles-nothing', { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }] }, ep(upright, 1), 1, [true], ['end']),
-  fc('handleDrag', 'moves-extend-and-end-commits', { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }, { pon: 2, rect: { x: 0, y: 110, width: 100, height: 100 } }] }, ep(turned, -1), 1, [true], [{ x: 40, y: 30 }, { x: 50, y: 120 }, { x: 50, y: 105 }, 'end']),
-  fc('handleDrag', 'begin-refused-then-accepted', { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }] }, ep(upright, 1), 1, [false, true], [{ x: 1, y: 1 }, 'end', { x: 2, y: 2 }, { x: 3, y: 3 }, 'end']),
-  fc('handleDrag', 'gap-with-no-home-page', { pages: [] }, ep(upright, 1), 3, [true], [{ x: 1, y: 1 }, 'end']),
+  fc(
+    'handleDrag',
+    'untouched-press-settles-nothing',
+    { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }] },
+    ep(upright, 1),
+    1,
+    [true],
+    ['end'],
+  ),
+  fc(
+    'handleDrag',
+    'moves-extend-and-end-commits',
+    {
+      pages: [
+        { pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } },
+        { pon: 2, rect: { x: 0, y: 110, width: 100, height: 100 } },
+      ],
+    },
+    ep(turned, -1),
+    1,
+    [true],
+    [{ x: 40, y: 30 }, { x: 50, y: 120 }, { x: 50, y: 105 }, 'end'],
+  ),
+  fc(
+    'handleDrag',
+    'begin-refused-then-accepted',
+    { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }] },
+    ep(upright, 1),
+    1,
+    [false, true],
+    [{ x: 1, y: 1 }, 'end', { x: 2, y: 2 }, { x: 3, y: 3 }, 'end'],
+  ),
+  fc(
+    'handleDrag',
+    'gap-with-no-home-page',
+    { pages: [] },
+    ep(upright, 1),
+    3,
+    [true],
+    [{ x: 1, y: 1 }, 'end'],
+  ),
 ];
 
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/selection.json',
-    describes: 'packages/plugin/selection: text selection over engine geometry, the pointer handler, copy, permissions.',
+    describes:
+      'packages/plugin/selection: text selection over engine geometry, the pointer handler, copy, permissions.',
     cases,
   },
   {
     kind: 'function',
     file: 'plugins/selection-geometry.json',
-    describes: 'packages/plugin/selection: the coordinate seam, the engine-core text layout it builds on, the reducer.',
+    describes:
+      'packages/plugin/selection: the coordinate seam, the engine-core text layout it builds on, the reducer.',
     functions: geometryFns,
     cases: geometryCases,
   },

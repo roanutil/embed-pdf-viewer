@@ -67,8 +67,6 @@ public typealias ActionTriggerResult = EmbedPDFBindings.ActionTriggerResult
 public typealias ActionDiagnostic = EmbedPDFBindings.ActionDiagnostic
 /// A machine-readable category for an action diagnostic.
 public typealias ActionDiagnosticCode = EmbedPDFBindings.ActionDiagnosticCode
-/// An event describing an action tree dispatch.
-public typealias ActionDispatchEvent = EmbedPDFBindings.ActionDispatchEvent
 /// An event describing completion of the document opening sequence.
 public typealias OpenSequenceCompleted = EmbedPDFBindings.OpenSequenceCompleted
 /// Diagnostic information reported by document scripting.

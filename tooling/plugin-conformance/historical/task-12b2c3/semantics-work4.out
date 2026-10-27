@@ -1,0 +1,54 @@
+(node:27486) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (621.842292ms)
+✔ all 42 cases assert complete current results, exact callback order and named negative channels (31.711417ms)
+✔ M14 executor print distinguishes kernel origin refusal, adapter policy and accepted user print (2.056042ms)
+✔ every case pins engine arguments, catalog/cache reads, diagnostic event payloads and all promise settlements (0.491708ms)
+✔ six annotation events and first-party hints preserve full origin/source/event and execution notifications (0.131125ms)
+✔ adapter installation coalesces reports and completion observers run once after both document steps (0.100292ms)
+✔ slow page reads and save operations retain call order; held print observes adapter disposal before settlement (0.108625ms)
+✔ cache invalidation and close/reopen own current document subscriptions and drop all old registrations (0.095375ms)
+✖ all registry event channels and canDispatch booleans remain explicit (2.036625ms)
+✔ prior C2 current 76 complete inputs and exact outcomes remain unchanged (51.076541ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1623.274792
+
+✖ failing tests:
+
+test at test/actions-lifecycle-current.test.ts:1:26657
+✖ all registry event channels and canDispatch booleans remain explicit (2.036625ms)
+  AssertionError [ERR_ASSERTION]: off-releases-the-barrier exact registry channels
+  + actual - expected
+  ... Skipped lines
+
+    [
+      {
+        event: 'activeChanged',
+        value: {
+          documentId: 'a',
+  ...
+            id: 'a',
+  +         pageCount: 1,
+  -         pageCount: 2,
+            status: 'ready'
+          }
+        }
+      }
+    ]
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-lifecycle-current.test.ts:382:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ { event: 'activeChanged', value: [Object] }, { event: 'opened', value: [Object] } ],
+    expected: [ { event: 'activeChanged', value: [Object] }, { event: 'opened', value: [Object] } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

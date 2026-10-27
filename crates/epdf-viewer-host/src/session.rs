@@ -4,8 +4,8 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Weak};
 
 use epdf_ffi::{KernelPost, ViewerError};
 use epdf_kernel::{Error, Kernel, KernelOptions, Unsubscribe};
@@ -103,10 +103,21 @@ impl Session {
             plugins.push(epdf_plugin_selection::selection_plugin(Default::default()));
         }
         if config.link {
-            plugins.push(epdf_plugin_link::link_plugin(Default::default()));
+            plugins.push(epdf_plugin_link::link_plugin());
+        }
+        if config.history {
+            plugins.push(epdf_plugin_history::history_plugin(Default::default()));
         }
         if let Some(annotation) = config.annotation {
-            plugins.push(epdf_plugin_annotation::annotation_plugin(annotation.into()));
+            // The settings JSON registered over `annotation_defaults()`.
+            let registered = match settings_json("annotation", &annotation) {
+                Ok(registered) => registered,
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            };
+            plugins.push(epdf_plugin_annotation::annotation_plugin(registered));
         }
         if let Some(form) = config.form {
             plugins.push(epdf_plugin_form::form_plugin(form.into()));
@@ -115,22 +126,31 @@ impl Session {
             plugins.push(epdf_plugin_redaction::redaction_plugin(redaction.into()));
         }
         if let Some(measurement) = config.measurement {
-            plugins.push(epdf_plugin_measurement::measurement_plugin(measurement.into()));
+            match measurement.try_into() {
+                Ok(measurement) => {
+                    plugins.push(epdf_plugin_measurement::measurement_plugin(measurement))
+                }
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            }
         }
         let asset_worker: Rc<RefCell<Option<EngineWorker>>> = Rc::default();
         if let Some(stamp) = config.stamp {
             // The asset engine starts on the plugin's first open, on its own
             // engine thread, and is joined with the session.
             let (slot, assets_post) = (asset_worker.clone(), post.clone());
-            let factory: Rc<dyn Fn() -> Result<epdf_plugin_stamp::AssetEngineRef, Error>> =
-                Rc::new(move || {
-                    let (engine, worker) = NativeEngine::assets(assets_post.clone());
-                    if let Some(old) = slot.borrow_mut().replace(worker) {
-                        old.join();
-                    }
-                    Ok(epdf_plugin_stamp::AssetEngineRef::Ready(Rc::new(engine)))
-                });
-            let asset_engine = epdf_plugin_stamp::AssetEngine::Factory(factory);
+            let factory: epdf_plugin_stamp::AssetEngineFactory = Rc::new(move || {
+                let (engine, worker) = NativeEngine::assets(assets_post.clone());
+                if let Some(old) = slot.borrow_mut().replace(worker) {
+                    old.join();
+                }
+                Ok(epdf_plugin_stamp::MadeAssetEngine::Ready(epdf_plugin_stamp::LocalEngine::new(
+                    Rc::new(engine),
+                )))
+            });
+            let asset_engine = epdf_plugin_stamp::StampAssetEngine::Factory(factory);
             plugins.push(epdf_plugin_stamp::stamp_plugin(stamp.into_core(Some(asset_engine))));
         }
         if config.page_edit {
@@ -157,14 +177,15 @@ impl Session {
             ));
         }
         if let Some(actions) = config.actions {
-            // A throwing observer on one of the five hooks goes where the
-            // kernel's own reports go.
-            let observer = delegate.clone();
-            let config =
-                actions.into_plugin_config(Some(Rc::new(move |_hook: &str, error: &Error| {
-                    observer.report(ViewerError::from(error.clone()));
-                })));
-            plugins.push(epdf_plugin_actions::actions_plugin(config));
+            // A throwing listener is reported through the kernel's report,
+            // which reaches the delegate.
+            plugins.push(epdf_plugin_actions::actions_plugin(actions.into_plugin_config()));
+        }
+        if config.outline {
+            plugins.push(epdf_plugin_outline::outline_plugin());
+        }
+        if config.attachment {
+            plugins.push(epdf_plugin_attachment::attachment_plugin());
         }
         if let Some(signature) = config.signature {
             let SignatureSlots { signer, trust } = signature_slots;
@@ -175,7 +196,7 @@ impl Session {
                 post.clone(),
             ));
         }
-        let kernel = match Kernel::new(engine, plugins, options) {
+        let kernel = match Kernel::new_with_clock(engine, plugins, options, Rc::new(FrameClock)) {
             Ok(kernel) => kernel,
             Err(error) => {
                 worker.join();
@@ -205,6 +226,44 @@ impl Session {
     pub fn asset_engine_alive(&self) -> Option<Weak<()>> {
         self.asset_worker.borrow().as_ref().map(EngineWorker::alive)
     }
+}
+
+/// The host's time on the kernel thread, with frames: the stage's motion
+/// and the render plugin's frame batching run on 16 ms timers, as a
+/// browser's `browserClock()` gives them animation frames.
+struct FrameClock;
+
+impl epdf_kernel::clock::HostClock for FrameClock {
+    fn now(&self) -> f64 {
+        epdf_kernel::rt::now()
+    }
+    fn after(&self, ms: f64, run: Box<dyn FnOnce()>) -> Unsubscribe {
+        let timer = epdf_kernel::rt::set_timeout(ms, run);
+        Unsubscribe::new(move || epdf_kernel::rt::clear_timer(timer))
+    }
+    fn has_frames(&self) -> bool {
+        true
+    }
+    fn next_frame(&self, run: Box<dyn FnOnce(f64)>) -> Unsubscribe {
+        self.after(16.0, Box::new(move || run(epdf_kernel::rt::now())))
+    }
+}
+
+/// A plugin's settings as JSON text (`""` for the defaults), or
+/// `invalid-input`.
+fn settings_json(plugin: &str, text: &str) -> Result<Option<serde_json::Value>, Error> {
+    if text.trim().is_empty() {
+        return Ok(None);
+    }
+    serde_json::from_str::<serde_json::Value>(text).map(Some).map_err(|e| {
+        epdf_kernel::error::plugin_error(
+            "invalid-input",
+            plugin,
+            format!("[epdf-viewer-host] {plugin} settings are not JSON: {e}"),
+            None,
+            None,
+        )
+    })
 }
 
 impl Drop for Session {

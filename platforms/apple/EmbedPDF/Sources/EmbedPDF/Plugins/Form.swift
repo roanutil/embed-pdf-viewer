@@ -15,8 +15,6 @@ public typealias FormKind = EmbedPDFBindings.FormKind
 public typealias FormSnapshot = EmbedPDFBindings.FormSnapshot
 /// A field's identity, flags, typed value and page widgets.
 public typealias FormField = EmbedPDFBindings.FormField
-/// Read-only, required and export flags on a form field.
-public typealias FormFieldFlags = EmbedPDFBindings.FormFieldFlags
 /// The type-specific value and settings of a form field.
 public typealias FormFieldDetail = EmbedPDFBindings.FormFieldDetail
 /// The page-space appearance and annotation identity of a field widget.
@@ -37,28 +35,34 @@ public typealias FormFillItem = EmbedPDFBindings.FormFillItem
 public typealias FormFillControl = EmbedPDFBindings.FormFillControl
 /// The field and widget found under a page-space point.
 public typealias FormWidgetHit = EmbedPDFBindings.FormWidgetHit
+/// Where a field's new widget goes; without bounds, next in line after the field's widgets.
+public typealias FormWidgetPlacement = EmbedPDFBindings.FormWidgetPlacement
+/// The field after adding a widget, and the new widget's row as the engine's JSON.
+public typealias FormWidgetAdded = EmbedPDFBindings.FormWidgetAdded
 /// The outcome of a form commit, including validation refusal or no change.
 public typealias FormCommitStatus = EmbedPDFBindings.FormCommitStatus
 /// The status and validation information from committing a field value.
 public typealias FormCommitResult = EmbedPDFBindings.FormCommitResult
+/// Whether a value write was applied, left the field unchanged, or was rejected by validation.
+public typealias FormSetValueStatus = EmbedPDFBindings.FormSetValueStatus
+/// The field as it is after a value write, and what the write did.
+public typealias FormSetValueResult = EmbedPDFBindings.FormSetValueResult
 /// Applied, skipped and failed form entries from a batch operation.
 public typealias FormBatchResult = EmbedPDFBindings.FormBatchResult
 /// The field and error associated with a failed batch entry.
 public typealias FormBatchFailure = EmbedPDFBindings.FormBatchFailure
+/// The field name and reason for a skipped batch entry.
+public typealias FormBatchSkip = EmbedPDFBindings.FormBatchSkip
 /// Criteria for listing a subset of AcroForm fields.
 public typealias FormFilter = EmbedPDFBindings.FormFilter
 /// The family, page-space bounds and initial settings of a new field.
 public typealias FormCreateFieldInput = EmbedPDFBindings.FormCreateFieldInput
-/// The references created when adding a field and its widget.
-public typealias FormCreatedField = EmbedPDFBindings.FormCreatedField
 /// Changes to field flags, options and other design properties.
 public typealias FormFieldPatch = EmbedPDFBindings.FormFieldPatch
 /// A field design property accepted by a patch.
 public typealias FormFieldPatchKey = EmbedPDFBindings.FormFieldPatchKey
-/// The FDF or XFDF interchange format for form values.
-public typealias FormDataFormat = EmbedPDFBindings.FormDataFormat
-/// Exported form bytes together with their FDF or XFDF format.
-public typealias FormDataExport = EmbedPDFBindings.FormDataExport
+/// The fields a bundle import created, its reference map and dropped items as JSON.
+public typealias FormImportResult = EmbedPDFBindings.FormImportResult
 /// Whether widget activation committed a form value or dispatched an action.
 public typealias FormActivationResult = EmbedPDFBindings.FormActivationResult
 /// A confirmed form value, field-tree or loading-state change.
@@ -107,24 +111,20 @@ public struct FormCapability: Sendable {
     try await bridged { try await handle.value(fieldRef: ref) }
   }
 
+  /// Returns every field value keyed by full name, as plain-data JSON.
+  public func exportValues() async throws(PDFError) -> String {
+    try await bridged { try await handle.exportValues() }
+  }
+
   /// One control per widget on a page: what a native form overlay draws.
-  public func fillItems(on page: PageRef) async throws(PDFError) -> [FormFillItem] {
-    try await bridged { try await handle.fillItems(page: page) }
-  }
-
-  /// Returns the native overlay control for an annotation object number, or `nil` if it is unknown.
-  public func fillItem(_ annotObjectNumber: UInt32) async throws(PDFError) -> FormFillItem? {
-    try await bridged { try await handle.fillItem(annotObjectNumber: annotObjectNumber) }
-  }
-
-  /// Returns the native form overlay items for widgets on `page`.
+  /// One control per widget on a page: what a native form overlay draws.
   public func widgets(on page: PageRef) async throws(PDFError) -> [FormFillItem] {
     try await bridged { try await handle.widgets(page: page) }
   }
 
-  /// Starts loading page widget annotations if needed, without waiting for that load to finish.
+  /// Waits until the form, which carries every page's widgets, has been read.
   public func ensureLoaded(_ page: PageRef) async throws(PDFError) {
-    try await bridged { try await handle.ensureLoaded(page: page) }
+    try await bridgedCancellable { token in try await handle.ensureLoaded(page: page, cancel: token) }
   }
 
   /// Hit-tests a page-space point and returns the widget and field there, or `nil`.
@@ -137,27 +137,17 @@ public struct FormCapability: Sendable {
     try await bridged { try await handle.pageBox(page: page) }
   }
 
-  /// Commits a typed field value and returns whether it was applied, unchanged or refused by validation.
-  public func setValue(_ value: FormValueInput, for ref: FormFieldRef) async throws(PDFError) -> FormCommitResult {
+  /// Commits a typed field value and returns the field as it is now, with whether the value
+  /// was applied, unchanged or rejected by validation.
+  ///
+  /// - Parameters:
+  ///   - value: A text value (`.value`), a checkbox or radio (`.checked`, or `.value`
+  ///     with a radio's export value) or a choice (`.selectedValues`).
+  ///   - ref: The field to write.
+  public func setValue(_ value: FormValueInput, for ref: FormFieldRef) async throws(PDFError)
+    -> FormSetValueResult
+  {
     try await bridgedCancellable { token in try await handle.setValue(fieldRef: ref, value: value, cancel: token) }
-  }
-
-  /// Commits text to a text field and returns the commit and validation outcome.
-  public func setText(_ text: String, for ref: FormFieldRef) async throws(PDFError) -> FormCommitResult {
-    try await bridgedCancellable { token in try await handle.setText(fieldRef: ref, text: text, cancel: token) }
-  }
-
-  /// A checkbox or radio by its on-state (`FormToggleWidget.onState`);
-  /// `nil` clears the group.
-  public func setChecked(_ onState: String?, for ref: FormFieldRef) async throws(PDFError) -> FormCommitResult {
-    try await bridgedCancellable { token in
-      try await handle.setChecked(fieldRef: ref, onState: onState, cancel: token)
-    }
-  }
-
-  /// Commits choice export values to a choice field and returns the commit outcome.
-  public func setChoice(_ values: [String], for ref: FormFieldRef) async throws(PDFError) -> FormCommitResult {
-    try await bridgedCancellable { token in try await handle.setChoice(fieldRef: ref, values: values, cancel: token) }
   }
 
   /// Commits field-reference/value pairs and reports individual outcomes.
@@ -165,72 +155,85 @@ public struct FormCapability: Sendable {
     try await bridgedCancellable { token in try await handle.setValues(entries: entries, cancel: token) }
   }
 
-  /// Commits values keyed by field name and reports individual outcomes.
-  public func importValues(_ values: [String: FormValueInput]) async throws(PDFError) -> FormBatchResult {
-    try await bridgedCancellable { token in try await handle.importValues(values: values, cancel: token) }
-  }
-
-  /// Restores one field's default value.
-  public func reset(_ ref: FormFieldRef) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.reset(fieldRef: ref, cancel: token) }
-  }
-
-  /// Restores defaults for all fields or a specified subset.
+  /// Commits plain values keyed by full field name and reports individual outcomes.
   ///
-  /// - Parameters:
-  ///   - fields: Fields to reset; `nil` targets every field.
-  ///   - excluding: When `true`, resets fields outside the supplied list.
-  /// - Returns: Applied, skipped and failed field resets.
-  public func resetAll(_ fields: [FormFieldRef]? = nil, excluding: Bool = false) async throws(PDFError) -> FormBatchResult {
+  /// - Parameter valuesJSON: A JSON object of values by full name, as ``exportValues()`` returns.
+  public func importValues(_ valuesJSON: String) async throws(PDFError) -> FormBatchResult {
+    try await bridgedCancellable { token in try await handle.importValues(valuesJson: valuesJSON, cancel: token) }
+  }
+
+  /// Restores default values and returns the fields it changed.
+  ///
+  /// - Parameter fields: Fields to reset; `nil` targets every field the session may fill.
+  @discardableResult
+  public func reset(_ fields: [FormFieldRef]? = nil) async throws(PDFError) -> [FormField] {
+    try await bridgedCancellable { token in try await handle.reset(fields: fields, cancel: token) }
+  }
+
+  /// Creates a field and its widget from the supplied design settings and returns the field.
+  public func create(_ input: FormCreateFieldInput) async throws(PDFError) -> FormField {
+    try await bridgedCancellable { token in try await handle.create(input: input, cancel: token) }
+  }
+
+  /// Adds another widget for an existing field and returns the field with the new widget.
+  public func addWidget(to ref: FormFieldRef, _ placement: FormWidgetPlacement) async throws(PDFError)
+    -> FormWidgetAdded
+  {
     try await bridgedCancellable { token in
-      try await handle.resetAll(fields: fields, exclude: excluding, cancel: token)
+      try await handle.addWidget(fieldRef: ref, placement: placement, cancel: token)
     }
   }
 
-  /// Creates a field and its widget from the supplied design settings and returns their references.
-  public func createField(_ input: FormCreateFieldInput) async throws(PDFError) -> FormCreatedField {
-    try await bridgedCancellable { token in try await handle.createField(input: input, cancel: token) }
-  }
-
-  /// Changes the supplied design properties of a field.
-  public func updateField(_ ref: FormFieldRef, _ patch: FormFieldPatch) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.updateField(fieldRef: ref, patch: patch, cancel: token) }
+  /// Changes the supplied design properties of a field and returns the updated field.
+  @discardableResult
+  public func update(_ ref: FormFieldRef, _ patch: FormFieldPatch) async throws(PDFError) -> FormField {
+    try await bridgedCancellable { token in try await handle.update(fieldRef: ref, patch: patch, cancel: token) }
   }
 
   /// Deletes a field and its widgets from the form.
-  public func deleteField(_ ref: FormFieldRef) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.deleteField(fieldRef: ref, cancel: token) }
+  public func delete(_ ref: FormFieldRef) async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.delete(fieldRef: ref, cancel: token) }
   }
 
-  /// Detaches a widget annotation from a field.
-  public func detachWidget(_ widget: AnnotationRef, from ref: FormFieldRef) async throws(PDFError) {
+  /// Removes a widget annotation from a field and returns the updated field.
+  ///
+  /// The widget stays on its page, in no field.
+  @discardableResult
+  public func removeWidget(_ widget: AnnotationRef, from ref: FormFieldRef) async throws(PDFError)
+    -> FormField
+  {
     try await bridgedCancellable { token in
-      try await handle.detachWidget(fieldRef: ref, widget: widget, cancel: token)
+      try await handle.removeWidget(fieldRef: ref, widget: widget, cancel: token)
     }
   }
 
-  /// Attaches a widget annotation to a field.
-  public func attachWidget(_ widget: AnnotationRef, to ref: FormFieldRef) async throws(PDFError) {
+  /// Exports fields as a `FormBundle` JSON document.
+  ///
+  /// - Parameter fields: Fields to export; `nil` exports every field.
+  public func export(_ fields: [FormFieldRef]? = nil) async throws(PDFError) -> String {
+    try await bridgedCancellable { token in try await handle.export(fields: fields, cancel: token) }
+  }
+
+  /// Copies a bundle's fields into this document.
+  ///
+  /// - Parameters:
+  ///   - bundleJSON: A `FormBundle` JSON document, as ``export(_:)`` returns.
+  ///   - optionsJSON: `FormImportOptions` as JSON.
+  public func `import`(_ bundleJSON: String, optionsJSON: String = "{}") async throws(PDFError)
+    -> FormImportResult
+  {
     try await bridgedCancellable { token in
-      try await handle.attachWidget(fieldRef: ref, widget: widget, cancel: token)
+      try await handle.import(bundleJson: bundleJSON, optionsJson: optionsJSON, cancel: token)
     }
   }
 
-  /// `nil` is XFDF.
-  public func exportData(_ format: FormDataFormat? = nil) async throws(PDFError) -> FormDataExport {
-    try await bridgedCancellable { token in try await handle.exportData(format: format, cancel: token) }
-  }
-
-  /// FDF or XFDF; `nil` sniffs the format from the bytes.
-  public func importData(_ bytes: Data, format: FormDataFormat? = nil) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.importData(bytes: bytes, format: format, cancel: token) }
-  }
-
-  /// Relinks inconsistent form fields and page widgets.
+  /// Relinks inconsistent form fields and page widgets that other applications read differently.
   ///
   /// - Parameter bakeAppearances: When `true`, generates appearance streams for
   ///   every widget so the document no longer needs `/NeedAppearances`. Defaults to `false`.
-  public func repair(bakeAppearances: Bool = false) async throws(PDFError) {
+  /// - Returns: The repair's result as JSON (`FormRepairResult`).
+  @discardableResult
+  public func repair(bakeAppearances: Bool = false) async throws(PDFError) -> String {
     try await bridgedCancellable { token in try await handle.repair(bakeAppearances: bakeAppearances, cancel: token) }
   }
 
@@ -244,9 +247,9 @@ public struct FormCapability: Sendable {
     try await bridged { try await handle.canRead() }
   }
 
-  /// Returns whether `doc.forms.fill` is currently granted.
-  public func canFill() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canFill() }
+  /// Returns whether the session may fill `ref` (`doc.forms.fill`); `false` for a field the form doesn't have.
+  public func canFill(_ ref: FormFieldRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canFill(fieldRef: ref) }
   }
 
   /// Returns whether `doc.forms.modify` is currently granted.

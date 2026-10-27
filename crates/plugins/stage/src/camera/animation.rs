@@ -1,298 +1,350 @@
-//! `camera/animation.ts`: camera motion over the scheduler seam. The
-//! coordinate tween, the zoom-anchored tween (the focal page-point holds
-//! still by construction), and the momentum and edge physics (glide,
-//! spring). One frame handle: every verb's first act, `cancel_anim`, is
-//! also a catch.
+//! `camera/animation.ts`: camera motion over the host's frames
+//! (`ctx.clock`). The coordinate tween, the zoom-anchored tween (the focal
+//! page-point holds still by construction), and the momentum and edge
+//! physics (glide, spring). One frame is waited for at a time:
+//! `cancel_animation`, every verb's first act, is also "catch".
 
+use crate::model::CameraObject;
 use crate::prelude::*;
 
-/// One axis of the momentum integrator, in camera-space screen px.
+/// The default tween duration.
+const TWEEN_MS: f64 = 240.0;
+
+fn lerp(from: f64, to: f64, progress: f64) -> f64 {
+    from + (to - from) * progress
+}
+
+/// One axis of the momentum integrator, in screen px.
 #[derive(Clone, Copy)]
 struct AxisState {
-    p: f64,
-    v: f64,
+    position: f64,
+    velocity: f64,
     springing: bool,
     done: bool,
 }
 
-impl StageCapability {
-    // ── camera tween ──────────────────────────────────────────────────────────
+/// What runs when a motion reaches its natural end.
+pub(crate) type Then = Rc<dyn Fn(&StageCapability)>;
 
-    pub(crate) fn cancel_anim(&self) {
-        let raf = self.inner.raf.get();
-        if raf != 0 {
-            self.caf_call(raf);
-            self.inner.raf.set(0);
+impl StageCapability {
+    /// Cancel the frame the running motion waits for.
+    pub(crate) fn cancel_animation(&self) {
+        let cancel = self.inner.cancel_frame.borrow_mut().take();
+        if let Some(cancel) = cancel {
+            cancel.call();
         }
     }
 
     /// A tween or fling reached its natural end.
     fn end_motion(&self) {
-        self.inner.raf.set(0);
-        self.inner.events.motion_ended.emit(&StageMotionEndedEvent { camera: self.cam() });
+        self.inner.cancel_frame.borrow_mut().take();
+        self.emit_motion_ended();
+    }
+
+    fn emit_motion_ended(&self) {
+        let state = self.st();
+        self.inner
+            .events
+            .motion_ended
+            .emit(&StageMotionEndedEvent { camera: state.camera, order: state.camera_order() });
+    }
+
+    /// Wait for the next frame, as the running motion's.
+    fn next_frame(&self, tick: impl FnOnce(&StageCapability, f64) + 'static) {
+        let this = self.clone();
+        let cancel = self.inner.clock.next_frame(move |now| tick(&this, now));
+        *self.inner.cancel_frame.borrow_mut() = Some(cancel);
     }
 
     /// Tween to `target`, clamping every frame to `bounds`. `then` runs on
-    /// natural completion only.
-    pub(crate) fn animate_to(&self, target: Camera, bounds: Rect, then: Option<Rc<dyn Fn(&Self)>>) {
-        if !self.can_animate() {
-            self.set_cam(target, bounds);
+    /// natural completion only: a cancelled tween belongs to the verb that
+    /// cancelled it.
+    pub(crate) fn animate_to(&self, target: CameraObject, bounds: Rect, then: Option<Then>) {
+        if !self.inner.clock.has_frames() {
+            self.write_camera(target, bounds);
             if let Some(then) = then {
                 then(self);
             }
             return;
         }
-        self.cancel_anim();
-        let from = self.cam();
-        let t0 = Rc::new(Cell::new(None::<f64>));
-        let id = self.raf_call(self.tween_tick(from, target, bounds, t0, then));
-        self.inner.raf.set(id);
+        self.cancel_animation();
+        let from = self.camera();
+        let started = Rc::new(Cell::new(None::<f64>));
+        self.next_frame(Self::tween_tick(from, target.camera, bounds, started, then));
     }
 
     fn tween_tick(
-        &self,
         from: Camera,
         target: Camera,
         bounds: Rect,
-        t0: Rc<Cell<Option<f64>>>,
-        then: Option<Rc<dyn Fn(&Self)>>,
-    ) -> Box<dyn FnOnce(f64)> {
-        let this = self.clone();
-        Box::new(move |now| {
-            let start = match t0.get() {
-                Some(t) => t,
+        started: Rc<Cell<Option<f64>>>,
+        then: Option<Then>,
+    ) -> impl FnOnce(&StageCapability, f64) + 'static {
+        move |this, now| {
+            // Anchor to the first real timestamp (works even when it is 0).
+            let started_at = match started.get() {
+                Some(at) => at,
                 None => {
-                    t0.set(Some(now));
+                    started.set(Some(now));
                     now
                 }
             };
-            let k = ease_out_cubic(js::min(1.0, (now - start) / TWEEN_MS));
-            let lerp = |a: f64, b: f64| a + (b - a) * k;
-            this.set_cam(
-                Camera {
-                    x: lerp(from.x, target.x),
-                    y: lerp(from.y, target.y),
-                    zoom: lerp(from.zoom, target.zoom),
-                },
+            let progress = ease_out_cubic(js::min(1.0, (now - started_at) / TWEEN_MS));
+            this.write_camera(
+                CameraObject::xy_zoom(Camera {
+                    x: lerp(from.x, target.x, progress),
+                    y: lerp(from.y, target.y, progress),
+                    zoom: lerp(from.zoom, target.zoom, progress),
+                }),
                 bounds,
             );
-            if k < 1.0 {
-                let id = this.raf_call(this.tween_tick(from, target, bounds, t0, then));
-                this.inner.raf.set(id);
+            if progress < 1.0 {
+                this.next_frame(Self::tween_tick(from, target, bounds, started, then));
             } else {
                 this.end_motion();
                 if let Some(then) = then {
-                    then(&this);
+                    then(this);
                 }
             }
-        })
+        }
     }
 
-    /// Zoom-anchored tween: the zoom interpolates geometrically and each
-    /// frame's camera derives from the focal anchor at that zoom.
+    /// The zoom-anchored tween: the zoom interpolates geometrically and each
+    /// frame's camera derives from the focal anchor at that zoom, then
+    /// clamps.
     pub(crate) fn animate_zoom_anchored(
         &self,
         focal: Anchor,
-        pt: Point,
+        point: Point,
         target_zoom: f64,
-        then: Option<Rc<dyn Fn(&Self)>>,
-    ) {
-        if !self.can_animate() {
+        then: Option<Then>,
+    ) -> Result<(), Error> {
+        if !self.inner.clock.has_frames() {
             let scene = self.build_scene();
             if scene.item_count > 0 {
-                self.set_cam_anchor_at_screen(focal, &scene, pt, target_zoom);
+                self.write_camera_anchor_at_screen(focal, &scene, point, target_zoom)?;
             }
             if let Some(then) = then {
                 then(self);
             }
-            return;
+            return Ok(());
         }
-        self.cancel_anim();
-        let z0 = self.cam().zoom;
-        let t0 = Rc::new(Cell::new(None::<f64>));
-        let id = self.raf_call(self.zoom_tick(focal, pt, z0, target_zoom, t0, then));
-        self.inner.raf.set(id);
+        self.cancel_animation();
+        let start_zoom = self.camera().zoom;
+        let started = Rc::new(Cell::new(None::<f64>));
+        self.next_frame(Self::zoom_tick(focal, point, start_zoom, target_zoom, started, then));
+        Ok(())
     }
 
-    /// `setCam(S.cameraForAnchorAtScreen(focal, scene, pt, zoom))`, whose
-    /// default bounds exist whenever the scene has items.
-    pub(crate) fn set_cam_anchor_at_screen(
+    /// `writeCamera(cameraForAnchorAtScreen(focal, scene, point, zoom))`.
+    pub(crate) fn write_camera_anchor_at_screen(
         &self,
         focal: Anchor,
         scene: &Scene,
-        pt: Point,
+        point: Point,
         zoom: f64,
-    ) {
-        let camera = sc::camera_for_anchor_at_screen(focal, scene, pt, zoom)
-            .expect("a scene with items places an anchor");
-        let bounds = self.stay_bounds().expect("a scene with items has bounds");
-        self.set_cam(camera, bounds);
+    ) -> Result<(), Error> {
+        let camera =
+            sc::camera_for_anchor_at_screen(focal, scene, point, zoom).map_err(stage_error)?;
+        self.write_camera_stay(CameraObject::zoom_xy(camera))
     }
 
     fn zoom_tick(
-        &self,
         focal: Anchor,
-        pt: Point,
-        z0: f64,
+        point: Point,
+        start_zoom: f64,
         target_zoom: f64,
-        t0: Rc<Cell<Option<f64>>>,
-        then: Option<Rc<dyn Fn(&Self)>>,
-    ) -> Box<dyn FnOnce(f64)> {
-        let this = self.clone();
-        Box::new(move |now| {
-            let start = match t0.get() {
-                Some(t) => t,
+        started: Rc<Cell<Option<f64>>>,
+        then: Option<Then>,
+    ) -> impl FnOnce(&StageCapability, f64) + 'static {
+        move |this, now| {
+            let started_at = match started.get() {
+                Some(at) => at,
                 None => {
-                    t0.set(Some(now));
+                    started.set(Some(now));
                     now
                 }
             };
-            let k = ease_out_cubic(js::min(1.0, (now - start) / TWEEN_MS));
-            let z = zoom_lerp(z0, target_zoom, k);
+            let progress = ease_out_cubic(js::min(1.0, (now - started_at) / TWEEN_MS));
+            let zoom = zoom_lerp(start_zoom, target_zoom, progress);
             let scene = this.build_scene();
             if scene.item_count > 0 {
-                this.set_cam_anchor_at_screen(focal, &scene, pt, z);
+                // A throw in a frame callback is uncaught in the TypeScript;
+                // the motion stops there.
+                if this.write_camera_anchor_at_screen(focal, &scene, point, zoom).is_err() {
+                    this.inner.cancel_frame.borrow_mut().take();
+                    return;
+                }
             }
-            if k < 1.0 {
-                let id = this.raf_call(this.zoom_tick(focal, pt, z0, target_zoom, t0, then));
-                this.inner.raf.set(id);
+            if progress < 1.0 {
+                this.next_frame(Self::zoom_tick(
+                    focal,
+                    point,
+                    start_zoom,
+                    target_zoom,
+                    started,
+                    then,
+                ));
             } else {
                 this.end_motion();
                 if let Some(then) = then {
-                    then(&this);
+                    then(this);
                 }
             }
-        })
+        }
     }
 
-    // ── momentum and edge physics ─────────────────────────────────────────────
+    // ── momentum and edge physics ──
 
-    pub(crate) fn start_camera_physics(&self, vx_finger: f64, vy_finger: f64) -> Result<(), Error> {
-        if !self.can_animate() {
-            return self.set_cam_current(); // no host frames: snap into bounds
+    /// The glide, the spring and their conversion, per axis, until every
+    /// trajectory ends on the clamp.
+    pub(crate) fn start_camera_physics(
+        &self,
+        finger_velocity_x: f64,
+        finger_velocity_y: f64,
+    ) -> Result<(), Error> {
+        if !self.inner.clock.has_frames() {
+            // No host frames: snap straight into bounds.
+            return self.write_camera_stay(self.camera_object());
         }
-        self.cancel_anim();
-        let zoom = self.cam().zoom;
-        let c0 = self.cam();
-        let cl0 = sc::clamp_camera(c0, self.stay_bounds()?, self.vp(), self.constraint());
-        let b0 = self.stay_bounds()?;
-        let v0 = self.vp();
-        let mk = |cam_a: f64, clamped_a: f64, finger_v: f64| AxisState {
-            p: cam_a * zoom,
-            v: -finger_v / 1000.0,
-            springing: cam_a != clamped_a,
-            done: false,
-        };
+        self.cancel_animation();
+        let zoom = self.camera().zoom;
+        let start = self.camera();
+        let start_clamped =
+            sc::clamp_camera(start, self.stay_bounds()?, self.viewport(), self.constraint());
+        let start_bounds = self.stay_bounds()?;
+        let start_viewport = self.viewport();
+        let axis_state =
+            |camera_position: f64, clamped_position: f64, finger_velocity: f64| AxisState {
+                position: camera_position * zoom,
+                velocity: -finger_velocity / 1000.0,
+                springing: camera_position != clamped_position,
+                done: false,
+            };
         // A fitting axis takes no ballistic motion.
-        let ax = mk(
-            c0.x,
-            cl0.x,
-            if self.axis_travels(b0.x, b0.width, v0.width, zoom) { vx_finger } else { 0.0 },
+        let axis_x = axis_state(
+            start.x,
+            start_clamped.x,
+            if self.axis_travels(start_bounds.x, start_bounds.width, start_viewport.width, zoom) {
+                finger_velocity_x
+            } else {
+                0.0
+            },
         );
-        let ay = mk(
-            c0.y,
-            cl0.y,
-            if self.axis_travels(b0.y, b0.height, v0.height, zoom) { vy_finger } else { 0.0 },
+        let axis_y = axis_state(
+            start.y,
+            start_clamped.y,
+            if self.axis_travels(start_bounds.y, start_bounds.height, start_viewport.height, zoom) {
+                finger_velocity_y
+            } else {
+                0.0
+            },
         );
-        if !ax.springing && !ay.springing && js::hypot(ax.v, ay.v) < FLING_STOP {
+        if !axis_x.springing
+            && !axis_y.springing
+            && js::hypot(axis_x.velocity, axis_y.velocity) < FLING_STOP
+        {
             return Ok(());
         }
-        let state = Rc::new(RefCell::new((ax, ay, false, 0.0)));
-        let id = self.raf_call(self.physics_tick(zoom, state));
-        self.inner.raf.set(id);
+        let state = Rc::new(RefCell::new((axis_x, axis_y, None::<f64>)));
+        self.next_frame(Self::physics_tick(zoom, state));
         Ok(())
     }
 
     fn physics_tick(
-        &self,
         zoom: f64,
-        state: Rc<RefCell<(AxisState, AxisState, bool, f64)>>,
-    ) -> Box<dyn FnOnce(f64)> {
-        let this = self.clone();
-        Box::new(move |now| {
-            this.inner.raf.set(0);
-            let (mut ax, mut ay, started, last) = *state.borrow();
+        state: Rc<RefCell<(AxisState, AxisState, Option<f64>)>>,
+    ) -> impl FnOnce(&StageCapability, f64) + 'static {
+        move |this, now| {
+            this.inner.cancel_frame.borrow_mut().take();
+            let (mut axis_x, mut axis_y, last_frame_at) = *state.borrow();
             // The first frame assumes one 60 Hz step.
-            let dt = if started { js::min(64.0, js::max(1.0, now - last)) } else { 16.0 };
-            // The stay bounds exist: the motion started against them.
+            let elapsed_ms = match last_frame_at {
+                Some(last) => js::min(64.0, js::max(1.0, now - last)),
+                None => 16.0,
+            };
+            // A throw in a frame callback is uncaught in the TypeScript; the
+            // motion stops there. The stay bounds exist: the motion started
+            // against them, and only paged flow over no pages lacks them.
             let Ok(bounds) = this.stay_bounds() else { return };
-            let cl = sc::clamp_camera(
-                Camera { x: ax.p / zoom, y: ay.p / zoom, zoom },
+            let home = sc::clamp_camera(
+                Camera { x: axis_x.position / zoom, y: axis_y.position / zoom, zoom },
                 bounds,
-                this.vp(),
+                this.viewport(),
                 this.constraint(),
             );
-            let step = |a: &mut AxisState, edge_world: f64| {
-                if a.done {
+            let step = |axis: &mut AxisState, edge_world: f64| {
+                if axis.done {
                     return;
                 }
-                let r = if a.springing {
-                    spring_step(a.p, a.v, edge_world * zoom, dt)
+                let next = if axis.springing {
+                    spring_step(axis.position, axis.velocity, edge_world * zoom, elapsed_ms)
                 } else {
-                    glide_step(a.p, a.v, dt)
+                    glide_step(axis.position, axis.velocity, elapsed_ms)
                 };
-                a.p = r.p;
-                a.v = r.v;
-                a.done = r.done;
+                axis.position = next.position;
+                axis.velocity = next.velocity;
+                axis.done = next.done;
             };
-            step(&mut ax, cl.x);
-            step(&mut ay, cl.y);
-            let bounds = this.stay_bounds().unwrap_or(bounds);
-            let ncl = sc::clamp_camera(
-                Camera { x: ax.p / zoom, y: ay.p / zoom, zoom },
+            step(&mut axis_x, home.x);
+            step(&mut axis_y, home.y);
+            let Ok(bounds) = this.stay_bounds() else { return };
+            let next_home = sc::clamp_camera(
+                Camera { x: axis_x.position / zoom, y: axis_y.position / zoom, zoom },
                 bounds,
-                this.vp(),
+                this.viewport(),
                 this.constraint(),
             );
-            let convert = |a: &mut AxisState, clamped_a: f64| {
-                if !a.springing && (clamped_a * zoom - a.p).abs() > 1e-6 {
-                    a.p = clamped_a * zoom;
-                    a.springing = true;
-                    a.done = false;
+            let convert = |axis: &mut AxisState, clamped_position: f64| {
+                if !axis.springing && (clamped_position * zoom - axis.position).abs() > 1e-6 {
+                    axis.position = clamped_position * zoom;
+                    axis.springing = true;
+                    axis.done = false;
                 }
             };
-            convert(&mut ax, ncl.x);
-            convert(&mut ay, ncl.y);
-            *state.borrow_mut() = (ax, ay, true, now);
-            this.set_cam_raw(Camera { x: ax.p / zoom, y: ay.p / zoom, zoom });
-            // A throw in a frame callback is uncaught in the TypeScript.
-            let _ = this.sync_cursor_from_camera();
-            if ax.done && ay.done {
+            convert(&mut axis_x, next_home.x);
+            convert(&mut axis_y, next_home.y);
+            *state.borrow_mut() = (axis_x, axis_y, Some(now));
+            this.write_camera_unclamped(CameraObject::xy_zoom(Camera {
+                x: axis_x.position / zoom,
+                y: axis_y.position / zoom,
+                zoom,
+            }));
+            if this.sync_cursor_from_camera().is_err() {
+                return;
+            }
+            if axis_x.done && axis_y.done {
                 // The exact landing: clamped, snapped, settled.
-                if this.set_cam_current().is_ok() {
-                    this.inner
-                        .events
-                        .motion_ended
-                        .emit(&StageMotionEndedEvent { camera: this.cam() });
+                if this.write_camera_stay(this.camera_object()).is_ok() {
+                    this.emit_motion_ended();
                 }
                 return;
             }
-            let id = this.raf_call(this.physics_tick(zoom, state));
-            this.inner.raf.set(id);
-        })
+            this.next_frame(Self::physics_tick(zoom, state));
+        }
     }
 }
 
-// ── the area's api ────────────────────────────────────────────────────────────
+// ── the area's api ──
 
 impl StageCapability {
-    /// Momentum pan from a release velocity in viewport px/s (`pan_by`'s
-    /// sign convention). Without frames it only snaps into bounds.
+    /// Momentum pan from a release velocity in viewport px/s. Without frames
+    /// it only snaps into bounds.
     pub fn fling(&self, velocity_x: f64, velocity_y: f64) -> Result<(), Error> {
         self.start_camera_physics(velocity_x, velocity_y)
     }
 
     /// A tween or fling is running.
     pub fn is_moving(&self) -> bool {
-        self.inner.raf.get() != 0
+        self.inner.cancel_frame.borrow().is_some()
     }
 
     /// Halt any running tween or fling where it is.
     pub fn stop_motion(&self) {
-        if self.inner.raf.get() == 0 {
+        if self.inner.cancel_frame.borrow().is_none() {
             return;
         }
-        self.cancel_anim();
-        self.inner.events.motion_ended.emit(&StageMotionEndedEvent { camera: self.cam() });
+        self.cancel_animation();
+        self.emit_motion_ended();
     }
 }

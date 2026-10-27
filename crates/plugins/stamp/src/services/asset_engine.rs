@@ -1,29 +1,27 @@
-//! `services/asset-engine.ts`: the asset engine port and the canonical
-//! library services every write needs: opening library bytes as a document,
-//! import-time previews, the canonical-services check, and the import
-//! support fact learned from the first failed open.
+//! `services/asset-engine.ts`: the asset engine port and the
+//! canonical-library services every write needs: opening library bytes as a
+//! document on a local engine, import-time previews, and the import-support
+//! fact learned from the first import.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use epdf_kernel::bytes::{Bytes, release_host};
-use epdf_kernel::engine::DocumentHandle;
+use epdf_kernel::engine::{DocumentHandle, Engine};
+use epdf_kernel::error::code;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, is_undefined, undefined};
 use serde_json::{Value, json};
 
-use crate::contract::{AssetEngine, AssetEngineRef, StampAssetPreview};
+use crate::contract::{LocalEngine, MadeAssetEngine, StampAssetEngine, StampAssetPreview};
 use crate::controller::StampCapability;
-use crate::promise::await_engine;
-use crate::value::{get, str_of};
-
-/// `DEFAULT_PREVIEW_WIDTH`.
-pub const DEFAULT_PREVIEW_WIDTH: f64 = 256.0;
+use crate::services::errors::stamp_error;
+use crate::services::settings::{EngineHold, EngineTable};
 
 thread_local! {
-    /// The TypeScript's module-level `seq`. A kernel and its plugins live on
-    /// one thread, so a thread is the realm a module would be.
-    static SEQ: Cell<u64> = const { Cell::new(0) };
+    /// The TypeScript's module-level `idCounter`. A kernel and its plugins
+    /// live on one thread, so a thread is the realm a module would be.
+    static ID_COUNTER: Cell<u64> = const { Cell::new(0) };
 }
 
 /// Put the id counter back to zero, as a fresh import of
@@ -31,9 +29,10 @@ thread_local! {
 /// after another.
 #[doc(hidden)]
 pub fn reset_id_sequence() {
-    SEQ.with(|seq| seq.set(0));
+    ID_COUNTER.with(|n| n.set(0));
 }
 
+/// `n.toString(36)` for a whole, non-negative number.
 fn base36(mut n: u64) -> String {
     const DIGITS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
     if n == 0 {
@@ -48,33 +47,61 @@ fn base36(mut n: u64) -> String {
     String::from_utf8(out).unwrap_or_default()
 }
 
-/// `uid(prefix)`: `${prefix}-${Date.now().toString(36)}-${(seq++).toString(36)}`.
+/// `uid(prefix)`: session-unique ids (scratch documents, library ids a file
+/// does not carry), `${prefix}-${Date.now().toString(36)}-${counter}`.
 pub fn uid(prefix: &str) -> String {
-    let n = SEQ.with(|seq| {
-        let n = seq.get();
-        seq.set(n + 1);
+    let n = ID_COUNTER.with(|counter| {
+        let n = counter.get();
+        counter.set(n + 1);
         n
     });
     format!("{prefix}-{}-{}", base36(rt::now().max(0.0) as u64), base36(n))
 }
 
-fn type_error(message: impl Into<String>) -> Error {
-    Error::named("TypeError", message)
-}
-
-/// Reading `member` off a value that is `null` or `undefined`.
+/// `TypeError: Cannot read properties of null (reading 'member')`.
 pub(crate) fn read_off(value: &Value, member: &str) -> Error {
     let what = if value.is_null() { "null" } else { "undefined" };
-    type_error(format!("Cannot read properties of {what} (reading '{member}')"))
+    Error::named("TypeError", format!("Cannot read properties of {what} (reading '{member}')"))
 }
 
-fn missing(value: Option<&Value>) -> bool {
-    value.is_none_or(|v| v.is_null() || is_undefined(v))
+fn nullish(value: &Value) -> bool {
+    value.is_null() || is_undefined(value)
 }
 
-/// A byte answer: `None` when the engine answered no bytes.
+/// A byte answer: `None` for one that isn't bytes (the TypeScript's
+/// `undefined`).
 pub(crate) fn bytes_of(value: &Value) -> Option<Vec<u8>> {
     Bytes::from_json(value).map(|b| b.0)
+}
+
+/// The engine the asset engine setting resolved to.
+#[derive(Clone)]
+pub(crate) enum ResolvedEngine {
+    /// The kernel's engine (`ctx.engine`), local or not: `Engine::is_local`
+    /// is the TypeScript's `isLocalEngine` brand check.
+    Kernel(Option<Rc<dyn Engine>>),
+    Ready(LocalEngine),
+    Pending(Promise<LocalEngine>),
+}
+
+pub(crate) struct Resolved {
+    /// The setting it was resolved from, by its stored handle.
+    from: Option<u64>,
+    engine: ResolvedEngine,
+    /// Keeps `from`'s engine in the table while this is the resolved one,
+    /// as `resolved.from` keeps the object alive in the TypeScript.
+    _hold: Option<EngineHold>,
+}
+
+/// The asset engine service's state.
+#[derive(Default)]
+pub struct AssetEngineState {
+    /// Set once an import finds the asset engine is not local (cloud).
+    import_supported: Cell<Option<bool>>,
+    resolved: RefCell<Option<Resolved>>,
+    /// Engines this plugin made through a configured function: destroyed
+    /// with it.
+    owned: RefCell<Vec<MadeAssetEngine>>,
 }
 
 /// The render options every preview uses.
@@ -87,153 +114,200 @@ pub(crate) fn render_options(width: f64, include_annotations: bool) -> Value {
     })
 }
 
-/// `imageToPreview(image)`: the asset engine is local by definition, so a
-/// render's source is always inline bytes. Once they are copied out, the
-/// render itself goes back to its host (`release_host`): every caller
-/// passes a `page.render.image` result it keeps nothing else of. When the
-/// bytes did not resolve (a host with no `$hostBytes` resolver), the render
-/// is kept: releasing it would drop pixels nothing has read.
+/// `imageToPreview(image)`: import-time preview render to bytes. The asset
+/// engine is local by definition, so the image source is always inline
+/// bytes. Once they are copied out, a host-held render goes back to its
+/// host (`release_host`); a render whose bytes did not resolve is kept.
 pub(crate) fn image_to_preview(image: &Value) -> Result<StampAssetPreview, Error> {
-    if missing(Some(image)) {
+    if nullish(image) {
         return Err(read_off(image, "source"));
     }
-    let source = get(image, "source").cloned().unwrap_or_else(undefined);
-    if missing(Some(&source)) {
+    let source = image.get("source").cloned().unwrap_or_else(undefined);
+    if nullish(&source) {
         return Err(read_off(&source, "kind"));
     }
-    if str_of(&source, "kind") != Some("bytes") {
-        return Err(Error::engine(
-            "NotImplemented",
-            "[stamp] asset engine returned a URL-sourced render; asset engines must be local",
+    if source.get("kind").and_then(Value::as_str) != Some("bytes") {
+        return Err(stamp_error(
+            code::UNSUPPORTED,
+            "the asset engine returned a URL-sourced render; asset engines must be local",
         ));
     }
-    let bytes = get(&source, "bytes").and_then(bytes_of);
-    if bytes.is_some() {
+    let bytes = source.get("bytes").filter(|v| !is_undefined(v)).map(|raw| match bytes_of(raw) {
+        Some(bytes) => Bytes(bytes).to_json(),
+        None => raw.clone(),
+    });
+    if source.get("bytes").and_then(bytes_of).is_some() {
         release_host(image);
     }
-    Ok(StampAssetPreview { bytes, mime_type: str_of(image, "contentType").map(str::to_string) })
+    Ok(StampAssetPreview {
+        bytes,
+        mime_type: image.get("contentType").filter(|v| !is_undefined(v)).cloned(),
+    })
 }
 
-/// A document call.
+/// A call on a document of the asset engine.
 pub(crate) fn call(doc: &Rc<dyn DocumentHandle>, path: &str, args: Vec<Value>) -> Promise<Value> {
     doc.call(path, None, args)
 }
 
-/// A page call.
+/// A call on one of its pages.
 pub(crate) fn page_call(
     doc: &Rc<dyn DocumentHandle>,
     path: &str,
-    pon: u32,
+    page: u32,
     args: Vec<Value>,
 ) -> Promise<Value> {
-    doc.call(path, Some(pon), args)
+    doc.call(path, Some(page), args)
 }
 
-/// `doc.close()` in a `finally`: its failure replaces the body's outcome.
+/// `try { body } finally { await doc.close() }`: a failed close replaces the
+/// body's outcome.
 pub(crate) async fn close<T>(
     doc: &Rc<dyn DocumentHandle>,
     body: Result<T, Error>,
 ) -> Result<T, Error> {
-    await_engine(call(doc, "close", Vec::new())).await?;
+    call(doc, "close", Vec::new()).await?;
     body
 }
 
 impl StampCapability {
-    pub(crate) fn preview_width(&self) -> f64 {
-        self.0.config.preview_width.unwrap_or(DEFAULT_PREVIEW_WIDTH)
-    }
-
-    /// The asset engine: a configured factory is called (and memoized) on
-    /// the first open, an instance is used as is, and nothing configured is
-    /// the kernel's engine.
-    fn asset_engine(&self) -> Result<AssetEngineRef, Error> {
-        if let Some(engine) = self.0.asset_engine_ref.borrow().clone() {
-            return Ok(engine);
-        }
-        let engine = match &self.0.config.asset_engine {
-            None => AssetEngineRef::Ready(
-                self.cx()
-                    .engine()
-                    .ok_or_else(|| Error::new("[kernel] used after the kernel was dropped"))?,
-            ),
-            Some(AssetEngine::Factory(factory)) => factory()?,
-            Some(AssetEngine::Instance(engine)) => AssetEngineRef::Ready(engine.clone()),
+    /// `assetEngine()`: the asset engine port, read from the setting. A
+    /// configured function is called (and memoized) on the first import; a
+    /// configured engine is used as it is; none falls back to the kernel's
+    /// engine. A change of the setting takes effect at the next library
+    /// operation.
+    fn asset_engine(&self) -> Result<ResolvedEngine, Error> {
+        let stored = self.settings_json();
+        let setting = stored.get("assetEngine").cloned().unwrap_or(Value::Null);
+        let from = EngineTable::handle_of(&setting);
+        let state = &self.0.asset_engine;
+        let stale = match &*state.resolved.borrow() {
+            Some(resolved) => resolved.from != from,
+            // `undefined !== configured`: the first call always resolves.
+            None => true,
         };
-        *self.0.asset_engine_ref.borrow_mut() = Some(engine.clone());
-        Ok(engine)
+        if stale {
+            let configured = self.get_settings().asset_engine;
+            let engine = match &configured {
+                None => ResolvedEngine::Kernel(self.0.cx.engine()),
+                Some(StampAssetEngine::Engine(engine)) => ResolvedEngine::Ready(engine.clone()),
+                Some(StampAssetEngine::Factory(factory)) => {
+                    let made = factory()?;
+                    state.owned.borrow_mut().push(made.clone());
+                    match made {
+                        MadeAssetEngine::Ready(engine) => ResolvedEngine::Ready(engine),
+                        MadeAssetEngine::Pending(promise) => ResolvedEngine::Pending(promise),
+                    }
+                }
+            };
+            let _hold = from.map(|n| self.0.table.hold(n));
+            *state.resolved.borrow_mut() = Some(Resolved { from, engine, _hold });
+            state.import_supported.set(None);
+        }
+        Ok(state
+            .resolved
+            .borrow()
+            .as_ref()
+            .map(|r| r.engine.clone())
+            .unwrap_or(ResolvedEngine::Kernel(None)))
     }
 
-    /// `openAssetDocument(bytes)`. Callers await it through `rt::returned`,
-    /// the turn an `async` function's caller spends.
-    pub(crate) async fn open_asset_document(
-        &self,
-        bytes: Vec<u8>,
-    ) -> Result<Rc<dyn DocumentHandle>, Error> {
-        let opened = async {
-            let engine = match self.asset_engine()? {
-                AssetEngineRef::Ready(engine) => {
+    /// `openAssetDocument(bytes)`: library PDFs are sliced and tagged
+    /// (`/PieceInfo`) on a local engine only.
+    pub(crate) fn open_asset_document(&self, bytes: Vec<u8>) -> Promise<Rc<dyn DocumentHandle>> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            let engine = match this.asset_engine()? {
+                ResolvedEngine::Pending(promise) => Some(promise.await?),
+                ResolvedEngine::Ready(engine) => {
                     rt::tick().await;
-                    engine
+                    Some(engine)
                 }
-                AssetEngineRef::Pending(promise) => promise.await?,
+                // `if (!isLocalEngine(engine))`: the kernel's engine, used as
+                // it is when it carries the local brand.
+                ResolvedEngine::Kernel(engine) => {
+                    rt::tick().await;
+                    engine.filter(|engine| engine.is_local()).map(LocalEngine::new)
+                }
+            };
+            let Some(engine) = engine else {
+                let state = &this.0.asset_engine;
+                if state.import_supported.get() != Some(false) {
+                    state.import_supported.set(Some(false));
+                    this.0.cx.notify();
+                }
+                let configured = this.get_settings().asset_engine.is_some();
+                return Err(stamp_error(
+                    code::UNSUPPORTED,
+                    if configured {
+                        "the stamp plugin's assetEngine must be a local engine (createLocalEngine())"
+                    } else {
+                        "importing a library PDF needs a local engine, and this viewer's engine is a cloud engine. Pass stampPlugin({ assetEngine: () => import('@embedpdf/engine').then((module) => module.createLocalEngine()) }): it loads lazily, on first import."
+                    },
+                ));
             };
             let input = json!({ "kind": "bytes", "id": uid("stamp-import"), "bytes": Bytes(bytes).to_json() });
-            await_engine(engine.open(input, Some(json!({ "scope": ["*"] })))).await
-        }
-        .await;
-        opened.map_err(|error| {
-            // A cloud kernel engine rejects 'bytes' with InvalidArg: turn the
-            // generic contract error into the configuration fix.
-            if self.0.config.asset_engine.is_none()
-                && error.name == "EngineError"
-                && error.code() == Some("InvalidArg")
-            {
-                self.0.import_supported.set(Some(false));
-                Error::engine(
-                    "NotImplemented",
-                    "[stamp] importing a library PDF needs an engine that can open local bytes, and this viewer's engine cannot (cloud). Pass stampPlugin({ assetEngine: () => import('@embedpdf/engine').then((m) => m.createLocalEngine()) }) — it loads lazily, on first import.",
-                )
-            } else {
-                error
-            }
+            // `return engine.open(...)` from an `async` function: the
+            // resolve-thenable job, then the `then` reaction.
+            let opened = engine.open(input, Some(json!({ "scope": ["*"] })));
+            rt::tick().await;
+            opened.reaction().await
         })
     }
 
-    /// `renderThumbnail(handle)`: the small picker image of one library page.
-    pub(crate) async fn render_thumbnail(
+    /// `renderThumbnail(handle)`: the small picker image of one library
+    /// page.
+    pub(crate) fn render_thumbnail(
         &self,
         doc: &Rc<dyn DocumentHandle>,
-        pon: u32,
-    ) -> Result<StampAssetPreview, Error> {
+        page: u32,
+    ) -> Promise<StampAssetPreview> {
         let render = page_call(
             doc,
             "page.render.image",
-            pon,
-            vec![render_options(self.preview_width(), true)],
+            page,
+            vec![render_options(self.get_settings().preview_width, true)],
         );
-        image_to_preview(&await_engine(render).await?)
+        Promise::spawn(async move { image_to_preview(&render.await?) })
     }
 
-    /// `requireCanonicalServices(doc)`.
-    pub(crate) fn require_canonical_services(doc: &Rc<dyn DocumentHandle>) -> Result<(), Error> {
-        if !doc.has("pieceInfo") {
-            return Err(Error::engine(
-                "NotImplemented",
-                "[stamp] canonical PDF libraries need an asset engine with pieceInfo",
-            ));
-        }
-        if !doc.has("pages.setName") || !doc.has("pages.removeName") {
-            return Err(Error::engine(
-                "NotImplemented",
-                "[stamp] canonical PDF libraries need an asset engine with named pages (pages.setName)",
-            ));
-        }
-        Ok(())
-    }
-
-    /// `canImport()`: optimistic until an import proves the engine cannot
-    /// open local bytes.
+    /// `canImport()`: optimistic until an import finds the asset engine is
+    /// not local. Reading the setting re-resolves after a change, which
+    /// makes imports possible again.
     pub fn can_import(&self) -> bool {
-        self.0.import_supported.get() != Some(false)
+        let state = &self.0.asset_engine;
+        if let Some(resolved) = &*state.resolved.borrow() {
+            let setting = self.settings_json().get("assetEngine").cloned().unwrap_or(Value::Null);
+            if resolved.from != EngineTable::handle_of(&setting) {
+                return true;
+            }
+        }
+        state.import_supported.get() != Some(false)
+    }
+}
+
+impl AssetEngineState {
+    /// The asset engine service's cleanup: forget the resolved engine and
+    /// destroy every engine a configured function made,
+    /// `void Promise.resolve(engine).then((made) => made.destroy()).catch(() => {})`.
+    pub(crate) fn release(&self) {
+        let state = self;
+        *state.resolved.borrow_mut() = None;
+        let owned: Vec<MadeAssetEngine> = state.owned.borrow_mut().drain(..).collect();
+        for engine in owned {
+            rt::spawn(async move {
+                let made = match engine {
+                    MadeAssetEngine::Ready(engine) => {
+                        rt::tick().await;
+                        engine
+                    }
+                    MadeAssetEngine::Pending(promise) => match promise.reaction().await {
+                        Ok(engine) => engine,
+                        Err(_) => return,
+                    },
+                };
+                made.destroy().ignore();
+            });
+        }
     }
 }

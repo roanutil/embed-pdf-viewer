@@ -17,11 +17,13 @@ use crate::contract::{
     DocumentTriggerEvent, OpenSequence, OpenSequenceCompletedEvent,
 };
 use crate::dispatch::fold::fold_steps;
-use crate::services::{get, truthy};
+use crate::services::{DiagnosticPlace, get, truthy};
 
 impl ActionsCapability {
+    /// The `openSequence` setting, read when it decides: it applies until
+    /// the sequence has run.
     fn open_sequence_mode(&self) -> OpenSequence {
-        self.0.config.open_sequence.unwrap_or(OpenSequence::Auto)
+        self.settings_now().open_sequence
     }
 
     /// The sequence body, inside the queue; callers set `open_fired`.
@@ -46,7 +48,7 @@ impl ActionsCapability {
                     "warnings": [],
                 });
                 let result =
-                    rt::returned(self.clone().run_and_emit(tree.clone(), lifecycle_ctx.clone()))
+                    rt::returned(self.clone().run_and_emit(tree.clone(), lifecycle_ctx.clone(), None))
                         .await?;
                 steps.push(ActionStepResult { source: ActionSource::Document, tree, result });
             }
@@ -55,7 +57,7 @@ impl ActionsCapability {
             {
                 let tree = open_action.clone();
                 let result =
-                    rt::returned(self.clone().run_and_emit(tree.clone(), lifecycle_ctx.clone()))
+                    rt::returned(self.clone().run_and_emit(tree.clone(), lifecycle_ctx.clone(), None))
                         .await?;
                 steps.push(ActionStepResult { source: ActionSource::Document, tree, result });
             }
@@ -68,7 +70,7 @@ impl ActionsCapability {
                 format!("open sequence failed: {}", error.message),
             );
             diagnostics.push(diagnostic.clone());
-            self.emit_diagnostic(diagnostic);
+            self.report_diagnostic(&diagnostic, &DiagnosticPlace::source(ActionSource::Document));
         }
         // Release after the document steps, on every path. Page-open emission
         // enqueues behind this op.
@@ -76,7 +78,7 @@ impl ActionsCapability {
         let result = fold_steps(steps, diagnostics);
         self.0
             .events
-            .open_sequence_hook
+            .open_sequence_completed
             .emit(&OpenSequenceCompletedEvent { result: result.clone() });
         result
     }

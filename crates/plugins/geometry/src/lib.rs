@@ -4,7 +4,7 @@
 //! The bottom of the pyramid: stage-core (layout), plugin-stage
 //! (`pageToWorld`) and every adapter's hit-testing sit on these. The
 //! page-rotation transforms are why the package exists: the same quarter-turn
-//! maps content to box in both directions, and that one rule is written once.
+//! maps page to box in both directions, and that one rule is written once.
 //!
 //! Names mirror the TypeScript (`boundsOfRects` is [`bounds_of_rects`]).
 //! Values serialize to the JSON the TypeScript objects print. Arithmetic that
@@ -12,15 +12,24 @@
 //! printing uses [`js`], because Rust's versions differ.
 //!
 //! Not carried over: the phantom space brands (`PointIn<S>`, `RectIn<S>`,
-//! `QuadIn<S>`, `TextQuadIn<S>`, `Mat2D<From, To>`). They are type-only in the
-//! TypeScript and carry no runtime field; here those are plain [`Point`],
-//! [`Rect`], [`Quad`], [`TextQuad`] and [`Mat2D`]. [`Space`] names the spaces.
+//! `QuadIn<S>`, `Mat2D<From, To>`). They are type-only in the TypeScript and
+//! carry no runtime field; here those are plain [`Point`], [`Rect`], [`Quad`]
+//! and [`Mat2D`]. [`Space`] names the spaces.
+//!
+//! [`pdf`] and [`page_space`] carry the pure part of `engine-core`'s geometry
+//! that the viewer side calls: the file's coordinates, quad naming and the
+//! one conversion to and from page space.
 
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
 pub mod js;
+pub mod page_space;
+pub mod pdf;
+
+pub use page_space::*;
+pub use pdf::*;
 
 #[cfg(feature = "harness")]
 pub mod harness;
@@ -39,9 +48,8 @@ pub struct Size {
     pub height: f64,
 }
 
-/// A rectangle in the viewer's coordinates: top-left origin, y-down,
-/// PDF-point scale. Shown on screen is a `Rect`; stored in the file is the
-/// engine's y-up `PdfRect` (`{left, bottom, right, top}`).
+/// A rectangle in page space: top-left origin, y-down, in points. What every
+/// viewer and engine API speaks. Stored in the file is the y-up [`PdfRect`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
     pub x: f64,
@@ -104,6 +112,23 @@ pub fn rect_contains(rect: Rect, point: Point) -> bool {
 pub fn rects_overlap(a: Rect, b: Rect) -> bool {
     let i = intersect_rects(a, b);
     i.width > 0.0 && i.height > 0.0
+}
+
+/// The largest rect of `content`'s proportions inside `box_`, centred in it:
+/// CSS `object-fit: contain`. `box_` itself when `content` has no area.
+pub fn contained_rect(content: Size, box_: Rect) -> Rect {
+    if content.width <= 0.0 || content.height <= 0.0 {
+        return box_;
+    }
+    let scale = js::min(box_.width / content.width, box_.height / content.height);
+    let width = content.width * scale;
+    let height = content.height * scale;
+    Rect {
+        x: box_.x + (box_.width - width) / 2.0,
+        y: box_.y + (box_.height - height) / 2.0,
+        width,
+        height,
+    }
 }
 
 // ── rotation, frames, device rounding ───────────────────────────────────────
@@ -169,13 +194,12 @@ pub fn device_height_for_width(page_size: Size, device_width: f64) -> f64 {
 
 // ── Mat2D ───────────────────────────────────────────────────────────────────
 
-/// The coordinate spaces a viewer touches. `Pdf` is the engine's user space
-/// (y-up); the rest are viewer-local, y-down.
+/// The coordinate spaces a viewer touches, all y-down. `Page` is the
+/// engine's page space: points from the top-left of the visible page.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Space {
-    Pdf,
-    Content,
+    Page,
     View,
     Screen,
 }
@@ -184,15 +208,22 @@ pub enum Space {
 /// `matrix()`: `x' = a·x + c·y + e`, `y' = b·x + d·y + f`.
 pub type Mat2D = [f64; 6];
 
-/// Four positional points with no corner semantics: the viewer twin of the
-/// engine's `PdfQuad`.
+/// Four corners named in the text's own upright frame, the viewer twin of
+/// the engine's `PageQuad`. `upper` is the ascent side, `lower` the baseline
+/// side, and `left` to `right` runs along the frame's x axis: text turned
+/// 180° has its `upper_left` at the bottom right. In y-down page space an
+/// upright quad has `upper_*` at the smaller y.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Quad {
-    pub p1: Point,
-    pub p2: Point,
-    pub p3: Point,
-    pub p4: Point,
+    pub upper_left: Point,
+    pub upper_right: Point,
+    pub lower_left: Point,
+    pub lower_right: Point,
 }
+
+/// Four points as a polygon ring, for fills and hit tests.
+pub type QuadRing = [Point; 4];
 
 /// `invert` of a matrix whose determinant is exactly zero.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -260,13 +291,13 @@ pub fn apply_rect(m: Mat2D, r: Rect) -> Rect {
     Rect { x: min_x, y: min_y, width: js::max_of(&xs) - min_x, height: js::max_of(&ys) - min_y }
 }
 
-/// Apply a transform to a quad, point by point.
+/// Apply a transform to a quad: each corner moves and keeps its name.
 pub fn apply_quad(m: Mat2D, q: Quad) -> Quad {
     Quad {
-        p1: apply_point(m, q.p1),
-        p2: apply_point(m, q.p2),
-        p3: apply_point(m, q.p3),
-        p4: apply_point(m, q.p4),
+        upper_left: apply_point(m, q.upper_left),
+        upper_right: apply_point(m, q.upper_right),
+        lower_left: apply_point(m, q.lower_left),
+        lower_right: apply_point(m, q.lower_right),
     }
 }
 
@@ -287,7 +318,7 @@ pub fn scale(sx: f64, sy: f64) -> Mat2D {
     [sx, 0.0, 0.0, sy, 0.0, 0.0]
 }
 
-/// Rotate about the origin (radians; clockwise in y-down content space).
+/// Rotate about the origin (radians; clockwise in y-down page space).
 pub fn rotate(rad: f64) -> Mat2D {
     let c = rad.cos();
     let s = rad.sin();
@@ -309,7 +340,7 @@ pub fn angle_of(m: Mat2D) -> f64 {
     m[1].atan2(m[0])
 }
 
-/// The page's scale plus quarter-turn: a content point to its place in the
+/// The page's scale plus quarter-turn: a page point to its place in the
 /// rotated display box. `box_w`/`box_h` are the un-rotated extents in output
 /// units. Any rotation other than 90, 180 or 270 is treated as 0.
 pub fn rotate_scale_matrix(scale: f64, box_w: f64, box_h: f64, rotation: PageRotation) -> Mat2D {
@@ -322,62 +353,6 @@ pub fn rotate_scale_matrix(scale: f64, box_w: f64, box_h: f64, rotation: PageRot
     } else {
         [scale, 0.0, 0.0, scale, 0.0, 0.0]
     }
-}
-
-// ── page geometry ───────────────────────────────────────────────────────────
-
-/// A crop box in PDF user space (y-up edges), origin preserved.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct CropBox {
-    pub left: f64,
-    pub bottom: f64,
-    pub right: f64,
-    pub top: f64,
-}
-
-/// `PageGeometryInput`: structurally a subset of the engine's `PageLayout`.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageGeometryInput {
-    pub crop: CropBox,
-    /// The document's `/Rotate`.
-    pub rotation: PageRotation,
-    pub user_unit: f64,
-}
-
-/// The matrices bridging one page's spaces.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageGeometry {
-    pub pdf_to_content: Mat2D,
-    pub content_to_view: Mat2D,
-    pub pdf_to_view: Mat2D,
-    pub view_to_pdf: Mat2D,
-}
-
-/// PDF user space (y-up, origin at the crop bottom-left) to content space
-/// (y-down, origin at the crop top-left). The TypeScript takes
-/// `{left, top}`; those are the two numbers it reads.
-pub fn pdf_to_content_matrix(left: f64, top: f64) -> Mat2D {
-    [1.0, 0.0, 0.0, -1.0, -left, top]
-}
-
-/// A page's space matrices from its crop box, rotation and `userUnit` plus
-/// the viewer zoom.
-pub fn page_geometry(input: PageGeometryInput, zoom: f64) -> Result<PageGeometry, NonInvertible> {
-    let PageGeometryInput { crop, rotation, user_unit } = input;
-    let s = zoom * user_unit;
-    let pdf_to_content = pdf_to_content_matrix(crop.left, crop.top);
-    let wc = (crop.right - crop.left) * s;
-    let hc = (crop.top - crop.bottom) * s;
-    let content_to_view = rotate_scale_matrix(s, wc, hc, rotation);
-    let pdf_to_view = compose(content_to_view, pdf_to_content);
-    Ok(PageGeometry {
-        pdf_to_content,
-        content_to_view,
-        pdf_to_view,
-        view_to_pdf: invert(pdf_to_view)?,
-    })
 }
 
 // ── page transform ──────────────────────────────────────────────────────────
@@ -399,7 +374,7 @@ pub struct PageTransformInput {
     pub dpr: f64,
 }
 
-/// The per-page bridge between content, view and device space. The
+/// The per-page bridge between page, view and device space. The
 /// TypeScript object's closures are methods here, over the matrices built
 /// once in [`page_transform`]; it serializes to its data members.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -428,28 +403,30 @@ pub struct PageTransform {
 }
 
 impl PageTransform {
-    /// Content point to the un-rotated content wrapper's px.
+    /// Page point to this page's pixels: the un-rotated content wrapper's
+    /// local px.
     pub fn to_pixels(&self, p: Point) -> Point {
         apply_point(self.content_mat, p)
     }
-    /// Inverse of [`to_pixels`](Self::to_pixels).
+    /// Inverse of [`to_pixels`](Self::to_pixels): wrapper-local px to page
+    /// point.
     pub fn from_pixels(&self, p: Point) -> Point {
         apply_point(self.content_inv, p)
     }
-    /// Content point to display-box view px (rotation applied).
-    pub fn content_to_view(&self, p: Point) -> Point {
+    /// Page point to display-box view px (rotation applied).
+    pub fn page_to_view(&self, p: Point) -> Point {
         apply_point(self.view_mat, p)
     }
-    /// Content rect to its axis-aligned view-px rect.
-    pub fn content_to_view_rect(&self, r: Rect) -> Rect {
+    /// Page rect to its axis-aligned view-px rect (exact for quarter-turns).
+    pub fn page_to_view_rect(&self, r: Rect) -> Rect {
         apply_rect(self.view_mat, r)
     }
-    /// Display-box view px to content point.
-    pub fn view_to_content(&self, p: Point) -> Point {
+    /// Display-box view px to page point: hit-testing.
+    pub fn view_to_page(&self, p: Point) -> Point {
         apply_point(self.inv_mat, p)
     }
-    /// Display-box view-px rect to its content bounds.
-    pub fn view_to_content_rect(&self, r: Rect) -> Rect {
+    /// Display-box view-px rect to its page bounds (exact for quarter-turns).
+    pub fn view_to_page_rect(&self, r: Rect) -> Rect {
         apply_rect(self.inv_mat, r)
     }
 }
@@ -496,267 +473,71 @@ pub fn page_transform(input: PageTransformInput) -> Result<PageTransform, NonInv
     })
 }
 
-// ── TextQuad ────────────────────────────────────────────────────────────────
-
-/// A quad whose orientation is known, corners named in the text's own
-/// upright frame: `upper` is the ascent side, `start` to `end` runs along +x.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextQuad {
-    pub upper_start: Point,
-    pub upper_end: Point,
-    pub lower_start: Point,
-    pub lower_end: Point,
+/// Whether two transforms place things on the page the same: the same view
+/// scale, zoom and turn, and the same content box. Strict `===` on each, so a
+/// NaN member never matches.
+pub fn same_page_placement(left: &PageTransform, right: &PageTransform) -> bool {
+    left.view_scale == right.view_scale
+        && left.zoom == right.zoom
+        && left.rotation == right.rotation
+        && left.content_width == right.content_width
+        && left.content_height == right.content_height
 }
 
-/// Which side edge [`text_quad_edge`] returns.
+// ── quad helpers ────────────────────────────────────────────────────────────
+
+/// Which side edge [`quad_edge`] returns.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum TextQuadSide {
-    Start,
-    End,
+pub enum QuadSide {
+    Left,
+    Right,
 }
 
-/// Axis-aligned TextQuad over a rect (y-down: upper is the smaller y).
-pub fn text_quad_from_rect(r: Rect) -> TextQuad {
-    TextQuad {
-        upper_start: Point { x: r.x, y: r.y },
-        upper_end: Point { x: r.x + r.width, y: r.y },
-        lower_start: Point { x: r.x, y: r.y + r.height },
-        lower_end: Point { x: r.x + r.width, y: r.y + r.height },
+/// An upright quad over a rect (y-down: upper is the smaller y).
+pub fn quad_from_rect(r: Rect) -> Quad {
+    Quad {
+        upper_left: Point { x: r.x, y: r.y },
+        upper_right: Point { x: r.x + r.width, y: r.y },
+        lower_left: Point { x: r.x, y: r.y + r.height },
+        lower_right: Point { x: r.x + r.width, y: r.y + r.height },
     }
 }
 
-/// The corners in slot order: upper-start, upper-end, lower-start, lower-end.
-pub fn text_quad_points(t: TextQuad) -> [Point; 4] {
-    [t.upper_start, t.upper_end, t.lower_start, t.lower_end]
+/// The four corners: upper-left, upper-right, lower-left, lower-right.
+pub fn quad_corners(q: Quad) -> [Point; 4] {
+    [q.upper_left, q.upper_right, q.lower_left, q.lower_right]
 }
 
-/// The corners as a polygon ring: US, UE, LE, LS.
-pub fn text_quad_ring(t: TextQuad) -> [Point; 4] {
-    [t.upper_start, t.upper_end, t.lower_end, t.lower_start]
+/// The corners as a polygon ring: upper-left, upper-right, lower-right,
+/// lower-left.
+pub fn quad_ring(q: Quad) -> QuadRing {
+    [q.upper_left, q.upper_right, q.lower_right, q.lower_left]
 }
 
-/// One side edge, ascent corner first.
-pub fn text_quad_edge(t: TextQuad, side: TextQuadSide) -> [Point; 2] {
+/// One side edge, ascent corner first: left is `UL -> LL`, right is
+/// `UR -> LR`.
+pub fn quad_edge(q: Quad, side: QuadSide) -> [Point; 2] {
     match side {
-        TextQuadSide::Start => [t.upper_start, t.lower_start],
-        TextQuadSide::End => [t.upper_end, t.lower_end],
+        QuadSide::Left => [q.upper_left, q.lower_left],
+        QuadSide::Right => [q.upper_right, q.lower_right],
     }
 }
 
 /// Corner-wise `===` equality (NaN is never equal, `-0` equals `0`).
-pub fn text_quad_equals(a: TextQuad, b: TextQuad) -> bool {
+pub fn quad_equals(a: Quad, b: Quad) -> bool {
     let eq = |p: Point, q: Point| p.x == q.x && p.y == q.y;
-    eq(a.upper_start, b.upper_start)
-        && eq(a.upper_end, b.upper_end)
-        && eq(a.lower_start, b.lower_start)
-        && eq(a.lower_end, b.lower_end)
+    eq(a.upper_left, b.upper_left)
+        && eq(a.upper_right, b.upper_right)
+        && eq(a.lower_left, b.lower_left)
+        && eq(a.lower_right, b.lower_right)
 }
 
-/// Axis-aligned bounds of a TextQuad.
-pub fn text_quad_bounds(t: TextQuad) -> Rect {
-    let xs = [t.upper_start.x, t.upper_end.x, t.lower_start.x, t.lower_end.x];
-    let ys = [t.upper_start.y, t.upper_end.y, t.lower_start.y, t.lower_end.y];
+/// Axis-aligned bounds of a quad.
+pub fn quad_bounds(q: Quad) -> Rect {
+    let xs = [q.upper_left.x, q.upper_right.x, q.lower_left.x, q.lower_right.x];
+    let ys = [q.upper_left.y, q.upper_right.y, q.lower_left.y, q.lower_right.y];
     let min_x = js::min_of(&xs);
     let min_y = js::min_of(&ys);
     Rect { x: min_x, y: min_y, width: js::max_of(&xs) - min_x, height: js::max_of(&ys) - min_y }
-}
-
-/// Map a TextQuad through a transform; corner names ride along.
-pub fn apply_text_quad(m: Mat2D, t: TextQuad) -> TextQuad {
-    TextQuad {
-        upper_start: apply_point(m, t.upper_start),
-        upper_end: apply_point(m, t.upper_end),
-        lower_start: apply_point(m, t.lower_start),
-        lower_end: apply_point(m, t.lower_end),
-    }
-}
-
-/// The positional zigzag convention: `p1..p4` are US, UE, LS, LE.
-pub fn positional_quad(t: TextQuad) -> Quad {
-    Quad { p1: t.upper_start, p2: t.upper_end, p3: t.lower_start, p4: t.lower_end }
-}
-
-const QUAD_EPSILON: f64 = 1e-6;
-
-fn finite_point(p: Point) -> bool {
-    p.x.is_finite() && p.y.is_finite()
-}
-
-/// Is `[us, ue, ls, le]` a well-formed zigzag reading of a quad?
-fn zigzag_well_formed([us, ue, ls, le]: [Point; 4]) -> bool {
-    if ![us, ue, ls, le].into_iter().all(finite_point) {
-        return false;
-    }
-    let upper = Point { x: ue.x - us.x, y: ue.y - us.y };
-    let lower = Point { x: le.x - ls.x, y: le.y - ls.y };
-    let start_side = Point { x: ls.x - us.x, y: ls.y - us.y };
-    let end_side = Point { x: le.x - ue.x, y: le.y - ue.y };
-    let len_u = js::hypot(upper.x, upper.y);
-    let len_l = js::hypot(lower.x, lower.y);
-    let len_s = js::hypot(start_side.x, start_side.y);
-    let len_e = js::hypot(end_side.x, end_side.y);
-    if len_u <= QUAD_EPSILON
-        || len_l <= QUAD_EPSILON
-        || len_s <= QUAD_EPSILON
-        || len_e <= QUAD_EPSILON
-    {
-        return false;
-    }
-    if upper.x * lower.x + upper.y * lower.y <= 0.0 {
-        return false;
-    }
-    if start_side.x * end_side.x + start_side.y * end_side.y <= 0.0 {
-        return false;
-    }
-    let start_area = upper.x * start_side.y - upper.y * start_side.x;
-    let end_area = lower.x * end_side.y - lower.y * end_side.x;
-    if start_area.abs() <= QUAD_EPSILON * len_u * len_s {
-        return false;
-    }
-    if end_area.abs() <= QUAD_EPSILON * len_l * len_e {
-        return false;
-    }
-    // `Math.sign(a) === Math.sign(b)`: NaN never matches.
-    js::sign(start_area) == js::sign(end_area)
-}
-
-/// Interpret an arbitrary positional quad as a TextQuad: zigzag order passes
-/// through, ring order is repaired, and anything else gets a deterministic
-/// labeling (corners sorted around their centroid, upper is the edge whose
-/// midpoint is highest on screen).
-pub fn normalize_quad(q: Quad) -> TextQuad {
-    if zigzag_well_formed([q.p1, q.p2, q.p3, q.p4]) {
-        return TextQuad { upper_start: q.p1, upper_end: q.p2, lower_start: q.p3, lower_end: q.p4 };
-    }
-    if zigzag_well_formed([q.p1, q.p2, q.p4, q.p3]) {
-        return TextQuad { upper_start: q.p1, upper_end: q.p2, lower_start: q.p4, lower_end: q.p3 };
-    }
-
-    let pts = [q.p1, q.p2, q.p3, q.p4].map(|p| if finite_point(p) { p } else { Point::default() });
-    let cx = (pts[0].x + pts[1].x + pts[2].x + pts[3].x) / 4.0;
-    let cy = (pts[0].y + pts[1].y + pts[2].y + pts[3].y) / 4.0;
-    let mut ring = pts;
-    // `Array.prototype.sort` is stable, as `sort_by` is; the comparator's
-    // number maps to an ordering by sign, NaN as equal.
-    ring.sort_by(|a, b| {
-        let d = (a.y - cy).atan2(a.x - cx) - (b.y - cy).atan2(b.x - cx);
-        d.partial_cmp(&0.0).unwrap_or(std::cmp::Ordering::Equal)
-    });
-    let mut upper_edge = 0;
-    let mut best_y = f64::INFINITY;
-    for i in 0..4 {
-        let mid_y = (ring[i].y + ring[(i + 1) % 4].y) / 2.0;
-        if mid_y < best_y {
-            best_y = mid_y;
-            upper_edge = i;
-        }
-    }
-    let a = ring[upper_edge];
-    let b = ring[(upper_edge + 1) % 4];
-    let c = ring[(upper_edge + 2) % 4];
-    let d = ring[(upper_edge + 3) % 4];
-    if a.x <= b.x {
-        TextQuad { upper_start: a, upper_end: b, lower_start: d, lower_end: c }
-    } else {
-        TextQuad { upper_start: b, upper_end: a, lower_start: c, lower_end: d }
-    }
-}
-
-// ── page space ──────────────────────────────────────────────────────────────
-
-/// A rectangle in PDF user space by its edges: the engine's `PdfRect` shape.
-/// The same four numbers as [`CropBox`]; the TypeScript names both
-/// `PdfEdges` structurally.
-pub type PdfEdges = CropBox;
-
-/// The one owner of page to PDF conversion for one page (`pageSpace` in
-/// `page-space.ts`). Page space is content space: the unrotated page, origin
-/// at the CropBox top-left, y down.
-///
-/// ```text
-/// pageX = pdfX - crop.left
-/// pageY = crop.top - pdfY
-/// ```
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
-pub struct PageSpace {
-    pub crop: PdfEdges,
-    pub width: f64,
-    pub height: f64,
-    #[serde(skip)]
-    to_page: Mat2D,
-    #[serde(skip)]
-    to_pdf: Mat2D,
-}
-
-/// Build a page's [`PageSpace`] from its CropBox.
-pub fn page_space(crop: PdfEdges) -> PageSpace {
-    let to_page = pdf_to_content_matrix(crop.left, crop.top);
-    // `[1, 0, 0, -1, e, f]` has determinant -1 whatever the offsets, so the
-    // inverse always exists (NaN offsets invert to NaNs, as in the TypeScript).
-    let to_pdf = invert(to_page).unwrap_or([f64::NAN; 6]);
-    PageSpace {
-        crop,
-        width: crop.right - crop.left,
-        height: crop.top - crop.bottom,
-        to_page,
-        to_pdf,
-    }
-}
-
-impl PageSpace {
-    pub fn pdf_to_page(&self, p: Point) -> Point {
-        apply_point(self.to_page, p)
-    }
-
-    pub fn page_to_pdf(&self, p: Point) -> Point {
-        apply_point(self.to_pdf, p)
-    }
-
-    pub fn pdf_rect_to_page(&self, r: PdfEdges) -> Rect {
-        Rect {
-            x: r.left - self.crop.left,
-            y: self.crop.top - r.top,
-            width: r.right - r.left,
-            height: r.top - r.bottom,
-        }
-    }
-
-    pub fn page_rect_to_pdf(&self, r: Rect) -> PdfEdges {
-        let c = self.crop;
-        PdfEdges {
-            left: r.x + c.left,
-            right: r.x + r.width + c.left,
-            top: c.top - r.y,
-            bottom: c.top - (r.y + r.height),
-        }
-    }
-
-    pub fn pdf_quad_to_page(&self, q: Quad) -> Quad {
-        apply_quad(self.to_page, q)
-    }
-
-    pub fn page_quad_to_pdf(&self, q: Quad) -> Quad {
-        apply_quad(self.to_pdf, q)
-    }
-}
-
-/// Positive-area overlap of two PDF rects given by their edges: the engine's
-/// collateral rule (a redaction touches what it overlaps, not what it abuts).
-pub fn edges_overlap(a: PdfEdges, b: PdfEdges) -> bool {
-    js::min(a.right, b.right) > js::max(a.left, b.left)
-        && js::min(a.top, b.top) > js::max(a.bottom, b.bottom)
-}
-
-/// The axis-aligned PDF edges enclosing a quad.
-pub fn edges_of_quad(q: Quad) -> PdfEdges {
-    let xs = [q.p1.x, q.p2.x, q.p3.x, q.p4.x];
-    let ys = [q.p1.y, q.p2.y, q.p3.y, q.p4.y];
-    PdfEdges {
-        left: js::min_of(&xs),
-        right: js::max_of(&xs),
-        bottom: js::min_of(&ys),
-        top: js::max_of(&ys),
-    }
 }

@@ -1,0 +1,7 @@
+rendered 1 suites
+render OK plugins/commands/functions.json cases=54
+(node:42655) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+rendered 1 suites
+render OK plugins/commands/plugin.json cases=25
+captured 79

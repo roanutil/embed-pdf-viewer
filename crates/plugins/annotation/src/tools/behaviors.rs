@@ -1,83 +1,74 @@
-//! `tools/behaviors.ts`: a sibling plugin (forms, links) marks some
-//! annotations as interactive. While a behavior is engaged its annotations
-//! render their own DOM and are not geometry-editable: hit-test, marquee and
-//! the selection must not see them.
+//! `tools/behaviors.ts`: a sibling plugin (forms, links) or an interactive
+//! renderer marks some annotations as interactive. While a behavior is
+//! engaged its annotations render their own DOM and are not
+//! geometry-editable: hit-test, marquee and the selection must not see them.
 
 use std::rc::Rc;
 
 use epdf_annotation_core::js::IdSet;
-use epdf_annotation_core::{Annot, AnnotationRef, Id, Msg, PageObjectNumber};
-use epdf_plugin_interaction::Unregister;
+use epdf_kernel::Unsubscribe;
+use serde_json::json;
 
-use crate::contract::Behavior;
-use crate::controller::AnnotationCapability;
+use crate::controller::Core;
+use crate::host_contract::Behavior;
+use crate::js::Object;
 
-impl AnnotationCapability {
-    fn behavior_matches(b: &Rc<dyn Behavior>, subtype: &str, r: Option<&AnnotationRef>) -> bool {
-        b.matches(subtype, r) && b.engaged()
+impl Core {
+    /// The behavior that owns the annotation now: one that matches it and is engaged.
+    fn owner(&self, annotation: &Object) -> Option<Rc<dyn Behavior>> {
+        let behaviors = self.behaviors.borrow().clone();
+        behaviors.into_iter().find(|b| b.matches(annotation) && b.engaged(annotation))
     }
 
-    fn engaged(&self, a: &Annot) -> bool {
-        let behaviors = self.0.behaviors.borrow().clone();
-        behaviors.iter().any(|b| Self::behavior_matches(b, &a.subtype, a.ref_.as_ref()))
-    }
-
-    /// `engagedIdsOn(pon)`: ids on a page whose behavior is engaged,
-    /// resolved per event.
-    pub(crate) fn engaged_ids_on(&self, pon: PageObjectNumber) -> Option<IdSet> {
-        if self.0.behaviors.borrow().is_empty() {
+    /// `engagedIdsOn(page)`: ids on a page whose behavior is engaged now; `None` without behaviors.
+    pub(crate) fn engaged_ids_on(&self, page: f64) -> Option<IdSet> {
+        if self.behaviors.borrow().is_empty() {
             return None;
         }
-        let m = self.model();
-        let mut out: Option<IdSet> = None;
-        for id in m.order.iter() {
-            let Some(a) = m.by_id.get(id) else { continue };
-            if a.page.page_object_number != pon {
+        let model = self.model();
+        let mut out: Option<Vec<String>> = None;
+        for id in model.order.iter() {
+            let Some(record) = model.by_id.get(id) else { continue };
+            if record.page_number() != Some(page) {
                 continue;
             }
-            if self.engaged(a) {
-                out.get_or_insert_with(IdSet::default).0.push(id.clone());
+            if self.owner(&record.annotation).is_some() {
+                out.get_or_insert_with(Vec::new).push(id.clone());
             }
         }
-        out
+        out.map(|ids| IdSet::of_value(&json!(ids)))
     }
 
-    /// `registerBehavior(b)` (host): the returned function unregisters it.
-    pub fn register_behavior(&self, b: Rc<dyn Behavior>) -> Unregister {
-        self.0.behaviors.borrow_mut().push(b.clone());
-        let weak = Rc::downgrade(&self.0);
-        Unregister::new(move || {
-            if let Some(core) = weak.upgrade() {
-                let mut behaviors = core.behaviors.borrow_mut();
-                if let Some(i) = behaviors.iter().position(|x| Rc::ptr_eq(x, &b)) {
-                    behaviors.remove(i);
+    /// `registerBehavior(behavior)`.
+    pub fn register_behavior(&self, behavior: Rc<dyn Behavior>) -> Unsubscribe {
+        self.behaviors.borrow_mut().push(behavior.clone());
+        let me = self.weak();
+        Unsubscribe::new(move || {
+            if let Some(core) = me.upgrade() {
+                let mut list = core.behaviors.borrow_mut();
+                if let Some(i) = list.iter().position(|b| Rc::ptr_eq(b, &behavior)) {
+                    list.remove(i);
                 }
             }
         })
     }
 
-    /// `getBehaviorFor(a)` (host).
-    pub fn get_behavior_for(
-        &self,
-        subtype: &str,
-        r: Option<&AnnotationRef>,
-    ) -> Option<Rc<dyn Behavior>> {
-        let behaviors = self.0.behaviors.borrow().clone();
-        behaviors.into_iter().find(|b| Self::behavior_matches(b, subtype, r))
+    /// `getBehaviorFor(annotation)`.
+    pub fn get_behavior_for(&self, annotation: &Object) -> Option<Rc<dyn Behavior>> {
+        self.owner(annotation)
     }
 
-    /// `pruneEngagedSelection()` (host): engaged annotations drop out of
-    /// the selection.
+    /// `pruneEngagedSelection()`: engaged annotations leave the selection.
     pub fn prune_engaged_selection(&self) {
-        let m = self.model();
-        let drop: Vec<Id> = m
+        let model = self.model();
+        let drop: Vec<String> = model
             .selected
             .iter()
-            .filter(|id| m.by_id.get(*id).is_some_and(|a| self.engaged(a)))
+            .filter(|id| model.by_id.get(*id).is_some_and(|r| self.owner(&r.annotation).is_some()))
             .cloned()
             .collect();
         if !drop.is_empty() {
-            self.commit(Msg::Deselect { ids: Some(drop) });
+            self.commit_or_log(json!({ "type": "deselect", "ids": drop }));
         }
     }
 }

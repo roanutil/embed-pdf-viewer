@@ -13,8 +13,8 @@
         "keywords": null,
         "producer": "EmbedPDF conformance fixtures",
         "creator": "generate.mjs",
-        "created": "2024-01-15T08:30:00.000Z",
-        "modified": "2024-02-20T12:00:00.000Z",
+        "createdAt": "2024-01-15T09:30:00+01:00",
+        "modifiedAt": "2024-02-20T12:00:00Z",
         "trapped": "false",
         "custom": {
           "EmbedPDFCustom": "a custom value",
@@ -33,8 +33,8 @@
         "keywords": null,
         "producer": "pdfeTeX-1.21a",
         "creator": "TeX",
-        "created": "2009-04-01T23:39:25.000Z",
-        "modified": null,
+        "createdAt": "2009-04-01T16:39:25-07:00",
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {
           "PTEX.Fullbanner": "This is pdfeTeX, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) kpathsea version 3.5.6"
@@ -52,8 +52,8 @@
         "keywords": null,
         "producer": null,
         "creator": null,
-        "created": null,
-        "modified": null,
+        "createdAt": null,
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {}
       }
@@ -69,8 +69,8 @@
         "keywords": null,
         "producer": null,
         "creator": null,
-        "created": null,
-        "modified": null,
+        "createdAt": null,
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {}
       }
@@ -86,8 +86,8 @@
         "keywords": null,
         "producer": null,
         "creator": null,
-        "created": null,
-        "modified": null,
+        "createdAt": null,
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {}
       }
@@ -103,8 +103,8 @@
         "keywords": null,
         "producer": null,
         "creator": null,
-        "created": null,
-        "modified": null,
+        "createdAt": null,
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {}
       }
@@ -121,8 +121,8 @@
         "keywords": null,
         "producer": null,
         "creator": null,
-        "created": null,
-        "modified": null,
+        "createdAt": null,
+        "modifiedAt": null,
         "trapped": "unknown",
         "custom": {}
       }

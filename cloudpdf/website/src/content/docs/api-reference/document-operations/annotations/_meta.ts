@@ -5,6 +5,9 @@ export default {
   create: 'Create',
   update: 'Update',
   delete: 'Delete',
+  'read-appearance': 'Read Appearance',
+  'read-file': 'Read File',
   'export-appearance': 'Export Appearance',
   flatten: 'Flatten',
+  reorder: 'Reorder',
 };

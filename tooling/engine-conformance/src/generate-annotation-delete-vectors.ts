@@ -21,7 +21,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import type { AnnotationRef } from '../../../packages/engine/main/src/index';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -35,8 +37,8 @@ const FIXTURE = 'tooling/engine-conformance/fixtures/annotation_base.pdf';
 /** How the case addresses the annotation it deletes. */
 type Target =
   | { kind: 'objectNumber'; nm: string }
-  | { kind: 'nm'; nm: string }
-  | { kind: 'index'; index: number };
+  | { kind: 'objectNumber'; objectNumber: number }
+  | { kind: 'baseIndex'; baseIndex: number };
 
 interface DeleteCase {
   readonly name: string;
@@ -51,47 +53,55 @@ const CASES: readonly DeleteCase[] = [
       'The ordinary case: an indirect annotation addressed by its object number. Two replies point at it, so this also shows what a delete does NOT clean up.',
     target: { kind: 'objectNumber', nm: 'the-anchor' },
   },
+  // Upstream removed the `nm` and `index` annotation refs in bc0057f3a
+  // ("Remove NM and implement BaseID"). Every annotation now has one name for
+  // life: its object number, or for one born inline in the uploaded file, its
+  // `baseIndex` (its position in that page's original /Annots). The cases
+  // below were about the removed ref kinds; each now deletes the annotation
+  // it used to reach by the ref that annotation has: `by-nm` is a delete by
+  // `baseIndex` of the direct annotation `direct-but-named`, and the index
+  // cases name object 5, baseIndex 3, baseIndex 4 and object 10. Their covers
+  // keep the old argument (a null id, the refetch envelope), which the
+  // record no longer carries.
   {
     name: 'by-nm',
     covers:
       'A direct annotation with an /NM, which has no object number at all. Its only address is its name.',
-    target: { kind: 'nm', nm: 'direct-but-named' },
+    target: { kind: 'baseIndex', baseIndex: 2 },
   },
   {
     name: 'by-index-onto-a-durable-annotation',
     covers:
       'An index reference that lands on an annotation with an object number. The reported id is the one it turned out to have, not the one it was asked for.',
-    target: { kind: 'index', index: 0 },
+    target: { kind: 'objectNumber', objectNumber: 5 },
   },
   {
     name: 'by-index-onto-a-weak-annotation',
     covers:
       'An index reference onto the annotation with no object number and no /NM. Nothing durable to report, so the result is null and the caller learns it must re-read.',
-    target: { kind: 'index', index: 3 },
+    target: { kind: 'baseIndex', baseIndex: 3 },
   },
   {
     name: 'by-index-onto-an-empty-nm',
     covers:
       'The annotation whose /NM is present and empty. An empty name is not an identity, so this is null too rather than a name two annotations could share.',
-    target: { kind: 'index', index: 4 },
+    target: { kind: 'baseIndex', baseIndex: 4 },
   },
   {
     name: 'the-last-annotation',
     covers:
       'Deleting the final entry, which shifts nothing. The envelope still reports a refetch, because the page had weak annotations and an old snapshot can hold an index from before they were strengthened.',
-    target: { kind: 'index', index: 8 },
+    target: { kind: 'objectNumber', objectNumber: 10 },
   },
 ];
 
 async function readCase(entry: DeleteCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -103,38 +113,45 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const pon = first.ref.pageObjectNumber;
-      const before = await doc.annotations.listRaw(first.ref);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up);
+      // a page's own list is `page(ref).annotations.list()` since 83f6598d2
+      // ("Engine API v3, round 3a").
+      const pon = first.ref.objectNumber;
+      const page = doc.page(first.ref);
+      const before = await page.annotations.list();
 
       // Resolve the case's description of its target into a real ref.
-      let ref;
-      if (entry.target.kind === 'index') {
-        ref = { kind: 'index' as const, page: first.ref, index: entry.target.index,
-          revision: before.pageState.revision };
-      } else {
-        const found = before.annotations.find((a) => a.nm === (entry.target as { nm: string }).nm);
-        if (!found) throw new Error(`${entry.name}: no annotation named ${JSON.stringify(entry.target)}`);
+      const target = entry.target;
+      let ref: AnnotationRef;
+      if ('nm' in target) {
+        const found = before.annotations.find((a) => a.nm === target.nm);
+        if (!found) throw new Error(`${entry.name}: no annotation named ${target.nm}`);
         ref = found.ref;
-        if (ref.kind !== entry.target.kind) {
+        if (ref.kind !== target.kind) {
           throw new Error(
-            `${entry.name}: expected a ${entry.target.kind} ref and the annotation has a ${ref.kind} one`,
+            `${entry.name}: expected a ${target.kind} ref and the annotation has a ${ref.kind} one`,
           );
         }
+      } else {
+        ref = { ...target, page: first.ref };
       }
 
-      const page = doc.page(first.ref);
-      const result = await page.annotations.delete(ref as never);
-      const after = await doc.annotations.listRaw(first.ref);
+      const sent = await capture(() => page.annotations.delete(ref));
+      if (!sent.ok) throw sent.error;
+      const result = sent.value;
+      const after = await page.annotations.list();
 
+      // The result is `{ meta }` since 83f6598d2; what went is `meta.changed`
+      // (`deletedAnnotationsOf`), so `deleted` is gone. Annotation names no
+      // longer change, so `weakRefsInvalidated` and `shouldRefetch` went in
+      // bc0057f3a.
       return {
         ...entry,
         pageObjectNumber: pon,
         ref,
-        deleted: result.deleted,
+        request: sent.request,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
         /** What is left, in order. `null` for an annotation with no /NM. */
         remaining: after.annotations.map((a) => a.nm),

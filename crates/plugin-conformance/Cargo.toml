@@ -17,3 +17,11 @@ serde = { version = "1", features = ["derive"] }
 # order (a list of problems, the first error thrown) cannot be replayed.
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 base64 = "0.22"
+
+# Text-layout hydration runs the native engine's geometry. epdf-web builds this
+# crate for wasm32, where pdfium-sys has no target, so the engine stays native.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+epdf-engine = { path = "../epdf-engine" }
+
+[build-dependencies]
+build-support = { path = "../build-support" }

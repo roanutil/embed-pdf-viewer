@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/annotation endings.ts: /LE ending points and render nodes.",
   "cases": [

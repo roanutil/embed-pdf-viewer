@@ -1,0 +1,51 @@
+(node:50215) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current links replace the removed cache reducer and use the current annotation host (0.712125ms)
+✔ viewer cache filters visible page-space records, keeps refs and copies activation/hover/reply fields (578.913792ms)
+✔ in-flight requests share the engine read and both settle before a refused page retries (1.348541ms)
+✔ six named read refusals expose error then retry to ready with typed link records (2.173834ms)
+✔ current annotation events refresh loaded pages in order and document close removes subscribers (1.532542ms)
+✔ annotation-backed links follow remote facts and confirmed local apply updates and deletions without page reads (7.58025ms)
+✔ navigation ownership follows real link/pan tools and behavior matching (3.05375ms)
+✔ classic activations and current events hand every non-navigation target to the embedder (1.363167ms)
+✔ stage navigation uses page destinations and configured smooth motion rather than PDF inversion (8.212667ms)
+✔ actions dispatch resolves goto, handles URI success and preserves exact link ref/page provenance (7.42875ms)
+✔ hit tests include edges, choose smallest area with stable ties and miss absent links (1.497083ms)
+✔ labels and pure resolution return current destinations, URI/name and exact reported targets (0.741209ms)
+✔ listAllLinks preserves page order, retries failed pages and emits onLoaded only for successful loads (2.567125ms)
+✖ all nine former reducer occurrences execute their surviving page-mirror ownership with explicit retired state identity (5.010583ms)
+✔ every owned throw, rejection, callback report and nested action diagnostic has an exact independently specified owner (28.039792ms)
+✔ URI openers stack and unsubscribe, event listener failures preserve siblings, lifetime drops pending loads (0.499625ms)
+✔ caller cancellation rejects immediately while the shared page load can complete for other readers (0.385333ms)
+✔ all29 immutable original occurrences map one-to-one to complete current cases and eight explicit additions (9.341833ms)
+✔ all37 current definitions and complete outputs preserve every return, promise, callback, event, engine call and report (33.549459ms)
+✔ prior current actions160 and commands79 keep their complete actual inputs and every output channel (160.847583ms)
+✔ immutable evidence and the one-time prior-tooling audit manifest remain exact (23.505917ms)
+✔ original link29 and all progressed source guard authorities have fixed immutable hashes (0.717959ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 21
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1693.503334
+
+✖ failing tests:
+
+test at test/link-current.test.ts:1:12526
+✖ all nine former reducer occurrences execute their surviving page-mirror ownership with explicit retired state identity (5.010583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/link-current.test.ts:404:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,5 +1,5 @@
-//! `token.ts`: the package token, which `host-contract.ts` carries for
-//! siblings. The host lens equals the public one, so there is one token.
+//! `token.ts`: the package token. The host lens and the public capability
+//! are one Rust type, so there is one token.
 
 use std::sync::LazyLock;
 

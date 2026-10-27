@@ -10,16 +10,19 @@
 //!
 //! PDF stores timestamps as ASCII shaped like `D:YYYYMMDDHHmmSSOHH'mm'`, where
 //! `O` is `+`, `-` or `Z` (ISO 32000 §7.9.4). The engine's DTO wire format is
-//! always ISO 8601, so readers convert PDF to ISO and writers convert back.
+//! ISO 8601 (`IsoDateTime.ts`), so readers convert PDF to ISO and writers
+//! convert back. A date keeps the offset it was written with in both
+//! directions: `D:20170712214438-07'00'` reads `2017-07-12T21:44:38-07:00`
+//! and writes back as it was. Nothing is normalized to UTC.
+
+use crate::error::{EngineError, EngineErrorCode};
 
 /// An instant plus the UTC offset to render it at.
 ///
-/// The offset is carried explicitly, which is the one deliberate difference
-/// from `formatPdfDate`. That function reads the host's local zone through
-/// `Date.prototype.getTimezoneOffset`, and there is no portable equivalent
-/// across a WASM worker, an iOS process and a Linux server, nor any way to
-/// freeze it for the corpus. So the clock supplies it and the formatter uses
-/// what it is given.
+/// The counterpart of a `Date` passed to `formatPdfDate`, which writes it in
+/// UTC. The offset is carried so a test clock can stamp another zone;
+/// [`SystemClock`] always reports zero, which writes what upstream writes.
+/// See [`format_pdf_timestamp`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Timestamp {
     pub epoch_millis: i64,
@@ -72,7 +75,6 @@ struct Civil {
     hour: u32,
     minute: u32,
     second: u32,
-    milli: u32,
 }
 
 /// Days from 1970-01-01 to a proleptic Gregorian date, by Howard Hinnant's
@@ -115,145 +117,239 @@ fn civil_from_epoch_millis(epoch_millis: i64) -> Civil {
         hour: (rem / 3_600_000) as u32,
         minute: (rem / 60_000 % 60) as u32,
         second: (rem / 1_000 % 60) as u32,
-        milli: (rem % 1_000) as u32,
     }
 }
 
-/// Parses `D:YYYYMMDDHHmmSSOHH'mm'` to an ISO 8601 instant, or `None` when the
-/// input is malformed.
+/// Whether the fields name a real date and time: no February 31st, no hour
+/// 25. `validClock` in `pdf-date.ts`.
 ///
-/// PDF says an omitted timezone means the relationship to UTC is unknown. The
-/// wire format needs an absolute instant, so this keeps the pre-existing
-/// fallback of reading an omitted zone as UTC.
-///
-/// Field validation is by construction rather than by rollover: `20250231`
-/// is rejected, not silently read as March 3rd, because `days_from_civil`
+/// Validation is by construction rather than by rollover: `20250231` is
+/// rejected, not silently read as March 3rd, because `days_from_civil`
 /// round-trips through [`civil_from_days`] and the comparison catches it.
-pub fn pdf_date_to_iso(pdf: &str) -> Option<String> {
-    let rest = pdf.strip_prefix("D:")?;
-    let bytes = rest.as_bytes();
-    if bytes.len() < 14 || !bytes[..14].iter().all(u8::is_ascii_digit) {
-        return None;
-    }
-    let num = |from: usize, to: usize| rest[from..to].parse::<i64>().ok();
-    let year = num(0, 4)?;
-    let month = num(4, 6)? as u32;
-    let day = num(6, 8)? as u32;
-    let hour = num(8, 10)? as u32;
-    let minute = num(10, 12)? as u32;
-    let second = num(12, 14)? as u32;
-
-    if !(1..=12).contains(&month) || day < 1 || hour > 23 || minute > 59 || second > 59 {
-        return None;
-    }
-    let days = days_from_civil(year, month, day);
-    // Rejects a day past the end of its month, including February 29th in a
-    // non-leap year, without a month-length table.
-    if civil_from_days(days) != (year, month, day) {
-        return None;
-    }
-
-    let offset_minutes = match &rest[14..] {
-        "" | "Z" => 0,
-        tz => {
-            let tz = tz.as_bytes();
-            // OHH'mm' is seven bytes: sign, two digits, quote, two digits,
-            // quote. Anything else is malformed, including a missing trailing
-            // quote, which is common in the wild but not what this parser
-            // accepts.
-            if tz.len() != 7 || tz[3] != b'\'' || tz[6] != b'\'' {
-                return None;
-            }
-            let sign = match tz[0] {
-                b'+' => 1,
-                b'-' => -1,
-                _ => return None,
-            };
-            let hours: i64 = rest[15..17].parse().ok()?;
-            let minutes: i64 = rest[18..20].parse().ok()?;
-            if hours > 23 || minutes > 59 {
-                return None;
-            }
-            sign * (hours * 60 + minutes)
-        }
-    };
-
-    let wall_clock_millis = days
-        .checked_mul(86_400_000)?
-        .checked_add((hour as i64 * 3600 + minute as i64 * 60 + second as i64) * 1000)?;
-    let epoch_millis = wall_clock_millis.checked_sub(offset_minutes * 60_000)?;
-    Some(iso_8601(epoch_millis))
+fn valid_clock(year: i64, month: u32, day: u32, hour: u32, minute: u32, second: u32) -> bool {
+    (1..=12).contains(&month)
+        && day >= 1
+        && hour <= 23
+        && minute <= 59
+        && second <= 59
+        && civil_from_days(days_from_civil(year, month, day)) == (year, month, day)
 }
 
-/// Renders an instant the way `Date.prototype.toISOString` does: always UTC,
-/// always milliseconds, and the expanded `±YYYYYY` year form outside
-/// `0000..=9999`.
-pub fn iso_8601(epoch_millis: i64) -> String {
-    let c = civil_from_epoch_millis(epoch_millis);
-    let year = if (0..=9999).contains(&c.year) {
-        format!("{:04}", c.year)
-    } else if c.year > 9999 {
-        format!("+{:06}", c.year)
-    } else {
-        format!("-{:06}", -c.year)
-    };
-    format!(
-        "{year}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
-        c.month, c.day, c.hour, c.minute, c.second, c.milli
-    )
+/// The value of a run of ASCII digits. Only called on bytes already checked
+/// to be digits, and never on more than four of them.
+fn digits_value(bytes: &[u8]) -> u32 {
+    bytes.iter().fold(0, |value, digit| value * 10 + u32::from(digit - b'0'))
 }
 
-/// Turns a validated ISO 8601 UTC string back into an instant.
+fn all_digits(bytes: &[u8]) -> bool {
+    bytes.iter().all(u8::is_ascii_digit)
+}
+
+/// The text of bytes already checked to be ASCII.
+fn ascii(bytes: &[u8]) -> &str {
+    std::str::from_utf8(bytes).expect("checked ASCII")
+}
+
+/// `'?` in the offset patterns: one apostrophe, if there is one.
+fn skip_apostrophe(bytes: &[u8]) -> &[u8] {
+    bytes.strip_prefix(b"'").unwrap_or(bytes)
+}
+
+/// A PDF date as ISO 8601, keeping its offset. `pdfDateToIso` in
+/// `pdf-date.ts`.
 ///
-/// The inverse of [`iso_8601`], and only for strings [`is_iso_8601_utc`] has
-/// accepted: the wire carries dates in that form and a patch writing one to
-/// `/CreationDate` has to convert it. `None` for anything else, which by the
-/// time this is reached means the validator and this function disagree.
-pub fn iso_8601_to_timestamp(value: &str) -> Option<Timestamp> {
-    if !is_iso_8601_utc(value) {
+/// A zero offset (`Z`, `+00'00'`) reads as `Z`, any other offset reads as
+/// `±HH:mm`, and a date without one reads without one: PDF says the relation
+/// to UTC is then unknown, and none is invented. Fields the date leaves out
+/// take the spec's defaults (month and day 1, the rest 0). The `D:` prefix
+/// and the apostrophes of the offset are optional, as readers in the wild
+/// treat them. There are no milliseconds: PDF dates have whole seconds.
+///
+/// `None` when the text isn't a date. The grammar is upstream's regex:
+///
+/// ```text
+/// ^(?:D:)?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?
+///   (?:([Zz])(?:00'?00'?)?|([+-])(\d{2})(?:'?(\d{2})'?)?)?$
+/// ```
+///
+/// The digit groups fill left to right, so the run of digits is 4 to 14
+/// long and even, and what follows it is the offset.
+pub fn pdf_date_to_iso(pdf: &str) -> Option<String> {
+    // `String.prototype.trim` strips the BOM as well as Unicode white space.
+    let text = pdf.trim_matches(|c: char| c.is_whitespace() || c == '\u{feff}');
+    let bytes = text.as_bytes();
+    let bytes = bytes.strip_prefix(b"D:").unwrap_or(bytes);
+    let run = bytes.iter().take_while(|byte| byte.is_ascii_digit()).count();
+    if !(4..=14).contains(&run) || run % 2 != 0 {
         return None;
     }
-    let bytes = value.as_bytes();
-    let number = |from: usize, to: usize| -> Option<i64> {
-        std::str::from_utf8(&bytes[from..to]).ok()?.parse().ok()
+    let (clock, zone) = bytes.split_at(run);
+
+    // Each field is the two digits at its place, or the spec's default.
+    let field = |at: usize, default: &'static str| {
+        clock.get(at..at + 2).map_or(default, |digits| ascii(digits))
     };
-    let year = number(0, 4)?;
-    let month = number(5, 7)? as u32;
-    let day = number(8, 10)? as u32;
-    let hour = number(11, 13)?;
-    let minute = number(14, 16)?;
-    let second = number(17, 19)?;
-    // The fraction is optional and is whatever sits between the seconds and
-    // the `Z`. Only the first three digits are milliseconds; a longer one is
-    // truncated rather than rounded, which is what a millisecond clock can
-    // represent.
-    let milli = if bytes.get(19) == Some(&b'.') {
-        let end = value.len() - 1;
-        let digits = &value[20..end];
-        let mut millis = 0i64;
-        for (index, digit) in digits.bytes().take(3).enumerate() {
-            millis += i64::from(digit - b'0') * 10i64.pow(2 - index as u32);
+    let year = ascii(&clock[..4]);
+    let (month, day) = (field(4, "01"), field(6, "01"));
+    let (hour, minute, second) = (field(8, "00"), field(10, "00"), field(12, "00"));
+    let number = |text: &str| digits_value(text.as_bytes());
+    if !valid_clock(
+        i64::from(number(year)),
+        number(month),
+        number(day),
+        number(hour),
+        number(minute),
+        number(second),
+    ) {
+        return None;
+    }
+
+    let offset = match zone {
+        [] => String::new(),
+        [b'Z' | b'z', rest @ ..] => {
+            // `(?:00'?00'?)?`: a zero offset may follow the `Z`.
+            if !rest.is_empty() {
+                let rest = rest.strip_prefix(b"00")?;
+                let rest = skip_apostrophe(rest).strip_prefix(b"00")?;
+                if !skip_apostrophe(rest).is_empty() {
+                    return None;
+                }
+            }
+            "Z".into()
         }
-        millis
-    } else {
-        0
+        [sign @ (b'+' | b'-'), rest @ ..] => {
+            let (hours, rest) = (rest.get(..2)?, &rest[2..]);
+            if !all_digits(hours) {
+                return None;
+            }
+            // `(?:'?(\d{2})'?)?`: minutes are optional, and so is each
+            // apostrophe around them, but an apostrophe alone is not.
+            let minutes: &[u8] = if rest.is_empty() {
+                b"00"
+            } else {
+                let rest = skip_apostrophe(rest);
+                let minutes = rest.get(..2).filter(|minutes| all_digits(minutes))?;
+                if !skip_apostrophe(&rest[2..]).is_empty() {
+                    return None;
+                }
+                minutes
+            };
+            let (h, m) = (digits_value(hours), digits_value(minutes));
+            if h > 23 || m > 59 {
+                return None;
+            }
+            if h == 0 && m == 0 {
+                "Z".into()
+            } else {
+                format!("{}{}:{}", *sign as char, ascii(hours), ascii(minutes))
+            }
+        }
+        _ => return None,
     };
-    let days = days_from_civil(year, month, day);
-    Some(Timestamp::utc(
-        days * 86_400_000 + hour * 3_600_000 + minute * 60_000 + second * 1_000 + milli,
+    Some(format!("{year}-{month}-{day}T{hour}:{minute}:{second}{offset}"))
+}
+
+/// An ISO 8601 date and time as a PDF date, in its own offset.
+/// `formatPdfDate` in `pdf-date.ts`, for a string.
+///
+/// A string with an offset keeps it (`-07:00` writes `-07'00'`), one without
+/// writes none, and `Z` writes `+00'00'` rather than `Z`, which some readers
+/// don't accept. A fraction of a second is dropped: PDF dates have whole
+/// seconds. Seconds may be left out, and write as `00`.
+///
+/// `InvalidArg` when the text isn't a date and time. The grammar is
+/// upstream's regex, which takes a lower-case `z` and requires the colon in
+/// an offset, but does not range-check the offset's digits:
+///
+/// ```text
+/// ^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?
+///   (?:([Zz])|([+-])(\d{2}):(\d{2}))?$
+/// ```
+pub fn format_pdf_date(value: &str) -> Result<String, EngineError> {
+    parse_pdf_date_input(value.as_bytes()).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("not an ISO 8601 date and time: '{value}'"),
+        )
+    })
+}
+
+fn parse_pdf_date_input(bytes: &[u8]) -> Option<String> {
+    // YYYY-MM-DDTHH:MM is the shortest form.
+    let head = bytes.get(..16)?;
+    let digits_at =
+        |ranges: &[(usize, usize)]| ranges.iter().all(|&(a, b)| all_digits(&head[a..b]));
+    if !(digits_at(&[(0, 4), (5, 7), (8, 10), (11, 13), (14, 16)])
+        && head[4] == b'-'
+        && head[7] == b'-'
+        && head[10] == b'T'
+        && head[13] == b':')
+    {
+        return None;
+    }
+    let mut rest = &bytes[16..];
+
+    // `(?::(\d{2})(?:\.\d+)?)?`
+    let mut second: &[u8] = b"00";
+    if let Some(after) = rest.strip_prefix(b":") {
+        second = after.get(..2).filter(|digits| all_digits(digits))?;
+        rest = &after[2..];
+        if let Some(fraction) = rest.strip_prefix(b".") {
+            let length = fraction.iter().take_while(|byte| byte.is_ascii_digit()).count();
+            if length == 0 {
+                return None;
+            }
+            rest = &fraction[length..];
+        }
+    }
+
+    // `(?:([Zz])|([+-])(\d{2}):(\d{2}))?`
+    let offset = match rest {
+        [] => String::new(),
+        [b'Z' | b'z'] => "+00'00'".into(),
+        [sign @ (b'+' | b'-'), h1, h2, b':', m1, m2] if all_digits(&[*h1, *h2, *m1, *m2]) => {
+            format!(
+                "{}{}{}'{}{}'",
+                *sign as char, *h1 as char, *h2 as char, *m1 as char, *m2 as char
+            )
+        }
+        _ => return None,
+    };
+
+    let (year, month, day) = (&head[0..4], &head[5..7], &head[8..10]);
+    let (hour, minute) = (&head[11..13], &head[14..16]);
+    if !valid_clock(
+        i64::from(digits_value(year)),
+        digits_value(month),
+        digits_value(day),
+        digits_value(hour),
+        digits_value(minute),
+        digits_value(second),
+    ) {
+        return None;
+    }
+    Some(format!(
+        "D:{}{}{}{}{}{}{offset}",
+        ascii(year),
+        ascii(month),
+        ascii(day),
+        ascii(hour),
+        ascii(minute),
+        ascii(second)
     ))
 }
 
-/// Formats an instant as a PDF date string.
+/// An instant as a PDF date. `formatPdfDate` in `pdf-date.ts`, for a `Date`.
 ///
-/// Emits the offset in PDF's `OHH'mm'` form, where the apostrophe after the
-/// hour is literal and the sign is always present. UTC is emitted as `+00'00'`
-/// rather than `Z`: the shorthand is legal but not universally supported by
-/// readers.
+/// Upstream writes a `Date` in UTC. [`SystemClock`] always reports a zero
+/// offset, so a stamp from it writes `+00'00'` the same way; a
+/// [`Timestamp`] that carries another offset writes the wall clock at that
+/// offset. A fraction of a second is dropped.
 ///
 /// `None` when the instant does not have a four-digit year, which PDF date
-/// syntax cannot express.
-pub fn format_pdf_date(at: Timestamp) -> Option<String> {
+/// syntax cannot express. Upstream's `RangeError` for an invalid `Date` has
+/// no counterpart: every `Timestamp` is a valid instant.
+pub fn format_pdf_timestamp(at: Timestamp) -> Option<String> {
     let local = at.epoch_millis.checked_add(at.utc_offset_minutes as i64 * 60_000)?;
     let c = civil_from_epoch_millis(local);
     if !(0..=9999).contains(&c.year) {
@@ -274,62 +370,69 @@ pub fn format_pdf_date(at: Timestamp) -> Option<String> {
     ))
 }
 
-/// Accepts exactly the strings `z.string().datetime()` accepts in
-/// `wire/schemas.ts`: `YYYY-MM-DDTHH:MM:SS[.fraction]Z`, four-digit year, a
-/// real calendar date, and a literal `Z`.
+/// Accepts exactly the strings `IsoDateTimeSchema` accepts
+/// (`core/src/dto/IsoDateTime.schema.ts`), which is zod 3's
+/// `z.string().datetime({ offset: true, local: true })`:
 ///
-/// The wire carries ISO 8601 for `/CreationDate` and `/ModDate`, and the zod
-/// schema is the shipping validator for it. A Rust type that took any string
-/// there would accept `+02:00` offsets, `2025-02-30`, and `not-a-date`, which
-/// the schema refuses: the two would disagree about whether a request is well
-/// formed, and only one of them runs on mobile.
+/// ```text
+/// ^DATE T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z?|[+-]\d{2}:?\d{2})$
+/// ```
 ///
-/// Deliberately narrow, matching zod rather than ISO 8601 at large: no offsets
-/// (zod's default has `offset: false`), no `local` form, no leap second, no
-/// expanded year. `iso_8601` never emits any of those either.
-pub fn is_iso_8601_utc(value: &str) -> bool {
+/// where `DATE` is `YYYY-MM-DD` naming a real Gregorian day (leap years
+/// included). Seconds and a fraction are optional, `Z` is upper case only,
+/// no zone at all is the `local` form, and an offset may drop its colon. zod
+/// does not range-check the offset's digits, so neither does this.
+///
+/// The schema is the shipping validator on the wire. A Rust type that took
+/// any string would accept what zod refuses, and the same request would be
+/// well formed on one engine and not on the other.
+pub fn is_iso_date_time(value: &str) -> bool {
     let bytes = value.as_bytes();
-    // YYYY-MM-DDTHH:MM:SS plus the mandatory Z is the shortest accepted form.
-    if bytes.len() < 20 || bytes[bytes.len() - 1] != b'Z' {
+    let Some(head) = bytes.get(..16) else {
         return false;
-    }
-    let digits = |from: usize, to: usize| bytes[from..to].iter().all(u8::is_ascii_digit);
-    if !(digits(0, 4)
-        && bytes[4] == b'-'
-        && digits(5, 7)
-        && bytes[7] == b'-'
-        && digits(8, 10)
-        && bytes[10] == b'T'
-        && digits(11, 13)
-        && bytes[13] == b':'
-        && digits(14, 16)
-        && bytes[16] == b':'
-        && digits(17, 19))
+    };
+    let digits_at =
+        |ranges: &[(usize, usize)]| ranges.iter().all(|&(a, b)| all_digits(&head[a..b]));
+    if !(digits_at(&[(0, 4), (5, 7), (8, 10), (11, 13), (14, 16)])
+        && head[4] == b'-'
+        && head[7] == b'-'
+        && head[10] == b'T'
+        && head[13] == b':')
     {
         return false;
     }
-
-    // Anything between the seconds and the Z must be a dot and at least one
-    // digit. zod's `(\.\d+)?` allows any precision, so this does too.
-    let fraction = &bytes[19..bytes.len() - 1];
-    if !fraction.is_empty()
-        && (fraction[0] != b'.'
-            || fraction.len() < 2
-            || !fraction[1..].iter().all(u8::is_ascii_digit))
-    {
-        return false;
+    let mut rest = &bytes[16..];
+    let mut second = 0;
+    if let Some(after) = rest.strip_prefix(b":") {
+        let Some(digits) = after.get(..2).filter(|digits| all_digits(digits)) else {
+            return false;
+        };
+        second = digits_value(digits);
+        rest = &after[2..];
+        if let Some(fraction) = rest.strip_prefix(b".") {
+            let length = fraction.iter().take_while(|byte| byte.is_ascii_digit()).count();
+            if length == 0 {
+                return false;
+            }
+            rest = &fraction[length..];
+        }
     }
-
-    let num = |from: usize, to: usize| value[from..to].parse::<i64>().unwrap_or(-1);
-    let (year, month, day) = (num(0, 4), num(5, 7), num(8, 10));
-    let (hour, minute, second) = (num(11, 13), num(14, 16), num(17, 19));
-    if !(1..=12).contains(&month) || day < 1 || hour > 23 || minute > 59 || second > 59 {
-        return false;
-    }
-    // Rejects a day past the end of its month, February 29th in a non-leap
-    // year included, without a month-length table.
-    civil_from_days(days_from_civil(year, month as u32, day as u32))
-        == (year, month as u32, day as u32)
+    let zone_ok = match rest {
+        [] | [b'Z'] => true,
+        [b'+' | b'-', h1, h2, b':', m1, m2] | [b'+' | b'-', h1, h2, m1, m2] => {
+            all_digits(&[*h1, *h2, *m1, *m2])
+        }
+        _ => false,
+    };
+    zone_ok
+        && valid_clock(
+            i64::from(digits_value(&head[0..4])),
+            digits_value(&head[5..7]),
+            digits_value(&head[8..10]),
+            digits_value(&head[11..13]),
+            digits_value(&head[14..16]),
+            second,
+        )
 }
 
 #[cfg(test)]
@@ -354,84 +457,206 @@ mod tests {
         assert_eq!(days_from_civil(1969, 12, 31), -1);
     }
 
+    // `packages/engine/main/test/pdf-date.test.ts`, case for case.
+
     #[test]
-    fn parses_a_pdf_date_with_each_timezone_form() {
-        assert_eq!(pdf_date_to_iso("D:20240102030405Z"), Some("2024-01-02T03:04:05.000Z".into()));
-        assert_eq!(pdf_date_to_iso("D:20240102030405"), Some("2024-01-02T03:04:05.000Z".into()));
-        // +05'30' means the wall clock is ahead of UTC, so the instant is
-        // earlier than the digits read.
+    fn reads_a_pdf_date_keeping_its_offset() {
+        for (pdf, expected) in [
+            ("D:20260713150000+03'00'", "2026-07-13T15:00:00+03:00"),
+            ("D:20260713150000-03'00'", "2026-07-13T15:00:00-03:00"),
+            ("D:20260713150000+05'45'", "2026-07-13T15:00:00+05:45"),
+            ("D:20260713150000Z", "2026-07-13T15:00:00Z"),
+            ("D:20260713150000+00'00'", "2026-07-13T15:00:00Z"),
+            ("D:20260713150000Z00'00'", "2026-07-13T15:00:00Z"),
+            // No offset: the relation to UTC is unknown, so none is invented.
+            ("D:20260713150000", "2026-07-13T15:00:00"),
+            // Readers in the wild: no prefix, loose apostrophes, an hours-only offset.
+            ("20260713150000Z", "2026-07-13T15:00:00Z"),
+            ("D:20260713150000+03'00", "2026-07-13T15:00:00+03:00"),
+            ("D:20260713150000-07", "2026-07-13T15:00:00-07:00"),
+            // Left-out fields take the spec's defaults.
+            ("D:2026", "2026-01-01T00:00:00"),
+            ("D:202607131500+02'00'", "2026-07-13T15:00:00+02:00"),
+        ] {
+            assert_eq!(pdf_date_to_iso(pdf).as_deref(), Some(expected), "{pdf}");
+        }
+    }
+
+    #[test]
+    fn reads_a_malformed_pdf_date_as_none() {
+        for pdf in [
+            "",
+            "not a date",
+            "D:20261313150000+03'00'",
+            "D:20260231150000+03'00'",
+            "D:20250229120000Z",
+            "D:20260713250000+03'00'",
+            "D:20260713150000+24'00'",
+            "D:20260713150000+03'60'",
+            "D:20260713150000garbage",
+        ] {
+            assert_eq!(pdf_date_to_iso(pdf), None, "{pdf:?}");
+        }
+    }
+
+    #[test]
+    fn a_leap_day_is_a_date() {
+        assert_eq!(pdf_date_to_iso("D:20240229120000Z").as_deref(), Some("2024-02-29T12:00:00Z"));
+    }
+
+    #[test]
+    fn writes_an_iso_date_in_its_own_offset() {
+        for (iso, expected) in [
+            ("2017-07-12T21:44:38-07:00", "D:20170712214438-07'00'"),
+            ("2017-07-12T21:44:38+05:30", "D:20170712214438+05'30'"),
+            ("2017-07-12T21:44:38Z", "D:20170712214438+00'00'"),
+            ("2017-07-12T21:44:38", "D:20170712214438"),
+            ("2017-07-12T21:44:38.999Z", "D:20170712214438+00'00'"),
+            ("2017-07-12T21:44Z", "D:20170712214400+00'00'"),
+        ] {
+            assert_eq!(format_pdf_date(iso).unwrap(), expected, "{iso}");
+        }
+    }
+
+    #[test]
+    fn a_read_date_written_back_is_the_same_pdf_date() {
+        for pdf in ["D:20170712214438-07'00'", "D:20170712214438+05'30'", "D:20170712214438"] {
+            assert_eq!(format_pdf_date(&pdf_date_to_iso(pdf).unwrap()).unwrap(), pdf);
+        }
+    }
+
+    #[test]
+    fn an_instant_is_written_in_utc() {
+        // `new Date('2026-07-13T23:59:58.500+02:00')`: the fraction is dropped.
+        let at = Timestamp::utc(1_783_979_998_500);
+        assert_eq!(format_pdf_timestamp(at).unwrap(), "D:20260713215958+00'00'");
+    }
+
+    #[test]
+    fn an_invalid_string_is_refused() {
+        for value in ["2026-02-30T00:00:00Z", "yesterday"] {
+            let error = format_pdf_date(value).unwrap_err();
+            assert_eq!(error.code, EngineErrorCode::InvalidArg, "{value}");
+            assert!(error.message.contains("not an ISO 8601"), "{value}: {}", error.message);
+        }
+    }
+
+    // `packages/engine/main/test/dates.test.ts` runs `runDateConformance`
+    // against `fixtures/dates.pdf`. These are its dates, at the converter;
+    // the readers that surface them adopt it in 8.6, 8.8, 8.12 and 8.19.
+
+    #[test]
+    fn the_date_fixtures_annotation_dates_read_with_their_offsets() {
+        for (pdf, expected) in [
+            // dates-offset
+            ("D:20170712214438-07'00'", Some("2017-07-12T21:44:38-07:00")),
+            ("D:20170713091500+05'30'", Some("2017-07-13T09:15:00+05:30")),
+            // dates-local: no offset reads without one; `Z` stays UTC.
+            ("D:20170712214438", Some("2017-07-12T21:44:38")),
+            ("D:20170712214438Z", Some("2017-07-12T21:44:38Z")),
+            // dates-odd: text that isn't a date, and a year alone.
+            ("not a date", None),
+            ("D:2017", Some("2017-01-01T00:00:00")),
+            // dates-file's /Params, and the embedded file's.
+            ("D:20180101120000+01'00'", Some("2018-01-01T12:00:00+01:00")),
+            // The Info dictionary.
+            ("D:20190203040506+09'00'", Some("2019-02-03T04:05:06+09:00")),
+        ] {
+            assert_eq!(pdf_date_to_iso(pdf).as_deref(), expected, "{pdf}");
+        }
+    }
+
+    #[test]
+    fn the_date_fixtures_metadata_writes_read_back_as_written() {
+        // A string keeps its offset through the write and the read.
+        let written = format_pdf_date("2020-01-02T03:04:05+05:30").unwrap();
+        assert_eq!(written, "D:20200102030405+05'30'");
+        assert_eq!(pdf_date_to_iso(&written).as_deref(), Some("2020-01-02T03:04:05+05:30"));
+
+        // `new Date('2021-06-07T10:09:10.500+02:00')`: an instant, written in
+        // UTC, whole seconds.
+        let written = format_pdf_timestamp(Timestamp::utc(1_623_053_350_500)).unwrap();
+        assert_eq!(pdf_date_to_iso(&written).as_deref(), Some("2021-06-07T08:09:10Z"));
+    }
+
+    #[test]
+    fn an_engine_stamp_reads_back_in_utc() {
+        // An update stamps `/M` itself; the read ends in `Z`.
+        let stamp = format_pdf_timestamp(SystemClock.now()).unwrap();
+        assert!(pdf_date_to_iso(&stamp).unwrap().ends_with('Z'), "{stamp}");
+    }
+
+    #[test]
+    fn nothing_normalizes_to_utc() {
+        // The same instant in two zones reads as two strings.
         assert_eq!(
-            pdf_date_to_iso("D:20240102030405+05'30'"),
-            Some("2024-01-01T21:34:05.000Z".into())
+            pdf_date_to_iso("D:20170712214438-07'00'").as_deref(),
+            Some("2017-07-12T21:44:38-07:00")
         );
         assert_eq!(
-            pdf_date_to_iso("D:20240102030405-08'00'"),
-            Some("2024-01-02T11:04:05.000Z".into())
+            pdf_date_to_iso("D:20170713044438+00'00'").as_deref(),
+            Some("2017-07-13T04:44:38Z")
         );
     }
 
     #[test]
-    fn rejects_dates_javascript_would_silently_roll_over() {
-        // The TypeScript reader constructs the fields then compares them back,
-        // for exactly this. February 31st is not March 3rd.
-        assert_eq!(pdf_date_to_iso("D:20250231000000"), None);
-        assert_eq!(pdf_date_to_iso("D:20230229000000"), None);
-        assert_eq!(pdf_date_to_iso("D:20240229000000"), Some("2024-02-29T00:00:00.000Z".into()));
-        assert_eq!(pdf_date_to_iso("D:20240001000000"), None);
-        assert_eq!(pdf_date_to_iso("D:20241301000000"), None);
-        assert_eq!(pdf_date_to_iso("D:20240100000000"), None);
-        assert_eq!(pdf_date_to_iso("D:20240102240000"), None);
-        assert_eq!(pdf_date_to_iso("D:20240102006000"), None);
+    fn reads_the_offset_spellings_the_grammar_allows() {
+        for (pdf, expected) in [
+            ("D:20260713150000z", Some("2026-07-13T15:00:00Z")),
+            ("D:20260713150000Z0000", Some("2026-07-13T15:00:00Z")),
+            ("D:20260713150000+0300", Some("2026-07-13T15:00:00+03:00")),
+            ("D:20260713150000+03'00'", Some("2026-07-13T15:00:00+03:00")),
+            ("D:20260713150000+0300'", Some("2026-07-13T15:00:00+03:00")),
+            ("  D:20260713150000Z\n", Some("2026-07-13T15:00:00Z")),
+            ("D:202607", Some("2026-07-01T00:00:00")),
+            // An apostrophe alone, an odd digit, a short offset, a `Z` with
+            // a non-zero tail, and fifteen digits.
+            ("D:20260713150000+03'", None),
+            ("D:2026071", None),
+            ("D:20260713150000+3", None),
+            ("D:20260713150000Z01'00'", None),
+            ("D:202607131500001", None),
+            ("D:", None),
+            ("d:20260713150000Z", None),
+        ] {
+            assert_eq!(pdf_date_to_iso(pdf).as_deref(), expected, "{pdf:?}");
+        }
     }
 
     #[test]
-    fn rejects_malformed_shapes_rather_than_guessing() {
-        assert_eq!(pdf_date_to_iso("20240102030405"), None); // no D: prefix
-        assert_eq!(pdf_date_to_iso("D:202401020304"), None); // too short
-        assert_eq!(pdf_date_to_iso("D:2024010203040x"), None); // non-digit
-        assert_eq!(pdf_date_to_iso("D:20240102030405+05'30"), None); // unterminated
-        assert_eq!(pdf_date_to_iso("D:20240102030405+0530"), None); // no quotes
-        assert_eq!(pdf_date_to_iso("D:20240102030405*05'30'"), None); // bad sign
-        assert_eq!(pdf_date_to_iso("D:20240102030405+25'00'"), None); // hour > 23
-        assert_eq!(pdf_date_to_iso("D:20240102030405+05'60'"), None); // minute > 59
-    }
-
-    #[test]
-    fn formats_utc_as_an_explicit_zero_offset_not_z() {
-        let at = Timestamp::utc(1_704_164_645_000); // 2024-01-02T03:04:05Z
-        assert_eq!(format_pdf_date(at).unwrap(), "D:20240102030405+00'00'");
-    }
-
-    #[test]
-    fn formats_at_the_offset_it_is_given() {
-        let at = Timestamp { epoch_millis: 1_704_164_645_000, utc_offset_minutes: -480 };
-        // 03:04:05Z is 19:04:05 the previous day at UTC-08:00.
-        assert_eq!(format_pdf_date(at).unwrap(), "D:20240101190405-08'00'");
-
-        let half_hour = Timestamp { epoch_millis: 1_704_164_645_000, utc_offset_minutes: 330 };
-        assert_eq!(format_pdf_date(half_hour).unwrap(), "D:20240102083405+05'30'");
-    }
-
-    #[test]
-    fn round_trips_a_formatted_date_back_through_the_parser() {
-        let at = Timestamp { epoch_millis: 1_704_164_645_000, utc_offset_minutes: 330 };
-        let pdf = format_pdf_date(at).unwrap();
-        assert_eq!(pdf_date_to_iso(&pdf), Some(iso_8601(at.epoch_millis)));
+    fn writes_only_what_the_formatter_grammar_takes() {
+        assert_eq!(format_pdf_date("2017-07-12T21:44:38z").unwrap(), "D:20170712214438+00'00'");
+        assert_eq!(format_pdf_date("2017-07-12T21:44").unwrap(), "D:20170712214400");
+        for value in [
+            "2017-07-12T21:44:38+0530",
+            "2017-07-12T21:44:38.Z",
+            "2017-07-12 21:44:38Z",
+            "2017-07-12T21:44:3Z",
+            "2017-07-12T24:00:00Z",
+            "2017-07-12T21:44:38Z ",
+        ] {
+            assert!(format_pdf_date(value).is_err(), "{value}");
+        }
     }
 
     #[test]
     fn refuses_years_pdf_date_syntax_cannot_express() {
         // Year 10000 and year -1 both need more than four digits.
-        assert_eq!(format_pdf_date(Timestamp::utc(253_402_300_800_000)), None);
-        assert_eq!(format_pdf_date(Timestamp::utc(-62_167_219_200_001)), None);
+        assert_eq!(format_pdf_timestamp(Timestamp::utc(253_402_300_800_000)), None);
+        assert_eq!(format_pdf_timestamp(Timestamp::utc(-62_167_219_200_001)), None);
     }
 
     #[test]
-    fn iso_renders_pre_epoch_instants_on_the_right_day() {
+    fn an_instant_before_1970_lands_on_the_right_day() {
         // Truncating division would put this on 1970-01-01.
-        assert_eq!(iso_8601(-1), "1969-12-31T23:59:59.999Z");
-        assert_eq!(iso_8601(0), "1970-01-01T00:00:00.000Z");
-        assert_eq!(iso_8601(253_402_300_800_000), "+010000-01-01T00:00:00.000Z");
+        assert_eq!(format_pdf_timestamp(Timestamp::utc(-1)).unwrap(), "D:19691231235959+00'00'");
+    }
+
+    #[test]
+    fn a_timestamp_with_an_offset_writes_its_wall_clock() {
+        let at = Timestamp { epoch_millis: 1_704_164_645_000, utc_offset_minutes: -480 };
+        // 03:04:05Z is 19:04:05 the previous day at UTC-08:00.
+        assert_eq!(format_pdf_timestamp(at).unwrap(), "D:20240101190405-08'00'");
     }
 
     #[test]
@@ -442,36 +667,42 @@ mod tests {
     }
 
     #[test]
-    fn iso_8601_validation_accepts_what_the_zod_schema_accepts() {
+    fn iso_date_time_validation_accepts_what_the_zod_schema_accepts() {
         for accepted in [
             "2026-09-22T08:00:00Z",
             "2026-09-22T08:00:00.000Z",
             "2026-09-22T08:00:00.123456Z",
             "2024-02-29T00:00:00Z",
-            "0000-01-01T00:00:00Z",
+            "0000-02-29T00:00:00Z",
             "9999-12-31T23:59:59Z",
+            // `offset: true`, with or without the colon, digits unchecked.
+            "2026-09-22T08:00:00+02:00",
+            "2026-09-22T08:00:00-0200",
+            "2026-09-22T08:00:00+99:99",
+            // `local: true`: no zone at all, and seconds are optional.
+            "2026-09-22T08:00:00",
+            "2026-09-22T08:00",
+            "2026-09-22T08:00Z",
         ] {
-            assert!(is_iso_8601_utc(accepted), "{accepted}");
+            assert!(is_iso_date_time(accepted), "{accepted}");
         }
-        // What iso_8601 itself emits must always be accepted, or a value this
-        // engine produced would fail validation on the way back in.
-        assert!(is_iso_8601_utc(&iso_8601(0)));
-        assert!(is_iso_8601_utc(&iso_8601(1_789_000_000_000)));
+        // What the reader emits must always be accepted, or a read could not
+        // go back into a write.
+        for pdf in ["D:20170712214438-07'00'", "D:20170712214438", "D:2017", "D:20170712214438Z"] {
+            assert!(is_iso_date_time(&pdf_date_to_iso(pdf).unwrap()), "{pdf}");
+        }
     }
 
     #[test]
-    fn iso_8601_validation_rejects_what_the_zod_schema_rejects() {
+    fn iso_date_time_validation_rejects_what_the_zod_schema_rejects() {
         for rejected in [
             "",
             "not-a-date",
-            // Offsets: zod's datetime() defaults to offset: false.
-            "2026-09-22T08:00:00+02:00",
-            "2026-09-22T08:00:00-0200",
-            // No zone at all.
-            "2026-09-22T08:00:00",
+            "yesterday",
             // Impossible calendar dates.
             "2025-02-30T00:00:00Z",
             "2025-02-29T00:00:00Z",
+            "1900-02-29T00:00:00Z",
             "2025-04-31T00:00:00Z",
             "2025-13-01T00:00:00Z",
             "2025-00-10T00:00:00Z",
@@ -480,20 +711,23 @@ mod tests {
             "2025-01-01T24:00:00Z",
             "2025-01-01T00:60:00Z",
             "2025-01-01T00:00:60Z",
-            // A dot with no digits after it.
+            // A dot with no digits after it, and a fraction without seconds.
             "2025-01-01T00:00:00.Z",
+            "2025-01-01T00:00.5Z",
             // Separators in the wrong place.
             "2025/01/01T00:00:00Z",
             "2025-01-01 00:00:00Z",
-            // Lower-case zone, and a trailing space.
+            // Lower-case zone, a trailing space, a short or long offset.
             "2025-01-01T00:00:00z",
             "2025-01-01T00:00:00Z ",
-            // Expanded years: iso_8601 emits these outside 0000..=9999, and
-            // the schema refuses them. Documented rather than fixed here.
+            "2025-01-01T00:00:00+02",
+            "2025-01-01T00:00:00+02:000",
+            "2025-01-01T00:00:00Z+02:00",
+            // Expanded years.
             "+010000-01-01T00:00:00Z",
             "-000001-01-01T00:00:00Z",
         ] {
-            assert!(!is_iso_8601_utc(rejected), "{rejected}");
+            assert!(!is_iso_date_time(rejected), "{rejected}");
         }
     }
 }

@@ -6,22 +6,62 @@
  * here is the kernel's and nobody else's.
  */
 import '../probe';
-
 import type { ProbeConfig } from '../probe';
 import type { ScenarioCase, Step } from '../scenario';
 import type { FakeDocumentSpec } from '../fake-engine';
 import type { Suite } from '../vectors';
-
-const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const page = (pon: number, index: number) => ({
+import type {
+  DocumentEvent,
+  DocumentMetadata,
+  DocumentSecurityState,
+  EventOrigin,
+  PageLayout,
+  PageRef,
+  PageTextSnapshot,
+} from '@embedpdf/engine-core/runtime';
+const box = { x: 0, y: 0, width: 600, height: 800 };
+const origin: EventOrigin = { kind: 'local', sessionId: 'fake', sub: null, ts: 0, serverId: null };
+const page = (pon: number, index: number): PageLayout => ({
   index,
-  ref: { kind: 'objectNumber', pageObjectNumber: pon },
+  ref: { kind: 'objectNumber', objectNumber: pon },
   label: null,
   size: { width: 600, height: 800 },
   rotation: 0,
   userUnit: 1,
-  boxes: { media: { ...box }, crop: { ...box } },
+  tabOrder: null,
+  pdfCropBox: { left: 0, bottom: 0, right: 600, top: 800 },
+  boxes: {
+    media: { ...box },
+    crop: { ...box },
+    bleed: { ...box },
+    trim: { ...box },
+    art: { ...box },
+  },
 });
+const metadata: DocumentMetadata = {
+  title: null,
+  author: null,
+  subject: null,
+  keywords: null,
+  producer: null,
+  creator: null,
+  createdAt: null,
+  modifiedAt: null,
+  trapped: 'unknown',
+};
+const unlockedSecurity: DocumentSecurityState = {
+  encryption: { state: 'none', requiresPassword: false },
+  permissions: {
+    known: true,
+    bits: null,
+    allAllowed: true,
+    openedAs: 'none',
+    securityHandlerRevision: null,
+    canUpgradeToOwner: false,
+  },
+  access: { required: false, reasons: [] },
+};
+const mutationMeta = { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true };
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
   pages: [page(1, 0)],
   ...over,
@@ -33,7 +73,6 @@ const bytes = (id: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 const probe = (config: ProbeConfig) => ({ factory: 'probe', config });
-
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const destroy: Step = { op: 'call', target: 'kernel', method: 'destroy' };
 const open = (input: unknown, options?: unknown): Step => ({
@@ -42,8 +81,18 @@ const open = (input: unknown, options?: unknown): Step => ({
   method: 'open',
   args: options === undefined ? [input] : [input, options],
 });
-const docs = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: 'documents', method, args });
-const kernel = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: 'kernel', method, args });
+const docs = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: 'documents',
+  method,
+  args,
+});
+const kernel = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: 'kernel',
+  method,
+  args,
+});
 const cap = (token: string, method: string, args: unknown[] = [], docId?: string): Step => ({
   op: 'call',
   target: docId === undefined ? { token } : { token, doc: docId },
@@ -56,33 +105,95 @@ const fail = (label: string, message: string, name = 'Error'): Step => ({
   label,
   error: { name, message },
 });
-const listing: Step[] = [
-  docs('list'),
-  docs('getOrder'),
-  docs('getCount'),
-  docs('getActiveId'),
-];
-
+const listing: Step[] = [docs('list'), docs('getOrder'), docs('getCount'), docs('getActiveId')];
 /** A document-scoped probe with every lifecycle member switched on. */
 const docProbe = (id: string, extra: Partial<ProbeConfig> = {}): ProbeConfig => ({
   id,
   scope: 'document',
   token: id,
-  initialState: { n: 0 },
-  reduce: { SET: 'replace', MERGE: 'merge', SAME: 'same' },
-  init: true,
-  effects: { onAction: ['@@core/document-added', '@@core/active-changed'], cleanup: true, watchState: true },
+  state: { n: 0 },
+  connect: { cleanup: true, watchState: true },
   ...extra,
 });
-
+// ── the v3 contract: create/connect controllers, leases, documents API ─────────
+/** The members of a `create` probe's api, in object order: a capability
+ *  printed as an outcome registers one ref per member, in this order. */
+const API = [
+  'instanceId',
+  'state',
+  'replaceState',
+  'mergeState',
+  'sameState',
+  'docCall',
+  'pageCall',
+  'allows',
+  'docId',
+  'docRead',
+  'on',
+  'emit',
+  'onThrowing',
+  'abortSignal',
+  'waitFor',
+  'waitForThrowing',
+  'queue',
+  'latest',
+  'latestCancel',
+  'latestRunning',
+  'acquire',
+  'assertPageRef',
+  'getPage',
+  'get',
+  'tryGet',
+  'forDocument',
+  'tryForDocument',
+  'cleanup',
+  'signalReason',
+  'document',
+  'documentId',
+  'handleId',
+  'handleFor',
+  'pageOf',
+  'notify',
+] as const;
+/** The ref of an api member when the capability printed at `base`. */
+const at = (member: (typeof API)[number], base = 0) => base + API.indexOf(member);
+const callRef = (ref: number, ...args: unknown[]): Step => ({ op: 'call', target: { ref }, args });
+const api = (member: (typeof API)[number], ...args: unknown[]) => callRef(at(member), ...args);
+const ref1 = (pon: number): PageRef => ({ kind: 'objectNumber', objectNumber: pon });
+const U = { $undefined: true };
+/** A document-scoped `create` probe. */
+const ctl = (id: string, extra: Partial<ProbeConfig> = {}): ProbeConfig => ({
+  id,
+  scope: 'document',
+  token: id,
+  state: { n: 0 },
+  ...extra,
+});
+/** A workspace `create` probe. */
+const wsCtl = (id: string, extra: Partial<ProbeConfig> = {}): ProbeConfig => ({
+  id,
+  token: id,
+  state: { n: 0 },
+  ...extra,
+});
+const capOf = (token: string, docId?: string): Step =>
+  kernel('capability', { $token: token }, ...(docId ? [docId] : []));
 const cases: ScenarioCase[] = [
   {
     name: 'open-a-document',
     covers:
-      'The ready path end to end: slot reserved synchronously as loading, the engine open, pages.list, bring-up (slices, init, effects) in plugin order, and the one commit that swaps the pending slot for the document.',
-    plugins: [probe(docProbe('alpha')), probe({ id: 'workspace', token: 'ws', init: true, effects: { onAction: ['@@core/document-opening'] } })],
+      'Open reserves a loading slot, lists pages, creates and connects plugins in dependency order, and publishes one ready document.',
+    plugins: [probe(docProbe('alpha')), probe({ id: 'workspace', token: 'ws', connect: {} })],
     engine: { documents: { a: doc({ pages: [page(1, 0), page(7, 1)] }) } },
-    steps: [start, open(bytes('a'), { name: 'Report' }), ...listing, docs('get', 'a'), docs('has', 'a'), docs('has', 'zzz'), docs('get', 'zzz')],
+    steps: [
+      start,
+      open(bytes('a'), { name: 'Report' }),
+      ...listing,
+      docs('get', 'a'),
+      docs('has', 'a'),
+      docs('has', 'zzz'),
+      docs('get', 'zzz'),
+    ],
   },
   {
     name: 'tabs-keep-request-order',
@@ -113,7 +224,13 @@ const cases: ScenarioCase[] = [
       '`activate: false` leaves the active tab alone unless there is none, in which case the first tab is always selected.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc(), b: doc() } },
-    steps: [start, open(bytes('a'), { activate: false }), docs('getActiveId'), open(bytes('b'), { activate: false }), docs('getActiveId')],
+    steps: [
+      start,
+      open(bytes('a'), { activate: false }),
+      docs('getActiveId'),
+      open(bytes('b'), { activate: false }),
+      docs('getActiveId'),
+    ],
   },
   {
     name: 'open-all',
@@ -122,7 +239,13 @@ const cases: ScenarioCase[] = [
     plugins: [probe(docProbe('alpha'))],
     engine: {
       documents: { a: doc(), b: doc(), c: doc() },
-      responses: [{ path: 'open', args: [bytes('c'), {}], error: { name: 'EngineError', message: 'broken file', code: 'Format' } }],
+      responses: [
+        {
+          path: 'open',
+          args: [bytes('c'), {}],
+          error: { name: 'EngineError', message: 'broken file', code: 'Format' },
+        },
+      ],
     },
     steps: [
       start,
@@ -140,7 +263,11 @@ const cases: ScenarioCase[] = [
     covers: 'With no `active` entry the first document is selected.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc(), b: doc() } },
-    steps: [start, docs('openAll', [{ source: bytes('a') }, { source: bytes('b') }]), docs('getActiveId')],
+    steps: [
+      start,
+      docs('openAll', [{ source: bytes('a') }, { source: bytes('b') }]),
+      docs('getActiveId'),
+    ],
   },
   {
     name: 'close-while-opening',
@@ -148,7 +275,14 @@ const cases: ScenarioCase[] = [
       'close() during the engine open: the tab disappears synchronously, open() rejects with the typed cancellation, and a handle that lands afterwards is closed rather than leaked.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() }, responses: [{ path: 'open', defer: 'open-a' }] },
-    steps: [start, open(bytes('a')), docs('close', 'a'), ...listing, settle('open-a', { $document: 'a' }), docs('close', 'a')],
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('close', 'a'),
+      ...listing,
+      settle('open-a', { $document: 'a' }),
+      docs('close', 'a'),
+    ],
   },
   {
     name: 'close-during-pages-list',
@@ -159,12 +293,36 @@ const cases: ScenarioCase[] = [
     steps: [start, open(bytes('a')), docs('close', 'a'), ...listing],
   },
   {
-    name: 'close-during-init',
+    name: 'close-during-policy',
     covers:
-      'close() while a plugin init is pending: inits are joined, not raced, so close waits for the init; the session then disposes and open rejects as cancelled.',
-    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
-    engine: { documents: { a: doc() } },
-    steps: [start, open(bytes('a')), docs('close', 'a'), ...listing, settle('init')],
+      'Close during the final asynchronous bring-up read joins the policy call, then cancels open without constructing document plugins.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: { a: doc({ responses: [{ path: 'render.getPolicy', defer: 'policy' }] }) },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('close', 'a'),
+      ...listing,
+      settle('policy', { kind: 'continuous' }),
+    ],
+  },
+  {
+    name: 'close-during-policy-then-policy-fails',
+    covers:
+      'A policy read that rejects after close is still cancelled at the checkpoint: no ready or error tab and no plugin construction.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: { a: doc({ responses: [{ path: 'render.getPolicy', defer: 'policy' }] }) },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('close', 'a'),
+      fail('policy', 'policy failed late'),
+      ...listing,
+    ],
   },
   {
     name: 'open-failure-parks-an-error-tab',
@@ -173,22 +331,45 @@ const cases: ScenarioCase[] = [
     plugins: [probe(docProbe('alpha'))],
     engine: {
       documents: { a: doc() },
-      responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
+      responses: [
+        {
+          path: 'open',
+          times: 1,
+          error: { name: 'EngineError', message: 'bad xref', code: 'Format' },
+        },
+      ],
     },
-    steps: [start, open(bytes('a')), ...listing, docs('get', 'a'), open(bytes('a')), docs('close', 'a'), ...listing, open(bytes('a')), ...listing],
+    steps: [
+      start,
+      open(bytes('a')),
+      ...listing,
+      docs('get', 'a'),
+      open(bytes('a')),
+      docs('close', 'a'),
+      ...listing,
+      open(bytes('a')),
+      ...listing,
+    ],
   },
   {
     name: 'bring-up-failure-rolls-back',
     covers:
-      'A plugin init that throws after the handle is open: the session scope unwinds (slices removed, the handle closed) and the tab parks as `error`; the document was never ready.',
-    plugins: [probe(docProbe('alpha')), probe(docProbe('beta', { init: { rejects: { message: 'init broke' } }, requires: ['alpha'] }))],
+      'A document create failure unwinds acquired resources, closes its handle, and parks an error tab without publishing ready.',
+    plugins: [
+      probe(docProbe('alpha')),
+      probe(docProbe('beta', { createThrows: { message: 'init broke' }, requires: ['alpha'] })),
+    ],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), ...listing, docs('get', 'a')],
   },
   {
-    name: 'effect-setup-failure-rolls-back',
-    covers: 'Effect setup is part of the transaction: a throwing effects() rolls the open back like a failed init.',
-    plugins: [probe(docProbe('alpha', { effects: { throws: { message: 'effects broke' }, cleanup: true } }))],
+    name: 'connection-setup-failure-rolls-back',
+    covers: 'A connect failure rolls back document bring-up.',
+    plugins: [
+      probe(
+        docProbe('alpha', { connect: { throws: { message: 'effects broke' }, cleanup: true } }),
+      ),
+    ],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), ...listing],
   },
@@ -196,12 +377,23 @@ const cases: ScenarioCase[] = [
     name: 'pages-list-failure',
     covers: 'pages.list rejecting is an open failure like any other.',
     plugins: [probe(docProbe('alpha'))],
-    engine: { documents: { a: doc({ responses: [{ path: 'pages.list', error: { name: 'EngineError', message: 'no pages', code: 'Format' } }] }) } },
+    engine: {
+      documents: {
+        a: doc({
+          responses: [
+            {
+              path: 'pages.list',
+              error: { name: 'EngineError', message: 'no pages', code: 'Format' },
+            },
+          ],
+        }),
+      },
+    },
     steps: [start, open(bytes('a')), ...listing],
   },
   {
     name: 'duplicate-open-refuses',
-    covers: 'Opening an id that already has a session throws synchronously and changes nothing.',
+    covers: 'Opening an id that already has a session rejects conflict and changes nothing.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), open(bytes('a')), ...listing],
@@ -214,10 +406,22 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
           responses: [
-            { path: 'security.unlock', args: [{ password: 'wrong' }], error: { name: 'EngineError', message: 'incorrect password', code: 'DocPasswordIncorrect' } },
-            { path: 'security.unlock', args: [{ password: 'right' }], value: { security: {} } },
+            {
+              path: 'security.unlock',
+              args: [{ password: 'wrong' }],
+              error: {
+                name: 'EngineError',
+                message: 'incorrect password',
+                code: 'DocPasswordIncorrect',
+              },
+            },
+            {
+              path: 'security.unlock',
+              args: [{ password: 'right' }],
+              value: { security: unlockedSecurity },
+            },
           ],
         }),
       },
@@ -238,16 +442,29 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'password-provided-is-remembered',
-    covers: 'A password supplied at open, in the options or on the input, marks the locked tab `passwordProvided` (the "incorrect" copy).',
+    covers:
+      'A password supplied at open, in the options or on the input, marks the locked tab `passwordProvided` (the "incorrect" copy).',
     plugins: [],
     engine: {
       documents: {
-        a: doc({ security: { passwordPrompt: { state: 'required' } } }),
-        b: doc({ security: { passwordPrompt: { state: 'required' } } }),
-        c: doc({ security: { passwordPrompt: { state: 'required' } } }),
+        a: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
+        b: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
+        c: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
       },
     },
-    steps: [start, open(bytes('a'), { password: 'x' }), open(bytes('b', { password: 'y' })), open(bytes('c')), docs('list')],
+    steps: [
+      start,
+      open(bytes('a'), { password: 'x' }),
+      open(bytes('b', { password: 'y' })),
+      open(bytes('c')),
+      docs('list'),
+    ],
   },
   {
     name: 'an-undefined-password-is-not-provided',
@@ -256,8 +473,12 @@ const cases: ScenarioCase[] = [
     plugins: [],
     engine: {
       documents: {
-        a: doc({ security: { passwordPrompt: { state: 'required' } } }),
-        b: doc({ security: { passwordPrompt: { state: 'required' } } }),
+        a: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
+        b: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
       },
     },
     steps: [
@@ -274,7 +495,10 @@ const cases: ScenarioCase[] = [
     plugins: [],
     engine: {
       documents: {
-        a: doc({ security: { passwordPrompt: { state: 'required' } }, responses: [{ path: 'security.unlock', defer: 'unlock' }] }),
+        a: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+          responses: [{ path: 'security.unlock', defer: 'unlock' }],
+        }),
       },
     },
     steps: [
@@ -293,9 +517,9 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
           responses: [
-            { path: 'security.unlock', value: {} },
+            { path: 'security.unlock', value: { security: unlockedSecurity } },
             { path: 'pages.list', error: { name: 'EngineError', message: 'gone', code: 'Format' } },
           ],
         }),
@@ -310,15 +534,21 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
           responses: [
-            { path: 'security.unlock', value: {} },
+            { path: 'security.unlock', value: { security: unlockedSecurity } },
             { path: 'pages.list', defer: 'list' },
           ],
         }),
       },
     },
-    steps: [start, open(bytes('a')), docs('unlock', 'a', { password: 'p' }), docs('close', 'a'), ...listing],
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('unlock', 'a', { password: 'p' }),
+      docs('close', 'a'),
+      ...listing,
+    ],
   },
   {
     name: 'thunk-source',
@@ -363,20 +593,26 @@ const cases: ScenarioCase[] = [
         { path: 'open', args: [bytes('other'), {}], value: { $document: 'taken' } },
       ],
     },
-    steps: [start, open(bytes('taken')), open(bytes('requested')), open(bytes('other')), ...listing],
+    steps: [
+      start,
+      open(bytes('taken')),
+      open(bytes('requested')),
+      open(bytes('other')),
+      ...listing,
+    ],
   },
   {
     name: 'input-without-id',
     covers: 'An input that carries no id gets a ticket, then takes the handle id.',
     plugins: [],
     engine: { documents: { h: doc() }, responses: [{ path: 'open', value: { $document: 'h' } }] },
-    steps: [start, open({ kind: 'url', url: 'https://example.test/x.pdf' }), ...listing],
+    steps: [start, open({ kind: 'bytes', bytes: { $bytes: '' } }), ...listing],
   },
   {
     name: 'page-registry-events',
     covers:
-      'A pages.* mutation event swaps the registry in place and bumps the revision; any other event is ignored; an event for a closed document is ignored.',
-    plugins: [probe(docProbe('alpha', { effects: { onAction: ['@@core/document-pages-updated'] } }))],
+      'Confirmed page events update the registry and revision; metadata events do not change the registry.',
+    plugins: [probe(docProbe('alpha', { connect: {} }))],
     engine: { documents: { a: doc({ pages: [page(1, 0), page(2, 1)] }) } },
     steps: [
       start,
@@ -384,26 +620,87 @@ const cases: ScenarioCase[] = [
       {
         op: 'emit',
         doc: 'a',
-        event: { type: 'pages.rotated', layout: { pageCount: 2, pages: [{ ...page(1, 0), rotation: 90 }, page(2, 1)] } },
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.rotated',
+          pages: [ref1(1)],
+          rotation: 90,
+          layout: {
+            namedPages: [],
+            pageCount: 2,
+            pages: [{ ...page(1, 0), rotation: 90 }, page(2, 1)],
+          },
+        } satisfies DocumentEvent,
       },
-      { op: 'emit', doc: 'a', event: { type: 'pages.moved', layout: { pageCount: 2, pages: [page(2, 0), page(1, 1)] } } },
-      { op: 'emit', doc: 'a', event: { type: 'pages.deleted', layout: { pageCount: 1, pages: [page(2, 0)] } } },
-      { op: 'emit', doc: 'a', event: { type: 'pages.inserted', layout: { pageCount: 2, pages: [page(2, 0), page(9, 1)] } } },
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: {} } },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.reordered',
+          pages: [ref1(2)],
+          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(1, 1)] },
+        } satisfies DocumentEvent,
+      },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.deleted',
+          pages: [ref1(1)],
+          layout: { namedPages: [], pageCount: 1, pages: [page(2, 0)] },
+        } satisfies DocumentEvent,
+      },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.inserted',
+          insertedPages: [ref1(9)],
+          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(9, 1)] },
+        } satisfies DocumentEvent,
+      },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'metadata.updated',
+          metadata,
+        } satisfies DocumentEvent,
+      },
       docs('close', 'a'),
     ],
   },
   {
     name: 'render-policy',
     covers:
-      'The render policy is read once in bring-up and lands on the meta; an engine without a render service, or a failed read, means `continuous`.',
+      'Bring-up reads getPolicy once, falling back to continuous when the read fails or yields null.',
     plugins: [],
     engine: {
       documents: {
-        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { kind: 'lattice', fullPage: { widths: [256, 512] } } }] }),
-        b: doc({ services: ['render'], responses: [{ path: 'render.policy', error: { message: 'offline' } }] }),
+        a: doc({
+          services: ['render'],
+          responses: [
+            {
+              path: 'render.getPolicy',
+              value: { kind: 'lattice', fullPage: { widths: [256, 512] } },
+            },
+          ],
+        }),
+        b: doc({
+          services: ['render'],
+          responses: [{ path: 'render.getPolicy', error: { message: 'offline' } }],
+        }),
         c: doc(),
-        d: doc({ services: ['render'], responses: [{ path: 'render.policy', value: null }] }),
+        d: doc({ services: ['render'], responses: [{ path: 'render.getPolicy', value: null }] }),
       },
     },
     steps: [start, open(bytes('a')), open(bytes('b')), open(bytes('c')), open(bytes('d'))],
@@ -414,7 +711,10 @@ const cases: ScenarioCase[] = [
     plugins: [],
     engine: {
       documents: {
-        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { $undefined: true } }] }),
+        a: doc({
+          services: ['render'],
+          responses: [{ path: 'render.getPolicy', value: { $undefined: true } }],
+        }),
       },
     },
     steps: [start, open(bytes('a'))],
@@ -424,7 +724,10 @@ const cases: ScenarioCase[] = [
     covers:
       'Workspace singletons; document instances built lazily, once per document; the truthful refusals for no provider, no active document, an unknown document and a loading one; tryCapability counting only ready documents; scopeOf.',
     plugins: [probe({ id: 'ws', token: 'ws' }), probe(docProbe('alpha')), probe({ id: 'bare' })],
-    engine: { documents: { a: doc(), b: doc() }, responses: [{ path: 'open', args: [bytes('b'), {}], defer: 'open-b' }] },
+    engine: {
+      documents: { a: doc(), b: doc() },
+      responses: [{ path: 'open', args: [bytes('b'), {}], defer: 'open-b' }],
+    },
     steps: [
       start,
       kernel('capability', { $token: 'ws' }),
@@ -458,8 +761,12 @@ const cases: ScenarioCase[] = [
   {
     name: 'context-resolution-from-plugins',
     covers:
-      "A plugin's own get/tryGet/forDocument: bring-up counts for tryGet inside the plugin, sibling document capabilities resolve for the bound document, and forDocument crosses to another one.",
-    plugins: [probe(docProbe('alpha')), probe(docProbe('beta', { requires: ['alpha'], optional: ['missing'] })), probe({ id: 'ws', token: 'ws', optional: ['alpha'] })],
+      'Declared capabilities resolve within the bound document and across named documents; workspace document reads have no bound metadata.',
+    plugins: [
+      probe(docProbe('alpha')),
+      probe(docProbe('beta', { requires: ['alpha'], optional: ['missing'] })),
+      probe({ id: 'ws', token: 'ws', optional: ['alpha'] }),
+    ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
       start,
@@ -474,22 +781,22 @@ const cases: ScenarioCase[] = [
       docs('setActive', 'a'),
       cap('ws', 'handleId'),
       cap('ws', 'handleFor', ['b']),
-      cap('ws', 'core'),
+      kernel('getState'),
     ],
   },
   {
-    name: 'dispatch-and-watch',
+    name: 'state-transitions-and-watch',
     covers:
-      'dispatch targets the bound slice; a reducer returning the same state emits no change (so a reference watch does not fire), a new state does; action listeners see every dispatch either way.',
-    plugins: [probe(docProbe('alpha', { effects: { watchState: true, onAction: ['SET', 'SAME', 'MERGE'] } }))],
+      'Pure state transitions commit to the bound slice. Returning the current object emits no state change; replacement and merge emit one committed change each.',
+    plugins: [probe(docProbe('alpha', { connect: { watchState: true } }))],
     engine: { documents: { a: doc() } },
     steps: [
       start,
       open(bytes('a')),
-      cap('alpha', 'dispatch', [{ type: 'SAME' }]),
-      cap('alpha', 'dispatch', [{ type: 'MERGE', state: { m: 1 } }]),
-      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 5 } }]),
-      cap('alpha', 'dispatch', [{ type: 'UNKNOWN' }]),
+      cap('alpha', 'sameState', []),
+      cap('alpha', 'mergeState', [{ m: 1 }]),
+      cap('alpha', 'replaceState', [{ n: 5 }]),
+      cap('alpha', 'sameState', []),
       cap('alpha', 'state'),
     ],
   },
@@ -497,8 +804,11 @@ const cases: ScenarioCase[] = [
     name: 'active-document-and-order',
     covers:
       'setActive (a pending tab is selectable, an unknown id is ignored), move with clamping, swap, and the next-active rule when the active tab closes: the tab before it, else the first.',
-    plugins: [probe({ id: 'ws', token: 'ws', effects: { watchActive: true } })],
-    engine: { documents: { a: doc(), b: doc(), c: doc(), d: doc() }, responses: [{ path: 'open', args: [bytes('d'), {}], defer: 'open-d' }] },
+    plugins: [probe({ id: 'ws', token: 'ws', connect: { watchActive: true } })],
+    engine: {
+      documents: { a: doc(), b: doc(), c: doc(), d: doc() },
+      responses: [{ path: 'open', args: [bytes('d'), {}], defer: 'open-d' }],
+    },
     steps: [
       start,
       open(bytes('a')),
@@ -531,18 +841,27 @@ const cases: ScenarioCase[] = [
     covers: 'Closing the active tab when it is first selects the new first tab.',
     plugins: [],
     engine: { documents: { a: doc(), b: doc() } },
-    steps: [start, open(bytes('a')), open(bytes('b')), docs('setActive', 'a'), docs('close', 'a'), docs('getActiveId'), docs('close', 'b'), docs('getActiveId')],
+    steps: [
+      start,
+      open(bytes('a')),
+      open(bytes('b')),
+      docs('setActive', 'a'),
+      docs('close', 'a'),
+      docs('getActiveId'),
+      docs('close', 'b'),
+      docs('getActiveId'),
+    ],
   },
   {
     name: 'document-io',
     covers:
-      'download and downloadLayer go straight to the handle; both refuse with no document; downloadLayer refuses on an engine without layers; allows answers from the handle and is false with no document.',
+      'Downloads enforce permissions, local layer downloads require a local document, and canPrint is false without a host printer.',
     plugins: [],
     engine: {
       documents: {
         a: doc({
-          services: ['downloadLayer'],
-          security: { allows: ['doc.print'] },
+          local: true,
+          security: { allows: ['doc.print', 'doc.download'] },
           responses: [
             { path: 'download', value: { $bytes: 'JVBERi0=' } },
             { path: 'downloadLayer', value: { $bytes: 'TEFZRVI=' } },
@@ -553,37 +872,37 @@ const cases: ScenarioCase[] = [
     },
     steps: [
       start,
-      docs('save'),
-      docs('saveLayer'),
-      docs('allows', 'doc.print'),
+      docs('download'),
+      docs('downloadLayer'),
+      docs('canPrint'),
       open(bytes('a')),
-      docs('save', undefined, { mode: 'rewrite' }),
-      docs('saveLayer'),
-      docs('allows', 'doc.print'),
-      docs('allows', 'doc.download'),
+      docs('download', undefined, { mode: 'rewrite' }),
+      docs('downloadLayer'),
+      docs('canPrint'),
+      docs('canDownload'),
       open(bytes('b')),
-      docs('saveLayer', 'b'),
-      docs('allows', 'doc.download', 'b'),
-      docs('allows', 'doc.print', 'zzz'),
+      docs('downloadLayer', 'b'),
+      docs('canDownload', 'b'),
+      docs('canPrint', 'zzz'),
     ],
   },
   {
     name: 'start-lifecycle',
     covers:
-      'start runs workspace inits in plan order and then workspace effects; a second start joins the first; status moves created → starting → started.',
+      'Workspace create runs at construction, connect runs at start in dependency order, and subsequent starts join the first.',
     plugins: [
-      probe({ id: 'late', token: 'late', requires: ['early'], init: { defer: 'late-init' }, effects: {} }),
-      probe({ id: 'early', token: 'early', init: true, effects: {} }),
+      probe({ id: 'late', token: 'late', requires: ['early'], connect: {} }),
+      probe({ id: 'early', token: 'early', connect: {} }),
     ],
-    steps: [kernel('status'), start, kernel('status'), start, { op: 'settle', label: 'late-init' }, kernel('status'), start],
+    steps: [kernel('status'), start, kernel('status'), start, kernel('status'), start],
   },
   {
     name: 'start-failure',
     covers:
-      'A workspace init that rejects fails the kernel terminally: the workspace scope unwinds, start rejects, a later start refuses, capability and open refuse, destroy stays legal.',
+      'A workspace connect failure fails start, unwinds resources, and refuses later use while destroy remains legal.',
     plugins: [
-      probe({ id: 'ws', token: 'ws', effects: {}, init: { rejects: { message: 'boot failed' } } }),
-      probe({ id: 'teardown', token: 'td', effects: { cleanup: true } }),
+      probe({ id: 'ws', token: 'ws', connect: { throws: { message: 'boot failed' } } }),
+      probe({ id: 'teardown', token: 'td', connect: { cleanup: true } }),
     ],
     engine: { documents: { a: doc() } },
     steps: [
@@ -598,22 +917,15 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'destroy-during-start',
-    covers: 'destroy while a workspace init is pending: start stops at its next check, destroy joins it, and nothing after the pending init runs.',
-    plugins: [
-      probe({ id: 'first', token: 'first', init: { defer: 'first-init' }, effects: {} }),
-      probe({ id: 'second', token: 'second', init: true, effects: {} }),
-    ],
-    steps: [start, destroy, kernel('status'), settle('first-init'), kernel('status'), destroy, start],
-  },
-  {
     name: 'destroy-closes-everything',
     covers:
       'destroy closes every session (a mid-close one included), unwinds document scopes LIFO in reverse dependency order, then the workspace scope, then refuses further use; a teardown registered after disposal runs immediately.',
     plugins: [
-      probe(docProbe('alpha', { effects: { cleanup: true } })),
-      probe(docProbe('beta', { requires: ['alpha'], effects: { cleanup: { defer: 'beta-teardown' } } })),
-      probe({ id: 'ws', token: 'ws', effects: { cleanup: true } }),
+      probe(docProbe('alpha', { connect: { cleanup: true } })),
+      probe(
+        docProbe('beta', { requires: ['alpha'], connect: { cleanup: { defer: 'beta-teardown' } } }),
+      ),
+      probe({ id: 'ws', token: 'ws', connect: { cleanup: true } }),
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
@@ -641,84 +953,119 @@ const cases: ScenarioCase[] = [
       'A cleanup registered on a scope that already disposed runs as soon as it is registered, instead of being dropped.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() } },
-    steps: [start, open(bytes('a')), { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'alpha' }, 'a'] }, docs('close', 'a'), { op: 'call', target: { ref: 11 }, args: ['after-close'] }],
+    steps: [
+      start,
+      open(bytes('a')),
+      { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'alpha' }, 'a'] },
+      docs('close', 'a'),
+      { op: 'call', target: { ref: at('cleanup') }, args: ['after-close'] },
+    ],
   },
   {
     name: 'teardown-failures-are-reported',
     covers:
       'A teardown that throws is reported and the rest still run; a listener that throws is reported and its siblings still run.',
     plugins: [
-      probe(docProbe('alpha', { effects: { cleanup: { throws: { message: 'teardown broke' } } } })),
-      probe(docProbe('beta', { effects: { cleanup: { rejects: { message: 'async teardown broke' } } } })),
+      probe(docProbe('alpha', { connect: { cleanup: { throws: { message: 'teardown broke' } } } })),
+      probe(
+        docProbe('beta', {
+          connect: { cleanup: { rejects: { message: 'async teardown broke' } } },
+        }),
+      ),
     ],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), docs('close', 'a')],
   },
   {
     name: 'missing-dependency',
-    covers: 'A required token nobody provides fails construction, and the message carries the token\'s own remedy.',
-    plugins: [probe({ id: 'needs', requires: ['absent'] }), probe({ id: 'provider', token: 'other', hint: 'unused' })],
+    covers:
+      "A required token nobody provides fails construction, and the message carries the token's own remedy.",
+    plugins: [
+      probe({ id: 'needs', requires: ['absent'] }),
+      probe({ id: 'provider', token: 'other', hint: 'unused' }),
+    ],
     steps: [],
   },
   {
     name: 'missing-dependency-with-hint',
     covers: 'The hint is appended to the missing-dependency message.',
-    plugins: [probe({ id: 'needs', requires: ['needed-token'], requiresHint: { 'needed-token': "add neededPlugin() from '@x/y' to your plugins list" } })],
+    plugins: [
+      probe({
+        id: 'needs',
+        requires: ['needed-token'],
+        requiresHint: { 'needed-token': "add neededPlugin() from '@x/y' to your plugins list" },
+      }),
+    ],
     steps: [],
   },
   {
     name: 'dependency-cycle',
     covers: 'A requires cycle fails construction naming a plugin in it.',
-    plugins: [probe({ id: 'a', token: 'ta', requires: ['tb'] }), probe({ id: 'b', token: 'tb', requires: ['ta'] })],
+    plugins: [
+      probe({ id: 'a', token: 'ta', requires: ['tb'] }),
+      probe({ id: 'b', token: 'tb', requires: ['ta'] }),
+    ],
     steps: [],
   },
   {
     name: 'plan-order',
     covers:
-      'Dependencies are initialised before dependents regardless of list order, optional dependencies order too, a plugin optional on itself is not a cycle, and a token without a capability provides nothing.',
+      'Required and present optional dependencies construct and connect before dependents; optional self-dependency is not a cycle.',
     plugins: [
-      probe({ id: 'c', token: 'tc', requires: ['tb'], init: true }),
-      probe({ id: 'b', token: 'tb', optional: ['ta', 'tb', 'nobody'], init: true }),
-      probe({ id: 'a', token: 'ta', init: true }),
+      probe({ id: 'c', token: 'tc', requires: ['tb'], connect: true }),
+      probe({ id: 'b', token: 'tb', optional: ['ta', 'tb', 'nobody'], connect: true }),
+      probe({ id: 'a', token: 'ta', connect: true }),
     ],
     steps: [start],
   },
   {
     name: 'capability-constructor-throws',
-    covers: 'A workspace capability that throws while being built fails construction; a document one throws at resolution and is not cached.',
-    plugins: [probe({ id: 'ws', token: 'ws', capabilityThrows: { message: 'cannot build' } })],
+    covers: 'A workspace create failure rejects kernel construction.',
+    plugins: [probe({ id: 'ws', token: 'ws', createThrows: { message: 'cannot build' } })],
     steps: [],
   },
   {
     name: 'document-capability-constructor-throws',
-    covers: 'A document capability that throws at build is a bug and propagates out of resolution, every time.',
-    plugins: [probe(docProbe('alpha', { init: undefined, effects: undefined, capabilityThrows: { message: 'cannot build' } }))],
+    covers: 'A document create failure parks an error tab; public resolution refuses that tab.',
+    plugins: [
+      probe(docProbe('alpha', { connect: undefined, createThrows: { message: 'cannot build' } })),
+    ],
     engine: { documents: { a: doc() } },
-    steps: [start, open(bytes('a')), kernel('capability', { $token: 'alpha' }), kernel('tryCapability', { $token: 'alpha' })],
+    steps: [
+      start,
+      open(bytes('a')),
+      kernel('capability', { $token: 'alpha' }),
+      kernel('tryCapability', { $token: 'alpha' }),
+    ],
   },
   {
     name: 'listener-isolation',
-    covers: 'A watcher that throws is reported; the change still reaches the other listeners and the dispatch completes.',
-    plugins: [
-      probe({ id: 'thrower', token: 'thrower', reduce: { SET: 'replace' }, effects: { watchState: true, onAction: ['SET'], listenerThrows: { message: 'listener broke' } } }),
-      probe({ id: 'sibling', token: 'sibling', effects: { watchState: true, onAction: ['SET'] } }),
-    ],
-    steps: [start, cap('thrower', 'dispatch', [{ type: 'SET', state: { $undefined: true } }])],
-  },
-  {
-    name: 'close-during-init-then-init-fails',
     covers:
-      'An init that rejects after close() won is still a cancellation, not a failure: no error tab, nothing reported.',
-    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
-    engine: { documents: { a: doc() } },
-    steps: [start, open(bytes('a')), docs('close', 'a'), fail('init', 'init broke late'), ...listing],
+      'A throwing state listener is reported without undoing the committed transition or preventing the trace observer from seeing it.',
+    plugins: [
+      probe({
+        id: 'thrower',
+        token: 'thrower',
+        connect: { watchState: true, listenerThrows: { message: 'listener broke' } },
+      }),
+      probe({ id: 'sibling', token: 'sibling', connect: { watchState: true } }),
+    ],
+    steps: [start, cap('thrower', 'replaceState', [{ n: 1 }])],
   },
   {
     name: 'an-abort-error-from-the-engine-reads-as-cancelled',
     covers:
       'An engine call rejecting with AbortError when nobody closed the tab: the open rejects as cancelled and the tab stays loading, which is what isAbortLike does to an abort the kernel did not start.',
     plugins: [],
-    engine: { documents: { a: doc({ responses: [{ path: 'pages.list', error: { name: 'AbortError', message: 'worker aborted' } }] }) } },
+    engine: {
+      documents: {
+        a: doc({
+          responses: [
+            { path: 'pages.list', error: { name: 'AbortError', message: 'worker aborted' } },
+          ],
+        }),
+      },
+    },
     steps: [start, open(bytes('a')), ...listing],
   },
   {
@@ -728,9 +1075,9 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
           responses: [
-            { path: 'security.unlock', value: {} },
+            { path: 'security.unlock', value: { security: unlockedSecurity } },
             { path: 'pages.list', error: { name: 'AbortError', message: 'worker aborted' } },
           ],
         }),
@@ -743,8 +1090,18 @@ const cases: ScenarioCase[] = [
     covers:
       'An engine whose calls cannot be aborted: close() does not wait for the open, and the handle that lands afterwards is closed through the disposed scope rather than leaked.',
     plugins: [probe(docProbe('alpha'))],
-    engine: { plainPromises: true, documents: { a: doc() }, responses: [{ path: 'open', defer: 'open-a' }] },
-    steps: [start, open(bytes('a')), docs('close', 'a'), ...listing, settle('open-a', { $document: 'a' })],
+    engine: {
+      plainPromises: true,
+      documents: { a: doc() },
+      responses: [{ path: 'open', defer: 'open-a' }],
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('close', 'a'),
+      ...listing,
+      settle('open-a', { $document: 'a' }),
+    ],
   },
   {
     name: 'rekey-keeps-another-active-tab',
@@ -763,7 +1120,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'close-joins-a-close-in-flight',
     covers: 'A second close while the first is still disposing returns the same close.',
-    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    plugins: [probe(docProbe('alpha', { connect: { cleanup: { defer: 'teardown' } } }))],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), docs('close', 'a'), docs('close', 'a'), settle('teardown')],
   },
@@ -776,7 +1133,10 @@ const cases: ScenarioCase[] = [
       documents: {
         a: doc({
           responses: [
-            { path: 'pages.list', error: { name: 'EngineError', message: 'no pages', code: 'Format' } },
+            {
+              path: 'pages.list',
+              error: { name: 'EngineError', message: 'no pages', code: 'Format' },
+            },
             { path: 'close', defer: 'handle-close' },
           ],
         }),
@@ -786,14 +1146,30 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'page-event-before-commit',
-    covers: 'A page mutation event that arrives during bring-up, before the document is published, changes nothing.',
-    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
-    engine: { documents: { a: doc({ pages: [page(1, 0)] }) } },
+    covers:
+      'A page mutation during the policy read arrives before kernel event subscriptions are attached.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: {
+        a: doc({ pages: [page(1, 0)], responses: [{ path: 'render.getPolicy', defer: 'policy' }] }),
+      },
+    },
     steps: [
       start,
       open(bytes('a')),
-      { op: 'emit', doc: 'a', event: { type: 'pages.rotated', layout: { pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] } } },
-      settle('init'),
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.rotated',
+          pages: [ref1(1)],
+          rotation: 90,
+          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+        } satisfies DocumentEvent,
+      },
+      settle('policy', { kind: 'continuous' }),
       docs('get', 'a'),
     ],
   },
@@ -801,8 +1177,15 @@ const cases: ScenarioCase[] = [
     name: 'try-get-across-scopes',
     covers:
       "A document plugin's tryGet resolves a workspace capability; a workspace plugin's tryGet of a document capability is null while the active document is still loading; allows() is false for a loading document.",
-    plugins: [probe({ id: 'ws', token: 'ws', optional: ['alpha'] }), probe(docProbe('alpha')), probe(docProbe('beta', { optional: ['ws'] }))],
-    engine: { documents: { a: doc({ security: { allows: '*' } }), b: doc({ security: { allows: '*' } }) }, responses: [{ path: 'open', args: [bytes('b'), {}], defer: 'open-b' }] },
+    plugins: [
+      probe({ id: 'ws', token: 'ws', optional: ['alpha'] }),
+      probe(docProbe('alpha')),
+      probe(docProbe('beta', { optional: ['ws'] })),
+    ],
+    engine: {
+      documents: { a: doc({ security: { allows: '*' } }), b: doc({ security: { allows: '*' } }) },
+      responses: [{ path: 'open', args: [bytes('b'), {}], defer: 'open-b' }],
+    },
     steps: [
       start,
       open(bytes('a')),
@@ -811,8 +1194,8 @@ const cases: ScenarioCase[] = [
       cap('ws', 'tryGet', ['alpha']),
       cap('ws', 'handleFor', []),
       cap('ws', 'document'),
-      docs('allows', 'doc.print'),
-      docs('allows', 'doc.print', 'a'),
+      docs('canPrint'),
+      docs('canPrint', 'a'),
       settle('open-b', { $document: 'b' }),
       cap('ws', 'tryGet', ['alpha']),
     ],
@@ -820,54 +1203,47 @@ const cases: ScenarioCase[] = [
   {
     name: 'a-capability-outlives-its-document',
     covers:
-      "A capability kept after its document closed: dispatch reaches no slice and does nothing, state reads undefined, and document() falls back to the meta staged at bring-up.",
-    plugins: [probe(docProbe('alpha', { effects: undefined, init: undefined }))],
+      'A retained state setter is revoked at close, reads retain the last state, and document metadata remains staged.',
+    plugins: [probe(docProbe('alpha', { connect: undefined }))],
     engine: { documents: { a: doc() } },
     steps: [
       start,
       open(bytes('a')),
       kernel('capability', { $token: 'alpha' }, 'a'),
       docs('close', 'a'),
-      { op: 'call', target: { ref: 0 }, args: [{ type: 'SET', state: { n: 9 } }] },
-      { op: 'call', target: { ref: 1 } },
-      { op: 'call', target: { ref: 2 } },
+      api('replaceState', { n: 9 }),
+      api('state'),
+      api('document'),
     ],
   },
   {
-    name: 'a-listener-dispatching-mid-pass',
+    name: 'a-listener-updating-state',
     covers:
-      'A state watcher that dispatches from inside its handler: the store finishes the pass it is in, then runs another, so listener order stays deterministic.',
+      'A state change listener can apply a second pure transition; committed changes and listener order remain observable.',
     plugins: [
-      probe({ id: 'relay', token: 'relay', reduce: { SET: 'replace', MERGE: 'merge' }, effects: { watchState: true, watchDispatchOnce: { type: 'MERGE', state: { relayed: true } } } }),
-      probe({ id: 'after', token: 'after', effects: { watchActive: true } }),
+      probe({
+        id: 'relay',
+        token: 'relay',
+        connect: { watchState: true, watchMergeOnce: { relayed: true } },
+      }),
+      probe({ id: 'after', token: 'after', connect: { watchActive: true } }),
     ],
-    steps: [start, cap('relay', 'dispatch', [{ type: 'SET', state: { n: 1 } }]), cap('relay', 'state')],
-  },
-  {
-    name: 'a-plugin-with-no-reducer',
-    covers: 'A plugin without a reducer keeps its initial state whatever it dispatches.',
-    plugins: [probe({ id: 'inert', token: 'inert', reduce: null, initialState: { fixed: true } })],
-    steps: [start, cap('inert', 'dispatch', [{ type: 'SET', state: {} }]), cap('inert', 'state')],
-  },
-  {
-    name: 'destroy-during-the-last-init',
-    covers: 'destroy() while the last workspace init is pending: start stops before running any effects.',
-    plugins: [probe({ id: 'only', token: 'only', init: { defer: 'init' }, effects: {} })],
-    steps: [start, destroy, settle('init'), kernel('status')],
-  },
-  {
-    name: 'destroy-during-a-start-that-fails',
-    covers: 'destroy() while start is pending, and start then fails: destroy reports the failure, since the kernel was not already failed when destroy began.',
-    plugins: [probe({ id: 'only', token: 'only', init: { defer: 'init' } })],
-    steps: [start, destroy, fail('init', 'boot failed late'), kernel('status')],
+    steps: [start, cap('relay', 'replaceState', [{ n: 1 }]), cap('relay', 'state')],
   },
   {
     name: 'capability-of-an-error-or-closing-tab',
-    covers: 'Resolution refuses truthfully for a tab that failed and for one whose close is still disposing.',
-    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    covers:
+      'Resolution refuses truthfully for a tab that failed and for one whose close is still disposing.',
+    plugins: [probe(docProbe('alpha', { connect: { cleanup: { defer: 'teardown' } } }))],
     engine: {
       documents: { a: doc(), bad: doc() },
-      responses: [{ path: 'open', args: [bytes('bad'), {}], error: { name: 'EngineError', message: 'broken', code: 'Format' } }],
+      responses: [
+        {
+          path: 'open',
+          args: [bytes('bad'), {}],
+          error: { name: 'EngineError', message: 'broken', code: 'Format' },
+        },
+      ],
     },
     steps: [
       start,
@@ -883,27 +1259,35 @@ const cases: ScenarioCase[] = [
   {
     name: 'try-get-during-bring-up',
     covers:
-      "A capability resolved while its document is still in bring-up (a plugin's init pending) is usable, and its tryGet counts bring-up; the public tryCapability does not.",
-    plugins: [probe(docProbe('alpha', { init: { defer: 'init' }, optional: ['beta'] })), probe(docProbe('beta'))],
-    engine: { documents: { a: doc() } },
+      'Public tryCapability is null during the policy read. During connect, after leases exist but before ready is published, the bound context can tryGet a declared sibling.',
+    plugins: [
+      probe(docProbe('alpha', { optional: ['beta'], connect: { tryGet: 'beta' } })),
+      probe(docProbe('beta')),
+    ],
+    engine: {
+      documents: { a: doc({ responses: [{ path: 'render.getPolicy', defer: 'policy' }] }) },
+    },
     steps: [
       start,
       open(bytes('a')),
       kernel('tryCapability', { $token: 'alpha' }, 'a'),
+      settle('policy', { kind: 'continuous' }),
       cap('alpha', 'tryGet', ['beta'], 'a'),
       cap('alpha', 'documentId', [], 'a'),
-      settle('init'),
     ],
   },
   {
     name: 'an-abort-error-from-unlock-reads-as-cancelled',
-    covers: 'security.unlock rejecting with AbortError, with no close: the unlock rejects as cancelled and the tab stays locked.',
+    covers:
+      'security.unlock rejecting with AbortError, with no close: the unlock rejects as cancelled and the tab stays locked.',
     plugins: [],
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
-          responses: [{ path: 'security.unlock', error: { name: 'AbortError', message: 'worker aborted' } }],
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+          responses: [
+            { path: 'security.unlock', error: { name: 'AbortError', message: 'worker aborted' } },
+          ],
         }),
       },
     },
@@ -911,16 +1295,28 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'a-rekeyed-slot-carries-its-new-id',
-    covers: 'A ticket re-keyed to a document that then parks as locked keeps the real id on its pending slot.',
+    covers:
+      'A ticket re-keyed to a document that then parks as locked keeps the real id on its pending slot.',
     plugins: [],
-    engine: { documents: { real: doc({ security: { passwordPrompt: { state: 'required' } } }) } },
-    steps: [start, open({ $fn: 'source', resolves: bytes('real') }), docs('list'), docs('get', 'real')],
+    engine: {
+      documents: {
+        real: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
+      },
+    },
+    steps: [
+      start,
+      open({ $fn: 'source', resolves: bytes('real') }),
+      docs('list'),
+      docs('get', 'real'),
+    ],
   },
   {
     name: 'closing-one-document-leaves-the-others-listening',
     covers:
-      "Closing a document releases its plugins' watches and action listeners and nobody else's: the other document's probe still hears its own dispatches.",
-    plugins: [probe(docProbe('alpha', { effects: { watchState: true, onAction: ['SET'] } }))],
+      'Closing one document releases only its subscriptions; state changes on other documents remain observable.',
+    plugins: [probe(docProbe('alpha', { connect: { watchState: true } }))],
     engine: { documents: { a: doc(), b: doc(), c: doc() } },
     steps: [
       start,
@@ -928,8 +1324,8 @@ const cases: ScenarioCase[] = [
       open(bytes('b')),
       open(bytes('c')),
       docs('close', 'b'),
-      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 1 } }], 'a'),
-      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 2 } }], 'c'),
+      cap('alpha', 'replaceState', [{ n: 1 }], 'a'),
+      cap('alpha', 'replaceState', [{ n: 2 }], 'c'),
     ],
   },
   {
@@ -938,13 +1334,27 @@ const cases: ScenarioCase[] = [
       'A page event whose layout carries a count and no page list: the registry copies what it is given, so the meta has no pages member rather than an empty one.',
     plugins: [],
     engine: { documents: { a: doc() } },
-    steps: [start, open(bytes('a')), { op: 'emit', doc: 'a', event: { type: 'pages.deleted', layout: { pageCount: 0 } } }],
+    steps: [
+      start,
+      open(bytes('a')),
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.deleted',
+          pages: [ref1(2)],
+          layout: { namedPages: [], pageCount: 0 },
+        },
+      },
+    ],
   },
   {
     name: 'a-rekey-onto-a-closing-id-refuses',
     covers:
       'A ticket whose input names a document that is still closing refuses the re-key: the closing session holds the id even though its slot has left the store.',
-    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    plugins: [probe(docProbe('alpha', { connect: { cleanup: { defer: 'teardown' } } }))],
     engine: { documents: { a: doc() } },
     steps: [
       start,
@@ -960,7 +1370,8 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'a-rekeyed-ticket-lists-its-new-id-while-the-engine-opens',
-    covers: 'Between the re-key and the engine answering, the pending slot already carries the real id.',
+    covers:
+      'Between the re-key and the engine answering, the pending slot already carries the real id.',
     plugins: [],
     engine: { documents: { real: doc() }, responses: [{ path: 'open', defer: 'open-real' }] },
     steps: [
@@ -974,79 +1385,15 @@ const cases: ScenarioCase[] = [
     ],
   },
 ];
-
-// ── the v3 contract: create/connect controllers, leases, documents API ─────────
-
-/** The members of a `create` probe's api, in object order: a capability
- *  printed as an outcome registers one ref per member, in this order. */
-const API = [
-  'instanceId',
-  'state',
-  'dispatch',
-  'docCall',
-  'pageCall',
-  'allows',
-  'docId',
-  'docRead',
-  'on',
-  'emit',
-  'onThrowing',
-  'abortSignal',
-  'waitFor',
-  'waitForThrowing',
-  'queue',
-  'latest',
-  'latestCancel',
-  'latestRunning',
-  'acquire',
-  'forPage',
-  'tryForPage',
-  'assertPageRef',
-  'getPage',
-  'get',
-  'tryGet',
-  'forDocument',
-  'tryForDocument',
-  'cleanup',
-  'signalReason',
-] as const;
-/** The ref of an api member when the capability printed at `base`. */
-const at = (member: (typeof API)[number], base = 0) => base + API.indexOf(member);
-const callRef = (ref: number, ...args: unknown[]): Step => ({ op: 'call', target: { ref }, args });
-const api = (member: (typeof API)[number], ...args: unknown[]) => callRef(at(member), ...args);
-const ref1 = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
-const U = { $undefined: true };
-
-/** A document-scoped `create` probe. */
-const ctl = (id: string, extra: Partial<ProbeConfig> = {}): ProbeConfig => ({
-  id,
-  scope: 'document',
-  token: id,
-  initialState: { n: 0 },
-  reduce: { SET: 'replace', MERGE: 'merge' },
-  create: {},
-  ...extra,
-});
-/** A workspace `create` probe. */
-const wsCtl = (id: string, extra: Partial<ProbeConfig> = {}): ProbeConfig => ({
-  id,
-  token: id,
-  initialState: { n: 0 },
-  reduce: { SET: 'replace' },
-  create: {},
-  ...extra,
-});
-const capOf = (token: string, docId?: string): Step => kernel('capability', { $token: token }, ...(docId ? [docId] : []));
-
 const v3Cases: ScenarioCase[] = [
   {
     name: 'create-and-connect-order',
     covers:
-      'A document `create` plugin is built eagerly in bring-up, in dependency order, right after its effects, and its connect runs there; a workspace one is built at construction and connects at start after its effects. Each instance gets its own id.',
+      'Workspace create runs at construction and connect at start. Document instances create then connect in dependency order before ready is published.',
     plugins: [
       probe(docProbe('alpha')),
-      probe(ctl('ctl', { requires: ['alpha'], create: { connect: true }, effects: { onAction: ['SET'] } })),
-      probe(wsCtl('wsc', { init: true, effects: {}, create: { connect: true } })),
+      probe(ctl('ctl', { requires: ['alpha'], connect: {} })),
+      probe(wsCtl('wsc', { connect: true })),
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
@@ -1055,7 +1402,7 @@ const v3Cases: ScenarioCase[] = [
       capOf('ctl', 'a'),
       cap('ctl', 'instanceId', [], 'a'),
       cap('wsc', 'instanceId'),
-      cap('ctl', 'dispatch', [{ type: 'SET', state: { n: 1 } }], 'a'),
+      cap('ctl', 'replaceState', [{ n: 1 }], 'a'),
       cap('ctl', 'state', [], 'a'),
       open(bytes('b')),
       cap('ctl', 'instanceId', [], 'b'),
@@ -1067,42 +1414,55 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'create-throws-at-construction',
     covers: 'A workspace `create` that throws fails kernel construction.',
-    plugins: [probe(wsCtl('wsc', { create: { throws: { message: 'cannot create' } } }))],
+    plugins: [probe(wsCtl('wsc', { createThrows: { message: 'cannot create' } }))],
     steps: [],
   },
   {
     name: 'create-throws-in-bring-up',
     covers: 'A document `create` that throws rolls the open back to an error tab.',
-    plugins: [probe(ctl('ctl', { create: { throws: { message: 'cannot create' } } }))],
+    plugins: [probe(ctl('ctl', { createThrows: { message: 'cannot create' } }))],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), ...listing],
   },
   {
     name: 'connect-throws-in-bring-up',
     covers: 'A document connect that throws rolls the open back too.',
-    plugins: [probe(ctl('ctl', { create: { connect: { throws: { message: 'cannot connect' } } } }))],
+    plugins: [probe(ctl('ctl', { connect: { throws: { message: 'cannot connect' } } }))],
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), ...listing],
   },
   {
     name: 'connect-throws-at-start',
     covers: 'A workspace connect that throws fails start.',
-    plugins: [probe(wsCtl('wsc', { create: { connect: { throws: { message: 'cannot connect' } } } }))],
+    plugins: [probe(wsCtl('wsc', { connect: { throws: { message: 'cannot connect' } } }))],
     steps: [start, kernel('status')],
   },
   {
-    name: 'connect-dispatches-and-listens',
+    name: 'connect-updates-and-listens',
     covers:
-      'A connect may dispatch into its slice, read the page registry before the document is published (from the staged meta), and listen: to the guarded handle event stream (an object source) and to a capability event (a function source). Both subscriptions end when the instance closes.',
+      'Connect can update its state, read staged pages, and subscribe to document and capability events; all subscriptions end at close.',
     plugins: [
-      probe(ctl('ctl', { create: { connect: { dispatch: { type: 'SET', state: { n: 7 } }, listenDoc: true, listenActive: true, readPage: 1 } } })),
+      probe(
+        ctl('ctl', {
+          connect: { replaceState: { n: 7 }, listenDoc: true, listenActive: true, readPage: 1 },
+        }),
+      ),
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
       start,
       open(bytes('a')),
       cap('ctl', 'state', [], 'a'),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: {} } },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'metadata.updated',
+          metadata,
+        } satisfies DocumentEvent,
+      },
       open(bytes('b')),
       docs('setActive', 'a'),
       docs('close', 'a'),
@@ -1112,17 +1472,20 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'guarded-handle',
     covers:
-      'ctx.doc is the guarded handle: calls reach the engine, synchronous reads pass through, a synchronous engine throw becomes a PluginError, a call pending at close rejects instance-closed and is aborted, a call after close still reaches the engine and is aborted at once, and a late answer is dropped.',
+      'Guarded calls reach the engine, missing page service calls reject not-found, and pending or later calls reject instance-closed after close.',
     plugins: [probe(ctl('ctl'))],
     engine: {
       documents: {
         a: doc({
-          capabilities: { canRender: true },
-          security: { allows: ['doc.print'], effectiveScope: ['doc.print'] },
+          security: { allows: ['doc.print'], scope: ['doc.print'] },
           responses: [
-            { path: 'metadata.read', value: { title: 'T' } },
-            { path: 'metadata.slow', defer: 'slow' },
-            { path: 'page.text.read', pon: 1, value: { runs: [] } },
+            { path: 'metadata.get', times: 1, value: { ...metadata, title: 'T' } },
+            { path: 'metadata.get', defer: 'slow' },
+            {
+              path: 'page.text.get',
+              pon: 1,
+              value: { text: '', charCount: 0 } satisfies PageTextSnapshot,
+            },
           ],
         }),
       },
@@ -1131,37 +1494,59 @@ const v3Cases: ScenarioCase[] = [
       start,
       open(bytes('a')),
       capOf('ctl', 'a'),
-      api('docCall', 'metadata.read'),
-      api('pageCall', 1, 'text.read', { from: 0 }),
-      api('pageCall', 99, 'text.read'),
+      api('docCall', 'metadata.get'),
+      api('pageCall', 1, 'text.get'),
+      api('pageCall', 99, 'text.get'),
       api('allows', 'doc.print'),
       api('allows', 'doc.annotate'),
       api('docId'),
-      api('docRead', 'capabilities'),
-      api('docRead', 'security.effectiveScope'),
+      api('docRead', 'objectNumbers.held'),
+      api('docRead', 'security.scope'),
       api('docRead', 'id'),
-      api('docCall', 'metadata.slow'),
+      api('docCall', 'metadata.get'),
       docs('close', 'a'),
-      settle('slow', { title: 'late' }),
-      api('docCall', 'metadata.read'),
-      api('dispatch', { type: 'SET', state: { n: 3 } }),
-      api('dispatch', { type: 'SET', state: { n: 4 } }),
+      settle('slow', { ...metadata, title: 'late' }),
+      api('docCall', 'metadata.get'),
+      api('replaceState', { n: 3 }),
+      api('replaceState', { n: 4 }),
       api('state'),
     ],
   },
   {
     name: 'guarded-handle-maps-engine-errors',
-    covers: 'An engine rejection through the guard is a PluginError from the mapping table; a plain rejection is operation-failed and an AbortError operation-cancelled.',
+    covers:
+      'An engine rejection through the guard is a PluginError from the mapping table; a plain rejection is operation-failed and an AbortError operation-cancelled.',
     plugins: [probe(ctl('ctl'))],
     engine: {
       documents: {
         a: doc({
           responses: [
-            { path: 'metadata.notFound', error: { name: 'EngineError', message: 'no such', code: 'NotFound', details: { key: 'k' } } },
-            { path: 'metadata.forbidden', error: { name: 'EngineError', message: 'nope', code: 'Forbidden' } },
-            { path: 'metadata.unknown', error: { name: 'EngineError', message: 'odd', code: 'Format' } },
-            { path: 'metadata.plain', error: { message: 'plain failure' } },
-            { path: 'metadata.aborted', error: { name: 'AbortError', message: 'worker aborted' } },
+            {
+              path: 'metadata.get',
+              times: 1,
+              error: {
+                name: 'EngineError',
+                message: 'no such',
+                code: 'NotFound',
+                details: { key: 'k' },
+              },
+            },
+            {
+              path: 'metadata.get',
+              times: 1,
+              error: { name: 'EngineError', message: 'nope', code: 'Forbidden' },
+            },
+            {
+              path: 'metadata.get',
+              times: 1,
+              error: { name: 'EngineError', message: 'odd', code: 'Format' },
+            },
+            { path: 'metadata.get', times: 1, error: { message: 'plain failure' } },
+            {
+              path: 'metadata.get',
+              times: 1,
+              error: { name: 'AbortError', message: 'worker aborted' },
+            },
           ],
         }),
       },
@@ -1170,25 +1555,30 @@ const v3Cases: ScenarioCase[] = [
       start,
       open(bytes('a')),
       capOf('ctl', 'a'),
-      api('docCall', 'metadata.notFound'),
-      api('docCall', 'metadata.forbidden'),
-      api('docCall', 'metadata.unknown'),
-      api('docCall', 'metadata.plain'),
-      api('docCall', 'metadata.aborted'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
     ],
   },
   {
     name: 'guarded-handle-over-plain-promises',
-    covers: 'Over an engine whose calls cannot be aborted, the guard still settles, maps errors, and rejects a pending call at close without an abort.',
+    covers:
+      'Over an engine whose calls cannot be aborted, the guard still settles, maps errors, and rejects a pending call at close without an abort.',
     plugins: [probe(ctl('ctl'))],
     engine: {
       plainPromises: true,
       documents: {
         a: doc({
           responses: [
-            { path: 'metadata.read', value: { title: 'T' } },
-            { path: 'metadata.bad', error: { name: 'EngineError', message: 'gone', code: 'NotFound' } },
-            { path: 'metadata.slow', defer: 'slow' },
+            { path: 'metadata.get', times: 1, value: { ...metadata, title: 'T' } },
+            {
+              path: 'metadata.get',
+              times: 1,
+              error: { name: 'EngineError', message: 'gone', code: 'NotFound' },
+            },
+            { path: 'metadata.get', defer: 'slow' },
           ],
         }),
       },
@@ -1197,11 +1587,11 @@ const v3Cases: ScenarioCase[] = [
       start,
       open(bytes('a')),
       capOf('ctl', 'a'),
-      api('docCall', 'metadata.read'),
-      api('docCall', 'metadata.bad'),
-      api('docCall', 'metadata.slow'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
+      api('docCall', 'metadata.get'),
       docs('close', 'a'),
-      settle('slow', {}),
+      settle('slow', metadata),
     ],
   },
   {
@@ -1247,7 +1637,7 @@ const v3Cases: ScenarioCase[] = [
       open(bytes('a')),
       capOf('ctl', 'a'),
       api('waitFor', 'n', 1),
-      api('dispatch', { type: 'SET', state: { n: 1 } }),
+      api('replaceState', { n: 1 }),
       api('waitFor', 'n', 1),
       api('waitFor', 'n', 2, 'sig'),
       api('abortSignal', 'sig'),
@@ -1260,7 +1650,8 @@ const v3Cases: ScenarioCase[] = [
   },
   {
     name: 'controller-serial-queue',
-    covers: 'serialQueue(key): one operation at a time per key, in submission order, a failure does not poison the next, and two keys are independent.',
+    covers:
+      'serialQueue(key): one operation at a time per key, in submission order, a failure does not poison the next, and two keys are independent.',
     plugins: [probe(ctl('ctl'))],
     engine: { documents: { a: doc() } },
     steps: [
@@ -1336,16 +1727,27 @@ const v3Cases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'controller-geometry-and-pages',
+    name: 'controller-pages',
     covers:
-      'geometry.forPage builds a PageSpace from the page crop, tryForPage answers null and forPage throws not-found for a foreign ref; assertPageRef and getPage read the same registry, which a page event replaces. A workspace controller has no bound document: doc throws, page reads are empty, forDocument and tryForDocument cross to a document.',
+      'getPage, pageOf and assertPageRef use the live page registry. A workspace context has no bound page or document; declared capabilities cross scopes.',
     plugins: [probe(ctl('ctl')), probe(wsCtl('wsc', { optional: ['ctl'] }))],
     engine: {
       documents: {
         a: doc({
           pages: [
             page(1, 0),
-            { ...page(2, 1), boxes: { media: { ...box }, crop: { left: 10, bottom: 20, right: 310, top: 420 } } },
+            {
+              ...page(2, 1),
+              size: { width: 300, height: 400 },
+              pdfCropBox: { left: 10, bottom: 20, right: 310, top: 420 },
+              boxes: {
+                media: { x: 0, y: 0, width: 300, height: 400 },
+                crop: { x: 0, y: 0, width: 300, height: 400 },
+                bleed: { x: 0, y: 0, width: 300, height: 400 },
+                trim: { x: 0, y: 0, width: 300, height: 400 },
+                art: { x: 0, y: 0, width: 300, height: 400 },
+              },
+            },
           ],
         }),
       },
@@ -1354,11 +1756,9 @@ const v3Cases: ScenarioCase[] = [
       start,
       open(bytes('a')),
       capOf('ctl', 'a'),
-      api('forPage', 1),
-      api('forPage', 2),
-      api('tryForPage', 2),
-      api('tryForPage', 99),
-      api('forPage', 99),
+      api('pageOf', ref1(2)),
+      api('pageOf', 1),
+      api('pageOf', ref1(99)),
       api('assertPageRef', 2),
       api('assertPageRef', 99),
       api('getPage', 2),
@@ -1366,13 +1766,19 @@ const v3Cases: ScenarioCase[] = [
       {
         op: 'emit',
         doc: 'a',
-        event: { type: 'pages.deleted', layout: { pageCount: 1, pages: [{ ...page(1, 0), boxes: { media: { ...box }, crop: { left: 0, bottom: 0, right: 100, top: 100 } } }] } },
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.deleted',
+          pages: [ref1(2)],
+          layout: { namedPages: [], pageCount: 1, pages: [page(1, 0)] },
+        } satisfies DocumentEvent,
       },
-      api('forPage', 1),
-      api('forPage', 2),
+      api('getPage', 2),
+      api('pageOf', ref1(1)),
+      api('pageOf', ref1(2)),
       cap('wsc', 'instanceId'),
       cap('wsc', 'docId'),
-      cap('wsc', 'tryForPage', [1]),
       cap('wsc', 'getPage', [1]),
       cap('wsc', 'assertPageRef', [1]),
       cap('wsc', 'get', ['ctl']),
@@ -1383,35 +1789,50 @@ const v3Cases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'page-space-at-the-origin',
+    name: 'invalid-page-identities',
     covers:
-      'A page space maps the origin both ways, including for a crop whose top edge is 0; a registry entry whose ref is not a whole non-negative number names no page.',
+      'Missing object-number addresses return null; a valid page with a zero top edge in PDF space retains its layout and resolves by index or ref.',
     plugins: [probe(ctl('ctl'))],
     engine: { documents: { a: doc() } },
     steps: [
       start,
       open(bytes('a')),
       capOf('ctl', 'a'),
-      api('forPage', 1),
       {
         op: 'emit',
         doc: 'a',
         event: {
+          origin,
+          meta: mutationMeta,
           type: 'pages.deleted',
+          pages: [ref1(2)],
           layout: {
+            namedPages: [],
             pageCount: 3,
             pages: [
-              { ...page(1, 0), ref: { kind: 'objectNumber', pageObjectNumber: 1.5 } },
-              { ...page(1, 1), ref: { kind: 'objectNumber', pageObjectNumber: -1 } },
-              { ...page(3, 2), boxes: { media: { ...box }, crop: { left: 5, bottom: -100, right: 105, top: 0 } } },
+              { ...page(1, 0), ref: { kind: 'objectNumber', objectNumber: 1.5 } },
+              { ...page(1, 1), ref: { kind: 'objectNumber', objectNumber: -1 } },
+              {
+                ...page(3, 2),
+                size: { width: 100, height: 100 },
+                pdfCropBox: { left: 5, bottom: -100, right: 105, top: 0 },
+                boxes: {
+                  media: { x: 0, y: 0, width: 100, height: 100 },
+                  crop: { x: 0, y: 0, width: 100, height: 100 },
+                  bleed: { x: 0, y: 0, width: 100, height: 100 },
+                  trim: { x: 0, y: 0, width: 100, height: 100 },
+                  art: { x: 0, y: 0, width: 100, height: 100 },
+                },
+              },
             ],
           },
-        },
+        } satisfies DocumentEvent,
       },
       api('getPage', 1),
       api('getPage', 0),
-      api('tryForPage', 1),
-      api('forPage', 3),
+      api('getPage', 3),
+      api('pageOf', ref1(3)),
+      api('pageOf', 2),
     ],
   },
   {
@@ -1441,21 +1862,30 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'guarded-handle-security-reads',
     covers:
-      'The guarded security passes every synchronous read straight through: identity, current, the password prompt, the annotation checks, and the server id.',
+      'Guarded security exposes state, scope, identity, password prompts, annotation authorization and the event cursor.',
     plugins: [probe(ctl('ctl'))],
     engine: {
       documents: {
         a: doc({
           security: {
-            identity: { user: 'u1' },
-            current: { level: 'owner' },
-            passwordPrompt: { state: 'unlocked' },
-            allowsAnnotationCreate: true,
-            allowsAnnotationMutation: { update: true, delete: false },
-            allowsAnnotationGroupAssignment: true,
+            identity: { userId: 'u1' },
+            state: {
+              encryption: { state: 'none', requiresPassword: false },
+              permissions: {
+                known: true,
+                bits: null,
+                allAllowed: true,
+                openedAs: 'owner',
+                securityHandlerRevision: null,
+                canUpgradeToOwner: false,
+              },
+              access: { required: false, reasons: [] },
+            },
+            passwordPrompt: { state: 'none' },
+            allowsAnnotation: { create: true, update: true, delete: false, 'set-group': true },
           },
         }),
-        b: doc({ security: { allowsAnnotationCreate: false, allowsAnnotationGroupAssignment: false } }),
+        b: doc({ security: { allowsAnnotation: { create: false, 'set-group': false } } }),
       },
     },
     steps: [
@@ -1463,22 +1893,22 @@ const v3Cases: ScenarioCase[] = [
       open(bytes('a')),
       capOf('ctl', 'a'),
       api('docRead', 'security.identity'),
-      api('docRead', 'security.current'),
+      api('docRead', 'security.state'),
       api('docRead', 'security.passwordPrompt'),
-      api('docRead', 'security.allowsAnnotationCreate'),
-      api('docRead', 'security.allowsAnnotationMutation', 'update', {}),
-      api('docRead', 'security.allowsAnnotationMutation', 'delete', {}),
-      api('docRead', 'security.allowsAnnotationGroupAssignment', 'g1'),
+      api('docRead', 'security.allowsAnnotation', 'create'),
+      api('docRead', 'security.allowsAnnotation', 'update', {}),
+      api('docRead', 'security.allowsAnnotation', 'delete', {}),
+      api('docRead', 'security.allowsAnnotation', 'set-group', { groupId: 'g1' }),
       api('docRead', 'events.lastServerId'),
       open(bytes('b')),
-      cap('ctl', 'docRead', ['security.allowsAnnotationCreate'], 'b'),
-      cap('ctl', 'docRead', ['security.allowsAnnotationGroupAssignment', 'g1'], 'b'),
+      cap('ctl', 'docRead', ['security.allowsAnnotation', 'create'], 'b'),
+      cap('ctl', 'docRead', ['security.allowsAnnotation', 'set-group', { groupId: 'g1' }], 'b'),
     ],
   },
   {
     name: 'workspace-controller-at-destroy',
     covers:
-      'The workspace lifetime ends at destroy: a pending lane run and waitFor reject instance-closed, an acquisition that lands afterwards is disposed, cleanups run with the workspace scope, and a dispatch after destroy is reported once.',
+      'The workspace lifetime ends at destroy: a pending lane run and waitFor reject instance-closed, an acquisition that lands afterwards is disposed, cleanups run with the workspace scope, and a state update after destroy is reported once.',
     plugins: [probe(wsCtl('wsc'))],
     steps: [
       start,
@@ -1490,30 +1920,30 @@ const v3Cases: ScenarioCase[] = [
       destroy,
       settle('wr', { r: 1 }),
       settle('w1', 'late'),
-      api('dispatch', { type: 'SET', state: { n: 1 } }),
-      api('dispatch', { type: 'SET', state: { n: 2 } }),
+      api('replaceState', { n: 1 }),
+      api('replaceState', { n: 2 }),
       api('state'),
     ],
   },
   {
     name: 'leases-across-reopen',
     covers:
-      'A slice lease ends when its instance closes: a retained dispatch is dropped and reported once per context, state reads the last value, and a reopened document gets a new lease the old context cannot reach.',
-    plugins: [probe(docProbe('alpha', { effects: undefined, init: undefined }))],
+      'A slice lease ends when its instance closes: a retained state setter is dropped and reported once per context, state reads the last value, and a reopened document gets a new lease the old context cannot reach.',
+    plugins: [probe(docProbe('alpha', { connect: undefined }))],
     engine: { documents: { a: doc() } },
     steps: [
       start,
       open(bytes('a')),
       capOf('alpha', 'a'),
-      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 1 } }], 'a'),
+      cap('alpha', 'replaceState', [{ n: 1 }], 'a'),
       docs('close', 'a'),
-      callRef(0, { type: 'SET', state: { n: 9 } }),
-      callRef(0, { type: 'SET', state: { n: 10 } }),
-      callRef(1),
+      api('replaceState', { n: 9 }),
+      api('replaceState', { n: 10 }),
+      api('state'),
       open(bytes('a')),
-      callRef(0, { type: 'SET', state: { n: 11 } }),
+      api('replaceState', { n: 11 }),
       cap('alpha', 'state', [], 'a'),
-      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 12 } }], 'a'),
+      cap('alpha', 'replaceState', [{ n: 12 }], 'a'),
       cap('alpha', 'state', [], 'a'),
     ],
   },
@@ -1522,12 +1952,14 @@ const v3Cases: ScenarioCase[] = [
     covers:
       'listPages, getPage, getPageAt, getPageIndex and getRevision read the active document by default or a named one, answer empty values with no document, and follow a page event.',
     plugins: [],
-    engine: { documents: { a: doc({ pages: [page(1, 0), page(7, 1)] }), b: doc({ pages: [page(3, 0)] }) } },
+    engine: {
+      documents: { a: doc({ pages: [page(1, 0), page(7, 1)] }), b: doc({ pages: [page(3, 0)] }) },
+    },
     steps: [
       start,
       docs('listPages'),
       docs('getPage', ref1(1)),
-      docs('getPageAt', 0),
+      docs('getPage', 0),
       docs('getPageIndex', ref1(1)),
       docs('getRevision'),
       docs('getActive'),
@@ -1538,12 +1970,22 @@ const v3Cases: ScenarioCase[] = [
       docs('getPage', ref1(7)),
       docs('getPage', ref1(3)),
       docs('getPage', ref1(3), 'b'),
-      docs('getPageAt', 1),
-      docs('getPageAt', 5),
+      docs('getPage', 1),
+      docs('getPage', 5),
       docs('getPageIndex', ref1(7)),
       docs('getPageIndex', ref1(99)),
       docs('getRevision'),
-      { op: 'emit', doc: 'a', event: { type: 'pages.moved', layout: { pageCount: 2, pages: [page(7, 0), page(1, 1)] } } },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.reordered',
+          pages: [ref1(2)],
+          layout: { namedPages: [], pageCount: 2, pages: [page(7, 0), page(1, 1)] },
+        } satisfies DocumentEvent,
+      },
       docs('getRevision', 'a'),
       docs('getPageIndex', ref1(7), 'a'),
       docs('listPages', 'b'),
@@ -1560,9 +2002,17 @@ const v3Cases: ScenarioCase[] = [
       documents: {
         a: doc(),
         b: doc(),
-        locked: doc({ security: { passwordPrompt: { state: 'required' } } }),
+        locked: doc({
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
+        }),
       },
-      responses: [{ path: 'open', args: [bytes('bad'), {}], error: { name: 'EngineError', message: 'broken', code: 'MalformedPdf' } }],
+      responses: [
+        {
+          path: 'open',
+          args: [bytes('bad'), {}],
+          error: { name: 'EngineError', message: 'broken', code: 'MalformedPdf' },
+        },
+      ],
     },
     steps: [
       start,
@@ -1575,7 +2025,18 @@ const v3Cases: ScenarioCase[] = [
       open(bytes('a')),
       open(bytes('bad')),
       open(bytes('locked')),
-      { op: 'emit', doc: 'a', event: { type: 'pages.rotated', layout: { pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] } } },
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          origin,
+          meta: mutationMeta,
+          type: 'pages.rotated',
+          pages: [ref1(1)],
+          rotation: 90,
+          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+        } satisfies DocumentEvent,
+      },
       docs('onClosed', { $fn: 'closedThrows', throws: { message: 'listener broke' } }),
       docs('close', 'bad'),
       callRef(0),
@@ -1588,10 +2049,17 @@ const v3Cases: ScenarioCase[] = [
     name: 'documents-rename-order-retry',
     covers:
       'rename a ready tab, a pending one and an unknown id; setOrder takes a permutation and refuses anything else; retry reopens a failed tab with its source and options and refuses a tab that did not fail.',
-    plugins: [probe(docProbe('alpha', { effects: { onAction: ['@@core/document-renamed'] } }))],
+    plugins: [probe(docProbe('alpha', { connect: {} }))],
     engine: {
       documents: { a: doc(), b: doc(), bad: doc() },
-      responses: [{ path: 'open', args: [bytes('bad'), { password: 'p' }], times: 1, error: { name: 'EngineError', message: 'broken', code: 'MalformedPdf' } }],
+      responses: [
+        {
+          path: 'open',
+          args: [bytes('bad'), { password: 'p' }],
+          times: 1,
+          error: { name: 'EngineError', message: 'broken', code: 'MalformedPdf' },
+        },
+      ],
     },
     steps: [
       start,
@@ -1615,13 +2083,18 @@ const v3Cases: ScenarioCase[] = [
   },
   {
     name: 'open-all-returns-ids',
-    covers: 'openAll returns the reserved ids in order: a thunk source its ticket, and a refused reservation (an id already open) the id it asked for, leaving the existing tab alone.',
+    covers:
+      'openAll returns the reserved ids in order: a thunk source its ticket, and a refused reservation (an id already open) the id it asked for, leaving the existing tab alone.',
     plugins: [],
     engine: { documents: { a: doc(), c: doc(), real: doc() } },
     steps: [
       start,
       open(bytes('a')),
-      docs('openAll', [{ source: bytes('a') }, { source: bytes('c'), active: true }, { source: { $fn: 'source', resolves: bytes('real') } }]),
+      docs('openAll', [
+        { source: bytes('a') },
+        { source: bytes('c'), active: true },
+        { source: { $fn: 'source', resolves: bytes('real') } },
+      ]),
       ...listing,
     ],
   },
@@ -1630,15 +2103,42 @@ const v3Cases: ScenarioCase[] = [
     covers:
       'A document capability resolved while bring-up is still reading the render policy, before the slice leases exist, refuses: the context has no lease to read or write through.',
     plugins: [probe(docProbe('alpha')), probe({ id: 'ws', token: 'ws', optional: ['alpha'] })],
-    engine: { documents: { a: doc({ services: ['render'], responses: [{ path: 'render.policy', defer: 'policy' }] }) } },
-    steps: [start, open(bytes('a')), cap('ws', 'tryForDocument', ['alpha', 'a']), settle('policy', null), cap('ws', 'tryForDocument', ['alpha', 'a'])],
+    engine: {
+      documents: {
+        a: doc({
+          services: ['render'],
+          responses: [{ path: 'render.getPolicy', defer: 'policy' }],
+        }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      cap('ws', 'tryForDocument', ['alpha', 'a']),
+      settle('policy', null),
+      cap('ws', 'tryForDocument', ['alpha', 'a']),
+    ],
   },
   {
     name: 'list-and-save-details',
-    covers: 'list() answers the same array until the registry changes; save() passes a mode only when one is given.',
+    covers: 'Repeated document reads remain stable, and download forwards the requested mode.',
     plugins: [],
-    engine: { documents: { a: doc({ responses: [{ path: 'download', value: { $bytes: 'JVBERi0=' } }] }) } },
-    steps: [start, open(bytes('a')), docs('list'), docs('list'), docs('save', 'a', {}), docs('save', 'a', { mode: 'incremental' })],
+    engine: {
+      documents: {
+        a: doc({
+          security: { allows: ['doc.download'] },
+          responses: [{ path: 'download', value: { $bytes: 'JVBERi0=' } }],
+        }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      docs('list'),
+      docs('list'),
+      docs('download', 'a', {}),
+      docs('download', 'a', { mode: 'incremental' }),
+    ],
   },
   {
     name: 'same-plugin-installed-twice',
@@ -1660,7 +2160,8 @@ const v3Cases: ScenarioCase[] = [
   },
   {
     name: 'workspace-requires-document-scoped',
-    covers: 'A workspace plugin that requires a document-scoped token fails construction with the remedy.',
+    covers:
+      'A workspace plugin that requires a document-scoped token fails construction with the remedy.',
     plugins: [probe(docProbe('alpha')), probe({ id: 'ws', requires: ['alpha'] })],
     steps: [],
   },
@@ -1668,7 +2169,12 @@ const v3Cases: ScenarioCase[] = [
     name: 'undeclared-resolution-refuses',
     covers:
       'In development a plugin that resolves a token it did not declare is refused, by get, tryGet, forDocument and tryForDocument alike; the documents token and its own token are always declared.',
-    plugins: [probe(docProbe('alpha')), probe(docProbe('beta')), probe({ id: 'ws', token: 'ws' }), probe({ id: 'ws2', token: 'ws2', optional: ['alpha'] })],
+    plugins: [
+      probe(docProbe('alpha')),
+      probe(docProbe('beta')),
+      probe({ id: 'ws', token: 'ws' }),
+      probe({ id: 'ws2', token: 'ws2', optional: ['alpha'] }),
+    ],
     engine: { documents: { a: doc() } },
     steps: [
       start,
@@ -1685,30 +2191,37 @@ const v3Cases: ScenarioCase[] = [
     ],
   },
 ];
-
 /** `meter` (see `Metered` in `scenario.ts`): enough turns to outlast every
  *  chain these cases start. */
 const metered = (step: Step, turns = 40): Step => ({ ...step, meter: turns }) as Step;
-
 const turnCases: ScenarioCase[] = [
   {
     name: 'open-settles-on-its-turn',
     covers:
       "open() resolves on the turn TypeScript's does: the operation's `.finally` takes three turns after the open body, and the `async` openDocument wrapper two more to adopt it.",
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() } },
     steps: [start, metered(open(bytes('a')))],
   },
   {
     name: 'a-failed-open-rejects-on-its-turn',
-    covers: 'The same turns on the failure path: the rollback, then the `.finally` and the adoption.',
+    covers:
+      'The same turns on the failure path: the rollback, then the `.finally` and the adoption.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
     engine: {
       documents: { a: doc() },
-      responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
+      responses: [
+        {
+          path: 'open',
+          times: 1,
+          error: { name: 'EngineError', message: 'bad xref', code: 'Format' },
+        },
+      ],
     },
     steps: [start, metered(open(bytes('a')))],
   },
@@ -1717,22 +2230,37 @@ const turnCases: ScenarioCase[] = [
     covers:
       'A thunk source that throws synchronously never reaches `engineCall`: the open fails in its own turn, then the `.finally` and the adoption.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
     steps: [start, metered(open({ $fn: 'throwing', throws: { message: 'bad url' } }))],
   },
   {
     name: 'unlock-settles-on-its-turn',
-    covers: 'unlock() is an `async` function returning the operation, so it adopts it in two turns, like open().',
+    covers:
+      'unlock() is an `async` function returning the operation, so it adopts it in two turns, like open().',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: {
       documents: {
         a: doc({
-          security: { passwordPrompt: { state: 'required' } },
+          security: { passwordPrompt: { state: 'required', hint: null, incorrect: false } },
           responses: [
-            { path: 'security.unlock', args: [{ password: 'wrong' }], error: { name: 'EngineError', message: 'incorrect password', code: 'DocPasswordIncorrect' } },
-            { path: 'security.unlock', args: [{ password: 'right' }], value: { security: {} } },
+            {
+              path: 'security.unlock',
+              args: [{ password: 'wrong' }],
+              error: {
+                name: 'EngineError',
+                message: 'incorrect password',
+                code: 'DocPasswordIncorrect',
+              },
+            },
+            {
+              path: 'security.unlock',
+              args: [{ password: 'right' }],
+              value: { security: unlockedSecurity },
+            },
           ],
         }),
       },
@@ -1746,13 +2274,21 @@ const turnCases: ScenarioCase[] = [
   },
   {
     name: 'retry-settles-on-its-turn',
-    covers: "retry() closes the failed tab, then returns openDocument's promise from an `async` arrow: the open's turns plus one adoption.",
+    covers:
+      "retry() closes the failed tab, then returns openDocument's promise from an `async` arrow: the open's turns plus one adoption.",
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: {
       documents: { a: doc() },
-      responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
+      responses: [
+        {
+          path: 'open',
+          times: 1,
+          error: { name: 'EngineError', message: 'bad xref', code: 'Format' },
+        },
+      ],
     },
     steps: [start, open(bytes('a')), metered(docs('retry', 'a'))],
   },
@@ -1761,7 +2297,8 @@ const turnCases: ScenarioCase[] = [
     covers:
       'close() while a thunk source is pending: the open rejects after its `.finally` and adoption, and close joins the operation with `await operation?.catch(...)`, two turns, before it disposes the scope and emits `closed`.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() } },
     steps: [
@@ -1776,8 +2313,9 @@ const turnCases: ScenarioCase[] = [
     covers:
       'destroy() after a settled start: `await startPromise?.catch(...)` is two turns before the workspace scope disposes.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the teardown fall among the `@@turn` callbacks.',
-    plugins: [probe({ id: 'ws', token: 'ws', effects: { cleanup: true } })],
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and the teardown fall among the `@@turn` callbacks.',
+    plugins: [probe({ id: 'ws', token: 'ws', connect: { cleanup: true } })],
     steps: [start, metered(destroy)],
   },
   {
@@ -1785,7 +2323,8 @@ const turnCases: ScenarioCase[] = [
     covers:
       'close() during pages.list: the open rejects after its `.finally` and adoption, and close joins the operation with `await operation?.catch(...)`, two turns, before it disposes the scope and emits `closed`.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc({ responses: [{ path: 'pages.list', defer: 'list-a' }] }) } },
     steps: [
@@ -1796,68 +2335,85 @@ const turnCases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'close-joins-a-pending-init-on-its-turn',
+    name: 'close-joins-a-pending-policy-on-its-turn',
     covers:
-      'close() while a plugin init is pending waits for the init; when it settles, the open rejects and close finishes, each on the turn TypeScript reaches it.',
+      'Close joins the pending policy read; when it settles the open rejects cancelled and close emits closed on their measured turns.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
-    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
-    engine: { documents: { a: doc() } },
+    reason: 'Pins turn counts: where @@settled and closed fall among @@turn callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: { a: doc({ responses: [{ path: 'render.getPolicy', defer: 'policy' }] }) },
+    },
     steps: [
       start,
       docs('onClosed', { $fn: 'closed' }),
       open(bytes('a')),
       docs('close', 'a'),
-      metered(settle('init')),
+      metered(settle('policy', { kind: 'continuous' })),
     ],
   },
   {
     name: 'close-of-a-ready-document-on-its-turn',
-    covers: 'close() with no operation in flight: `await session.operation?.catch(...)` on null is one turn.',
+    covers:
+      'close() with no operation in flight: `await session.operation?.catch(...)` on null is one turn.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: { documents: { a: doc() } },
-    steps: [start, docs('onClosed', { $fn: 'closed' }), open(bytes('a')), metered(docs('close', 'a'))],
+    steps: [
+      start,
+      docs('onClosed', { $fn: 'closed' }),
+      open(bytes('a')),
+      metered(docs('close', 'a')),
+    ],
   },
   {
     name: 'destroy-closes-a-document-on-its-turn',
     covers:
       'destroy() with a document open: the start join, then the session close, whose scope awaits `handle.close()`, an `AbortablePromise` that `await` adopts in three turns, then the workspace scope.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the teardowns fall among the `@@turn` callbacks.',
-    plugins: [probe(docProbe('alpha')), probe({ id: 'ws', token: 'ws', effects: { cleanup: true } })],
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and the teardowns fall among the `@@turn` callbacks.',
+    plugins: [
+      probe(docProbe('alpha')),
+      probe({ id: 'ws', token: 'ws', connect: { cleanup: true } }),
+    ],
     engine: { documents: { a: doc() } },
     steps: [start, docs('onClosed', { $fn: 'closed' }), open(bytes('a')), metered(destroy)],
   },
   {
     name: 'bring-up-awaits-the-render-policy-on-its-turn',
     covers:
-      'Bring-up reads `await session.handle.render?.policy()` from the raw engine handle: an `AbortablePromise`, which `await` adopts as a thenable, two turns more than a plain promise.',
+      'Bring-up awaits the raw render.getPolicy AbortablePromise before constructing document plugins.',
     snapshot: 'none',
-    reason: 'Pins turn counts: what matters is where `@@settled` and the init fall among the `@@turn` callbacks.',
+    reason:
+      'Pins turn counts: what matters is where `@@settled` and create falls among the `@@turn` callbacks.',
     plugins: [probe(docProbe('alpha'))],
     engine: {
       documents: {
-        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { kind: 'continuous' } }] }),
+        a: doc({
+          services: ['render'],
+          responses: [{ path: 'render.getPolicy', value: { kind: 'continuous' } }],
+        }),
       },
     },
     steps: [start, metered(open(bytes('a')))],
   },
 ];
-
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'kernel/turns.json',
     describes:
-      'packages/core/main: the microtask turn on which each document transition and the kernel teardown settle, measured with the runner\'s turn meter.',
+      "packages/core/main: the microtask turn on which each document transition and the kernel teardown settle, measured with the runner's turn meter.",
     cases: turnCases,
   },
   {
     kind: 'scenario',
     file: 'kernel/lifecycle.json',
-    describes: 'packages/core/main: the kernel, its store, plan, scopes, document lifecycle and the v3 controller contract.',
+    describes:
+      'packages/core/main: the kernel, its store, plan, scopes, document lifecycle and the v3 controller contract.',
     cases: [...cases, ...v3Cases],
   },
 ];

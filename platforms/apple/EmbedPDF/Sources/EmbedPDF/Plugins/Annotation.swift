@@ -1,67 +1,34 @@
 public import EmbedPDFBindings
 public import Foundation
 
-// `AnnotationRef`, `AnnotationRevisionToken`, `PdfLinkTarget` and
-// `PdfDestination` are declared in Link.swift.
-/// Visibility, interaction and locking flags read from an annotation.
-public typealias AnnotationFlags = EmbedPDFBindings.AnnotationFlags
-/// Changes to annotation flags; omitted members retain their values.
-public typealias AnnotationFlagsPatch = EmbedPDFBindings.AnnotationFlagsPatch
-/// A property identifier used by annotation style controls.
-public typealias AnnotationPropKey = EmbedPDFBindings.AnnotationPropKey
-/// The normalized styling and content properties of an annotation.
-public typealias AnnotationProps = EmbedPDFBindings.AnnotationProps
-/// Changes to annotation properties; omitted members retain their values.
-public typealias AnnotationPropsPatch = EmbedPDFBindings.AnnotationPropsPatch
-/// An endpoint decoration for a line or polyline.
-public typealias AnnotationLineEnding = EmbedPDFBindings.AnnotationLineEnding
-/// The decorations at the start and end of a line.
-public typealias AnnotationLineEndings = EmbedPDFBindings.AnnotationLineEndings
-/// Changes to one or both line endpoint decorations.
-public typealias AnnotationLineEndingsPatch = EmbedPDFBindings.AnnotationLineEndingsPatch
-/// The compositing mode used to paint an annotation.
-public typealias AnnotationBlendMode = EmbedPDFBindings.AnnotationBlendMode
-/// Horizontal alignment for annotation text.
-public typealias AnnotationTextAlign = EmbedPDFBindings.AnnotationTextAlign
-/// The stroke style and dimensions of an annotation border.
-public typealias AnnotationBorder = EmbedPDFBindings.AnnotationBorder
-/// The callout geometry attached to free text.
-public typealias AnnotationCallout = EmbedPDFBindings.AnnotationCallout
+// `AnnotationRef`, `PdfLinkTarget` and `PdfDestination` are declared in
+// Link.swift.
+//
+// The plugin speaks the engine's records: a record carries its ref, page,
+// subtype, rect, text members and authority typed, and the rest as JSON
+// (`AnnotationRecord.fieldsJson`). Create fields, patches, tool defaults and
+// selection values are the engine's field bags, passed as JSON objects.
 /// The page and tool associated with a creation gesture in progress.
 public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
-/// A snapshot of an annotation's identity, geometry, properties and flags.
+/// A snapshot of an annotation: its reference, page, subtype, rect, text members and
+/// authority typed, and its remaining fields as the engine's JSON (`fieldsJson`).
 public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
+/// The polygon or polyline being drawn: its page, and the draft as the engine's JSON.
+public typealias AnnotationCreationDraft = EmbedPDFBindings.AnnotationCreationDraft
+/// One editable property of a tool or selection as a style panel shows it: key, control,
+/// label, and the rest of its description as JSON.
+public typealias AnnotationProperty = EmbedPDFBindings.AnnotationProperty
 /// The pre-rename name of `AnnotationRecord`, kept for one release. It
 /// collides with MapKit's SwiftUI `Annotation` (iOS 17) in any file that
 /// imports EmbedPDF, SwiftUI and MapKit.
 @available(*, deprecated, renamed: "AnnotationRecord")
 public typealias Annotation = AnnotationRecord
-/// The shape-specific geometry of an annotation in page space.
-public typealias AnnotationGeometry = EmbedPDFBindings.AnnotationGeometry
-/// Changes to an annotation's page-space geometry.
-public typealias AnnotationGeometryPatch = EmbedPDFBindings.AnnotationGeometryPatch
-/// A mutation of annotation properties, flags or geometry.
-public typealias AnnotationPatch = EmbedPDFBindings.AnnotationPatch
-/// The page, subtype and initial data for a new annotation.
-public typealias CreateAnnotationInput = EmbedPDFBindings.CreateAnnotationInput
 /// Criteria that restrict an annotation listing.
 public typealias AnnotationFilter = EmbedPDFBindings.AnnotationFilter
-/// Progress and failures while loading a document's annotation plane.
-public typealias AnnotationHydration = EmbedPDFBindings.AnnotationHydration
 /// Applied references and per-annotation failures from a batch mutation.
 public typealias AnnotationBatchResult = EmbedPDFBindings.AnnotationBatchResult
 /// An annotation reference and the error from its failed batch mutation.
 public typealias AnnotationBatchFailure = EmbedPDFBindings.AnnotationBatchFailure
-/// Created references and failures from creating several annotations.
-public typealias AnnotationCreateBatchResult = EmbedPDFBindings.AnnotationCreateBatchResult
-/// The input index and error of an annotation that could not be created.
-public typealias AnnotationCreateFailure = EmbedPDFBindings.AnnotationCreateFailure
-/// The snapping rules used by annotation authoring gestures.
-public typealias AnnotationSnapSettings = EmbedPDFBindings.AnnotationSnapSettings
-/// Changes to snapping rules; omitted members retain their values.
-public typealias AnnotationSnapSettingsPatch = EmbedPDFBindings.AnnotationSnapSettingsPatch
-/// Configuration for annotation authoring and its initial tool defaults.
-public typealias AnnotationConfig = EmbedPDFBindings.AnnotationConfig
 /// A confirmed annotation, selection, draft, text-editing or comment change.
 public typealias AnnotationEvent = EmbedPDFBindings.AnnotationEvent
 /// The annotation reference, page and available record associated with a confirmed change.
@@ -76,12 +43,8 @@ public typealias AnnotationThreadChange = EmbedPDFBindings.AnnotationThreadChang
 public typealias AnnotationSelectionProps = EmbedPDFBindings.AnnotationSelectionProps
 /// A text emphasis style that can be toggled on selected annotations.
 public typealias AnnotationTextFormat = EmbedPDFBindings.AnnotationTextFormat
-/// A discrete rotation applied to selected annotations.
-public typealias AnnotationQuarterTurn = EmbedPDFBindings.AnnotationQuarterTurn
 /// An authoring tool descriptor and its interaction identifier.
 public typealias AnnotationTool = EmbedPDFBindings.AnnotationTool
-/// The metadata a native control needs to edit a tool property.
-public typealias AnnotationPropSpec = EmbedPDFBindings.AnnotationPropSpec
 /// The source bytes and metadata used to prepare a stamp.
 public typealias AnnotationStampSource = EmbedPDFBindings.AnnotationStampSource
 /// A stamp's target page, page-space location, size and rotation.
@@ -115,9 +78,10 @@ public typealias AnnotationPickedFile = EmbedPDFBindings.AnnotationPickedFile
 public typealias AnnotationFilePicker = EmbedPDFBindings.AnnotationFilePicker
 
 /// A document's annotations. Get one with `PDFViewer.annotations(for:)`;
-/// the viewer needs `ViewerConfig(interaction: true, annotation:
-/// AnnotationConfig())`. It keeps the viewer alive. After its document
-/// closes, every call throws `instance-closed`.
+/// the viewer needs `ViewerConfig(interaction: true, annotation: "")`
+/// (the settings JSON over the defaults; `""` for the defaults). It keeps
+/// the viewer alive. After its document closes, every call throws
+/// `instance-closed`.
 ///
 /// Pointer editing goes through the interaction hub: forward samples with
 /// `InteractionCapability.dispatchPointer` and the plugin's own handlers
@@ -136,7 +100,7 @@ public struct AnnotationCapability: Sendable {
     AnnotationSelectionCapability(handle: handle.selection(), viewer: viewer)
   }
 
-  /// The authoring tools, their defaults and the snap settings.
+  /// The authoring tools and their defaults.
   public var tools: AnnotationToolsCapability {
     AnnotationToolsCapability(handle: handle.tools(), viewer: viewer)
   }
@@ -166,78 +130,56 @@ public struct AnnotationCapability: Sendable {
     try await bridged { try await handle.selected() }
   }
 
-  /// The topmost annotation under a page-space point.
-  public func hitTest(at point: Point, on page: PageRef) async throws(PDFError) -> AnnotationRef? {
+  /// Returns the topmost annotation under a page-space point, or `nil` over none.
+  public func hitTest(at point: Point, on page: PageRef) async throws(PDFError) -> AnnotationRecord? {
     try await bridged { try await handle.hitTestAt(page: page, point: point) }
   }
 
-  /// `.loading`, then `.ready` once hydration completed, or `.forbidden`
-  /// or `.error`. Never `.idle`: hydration starts with the document.
+  /// Returns whether a change of this annotation is still on its way to the engine.
+  public func isPending(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.isPending(annotationRef: ref) }
+  }
+
+  /// Returns the annotation records' loading, availability, or failure state, as metadata,
+  /// form and signature report theirs.
   public func status() async throws(PDFError) -> ResourceStatus {
     try await bridged { try await handle.status() }
   }
 
-  /// Returns annotation loading progress, including any pages that failed to load.
-  public func hydration() async throws(PDFError) -> AnnotationHydration {
-    try await bridged { try await handle.hydration() }
-  }
-
-  /// Start hydration if it has not run, without waiting for it.
-  public func ensureHydrated() async throws(PDFError) {
-    try await bridged { try await handle.ensureHydrated() }
-  }
-
-  /// Re-read every annotation and wait for it.
+  /// Re-reads every annotation from the engine and waits for it.
   public func refresh() async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.refresh(cancel: token) }
   }
 
-  /// Re-reads the annotations on one page and waits for synchronization to finish.
-  public func reload(_ page: PageRef) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.reloadPage(page: page, cancel: token) }
+  /// Waits until every load and page re-read in flight has settled.
+  public func whenSynced() async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.whenSynced(cancel: token) }
   }
 
-  /// Resolves once the engine confirmed the annotation.
-  public func create(_ input: CreateAnnotationInput) async throws(PDFError) -> AnnotationRef {
-    try await bridgedCancellable { token in try await handle.create(input: input, cancel: token) }
-  }
-
-  /// Creates annotations independently and returns the created references and per-input failures.
-  public func create(_ inputs: [CreateAnnotationInput]) async throws(PDFError)
-    -> AnnotationCreateBatchResult
-  {
+  /// Creates an annotation and returns its reference once the engine confirms it.
+  ///
+  /// - Parameters:
+  ///   - fieldsJSON: The engine's field bag for the subtype, such as
+  ///     `{"subtype": "square", "box": …}`.
+  ///   - page: The page to receive the annotation.
+  ///   - tool: The tool whose defaults the annotation starts from; `nil` uses the subtype's.
+  ///   - select: Whether to select the annotation afterwards.
+  public func create(
+    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool? = nil
+  ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
-      try await handle.createMany(inputs: inputs, cancel: token)
+      try await handle.create(page: page, fieldsJson: fieldsJSON, tool: tool, select: select, cancel: token)
     }
   }
 
   /// Applies a partial mutation to one annotation and waits for engine confirmation.
-  public func update(_ ref: AnnotationRef, _ patch: AnnotationPatch) async throws(PDFError) {
+  ///
+  /// - Parameters:
+  ///   - ref: The annotation to change.
+  ///   - patchJSON: The engine's field bag; omitted fields keep their values.
+  public func update(_ ref: AnnotationRef, _ patchJSON: String) async throws(PDFError) {
     try await bridgedCancellable { token in
-      try await handle.update(annotationRef: ref, patch: patch, cancel: token)
-    }
-  }
-
-  /// One patch applied to every ref, best effort per ref.
-  public func update(_ refs: [AnnotationRef], _ patch: AnnotationPatch) async throws(PDFError)
-    -> AnnotationBatchResult
-  {
-    try await bridgedCancellable { token in
-      try await handle.updateMany(refs: refs, patch: patch, cancel: token)
-    }
-  }
-
-  /// Sets an annotation's absolute rotation in degrees.
-  public func setRotation(_ ref: AnnotationRef, degrees: Double) async throws(PDFError) {
-    try await bridgedCancellable { token in
-      try await handle.setRotation(annotationRef: ref, degrees: degrees, cancel: token)
-    }
-  }
-
-  /// Adds `delta` degrees to an annotation's current rotation.
-  public func rotate(_ ref: AnnotationRef, by delta: Double) async throws(PDFError) {
-    try await bridgedCancellable { token in
-      try await handle.rotateBy(annotationRef: ref, delta: delta, cancel: token)
+      try await handle.update(annotationRef: ref, patchJson: patchJSON, cancel: token)
     }
   }
 
@@ -248,9 +190,16 @@ public struct AnnotationCapability: Sendable {
     }
   }
 
-  /// Deletes annotations independently and returns applied references and per-annotation failures.
-  public func delete(_ refs: [AnnotationRef]) async throws(PDFError) -> AnnotationBatchResult {
-    try await bridgedCancellable { token in try await handle.deleteMany(refs: refs, cancel: token) }
+  /// Moves annotations in their page's paint order.
+  ///
+  /// - Parameters:
+  ///   - refs: The annotations to move.
+  ///   - positionJSON: `"front"`, `"back"`, `"forward"`, `"backward"` (each a
+  ///     quoted JSON string) or `{"above": ref}` / `{"below": ref}`.
+  public func reorder(_ refs: [AnnotationRef], to positionJSON: String) async throws(PDFError) {
+    try await bridgedCancellable { token in
+      try await handle.reorder(refs: refs, positionJson: positionJSON, cancel: token)
+    }
   }
 
   /// Returns whether `doc.annotate.read` is currently granted.
@@ -263,9 +212,9 @@ public struct AnnotationCapability: Sendable {
     try await bridged { try await handle.canCreate() }
   }
 
-  /// Returns whether the current authority and annotation flags allow editing `ref`.
-  public func canEdit(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canEdit(annotationRef: ref) }
+  /// Returns whether the current authority and annotation flags allow changing `ref`.
+  public func canUpdate(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canUpdate(annotationRef: ref) }
   }
 
   /// Returns whether the current authority and annotation flags allow deleting `ref`.
@@ -306,10 +255,9 @@ public struct AnnotationSelectionCapability: Sendable {
     try await bridged { try await handle.selectAll(page: page) }
   }
 
-  /// Selects annotations within a page-space rectangle, replacing the selection unless `adding` is `true`.
-  public func select(in rect: Rect, on page: PageRef, adding: Bool = false) async throws(PDFError)
-  {
-    try await bridged { try await handle.selectInRect(page: page, rect: rect, add: adding) }
+  /// Selects annotations within a page-space rectangle, replacing the selection.
+  public func select(in rect: Rect, on page: PageRef) async throws(PDFError) {
+    try await bridged { try await handle.selectInRect(page: page, rect: rect) }
   }
 
   /// Clears the annotation selection without deleting annotations.
@@ -327,19 +275,12 @@ public struct AnnotationSelectionCapability: Sendable {
     try await bridged { try await handle.props() }
   }
 
-  /// Applies a property patch to the selected annotations and reports individual outcomes.
-  public func update(_ patch: AnnotationPropsPatch) async throws(PDFError) -> AnnotationBatchResult
-  {
-    try await bridgedCancellable { token in try await handle.update(patch: patch, cancel: token) }
-  }
-
-  /// Applies a flag patch to the selected annotations and reports individual outcomes.
-  public func updateFlags(_ patch: AnnotationFlagsPatch) async throws(PDFError)
-    -> AnnotationBatchResult
-  {
-    try await bridgedCancellable { token in
-      try await handle.updateFlags(patch: patch, cancel: token)
-    }
+  /// Applies one patch to every selected annotation and reports individual outcomes.
+  ///
+  /// - Parameter patchJSON: The engine's field bag; each annotation takes the fields its
+  ///   kind has.
+  public func update(_ patchJSON: String) async throws(PDFError) -> AnnotationBatchResult {
+    try await bridgedCancellable { token in try await handle.update(patchJson: patchJSON, cancel: token) }
   }
 
   /// Deletes selected annotations and reports individual outcomes.
@@ -347,9 +288,9 @@ public struct AnnotationSelectionCapability: Sendable {
     try await bridgedCancellable { token in try await handle.delete(cancel: token) }
   }
 
-  /// Rotates selected annotations by the requested quarter turn.
-  public func rotate(_ turn: AnnotationQuarterTurn) async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.rotateBy(turn: turn, cancel: token) }
+  /// Adds `degrees` to each selected annotation's rotation.
+  public func rotate(by degrees: Double) async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.rotateBy(degrees: degrees, cancel: token) }
   }
 
   /// Resets the selected annotations' rotations.
@@ -385,7 +326,7 @@ public struct AnnotationSelectionCapability: Sendable {
   }
 }
 
-/// Authoring tool descriptors, defaults and snapping settings for one document.
+/// Authoring tool descriptors and defaults for one document.
 ///
 /// Obtain it from `AnnotationCapability.tools`. Changes to defaults affect future creations.
 /// It retains the viewer and is invalid after the document closes.
@@ -403,30 +344,23 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.tool(id: id) }
   }
 
-  /// Returns the properties used for new annotations created with `toolID`.
-  public func defaults(for toolID: String) async throws(PDFError) -> AnnotationProps {
+  /// Returns the engine's field bag, as JSON, that new annotations created with `toolID` start with.
+  public func defaults(for toolID: String) async throws(PDFError) -> String {
     try await bridged { try await handle.defaults(toolId: toolID) }
   }
 
-  /// Changes the defaults for future annotations created with `toolID`.
-  public func setDefaults(_ patch: AnnotationPropsPatch, for toolID: String) async throws(PDFError)
-  {
-    try await bridged { try await handle.setDefaults(toolId: toolID, patch: patch) }
+  /// Merges a field bag over the defaults for future annotations created with `toolID`.
+  ///
+  /// - Parameters:
+  ///   - changesJSON: The engine's field bag to merge.
+  ///   - toolID: The tool whose defaults change.
+  public func updateDefaults(_ changesJSON: String, for toolID: String) async throws(PDFError) {
+    try await bridged { try await handle.updateDefaults(toolId: toolID, changesJson: changesJSON) }
   }
 
-  /// Returns property-control metadata for the authoring tool identified by `toolID`.
-  public func propSpecs(for toolID: String) async throws(PDFError) -> [AnnotationPropSpec] {
-    try await bridged { try await handle.propSpecs(toolId: toolID) }
-  }
-
-  /// Returns the current authoring snap settings.
-  public func snapSettings() async throws(PDFError) -> AnnotationSnapSettings {
-    try await bridged { try await handle.snapSettings() }
-  }
-
-  /// Changes only the supplied snap settings.
-  public func updateSnapSettings(_ patch: AnnotationSnapSettingsPatch) async throws(PDFError) {
-    try await bridged { try await handle.updateSnapSettings(patch: patch) }
+  /// Returns the property values a style panel shows for `toolID`.
+  public func properties(for toolID: String) async throws(PDFError) -> AnnotationSelectionProps {
+    try await bridged { try await handle.properties(toolId: toolID) }
   }
 }
 
@@ -438,14 +372,9 @@ public struct AnnotationDraftsCapability: Sendable {
   let handle: AnnotationDraftsHandle
   let viewer: PDFViewer
 
-  /// Returns the active creation draft's page and tool, or `nil` when no draft is active.
-  public func creationDraft() async throws(PDFError) -> CreationDraftAnchor? {
+  /// Returns the polygon or polyline being drawn, or `nil` when no draft is active.
+  public func creationDraft() async throws(PDFError) -> AnnotationCreationDraft? {
     try await bridged { try await handle.creationDraft() }
-  }
-
-  /// Returns whether an annotation creation gesture is in progress.
-  public func hasCreationDraft() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.hasCreationDraft() }
   }
 
   /// Commit the polygon or polyline being drawn. `nil` when there was
@@ -459,21 +388,9 @@ public struct AnnotationDraftsCapability: Sendable {
     try await bridged { try await handle.finishInkDraft() }
   }
 
-  /// Discards the current creation draft.
-  public func cancelCreationDraft() async throws(PDFError) {
-    try await bridged { try await handle.cancelCreationDraft() }
-  }
-
   /// Drop every gesture in progress: drafts, ghosts, placement previews.
   public func cancel() async throws(PDFError) {
     try await bridged { try await handle.cancel() }
-  }
-
-  /// Commits annotation text to the document, replacing the current contents.
-  public func setContents(_ text: String, of ref: AnnotationRef) async throws(PDFError) {
-    try await bridgedCancellable { token in
-      try await handle.setContents(annotationRef: ref, text: text, cancel: token)
-    }
   }
 
   /// Begins the free-text editing session for `ref`.
@@ -494,7 +411,7 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  /// Ends the active free-text editing session and commits its draft contents.
+  /// Ends the active free-text editing session and commits what was typed.
   public func endTextEdit() async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.endTextEdit(cancel: token) }
   }
@@ -504,12 +421,7 @@ public struct AnnotationDraftsCapability: Sendable {
     try await bridged { try await handle.editingRef() }
   }
 
-  /// Returns the identifier of the annotation being edited, or `nil` outside a text-editing session.
-  public func editingID() async throws(PDFError) -> String? {
-    try await bridged { try await handle.editingId() }
-  }
-
-  /// Keystroke-level text, kept as a draft until `endTextEdit`.
+  /// Keystroke-level text, sent to the engine once typing pauses or at `endTextEdit`.
   public func draftContents(_ text: String, of ref: AnnotationRef) async throws(PDFError) {
     try await bridged { try await handle.draftContents(annotationRef: ref, text: text) }
   }
@@ -534,13 +446,15 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  /// Highlight, underline, squiggly or strikeout over text quads. The new
-  /// annotation arrives on `AnnotationCapability.events`.
+  /// Highlight, underline, squiggly or strikeout over text quads
+  /// (`quadsJSON`, the engine's `Quad[]`). `preset` picks a tool's defaults
+  /// other than the subtype's own. The new annotation arrives on
+  /// `AnnotationCapability.events`.
   public func createMarkup(
-    _ subtype: String, quads: [TextQuad], on page: PageRef, preset: String? = nil
+    _ subtype: String, quadsJSON: String, on page: PageRef, preset: String? = nil
   ) async throws(PDFError) {
     try await bridged {
-      try await handle.createMarkup(page: page, subtype: subtype, quads: quads, preset: preset)
+      try await handle.createMarkup(page: page, subtype: subtype, quadsJson: quadsJSON, preset: preset)
     }
   }
 
@@ -553,11 +467,11 @@ public struct AnnotationDraftsCapability: Sendable {
 
   /// A strikeout over `quads` paired with an insert caret at `anchor`.
   public func createReplaceText(
-    quads: [TextQuad], caretAt anchor: AnnotationTextEndAnchor, on page: PageRef,
+    quadsJSON: String, caretAt anchor: AnnotationTextEndAnchor, on page: PageRef,
     preset: String? = nil
   ) async throws(PDFError) {
     try await bridged {
-      try await handle.createReplaceText(page: page, quads: quads, anchor: anchor, preset: preset)
+      try await handle.createReplaceText(page: page, quadsJson: quadsJSON, anchor: anchor, preset: preset)
     }
   }
 
@@ -575,15 +489,15 @@ public struct AnnotationDraftsCapability: Sendable {
     try await bridged { try await handle.clearMarkupPreview() }
   }
 
-  /// Mark the current text selection (needs `ViewerConfig.selection`),
-  /// one annotation per page. Empty when nothing is selected. `clear`
-  /// drops the text selection afterwards.
-  public func createFromSelection(
-    _ subtype: String, preset: String? = nil, clear: Bool? = nil
-  ) async throws(PDFError) -> [AnnotationRef] {
+  /// Mark the current text selection (needs `ViewerConfig.selection`) with
+  /// the markup tool `toolID`, one annotation per page. Empty when nothing is
+  /// selected. `clear` (default `true`) drops the text selection
+  /// afterwards.
+  public func createFromSelection(tool toolID: String, clear: Bool? = nil)
+    async throws(PDFError) -> [AnnotationRef]
+  {
     try await bridgedCancellable { token in
-      try await handle.createFromSelection(
-        subtype: subtype, preset: preset, clear: clear, cancel: token)
+      try await handle.createFromSelection(toolId: toolID, clear: clear, cancel: token)
     }
   }
 
@@ -606,12 +520,19 @@ public struct AnnotationDraftsCapability: Sendable {
     try await bridged { try await handle.hasArmedStamp() }
   }
 
-  /// Place a stamp at a point, without arming.
-  public func placeStamp(_ source: AnnotationStampSource, at placement: AnnotationStampPlacement)
-    async throws(PDFError) -> AnnotationRef
-  {
+  /// Place a stamp centred on a point, without arming.
+  ///
+  /// - Parameters:
+  ///   - source: The stamp's bytes and metadata.
+  ///   - placement: The target page, centre point, size and rotation.
+  ///   - targetWidth: Width in page-space points; `nil` uses the source's intrinsic size.
+  public func placeStamp(
+    _ source: AnnotationStampSource, at placement: AnnotationStampPlacement,
+    targetWidth: Double? = nil
+  ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
-      try await handle.placeStamp(source: source, placement: placement, cancel: token)
+      try await handle.placeStamp(
+        source: source, placement: placement, targetWidth: targetWidth, cancel: token)
     }
   }
 
@@ -638,11 +559,12 @@ public struct AnnotationDraftsCapability: Sendable {
 
   /// Updates a tool's hover preview at a page-space point.
   public func hoverGhost(
-    tool toolID: String, at point: Point, on page: PageRef, displayRotation: Double? = nil
+    tool toolID: String, at point: Point, on page: PageRef, displayRotation: Double? = nil,
+    zoom: Double? = nil
   ) async throws(PDFError) {
     try await bridged {
       try await handle.hoverGhostAt(
-        toolId: toolID, page: page, point: point, displayRotation: displayRotation)
+        toolId: toolID, page: page, point: point, displayRotation: displayRotation, zoom: zoom)
     }
   }
 
@@ -651,12 +573,13 @@ public struct AnnotationDraftsCapability: Sendable {
     try await bridged { try await handle.clearGhost() }
   }
 
-  /// Shows a tool's provisional bounds in page space without creating an annotation.
-  public func setPlacementPreview(tool toolID: String, bounds: Rect, on page: PageRef)
+  /// Shows provisional placement bounds for a sibling plugin's drag-to-place gesture with
+  /// the tool `toolID`.
+  public func previewPlacement(tool toolID: String, from: Point, to: Point, on page: PageRef)
     async throws(PDFError)
   {
     try await bridged {
-      try await handle.setPlacementPreview(toolId: toolID, page: page, bounds: bounds)
+      try await handle.previewPlacement(toolId: toolID, page: page, from: from, to: to)
     }
   }
 
@@ -667,11 +590,11 @@ public struct AnnotationDraftsCapability: Sendable {
 
   /// Click-place with the active tool (a note, a stamp). `false` when the
   /// tool places nothing on click.
-  public func place(at point: Point, on page: PageRef, displayRotation: Double? = nil)
-    async throws(PDFError) -> Bool
-  {
+  public func place(
+    at point: Point, on page: PageRef, displayRotation: Double? = nil, zoom: Double? = nil
+  ) async throws(PDFError) -> Bool {
     try await bridged {
-      try await handle.placeAt(page: page, point: point, displayRotation: displayRotation)
+      try await handle.placeAt(page: page, point: point, displayRotation: displayRotation, zoom: zoom)
     }
   }
 
@@ -764,15 +687,20 @@ public struct AnnotationThreadsCapability: Sendable {
     try await bridged { try await handle.permissions(annotationRef: ref) }
   }
 
-  /// The link attached to an annotation (a shape that acts as a link).
-  public func link(_ ref: AnnotationRef) async throws(PDFError) -> PdfLinkTarget? {
+  /// The link attached to an annotation (a shape that acts as a link), as
+  /// the engine's `LinkTarget` JSON, or `nil` when it has none.
+  public func link(_ ref: AnnotationRef) async throws(PDFError) -> String? {
     try await bridged { try await handle.link(annotationRef: ref) }
   }
 
-  /// Attaches `target` to an annotation so it acts as a link.
-  public func setLink(_ target: PdfLinkTarget, on ref: AnnotationRef) async throws(PDFError) {
+  /// Attaches a target to an annotation so it acts as a link.
+  ///
+  /// - Parameters:
+  ///   - targetJSON: The engine's `LinkTarget` JSON.
+  ///   - ref: The annotation to receive the link.
+  public func setLink(_ targetJSON: String, on ref: AnnotationRef) async throws(PDFError) {
     try await bridgedCancellable { token in
-      try await handle.setLink(annotationRef: ref, target: target, cancel: token)
+      try await handle.setLink(annotationRef: ref, targetJson: targetJSON, cancel: token)
     }
   }
 

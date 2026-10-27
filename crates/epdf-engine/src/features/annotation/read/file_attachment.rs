@@ -20,13 +20,18 @@ use serde::{Deserialize, Serialize};
 
 use super::dictionary_read;
 use super::style::{Color, read_color, read_opacity};
+use crate::clock::pdf_date_to_iso;
 use crate::error::EngineError;
 use crate::features::annotation::vocabulary::{DEFAULT_FILE_ATTACHMENT_ICON, FileAttachmentIcon};
 
 /// What an attachment marker with no `/C` is drawn as.
 pub const DEFAULT_FILE_ATTACHMENT_COLOR: Color = Color { r: 255, g: 255, b: 0 };
 
-/// The metadata projection of an embedded file.
+/// The metadata projection of an embedded file (`AttachmentFileInfo`).
+///
+/// Every field is present, `null` when the PDF has no value for it
+/// (bd4976e4e): a reader that left a field out could not be told from one
+/// that did not look.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentFileInfo {
@@ -34,22 +39,19 @@ pub struct AttachmentFileInfo {
     /// a name, so an empty one says the file is malformed while a missing
     /// field would say the reader did not look.
     pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// `/Subtype` of the embedded file stream.
     pub mime_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// `/Desc`.
     pub description: Option<String>,
     /// `/Params /Size`, the DECODED length.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<i32>,
     /// `/Params /CheckSum`, as lowercase hex.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub checksum: Option<String>,
-    /// `/Params /CreationDate`, as the PDF date string. Not converted to ISO
-    /// 8601, unlike the annotation's own dates: this one is the file's, it is
-    /// written by whatever produced the attachment, and the wire passes it
-    /// through.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub creation_date: Option<String>,
+    /// `/Params /CreationDate`, as ISO 8601 with the offset the PDF date was
+    /// written with (fd175ba50). A date that does not parse reads `null`.
+    pub created_at: Option<String>,
+    /// `/Params /ModDate`, as `created_at` is read.
+    pub modified_at: Option<String>,
 }
 
 /// A file-attachment annotation's own fields.
@@ -88,10 +90,19 @@ pub fn read_file_attachment(
 pub fn read_attachment_info(
     attachment: &Attachment<'_>,
 ) -> Result<AttachmentFileInfo, EngineError> {
+    // An empty string reads as `null`, as `readAttachmentFileInfo`'s
+    // `value || null` does: there is no file type, description or date
+    // that is the empty string.
+    let present = |value: Option<String>| value.filter(|value| !value.is_empty());
+    let date = |key: &str| -> Result<Option<String>, EngineError> {
+        Ok(present(dictionary_read(key, attachment.string_value(key))?)
+            .as_deref()
+            .and_then(pdf_date_to_iso))
+    };
     Ok(AttachmentFileInfo {
         name: dictionary_read("UF", attachment.name())?.unwrap_or_default(),
-        mime_type: dictionary_read("Subtype", attachment.mime_type())?,
-        description: dictionary_read("Desc", attachment.description())?,
+        mime_type: present(dictionary_read("Subtype", attachment.mime_type())?),
+        description: present(dictionary_read("Desc", attachment.description())?),
         // A negative size is PDFium reporting something it could not make
         // sense of, and a negative length is not a fact about a file.
         size: dictionary_read("Size", attachment.integer_value("Size"))?.filter(|size| *size >= 0),
@@ -99,7 +110,8 @@ pub fn read_attachment_info(
             "CheckSum",
             attachment.string_value("CheckSum"),
         )?),
-        creation_date: dictionary_read("CreationDate", attachment.string_value("CreationDate"))?,
+        created_at: date("CreationDate")?,
+        modified_at: date("ModDate")?,
     })
 }
 

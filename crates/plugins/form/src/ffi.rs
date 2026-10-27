@@ -1,11 +1,19 @@
-//! The form plugin through uniffi: typed records decoded from the plugin's
+//! The form plugin through uniffi: typed records read from the plugin's
 //! JSON, one handle, one event enum. Every method hops to the kernel thread
 //! through `KernelBound`.
 //!
-//! Not exported: `resetFormAction`, `resolveSubmitDataset`,
-//! `commitScriptFormEffects` and `notifyWidgetEvent` (the actions plugin's
-//! hooks, wired in `form_plugin`), `setValueRaw` (skips scripts), and
-//! `exportValues` (`fields` returns the same values typed).
+//! Migrated by hand in Task 13.18 to the current plugin; compiled and
+//! tested since Task 13.33. Refs are written in the engine's current
+//! spelling (`objectNumber`).
+//!
+//! Not exported: the actions plugin's seams (`resetFormAction`,
+//! `resolveSubmitDataset`, `commitScriptFormEffects`, `notifyWidgetEvent`),
+//! which the plugin wires itself, and the painter reads (`getWidgetPainting`,
+//! `getTextEditorLayout`, `listShownWidgets`), which a native layer reaches
+//! once a host types the scene. Removed with the TypeScript: `setText`,
+//! `setChecked`, `setChoice`, `resetAll`, `attachWidget` (now `add_widget`),
+//! `detachWidget` (now `remove_widget`), `exportData` and `importData` (now
+//! `export` and `import`, with bundles), `getFillItem`, and `flags.raw`.
 
 use std::sync::Arc;
 
@@ -13,7 +21,6 @@ use epdf_ffi::{
     AnnotationRef, CancelToken, FormFieldFamily, FormFieldRef, KernelBound, KernelPost, PageRef,
     PluginErrorInfo, Rect, ResourceStatus, Subscription, ViewerError,
 };
-use epdf_kernel::bytes::Bytes;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
 use serde::Deserialize;
@@ -29,6 +36,10 @@ fn decode<T: DeserializeOwned>(value: Value) -> Result<T, Error> {
     })
 }
 
+fn invalid_state(message: String) -> Error {
+    Error::named("InvalidState", message).with("code", "invalid-state")
+}
+
 fn open(cap: &FormCapability) -> Result<&FormCapability, Error> {
     if cap.lifetime().aborted() {
         return Err(plugin_error(
@@ -42,12 +53,66 @@ fn open(cap: &FormCapability) -> Result<&FormCapability, Error> {
     Ok(cap)
 }
 
-fn annotation_ref(value: &Value) -> Result<Option<AnnotationRef>, Error> {
+// ── refs, in the engine's current spelling ─────────────────────────────────
+
+fn page_json(page: PageRef) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": page.page_object_number })
+}
+
+/// A whole number the plugin wrote, as JavaScript numbers are (`101` or
+/// `101.0`), that fits a `u32`.
+fn whole(value: Option<&Value>) -> Option<u32> {
+    value
+        .and_then(Value::as_f64)
+        .filter(|n| n.fract() == 0.0 && *n >= 0.0 && *n <= f64::from(u32::MAX))
+        .map(|n| n as u32)
+}
+
+fn page_of(value: &Value) -> Result<PageRef, Error> {
+    let n = whole(value.get("objectNumber"))
+        .ok_or_else(|| invalid_state(format!("[form] not a page ref: {value}")))?;
+    Ok(PageRef { page_object_number: n })
+}
+
+fn field_ref_json(reference: &FormFieldRef) -> Value {
+    match reference {
+        FormFieldRef::ObjectNumber { field_object_number } => {
+            json!({ "kind": "objectNumber", "objectNumber": field_object_number })
+        }
+        FormFieldRef::Fqn { name } => json!({ "kind": "fqn", "name": name }),
+    }
+}
+
+fn field_ref_of(value: &Value) -> Result<FormFieldRef, Error> {
+    match value.get("kind").and_then(Value::as_str) {
+        Some("objectNumber") => Ok(FormFieldRef::ObjectNumber {
+            field_object_number: whole(value.get("objectNumber")).unwrap_or(0),
+        }),
+        Some("fqn") => Ok(FormFieldRef::Fqn {
+            name: value.get("name").and_then(Value::as_str).unwrap_or_default().to_string(),
+        }),
+        _ => Err(invalid_state(format!("[form] not a field ref: {value}"))),
+    }
+}
+
+fn annotation_ref_json(reference: &AnnotationRef) -> Value {
+    reference.to_json()
+}
+
+fn annotation_ref_of(value: &Value) -> Result<Option<AnnotationRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    let core: epdf_annotation_core::AnnotationRef = decode(value.clone())?;
-    Ok(Some(AnnotationRef::try_from(core)?))
+    AnnotationRef::from_json(value).map(Some)
+}
+
+fn rect_of(value: &Value) -> Rect {
+    let n = |k: &str| value.get(k).and_then(Value::as_f64).unwrap_or(f64::NAN);
+    Rect { x: n("x"), y: n("y"), width: n("width"), height: n("height") }
+}
+
+fn rect_json(rect: Rect) -> Value {
+    json!({ "x": rect.x, "y": rect.y, "width": rect.width, "height": rect.height })
 }
 
 // ── config ───────────────────────────────────────────────────────────────────
@@ -57,10 +122,11 @@ pub enum FormValidation {
     /// Run the document's keystroke, validate, calculate and format scripts
     /// (needs the actions plugin with scripting on).
     Scripts,
-    /// Write values straight to the engine.
+    /// Accept every value.
     None,
 }
 
+/// What the app registers over the defaults (`FormConfig`).
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct FormConfig {
     /// `None` is `Scripts`.
@@ -68,56 +134,41 @@ pub struct FormConfig {
     pub validation: Option<FormValidation>,
 }
 
-impl From<FormConfig> for crate::FormConfig {
+impl From<FormConfig> for Option<Value> {
     fn from(c: FormConfig) -> Self {
-        crate::FormConfig {
-            validation: c.validation.map(|v| match v {
-                FormValidation::Scripts => crate::Validation::Scripts,
-                FormValidation::None => crate::Validation::None,
-            }),
-            ..Default::default()
-        }
+        let validation = c.validation?;
+        Some(json!({ "validation": match validation {
+            FormValidation::Scripts => "scripts",
+            FormValidation::None => "none",
+        } }))
     }
 }
 
-// ── the snapshot ─────────────────────────────────────────────────────────────
+// ── fields ───────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, uniffi::Enum)]
 #[serde(rename_all = "camelCase")]
 pub enum FormKind {
-    /// No `/AcroForm`. Recovered fields may still exist.
     None,
     Acroform,
-    /// An XFA form, served read-only. The XFA itself never runs.
     Xfa,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, uniffi::Record)]
-#[serde(rename_all = "camelCase")]
-pub struct FormFieldFlags {
-    pub read_only: bool,
-    pub required: bool,
-    pub no_export: bool,
-    /// The raw `/Ff` word.
-    pub raw: u32,
 }
 
 /// A checkbox or radio widget's state.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormToggleWidget {
-    /// The `/AP /N` key that turns this widget on: what `set_checked` takes.
     pub on_state: String,
-    /// What FDF and XFDF carry.
+    /// What the form data holds while it's checked: what `set_value` takes.
     pub export_value: String,
     pub checked: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormWidget {
-    /// `None` until the engine placed the widget.
+    /// `None` for a widget on no page, or stored as a direct object.
     pub annotation_ref: Option<AnnotationRef>,
-    pub annot_object_number: u32,
-    pub page: PageRef,
+    pub object_number: u32,
+    pub page: Option<PageRef>,
     pub toggle: Option<FormToggleWidget>,
 }
 
@@ -161,7 +212,9 @@ pub enum FormFieldDetail {
         options: Vec<FormChoiceOption>,
     },
     Pushbutton,
-    Signature,
+    Signature {
+        signed: bool,
+    },
     Unknown {
         raw_value: String,
     },
@@ -170,20 +223,25 @@ pub enum FormFieldDetail {
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormField {
     pub field_ref: FormFieldRef,
-    /// Zero for a field stored as a direct object.
-    pub field_object_number: u32,
     /// The fully qualified name, such as `billing.name`.
     pub name: String,
     pub family: FormFieldFamily,
     /// `true` when the field was found only through a page's `/Annots`.
     pub recovered: bool,
-    pub flags: FormFieldFlags,
+    pub read_only: bool,
+    pub required: bool,
+    pub no_export: bool,
     /// `/TU`, the tooltip and accessible name.
     pub alternate_name: Option<String>,
     /// `/TM`, the export name.
     pub mapping_name: Option<String>,
+    /// Who fills it in: its group, or `None` for every user.
+    pub group_id: Option<String>,
     pub detail: FormFieldDetail,
     pub widgets: Vec<FormWidget>,
+    /// The engine's field record, whole, as JSON: attribution, the value
+    /// entries and the actions this record doesn't type.
+    pub fields_json: String,
 }
 
 #[derive(Deserialize)]
@@ -191,8 +249,9 @@ pub struct FormField {
 struct WidgetDto {
     #[serde(rename = "ref", default)]
     annotation_ref: Value,
-    annot_object_number: f64,
-    page: epdf_annotation_core::PageRef,
+    object_number: f64,
+    #[serde(default)]
+    page: Value,
     #[serde(default)]
     on_state: Option<String>,
     #[serde(default)]
@@ -206,21 +265,26 @@ struct WidgetDto {
 struct FieldDto {
     #[serde(rename = "ref")]
     field_ref: Value,
-    field_object_number: u32,
     name: String,
     family: String,
     origin: String,
-    flags: FormFieldFlags,
+    read_only: bool,
+    required: bool,
+    no_export: bool,
     #[serde(default)]
     alternate_name: Option<String>,
     #[serde(default)]
     mapping_name: Option<String>,
     #[serde(default)]
+    group_id: Option<String>,
+    #[serde(default)]
+    value_entry: Value,
+    #[serde(default)]
     widgets: Vec<WidgetDto>,
     #[serde(default)]
     value: Value,
     #[serde(default)]
-    default_value: Option<String>,
+    default_value: Value,
     #[serde(default)]
     max_length: Option<i64>,
     #[serde(default)]
@@ -257,7 +321,7 @@ impl FormField {
         let detail = match family {
             FormFieldFamily::Text => FormFieldDetail::Text {
                 value: text(&dto.value),
-                default_value: dto.default_value.clone().unwrap_or_default(),
+                default_value: text(&dto.default_value),
                 max_length: dto.max_length.and_then(|n| u32::try_from(n).ok()),
                 multiline: dto.multiline,
                 password: dto.password,
@@ -274,7 +338,7 @@ impl FormField {
             },
             FormFieldFamily::Combobox => FormFieldDetail::Combobox {
                 value: text(&dto.value),
-                default_value: dto.default_value.clone().unwrap_or_default(),
+                default_value: text(&dto.default_value),
                 edit: dto.edit,
                 options: dto.options.clone(),
             },
@@ -284,7 +348,9 @@ impl FormField {
                 options: dto.options.clone(),
             },
             FormFieldFamily::Pushbutton => FormFieldDetail::Pushbutton,
-            FormFieldFamily::Signature => FormFieldDetail::Signature,
+            FormFieldFamily::Signature => FormFieldDetail::Signature {
+                signed: dto.value_entry.get("kind").and_then(Value::as_str) != Some("none"),
+            },
             FormFieldFamily::Unknown => {
                 FormFieldDetail::Unknown { raw_value: dto.raw_value.clone().unwrap_or_default() }
             }
@@ -299,40 +365,51 @@ impl FormField {
                     checked: w.checked.unwrap_or(false),
                 });
                 Ok(FormWidget {
-                    annotation_ref: annotation_ref(&w.annotation_ref)?,
-                    annot_object_number: w.annot_object_number as u32,
-                    page: w.page.into(),
+                    annotation_ref: annotation_ref_of(&w.annotation_ref)?,
+                    object_number: w.object_number as u32,
+                    page: if w.page.is_null() { None } else { Some(page_of(&w.page)?) },
                     toggle,
                 })
             })
             .collect::<Result<_, Error>>()?;
         Ok(FormField {
-            field_ref: FormFieldRef::from_json(&dto.field_ref)?,
-            field_object_number: dto.field_object_number,
+            field_ref: field_ref_of(&dto.field_ref)?,
             name: dto.name,
             family,
             recovered: dto.origin == "recovered",
-            flags: dto.flags,
+            read_only: dto.read_only,
+            required: dto.required,
+            no_export: dto.no_export,
             alternate_name: dto.alternate_name,
             mapping_name: dto.mapping_name,
+            group_id: dto.group_id,
             detail,
             widgets,
+            fields_json: value.to_string(),
         })
     }
 }
 
-fn fields_out(list: Vec<Value>) -> Result<Vec<FormField>, Error> {
+fn fields_out(list: &[Value]) -> Result<Vec<FormField>, Error> {
     list.iter().map(FormField::from_json).collect()
+}
+
+fn optional_field(value: Option<&Value>) -> Result<Option<FormField>, Error> {
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(v) => FormField::from_json(v).map(Some),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormSnapshot {
     pub form_kind: FormKind,
-    /// `/NeedAppearances`: the viewer should draw the widgets itself.
     pub needs_appearances: bool,
     pub fields: Vec<FormField>,
     /// `/CO`. `None` keeps a slot naming a field the model lacks.
     pub calculation_order: Vec<Option<FormFieldRef>>,
+    /// Every widget's row, as JSON (`WidgetAnnotation[]`).
+    pub widgets_json: String,
 }
 
 impl FormSnapshot {
@@ -344,63 +421,84 @@ impl FormSnapshot {
             needs_appearances: bool,
             fields: Vec<Value>,
             #[serde(default)]
+            widgets: Vec<Value>,
+            #[serde(default)]
             calculation_order: Vec<Value>,
         }
         let dto: Dto = decode(value.clone())?;
         Ok(FormSnapshot {
             form_kind: dto.form_kind,
             needs_appearances: dto.needs_appearances,
-            fields: fields_out(dto.fields)?,
+            fields: fields_out(&dto.fields)?,
             calculation_order: dto
                 .calculation_order
                 .iter()
-                .map(|r| if r.is_null() { Ok(None) } else { FormFieldRef::from_json(r).map(Some) })
+                .map(|r| if r.is_null() { Ok(None) } else { field_ref_of(r).map(Some) })
                 .collect::<Result<_, Error>>()?,
+            widgets_json: Value::Array(dto.widgets).to_string(),
         })
     }
 }
 
 // ── values ───────────────────────────────────────────────────────────────────
 
-/// A value in the shape each family stores. A shape that does not fit the
-/// field is refused, not coerced.
+/// A value to write (`FormFieldValue`): a text field's text, a radio
+/// group's, checkbox's or dropdown's choice by export value (`None` clears
+/// it); a checkbox by `Checked`; a list's option values.
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum FormValueInput {
-    Text {
-        value: String,
-    },
-    /// The `/AP /N` key to turn on, or `None` to clear the group.
-    Toggle {
-        state: Option<String>,
-    },
-    Choice {
-        values: Vec<String>,
-    },
+    Value { value: Option<String> },
+    Checked { checked: bool },
+    SelectedValues { values: Vec<String> },
 }
 
 impl FormValueInput {
     fn to_json(&self) -> Value {
         match self {
-            FormValueInput::Text { value } => json!({ "type": "text", "value": value }),
-            FormValueInput::Toggle { state } => json!({ "type": "toggle", "state": state }),
-            FormValueInput::Choice { values } => json!({ "type": "choice", "values": values }),
+            FormValueInput::Value { value } => json!({ "value": value }),
+            FormValueInput::Checked { checked } => json!({ "checked": checked }),
+            FormValueInput::SelectedValues { values } => json!({ "selectedValues": values }),
         }
     }
 
     fn from_json(value: &Value) -> Result<Self, Error> {
-        #[derive(Deserialize)]
-        #[serde(tag = "type", rename_all = "camelCase")]
-        enum Dto {
-            Text { value: String },
-            Toggle { state: Option<String> },
-            Choice { values: Vec<String> },
+        if let Some(checked) = value.get("checked") {
+            return Ok(FormValueInput::Checked { checked: checked.as_bool().unwrap_or(false) });
         }
-        Ok(match decode::<Dto>(value.clone())? {
-            Dto::Text { value } => FormValueInput::Text { value },
-            Dto::Toggle { state } => FormValueInput::Toggle { state },
-            Dto::Choice { values } => FormValueInput::Choice { values },
+        if let Some(values) = value.get("selectedValues") {
+            return Ok(FormValueInput::SelectedValues { values: decode(values.clone())? });
+        }
+        Ok(FormValueInput::Value {
+            value: value.get("value").and_then(Value::as_str).map(str::to_string),
         })
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum FormSetValueStatus {
+    Applied,
+    Unchanged,
+    /// The form's own validation refused the value.
+    Rejected,
+}
+
+/// What `set_value` resolves: the field as it is now, and what the write did.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct FormSetValueResult {
+    pub field: FormField,
+    pub status: FormSetValueStatus,
+}
+
+fn set_value_result(value: &Value) -> Result<FormSetValueResult, ViewerError> {
+    let status = match value.get("status").and_then(Value::as_str) {
+        Some("applied") => FormSetValueStatus::Applied,
+        Some("rejected") => FormSetValueStatus::Rejected,
+        _ => FormSetValueStatus::Unchanged,
+    };
+    Ok(FormSetValueResult {
+        field: FormField::from_json(value.get("field").unwrap_or(&Value::Null))?,
+        status,
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
@@ -422,16 +520,12 @@ impl From<crate::FormCommitStatus> for FormCommitStatus {
     }
 }
 
-/// What a value write did. A script that refused the value is `Rejected`
-/// with its diagnostics, not an error.
+/// A write through the document's scripts.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormCommitResult {
     pub status: FormCommitStatus,
-    /// Whether the K/V/C/F scripts ran.
     pub scripted: bool,
-    /// The scripts' messages (`app.alert`, validation failures), in order.
     pub diagnostics: Vec<String>,
-    /// The script error that ended the transaction, if one did.
     pub error: Option<String>,
 }
 
@@ -455,58 +549,52 @@ pub struct FormBatchFailure {
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct FormBatchSkip {
+    pub name: String,
+    pub reason: String,
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormBatchResult {
     pub applied: Vec<FormFieldRef>,
-    pub skipped: Vec<FormFieldRef>,
+    pub skipped: Vec<FormBatchSkip>,
     pub failed: Vec<FormBatchFailure>,
 }
 
-impl TryFrom<crate::BatchResult> for FormBatchResult {
-    type Error = Error;
-
-    fn try_from(b: crate::BatchResult) -> Result<Self, Error> {
-        let refs = |list: &[Value]| {
-            list.iter().map(FormFieldRef::from_json).collect::<Result<Vec<_>, Error>>()
-        };
-        Ok(FormBatchResult {
-            applied: refs(&b.applied)?,
-            skipped: refs(&b.skipped)?,
-            failed: b
-                .failed
-                .into_iter()
-                .map(|f| {
-                    let error: PluginErrorInfo = PluginErrorInfo {
-                        code: f
-                            .error
-                            .get("code")
+fn batch_result(value: &Value) -> Result<FormBatchResult, ViewerError> {
+    let list = |key: &str| value.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
+    let text =
+        |v: &Value, key: &str| v.get(key).and_then(Value::as_str).unwrap_or_default().to_string();
+    Ok(FormBatchResult {
+        applied: list("applied").iter().map(field_ref_of).collect::<Result<_, Error>>()?,
+        skipped: list("skipped")
+            .iter()
+            .map(|s| FormBatchSkip { name: text(s, "ref"), reason: text(s, "reason") })
+            .collect(),
+        failed: list("failed")
+            .iter()
+            .map(|f| {
+                let entry = f.get("ref").unwrap_or(&Value::Null);
+                let error = f.get("error").unwrap_or(&Value::Null);
+                FormBatchFailure {
+                    field_ref: field_ref_of(entry).ok(),
+                    name: entry.as_str().map(str::to_string),
+                    error: PluginErrorInfo {
+                        code: text(error, "code"),
+                        message: text(error, "message"),
+                        capability: text(error, "capability"),
+                        permission: error
+                            .get("permission")
                             .and_then(Value::as_str)
-                            .unwrap_or("unknown")
-                            .into(),
-                        message: f
-                            .error
-                            .get("message")
-                            .and_then(Value::as_str)
-                            .unwrap_or_default()
-                            .into(),
-                        capability: f
-                            .error
-                            .get("capability")
-                            .and_then(Value::as_str)
-                            .unwrap_or("form")
-                            .into(),
-                    };
-                    FormBatchFailure {
-                        field_ref: FormFieldRef::from_json(&f.entry).ok(),
-                        name: f.entry.as_str().map(str::to_string),
-                        error,
-                    }
-                })
-                .collect(),
-        })
-    }
+                            .map(str::to_string),
+                    },
+                }
+            })
+            .collect(),
+    })
 }
 
-// ── fill projection ──────────────────────────────────────────────────────────
+// ── the fill projection ──────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum FormFillControl {
@@ -520,7 +608,7 @@ pub enum FormFillControl {
     Toggle {
         radio: bool,
         checked: bool,
-        on_state: String,
+        export_value: String,
     },
     Choice {
         list: bool,
@@ -535,7 +623,7 @@ pub enum FormFillControl {
     },
 }
 
-/// One widget's fill control: what a native form overlay draws on a page.
+/// One widget as a fill control draws it (`FormWidgetItem`).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormFillItem {
     pub field_ref: FormFieldRef,
@@ -543,67 +631,52 @@ pub struct FormFillItem {
     pub annotation_ref: Option<AnnotationRef>,
     /// Page space.
     pub bounds: Rect,
-    /// Read-only field, or a write in flight: draw it, don't accept input.
+    /// The widget's own look (`FormWidgetLook`), as JSON.
+    pub look_json: String,
+    /// Read-only, no permission to fill, or filling turned off: draw it,
+    /// don't take input.
     pub disabled: bool,
-    /// `/TU`, else the fully qualified name.
     pub label: String,
     pub control: FormFillControl,
 }
 
-impl TryFrom<&crate::FillItem> for FormFillItem {
-    type Error = Error;
-
-    fn try_from(item: &crate::FillItem) -> Result<Self, Error> {
-        let flag = |v: &Value| v.as_bool().unwrap_or(false);
-        let string = |v: &Value| v.as_str().unwrap_or_default().to_string();
-        let control = match &item.control {
-            crate::FillControl::Text { value, multiline, password, max_length, comb } => {
-                FormFillControl::Text {
-                    value: string(value),
-                    multiline: flag(multiline),
-                    password: flag(password),
-                    max_length: max_length.as_u64().and_then(|n| u32::try_from(n).ok()),
-                    comb: flag(comb),
-                }
-            }
-            crate::FillControl::Toggle { kind, checked, on_state } => FormFillControl::Toggle {
-                radio: *kind == crate::ToggleKind::Radio,
-                checked: flag(checked),
-                on_state: string(on_state),
-            },
-            crate::FillControl::Choice { kind, edit, multi, options, selected } => {
-                FormFillControl::Choice {
-                    list: *kind == crate::ChoiceKind::List,
-                    edit: flag(edit),
-                    multi: flag(multi),
-                    options: decode(options.clone())?,
-                    selected: match selected {
-                        Value::Array(_) => decode(selected.clone())?,
-                        Value::String(s) => vec![s.clone()],
-                        _ => Vec::new(),
-                    },
-                }
-            }
-            crate::FillControl::Button => FormFillControl::Button,
-            crate::FillControl::Signature { signed, .. } => {
-                FormFillControl::Signature { signed: *signed }
-            }
-        };
-        Ok(FormFillItem {
-            field_ref: FormFieldRef::from_json(&item.field_ref)?,
-            annot_object_number: item.annot_object_number as u32,
-            annotation_ref: annotation_ref(&item.annotation_ref)?,
-            bounds: Rect {
-                x: item.bx.x,
-                y: item.bx.y,
-                width: item.bx.width,
-                height: item.bx.height,
-            },
-            disabled: item.disabled,
-            label: string(&item.label),
-            control,
-        })
-    }
+fn fill_item(item: &Value) -> Result<FormFillItem, Error> {
+    let flag = |k: &str| item.get(k).and_then(Value::as_bool).unwrap_or(false);
+    let text = |k: &str| item.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+    let control = match item.get("control").and_then(Value::as_str) {
+        Some("text") => FormFillControl::Text {
+            value: text("value"),
+            multiline: flag("multiline"),
+            password: flag("password"),
+            max_length: whole(item.get("maxLength")),
+            comb: flag("comb"),
+        },
+        Some("toggle") => FormFillControl::Toggle {
+            radio: item.get("kind").and_then(Value::as_str) == Some("radio"),
+            checked: flag("checked"),
+            export_value: text("exportValue"),
+        },
+        Some("choice") => FormFillControl::Choice {
+            list: item.get("kind").and_then(Value::as_str) == Some("list"),
+            edit: flag("edit"),
+            multi: flag("multi"),
+            options: decode(item.get("options").cloned().unwrap_or(json!([])))?,
+            selected: decode(item.get("selected").cloned().unwrap_or(json!([])))?,
+        },
+        Some("button") => FormFillControl::Button,
+        Some("signature") => FormFillControl::Signature { signed: flag("signed") },
+        other => return Err(invalid_state(format!("[form] a fill control {other:?}"))),
+    };
+    Ok(FormFillItem {
+        field_ref: field_ref_of(item.get("fieldRef").unwrap_or(&Value::Null))?,
+        annot_object_number: whole(item.get("annotObjectNumber")).unwrap_or(0),
+        annotation_ref: annotation_ref_of(item.get("annotationRef").unwrap_or(&Value::Null))?,
+        bounds: rect_of(item.get("box").unwrap_or(&Value::Null)),
+        look_json: item.get("look").cloned().unwrap_or(Value::Null).to_string(),
+        disabled: flag("disabled"),
+        label: text("label"),
+        control,
+    })
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -611,6 +684,13 @@ pub struct FormWidgetHit {
     pub annot_object_number: u32,
     pub field: FormField,
     pub bounds: Rect,
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct FormValidationResult {
+    pub valid: bool,
+    /// The required fields you may fill in that are empty, in page order.
+    pub missing: Vec<FormField>,
 }
 
 // ── design ───────────────────────────────────────────────────────────────────
@@ -621,50 +701,84 @@ pub struct FormChoiceOptionInput {
     pub value: String,
 }
 
-/// A new field and its one widget. `family` is one the engine can create:
-/// text, checkbox, radio, combobox or listbox.
+/// A new field with one widget (`FormFieldDraft`); `draft_json` is the
+/// engine's whole draft when the typed members don't say enough.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormCreateFieldInput {
     pub family: FormFieldFamily,
+    /// A fully qualified name, such as `billing.name`.
+    pub name: String,
     pub page: PageRef,
     /// The widget's page-space box.
     pub bounds: Rect,
-    /// A fully qualified name; numbered from the family when `None`.
-    #[uniffi(default = None)]
-    pub name: Option<String>,
     #[uniffi(default = None)]
     pub options: Option<Vec<FormChoiceOptionInput>>,
+    /// A radio button's or checkbox's export value.
+    #[uniffi(default = None)]
+    pub export_value: Option<String>,
 }
 
-impl From<FormCreateFieldInput> for crate::CreateFieldInput {
-    fn from(i: FormCreateFieldInput) -> Self {
-        crate::CreateFieldInput {
-            family: i.family.as_str().into(),
-            page: i.page.into(),
-            bounds: crate::Box {
-                x: i.bounds.x,
-                y: i.bounds.y,
-                width: i.bounds.width,
-                height: i.bounds.height,
-            },
-            name: i.name,
-            appearance: None,
-            options: i.options.map(|o| {
-                o.into_iter().map(|o| json!({ "label": o.label, "value": o.value })).collect()
-            }),
+impl FormCreateFieldInput {
+    fn to_json(&self) -> Value {
+        let mut widget = Map::new();
+        widget.insert("page".into(), page_json(self.page));
+        widget.insert("rect".into(), rect_json(self.bounds));
+        if let Some(export_value) = &self.export_value {
+            widget.insert("exportValue".into(), json!(export_value));
         }
+        let mut draft = Map::new();
+        draft.insert("family".into(), json!(self.family.as_str()));
+        draft.insert("name".into(), json!(self.name));
+        draft.insert("widgets".into(), json!([widget]));
+        if let Some(options) = &self.options {
+            let options: Vec<Value> =
+                options.iter().map(|o| json!({ "label": o.label, "value": o.value })).collect();
+            draft.insert("options".into(), Value::Array(options));
+        }
+        Value::Object(draft)
     }
 }
 
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct FormCreatedField {
-    pub field: FormField,
-    pub widget: Option<FormWidget>,
+/// Where a field's new widget goes (`Partial<WidgetPlacement>`): without a
+/// box, next in line after the field's widgets.
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
+pub struct FormWidgetPlacement {
+    #[uniffi(default = None)]
+    pub page: Option<PageRef>,
+    #[uniffi(default = None)]
+    pub bounds: Option<Rect>,
+    #[uniffi(default = None)]
+    pub export_value: Option<String>,
 }
 
-/// A field edit. `None` leaves a member alone; a key in `clear` removes it.
+impl FormWidgetPlacement {
+    fn to_json(&self) -> Value {
+        let mut placement = Map::new();
+        if let Some(page) = self.page {
+            placement.insert("page".into(), page_json(page));
+        }
+        if let Some(bounds) = self.bounds {
+            placement.insert("rect".into(), rect_json(bounds));
+        }
+        if let Some(export_value) = &self.export_value {
+            placement.insert("exportValue".into(), json!(export_value));
+        }
+        Value::Object(placement)
+    }
+}
+
+/// What `add_widget` resolves: the field, and its new widget's row as JSON.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct FormWidgetAdded {
+    pub field: FormField,
+    pub widget_json: String,
+}
+
+/// A field edit (`FormFieldPatch`). `None` leaves a member alone; a key in
+/// `clear` removes it.
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct FormFieldPatch {
+    /// The field's own segment of its dotted name.
     #[uniffi(default = None)]
     pub name: Option<String>,
     #[uniffi(default = None)]
@@ -696,11 +810,8 @@ pub enum FormFieldPatchKey {
 }
 
 impl FormFieldPatch {
-    /// The engine's `FormFieldPatch`: flags at the top level, a cleared
-    /// member as `null`. `family` is the field's, which the engine checks.
-    fn to_json(&self, family: FormFieldFamily) -> Result<Value, Error> {
+    fn to_json(&self) -> Result<Value, Error> {
         let mut patch = Map::new();
-        patch.insert("family".into(), family.as_str().into());
         let set: [(&str, Option<Value>); 9] = [
             ("name", self.name.clone().map(Value::from)),
             ("readOnly", self.read_only.map(Value::from)),
@@ -745,35 +856,21 @@ impl FormFieldPatch {
     }
 }
 
-// ── interchange ──────────────────────────────────────────────────────────────
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
-pub enum FormDataFormat {
-    Fdf,
-    Xfdf,
-}
-
-impl FormDataFormat {
-    fn as_str(self) -> &'static str {
-        match self {
-            FormDataFormat::Fdf => "fdf",
-            FormDataFormat::Xfdf => "xfdf",
-        }
-    }
-}
-
+/// What `import` did (`FormImportResult`).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct FormDataExport {
-    /// The format the engine wrote, which names the file extension.
-    pub format: FormDataFormat,
-    pub bytes: Vec<u8>,
+pub struct FormImportResult {
+    pub fields: Vec<FormField>,
+    /// Each imported field's ref in the bundle and here, as JSON.
+    pub ref_map_json: String,
+    /// What was left out, and why, as JSON.
+    pub dropped_json: String,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum FormActivationResult {
-    /// The form plugin handled it: a toggle flipped, a value committed.
+    /// The form's own scripts ran.
     Form { result: FormCommitResult },
-    /// An action ran instead (a pushbutton's `/A`).
+    /// The widget's action ran.
     Dispatched,
 }
 
@@ -782,41 +879,34 @@ pub enum FormActivationResult {
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum FormEvent {
     ValueChanged {
-        field_ref: FormFieldRef,
-        field: Option<FormField>,
+        field: FormField,
+        origin_json: String,
     },
     FieldCreated {
-        field_ref: FormFieldRef,
-        field: Option<FormField>,
+        field: FormField,
+        origin_json: String,
     },
     FieldUpdated {
-        field_ref: FormFieldRef,
-        field: Option<FormField>,
+        field: FormField,
+        origin_json: String,
     },
     FieldDeleted {
         field_ref: FormFieldRef,
+        origin_json: String,
     },
     ValidationRejected {
-        field_ref: FormFieldRef,
+        field: FormField,
         messages: Vec<String>,
     },
-    /// The snapshot was re-read; every field may have changed.
+    /// The whole form was read.
     Resynced,
 }
 
 #[uniffi::export(with_foreign)]
 pub trait FormEventListener: Send + Sync {
     fn on_event(&self, event: FormEvent);
-    /// The document closed: no event follows. Called once, and at once for
-    /// a subscription made after the close.
+    /// The document closed: no event follows.
     fn on_end(&self);
-}
-
-fn optional_field(value: Option<&Value>) -> Result<Option<FormField>, Error> {
-    match value {
-        None | Some(Value::Null) => Ok(None),
-        Some(v) => FormField::from_json(v).map(Some),
-    }
 }
 
 // ── the handle ───────────────────────────────────────────────────────────────
@@ -834,13 +924,13 @@ impl FormHandle {
     }
 }
 
-fn commit(result: crate::FormCommitResult) -> FormCommitResult {
-    result.into()
+fn field_result(value: &Value) -> Result<FormField, ViewerError> {
+    Ok(FormField::from_json(value.get("field").unwrap_or(&Value::Null))?)
 }
 
 #[uniffi::export]
 impl FormHandle {
-    /// `None` until the field tree is in, or while reading is forbidden.
+    /// `None` until the form is read, or while reading is forbidden.
     pub async fn snapshot(&self) -> Result<Option<FormSnapshot>, ViewerError> {
         self.cap
             .call(|c| open(c)?.get_snapshot().map(|s| FormSnapshot::from_json(&s)).transpose())
@@ -850,24 +940,25 @@ impl FormHandle {
     pub async fn status(&self) -> Result<ResourceStatus, ViewerError> {
         self.cap
             .call(|c| {
+                use epdf_kernel::mirror::ResourceStatus as Kernel;
                 Ok(match open(c)?.get_status() {
-                    crate::ResourceStatus::Idle => ResourceStatus::Idle,
-                    crate::ResourceStatus::Loading => ResourceStatus::Loading,
-                    crate::ResourceStatus::Ready => ResourceStatus::Ready,
-                    crate::ResourceStatus::Forbidden => ResourceStatus::Forbidden,
-                    crate::ResourceStatus::Error => ResourceStatus::Error,
+                    Kernel::Idle => ResourceStatus::Idle,
+                    Kernel::Loading => ResourceStatus::Loading,
+                    Kernel::Ready => ResourceStatus::Ready,
+                    Kernel::Forbidden => ResourceStatus::Forbidden,
+                    Kernel::Error => ResourceStatus::Error,
                 })
             })
             .await
     }
 
     pub async fn refresh(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
-        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.refresh()), |()| ()).await
+        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.refresh(None)), |()| ()).await
     }
 
     pub async fn field(&self, field_ref: FormFieldRef) -> Result<Option<FormField>, ViewerError> {
         self.cap
-            .call(move |c| optional_field(open(c)?.get_field(&field_ref.to_json()).as_ref()))
+            .call(move |c| optional_field(open(c)?.get(&field_ref_json(&field_ref)).as_deref()))
             .await
     }
 
@@ -877,10 +968,9 @@ impl FormHandle {
     ) -> Result<Option<FormField>, ViewerError> {
         self.cap
             .call(move |c| {
-                let widget =
-                    serde_json::to_value(epdf_annotation_core::AnnotationRef::from(widget))
-                        .expect("a ref");
-                optional_field(open(c)?.get_field_for_widget(&widget).as_ref())
+                optional_field(
+                    open(c)?.get_field_for_widget(&annotation_ref_json(&widget)).as_deref(),
+                )
             })
             .await
     }
@@ -888,8 +978,8 @@ impl FormHandle {
     pub async fn fields(&self, filter: Option<FormFilter>) -> Result<Vec<FormField>, ViewerError> {
         self.cap
             .call(move |c| {
-                let filter = filter.map(crate::FormFilter::from);
-                fields_out(open(c)?.list_fields(filter.as_ref()))
+                let filter = filter.map(|f| f.to_json());
+                open(c)?.list(filter.as_ref()).iter().map(|f| FormField::from_json(f)).collect()
             })
             .await
     }
@@ -901,56 +991,57 @@ impl FormHandle {
         self.cap
             .call(move |c| {
                 open(c)?
-                    .get_value(&field_ref.to_json())
-                    .as_ref()
+                    .get_value(&field_ref_json(&field_ref))
+                    .as_deref()
                     .map(FormValueInput::from_json)
                     .transpose()
             })
             .await
     }
 
-    pub async fn fill_items(&self, page: PageRef) -> Result<Vec<FormFillItem>, ViewerError> {
+    /// Every value by full name, as plain data, JSON.
+    pub async fn export_values(&self) -> Result<String, ViewerError> {
+        self.cap.call(|c| Ok(open(c)?.export_values().to_string())).await
+    }
+
+    pub async fn validate(&self) -> Result<FormValidationResult, ViewerError> {
         self.cap
-            .call(move |c| {
-                open(c)?.list_fill_items(page.into()).iter().map(FormFillItem::try_from).collect()
+            .call(|c| {
+                let result = open(c)?.validate();
+                Ok(FormValidationResult {
+                    valid: result.valid,
+                    missing: result
+                        .missing
+                        .iter()
+                        .map(|f| FormField::from_json(f))
+                        .collect::<Result<_, Error>>()?,
+                })
             })
             .await
     }
 
-    pub async fn fill_item(
-        &self,
-        annot_object_number: u32,
-    ) -> Result<Option<FormFillItem>, ViewerError> {
-        self.cap
-            .call(move |c| {
-                open(c)?
-                    .get_fill_item(f64::from(annot_object_number))
-                    .map(|i| FormFillItem::try_from(&*i))
-                    .transpose()
-            })
-            .await
-    }
-
-    /// The same projection as `fill_items`, under the TypeScript's other name.
+    /// Each widget on a page, as a fill control draws it.
     pub async fn widgets(&self, page: PageRef) -> Result<Vec<FormFillItem>, ViewerError> {
         self.cap
-            .call(move |c| {
-                open(c)?.list_widgets(page.into()).iter().map(FormFillItem::try_from).collect()
-            })
+            .call(move |c| open(c)?.list_widgets(&page_json(page)).iter().map(fill_item).collect())
             .await
     }
 
-    /// Start loading a page's widget geometry. Returns before it lands.
-    pub async fn ensure_loaded(&self, page: PageRef) -> Result<(), ViewerError> {
+    /// Every page's widgets come with the form: resolves once it is read.
+    pub async fn ensure_loaded(
+        &self,
+        page: PageRef,
+        cancel: Arc<CancelToken>,
+    ) -> Result<(), ViewerError> {
         self.cap
-            .call(move |c| {
-                open(c)?.ensure_loaded(page.into());
-                Ok(())
-            })
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.ensure_loaded(&page_json(page))),
+                |()| (),
+            )
             .await
     }
 
-    /// The widget under a page-space point.
     pub async fn widget_at(
         &self,
         page: PageRef,
@@ -960,17 +1051,12 @@ impl FormHandle {
         self.cap
             .call(move |c| {
                 open(c)?
-                    .get_widget_at(page.into(), x, y)
+                    .get_widget_at(&page_json(page), x, y)
                     .map(|hit| {
                         Ok(FormWidgetHit {
                             annot_object_number: hit.annot_object_number as u32,
                             field: FormField::from_json(&hit.field)?,
-                            bounds: Rect {
-                                x: hit.bx.x,
-                                y: hit.bx.y,
-                                width: hit.bx.width,
-                                height: hit.bx.height,
-                            },
+                            bounds: rect_of(&hit.bx),
                         })
                     })
                     .transpose()
@@ -979,7 +1065,16 @@ impl FormHandle {
     }
 
     pub async fn page_box(&self, page: PageRef) -> Result<Option<Rect>, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_page_box(page.into()).map(Into::into))).await
+        self.cap
+            .call(move |c| {
+                Ok(open(c)?.get_page_box(&page_json(page)).map(|b| Rect {
+                    x: b.x,
+                    y: b.y,
+                    width: b.width,
+                    height: b.height,
+                }))
+            })
+            .await
     }
 
     pub async fn set_value(
@@ -987,72 +1082,14 @@ impl FormHandle {
         field_ref: FormFieldRef,
         value: FormValueInput,
         cancel: Arc<CancelToken>,
-    ) -> Result<FormCommitResult, ViewerError> {
+    ) -> Result<FormSetValueResult, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.set_value(field_ref.to_json(), value.to_json())),
-                commit,
+                move |c| Ok(open(c)?.set_value(field_ref_json(&field_ref), value.to_json(), None)),
+                |result| set_value_result(&result),
             )
-            .await
-    }
-
-    pub async fn set_text(
-        &self,
-        field_ref: FormFieldRef,
-        text: String,
-        cancel: Arc<CancelToken>,
-    ) -> Result<FormCommitResult, ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.set_text(field_ref.to_json(), text.into())),
-                commit,
-            )
-            .await
-    }
-
-    /// A checkbox or radio by its on-state (`FormToggleWidget.on_state`);
-    /// `None` clears the group.
-    pub async fn set_checked(
-        &self,
-        field_ref: FormFieldRef,
-        on_state: Option<String>,
-        cancel: Arc<CancelToken>,
-    ) -> Result<FormCommitResult, ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| {
-                    Ok(open(c)?.set_checked(
-                        field_ref.to_json(),
-                        on_state.map_or(Value::Null, Value::from),
-                    ))
-                },
-                commit,
-            )
-            .await
-    }
-
-    /// Choice options by export value.
-    pub async fn set_choice(
-        &self,
-        field_ref: FormFieldRef,
-        values: Vec<String>,
-        cancel: Arc<CancelToken>,
-    ) -> Result<FormCommitResult, ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| {
-                    Ok(open(c)?.set_choice(
-                        field_ref.to_json(),
-                        values.into_iter().map(Value::from).collect(),
-                    ))
-                },
-                commit,
-            )
-            .await
+            .await?
     }
 
     pub async fn set_values(
@@ -1064,122 +1101,117 @@ impl FormHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    Ok(open(c)?.set_values(
-                        entries
-                            .into_iter()
-                            .map(|e| (e.field_ref.to_json(), e.value.to_json()))
-                            .collect(),
-                    ))
+                    let entries = entries
+                        .iter()
+                        .map(|e| (field_ref_json(&e.field_ref), e.value.to_json()))
+                        .collect();
+                    Ok(open(c)?.set_values(entries, None))
                 },
-                |b| FormBatchResult::try_from(b).map_err(ViewerError::from),
+                |result| batch_result(&result),
             )
             .await?
     }
 
-    /// Values by fully qualified name, as an FDF would carry them.
+    /// Plain values by full name (`exportValues()`' JSON).
     pub async fn import_values(
         &self,
-        values: std::collections::HashMap<String, FormValueInput>,
+        values_json: String,
         cancel: Arc<CancelToken>,
     ) -> Result<FormBatchResult, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    Ok(open(c)?
-                        .import_values(values.into_iter().map(|(k, v)| (k, v.to_json())).collect()))
+                    let values: Value = decode(
+                        serde_json::from_str(&values_json)
+                            .map_err(|e| invalid_state(e.to_string()))?,
+                    )?;
+                    Ok(open(c)?.import_values(values, None))
                 },
-                |b| FormBatchResult::try_from(b).map_err(ViewerError::from),
+                |result| batch_result(&result),
             )
             .await?
     }
 
+    /// Each field's default, for the fields given, or every field you may
+    /// fill in. Resolves the fields it changed.
     pub async fn reset(
         &self,
-        field_ref: FormFieldRef,
-        cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.reset(field_ref.to_json())),
-                |()| (),
-            )
-            .await
-    }
-
-    /// Reset every field, or only `fields` (every other field with `exclude`).
-    pub async fn reset_all(
-        &self,
         fields: Option<Vec<FormFieldRef>>,
-        exclude: bool,
         cancel: Arc<CancelToken>,
-    ) -> Result<FormBatchResult, ViewerError> {
+    ) -> Result<Vec<FormField>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let options = crate::ResetAllOptions {
-                        fields: fields.map(|f| f.iter().map(FormFieldRef::to_json).collect()),
-                        exclude: Some(exclude),
-                    };
-                    Ok(open(c)?.reset_all(options))
+                    Ok(open(c)?.reset(fields.map(|f| f.iter().map(field_ref_json).collect()), None))
                 },
-                |b| FormBatchResult::try_from(b).map_err(ViewerError::from),
+                |result| {
+                    Ok::<_, ViewerError>(fields_out(
+                        result.get("fields").and_then(Value::as_array).map_or(&[], Vec::as_slice),
+                    )?)
+                },
             )
             .await?
     }
 
-    pub async fn create_field(
+    pub async fn create(
         &self,
         input: FormCreateFieldInput,
         cancel: Arc<CancelToken>,
-    ) -> Result<FormCreatedField, ViewerError> {
+    ) -> Result<FormField, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.create_field(input.into())),
-                |created| {
-                    let field = FormField::from_json(&created.field)?;
-                    let widget = created.widget.as_ref().and_then(|w| {
-                        field
-                            .widgets
-                            .iter()
-                            .find(|fw| {
-                                Some(fw.annot_object_number as u64)
-                                    == w.get("annotObjectNumber").and_then(Value::as_u64)
-                            })
+                move |c| Ok(open(c)?.create(input.to_json(), None)),
+                |result| field_result(&result),
+            )
+            .await?
+    }
+
+    /// The field in one more place (`addWidget`).
+    pub async fn add_widget(
+        &self,
+        field_ref: FormFieldRef,
+        placement: FormWidgetPlacement,
+        cancel: Arc<CancelToken>,
+    ) -> Result<FormWidgetAdded, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| {
+                    Ok(open(c)?.add_widget(field_ref_json(&field_ref), placement.to_json(), None))
+                },
+                |result| {
+                    Ok::<_, ViewerError>(FormWidgetAdded {
+                        field: field_result(&result)?,
+                        widget_json: result
+                            .get("widget")
                             .cloned()
-                    });
-                    Ok::<_, ViewerError>(FormCreatedField { field, widget })
+                            .unwrap_or(Value::Null)
+                            .to_string(),
+                    })
                 },
             )
             .await?
     }
 
-    pub async fn update_field(
+    pub async fn update(
         &self,
         field_ref: FormFieldRef,
         patch: FormFieldPatch,
         cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
+    ) -> Result<FormField, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let cap = open(c)?;
-                    let field = optional_field(cap.get_field(&field_ref.to_json()).as_ref())?
-                        .ok_or_else(|| {
-                            plugin_error(code::NOT_FOUND, "form", "no such field", None, None)
-                        })?;
-                    Ok(cap.update_field(field_ref.to_json(), patch.to_json(field.family)?))
-                },
-                |()| (),
+                move |c| Ok(open(c)?.update(field_ref_json(&field_ref), patch.to_json()?, None)),
+                |result| field_result(&result),
             )
-            .await
+            .await?
     }
 
-    pub async fn delete_field(
+    pub async fn delete(
         &self,
         field_ref: FormFieldRef,
         cancel: Arc<CancelToken>,
@@ -1187,127 +1219,116 @@ impl FormHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.delete_field(field_ref.to_json())),
-                |()| (),
+                move |c| Ok(open(c)?.delete(field_ref_json(&field_ref), None)),
+                |_| (),
             )
             .await
     }
 
-    pub async fn detach_widget(
+    /// One widget out of a field: it stays on its page, in no field.
+    pub async fn remove_widget(
         &self,
         field_ref: FormFieldRef,
         widget: AnnotationRef,
         cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
+    ) -> Result<FormField, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let widget =
-                        serde_json::to_value(epdf_annotation_core::AnnotationRef::from(widget))
-                            .expect("a ref");
-                    Ok(open(c)?.detach_widget(field_ref.to_json(), widget))
+                    Ok(open(c)?.remove_widget(
+                        field_ref_json(&field_ref),
+                        annotation_ref_json(&widget),
+                        None,
+                    ))
                 },
-                |()| (),
+                |result| field_result(&result),
             )
-            .await
+            .await?
     }
 
-    pub async fn attach_widget(
+    /// Fields out as a bundle (`FormBundle`), JSON: every field, or the
+    /// ones named.
+    pub async fn export(
         &self,
-        field_ref: FormFieldRef,
-        widget: AnnotationRef,
+        fields: Option<Vec<FormFieldRef>>,
         cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
+    ) -> Result<String, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let widget =
-                        serde_json::to_value(epdf_annotation_core::AnnotationRef::from(widget))
-                            .expect("a ref");
-                    Ok(open(c)?.attach_widget(field_ref.to_json(), widget))
+                    let selection = fields.map(
+                        |f| json!({ "fields": f.iter().map(field_ref_json).collect::<Vec<_>>() }),
+                    );
+                    Ok(open(c)?.export(selection, None))
                 },
-                |()| (),
+                |bundle| bundle.to_string(),
             )
             .await
     }
 
-    /// `None` is XFDF.
-    pub async fn export_data(
+    /// A bundle's fields copied into this document. `options_json` is
+    /// `FormImportOptions` (`{}` for the defaults).
+    pub async fn import(
         &self,
-        format: Option<FormDataFormat>,
+        bundle_json: String,
+        options_json: String,
         cancel: Arc<CancelToken>,
-    ) -> Result<FormDataExport, ViewerError> {
+    ) -> Result<FormImportResult, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.export_data(format.map(|f| Value::from(f.as_str())))),
+                move |c| {
+                    let bundle: Value = serde_json::from_str(&bundle_json)
+                        .map_err(|e| invalid_state(e.to_string()))?;
+                    let options: Value = serde_json::from_str(&options_json)
+                        .map_err(|e| invalid_state(e.to_string()))?;
+                    Ok(open(c)?.import(bundle, options, None))
+                },
                 |result| {
-                    let format = match result.get("format").and_then(Value::as_str) {
-                        Some("fdf") => FormDataFormat::Fdf,
-                        Some("xfdf") => FormDataFormat::Xfdf,
-                        other => {
-                            return Err(ViewerError::from(
-                                Error::named(
-                                    "InvalidState",
-                                    format!("[form] export format {other:?}"),
-                                )
-                                .with("code", "invalid-state"),
-                            ));
-                        }
-                    };
-                    let bytes =
-                        result.get("bytes").and_then(Bytes::from_json).ok_or_else(|| {
-                            ViewerError::from(
-                                Error::named("InvalidState", "[form] an export without bytes")
-                                    .with("code", "invalid-state"),
-                            )
-                        })?;
-                    Ok(FormDataExport { format, bytes: bytes.0 })
+                    Ok::<_, ViewerError>(FormImportResult {
+                        fields: fields_out(
+                            result
+                                .get("fields")
+                                .and_then(Value::as_array)
+                                .map_or(&[], Vec::as_slice),
+                        )?,
+                        ref_map_json: result
+                            .get("refMap")
+                            .cloned()
+                            .unwrap_or(Value::Null)
+                            .to_string(),
+                        dropped_json: result
+                            .get("dropped")
+                            .cloned()
+                            .unwrap_or(Value::Null)
+                            .to_string(),
+                    })
                 },
             )
             .await?
     }
 
-    /// FDF or XFDF; `None` sniffs the format from the bytes.
-    pub async fn import_data(
-        &self,
-        bytes: Vec<u8>,
-        format: Option<FormDataFormat>,
-        cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| {
-                    Ok(open(c)?.import_data(
-                        Bytes(bytes).to_json(),
-                        format.map(|f| Value::from(f.as_str())),
-                    ))
-                },
-                |_| (),
-            )
-            .await
-    }
-
-    /// Make recovered fields durable, and bake their appearances when
-    /// `bake_appearances`.
+    /// Fix a form other apps read differently. Resolves the repair's result
+    /// as JSON (`FormRepairResult`).
     pub async fn repair(
         &self,
         bake_appearances: bool,
         cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
+    ) -> Result<String, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.repair(Some(json!({ "bakeAppearances": bake_appearances })))),
-                |_| (),
+                move |c| {
+                    Ok(open(c)?.repair(Some(json!({ "bakeAppearances": bake_appearances })), None))
+                },
+                |result| result.to_string(),
             )
             .await
     }
 
-    /// A tap on a widget: toggles a checkbox, runs a pushbutton's action.
+    /// What a click on a widget does.
     pub async fn activate_widget(
         &self,
         widget: AnnotationRef,
@@ -1316,12 +1337,7 @@ impl FormHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let widget =
-                        serde_json::to_value(epdf_annotation_core::AnnotationRef::from(widget))
-                            .expect("a ref");
-                    Ok(open(c)?.activate_widget(widget))
-                },
+                move |c| Ok(open(c)?.activate_widget(annotation_ref_json(&widget), None)),
                 |r| match r {
                     crate::WidgetActivationResult::Form(result) => {
                         FormActivationResult::Form { result: result.into() }
@@ -1338,12 +1354,20 @@ impl FormHandle {
         self.cap.call(|c| Ok(open(c)?.can_read())).await
     }
 
-    pub async fn can_fill(&self) -> Result<bool, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.can_fill())).await
+    pub async fn can_fill(&self, field_ref: FormFieldRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_fill(&field_ref_json(&field_ref)))).await
     }
 
     pub async fn can_design(&self) -> Result<bool, ViewerError> {
         self.cap.call(|c| Ok(open(c)?.can_design())).await
+    }
+
+    pub async fn can_restore_attribution(&self) -> Result<bool, ViewerError> {
+        self.cap.call(|c| Ok(open(c)?.can_restore_attribution())).await
+    }
+
+    pub async fn can_write_scripts(&self) -> Result<bool, ViewerError> {
+        self.cap.call(|c| Ok(open(c)?.can_write_scripts())).await
     }
 
     pub fn subscribe(&self, listener: Arc<dyn FormEventListener>) -> Arc<Subscription> {
@@ -1353,51 +1377,54 @@ impl FormHandle {
             slot.fill_until_end(
                 c.lifetime(),
                 || {
+                    let origin =
+                        |e: &Value| e.get("origin").cloned().unwrap_or(Value::Null).to_string();
+                    let field =
+                        |e: &Value| FormField::from_json(e.get("field").unwrap_or(&Value::Null));
                     let l = listener.clone();
                     let value = c.on_value_changed(move |e| {
                         l.on_event(FormEvent::ValueChanged {
-                            field_ref: FormFieldRef::from_json(&e.field_ref)?,
-                            field: optional_field(Some(&e.field))?,
+                            field: field(e)?,
+                            origin_json: origin(e),
                         });
                         Ok(())
                     });
                     let l = listener.clone();
                     let created = c.on_field_created(move |e| {
                         l.on_event(FormEvent::FieldCreated {
-                            field_ref: FormFieldRef::from_json(&e.field_ref)?,
-                            field: optional_field(e.field.as_ref())?,
+                            field: field(e)?,
+                            origin_json: origin(e),
                         });
                         Ok(())
                     });
                     let l = listener.clone();
                     let updated = c.on_field_updated(move |e| {
                         l.on_event(FormEvent::FieldUpdated {
-                            field_ref: FormFieldRef::from_json(&e.field_ref)?,
-                            field: optional_field(e.field.as_ref())?,
+                            field: field(e)?,
+                            origin_json: origin(e),
                         });
                         Ok(())
                     });
                     let l = listener.clone();
                     let deleted = c.on_field_deleted(move |e| {
                         l.on_event(FormEvent::FieldDeleted {
-                            field_ref: FormFieldRef::from_json(&e.field_ref)?,
+                            field_ref: field_ref_of(e.get("ref").unwrap_or(&Value::Null))?,
+                            origin_json: origin(e),
                         });
                         Ok(())
                     });
                     let l = listener.clone();
                     let rejected = c.on_validation_rejected(move |e| {
                         let messages = e
-                            .issues
-                            .iter()
-                            .filter_map(|d| serde_json::to_value(d).ok())
+                            .get("issues")
+                            .and_then(Value::as_array)
+                            .into_iter()
+                            .flatten()
                             .filter_map(|d| {
                                 d.get("message").and_then(Value::as_str).map(str::to_string)
                             })
                             .collect();
-                        l.on_event(FormEvent::ValidationRejected {
-                            field_ref: FormFieldRef::from_json(&e.field_ref)?,
-                            messages,
-                        });
+                        l.on_event(FormEvent::ValidationRejected { field: field(e)?, messages });
                         Ok(())
                     });
                     let l = listener.clone();
@@ -1422,7 +1449,7 @@ pub struct FormValueEntry {
     pub value: FormValueInput,
 }
 
-/// Every member optional.
+/// Which fields `fields` returns: every member optional.
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct FormFilter {
     #[uniffi(default = None)]
@@ -1430,18 +1457,24 @@ pub struct FormFilter {
     /// Fields with a widget on this page.
     #[uniffi(default = None)]
     pub page: Option<PageRef>,
-    /// Exact fully qualified name.
+    /// One full name.
     #[uniffi(default = None)]
     pub name: Option<String>,
 }
 
-impl From<FormFilter> for crate::FormFilter {
-    fn from(f: FormFilter) -> Self {
-        crate::FormFilter {
-            family: f.family.map(|f| f.as_str().to_string()),
-            page: f.page.map(Into::into),
-            name: f.name,
+impl FormFilter {
+    fn to_json(&self) -> Value {
+        let mut filter = Map::new();
+        if let Some(family) = self.family {
+            filter.insert("family".into(), json!(family.as_str()));
         }
+        if let Some(page) = self.page {
+            filter.insert("page".into(), page_json(page));
+        }
+        if let Some(name) = &self.name {
+            filter.insert("name".into(), json!(name));
+        }
+        Value::Object(filter)
     }
 }
 
@@ -1450,9 +1483,7 @@ mod tests {
     use super::*;
     use epdf_acrojs::{ScriptDiagnostic, ScriptDiagnosticCode};
 
-    /// Without the actions plugin's script realm the plugin has no rejected
-    /// path (a commit applies, is unchanged, or throws), so the rejected
-    /// mapping is pinned here, on the result a validate script produces.
+    /// A refusal by the form's own scripts is a result, not an error.
     #[test]
     fn a_rejected_commit_is_a_result_not_an_error() {
         let rejected = crate::FormCommitResult {
@@ -1463,7 +1494,7 @@ mod tests {
             ..crate::FormCommitResult::bare(crate::FormCommitStatus::Rejected, true)
         };
         assert_eq!(
-            commit(rejected),
+            FormCommitResult::from(rejected),
             FormCommitResult {
                 status: FormCommitStatus::Rejected,
                 scripted: true,
@@ -1471,5 +1502,12 @@ mod tests {
                 error: None,
             }
         );
+    }
+
+    #[test]
+    fn refs_are_written_in_the_current_spelling() {
+        let field = FormFieldRef::ObjectNumber { field_object_number: 7 };
+        assert_eq!(field_ref_json(&field), json!({ "kind": "objectNumber", "objectNumber": 7 }));
+        assert_eq!(field_ref_of(&field_ref_json(&field)).unwrap(), field);
     }
 }

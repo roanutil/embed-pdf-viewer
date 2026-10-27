@@ -23,7 +23,7 @@ use epdf_engine::features::annotation::state::{
 use epdf_engine::features::annotation::subtype::AnnotationSubtype;
 use epdf_engine::features::annotation::vocabulary::{
     AnnotationBorderStyle, AnnotationColorType, AnnotationReplyType, BlendMode, FileAttachmentIcon,
-    LineEnding, NoteIcon, STAMP_NAMES, StandardFont, TextAlignment, is_standard_stamp_name,
+    LineEnding, NoteIcon, StandardFont, TextAlignment,
 };
 use serde::Deserialize;
 
@@ -368,13 +368,10 @@ fn the_name_maps_decode_and_encode_what_typescript_does() {
                 .map(FileAttachmentIcon::pdf_name)
         },
     );
-    // A stamp label is written verbatim, so the encode side is the identity
-    // over the standard set, and the decode side is membership.
-    let standard = |label: &str| STAMP_NAMES.into_iter().find(|n| *n == label);
-    check_names(
-        &file,
-        "stampName",
-        |pdf| standard(pdf).filter(|n| is_standard_stamp_name(n)),
-        standard,
+    // `stampName` is gone (0427e3dc9): a stamp's `/Name` passes through
+    // verbatim, so there is no map to check, and the vector has none.
+    assert!(
+        file.names.iter().all(|n| n.name != "stampName"),
+        "vocabulary.json has a stampName map again; port its codec"
     );
 }

@@ -1,0 +1,1282 @@
+[
+  {
+    "name": "script-commit-failures",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "form effects: value refused"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: form effects: value refused"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "form effects: failed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: form effects: failed"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 9,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "annotation 6: locked"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: annotation 6: locked"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 10,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 7,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "annotation 6: failed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: annotation 6: failed"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "boot-effects-and-a-refetched-world",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "unsupported-api",
+                "message": "app.beep"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "boot threw",
+                  "stack": "at boot"
+                },
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "boot-without-effects",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "script-error",
+                "message": "boot warned"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "run-errors-and-diagnostics",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "interrupted: time budget"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: interrupted: time budget"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked-network",
+                "message": "fetch refused"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "budget",
+                  "message": "interrupted: time budget"
+                },
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 8,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "output too large"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: output too large"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "invalid-output",
+                  "message": "output too large"
+                },
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "script-print-obeys-the-print-policy",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "script-node-budget",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "executed",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "executed"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "executed"
+                },
+                {
+                  "path": [
+                    0,
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "inert",
+                  "detail": "dispatch script budget exhausted (2 JS nodes)"
+                },
+                {
+                  "path": [
+                    0,
+                    0,
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "inert",
+                  "detail": "dispatch script budget exhausted (2 JS nodes)"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-inert",
+                  "message": "javascript: dispatch script budget exhausted (2 JS nodes)"
+                },
+                {
+                  "code": "executor-inert",
+                  "message": "javascript: dispatch script budget exhausted (2 JS nodes)"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-inert",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-inert",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "no-page-to-anchor",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert",
+                  "detail": "no page to anchor the world on"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-inert",
+                  "message": "javascript: no page to anchor the world on"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-inert",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "an-unknown-page-fails-the-node",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "no page 42"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: no page 42"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "page",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 42
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "a-throwing-sandbox-fails-the-node",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "vm exploded"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: vm exploded"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "no-sandbox-host",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "rejected": [
+          {
+            "promise": 3,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "script host is disposed"
+              }
+            }
+          }
+        ],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "script-transaction-port",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [
+          {
+            "promise": 4,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "body threw"
+              }
+            }
+          }
+        ],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "detached-script-realm",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 9,
+        "rejected": [
+          {
+            "promise": 6,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "script host is disposed"
+              }
+            }
+          }
+        ],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "detached-script-realm-without-metadata",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "rejected": [
+          {
+            "promise": 5,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "script host is disposed"
+              }
+            }
+          }
+        ],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "scripting-disabled",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 2,
+        "rejected": [],
+        "returnedDiagnostics": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "javascript: no executor registered (scripting unavailable)"
+                }
+              ]
+            }
+          }
+        ],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "surface-ui-effects",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "unsupported-api",
+                "message": "x"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "boom"
+                },
+                "source": null
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "surface-refusals",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-adapter",
+                "action": "javascript",
+                "source": null
+              }
+            ]
+          }
+        ],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script print request withheld: doc.print is not allowed"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 9,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "b.onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script print request during a document print event — suppressed (reentrant)"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "surface-a-detached-realm",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script print request from a detached realm suppressed: no document surface"
+              }
+            ]
+          },
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script gotoPage request from a detached realm suppressed: no document surface"
+              }
+            ]
+          },
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script submitForm request from a detached realm suppressed: no document surface"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "surface-script-commit",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "unsupported-api",
+                "message": "d"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "e"
+                },
+                "source": null
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "unsupported-api",
+                "message": "no effects"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "onScriptFailed",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "no effects"
+                },
+                "source": null
+              }
+            ]
+          }
+        ],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      },
+      {
+        "stepIndex": 8,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "onScriptDiagnosticReported",
+            "args": [
+              {
+                "code": "ui-effect-suppressed",
+                "message": "script print request from a detached realm suppressed: no document surface"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [],
+        "hostReports": [],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  },
+  {
+    "name": "script-hooks-isolate-observers",
+    "file": "plugins/actions-script.json",
+    "sourceOwner": "actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "returnedDiagnostics": [],
+        "actionDiagnosticCallbacks": [],
+        "scriptDiagnosticCallbacks": [
+          {
+            "fn": "bad.diag",
+            "args": [
+              {
+                "code": "script-error",
+                "message": "d"
+              }
+            ]
+          },
+          {
+            "fn": "good.diag",
+            "args": [
+              {
+                "code": "script-error",
+                "message": "d"
+              }
+            ]
+          }
+        ],
+        "scriptFailureCallbacks": [
+          {
+            "fn": "bad.error",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "e"
+                },
+                "source": null
+              }
+            ]
+          },
+          {
+            "fn": "good.error",
+            "args": [
+              {
+                "error": {
+                  "kind": "exception",
+                  "message": "e"
+                },
+                "source": null
+              }
+            ]
+          }
+        ],
+        "hostReports": [
+          {
+            "$error": {
+              "name": "Error",
+              "message": "diag broke"
+            }
+          },
+          {
+            "$error": {
+              "name": "Error",
+              "message": "error broke"
+            }
+          }
+        ],
+        "console": [],
+        "stepThrow": null
+      }
+    ]
+  }
+]

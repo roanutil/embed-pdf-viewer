@@ -1,0 +1,3010 @@
+[
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "rgb-transparent",
+    "input": {
+      "name": "rgb-transparent",
+      "fn": "scriptColorToRgb",
+      "args": [
+        [
+          "T"
+        ]
+      ]
+    },
+    "inputSha256": "33e2dc729b9ca7995afbd3aaed6ffb57b3cd02ef5ebb7056614a704967a26e2c",
+    "occurrence": 236
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "rgb-gray",
+    "input": {
+      "name": "rgb-gray",
+      "fn": "scriptColorToRgb",
+      "args": [
+        [
+          "G",
+          0.25
+        ]
+      ]
+    },
+    "inputSha256": "ddf9ecd029c2993c4974f21d509f140a166a3e64ebcd1828582a26cbe5607e50",
+    "occurrence": 237
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "rgb-rgb",
+    "input": {
+      "name": "rgb-rgb",
+      "fn": "scriptColorToRgb",
+      "args": [
+        [
+          "RGB",
+          0.1,
+          0.2,
+          0.3
+        ]
+      ]
+    },
+    "inputSha256": "1ff36e648fd54c4d5a619b3ab9ce93862ca03a1e9d36d3d1f7319271eb2ebbce",
+    "occurrence": 238
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "rgb-cmyk",
+    "input": {
+      "name": "rgb-cmyk",
+      "fn": "scriptColorToRgb",
+      "args": [
+        [
+          "CMYK",
+          0.1,
+          0.2,
+          0.3,
+          0.4
+        ]
+      ]
+    },
+    "inputSha256": "54087df3a5b58c6ee52ec54ec184fc2a6b5fd229eef787034a5d81c925d263e1",
+    "occurrence": 239
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "rgb-cmyk-saturates",
+    "input": {
+      "name": "rgb-cmyk-saturates",
+      "covers": "channel + k past 1 clamps to 0.",
+      "fn": "scriptColorToRgb",
+      "args": [
+        [
+          "CMYK",
+          0.9,
+          0.2,
+          0.7,
+          0.5
+        ]
+      ]
+    },
+    "inputSha256": "7c614575433838318bd635f1bb0410421bf274147f91f43ff0cd4256a2d98851",
+    "occurrence": 240
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-transparent",
+    "input": {
+      "name": "css-transparent",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "T"
+        ]
+      ]
+    },
+    "inputSha256": "08fb7b35842e09a60046ccce26fc8bc88b0559bb913f36607c7ad288065c3a86",
+    "occurrence": 241
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-gray",
+    "input": {
+      "name": "css-gray",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "G",
+          0.5
+        ]
+      ]
+    },
+    "inputSha256": "c4d0a46cf5708156a5fd4b4f7b2d4cbfa62ec3e1ea98f81cde9ee66353d0f963",
+    "occurrence": 242
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-rgb-rounds-half-up",
+    "input": {
+      "name": "css-rgb-rounds-half-up",
+      "covers": "Math.round: 0.5 * 255 = 127.5 rounds to 128.",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "RGB",
+          0.5,
+          1,
+          0
+        ]
+      ]
+    },
+    "inputSha256": "aa53699f561150bc6cd7d9fbc7b8ffbdf0f4b3c73a52bc0127756bcff6593101",
+    "occurrence": 243
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-clamps",
+    "input": {
+      "name": "css-clamps",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "RGB",
+          -2,
+          3,
+          0.002
+        ]
+      ]
+    },
+    "inputSha256": "1a514a7cdce9f72ef2082f8be90237dd4b8ac0618cfb8720320f4088af4d06b5",
+    "occurrence": 244
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-cmyk",
+    "input": {
+      "name": "css-cmyk",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "CMYK",
+          0,
+          1,
+          0.5,
+          0.25
+        ]
+      ]
+    },
+    "inputSha256": "c46b445bfd9a3c09cb6ba11c5d83407efe4d5ee8a0d0e601220d61f37e78eb79",
+    "occurrence": 245
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-infinity-clamps",
+    "input": {
+      "name": "css-infinity-clamps",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "RGB",
+          {
+            "$number": "Infinity"
+          },
+          {
+            "$number": "-Infinity"
+          },
+          0
+        ]
+      ]
+    },
+    "inputSha256": "a43ac9315e1b24a392a7148f2a714ab22e7328d743bac2dc34c3e82f7b14ab9a",
+    "occurrence": 246
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "css-nan-propagates",
+    "input": {
+      "name": "css-nan-propagates",
+      "covers": "Math.max and Math.min propagate NaN, and NaN.toString(16) is \"NaN\".",
+      "fn": "scriptColorToCss",
+      "args": [
+        [
+          "G",
+          {
+            "$number": "NaN"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "ddfae7cfbf61f99eb6255fbbea9f01737ad461452a5192db6361ccd5f8c2fdcc",
+    "occurrence": 247
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-null",
+    "input": {
+      "name": "from-css-null",
+      "fn": "cssToScriptColor",
+      "args": [
+        null
+      ]
+    },
+    "inputSha256": "34aa49b245c0c2f670e6a2115d9ba4e34f94ba44c360a39d2a63052ed9731a9b",
+    "occurrence": 248
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-undefined",
+    "input": {
+      "name": "from-css-undefined",
+      "fn": "cssToScriptColor",
+      "args": [
+        {
+          "$undefined": true
+        }
+      ]
+    },
+    "inputSha256": "f710693c8f7ec82361c0a4cba878155c085c9263680dc657270d79264beb3d7f",
+    "occurrence": 249
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-empty",
+    "input": {
+      "name": "from-css-empty",
+      "fn": "cssToScriptColor",
+      "args": [
+        ""
+      ]
+    },
+    "inputSha256": "46230e7de6bb7147352aee0daf0228108a6e46bc89448e817a6a523f8097929e",
+    "occurrence": 250
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-short",
+    "input": {
+      "name": "from-css-short",
+      "fn": "cssToScriptColor",
+      "args": [
+        "#abc"
+      ]
+    },
+    "inputSha256": "bd574d84522248fc5596949287c09fc7d71ed86009d2a9538a6f683c0446bd06",
+    "occurrence": 251
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-short-no-hash",
+    "input": {
+      "name": "from-css-short-no-hash",
+      "fn": "cssToScriptColor",
+      "args": [
+        "F0a"
+      ]
+    },
+    "inputSha256": "c25caa396777d54ed97e860ce9db885645cf977358ad6597463222cedbaa69af",
+    "occurrence": 252
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-long",
+    "input": {
+      "name": "from-css-long",
+      "fn": "cssToScriptColor",
+      "args": [
+        "#FF8000"
+      ]
+    },
+    "inputSha256": "092af41a318d7f055610fefe15a0ce206e93cc0a7a6fcc086c231085616e9b41",
+    "occurrence": 253
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-trims",
+    "input": {
+      "name": "from-css-trims",
+      "fn": "cssToScriptColor",
+      "args": [
+        " \t#00ff7f\n"
+      ]
+    },
+    "inputSha256": "e9967d1ef3d4f353f2ecd330486b9a9bcc2ec5fab492254771394d10c57d3682",
+    "occurrence": 254
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-trims-js-whitespace",
+    "input": {
+      "name": "from-css-trims-js-whitespace",
+      "covers": "String.prototype.trim removes U+FEFF and U+00A0.",
+      "fn": "cssToScriptColor",
+      "args": [
+        "\ufeff#123456\u00a0"
+      ]
+    },
+    "inputSha256": "b7c08e2f1ca6a1441579d95e838f4a9cfdee9147a8ff83e07e86820755e897b6",
+    "occurrence": 255
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-keeps-nel",
+    "input": {
+      "name": "from-css-keeps-nel",
+      "covers": "U+0085 is not JavaScript whitespace, so it stays and the value is invalid.",
+      "fn": "cssToScriptColor",
+      "args": [
+        "\u0085#123456"
+      ]
+    },
+    "inputSha256": "49c860c4bb96ad9dc5894fc0d9324b78570797f96af13f0589bad71bc01f01f0",
+    "occurrence": 256
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-one-hash-only",
+    "input": {
+      "name": "from-css-one-hash-only",
+      "fn": "cssToScriptColor",
+      "args": [
+        "##abc"
+      ]
+    },
+    "inputSha256": "80e338ea19900be8e76592f6650e6fa9c0cb8f7fd77f4a170cb1b7b60063be81",
+    "occurrence": 257
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-bad-digit",
+    "input": {
+      "name": "from-css-bad-digit",
+      "fn": "cssToScriptColor",
+      "args": [
+        "#ggg"
+      ]
+    },
+    "inputSha256": "2184f8004402667cd47e19ef0fe7cf0a3bc86d1d9fffa3f8b6239260f98dbf74",
+    "occurrence": 258
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-bad-length",
+    "input": {
+      "name": "from-css-bad-length",
+      "fn": "cssToScriptColor",
+      "args": [
+        "#12345"
+      ]
+    },
+    "inputSha256": "f7ba122c3e32041fefaaefd5b8fb059f6d873bc7e9efbb75cb91f49da5903993",
+    "occurrence": 259
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-three-non-ascii",
+    "input": {
+      "name": "from-css-three-non-ascii",
+      "fn": "cssToScriptColor",
+      "args": [
+        "\u00e9ab"
+      ]
+    },
+    "inputSha256": "2f11ee6358aec5cdb20173b1508ef74d236e240871a7eca48f585707f69ab250",
+    "occurrence": 260
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "from-css-astral",
+    "input": {
+      "name": "from-css-astral",
+      "covers": "Length is counted in UTF-16 units: \"a\" plus one astral character is three.",
+      "fn": "cssToScriptColor",
+      "args": [
+        "a\ud83d\ude00"
+      ]
+    },
+    "inputSha256": "41afcc841ddded8518b077dce44448312390964bb2908993fd0eedee64c2cde1",
+    "occurrence": 261
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-not-array",
+    "input": {
+      "name": "is-color-not-array",
+      "fn": "isScriptColorArray",
+      "args": [
+        "RGB"
+      ]
+    },
+    "inputSha256": "c4bfdacb753bac2efc87f1a1846d3c980f558005305cc949f8cddc3095506ff5",
+    "occurrence": 262
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-empty",
+    "input": {
+      "name": "is-color-empty",
+      "fn": "isScriptColorArray",
+      "args": [
+        []
+      ]
+    },
+    "inputSha256": "0a61a260d1d9e48b9cd78fc048aacc8fe51aa83a60f96fa8cff421fb6a047a81",
+    "occurrence": 263
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-t",
+    "input": {
+      "name": "is-color-t",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "T"
+        ]
+      ]
+    },
+    "inputSha256": "24a13342211111f3cd856b58d40a40b5a69aed157821de593a35243648e4b6b7",
+    "occurrence": 264
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-t-extra",
+    "input": {
+      "name": "is-color-t-extra",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "T",
+          1
+        ]
+      ]
+    },
+    "inputSha256": "a8afe281de216d5aab39c6424c7bf4af27f60852b29189f085759d4b127abe36",
+    "occurrence": 265
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-g",
+    "input": {
+      "name": "is-color-g",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "G",
+          0.5
+        ]
+      ]
+    },
+    "inputSha256": "39497ed9d63cc3b3496c9df1e814a6ab2d31ab419d8f335a678ed526476a1f21",
+    "occurrence": 266
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-g-string",
+    "input": {
+      "name": "is-color-g-string",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "G",
+          "0.5"
+        ]
+      ]
+    },
+    "inputSha256": "0520e1285a917ec0bc8f7e1b893990a914d01cbcb731d6d92675905ab92c6ad5",
+    "occurrence": 267
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-g-nan",
+    "input": {
+      "name": "is-color-g-nan",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "G",
+          {
+            "$number": "NaN"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "8737c60717959c33c0bb0fb112095ad5bdc82e3fd70a7e6390ff0cc2673e7357",
+    "occurrence": 268
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-g-infinity",
+    "input": {
+      "name": "is-color-g-infinity",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "G",
+          {
+            "$number": "Infinity"
+          }
+        ]
+      ]
+    },
+    "inputSha256": "bf43a4817428881b76573722980e6311ecac135d0643990601933777e8948bc1",
+    "occurrence": 269
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-rgb",
+    "input": {
+      "name": "is-color-rgb",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "RGB",
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    "inputSha256": "8364661949024d389e5df3dbf9b8333561315a9216b63472825b8054cfd6b088",
+    "occurrence": 270
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-rgb-short",
+    "input": {
+      "name": "is-color-rgb-short",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "RGB",
+          1,
+          2
+        ]
+      ]
+    },
+    "inputSha256": "fea28438bb28fabcb479424954c1f21fbffc14eabb9187d47c42f5db5a1d27ca",
+    "occurrence": 271
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-cmyk",
+    "input": {
+      "name": "is-color-cmyk",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "CMYK",
+          0,
+          0,
+          0,
+          1
+        ]
+      ]
+    },
+    "inputSha256": "cf3413307eef1f8799209e1e94d836b0f08057032131508012513409a1a7537a",
+    "occurrence": 272
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-unknown-space",
+    "input": {
+      "name": "is-color-unknown-space",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "X"
+        ]
+      ]
+    },
+    "inputSha256": "538e973f6e7a53439043451815da394be443bd354f98bb482c2629d67e081658",
+    "occurrence": 273
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-lowercase-space",
+    "input": {
+      "name": "is-color-lowercase-space",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "rgb",
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    "inputSha256": "368112bd4d94a7c48de5d674cb81aa86bcc74574ba646003576180b8b4a40caf",
+    "occurrence": 274
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-space-coerced",
+    "input": {
+      "name": "is-color-space-coerced",
+      "covers": "String([\"RGB\"]) is \"RGB\": the space is coerced before the lookup.",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          [
+            "RGB"
+          ],
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    "inputSha256": "a38012cd4d8e009f5c17f7a8f6c7544ae6ca53e0ec35814e30c0b459ad0697ec",
+    "occurrence": 275
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-space-null",
+    "input": {
+      "name": "is-color-space-null",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          null
+        ]
+      ]
+    },
+    "inputSha256": "e89e218d84dd11893b3257a813b3005d69a34b9dcf1c000a7955abf23f7bf625",
+    "occurrence": 276
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-space-number",
+    "input": {
+      "name": "is-color-space-number",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          3,
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    "inputSha256": "ee7eb157dca698b38f987c015313eb89af539846727a1e30a101b5bb2cca5aa5",
+    "occurrence": 277
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-space-prototype-member",
+    "input": {
+      "name": "is-color-space-prototype-member",
+      "covers": "counts[\"toString\"] is a function, never a count.",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "toString"
+        ]
+      ]
+    },
+    "inputSha256": "d09ee93574a72dd203eed9db39f094717de4b0717ade0a45436fce2494a32de4",
+    "occurrence": 278
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-space-proto",
+    "input": {
+      "name": "is-color-space-proto",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "__proto__"
+        ]
+      ]
+    },
+    "inputSha256": "173908c71447693a3ed7f1fa1222b5f9ac2381ceddf7608b2b48dbb478d6cc4e",
+    "occurrence": 279
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "is-color-part-null",
+    "input": {
+      "name": "is-color-part-null",
+      "fn": "isScriptColorArray",
+      "args": [
+        [
+          "G",
+          null
+        ]
+      ]
+    },
+    "inputSha256": "be1baa1db98d9051f1372c78b4a8cf0e83110955110124dbd2b34c2dfa794520",
+    "occurrence": 280
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-incomplete-throws",
+    "input": {
+      "name": "sources-incomplete-throws",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "x()",
+            "next": []
+          },
+          "incomplete": true,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "d2af25a51b25c73bb8b55f925933a7cc43dfecfc260c258c2573c469d412297d",
+    "occurrence": 281
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-rootless",
+    "input": {
+      "name": "sources-rootless",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": null,
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "f325b1b673bde579e7fec139765df32eb8881dfb5b3fd3fe758510fcf4169570",
+    "occurrence": 282
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-depth-first",
+    "input": {
+      "name": "sources-depth-first",
+      "covers": "Root, then /Next depth-first; only javascript nodes are collected (a rendition /JS is not).",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "a()",
+            "next": [
+              {
+                "type": "goto",
+                "subtype": "goto",
+                "destination": {
+                  "kind": "fit",
+                  "pageObjectNumber": 1
+                },
+                "next": [
+                  {
+                    "type": "javascript",
+                    "subtype": "javascript",
+                    "script": "b()",
+                    "next": []
+                  }
+                ]
+              },
+              {
+                "type": "rendition",
+                "subtype": "rendition",
+                "script": "no()",
+                "next": []
+              },
+              {
+                "type": "javascript",
+                "subtype": "javascript",
+                "script": "c()",
+                "next": []
+              }
+            ]
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "75d47475ebba9883dd0ebbe0ba49a8b397876a7dff2b40f98ef099f9300747eb",
+    "occurrence": 283
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-incomplete-is-truthiness",
+    "input": {
+      "name": "sources-incomplete-is-truthiness",
+      "covers": "incomplete is read for truthiness: 1 and a non-empty string refuse, 0 and the empty string do not.",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "one()",
+            "next": []
+          },
+          "incomplete": 1
+        }
+      ]
+    },
+    "inputSha256": "69dd824aadc256c270831493e8d8ed60ea4b393ab8de03ea981b0429d3ab144b",
+    "occurrence": 284
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-incomplete-zero",
+    "input": {
+      "name": "sources-incomplete-zero",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "zero()",
+            "next": []
+          },
+          "incomplete": 0
+        }
+      ]
+    },
+    "inputSha256": "c4272f8f29c9fd7b004b64d1422b58fa50f37172e2743fafdaa38782e0af61c9",
+    "occurrence": 285
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-incomplete-string",
+    "input": {
+      "name": "sources-incomplete-string",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "s()",
+            "next": []
+          },
+          "incomplete": "yes"
+        }
+      ]
+    },
+    "inputSha256": "93be3e87791b0d19a1087f3a538a5797814b1d78466fe95497505424f034df44",
+    "occurrence": 286
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-incomplete-empty-string",
+    "input": {
+      "name": "sources-incomplete-empty-string",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "e()",
+            "next": []
+          },
+          "incomplete": ""
+        }
+      ]
+    },
+    "inputSha256": "527fa94fa266eb447959f5c4b156f3b71f70ce771abb86e42a50e8f7118ea1c2",
+    "occurrence": 287
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "sources-root-zero",
+    "input": {
+      "name": "sources-root-zero",
+      "fn": "javaScriptSourcesFromActionTree",
+      "args": [
+        {
+          "root": 0,
+          "incomplete": false
+        }
+      ]
+    },
+    "inputSha256": "d6afeb4e6168f89e6f29a63f2a674c3c101c66d5e01e898befb10d7fff2bd96a",
+    "occurrence": 288
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "program-joins",
+    "input": {
+      "name": "program-joins",
+      "fn": "javaScriptProgramFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "javascript",
+            "subtype": "javascript",
+            "script": "a()",
+            "next": [
+              {
+                "type": "javascript",
+                "subtype": "javascript",
+                "script": "b()",
+                "next": []
+              }
+            ]
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "0ac14ead994f13ce8425d80e190e4e1401dc64f3fcb74adc7092b6780f6b69ca",
+    "occurrence": 289
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "program-empty",
+    "input": {
+      "name": "program-empty",
+      "fn": "javaScriptProgramFromActionTree",
+      "args": [
+        {
+          "root": {
+            "type": "named",
+            "subtype": "named",
+            "name": "NextPage",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "b713694c433172c37b4fc302e99fe92db89af68b0f23c12ddb4b4c5f9ef32160",
+    "occurrence": 290
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "program-incomplete-throws",
+    "input": {
+      "name": "program-incomplete-throws",
+      "fn": "javaScriptProgramFromActionTree",
+      "args": [
+        {
+          "root": null,
+          "incomplete": true,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      ]
+    },
+    "inputSha256": "68112e760a4bebc186cdde42d10357306e8ff29cccde18383b6dc15eefaba70d",
+    "occurrence": 291
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "fields-from-snapshot",
+    "input": {
+      "name": "fields-from-snapshot",
+      "covers": "Every value-entry kind, the Off token for toggles, and options only where the DTO has them.",
+      "fn": "scriptFieldsFromSnapshot",
+      "args": [
+        {
+          "formKind": "acroform",
+          "needsAppearances": false,
+          "calculationOrder": [],
+          "fields": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 5
+              },
+              "name": "text",
+              "family": "text",
+              "valueEntry": {
+                "kind": "scalar",
+                "value": "hi"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "flags": {
+                "readOnly": false,
+                "required": false
+              }
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 5
+              },
+              "name": "list",
+              "family": "listbox",
+              "valueEntry": {
+                "kind": "array",
+                "values": [
+                  "a",
+                  "b"
+                ]
+              },
+              "defaultValueEntry": {
+                "kind": "unsupported"
+              },
+              "flags": {
+                "readOnly": true,
+                "required": true
+              },
+              "options": [
+                {
+                  "label": "A",
+                  "value": "a",
+                  "extra": 1
+                },
+                {
+                  "label": "B",
+                  "value": "b"
+                }
+              ]
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 5
+              },
+              "name": "box",
+              "family": "checkbox",
+              "valueEntry": {
+                "kind": "none"
+              },
+              "defaultValueEntry": {
+                "kind": "scalar",
+                "value": "Yes"
+              },
+              "flags": {
+                "readOnly": false,
+                "required": false
+              }
+            },
+            {
+              "ref": {
+                "kind": "fqn",
+                "name": "radio"
+              },
+              "name": "radio",
+              "family": "radio",
+              "valueEntry": {
+                "kind": "scalar",
+                "value": "One"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "flags": {
+                "readOnly": false,
+                "required": false
+              }
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 5
+              },
+              "name": "toggle-unsupported",
+              "family": "checkbox",
+              "valueEntry": {
+                "kind": "unsupported"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "flags": {
+                "readOnly": false,
+                "required": false
+              }
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 5
+              },
+              "name": "bogus",
+              "family": "text",
+              "valueEntry": {
+                "kind": "bogus"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "flags": {
+                "readOnly": false,
+                "required": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "inputSha256": "e9813a96b298419d69dd678ffa6df8e018baa309f6722f55be7e63c6b9d3b5f6",
+    "occurrence": 292
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "fields-empty",
+    "input": {
+      "name": "fields-empty",
+      "fn": "scriptFieldsFromSnapshot",
+      "args": [
+        {
+          "fields": []
+        }
+      ]
+    },
+    "inputSha256": "d5766d43385ee55d9dba6f6b28c39e93609331a07bb0b604d07bd140b3e25fb8",
+    "occurrence": 293
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-basic",
+    "input": {
+      "name": "seed-basic",
+      "fn": "seedFrom",
+      "args": [
+        "doc-1",
+        0
+      ]
+    },
+    "inputSha256": "b94613db1f830b53385e294e6f99ce7384be6f8f6b41b509f48bcea21ad7f178",
+    "occurrence": 294
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-next",
+    "input": {
+      "name": "seed-next",
+      "fn": "seedFrom",
+      "args": [
+        "doc-1",
+        1
+      ]
+    },
+    "inputSha256": "10a07fae07b82ac2482a54ceb51a0e642218b1c7bc8060ae9beec657b3d1edd9",
+    "occurrence": 295
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-empty-id",
+    "input": {
+      "name": "seed-empty-id",
+      "fn": "seedFrom",
+      "args": [
+        "",
+        0
+      ]
+    },
+    "inputSha256": "e88b9f1e5230d74a7c07bf542905fb2e4246300c89f8493d8e448c669b5e6d76",
+    "occurrence": 296
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-large-sequence",
+    "input": {
+      "name": "seed-large-sequence",
+      "fn": "seedFrom",
+      "args": [
+        "doc",
+        123456789
+      ]
+    },
+    "inputSha256": "db942621887979df394658f0dafbf53e3c8b28f0ee80f6bd59a603b4597985b5",
+    "occurrence": 297
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-non-ascii",
+    "input": {
+      "name": "seed-non-ascii",
+      "fn": "seedFrom",
+      "args": [
+        "\u00e9\u6f22",
+        3
+      ]
+    },
+    "inputSha256": "56cdce820d007e738a844b6ea7fb58ee6e80f903385e5fc85e632a5b197c0c36",
+    "occurrence": 298
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "seed-astral-hashes-the-high-surrogate",
+    "input": {
+      "name": "seed-astral-hashes-the-high-surrogate",
+      "covers": "for...of walks code points and charCodeAt(0) takes the first UTF-16 unit, so the low surrogate never enters the hash.",
+      "fn": "seedFrom",
+      "args": [
+        "a\ud83d\ude00b",
+        2
+      ]
+    },
+    "inputSha256": "de8d77c917cdbda7f5a27e16a16712f6904cfa310888ffacc602cb34dbb8268f",
+    "occurrence": 299
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-from-claims",
+    "input": {
+      "name": "identity-from-claims",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        {
+          "user_id": "u-1",
+          "display_name": "Ada",
+          "group_id": "g-1"
+        },
+        null,
+        false
+      ]
+    },
+    "inputSha256": "9f0c9a4873432d97cb60b43ee5f55c2693863bb867015ca2cac31db71699e78c",
+    "occurrence": 300
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-no-claims",
+    "input": {
+      "name": "identity-no-claims",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        null,
+        null,
+        false
+      ]
+    },
+    "inputSha256": "883d4ed3b00ee4b5f921ce55d802060ca7467a16351e3bb0773232e7d6ded717",
+    "occurrence": 301
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-user-id-fallback",
+    "input": {
+      "name": "identity-user-id-fallback",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        {
+          "user_id": "u-1",
+          "display_name": null,
+          "group_id": "g-1"
+        },
+        {},
+        false
+      ]
+    },
+    "inputSha256": "ae1bfbcbef0fbe9a4363f0c1622d793265ee5de87591b30f2bef41def3c4b57e",
+    "occurrence": 302
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-overrides",
+    "input": {
+      "name": "identity-overrides",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        {
+          "user_id": "u-1",
+          "display_name": "Ada",
+          "group_id": "g-1"
+        },
+        {
+          "name": "Grace",
+          "email": "g@x.test"
+        },
+        false
+      ]
+    },
+    "inputSha256": "64839ee147a0f20570200ec16707e324dbaec8a32cf2ee59644d248f6a0166fd",
+    "occurrence": 303
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-override-null-falls-through",
+    "input": {
+      "name": "identity-override-null-falls-through",
+      "covers": "?? treats null like absent.",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        {
+          "user_id": "u-1",
+          "display_name": "Ada",
+          "group_id": "g-1"
+        },
+        {
+          "name": null,
+          "loginName": "root",
+          "corporation": "Acme"
+        },
+        false
+      ]
+    },
+    "inputSha256": "b01af43331ed4e3d39bf5527165e1af580209596d7879ae3ccda14b609b1874f",
+    "occurrence": 304
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "identity-override-function",
+    "input": {
+      "name": "identity-override-function",
+      "fn": "resolveScriptIdentity",
+      "args": [
+        {
+          "user_id": "u-1",
+          "display_name": "Ada",
+          "group_id": null
+        },
+        {
+          "corporation": "Fn Inc"
+        },
+        true
+      ]
+    },
+    "inputSha256": "9cc7be9051cf03a1fb3d9a0548229b112142fbe61c298756d581b30e3dc6c244",
+    "occurrence": 305
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "annot-writable-keys",
+    "input": {
+      "name": "annot-writable-keys",
+      "fn": "annotWritableKeys",
+      "args": []
+    },
+    "inputSha256": "a8ff1d2d78a444faee3a3a53834140520b16c3f329c723ab9f50f18a489594c8",
+    "occurrence": 306
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "default-script-budget",
+    "input": {
+      "name": "default-script-budget",
+      "fn": "defaultScriptBudget",
+      "args": []
+    },
+    "inputSha256": "4ac4a7179eb717721ac123ab08d5813bf9d264e5db47bc80edc410780f4d5055",
+    "occurrence": 307
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "default-script-security-policy",
+    "input": {
+      "name": "default-script-security-policy",
+      "fn": "defaultScriptSecurityPolicy",
+      "args": []
+    },
+    "inputSha256": "3d96bc881a45f534a445c6e3d4ca0be2b4bd4796688f4a7a35de740ad0f541d2",
+    "occurrence": 308
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "script-event-matrix",
+    "input": {
+      "name": "script-event-matrix",
+      "fn": "scriptEventMatrix",
+      "args": []
+    },
+    "inputSha256": "eaa3f96cd6e37e3ce3ae14e9b48da4a5f6fa6a4c2cbfce484184ca4843b04448",
+    "occurrence": 309
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs.json",
+    "kind": "function",
+    "name": "prelude-source",
+    "input": {
+      "name": "prelude-source",
+      "covers": "The text crates/plugins/acrojs/prelude.js carries.",
+      "fn": "preludeSource",
+      "args": []
+    },
+    "inputSha256": "ef3f3560b7b52482917b9f1bdb3ba11ebdb5a53884a255f0af9885d6a28ca4c7",
+    "occurrence": 310
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "boots-once-and-hands-the-output-to-one-caller",
+    "input": {
+      "name": "boots-once-and-hands-the-output-to-one-caller",
+      "covers": "The first boot() builds the realm, reads the name tree and boots it; a later boot() in any transaction returns null.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "boot": [
+                    {
+                      "output": {
+                        "diagnostics": [
+                          {
+                            "code": "script-error",
+                            "message": "boot#0"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "1e9e3222201cf8860824ac0371c368df51865baf2eeca830fd4656696355c64a",
+    "occurrence": 311
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "run-auto-boots-and-stashes-the-output",
+    "input": {
+      "name": "run-auto-boots-and-stashes-the-output",
+      "covers": "A run before any boot boots defensively; that boot output waits for the next boot() and is returned exactly once.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {}
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "2257d284cda7e95adc2f540b2022f06a366c5f456d0338866f27a846b256254f",
+    "occurrence": 312
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "transactions-serialize",
+    "input": {
+      "name": "transactions-serialize",
+      "covers": "A pending transaction holds the realm: the next one starts only after it settles, and one that fails does not poison the queue.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "wait",
+                "label": "slow"
+              },
+              {
+                "op": "run",
+                "program": "slow()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "fast()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "throw",
+                "message": "body broke"
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "after()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "slow"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "548e6d569e5edfdcc919c257c2f453b39646682e98d2fa6d8a4e11c4d3138f35",
+    "occurrence": 313
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "no-boot-sources",
+    "input": {
+      "name": "no-boot-sources",
+      "covers": "An empty name tree marks the realm booted without calling sandbox.boot.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "resolves": []
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "3aaa1e3090876f98b559421a7d772a62dd6e7f5d251bb03188866a1b3dadba38",
+    "occurrence": 314
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "boot-sources-read-fails",
+    "input": {
+      "name": "boot-sources-read-fails",
+      "covers": "A failed name-tree read degrades to a synthetic boot output with a script-error diagnostic, and the cache is dropped so a rebuilt realm retries.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "seq": [
+                {
+                  "rejects": {
+                    "message": "catalog unreadable"
+                  }
+                },
+                {
+                  "returns": [
+                    "retry()"
+                  ]
+                }
+              ]
+            },
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "dispose": true
+                    }
+                  ]
+                },
+                {}
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "367c135bc2a8e944ba70dcd9fadd17071ac792ce43ef24cc9985961ba2190653",
+    "occurrence": 315
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "resource-fault-rebuilds-and-reboots",
+    "input": {
+      "name": "resource-fault-rebuilds-and-reboots",
+      "covers": "A sandbox that reports disposed after a run poisons the realm; the next transaction builds a new one and boots it again.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "dispose": true
+                    }
+                  ]
+                },
+                {}
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "boom()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "after()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "222c30dde3265dab54778d0d87061c47010617520abd9f535bd487e29896aa94",
+    "occurrence": 316
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "boot-fault",
+    "input": {
+      "name": "boot-fault",
+      "covers": "A boot that disposes the sandbox is also a fault: the next run in the same transaction auto-boots on a fresh realm.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "boot": [
+                    {
+                      "dispose": true
+                    }
+                  ]
+                },
+                {}
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "f67a4aed1d385283a60600b37ff669f7ac6eb40ea53d7f5b1173a07baa3b7d95",
+    "occurrence": 317
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "budgets",
+    "input": {
+      "name": "budgets",
+      "covers": "The host default budget, a configured one, and a per-run override all reach the sandbox; the environment sequence advances per input.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "budget": {
+              "maxExecutionMs": 5,
+              "maxMemoryBytes": 1024,
+              "maxStackBytes": 256,
+              "maxEffects": 2,
+              "maxOutputBytes": 64
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                },
+                "budget": {
+                  "maxExecutionMs": 7,
+                  "maxMemoryBytes": 1,
+                  "maxStackBytes": 1,
+                  "maxEffects": 1,
+                  "maxOutputBytes": 1
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                },
+                "budget": {
+                  "maxExecutionMs": 9,
+                  "maxMemoryBytes": 2,
+                  "maxStackBytes": 2,
+                  "maxEffects": 3,
+                  "maxOutputBytes": 4
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "9cb0ad4ddd6e21ec681c460c084182e6b3cbedb9c1a2315d73db5b3fca223b32",
+    "occurrence": 318
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "input-shape",
+    "input": {
+      "name": "input-shape",
+      "covers": "inputFor: pageNumber overrides the document input only when given; annots, annotPages and annotsCoverDocument appear only when given.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            },
+            "document": {
+              "id": "d",
+              "fileName": "f.pdf",
+              "pageCount": 4,
+              "pageNumber": 1
+            },
+            "identity": {
+              "name": "N",
+              "loginName": "L",
+              "corporation": "C",
+              "email": "E"
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "fqn",
+                        "name": "t"
+                      },
+                      "name": "t",
+                      "family": "text",
+                      "value": "v",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": true,
+                      "options": [
+                        {
+                          "label": "l",
+                          "value": "v"
+                        }
+                      ]
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "type": "Field",
+                    "name": "Keystroke",
+                    "change": "x",
+                    "selStart": 0,
+                    "selEnd": 1,
+                    "willCommit": false,
+                    "modifier": true,
+                    "shift": false,
+                    "value": "v",
+                    "target": {
+                      "kind": "fqn",
+                      "name": "t"
+                    },
+                    "source": {
+                      "kind": "fqn",
+                      "name": "t"
+                    }
+                  },
+                  "pageNumber": 3,
+                  "annots": [],
+                  "annotPages": [
+                    0,
+                    2
+                  ],
+                  "annotsCoverDocument": false
+                }
+              },
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "field-format"
+                  },
+                  "annotsCoverDocument": true
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "9942ea80ffa26000f8918ebe1fcc13c059a9cf7b4573a11533483c7b6565589b",
+    "occurrence": 319
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "sandbox-run-throws",
+    "input": {
+      "name": "sandbox-run-throws",
+      "covers": "A sandbox call that throws rejects the transaction; the realm is not poisoned.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            },
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "throws": {
+                        "message": "vm exploded"
+                      }
+                    },
+                    {}
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "9a2a30c68fa518baf0f00be894e12ed139c971b59898af87bbddde213832562f",
+    "occurrence": 320
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "sandbox-boot-throws",
+    "input": {
+      "name": "sandbox-boot-throws",
+      "covers": "A throwing boot rejects the transaction after the realm was marked booted: the boot never re-runs.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "boot": [
+                    {
+                      "throws": {
+                        "message": "boot exploded"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "7171e025fc70e835c435634f36816a7e9aaf413ad4ca88d8539ba1c829973eff",
+    "occurrence": 321
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "boot-sources-throw",
+    "input": {
+      "name": "boot-sources-throw",
+      "covers": "bootSources() throwing synchronously is outside the degrade path: the transaction rejects.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "throws": {
+                "message": "no catalog"
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "a99c252c8385ceb3cdd013b1a09b05549e423ace39eb0b9014df9a073281389a",
+    "occurrence": 322
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "factory-rejects",
+    "input": {
+      "name": "factory-rejects",
+      "covers": "A factory that rejects fails the transaction; the rejected promise stays cached for the realm.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "rejects": {
+                    "message": "no vm"
+                  }
+                },
+                {}
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "f85ad34ab96c5c971a4f1c9d669e3fc87845f6203dcb97acde6d0afc4aa1edc8",
+    "occurrence": 323
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "factory-deferred",
+    "input": {
+      "name": "factory-deferred",
+      "covers": "The realm is built once even when two runs wait on the same pending factory.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            },
+            "sandbox": {
+              "builds": [
+                {
+                  "defer": "vm"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              },
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "vm"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "bad3e955d6382d7748418619fa43b046e91e5014fa92536a07b20c73ae9c9dc2",
+    "occurrence": 324
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "dispose",
+    "input": {
+      "name": "dispose",
+      "covers": "dispose() releases the realm one turn after its factory settled, is safe to repeat, and every later transaction rejects.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "b()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "3037c5fa403d8791fde3c83018be2867095e17e024cef2f9bf85e3485f9fb419",
+    "occurrence": 325
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "dispose-before-any-realm",
+    "input": {
+      "name": "dispose-before-any-realm",
+      "covers": "dispose() with no realm built does nothing but refuse later transactions.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {}
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "boot",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "01be725db08efc89974211f610a3281df077ab75c8e0a96b3727361a8061c184",
+    "occurrence": 326
+  },
+  {
+    "source": "acrojs",
+    "file": "core/acrojs-host.json",
+    "kind": "scenario",
+    "name": "dispose-with-a-rejected-factory",
+    "input": {
+      "name": "dispose-with-a-rejected-factory",
+      "covers": "A factory rejection is swallowed on dispose.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "rejects": {
+                    "message": "no vm"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "a()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks."
+    },
+    "inputSha256": "661436975d6c87db24bfd4406ee03a292dcb710b1645b1cdbc972c0a8ab1b5ad",
+    "occurrence": 327
+  }
+]

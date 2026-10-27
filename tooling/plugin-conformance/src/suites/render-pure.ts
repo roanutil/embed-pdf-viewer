@@ -11,7 +11,7 @@
  * `regionCovered` takes the painted set as `"ix,iy"` strings and also returns
  * the coords it asked about, in order, so the early exit is pinned;
  * `resolveStrategy` and `baseAskWidth` take raw plugin options and resolve
- * them first, as the capability does; `reduceRender` reports whether it
+ * them first, as the capability does; `invalidatePages` reports whether it
  * returned the same state object.
  */
 import {
@@ -22,13 +22,13 @@ import {
   type EngineRenderPolicy,
 } from '@embedpdf/engine-core/runtime';
 
-import { annotatedPons } from '../../../../packages/plugin/render/src/invalidation';
+import { pixelChangeOf } from '../../../../packages/plugin/render/src/invalidation';
 import {
   DEFAULT_TILE_PYRAMID,
   EMPTY_TILE_PLAN,
   resolveRenderOptions,
 } from '../../../../packages/plugin/render/src/paint-plan';
-import { initialRenderState, reduceRender } from '../../../../packages/plugin/render/src/model';
+import { initialRenderState, invalidatePages } from '../../../../packages/plugin/render/src/model';
 import { baseAskWidth, resolveStrategy } from '../../../../packages/plugin/render/src/strategy';
 import {
   bleedRect,
@@ -44,8 +44,7 @@ import {
   type TileGrid,
 } from '../../../../packages/plugin/render/src/tiles';
 import type { RenderConfig as RenderPluginOptions } from '../../../../packages/plugin/render/src/contract';
-import type { RenderAction, RenderState } from '../../../../packages/plugin/render/src/model';
-
+import type { RenderState } from '../../../../packages/plugin/render/src/model';
 import type { FunctionCase, Suite } from '../vectors';
 
 type Fn = (...args: never[]) => unknown;
@@ -285,7 +284,6 @@ const OPTIONS: [string, RenderPluginOptions][] = [
         engageAt: 1.5,
         prefetch: { margin: 0.25, velocityBias: false },
         settleMs: 0,
-        fadeMs: 120,
       },
       format: 'webp',
       quality: 0.8,
@@ -386,51 +384,63 @@ for (const [pName, p] of [
 
 const ledgerFns: Record<string, Fn> = {
   initialRenderState,
-  reduceRender: (state: RenderState, action: RenderAction) => {
-    const next = reduceRender(state, action);
+  invalidatePages: (state: RenderState,
+    pages: number[],
+    scope: Parameters<typeof invalidatePages>[2],
+  ) => {
+    const next = invalidatePages(state, pages, scope);
     return { changed: next !== state, state: next };
   },
-  annotatedPons: (event: never, pons: number[]) => annotatedPons(event, () => pons),
+  // `pixelChangeOf` is `pixelChangeOf` since 4fc1a32af: the pages and the scope they change in.
+  pixelChangeOf: (event: never, pons: number[]) => pixelChangeOf(event, () => pons),
 };
 
 const seeded: RenderState = {
   contentEpochs: { 11: 2 },
-  annotatedEpochs: { 11: 1, 22: 4 },
-  paintVersions: { 33: 7 },
+  annotationEpochs: { 11: 1, 22: 4 },
+  fieldEpochs: { 33: 7 },
 };
 const ledger: FunctionCase[] = [
   c('initialRenderState', 'empty-ledgers'),
-  c('reduceRender', 'annotations-bump', initialRenderState(), { type: 'invalidate', scope: 'annotations', pages: [11] }),
-  c('reduceRender', 'annotations-bump-seeded', seeded, { type: 'invalidate', scope: 'annotations', pages: [11, 22, 44] }),
-  c('reduceRender', 'content-bump', seeded, { type: 'invalidate', scope: 'content', pages: [11, 33] }),
-  c('reduceRender', 'duplicate-pons-bump-twice', seeded, { type: 'invalidate', scope: 'content', pages: [11, 11] }),
-  c('reduceRender', 'empty-pons-is-a-no-op', seeded, { type: 'invalidate', scope: 'content', pages: [] }),
-  c('reduceRender', 'empty-pons-annotations-no-op', seeded, { type: 'invalidate', scope: 'annotations', pages: [] }),
-  c('reduceRender', 'unknown-action-no-op', seeded, { type: 'OTHER' }),
-  c('reduceRender', 'paint-advanced', seeded, { type: 'paintAdvanced', page: 33 }),
-  c('reduceRender', 'paint-advanced-new-pon', seeded, { type: 'paintAdvanced', page: 5 }),
+  c('invalidatePages', 'annotations-bump', initialRenderState(), [11], 'annotations'),
+  c('invalidatePages', 'annotations-bump-seeded', seeded, [11, 22, 44], 'annotations'),
+  c('invalidatePages', 'content-bump', seeded, [11, 33], 'content'),
+  c('invalidatePages', 'duplicate-pons-bump-twice', seeded, [11, 11], 'content'),
+  c('invalidatePages', 'empty-pons-is-a-no-op', seeded, [], 'content'),
+  c('invalidatePages', 'empty-pons-annotations-no-op', seeded, [], 'annotations'),
+  c('invalidatePages', 'fields-bump', seeded, [33], 'fields'),
+  c('invalidatePages', 'fields-bump-new-page', seeded, [5], 'fields'),
 ];
 
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+const pr = (pon: number) => ({ kind: 'objectNumber', objectNumber: pon });
 const widget = (pon: number) => ({ ref: { kind: 'objectNumber', page: pr(pon), annotObjectNumber: 5 }, annotObjectNumber: 5, page: pr(pon) });
 const ALL = [11, 22, 33];
-for (const type of ['annotation.created', 'annotation.updated', 'annotation.deleted', 'annotation.moved']) {
-  ledger.push(c('annotatedPons', type, { type, page: pr(22) }, ALL));
+for (const type of [
+  'annotations.created',
+  'annotations.updated',
+  'annotations.deleted',
+  'annotations.reordered',
+]) {
+  ledger.push(c('pixelChangeOf', type, { type, page: pr(22) }, ALL));
 }
-for (const type of ['form.valueChanged', 'form.effectsApplied']) {
-  ledger.push(c('annotatedPons', type, { type, changedWidgets: [widget(11), widget(33), widget(11)] }, ALL));
-  ledger.push(c('annotatedPons', `${type}/none`, { type, changedWidgets: [] }, ALL));
+for (const type of ['forms.valueSet', 'forms.updated']) {
+  ledger.push(c(
+      'pixelChangeOf', type, { type, meta: { changedWidgets: [widget(11), widget(33), widget(11)] } }, ALL));
+  ledger.push(c('pixelChangeOf', `${type}/none`, { type, meta: { changedWidgets: [] } }, ALL));
 }
-ledger.push(c('annotatedPons', 'form.fieldDeleted', { type: 'form.fieldDeleted', removedWidgets: [widget(22)] }, ALL));
-for (const type of ['form.fieldCreated', 'form.fieldUpdated', 'form.widgetAttached', 'form.widgetDetached']) {
-  ledger.push(c('annotatedPons', type, { type, field: { widgets: [widget(11), widget(22)] } }, ALL));
+ledger.push(c(
+    'pixelChangeOf',
+    'forms.deleted', { type: 'forms.deleted', meta: { changedWidgets: [widget(22)] } }, ALL));
+for (const type of ['forms.created', 'forms.updated', 'forms.widgetAdded', 'forms.widgetRemoved']) {
+  ledger.push(c(
+      'pixelChangeOf', type, { type, meta: { changedWidgets: [widget(11), widget(22)] }, widgets: [] }, ALL));
 }
-for (const type of ['form.imported', 'form.repaired']) {
-  ledger.push(c('annotatedPons', type, { type }, ALL));
-  ledger.push(c('annotatedPons', `${type}/no-pages`, { type }, []));
+for (const type of ['forms.repaired', 'stream.desynced']) {
+  ledger.push(c('pixelChangeOf', type, { type }, ALL));
+  ledger.push(c('pixelChangeOf', `${type}/no-pages`, { type }, []));
 }
 for (const type of ['pages.rotated', 'pages.moved', 'pages.deleted', 'metadata.updated', 'redaction.applied', 'unknown']) {
-  ledger.push(c('annotatedPons', type, { type, page: pr(11) }, ALL));
+  ledger.push(c('pixelChangeOf', type, { type, page: pr(11), results: [] }, ALL));
 }
 
 export const suites: Suite[] = [

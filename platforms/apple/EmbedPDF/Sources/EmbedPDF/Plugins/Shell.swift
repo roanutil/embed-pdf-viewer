@@ -7,8 +7,10 @@ public typealias ShellSurface = EmbedPDFBindings.ShellSurface
 public typealias ShellOpenOptions = EmbedPDFBindings.ShellOpenOptions
 /// The document shell's surface and menu state for persistence and restoration.
 public typealias ShellSnapshot = EmbedPDFBindings.ShellSnapshot
-/// An event describing a document surface's state change.
-public typealias ShellSurfaceEvent = EmbedPDFBindings.ShellSurfaceEvent
+/// An event describing a document surface opening, with the props it was opened with.
+public typealias ShellSurfaceOpenedEvent = EmbedPDFBindings.ShellSurfaceOpenedEvent
+/// An event describing a document surface closing.
+public typealias ShellSurfaceClosedEvent = EmbedPDFBindings.ShellSurfaceClosedEvent
 /// An event describing a document menu's state change.
 public typealias ShellMenuEvent = EmbedPDFBindings.ShellMenuEvent
 /// An event describing surface and menu state changes.
@@ -147,7 +149,7 @@ extension ShellSurface {
   }
 }
 
-extension ShellSurfaceEvent {
+extension ShellSurfaceOpenedEvent {
   /// Decodes this event's JSON props as the requested type, returning nil when no props are
   /// present and throwing a decoding error on mismatch.
   public func props<Props: Decodable>(as type: Props.Type) throws -> Props? {

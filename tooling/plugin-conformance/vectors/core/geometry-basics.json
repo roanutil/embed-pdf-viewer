@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/geometry: rect bounds, intersection, corners, containment and overlap, quarter-turn rotations, device rounding.",
   "cases": [

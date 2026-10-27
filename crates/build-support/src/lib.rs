@@ -45,7 +45,9 @@ static EMIT_TARGET_ONCE: Once = Once::new();
 /// of whatever crate that build script links in. So even though this code
 /// lives in `crates/build-support`, reading `CARGO_MANIFEST_DIR` while
 /// executing inside `crates/pdfium-sys`'s build.rs yields
-/// `crates/pdfium-sys`, and `../..` from there is the workspace root.
+/// `crates/pdfium-sys`. The root is the nearest ancestor of that directory
+/// holding `packages/engine/runtime`, so a crate nested deeper, such as
+/// `crates/plugins/geometry`, finds the same library.
 pub fn lib_root() -> PathBuf {
     EMIT_LIB_DIR_ONCE.call_once(|| {
         println!("cargo:rerun-if-env-changed=PDF_RUNTIME_LIB_DIR");
@@ -54,9 +56,16 @@ pub fn lib_root() -> PathBuf {
     if let Ok(dir) = env::var("PDF_RUNTIME_LIB_DIR") {
         return PathBuf::from(dir);
     }
-    PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
-        .join("../..")
-        .join("packages/engine/runtime/build/libpdfium")
+    lib_root_from(Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()))
+}
+
+/// [`lib_root`]'s search from a manifest directory, without the override.
+fn lib_root_from(manifest: &Path) -> PathBuf {
+    let root = manifest
+        .ancestors()
+        .find(|dir| dir.join("packages/engine/runtime").is_dir())
+        .map_or_else(|| manifest.join("../.."), Path::to_path_buf);
+    root.join("packages/engine/runtime/build/libpdfium")
 }
 
 /// The fork's target spelling, which is Node's rather than Rust's.
@@ -308,7 +317,9 @@ pub fn apple_frameworks(target_os: &str) -> &'static [&'static str] {
 /// transitive) but cannot find it at run time. Windows has no rpath
 /// equivalent, so there is nothing to re-emit there.
 pub fn emit_rpath_only() {
-    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("emscripten") {
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("emscripten")
+        || env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("wasm32")
+    {
         return;
     }
     let lib = lib_root().join(fork_target()).join("lib");
@@ -344,6 +355,14 @@ pub fn assert_bindings_are_complete(bindings: &str, target: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lib_root_is_the_same_from_top_level_and_nested_crates() {
+        let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let expected = crates.parent().unwrap().join("packages/engine/runtime/build/libpdfium");
+        assert_eq!(lib_root_from(&crates.join("pdfium-sys")), expected);
+        assert_eq!(lib_root_from(&crates.join("plugins/geometry")), expected);
+    }
 
     #[test]
     fn maps_rust_targets_to_the_forks_target_spelling() {

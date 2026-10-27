@@ -1,151 +1,103 @@
-//! `write/activation.ts`: widget activation and the widget DOM-event feed
-//! into the actions plane. A click first offers the widget's `/A` tree to
-//! the dispatcher; only a tree-less widget falls back to the form's own
+//! `write/activation.ts`: widget activation and the widget event feed into
+//! the actions plane. A click first offers the widget's `/A` tree to the
+//! dispatcher; only a tree-less widget falls back to the form's own
 //! scripted activation.
 
-use epdf_annotation_core::AnnotationRef as TypedAnnotationRef;
 use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error};
+use epdf_kernel::error::code;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
+use epdf_kernel::signal::AbortSignal;
 use epdf_plugin_actions::{
-    ACTIONS, ActionOrigin, ActionResultStatus, ActionSource, ActionTrigger, ActionsCapability,
-    HoverEvents, HoverPump, HoverTarget, PdfAnnotationEventKind, create_hover_pump,
+    ActionOrigin, ActionResultStatus, ActionSource, ActionTrigger, ActionsCapability, HoverEvents,
+    HoverPump, HoverTarget, PdfAnnotationEventKind, create_hover_pump,
 };
 use serde_json::Value;
 
 use crate::contract::{FormCommitResult, FormCommitStatus, WidgetActivationResult};
-use crate::controller::FormCapability;
-use crate::core::model::field_for_widget;
-use crate::promise::await_engine;
+use crate::model::{field_for_widget, widget_row_of};
 use crate::read::fields::widget_object_of;
-use crate::value::{get, str_of, strict_eq, truthy};
+use crate::value::{get, str_of, truthy};
+use crate::write::fill::{FillRequest, FillScripts};
 
-/// `pageRefsEqual(a, b)` over two JSON page refs.
-fn same_page(left: Option<&Value>, right: Option<&Value>) -> bool {
-    let (Some(left), Some(right)) = (left, right) else { return false };
-    str_of(left, "kind") == str_of(right, "kind")
-        && strict_eq(get(left, "pageObjectNumber"), get(right, "pageObjectNumber"))
+fn page_of_ref(reference: &Value) -> Result<PageRef, Error> {
+    get(reference, "page")
+        .and_then(PageRef::from_json)
+        .ok_or_else(|| Error::named("TypeError", "the widget's ref names no page"))
 }
 
-/// `sameAnnotationRef(left, right)`. An index ref's `revision` is compared
-/// with `===`, which never holds for a revision object read from JSON.
-fn same_annotation_ref(left: &Value, right: &Value) -> bool {
-    let eq = |k: &str| strict_eq(get(left, k), get(right, k));
-    if !eq("kind") || !same_page(get(left, "page"), get(right, "page")) {
-        return false;
-    }
-    match (str_of(left, "kind"), str_of(right, "kind")) {
-        (Some("objectNumber"), Some("objectNumber")) => eq("annotObjectNumber"),
-        (Some("nm"), Some("nm")) => eq("nm"),
-        (l, r) => l == Some("index") && r == Some("index") && eq("index") && eq("revision"),
-    }
+/// `widgetSource(field, annotationRef)`.
+fn widget_source(field: &Value, annotation: &Value, page: PageRef) -> ActionSource {
+    ActionSource::Widget { field: field.clone(), annotation: annotation.clone(), page }
 }
 
-/// The page of a JSON annotation ref.
-fn page_of_ref(annotation_ref: &Value) -> PageRef {
-    get(annotation_ref, "page").and_then(PageRef::from_json).unwrap_or(PageRef::new(0))
-}
-
-fn widget_source(field: &Value, annotation_ref: &Value) -> ActionSource {
-    ActionSource::Widget {
-        field: field.clone(),
-        annotation: annotation_ref.clone(),
-        page: page_of_ref(annotation_ref),
-    }
-}
-
-impl FormCapability {
-    /// The annotation plugin's committed DTO for a ref, when it has one. A
-    /// ref that doesn't decode counts as not loaded.
-    fn loaded(&self, annotation_ref: &Value) -> Option<Value> {
-        let annotation = self.0.annotation.as_ref()?;
-        let typed: TypedAnnotationRef = epdf_kernel::js::from_value(annotation_ref).ok()?;
-        annotation.get_raw(&typed)
-    }
-
-    /// `annotationActivation(ref)`: the widget's `/A` tree, from the loaded
-    /// annotation when there is one, else from a page read.
-    async fn annotation_activation(&self, annotation_ref: &Value) -> Result<Option<Value>, Error> {
-        let Some(doc) = self.doc() else { return Ok(None) };
-        let activate = |annotation: &Value| {
-            get(annotation, "actions")
-                .and_then(|a| get(a, "activate"))
-                .filter(|t| !t.is_null())
-                .cloned()
-        };
-        if let Some(loaded) = self.loaded(annotation_ref)
-            && str_of(&loaded, "subtype") == Some("widget")
-        {
-            return Ok(activate(&loaded));
-        }
-        let page = page_of_ref(annotation_ref);
-        doc.page_index(page.page_object_number)?;
-        let list = await_engine(doc.call(
-            "page.annotations.list",
-            Some(page.page_object_number),
-            Vec::new(),
-        ))
-        .await?;
-        let found = get(&list, "annotations").and_then(Value::as_array).into_iter().flatten().find(
-            |candidate| {
-                same_annotation_ref(get(candidate, "ref").unwrap_or(&Value::Null), annotation_ref)
-            },
-        );
-        Ok(found.filter(|a| str_of(a, "subtype") == Some("widget")).and_then(activate))
-    }
-
-    /// `activateThroughScripts(ref, annotationRef)`.
-    async fn activate_through_scripts(
-        &self,
-        field_ref: Value,
-        annotation_ref: Value,
-    ) -> Result<FormCommitResult, Error> {
-        self.doc().ok_or_else(|| Error::new("no document"))?;
-        let Some(scripting) = &self.0.scripting else {
-            return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, false));
-        };
-        let reading = {
-            let (this, annotation_ref) = (self.clone(), annotation_ref.clone());
-            Promise::spawn(async move { this.annotation_activation(&annotation_ref).await })
-        };
-        let Some(action) = reading.await?.filter(|a| truthy(Some(a))) else {
-            return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, true));
-        };
-        let result = scripting.activate(field_ref, action).await?;
-        self.surface_via_actions(&result, ActionOrigin::User)?;
-        if result.effects_result.is_some() {
-            self.refresh().await?;
-        }
-        Ok(result)
-    }
-
-    /// `activateWidget(widget)`: run a widget's `/A` action as a click
-    /// would. With the actions plugin the whole tree is dispatched there;
-    /// only a tree-less result (inert, no steps, no diagnostics) falls back
-    /// to the form path. `not-found` when no field owns the widget.
-    pub fn activate_widget(&self, annotation_ref: Value) -> Promise<WidgetActivationResult> {
-        let this = self.clone();
+impl crate::controller::Core {
+    /// `annotationActivation(ref)`: the widget's activation action, from its
+    /// row in the form.
+    fn annotation_activation(&self, reference: &Value) -> Promise<Option<Value>> {
+        let me = self.rc();
+        let reference = reference.clone();
         Promise::spawn(async move {
-            let Some(field) = field_for_widget(&this.model(), widget_object_of(&annotation_ref))
+            me.fields.settled().await?;
+            let row = if str_of(&reference, "kind") == Some("objectNumber") {
+                let n = get(&reference, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN);
+                widget_row_of(&me.view(), n).cloned()
+            } else {
+                None
+            };
+            Ok(row
+                .and_then(|r| get(&r, "actions").and_then(|a| get(a, "activate")).cloned())
+                .filter(|a| !a.is_null()))
+        })
+    }
+
+    /// `activateThroughScripts(ref, annotationRef, options)`.
+    fn activate_through_scripts(
+        &self,
+        field: Value,
+        annotation: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<FormCommitResult> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            if me.script_controller().is_none() {
+                return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, false));
+            }
+            let Some(action) = me.annotation_activation(&annotation).await? else {
+                return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, true));
+            };
+            let request = FillRequest {
+                label: None,
+                ops: Vec::new(),
+                scripts: Some(FillScripts::Activate { field, action }),
+                origin: ActionOrigin::User,
+            };
+            Ok(me.fill(request, signal).await?.result)
+        })
+    }
+
+    /// `activateWidget(widget, options)`: do what a click on a widget does.
+    pub fn activate_widget(
+        &self,
+        annotation: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<WidgetActivationResult> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            let Some(field) = field_for_widget(&me.view(), widget_object_of(&annotation)).cloned()
             else {
-                return Err(plugin_error(
-                    code::NOT_FOUND,
-                    "form",
-                    "no form field owns this widget",
-                    None,
-                    None,
-                ));
+                return Err(me.error(code::NOT_FOUND, "no form field owns this widget"));
             };
             let field_ref = get(&field, "ref").cloned().unwrap_or(Value::Null);
-            if let Some(actions) = this.cx().try_get(&ACTIONS)? {
-                let result = actions
-                    .dispatch(ActionTrigger::Activate {
-                        annotation_ref: annotation_ref.clone(),
-                        page: page_of_ref(&annotation_ref),
-                        source: Some(widget_source(&field_ref, &annotation_ref)),
-                    })
-                    .await?;
+            if let Some(actions) = me.actions() {
+                let page = page_of_ref(&annotation)?;
+                let trigger = ActionTrigger::Activate {
+                    annotation_ref: annotation.clone(),
+                    page,
+                    source: Some(widget_source(&field_ref, &annotation, page)),
+                };
+                let result =
+                    me.cancellable(signal.clone(), actions.dispatch(trigger, None)).await?;
                 let no_tree = result.status == ActionResultStatus::Inert
                     && result.steps.is_empty()
                     && result.diagnostics.is_empty();
@@ -153,76 +105,84 @@ impl FormCapability {
                     return Ok(WidgetActivationResult::Dispatched(result));
                 }
             }
-            let now = this.clone();
-            let result = this
-                .0
-                .queue
-                .run(move || {
-                    Ok(Promise::spawn(async move {
-                        now.activate_through_scripts(field_ref, annotation_ref).await
-                    }))
-                })
-                .await?;
+            let result = me.activate_through_scripts(field_ref, annotation, signal).await?;
             Ok(WidgetActivationResult::Form(result))
         })
     }
 
+    /// One shared hover pump, made on first use.
     fn widget_hover_pump(&self, actions: &ActionsCapability) -> HoverPump {
-        let mut pump = self.0.widget_pump.borrow_mut();
-        pump.get_or_insert_with(|| {
-            let actions = actions.clone();
-            create_hover_pump(move |trigger| actions.dispatch(trigger))
-        })
-        .clone()
+        if let Some(pump) = &*self.widget_pump.borrow() {
+            return pump.clone();
+        }
+        let dispatcher = actions.clone();
+        let pump = create_hover_pump(move |trigger| dispatcher.dispatch(trigger, None));
+        *self.widget_pump.borrow_mut() = Some(pump.clone());
+        pump
     }
 
-    /// Tree presence through the folded annotation model, when available.
-    fn widget_hover_flags(&self, annotation_ref: &Value) -> Option<(bool, bool)> {
-        let loaded = self.loaded(annotation_ref)?;
-        if str_of(&loaded, "subtype") != Some("widget") {
+    /// `widgetHoverFlags(ref)`: whether the widget has enter and exit trees.
+    fn widget_hover_flags(&self, annotation: &Value) -> Option<HoverEvents> {
+        if str_of(annotation, "kind") != Some("objectNumber") {
             return None;
         }
-        let root = |event: &str| {
-            truthy(get(&loaded, "actions").and_then(|a| get(a, event)).and_then(|t| get(t, "root")))
+        let n = get(annotation, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN);
+        let index = self.view();
+        let row = widget_row_of(&index, n)?;
+        let tree = |key: &str| {
+            truthy(get(row, "actions").and_then(|a| get(a, key)).and_then(|t| get(t, "root")))
         };
-        Some((root("cursorEnter"), root("cursorExit")))
+        Some(HoverEvents { enter: Some(tree("cursorEnter")), exit: Some(tree("cursorExit")) })
     }
 
-    /// Host lens: `notifyWidgetEvent(field, widget, event)`, the widget
-    /// DOM-event feed. With the actions plugin the matching `/AA` tree
-    /// dispatches (hover through the shared pump); without it a no-op.
+    /// `notifyWidgetEvent(field, widget, event)`: a widget's pointer or focus
+    /// event to the actions plugin, which runs its `/AA` actions.
     pub fn notify_widget_event(
         &self,
-        field_ref: &Value,
-        annotation_ref: &Value,
+        field: &Value,
+        annotation: &Value,
         event: PdfAnnotationEventKind,
     ) -> Result<(), Error> {
-        let Some(actions) = self.cx().try_get(&ACTIONS)? else { return Ok(()) };
-        let source = widget_source(field_ref, annotation_ref);
-        let page = page_of_ref(annotation_ref);
+        let Some(actions) = self.actions() else { return Ok(()) };
+        let page = page_of_ref(annotation)?;
+        let source = widget_source(field, annotation, page);
         match event {
-            PdfAnnotationEventKind::CursorExit => self.widget_hover_pump(&actions).hover(None),
+            PdfAnnotationEventKind::CursorExit => {
+                self.widget_hover_pump(&actions).hover(None);
+            }
             PdfAnnotationEventKind::CursorEnter => {
-                let flags = self.widget_hover_flags(annotation_ref);
-                if flags == Some((false, false)) {
+                // Check for an enter/exit tree first, so a widget without one
+                // costs no dispatch.
+                let flags = self.widget_hover_flags(annotation);
+                if flags.as_ref().is_some_and(|f| f.enter != Some(true) && f.exit != Some(true)) {
                     return Ok(());
                 }
                 self.widget_hover_pump(&actions).hover(Some(HoverTarget {
-                    annotation_ref: annotation_ref.clone(),
+                    annotation_ref: annotation.clone(),
                     page,
                     source: Some(source),
-                    events: flags
-                        .map(|(enter, exit)| HoverEvents { enter: Some(enter), exit: Some(exit) }),
+                    events: flags,
                 }));
             }
-            _ => actions
-                .dispatch(ActionTrigger::Annotation {
-                    event,
-                    annotation_ref: annotation_ref.clone(),
-                    page,
-                    source: Some(source),
-                })
-                .ignore(),
+            _ => {
+                // The first field to take focus starts the realm.
+                if event == PdfAnnotationEventKind::Focus {
+                    self.warm_scripts(&self.view());
+                }
+                // Fire-and-forget: dispatch never rejects, and results
+                // surface through the actions events.
+                actions
+                    .dispatch(
+                        ActionTrigger::Annotation {
+                            event,
+                            annotation_ref: annotation.clone(),
+                            page,
+                            source: Some(source),
+                        },
+                        None,
+                    )
+                    .ignore();
+            }
         }
         Ok(())
     }

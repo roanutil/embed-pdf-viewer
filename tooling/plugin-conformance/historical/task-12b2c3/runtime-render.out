@@ -1,0 +1,7 @@
+(node:28041) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+rendered 1 suites
+render OK plugins/actions-triggers.json 15
+rendered 1 suites
+render OK plugins/actions-lifecycle.json 27
+{"originals":42,"current":42,"authoredSteps":302,"executedSteps":302,"stepThrows":0,"unmatched":0,"reports":1,"settlements":179,"rejected":5,"callbacks":157,"console":0}

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/plugin/actions createHoverPump, scripted and over the real dispatcher.",
   "cases": [
@@ -35,7 +35,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -44,18 +44,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -63,7 +88,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -72,18 +97,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -95,9 +145,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -105,6 +156,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -144,13 +203,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -177,13 +236,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -208,7 +267,7 @@
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -219,7 +278,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -233,20 +293,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -269,6 +344,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -276,7 +356,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -285,7 +365,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -298,13 +379,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -314,7 +395,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -325,20 +406,22 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -351,13 +434,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -372,13 +455,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -388,7 +471,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -399,27 +482,29 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         }
@@ -427,7 +512,7 @@
     },
     {
       "name": "a-slow-transition-is-never-split",
-      "covers": "While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.",
+      "covers": "C waits while Exit(A)/Enter(B) are pending: settling only Exit(A) submits nothing; settling Enter(B) submits Exit(B)/Enter(C) together.",
       "plugins": [
         {
           "factory": "hover-pump",
@@ -443,6 +528,12 @@
                 },
                 {
                   "defer": "d3"
+                },
+                {
+                  "defer": "d4"
+                },
+                {
+                  "defer": "d5"
                 }
               ]
             }
@@ -457,7 +548,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -466,18 +557,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -485,7 +601,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -494,18 +610,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -517,9 +658,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -527,6 +669,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -566,13 +716,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -590,13 +740,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -609,6 +759,30 @@
             "steps": [],
             "diagnostics": []
           }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "objectNumber": 3
+              },
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              }
+            }
+          ]
         },
         {
           "op": "settle",
@@ -627,10 +801,28 @@
             "steps": [],
             "diagnostics": []
           }
+        },
+        {
+          "op": "settle",
+          "label": "d4",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d5",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -641,7 +833,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -655,20 +848,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -691,6 +899,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -698,7 +911,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -707,7 +920,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -720,13 +934,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -736,7 +950,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -747,14 +961,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -765,7 +980,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -778,13 +994,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -799,13 +1015,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -815,33 +1031,125 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 2
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 3
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
             }
           }
         }
@@ -879,7 +1187,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -888,18 +1196,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -907,7 +1240,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -916,18 +1249,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -939,9 +1297,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -949,6 +1308,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -988,13 +1355,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1012,13 +1379,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1036,13 +1403,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 3
+                "objectNumber": 3
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1071,13 +1438,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 4
+                "objectNumber": 4
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1111,7 +1478,7 @@
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -1122,7 +1489,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1136,20 +1504,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1172,6 +1555,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1179,7 +1567,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1188,7 +1576,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1201,13 +1590,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -1217,7 +1606,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1228,14 +1617,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1246,14 +1636,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1264,14 +1655,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1282,14 +1674,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1300,7 +1693,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1313,13 +1707,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -1334,13 +1728,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 4
+                    "objectNumber": 4
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -1350,33 +1744,35 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         }
@@ -1411,7 +1807,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -1420,18 +1816,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -1439,7 +1860,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -1448,18 +1869,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -1471,9 +1917,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -1481,6 +1928,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -1520,13 +1975,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1553,13 +2008,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -1597,7 +2052,7 @@
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -1608,7 +2063,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1622,20 +2078,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1658,6 +2129,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1665,7 +2141,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1674,7 +2150,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1687,13 +2164,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -1703,7 +2180,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1714,27 +2191,29 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1745,7 +2224,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1758,13 +2238,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -1774,7 +2254,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1785,27 +2265,29 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1845,7 +2327,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -1854,18 +2336,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -1873,7 +2380,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -1882,18 +2389,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -1905,9 +2437,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -1915,6 +2448,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -1954,13 +2495,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               "events": {
                 "enter": false
@@ -1981,13 +2522,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               "events": {
                 "exit": false
@@ -2037,21 +2578,24 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 3
+                "objectNumber": 3
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
-              "events": {}
+              "events": {
+                "enter": false,
+                "exit": false
+              }
             }
           ]
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -2062,7 +2606,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2076,20 +2621,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2112,6 +2672,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2119,7 +2684,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2128,14 +2693,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2146,7 +2712,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2159,13 +2726,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -2180,13 +2747,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -2196,7 +2763,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2207,40 +2774,43 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2251,36 +2821,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 3
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2320,7 +2869,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2329,18 +2878,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -2348,7 +2922,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -2357,18 +2931,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2380,9 +2979,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -2390,6 +2990,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -2429,13 +3037,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2471,13 +3079,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2493,7 +3101,7 @@
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -2504,7 +3112,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2518,20 +3127,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2554,6 +3178,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2561,7 +3190,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2570,7 +3199,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2583,13 +3213,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -2599,7 +3229,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2610,27 +3240,29 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2641,7 +3273,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2654,13 +3287,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -2670,7 +3303,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2681,14 +3314,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           }
         }
@@ -2696,7 +3330,7 @@
     },
     {
       "name": "target-identity",
-      "covers": "Targets compare by ref kind and page: object numbers, /NM, and index plus revision; a different kind or page is a new target.",
+      "covers": "Targets compare by page and current annotationKey: object numbers and stable base indices; repeated positions stay silent and different pages produce a new target.",
       "plugins": [
         {
           "factory": "hover-pump",
@@ -2720,7 +3354,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2729,18 +3363,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -2748,7 +3407,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -2757,18 +3416,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2780,9 +3464,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -2790,6 +3475,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -2826,16 +3519,16 @@
           "args": [
             {
               "ref": {
-                "kind": "nm",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "nm": "tip"
+                "baseIndex": 0
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2850,16 +3543,16 @@
           "args": [
             {
               "ref": {
-                "kind": "nm",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "nm": "tip"
+                "baseIndex": 0
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2874,16 +3567,16 @@
           "args": [
             {
               "ref": {
-                "kind": "nm",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "nm": "other"
+                "baseIndex": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2898,17 +3591,16 @@
           "args": [
             {
               "ref": {
-                "kind": "index",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "index": 2,
-                "revision": "r1"
+                "baseIndex": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2923,17 +3615,16 @@
           "args": [
             {
               "ref": {
-                "kind": "index",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "index": 2,
-                "revision": "r1"
+                "baseIndex": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2948,17 +3639,16 @@
           "args": [
             {
               "ref": {
-                "kind": "index",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "index": 2,
-                "revision": "r2"
+                "baseIndex": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -2973,41 +3663,16 @@
           "args": [
             {
               "ref": {
-                "kind": "index",
+                "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "index": 3,
-                "revision": "r2"
+                "baseIndex": 3
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
-              }
-            }
-          ]
-        },
-        {
-          "op": "call",
-          "target": {
-            "token": "hover-pump",
-            "doc": "a"
-          },
-          "method": "hover",
-          "args": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "page": {
-                  "kind": "objectNumber",
-                  "pageObjectNumber": 1
-                },
-                "annotObjectNumber": 1
-              },
-              "page": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -3025,13 +3690,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2
+                "objectNumber": 1
               }
             }
           ]
@@ -3049,13 +3714,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2
+                "objectNumber": 2
               }
             }
           ]
@@ -3073,20 +3738,44 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2
+                "objectNumber": 2
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "objectNumber": 2
+              },
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 2
               }
             }
           ]
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -3097,7 +3786,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3111,20 +3801,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3147,6 +3852,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3154,7 +3864,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3163,7 +3873,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3173,16 +3884,16 @@
                   "scope": "annotation",
                   "event": "cursorEnter",
                   "ref": {
-                    "kind": "nm",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "nm": "tip"
+                    "baseIndex": 0
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3192,7 +3903,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3203,14 +3914,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3221,7 +3933,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3231,16 +3944,16 @@
                   "scope": "annotation",
                   "event": "cursorExit",
                   "ref": {
-                    "kind": "nm",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "nm": "tip"
+                    "baseIndex": 0
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3252,16 +3965,16 @@
                   "scope": "annotation",
                   "event": "cursorEnter",
                   "ref": {
-                    "kind": "nm",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "nm": "other"
+                    "baseIndex": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3271,7 +3984,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3282,7 +3995,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3292,16 +4006,16 @@
                   "scope": "annotation",
                   "event": "cursorExit",
                   "ref": {
-                    "kind": "nm",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "nm": "other"
+                    "baseIndex": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3313,17 +4027,16 @@
                   "scope": "annotation",
                   "event": "cursorEnter",
                   "ref": {
-                    "kind": "index",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "index": 2,
-                    "revision": "r1"
+                    "baseIndex": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3333,7 +4046,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3344,14 +4057,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3362,263 +4076,15 @@
         },
         {
           "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorExit",
-                  "ref": {
-                    "kind": "index",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "index": 2,
-                    "revision": "r1"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "index",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "index": 2,
-                    "revision": "r2"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorExit",
-                  "ref": {
-                    "kind": "index",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "index": 2,
-                    "revision": "r2"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "index",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "index": 3,
-                    "revision": "r2"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorExit",
-                  "ref": {
-                    "kind": "index",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "index": 3,
-                    "revision": "r2"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 1
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorExit",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 1
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 2
-                    },
-                    "annotObjectNumber": 1
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 2
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3629,7 +4095,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3639,16 +4106,78 @@
                   "scope": "annotation",
                   "event": "cursorExit",
                   "ref": {
-                    "kind": "objectNumber",
+                    "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 2
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "baseIndex": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 2
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "baseIndex",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "baseIndex": 3
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "baseIndex",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "baseIndex": 3
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3663,13 +4192,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 2
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 2
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3679,7 +4208,150 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 2
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 2
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 2
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 2
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 2
+                    },
+                    "objectNumber": 2
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 2
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3725,7 +4397,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -3734,18 +4406,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -3753,7 +4450,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -3762,18 +4459,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -3785,9 +4507,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -3795,6 +4518,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -3834,13 +4565,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 1
+                "objectNumber": 1
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -3858,20 +4589,20 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 2
+                "objectNumber": 2
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -3882,7 +4613,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3896,20 +4628,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3932,6 +4679,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3939,7 +4691,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3948,7 +4700,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3961,13 +4714,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -3977,7 +4730,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3988,7 +4741,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4001,13 +4755,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 1
+                    "objectNumber": 1
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -4022,13 +4776,13 @@
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     },
-                    "annotObjectNumber": 2
+                    "objectNumber": 2
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -4038,7 +4792,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4050,25 +4804,19 @@
       ]
     },
     {
-      "name": "an-unknown-ref-kind-never-matches-itself",
-      "covers": "sameTarget is false for a ref kind it does not know, even against itself, so every settle delivers the same target again.",
+      "name": "an-unknown-ref-kind-has-no-key-and-matches-itself",
+      "covers": "An intentionally malformed ref has no annotationKey; two identical unknown keys compare equal, so repeated input does not dispatch again.",
       "plugins": [
         {
           "factory": "hover-pump",
           "config": {
             "dispatch": {
               "$fn": "dispatch",
-              "seq": [
-                {
-                  "defer": "d1"
-                },
-                {
-                  "defer": "d2"
-                },
-                {
-                  "defer": "d3"
-                }
-              ]
+              "resolves": {
+                "status": "executed",
+                "steps": [],
+                "diagnostics": []
+              }
             }
           }
         }
@@ -4081,7 +4829,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -4090,18 +4838,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -4109,7 +4882,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -4118,18 +4891,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -4141,9 +4939,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -4151,6 +4950,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -4191,19 +4998,10 @@
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
-        },
-        {
-          "op": "settle",
-          "label": "d1",
-          "value": {
-            "status": "executed",
-            "steps": [],
-            "diagnostics": []
-          }
         },
         {
           "op": "call",
@@ -4219,14 +5017,14 @@
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
         }
       ],
       "snapshot": "none",
-      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+      "reason": "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
       "trace": [
         {
           "settled": [
@@ -4237,7 +5035,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4251,20 +5050,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4287,6 +5101,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4294,7 +5113,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4303,7 +5122,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4317,7 +5137,7 @@
                   },
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   }
                 }
               ]
@@ -4327,7 +5147,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4338,60 +5158,15 @@
         },
         {
           "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorExit",
-                  "ref": {
-                    "kind": "mystery"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "dispatch",
-              "args": [
-                {
-                  "scope": "annotation",
-                  "event": "cursorEnter",
-                  "ref": {
-                    "kind": "mystery"
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4407,7 +5182,7 @@
       "covers": "Over the actions capability: the pump forwards the source hint, and the /E and /X trees run as hover-origin steps.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -4427,7 +5202,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -4436,18 +5211,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -4455,7 +5255,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -4464,18 +5264,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -4490,33 +5315,51 @@
                 "value": {
                   "annotations": [
                     {
+                      "subtype": "square",
                       "ref": {
                         "kind": "objectNumber",
                         "page": {
                           "kind": "objectNumber",
-                          "pageObjectNumber": 1
+                          "objectNumber": 1
                         },
-                        "annotObjectNumber": 5
+                        "objectNumber": 5
                       },
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1
+                        "objectNumber": 1
                       },
-                      "subtype": "square",
+                      "hasAppearance": true,
+                      "appearanceState": null,
+                      "nm": null,
                       "rect": {
-                        "left": 10,
-                        "bottom": 20,
-                        "right": 30,
-                        "top": 40
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
                       },
-                      "flags": {
-                        "hidden": false,
-                        "print": true,
-                        "readOnly": false,
-                        "locked": false,
-                        "noView": false,
-                        "toggleNoView": false
-                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
                       "actions": {
                         "cursorEnter": {
                           "root": {
@@ -4540,36 +5383,68 @@
                           "warningFlags": 0,
                           "warnings": []
                         }
-                      }
+                      },
+                      "color": "#ef4444",
+                      "opacity": 1,
+                      "strokeWidth": 2,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "interiorColor": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "cloudyIntensity": null
                     },
                     {
+                      "subtype": "square",
                       "ref": {
                         "kind": "objectNumber",
                         "page": {
                           "kind": "objectNumber",
-                          "pageObjectNumber": 1
+                          "objectNumber": 1
                         },
-                        "annotObjectNumber": 6
+                        "objectNumber": 6
                       },
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1
+                        "objectNumber": 1
                       },
-                      "subtype": "square",
+                      "hasAppearance": true,
+                      "appearanceState": null,
+                      "nm": null,
                       "rect": {
-                        "left": 10,
-                        "bottom": 20,
-                        "right": 30,
-                        "top": 40
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
                       },
-                      "flags": {
-                        "hidden": false,
-                        "print": true,
-                        "readOnly": false,
-                        "locked": false,
-                        "noView": false,
-                        "toggleNoView": false
-                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
                       "actions": {
                         "cursorEnter": {
                           "root": {
@@ -4582,7 +5457,21 @@
                           "warningFlags": 0,
                           "warnings": []
                         }
-                      }
+                      },
+                      "color": "#ef4444",
+                      "opacity": 1,
+                      "strokeWidth": 2,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "interiorColor": null,
+                      "box": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "rotation": null,
+                      "cloudyIntensity": null
                     }
                   ]
                 }
@@ -4590,9 +5479,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -4600,6 +5490,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -4669,13 +5567,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 5
+                "objectNumber": 5
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               "source": {
                 "kind": "link",
@@ -4683,13 +5581,13 @@
                   "kind": "objectNumber",
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1
+                    "objectNumber": 1
                   },
-                  "annotObjectNumber": 5
+                  "objectNumber": 5
                 },
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 }
               }
             }
@@ -4708,13 +5606,13 @@
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
-                "annotObjectNumber": 6
+                "objectNumber": 6
               },
               "page": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               }
             }
           ]
@@ -4744,7 +5642,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4761,20 +5660,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4797,6 +5711,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4804,31 +5723,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4837,24 +5752,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4863,25 +5774,19 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
             {
               "doc": "a",
               "path": "page.annotations.list",
@@ -4907,13 +5812,13 @@
                       "kind": "objectNumber",
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1
+                        "objectNumber": 1
                       },
-                      "annotObjectNumber": 5
+                      "objectNumber": 5
                     },
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     }
                   },
                   "event": {
@@ -4927,28 +5832,6 @@
               "fn": "onExecuted",
               "args": [
                 {
-                  "ctx": {
-                    "origin": "hover",
-                    "source": {
-                      "kind": "link",
-                      "annotation": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 5
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      }
-                    },
-                    "event": {
-                      "scope": "annotation",
-                      "name": "cursorEnter"
-                    }
-                  },
                   "tree": {
                     "root": {
                       "type": "named",
@@ -4970,6 +5853,21 @@
                       }
                     ],
                     "diagnostics": []
+                  },
+                  "source": {
+                    "kind": "link",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 5
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
                   }
                 }
               ]
@@ -4979,7 +5877,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4988,35 +5886,28 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            },
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
             {
               "doc": "a",
               "path": "page.annotations.list",
               "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
               "args": []
             },
             {
@@ -5044,13 +5935,13 @@
                       "kind": "objectNumber",
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1
+                        "objectNumber": 1
                       },
-                      "annotObjectNumber": 5
+                      "objectNumber": 5
                     },
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     }
                   },
                   "event": {
@@ -5064,28 +5955,6 @@
               "fn": "onExecuted",
               "args": [
                 {
-                  "ctx": {
-                    "origin": "hover",
-                    "source": {
-                      "kind": "link",
-                      "annotation": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 5
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      }
-                    },
-                    "event": {
-                      "scope": "annotation",
-                      "name": "cursorExit"
-                    }
-                  },
                   "tree": {
                     "root": {
                       "type": "named",
@@ -5107,6 +5976,21 @@
                       }
                     ],
                     "diagnostics": []
+                  },
+                  "source": {
+                    "kind": "link",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 5
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
                   }
                 }
               ]
@@ -5128,13 +6012,13 @@
                       "kind": "objectNumber",
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1
+                        "objectNumber": 1
                       },
-                      "annotObjectNumber": 6
+                      "objectNumber": 6
                     },
                     "page": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1
+                      "objectNumber": 1
                     }
                   },
                   "event": {
@@ -5148,28 +6032,6 @@
               "fn": "onExecuted",
               "args": [
                 {
-                  "ctx": {
-                    "origin": "hover",
-                    "source": {
-                      "kind": "annotation",
-                      "annotation": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 6
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      }
-                    },
-                    "event": {
-                      "scope": "annotation",
-                      "name": "cursorEnter"
-                    }
-                  },
                   "tree": {
                     "root": {
                       "type": "named",
@@ -5191,6 +6053,21 @@
                       }
                     ],
                     "diagnostics": []
+                  },
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 6
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
                   }
                 }
               ]
@@ -5200,7 +6077,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5209,18 +6086,19 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 3,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
             {
               "doc": "a",
               "path": "page.annotations.list",
@@ -5233,7 +6111,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5242,12 +6120,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 3,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]

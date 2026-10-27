@@ -1,0 +1,40 @@
+{
+  "fixBase": "4b3ad039e3fd8bdac2569c38144fe67c561c6772",
+  "changedCases": [
+    {
+      "name": "set-another-page",
+      "oldInputSha256": "b8bfb76cabc1d3d9ef9fce4ba85650839feaf1be082a2b1fe577bc42424a53e9",
+      "currentInputSha256": "bb6250e12fdbc171a8e94992164104a0affaec6d9ed798028d8b6743dcb0b235",
+      "oldSteps": 8,
+      "currentSteps": 10
+    },
+    {
+      "name": "set-replaces-a-page",
+      "oldInputSha256": "c38cd027ba7c6a39e8bd1c856be80206fddc5d91e02e27a45a7be35946a57ddd",
+      "currentInputSha256": "3212827473ee39f99f8f0201486a8315c10e8e42c928b4eeb453cc5e120e26b6",
+      "oldSteps": 7,
+      "currentSteps": 9
+    },
+    {
+      "name": "set-an-empty-page",
+      "oldInputSha256": "880c9c5ba10e801896945c9792eeb05ed5bd3a52c81d98e09b77af7bd4c79814",
+      "currentInputSha256": "ed173ef90307838f9b08ced7ad06d191dfb4f19fd4a5390396a44dd330e8a90a",
+      "oldSteps": 5,
+      "currentSteps": 14
+    }
+  ],
+  "all29OriginalDefinitionsInputsAndOutcomesExact": true,
+  "other26MappingsExact": true,
+  "negativeChannelsExact": true,
+  "returnedRefusalsExact": true,
+  "originalAuthorities": {
+    "original-link.ts.txt": "1b93c7d7597cf50ee503b2be67a1769502880260456b353a666f69a9ed3bb29e",
+    "original-runtime.json": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7",
+    "base-link.ts.txt": "1b93c7d7597cf50ee503b2be67a1769502880260456b353a666f69a9ed3bb29e",
+    "base-acrojs-current.test.ts.txt": "3417d507c25b7104ee93c031f2278c8528a84d42ded2a5e67d64499a5cfe3b10",
+    "base-actions-current.test.ts.txt": "d1f1f8256d9efc7e6bf33f9443a1541ab3a021abfded473a323909c1ab706f0a",
+    "base-commands-current.test.ts.txt": "98819b93b3948551321c7e89c69a2cb492d563ea06285bd8ed7d37dceb3bfe53"
+  },
+  "preservedPrivateToolingCount": 522,
+  "prior239": "Complete actions160/commands79 inputs/outcomes replayed by fix1-green.out test; their authority/source files exact in this audit."
+}

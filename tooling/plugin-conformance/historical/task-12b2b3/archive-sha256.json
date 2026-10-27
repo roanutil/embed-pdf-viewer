@@ -1,0 +1,18 @@
+{
+  "c-signature-inputs.json": "23eb56e2869b165b142e7809f8f5cea29224321eca183839f2d7594a9eb6fb08",
+  "channels.json": "5e732e3e8736bee01ceb53357a0a6fb1735a73df06c024e91d4d09cef0e028f0",
+  "diagnostics.json": "8336d8d6c410aa31972e20a01c417a6c669bf08395b6da50e2fbb7586d516a1c",
+  "inputs-runtime.json.gz": "fe96fcea32d25f64b15941256e552a9363cccec547e977b106b38047ee7928a9",
+  "measurement.ts.txt": "67abea55de6a7ea9f354044b84970eb9026736096d37e2014e8d67d956f3a538",
+  "original-inputs.json": "52a3f6171fc21d567e90fda9792839eef7f216b3cfc0ae0cdfd09853c90272ec",
+  "redaction.ts.txt": "f33e56cab373dbd4c788b068212f00a94f43a605c716bd397b92f3ef23464f31",
+  "stamp-api.ts.txt": "5d0b14af04188af4a0f931f318fbf353dfc347e0d250c884f77cb83d20f490be",
+  "stamp-assets.ts.txt": "ec322d02378e6223f8ee916ac16b4d78dfecd566e79f1ce622e765d25d4aa723",
+  "stamp-fixtures.ts.txt": "b7b4506be876d6d71da57c38040ec970c41bdf0982608ac867eaa270cc7dad86",
+  "stamp-functions.ts.txt": "9ec8a89ad7234310ba6694b6db47d1d85d63b7624992cd80cf11172c02d7d0a7",
+  "stamp-library.ts.txt": "066c918d96cf21fea6f4e77db24ffdff80f489bb05e1d19125649bea4eb5c4e6",
+  "stamp-placement.ts.txt": "9db6a15b6a4113d9fff97900fef6a8b5f17250e57915cc30f520dba4b6ede58f",
+  "summary.json": "ee68ab1ecd18b4eaaeb3682f7ea5f82e7e2daa224e716099e380022e1e95d60c",
+  "task11-stamp-drift.json": "7bf05853cd4d415d6dc3b8c868695ecb93e8b20a04fddcc91eaa63daad3f22fa",
+  "inputs-runtime.json.uncompressed": "2f62e110a80541d9d292223fa4796483cf15800cf798723c9270d82154e13fb8"
+}

@@ -76,7 +76,7 @@ const CASES: readonly MetadataCase[] = [
   },
 ];
 
-async function readCase(entry: MetadataCase): Promise<unknown> {
+async function readCase(entry: MetadataCase): Promise<Record<string, unknown>> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, entry.fixture)));
   const engine = createLocalEngine({
     runtime: {
@@ -88,16 +88,23 @@ async function readCase(entry: MetadataCase): Promise<unknown> {
     },
   });
   try {
+    // The password moved from the input to `OpenOptions` in 09c24496f
+    // ("Engine API v3, round 2: opening and lifecycle").
     const doc = await engine.open(
-      { kind: 'bytes', id: `metadata:${entry.name}`, bytes, password: entry.password },
-      { scope: ['*'] },
+      { kind: 'bytes', id: `metadata:${entry.name}`, bytes },
+      { scope: ['*'], password: entry.password },
     );
     try {
+      // `metadata.read` and `actions.read` became `get` in 83f6598d2 ("Engine
+      // API v3, round 3a"). The Info dict's other keys left the metadata read
+      // for `metadata.custom.get()` in a4b8259f7 ("Custom metadata keys are an
+      // object of their own"); they go back under `custom`, where the vector
+      // has always carried them.
       return {
         ...entry,
-        metadata: await doc.metadata.read(),
+        metadata: { ...(await doc.metadata.get()), custom: await doc.metadata.custom.get() },
         pages: await doc.pages.list(),
-        actions: await doc.actions.read(),
+        actions: await doc.actions.get(),
       };
     } finally {
       await doc.close();

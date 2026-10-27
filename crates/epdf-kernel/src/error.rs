@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 
 /// The class an error was constructed from, where the TypeScript tells
 /// errors apart with `instanceof` rather than by name. A table or a vector
@@ -85,13 +85,25 @@ impl Error {
             Some(context) => format!("permission denied ({context}): {required}"),
             None => format!("permission denied: {required}"),
         };
+        let mut details = json!({ "required": required });
+        if let Some(context) = context {
+            details["context"] = json!(context);
+        }
         let mut error = Error::named("PermissionDenied", message)
+            .with("code", "Forbidden")
+            .with("details", details)
             .with("required", required)
             .of_class(ErrorClass::PermissionDenied);
         if let Some(context) = context {
             error = error.with("context", context);
         }
         error
+    }
+
+    /// `controller.abort()` with no reason: the platform's `DOMException`,
+    /// named `AbortError`, with Node's and the browsers' message.
+    pub fn dom_abort() -> Self {
+        Error::named("AbortError", "This operation was aborted")
     }
 
     /// `new AbortError(reason)`: the message rules of `AbortError.ts`.
@@ -199,6 +211,19 @@ pub fn plugin_error(
     let mut error = Error::named("PluginError", message)
         .with("code", code)
         .with("capability", capability)
+        .with(
+            "permission",
+            if code == code::PERMISSION_DENIED {
+                details
+                    .as_ref()
+                    .and_then(|d| d.get("required"))
+                    .filter(|v| v.is_string())
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else {
+                Value::Null
+            },
+        )
         .of_class(ErrorClass::Plugin);
     if let Some(details) = details.filter(|d| !crate::is_undefined(d)) {
         error = error.with("details", details);
@@ -223,20 +248,38 @@ impl Error {
         self.members.get("code").and_then(Value::as_str)
     }
 
-    /// `toPluginErrorInfo(error)`: `{code, message, capability}`.
+    /// `toPluginErrorInfo(error)` (`errors.ts:58-65`): `{code, message,
+    /// capability, permission}`, a member the error lacks as `null`. The one
+    /// converter: [`to_plugin_error_info`] reads this into the typed struct.
     pub fn plugin_error_info(&self) -> Value {
         serde_json::json!({
             "code": self.members.get("code").cloned().unwrap_or(Value::Null),
             "message": self.message,
             "capability": self.members.get("capability").cloned().unwrap_or(Value::Null),
+            "permission": self.members.get("permission").cloned().unwrap_or(Value::Null),
         })
+    }
+}
+
+/// [`Error::plugin_error_info`] as the typed `PluginErrorInfo` a contract
+/// carries. A `PluginError` (`to_plugin_error`'s answer) always has `code`
+/// and `capability`; on another error the struct's strings read a missing
+/// one as empty, where the JSON says `null`.
+pub fn to_plugin_error_info(error: &Error) -> crate::types::PluginErrorInfo {
+    let info = error.plugin_error_info();
+    let text = |key: &str| info[key].as_str().unwrap_or_default().to_string();
+    crate::types::PluginErrorInfo {
+        code: text("code"),
+        message: text("message"),
+        capability: text("capability"),
+        permission: info["permission"].as_str().map(str::to_string),
     }
 }
 
 /// The engine codes `toPluginError` maps; anything else is `operation-failed`.
 fn engine_code(code: &str) -> Option<&'static str> {
     Some(match code {
-        "InvalidArg" | "MalformedPdf" | "WireFormat" => code::INVALID_INPUT,
+        "InvalidArg" | "MalformedPdf" | "PayloadTooLarge" => code::INVALID_INPUT,
         "DocNotOpen" => code::NOT_READY,
         "DocPasswordRequired"
         | "DocPasswordIncorrect"
@@ -244,10 +287,14 @@ fn engine_code(code: &str) -> Option<&'static str> {
         | "Unauthenticated"
         | "Forbidden"
         | "ProtectedDocument" => code::PERMISSION_DENIED,
-        "NotFound" | "InvalidReference" => code::NOT_FOUND,
+        "NotFound" => code::NOT_FOUND,
         "NotImplemented" => code::UNSUPPORTED,
+        "IdempotencyKeyReused" => code::INVALID_INPUT,
         "Aborted" => code::OPERATION_CANCELLED,
-        "WeakAnnotationSessionConflict"
+        "ObjectNumberUnavailable"
+        | "LayerFull"
+        | "ChangeConflict"
+        | "UndoUnavailable"
         | "LayerVersionConflict"
         | "StaleBase"
         | "SigningPending"
@@ -284,19 +331,15 @@ pub fn to_plugin_error(capability: &str, error: &Error) -> Error {
     match error.class {
         ErrorClass::Plugin => return error.clone(),
         ErrorClass::PermissionDenied => {
-            let mut details = Map::new();
-            if let Some(required) = error.members.get("required") {
-                details.insert("required".into(), required.clone());
-            }
-            if let Some(context) = error.members.get("context") {
-                details.insert("context".into(), context.clone());
-            }
+            // TS passes `error.details` through whole (`anyOf`, `refs`
+            // included), and `permission` reads `details.required`.
+            let details = error.members.get("details").cloned();
             return plugin_error(
                 code::PERMISSION_DENIED,
                 capability,
                 error.message.clone(),
                 Some(error.to_canonical()),
-                Some(Value::Object(details)),
+                details,
             );
         }
         ErrorClass::Cancelled => {

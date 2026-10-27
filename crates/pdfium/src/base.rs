@@ -244,7 +244,9 @@ impl BaseDocument {
         // SAFETY: a non-null handle from EPDFLayer_OpenLayer is an ordinary
         // FPDF_DOCUMENT that must be closed with FPDF_CloseDocument, which is
         // what `Document::from_raw_layer` arranges.
-        let document = unsafe { Document::from_raw_layer(handle, Rc::clone(&self.library)) };
+        let document = unsafe {
+            Document::from_raw_layer_over(handle, Rc::clone(&self.library), Rc::clone(self))
+        };
         Ok(LayerDocument { document, base: Rc::clone(self) })
     }
 
@@ -272,8 +274,8 @@ impl Drop for BaseDocument {
 #[derive(Debug)]
 pub struct LayerDocument {
     document: Document,
-    /// Holds the base open. Declared after `document` so the layer closes
-    /// first, which is the order the base's lifetime requires.
+    /// The base, for [`LayerDocument::base`]. The document holds its own
+    /// reference, which is what keeps the base open.
     #[allow(dead_code)]
     base: Rc<BaseDocument>,
 }
@@ -289,16 +291,10 @@ impl LayerDocument {
 
     /// Split the layer into its document and the base that backs it.
     ///
-    /// For a caller that has to store the two separately, which a session
-    /// does: the document goes where every other document goes and the base
-    /// is parked with the session's retained resources.
-    ///
-    /// The `Rc` is not optional. A caller that drops it while still holding
-    /// the `Document` leaves that document pointing into a released base, so
-    /// the contract is that the `Rc` outlives the `Document`. Returning them
-    /// as a tuple makes the safe thing the easy thing: tuple fields drop
-    /// left to right, so `let (document, base) = ...` already drops the
-    /// document first.
+    /// The document holds its own reference to the base, released after its
+    /// handle closes, so dropping the returned `Rc` early is safe: the base
+    /// lives as long as the document, and as long as anything holding the
+    /// document (a pooled page) does.
     pub fn into_parts(self) -> (Document, Rc<BaseDocument>) {
         (self.document, self.base)
     }
@@ -309,5 +305,34 @@ impl std::ops::Deref for LayerDocument {
 
     fn deref(&self) -> &Self::Target {
         &self.document
+    }
+}
+
+/// A layer's object numbers: the last one it handed out, and raising it.
+///
+/// On [`Document`] because a layer is one; on a document that is not a layer
+/// both report failure, as the header says.
+impl Document {
+    /// `EPDFLayer_GetLastObjectNumber`: every object the layer has is at or
+    /// below this number, including those of a transaction that aborted.
+    /// `0` for a document that is not a layer.
+    pub fn layer_last_object_number(&self) -> u32 {
+        // SAFETY: the handle is live for the call.
+        let last = unsafe { pdfium_sys::EPDFLayer_GetLastObjectNumber(self.as_raw()) };
+        u32::try_from(last).unwrap_or(u32::MAX)
+    }
+
+    /// `EPDFLayer_RaiseLastObjectNumber`: raise the last object number to
+    /// `last` when it is lower, handing out the numbers in between. Never
+    /// lowers it. `false` for a document that is not a layer, or a number
+    /// past the parser's limit.
+    pub fn raise_layer_last_object_number(&self, last: u32) -> bool {
+        // SAFETY: the handle is live for the call.
+        unsafe {
+            pdfium_sys::EPDFLayer_RaiseLastObjectNumber(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(last),
+            ) != 0
+        }
     }
 }

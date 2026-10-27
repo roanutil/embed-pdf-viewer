@@ -1,34 +1,48 @@
 //! `view/lifecycle.ts`: the view lifecycle. The viewport report (initial
-//! placement is level-triggered here: the moment the stage first learns a
+//! placement is level-triggered here, the moment the stage first learns a
 //! real size and the document has pages), the device pixel ratio, the
 //! initial-view providers resolved once by priority, the refit after
-//! page-registry mutations, and the view memento reads.
+//! page-registry changes, and the view memento reads.
 
 use epdf_kernel::Unsubscribe;
 
+use crate::model::{mark_placed, set_dpr, set_viewport};
 use crate::prelude::*;
 
 impl StageCapability {
-    /// Report the viewport. The first report with both axes positive and a
-    /// document with pages runs initial placement; later ones keep the
-    /// anchor and re-resolve fit modes. `Err` where the TypeScript throws:
-    /// no item under the anchor point.
-    pub fn set_viewport_size(&self, v: Size) -> Result<(), Error> {
-        if !self.inner.placement_started.get() {
-            self.dispatch(StageAction::Vp { vp: v });
-            // Rules see the box before placement resolves. With react false
-            // nothing clamps, so this cannot fail.
-            let _ = self.sync_responsive(false);
-            if v.width > 0.0 && v.height > 0.0 && self.page_count_now() > 0 {
+    /// Report the container box. The first report with both axes positive
+    /// and a document with pages runs initial placement. After that, a box
+    /// with no area, or the size the stage already has, keeps the view;
+    /// a real resize keeps the anchored page-point and re-resolves fit
+    /// modes. `Err` where the TypeScript throws: no item under the anchor
+    /// point.
+    pub fn set_viewport_size(&self, size: Size) -> Result<(), Error> {
+        if !self.inner.placement.started.get() {
+            self.update(|s| set_viewport(s, size));
+            // Rules see the box before placement resolves.
+            self.sync_responsive_quietly();
+            if size.width > 0.0 && size.height > 0.0 && self.page_count() > 0 {
                 self.place_initial();
             }
             return Ok(());
         }
-        self.cancel_anim();
+        // A report with no area means the view isn't shown: keep the last
+        // real viewport and the view.
+        if size.width <= 0.0 || size.height <= 0.0 {
+            return Ok(());
+        }
+        // A report of the size the stage already has says nothing new.
+        let current = self.st().viewport;
+        if size.width == current.width && size.height == current.height {
+            return Ok(());
+        }
+        self.cancel_animation();
         let anchor = self.current_anchor()?; // against the old viewport
-        self.dispatch(StageAction::Vp { vp: v });
-        let fx = self.sync_responsive(false).unwrap_or(SettingEffect::None);
-        if fx == SettingEffect::Reflow {
+        self.update(|s| set_viewport(s, size));
+        // A breakpoint crossing rides the same reframe; only a rule-driven
+        // flow flip escalates past reapply.
+        let effect = self.sync_responsive_quietly();
+        if effect == SettingEffect::Reflow {
             self.go_to_target(
                 self.st().cursor as isize,
                 Some(GoToOptions::behavior(ScrollBehaviorKind::Instant)),
@@ -42,18 +56,18 @@ impl StageCapability {
     /// Report the device pixel ratio. Only a positive, changed ratio lands.
     pub fn set_device_pixel_ratio(&self, ratio: f64) {
         if ratio > 0.0 && ratio != self.dpr() {
-            self.dispatch(StageAction::Dpr { dpr: ratio });
+            self.update(|s| set_dpr(s, ratio));
         }
     }
 
     /// Re-resolve the zoom intent against the current scene, keeping the
-    /// anchor. A no-op before the first placement. The watchers call it on
+    /// anchor. A no-op before the first placement. `connect` calls it on
     /// every page-registry revision.
     pub fn refit(&self) -> Result<(), Error> {
-        if !self.inner.placement_started.get() {
+        if !self.inner.placement.started.get() {
             return Ok(());
         }
-        self.cancel_anim();
+        self.cancel_animation();
         self.reapply(self.current_anchor()?, None);
         Ok(())
     }
@@ -68,21 +82,22 @@ impl StageCapability {
     }
 
     /// This lens's identity: the stage plugin id it registered under.
-    /// Pointer samples are stamped with it.
     pub fn get_lens_id(&self) -> String {
         self.ctx.id().to_string()
     }
 
-    /// Offer a candidate initial view; the highest priority non-null one
+    /// Offer a candidate initial view; the highest-priority non-null one
     /// wins at placement. The returned unsubscribe withdraws it.
-    pub fn provide_initial_view(
+    pub fn provide_initial_view<V: Into<StageViewPatch>>(
         &self,
         priority: f64,
-        provider: impl Fn() -> Option<StageViewState> + 'static,
+        provider: impl Fn() -> Option<V> + 'static,
     ) -> Unsubscribe {
         let id = self.inner.next_provider.get();
         self.inner.next_provider.set(id + 1);
-        self.inner.providers.borrow_mut().push((id, priority, Rc::new(provider)));
+        let provider: Rc<dyn Fn() -> Option<StageViewPatch>> =
+            Rc::new(move || provider().map(Into::into));
+        self.inner.providers.borrow_mut().push((id, priority, provider));
         let inner = Rc::downgrade(&self.inner);
         Unsubscribe::new(move || {
             if let Some(inner) = inner.upgrade() {
@@ -91,20 +106,35 @@ impl StageCapability {
         })
     }
 
-    /// Resolve the providers once (else reset), then publish PLACED.
+    /// Resolve the registered providers once (else reset), land the
+    /// navigation asked for before placement, then publish `placed`.
     pub fn place_initial(&self) {
-        self.inner.placement_started.set(true);
-        let mut sorted = self.inner.providers.borrow().clone();
-        // `Array#sort` with `(a, b) => b.priority - a.priority`: stable.
-        sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-        for (_, _, provider) in sorted {
-            if let Some(view) = provider() {
-                self.apply_view_state(view);
-                self.dispatch(StageAction::Placed);
-                return;
+        self.inner.placement.started.set(true);
+        let mut by_priority = self.inner.providers.borrow().clone();
+        // `Array#sort` with `(left, right) => right.priority - left.priority`:
+        // stable. A NaN priority makes that comparator inconsistent, and
+        // neither language promises an order then (Rust's `sort_by` may even
+        // panic on a non-total order past 20 entries); `total_cmp` would not
+        // match V8's order either, so equal-on-NaN stays.
+        by_priority.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        let mut view = None;
+        for (_, _, provider) in by_priority {
+            view = provider();
+            if view.is_some() {
+                break;
             }
         }
-        self.reset_view();
-        self.dispatch(StageAction::Placed);
+        match view {
+            Some(view) => self.apply_view_state(view),
+            None => self.reset_view(),
+        }
+        // Navigation the app asked for before there was a viewport lands
+        // last, from the initial view.
+        let pending = self.inner.placement.pending.borrow_mut().take();
+        if let Some(pending) = pending {
+            pending(self);
+        }
+        // Publish renderability last.
+        self.update(mark_placed);
     }
 }

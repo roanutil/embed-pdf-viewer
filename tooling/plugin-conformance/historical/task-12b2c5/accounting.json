@@ -1,0 +1,4394 @@
+{
+  "base": "417838c1835da14c5f94164cbe3665bd0f35d29c",
+  "frozenCAuthority": "79b16091b9950935e5df77966f4207a1eddcce07/task-12b2c-before",
+  "summary": {
+    "original": 76,
+    "current": 79,
+    "mapped": 76,
+    "wholeRetirements": 0,
+    "partialRetirements": 25,
+    "additions": 3,
+    "changedInputs": 39
+  },
+  "mappings": [
+    {
+      "originalOccurrence": 0,
+      "originalSuiteIndex": 0,
+      "file": "plugins/commands/functions.json",
+      "name": "initial-state",
+      "originalInputSha256": "0a5379626a55df55bfb7c726f2d6f5a3e9fb1749805163d015ca670017563f19",
+      "currentIndex": 0,
+      "currentInputSha256": "3ba94811a3505c59af64faf3ebbfbe2d36756ed2b56d4723e14330d3e0b7ba10",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "initialCommandsState",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[0]",
+          "after": {}
+        },
+        {
+          "path": "$.args[1]",
+          "after": "read"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 1,
+      "originalSuiteIndex": 1,
+      "file": "plugins/commands/functions.json",
+      "name": "disable-new",
+      "originalInputSha256": "3c5c46b26c9c24ada4b879677fbd62c0199ca857939ab1e00212918c624b3e35",
+      "currentIndex": 1,
+      "currentInputSha256": "be4f297ba689b3f86846da62e88a4d5cb7a4d529c435cae2cfdeab6fb2d51b51",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/DISABLE_CATEGORY",
+            "category": "b"
+          },
+          "after": "disableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "b"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 2,
+      "originalSuiteIndex": 2,
+      "file": "plugins/commands/functions.json",
+      "name": "disable-into-empty",
+      "originalInputSha256": "9166fab954a2d183847869401f005315e5cdedcfe33815fd4b3fb0ab38d2277e",
+      "currentIndex": 2,
+      "currentInputSha256": "0868052c83ab67043b764b91145515f485d1095f4290310c28998a622476a2aa",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[0].disabledCategories",
+          "before": []
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/DISABLE_CATEGORY",
+            "category": "a"
+          },
+          "after": "disableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "a"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 3,
+      "originalSuiteIndex": 3,
+      "file": "plugins/commands/functions.json",
+      "name": "disable-existing-is-ignored",
+      "originalInputSha256": "d304aca3091bfd69e8a8ca0f35fb46da312fcf408c63d73850c996ac728ab06f",
+      "currentIndex": 3,
+      "currentInputSha256": "30ba568d3adc661de80ded755ac8eecef8f81b2f8382f8f802193e42f0b58bf7",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/DISABLE_CATEGORY",
+            "category": "b"
+          },
+          "after": "disableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "b"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 4,
+      "originalSuiteIndex": 4,
+      "file": "plugins/commands/functions.json",
+      "name": "enable-removes-every-copy",
+      "originalInputSha256": "631b5f3869ad48012ad136da8848d6a436f33d43c2f798a014dc4cef1e34c596",
+      "currentIndex": 4,
+      "currentInputSha256": "652be98b064a52f283f6c616eae24d4541d08680982c6cd1bd479432034e621a",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/ENABLE_CATEGORY",
+            "category": "a"
+          },
+          "after": "enableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "a"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 5,
+      "originalSuiteIndex": 5,
+      "file": "plugins/commands/functions.json",
+      "name": "enable-missing-is-ignored",
+      "originalInputSha256": "d8d5f27bd167e3358b69e6ec0f908190522521072c23a363e7ab6f67f50c2c01",
+      "currentIndex": 5,
+      "currentInputSha256": "7e3162947f417f64bb36ae4e13a655a3fb6021414712a6457de184b6428242da",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/ENABLE_CATEGORY",
+            "category": "z"
+          },
+          "after": "enableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "z"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 6,
+      "originalSuiteIndex": 6,
+      "file": "plugins/commands/functions.json",
+      "name": "enable-last",
+      "originalInputSha256": "7effaf6f6438af19ae7468e96eaf2de66b1e8f4e97622c139dd3a0cfbc977ef6",
+      "currentIndex": 6,
+      "currentInputSha256": "fa2c87c7fc03eafff5ed8fb0381a9424efdf96d815be41468ce3fd9fac10f996",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/ENABLE_CATEGORY",
+            "category": "a"
+          },
+          "after": "enableCategory"
+        },
+        {
+          "path": "$.args[2]",
+          "after": "a"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 7,
+      "originalSuiteIndex": 7,
+      "file": "plugins/commands/functions.json",
+      "name": "set-replaces",
+      "originalInputSha256": "9c1e3f37bd15cf4dd1cfef9283e8b790e19eb9d1d2cf90d869a36ddc6f738632",
+      "currentIndex": 7,
+      "currentInputSha256": "07414d411fcd2d2e9f2f895bf10b5943c573d8cb6ab6cc0ac0ba2518fece5fcb",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+            "categories": [
+              "b",
+              "b",
+              "c"
+            ]
+          },
+          "after": "setDisabledCategories"
+        },
+        {
+          "path": "$.args[2]",
+          "after": [
+            "b",
+            "b",
+            "c"
+          ]
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 8,
+      "originalSuiteIndex": 8,
+      "file": "plugins/commands/functions.json",
+      "name": "set-equal-is-a-new-state",
+      "originalInputSha256": "7c58fbbb41ec2fc4913a9383e934acfc3aeeb2c1bcac495f359b121e70ffd6f8",
+      "currentIndex": 8,
+      "currentInputSha256": "2d49f199f2f61721cc220ee4e8b006ebbeb8f8248f39acdda3626df39cd2bc48",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+            "categories": [
+              "a"
+            ]
+          },
+          "after": "setDisabledCategories"
+        },
+        {
+          "path": "$.args[2]",
+          "after": [
+            "a"
+          ]
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 9,
+      "originalSuiteIndex": 9,
+      "file": "plugins/commands/functions.json",
+      "name": "set-empty",
+      "originalInputSha256": "3e601becf18dda6d25c2369f3ab3127443669871c1aa8c896684366a87bcbc8d",
+      "currentIndex": 9,
+      "currentInputSha256": "d1806598f7461d7fad28a17e7d998acb09c5c1c09e6f880fc36cf085ff28dc4e",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+            "categories": []
+          },
+          "after": "setDisabledCategories"
+        },
+        {
+          "path": "$.args[2]",
+          "after": []
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 10,
+      "originalSuiteIndex": 10,
+      "file": "plugins/commands/functions.json",
+      "name": "unknown-action-is-ignored",
+      "originalInputSha256": "ce3a7f4e8cf194d4b427f20618a6451efb1c104563ad91b6f2236ce14cd24469",
+      "currentIndex": 10,
+      "currentInputSha256": "de3f9c3cf2e5fac274ab0ab601dcdb3671cca3442eb2c7c9e960bcee7900eb1b",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "commandsReducer",
+          "after": "commandSettings"
+        },
+        {
+          "path": "$.args[1]",
+          "before": {
+            "type": "COMMANDS/NOPE",
+            "category": "a"
+          },
+          "after": "read"
+        }
+      ],
+      "partialRetirement": "The retired state/reducer and action discriminator are replaced by current settings read/mutation. same now compares disabled-category list identity; equal replacement is a settings no-op. Unknown-action dispatch has no current equivalent; that sub-contract is retired and the surviving unchanged-list read is exercised.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 11,
+      "originalSuiteIndex": 11,
+      "file": "plugins/commands/functions.json",
+      "name": "both-null",
+      "originalInputSha256": "ad39d0c910e271e63caa6c178dcecda0299db0c47c4116db6a01ba65794dc6f5",
+      "currentIndex": 11,
+      "currentInputSha256": "ad39d0c910e271e63caa6c178dcecda0299db0c47c4116db6a01ba65794dc6f5",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 12,
+      "originalSuiteIndex": 12,
+      "file": "plugins/commands/functions.json",
+      "name": "null-left",
+      "originalInputSha256": "44d374307b1310f0c946f63eecc0aec5326df635bb847aac1313df9068a746a2",
+      "currentIndex": 12,
+      "currentInputSha256": "44d374307b1310f0c946f63eecc0aec5326df635bb847aac1313df9068a746a2",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 13,
+      "originalSuiteIndex": 13,
+      "file": "plugins/commands/functions.json",
+      "name": "null-right",
+      "originalInputSha256": "b9475b5eeb8cd783c4417812fba2c5a92ca1f804ee37742db9832f26df898da1",
+      "currentIndex": 13,
+      "currentInputSha256": "b9475b5eeb8cd783c4417812fba2c5a92ca1f804ee37742db9832f26df898da1",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 14,
+      "originalSuiteIndex": 14,
+      "file": "plugins/commands/functions.json",
+      "name": "equal-values",
+      "originalInputSha256": "17db988ce6cd50df3b8117aa348e5153ea6ef380c46f0f2fc42fc668818e3910",
+      "currentIndex": 14,
+      "currentInputSha256": "17db988ce6cd50df3b8117aa348e5153ea6ef380c46f0f2fc42fc668818e3910",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 15,
+      "originalSuiteIndex": 15,
+      "file": "plugins/commands/functions.json",
+      "name": "same-object",
+      "originalInputSha256": "6a516d4dc456656d9c43ae42c97748322322fdb9bcd54fecc1e2d2fecd5d449f",
+      "currentIndex": 15,
+      "currentInputSha256": "6a516d4dc456656d9c43ae42c97748322322fdb9bcd54fecc1e2d2fecd5d449f",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 16,
+      "originalSuiteIndex": 16,
+      "file": "plugins/commands/functions.json",
+      "name": "id-differs",
+      "originalInputSha256": "d2bfe92541cc8a338bc63fe209a2f56c1fc88e3889d85b1229b5c8719e7997cf",
+      "currentIndex": 16,
+      "currentInputSha256": "d2bfe92541cc8a338bc63fe209a2f56c1fc88e3889d85b1229b5c8719e7997cf",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 17,
+      "originalSuiteIndex": 17,
+      "file": "plugins/commands/functions.json",
+      "name": "label-differs",
+      "originalInputSha256": "4bd0ad4e485155534fe4d7d144742b3ab878f9daea83339bfee4b98c72e2e280",
+      "currentIndex": 17,
+      "currentInputSha256": "4bd0ad4e485155534fe4d7d144742b3ab878f9daea83339bfee4b98c72e2e280",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 18,
+      "originalSuiteIndex": 18,
+      "file": "plugins/commands/functions.json",
+      "name": "icon-differs",
+      "originalInputSha256": "f502b444ca2aaf301c22e97b8429063603d6fb14dbc0fd8829d64acd04e96daf",
+      "currentIndex": 18,
+      "currentInputSha256": "f502b444ca2aaf301c22e97b8429063603d6fb14dbc0fd8829d64acd04e96daf",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 19,
+      "originalSuiteIndex": 19,
+      "file": "plugins/commands/functions.json",
+      "name": "icon-absent-on-one-side",
+      "originalInputSha256": "8d2d771a31df24d39f5d8f1db9181fa6960a2c03ec74d21a76d3a3decabd2a49",
+      "currentIndex": 19,
+      "currentInputSha256": "8d2d771a31df24d39f5d8f1db9181fa6960a2c03ec74d21a76d3a3decabd2a49",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 20,
+      "originalSuiteIndex": 20,
+      "file": "plugins/commands/functions.json",
+      "name": "icon-absent-on-both",
+      "originalInputSha256": "0456d0cc495670d1c8a9f16eda79308f0e6eb40da0a974f3ae83f7aee12fc393",
+      "currentIndex": 20,
+      "currentInputSha256": "0456d0cc495670d1c8a9f16eda79308f0e6eb40da0a974f3ae83f7aee12fc393",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 21,
+      "originalSuiteIndex": 21,
+      "file": "plugins/commands/functions.json",
+      "name": "accent-primary-differs",
+      "originalInputSha256": "bbb832026c296d36b566853d90ee9516f622857263915cc5fcd991838cf2002f",
+      "currentIndex": 21,
+      "currentInputSha256": "bbb832026c296d36b566853d90ee9516f622857263915cc5fcd991838cf2002f",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 22,
+      "originalSuiteIndex": 22,
+      "file": "plugins/commands/functions.json",
+      "name": "accent-secondary-differs",
+      "originalInputSha256": "50ac4ec3a5766b4596fdb3e9db65d990c6807008c95e68304669c33b1bfb83b8",
+      "currentIndex": 22,
+      "currentInputSha256": "50ac4ec3a5766b4596fdb3e9db65d990c6807008c95e68304669c33b1bfb83b8",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 23,
+      "originalSuiteIndex": 23,
+      "file": "plugins/commands/functions.json",
+      "name": "accent-absent-on-one-side",
+      "originalInputSha256": "c01dc24bf0b4cba2dffeaf891e89499375f155302feeceac505ffc7b8cf081d1",
+      "currentIndex": 23,
+      "currentInputSha256": "c01dc24bf0b4cba2dffeaf891e89499375f155302feeceac505ffc7b8cf081d1",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 24,
+      "originalSuiteIndex": 24,
+      "file": "plugins/commands/functions.json",
+      "name": "accent-absent-vs-empty",
+      "originalInputSha256": "f85ca42b668feb3eefb99600f340762a9ae3466d6189d6b39cded5384b049de1",
+      "currentIndex": 24,
+      "currentInputSha256": "f85ca42b668feb3eefb99600f340762a9ae3466d6189d6b39cded5384b049de1",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 25,
+      "originalSuiteIndex": 25,
+      "file": "plugins/commands/functions.json",
+      "name": "accent-primary-only-both",
+      "originalInputSha256": "5ad0fa522108f17c05f5a4e29ae8219ee85d2d4f3379aaf4fbf85dbb566e7a51",
+      "currentIndex": 25,
+      "currentInputSha256": "5ad0fa522108f17c05f5a4e29ae8219ee85d2d4f3379aaf4fbf85dbb566e7a51",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 26,
+      "originalSuiteIndex": 26,
+      "file": "plugins/commands/functions.json",
+      "name": "menu-differs",
+      "originalInputSha256": "2a6adc6a4965f7edfa6aff303506fd7b4726896a4c1286bc653e3226cd5d8c35",
+      "currentIndex": 26,
+      "currentInputSha256": "2a6adc6a4965f7edfa6aff303506fd7b4726896a4c1286bc653e3226cd5d8c35",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 27,
+      "originalSuiteIndex": 27,
+      "file": "plugins/commands/functions.json",
+      "name": "menu-absent-on-one-side",
+      "originalInputSha256": "00392f1183447d7463300bc5b78adb982bfa719fe2b9965e38580b33c73120e5",
+      "currentIndex": 27,
+      "currentInputSha256": "00392f1183447d7463300bc5b78adb982bfa719fe2b9965e38580b33c73120e5",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 28,
+      "originalSuiteIndex": 28,
+      "file": "plugins/commands/functions.json",
+      "name": "enabled-differs",
+      "originalInputSha256": "233f0255d198252306f5a7dea0b4f510fdc510ad2a899efe7ab16cbf872a1421",
+      "currentIndex": 28,
+      "currentInputSha256": "233f0255d198252306f5a7dea0b4f510fdc510ad2a899efe7ab16cbf872a1421",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 29,
+      "originalSuiteIndex": 29,
+      "file": "plugins/commands/functions.json",
+      "name": "active-differs",
+      "originalInputSha256": "1847e8a6ecceddb9ca2154a1565af63719484d1d5ebdb8da9e832c4ebef199c1",
+      "currentIndex": 29,
+      "currentInputSha256": "1847e8a6ecceddb9ca2154a1565af63719484d1d5ebdb8da9e832c4ebef199c1",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 30,
+      "originalSuiteIndex": 30,
+      "file": "plugins/commands/functions.json",
+      "name": "visible-differs",
+      "originalInputSha256": "cd790fde510b8417b6d3bbf756c7a5cc8700bcea94c0f9986bbfaab4a31331c9",
+      "currentIndex": 30,
+      "currentInputSha256": "cd790fde510b8417b6d3bbf756c7a5cc8700bcea94c0f9986bbfaab4a31331c9",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 31,
+      "originalSuiteIndex": 31,
+      "file": "plugins/commands/functions.json",
+      "name": "shortcut-count-differs",
+      "originalInputSha256": "ce7e7fd220bbd9fbd339b6de097987e0248a9d524b2246e0f3c2fdf2b6c2cc58",
+      "currentIndex": 31,
+      "currentInputSha256": "ce7e7fd220bbd9fbd339b6de097987e0248a9d524b2246e0f3c2fdf2b6c2cc58",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 32,
+      "originalSuiteIndex": 32,
+      "file": "plugins/commands/functions.json",
+      "name": "shortcut-differs",
+      "originalInputSha256": "b413256403c85758dd6d78d281072c2117b40b923a32e51a219a8c5d4e81988e",
+      "currentIndex": 32,
+      "currentInputSha256": "b413256403c85758dd6d78d281072c2117b40b923a32e51a219a8c5d4e81988e",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 33,
+      "originalSuiteIndex": 33,
+      "file": "plugins/commands/functions.json",
+      "name": "shortcut-order-differs",
+      "originalInputSha256": "46bf7c4918096fa0b860b8a18ab88b0dc97d4f734f9f1f109b40f8b500aee189",
+      "currentIndex": 33,
+      "currentInputSha256": "46bf7c4918096fa0b860b8a18ab88b0dc97d4f734f9f1f109b40f8b500aee189",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 34,
+      "originalSuiteIndex": 34,
+      "file": "plugins/commands/functions.json",
+      "name": "no-shortcuts-both",
+      "originalInputSha256": "16836849cba36203bfb25b0333fd76a63f89407d18efc09a4b6012ffc9ea2f9b",
+      "currentIndex": 34,
+      "currentInputSha256": "16836849cba36203bfb25b0333fd76a63f89407d18efc09a4b6012ffc9ea2f9b",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 35,
+      "originalSuiteIndex": 35,
+      "file": "plugins/commands/functions.json",
+      "name": "categories-are-not-compared",
+      "originalInputSha256": "8ac7c5e398ab2316dd6d58406ee949c96d6b9954ff926f622cfd8a8e41629220",
+      "currentIndex": 37,
+      "currentInputSha256": "8ac7c5e398ab2316dd6d58406ee949c96d6b9954ff926f622cfd8a8e41629220",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 36,
+      "originalSuiteIndex": 36,
+      "file": "plugins/commands/functions.json",
+      "name": "none",
+      "originalInputSha256": "5c2ac136a9b2d3f41dab2c042fcd8e47122a019e2b2ed91d3cd44142fa14d144",
+      "currentIndex": 38,
+      "currentInputSha256": "8d9a7d95b59f4732d96dfdd21cce6cadfa991030df05b2dd1992489c2863239b",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 37,
+      "originalSuiteIndex": 37,
+      "file": "plugins/commands/functions.json",
+      "name": "no-shortcut",
+      "originalInputSha256": "db6427ffe785b87c3d941f9e131ac29c2d9de99c0701b5955fcd4e0811357282",
+      "currentIndex": 39,
+      "currentInputSha256": "c3fae7db538ae9fcbc784fff743916af7cca2d1e9db23c8a17aa233e9f34ca38",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 38,
+      "originalSuiteIndex": 38,
+      "file": "plugins/commands/functions.json",
+      "name": "one-shortcut",
+      "originalInputSha256": "e4914cfdeef496e2a3c93ff2bb41ea016b6d1465d10dae7348ae2151eafa8df1",
+      "currentIndex": 40,
+      "currentInputSha256": "63ae635bfd4ed8e5312c9861b1a524edf944ae3d29649ce22e4fdc089f451fed",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 39,
+      "originalSuiteIndex": 39,
+      "file": "plugins/commands/functions.json",
+      "name": "many-shortcuts",
+      "originalInputSha256": "2266135907dba016d5c4f70a4b14a17fb5fc91316c0b49ae77d62b51e7a41d88",
+      "currentIndex": 41,
+      "currentInputSha256": "cc7d664d6b7bea2d646278197a0b8833a5c11ce28c1e5dec2eb823561455957e",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 40,
+      "originalSuiteIndex": 40,
+      "file": "plugins/commands/functions.json",
+      "name": "empty-shortcut-list",
+      "originalInputSha256": "164a41663b5a3fff75eb68061b2be9b854935726032d23279653c0ec6306ba06",
+      "currentIndex": 42,
+      "currentInputSha256": "1f7f7f5f8f7c66f078b62c30861f3f25d6dbcafc519161c2aae1f18ac7447d97",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 41,
+      "originalSuiteIndex": 41,
+      "file": "plugins/commands/functions.json",
+      "name": "empty-shortcut-is-plus",
+      "originalInputSha256": "7bbbb0eeb99e18b2804d278adcd6fa61d9f82c62288c89716f1159f705f36b05",
+      "currentIndex": 43,
+      "currentInputSha256": "4ae5eb42db6fb851bf0b2290705d297465462bbd55c0ed3abfc9705289317c49",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 42,
+      "originalSuiteIndex": 42,
+      "file": "plugins/commands/functions.json",
+      "name": "insertion-order",
+      "originalInputSha256": "f30fd4c5637a192b2c9ac68591186d1417956415e498d6c6434488418552196f",
+      "currentIndex": 44,
+      "currentInputSha256": "17d931c968fa9e5ba3610026783d3d660e43e106667712897268b1cdbbef1257",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 43,
+      "originalSuiteIndex": 43,
+      "file": "plugins/commands/functions.json",
+      "name": "duplicate-throws-and-keeps-the-first",
+      "originalInputSha256": "072278ac7d060ff572c867c8823a2b9f9f5912a22332562312aeac0914c244e3",
+      "currentIndex": 45,
+      "currentInputSha256": "0e720eca0f29627a5a77b9f1ef71e17a5504da2396db836401f61c25f9f10123",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 44,
+      "originalSuiteIndex": 44,
+      "file": "plugins/commands/functions.json",
+      "name": "bad-modifier-throws-and-registers-nothing",
+      "originalInputSha256": "fd8abc8d76ab58ad181d4d59abde2d8a3abad99533a8c0601059777a90f6e44b",
+      "currentIndex": 46,
+      "currentInputSha256": "c6a915339538d7f9dade2b9307b1426762fe0cc603da1727a3771515aeffc5e4",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 45,
+      "originalSuiteIndex": 45,
+      "file": "plugins/commands/functions.json",
+      "name": "bad-modifier-in-a-string",
+      "originalInputSha256": "2c4e1ad06da863138358b7c9c33791ce2098465af0b883ca609b95921da6e0ba",
+      "currentIndex": 47,
+      "currentInputSha256": "5856532be7b0fbc21a947c1be0581e3f9352043ea92dae08e726870d3bb31451",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.fn",
+          "before": "registerCommand",
+          "after": "registerCurrentCommands"
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 46,
+      "originalSuiteIndex": 46,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-no-config",
+      "originalInputSha256": "14017315177b7c2598393ebc27b25a81d901c6d55fe3f99b4b93cb1c832addeb",
+      "currentIndex": 48,
+      "currentInputSha256": "14017315177b7c2598393ebc27b25a81d901c6d55fe3f99b4b93cb1c832addeb",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 47,
+      "originalSuiteIndex": 47,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-empty-config",
+      "originalInputSha256": "71abd708e4333fc171e3e3399d8c2b54d0aa08badb4f0f556af2528d0a2067a7",
+      "currentIndex": 49,
+      "currentInputSha256": "71abd708e4333fc171e3e3399d8c2b54d0aa08badb4f0f556af2528d0a2067a7",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 48,
+      "originalSuiteIndex": 48,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-disabled-categories",
+      "originalInputSha256": "235724127c100aee2166eb36d0041cc242a88992c510cc07b50810c056c6460f",
+      "currentIndex": 50,
+      "currentInputSha256": "235724127c100aee2166eb36d0041cc242a88992c510cc07b50810c056c6460f",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 49,
+      "originalSuiteIndex": 49,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-commands",
+      "originalInputSha256": "c897555c344e2b20377d99ed1ae695e8309044dc1983be24eb05200f15d61d93",
+      "currentIndex": 51,
+      "currentInputSha256": "c897555c344e2b20377d99ed1ae695e8309044dc1983be24eb05200f15d61d93",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 50,
+      "originalSuiteIndex": 50,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-duplicate-command-is-not-checked-here",
+      "originalInputSha256": "00e1d602dc6675c1c1cedb4607dd8d2c7a150d17551c24deb2ee04dcd879cf20",
+      "currentIndex": 52,
+      "currentInputSha256": "00e1d602dc6675c1c1cedb4607dd8d2c7a150d17551c24deb2ee04dcd879cf20",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 51,
+      "originalSuiteIndex": 51,
+      "file": "plugins/commands/functions.json",
+      "name": "plugin-bad-shortcut-is-not-checked-here",
+      "originalInputSha256": "851e3502197182383ffda2ab19969990e03e0448e35353524ce971ba8ddb5b97",
+      "currentIndex": 53,
+      "currentInputSha256": "851e3502197182383ffda2ab19969990e03e0448e35353524ce971ba8ddb5b97",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [],
+      "partialRetirement": "Plugin state construction is retired; the current definition declares settings with defaults/registration and no state. Duplicate/shortcut validation remains lazy at the configured registry read, not the plugin factory.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 52,
+      "originalSuiteIndex": 0,
+      "file": "plugins/commands/plugin.json",
+      "name": "capability-shape",
+      "originalInputSha256": "d5b35cc53aa82834914fa222d2b5e75f604054e99f60718b94c38290a7bfe459",
+      "currentIndex": 1,
+      "currentInputSha256": "bc09881666485dbeaa8ed9c041fa48a15155c05b164644d97c6c283038c2a28d",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "The capability is workspace-scoped and exists from createKernel(); its members, in the object literal order; the slice holds only disabledCategories.",
+          "after": "The capability is workspace-scoped and exists from createKernel(); its members, in the object literal order; commands live in settings and a closure registry, with no session slice."
+        },
+        {
+          "path": "$.steps[6].target.ref",
+          "before": 4
+        },
+        {
+          "path": "$.steps[6].target.token",
+          "after": "commands"
+        },
+        {
+          "path": "$.steps[6].method",
+          "after": "listCommandIds"
+        },
+        {
+          "path": "$.steps[6].args",
+          "after": []
+        },
+        {
+          "path": "$.steps[7].target.ref",
+          "before": 11
+        },
+        {
+          "path": "$.steps[7].target.token",
+          "after": "commands"
+        },
+        {
+          "path": "$.steps[7].method",
+          "after": "getDisabledCategories"
+        },
+        {
+          "path": "$.steps[7].args",
+          "after": []
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 53,
+      "originalSuiteIndex": 1,
+      "file": "plugins/commands/plugin.json",
+      "name": "registry",
+      "originalInputSha256": "bb3e0b6ef9e69f65c5953d866d472752edf4e426d7cc463c21b863756c43d749",
+      "currentIndex": 2,
+      "currentInputSha256": "bb3e0b6ef9e69f65c5953d866d472752edf4e426d7cc463c21b863756c43d749",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 54,
+      "originalSuiteIndex": 2,
+      "file": "plugins/commands/plugin.json",
+      "name": "resolve-defaults",
+      "originalInputSha256": "aaa8b96be37d7f0f9505ea56f903be0fa17f2ea8f5a8f3e0f8b2da87f8016995",
+      "currentIndex": 3,
+      "currentInputSha256": "7cff8227853aab0222c9ab5bd5fa944bf6094d0d95b96bc22f6b2d21c223643b",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 55,
+      "originalSuiteIndex": 3,
+      "file": "plugins/commands/plugin.json",
+      "name": "derivations",
+      "originalInputSha256": "02a89c58efb580f32a38c93f38a44113ec8cfb8bf3d640c92b40590859f3bb74",
+      "currentIndex": 4,
+      "currentInputSha256": "c4f8e1533023db1a763948804980519a9ddf992992c01ca1f4e5827133c20ba8",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.steps[8].args[1]",
+          "before": null
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 56,
+      "originalSuiteIndex": 4,
+      "file": "plugins/commands/plugin.json",
+      "name": "throwing-derivations-fall-back",
+      "originalInputSha256": "b07399abb9ee485a9a910bf9b58ff359e8119bc9c1516dc5ca6d18ee81363345",
+      "currentIndex": 5,
+      "currentInputSha256": "b07399abb9ee485a9a910bf9b58ff359e8119bc9c1516dc5ca6d18ee81363345",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 57,
+      "originalSuiteIndex": 5,
+      "file": "plugins/commands/plugin.json",
+      "name": "icon-accent",
+      "originalInputSha256": "9ad6b4207d72d12105967ab8bdce5c2baee97524610395c4c6e3cccd70a25c42",
+      "currentIndex": 6,
+      "currentInputSha256": "405cd7c763481f06dedc578f6dfb0254c82da62c4fae890ee18a3bb7ec6ac91b",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "iconAccent carries what the derivation returns: both colours, one, an empty object; null and undefined mean no accent; a throw means no accent; an absent derivation is never called.",
+          "after": "iconAccent carries what the derivation returns: both colours or one; empty, null and undefined mean no accent; a throw means no accent; an absent derivation is never called."
+        }
+      ],
+      "partialRetirement": "Empty accent object now resolves as absent since both channels are undefined; preserve literal success for both/individual colors and no accent for empty/null/undefined/throw.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 58,
+      "originalSuiteIndex": 6,
+      "file": "plugins/commands/plugin.json",
+      "name": "categories",
+      "originalInputSha256": "2708d63b6362e2c9458b43ed23c6011d2b7299cb68cd6e92eef4a19c08c530ef",
+      "currentIndex": 7,
+      "currentInputSha256": "cb3beb0a5a25651f8662ca6f5e5ed4181a35a897c6623b0e38c6c3f3b34eda55",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "config.disabledCategories seeds the slice (copied); a command in a disabled category is disabled and hidden though its derivations still run; disable, enable and set dispatch every time, and the reducer ignores what changes nothing; execute refuses a hidden command.",
+          "after": "config.disabledCategories seeds settings; a disabled category hides and disables its command without invoking enabled/visible; idempotent changes fire nothing; execute refuses a hidden command."
+        }
+      ],
+      "partialRetirement": "No old reducer dispatch/state-change stream exists. Settings are the live owner; turned-off definitions short-circuit enabled/visible derivations, and idempotent setting changes emit nothing.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 59,
+      "originalSuiteIndex": 7,
+      "file": "plugins/commands/plugin.json",
+      "name": "i18n-labels",
+      "originalInputSha256": "e187e7ccd20f3a58629c2c55fa77ac3667feb9a20fbb9069df3fa29ea2c375b3",
+      "currentIndex": 8,
+      "currentInputSha256": "6c25c403a69f86b5900c6cce0cba50813dd3519aebba8f54a8c1fa51e001e589",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "With i18n present the label is t(labelKey), following the locale; a missing key comes back as the key (and i18n warns once); search matches the translated label.",
+          "after": "With i18n present the label resolves the command id then labelKey through current and fallback locale; a missing key falls back to the command id and warns once; search matches the translated label."
+        },
+        {
+          "path": "$.plugins[0].factory",
+          "before": "i18n",
+          "after": "commands-current-i18n"
+        }
+      ],
+      "partialRetirement": "Current i18n missing-key fallback is the command id, not labelKey, while explicit labelKey translation and fallback-language translation survive.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 60,
+      "originalSuiteIndex": 8,
+      "file": "plugins/commands/plugin.json",
+      "name": "shell-derived-active",
+      "originalInputSha256": "9eca78b3ed84e8c8b7d73a0219c2056173d2f81684a0145d63edcd4f5a8b78a1",
+      "currentIndex": 9,
+      "currentInputSha256": "65edd2a6d3413bbbed70cff0a6ccf3887b17329e400c9ffa3a2228851c423f5d",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 61,
+      "originalSuiteIndex": 9,
+      "file": "plugins/commands/plugin.json",
+      "name": "execute-routing",
+      "originalInputSha256": "d3957dbbe32e42a9059b4dd31e53a79010983a42f1c6ddcb641cb48711d3a5bb",
+      "currentIndex": 10,
+      "currentInputSha256": "d9c146b403613815618d0e8fabcb18f28205165b2218c7f614e256ff58d04d3f",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 62,
+      "originalSuiteIndex": 10,
+      "file": "plugins/commands/plugin.json",
+      "name": "execute-guards-and-run",
+      "originalInputSha256": "9f5ef2bec5bd8db6f08be0e020a033cfe6daeba820b31989375d02ab0db1aa54",
+      "currentIndex": 11,
+      "currentInputSha256": "f2183cea5ac881093909dc8b972e58748bb27d27d4e34b94189677c113b81fe9",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 63,
+      "originalSuiteIndex": 11,
+      "file": "plugins/commands/plugin.json",
+      "name": "command-ctx",
+      "originalInputSha256": "6eab287fb08d97ce845171d705bcde25b4e436acc954f837d943374a397a91a0",
+      "currentIndex": 12,
+      "currentInputSha256": "27ef60cf1128a87028236a0af0f54e7da23313f8b6eb4ea502091f718486a1c0",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "What a command function can do with its CommandCtx: get resolves a document-scoped token for the target document and throws the kernel's refusal when it cannot; tryGet answers null instead; workspace tokens resolve whatever the target; an empty target falls back to the active document; core() is the kernel's core state.",
+          "after": "What a command function can do with its CommandCtx: get resolves a document-scoped token for the target document and throws the kernel's refusal when it cannot; tryGet answers null instead; workspace tokens resolve whatever the target; an empty target falls back to the active document; documentId and the Documents capability expose the current document and list."
+        },
+        {
+          "path": "$.plugins[0].factory",
+          "before": "i18n",
+          "after": "commands-current-i18n"
+        },
+        {
+          "path": "$.plugins[1].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.plugins[2].config.capabilityThrows",
+          "before": {
+            "name": "Error",
+            "message": "broken capability"
+          }
+        },
+        {
+          "path": "$.plugins[3].config.commands[0].run.uses[10].core",
+          "before": "activeId"
+        },
+        {
+          "path": "$.plugins[3].config.commands[0].run.uses[10].context",
+          "after": "documentId"
+        },
+        {
+          "path": "$.plugins[3].config.commands[0].run.uses[11].core",
+          "before": "order"
+        },
+        {
+          "path": "$.plugins[3].config.commands[0].run.uses[11].get",
+          "after": "documents"
+        },
+        {
+          "path": "$.plugins[3].config.commands[0].run.uses[11].call",
+          "after": "list"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.slow.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.steps[12]",
+          "after": {
+            "op": "call",
+            "target": {
+              "token": "commands",
+              "doc": "a"
+            },
+            "method": "execute",
+            "args": [
+              "probe",
+              {
+                "args": {
+                  "bound": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "path": "$.steps[13]",
+          "after": {
+            "op": "call",
+            "target": {
+              "token": "commands",
+              "doc": "a"
+            },
+            "method": "execute",
+            "args": [
+              "probe",
+              {
+                "documentId": "b"
+              }
+            ]
+          }
+        }
+      ],
+      "partialRetirement": "Retire core() and lazy capabilityThrows: current CommandContext has documentId/get/tryGet/args/signal, and capabilities are created transactionally before document publication. Use actual DocumentsToken.list for document order, current available capability and explicit missing/no-document/loading refusals. Add bound-scope success and explicit target override steps. Opaque null context argument is replaced by omission in derivations.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 64,
+      "originalSuiteIndex": 12,
+      "file": "plugins/commands/plugin.json",
+      "name": "follows-the-active-document",
+      "originalInputSha256": "f27790bb985bcf44dfbee66e3e3d70930219041f962f92726ff27922d1f3ca96",
+      "currentIndex": 13,
+      "currentInputSha256": "c554e082e4e6048e5f009c3cedc05efc640ca2e011b6bf490fef18c4eb1cc10b",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 65,
+      "originalSuiteIndex": 13,
+      "file": "plugins/commands/plugin.json",
+      "name": "search",
+      "originalInputSha256": "4f1bdca19bbfe14f3127c9eb6021b0e1951b5da610c427caf582928abecfedd7",
+      "currentIndex": 14,
+      "currentInputSha256": "4f1bdca19bbfe14f3127c9eb6021b0e1951b5da610c427caf582928abecfedd7",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 66,
+      "originalSuiteIndex": 14,
+      "file": "plugins/commands/plugin.json",
+      "name": "match-stroke",
+      "originalInputSha256": "32dcd25607f484f3a45125105a5fa5b81c9e04c060ba27aadde0d977aa3379d8",
+      "currentIndex": 15,
+      "currentInputSha256": "32dcd25607f484f3a45125105a5fa5b81c9e04c060ba27aadde0d977aa3379d8",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 67,
+      "originalSuiteIndex": 15,
+      "file": "plugins/commands/plugin.json",
+      "name": "registered-functions",
+      "originalInputSha256": "d0129c437a98aa02a2ea2fe62862bc0661000b59fce9b18abfaa6ad0e2f9f761",
+      "currentIndex": 16,
+      "currentInputSha256": "2dc65482ebcde9a6af75e2576f96edef80ec705f40c5b50a4589502768432fad",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 68,
+      "originalSuiteIndex": 16,
+      "file": "plugins/commands/plugin.json",
+      "name": "re-entrant-registry",
+      "originalInputSha256": "986e14236e689bebac00aa32d0c99e011ff32618f6f279d63d46dd4b0dcc3426",
+      "currentIndex": 17,
+      "currentInputSha256": "986e14236e689bebac00aa32d0c99e011ff32618f6f279d63d46dd4b0dcc3426",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 69,
+      "originalSuiteIndex": 17,
+      "file": "plugins/commands/plugin.json",
+      "name": "unregister-behind-a-search",
+      "originalInputSha256": "29efb1905f448c370f925abc30f9c703f74cb0283461c6ae5359dc1c7cbd6308",
+      "currentIndex": 18,
+      "currentInputSha256": "29efb1905f448c370f925abc30f9c703f74cb0283461c6ae5359dc1c7cbd6308",
+      "disposition": "unchanged-input-current-shipping-owner",
+      "inputChanges": [],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 70,
+      "originalSuiteIndex": 18,
+      "file": "plugins/commands/plugin.json",
+      "name": "register-many-shortcuts-and-can-execute",
+      "originalInputSha256": "1103f940ccbb124aba0605d29b18cbf82689f89bc46b0aacb2b41059608ade84",
+      "currentIndex": 19,
+      "currentInputSha256": "2fedf62a2c77f4a2c51fd03b1c08c366dc07add5391ef4348a223b22fa7b3a35",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": "A runtime replacement shadows configured commands. Disposing the replacement reveals the configured definition rather than deleting it. Old replacer cannot remove a newer owner.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 71,
+      "originalSuiteIndex": 19,
+      "file": "plugins/commands/plugin.json",
+      "name": "execute-events",
+      "originalInputSha256": "87352c01908923c19abb624059c8fee9e74298b4c9fac8e8454c5af15b9c2b12",
+      "currentIndex": 20,
+      "currentInputSha256": "738d28c329337f2af09b4af0263f8511008a6700b8aaa1bb8e4ea9932b80c4ae",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.b.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 72,
+      "originalSuiteIndex": 20,
+      "file": "plugins/commands/plugin.json",
+      "name": "get-and-list-commands",
+      "originalInputSha256": "9562d558dabdd12a2a4165178e338bd5c47aac10fb6b9643e0b3ea64b4937505",
+      "currentIndex": 21,
+      "currentInputSha256": "fd12d118d22f4edfaad4fe8dab67348acec48399e8197ce3aae75be9f7a389bf",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.plugins[0].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        }
+      ],
+      "partialRetirement": null,
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 73,
+      "originalSuiteIndex": 21,
+      "file": "plugins/commands/plugin.json",
+      "name": "a-bad-config-refuses-the-kernel",
+      "originalInputSha256": "1d526d9da2301a2b8dbd93da5aac4266ad8cf2dbfc4c659f45aa0d0e3536161d",
+      "currentIndex": 22,
+      "currentInputSha256": "9d98883e8eb7fdbaa2fad4c16b5c9c940846801e3ee411ca40f4504b75224fa2",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "config.commands are registered when the controller is created, so a duplicate id makes createKernel throw the conflict.",
+          "after": "Configured duplicate ids resolve to the last definition in the first insertion position; runtime registration still refuses duplicates."
+        }
+      ],
+      "partialRetirement": "Configured duplicates no longer refuse construction: configuredCommands uses Map.set and the later definition wins. Preserve original name as historical key and assert current configured registration success, with independent duplicate runtime conflicts elsewhere.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 74,
+      "originalSuiteIndex": 22,
+      "file": "plugins/commands/plugin.json",
+      "name": "a-bad-config-shortcut-refuses-the-kernel",
+      "originalInputSha256": "1f8ab167bd69078be9f96ec48ce232752bd9e16e207873c68dfe18f864439541",
+      "currentIndex": 23,
+      "currentInputSha256": "e61ee291073a9f47f0511107ba8926fda5fbeb617f3cc4ce44e49c60f60dd005",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "An unparsable shortcut in config.commands makes createKernel throw the parse error.",
+          "after": "An unparsable shortcut in config.commands makes the first configured-registry read throw the parse error."
+        }
+      ],
+      "partialRetirement": "Shortcut validation is lazy at configured-registry access; the first listCommandIds step throws the actual parser error instead of a kernel construction refusal.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    },
+    {
+      "originalOccurrence": 75,
+      "originalSuiteIndex": 23,
+      "file": "plugins/commands/plugin.json",
+      "name": "after-destroy",
+      "originalInputSha256": "ab5b92ca1e70cb246ede8be4fc9eac3f2a56282b2244a15c2984315caf920061",
+      "currentIndex": 24,
+      "currentInputSha256": "4e1bfa4d61af66ca3a46b1d4b53e65d80c18b5ca76b1fe4f5f1ba65ad4d598d3",
+      "disposition": "current-shipping-replacement",
+      "inputChanges": [
+        {
+          "path": "$.covers",
+          "before": "A capability reference kept past destroy still reads and changes the registry, matches strokes, resolves and executes against the last state (i18n no longer resolves, so labels are their keys); category intents are dropped, and the first is reported instance-closed.",
+          "after": "Retained registrations and definition-only reads survive teardown; operations resolving the active document refuse through the destroyed kernel. Settings writes are dropped, and removers retain their registration identity."
+        },
+        {
+          "path": "$.plugins[0].factory",
+          "before": "i18n",
+          "after": "commands-current-i18n"
+        },
+        {
+          "path": "$.plugins[1].factory",
+          "before": "shell",
+          "after": "commands-current-shell"
+        },
+        {
+          "path": "$.plugins[2].config.commands[0].run.uses[1].core",
+          "before": "activeId"
+        },
+        {
+          "path": "$.plugins[2].config.commands[0].run.uses[1].context",
+          "after": "documentId"
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.pageObjectNumber",
+          "before": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].ref.objectNumber",
+          "after": 1
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.media.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.left",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.bottom",
+          "before": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.right",
+          "before": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.top",
+          "before": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.x",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.y",
+          "after": 0
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.width",
+          "after": 600
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.crop.height",
+          "after": 800
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.bleed",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.trim",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].boxes.art",
+          "after": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].tabOrder",
+          "after": null
+        },
+        {
+          "path": "$.engine.documents.a.pages[0].pdfCropBox",
+          "after": {
+            "left": 0,
+            "bottom": 0,
+            "right": 600,
+            "top": 800
+          }
+        },
+        {
+          "path": "$.steps[3].target.ref",
+          "before": 5,
+          "after": 9
+        },
+        {
+          "path": "$.steps[4].target.ref",
+          "before": 9,
+          "after": 13
+        },
+        {
+          "path": "$.steps[6].target.ref",
+          "before": 4,
+          "after": 8
+        },
+        {
+          "path": "$.steps[7].target.ref",
+          "before": 2,
+          "after": 6
+        },
+        {
+          "path": "$.steps[8].target.ref",
+          "before": 19,
+          "after": 29
+        },
+        {
+          "path": "$.steps[9].target.ref",
+          "before": 18,
+          "after": 28
+        },
+        {
+          "path": "$.steps[10].target.ref",
+          "before": 0,
+          "after": 4
+        },
+        {
+          "path": "$.steps[11].target.ref",
+          "before": 4,
+          "after": 8
+        },
+        {
+          "path": "$.steps[12].target.ref",
+          "before": 5,
+          "after": 9
+        },
+        {
+          "path": "$.steps[13].target.ref",
+          "before": 5,
+          "after": 9
+        },
+        {
+          "path": "$.steps[14].target.ref",
+          "before": 9,
+          "after": 13
+        },
+        {
+          "path": "$.steps[15].target.ref",
+          "before": 9,
+          "after": 13
+        },
+        {
+          "path": "$.steps[16].target.ref",
+          "before": 7,
+          "after": 11
+        },
+        {
+          "path": "$.steps[17].target.ref",
+          "before": 11,
+          "after": 16
+        },
+        {
+          "path": "$.steps[18].target.ref",
+          "before": 12,
+          "after": 17
+        },
+        {
+          "path": "$.steps[19].target.ref",
+          "before": 13,
+          "after": 18
+        },
+        {
+          "path": "$.steps[20].target.ref",
+          "before": 14,
+          "after": 19
+        },
+        {
+          "path": "$.steps[21].target.ref",
+          "before": 15,
+          "after": 20
+        },
+        {
+          "path": "$.steps[22].target.ref",
+          "before": 20,
+          "after": 30
+        },
+        {
+          "path": "$.steps[23].target.ref",
+          "before": 4,
+          "after": 8
+        }
+      ],
+      "partialRetirement": "Old member-order refs are replaced with current actual returned function identities. Definition-only reads, registrations and removers survive; active-document lookups now refuse through kernel guardUsable, and disposed settings updates do nothing without reports.",
+      "sourceEvidence": [
+        "packages/plugin/commands/src/contract.ts",
+        "packages/plugin/commands/src/commands.plugin.ts",
+        "packages/plugin/commands/src/controller.ts",
+        "packages/plugin/commands/src/registry.ts",
+        "packages/plugin/commands/src/write/turning-off.ts",
+        "packages/plugin/commands/src/services/availability.ts"
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/commands/functions.json",
+      "index": 35,
+      "name": "disabled-reason-differs",
+      "inputSha256": "925c9f50b4f4528fe3cd3b2b845ecdfd182ca436d876192d3ac4dd83a0858273",
+      "reason": "Current disabledReason equality contract"
+    },
+    {
+      "file": "plugins/commands/functions.json",
+      "index": 36,
+      "name": "disabled-reason-equal",
+      "inputSha256": "c844bfcc3fb7e7f55bdc436636cb710ad3194d95c6f3f69ebcf17e94c6337aa2",
+      "reason": "Current disabledReason equality contract"
+    },
+    {
+      "file": "plugins/commands/plugin.json",
+      "index": 0,
+      "name": "current-settings-permission-refusals",
+      "inputSha256": "4fe3d5e867d25328d6735346720bb375cebb08a0137e554d0c01409f2a7c1ae6",
+      "reason": "Current settings events, permission hide/disable distinction, shortcut refusal, per-command disablement and category boundary/reset semantics."
+    }
+  ],
+  "task11": {
+    "originalFunctionCases": 52,
+    "originalScenarioCases": 24,
+    "inputDiff": 0,
+    "lost": 0,
+    "added": 0,
+    "source": "task-11-cases.out:41-42",
+    "disposition": "No Task11 commands input drift; current migrations and additions are exhaustively recorded here."
+  },
+  "inheritedLaterDrift": []
+}

@@ -65,8 +65,8 @@ public typealias SignatureChangeFinding = EmbedPDFBindings.SignatureChangeFindin
 public typealias SignatureFindingVerdict = EmbedPDFBindings.SignatureFindingVerdict
 /// A stamp asset or supplied source used as a visible signing mark.
 public typealias SignatureMark = EmbedPDFBindings.SignatureMark
-/// The name, reason, location and other attribution supplied when signing.
-public typealias SignatureAttribution = EmbedPDFBindings.SignatureAttribution
+/// The signer name, reason, location and other facts supplied when signing.
+public typealias SignatureSignerInput = EmbedPDFBindings.SignatureSignerInput
 /// The field, optional appearance and protection settings for signing.
 public typealias SignatureSignInput = EmbedPDFBindings.SignatureSignInput
 /// The field and digest, appearance and protection options for external signing.
@@ -193,14 +193,16 @@ public struct SignatureCapability: Sendable {
     try await bridged { try await handle.target() }
   }
 
-  /// `doc.sign` is granted and a signer is set.
-  public func canSign() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canSign() }
+  /// Whether signing `field` is allowed: `doc.sign`, or `fields:sign` for
+  /// its group. `false` for a field the form doesn't have.
+  public func canSign(_ field: FormFieldRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canSign(field: field) }
   }
 
-  /// `doc.forms.fill` is granted.
-  public func canFill() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canFill() }
+  /// Whether drawing a mark into `field` is allowed: `doc.forms.fill`, or
+  /// `fields:fill` for its group.
+  public func canFill(_ field: FormFieldRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canFill(field: field) }
   }
 
   /// The config allows certifying and `doc.sign.certify` is granted.
@@ -266,7 +268,7 @@ public struct SignatureCapability: Sendable {
   /// Prepares an external signing operation and returns its digest and signing identifier.
   ///
   /// The document becomes read-only while this operation is pending. Complete
-  /// it with `completeSignature(_:cms:)` or release it with `abortPending()`.
+  /// it with `completeSignature(_:cms:)` or release it with `cancelPending()`.
   public func prepareSignature(_ input: SignaturePrepareInput) async throws(PDFError) -> SignaturePrepared {
     try await bridgedCancellable { token in try await handle.prepareSignature(input: input, cancel: token) }
   }
@@ -283,9 +285,9 @@ public struct SignatureCapability: Sendable {
     }
   }
 
-  /// Cancel the parked signing, if any.
-  public func abortPending() async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.abortPending(cancel: token) }
+  /// Give up the parked signing, if any.
+  public func cancelPending() async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.cancelPending(cancel: token) }
   }
 
   /// Draw `mark` into an unsigned field without sealing it.

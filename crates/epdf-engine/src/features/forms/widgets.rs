@@ -1,0 +1,147 @@
+//! The form as `forms.list` answers it: the fields, and every widget row.
+//!
+//! G8. Ports `services/src/features/forms/internal/widgetRows.ts`
+//! (`readForm`, `readFormWidgets`) and the widget half of
+//! `annotations/internal/read/collectPageAnnotations.ts` (its `family:
+//! 'widgets'` filter).
+//!
+//! A form field's widgets come with the form, never with the annotations
+//! (1233d1349): the field tree says which widgets a field has, and each
+//! page's `/Annots` says where a widget is and how it looks, as it does for
+//! every reader.
+
+use pdfium::{Document, FormModel};
+
+use super::snapshot::{FormSnapshot, read_form_fields};
+use crate::cancel::CancelToken;
+use crate::error::EngineError;
+use crate::features::actions::vocabulary::ActionReadBudgetTracker;
+use crate::features::annotation::read::record::{
+    WidgetAnnotation, join_widget_field, read_annotation_record_base, read_widget_annotation,
+};
+use crate::features::annotation::subtype::code;
+use crate::identity::PageObjectNumber;
+
+/// The whole form (`readForm`), in the file's coordinates: the fields from
+/// `model`, and every widget row from the pages.
+pub fn read_form(
+    document: &Document,
+    model: &FormModel<'_>,
+    cancel: &CancelToken,
+) -> Result<FormSnapshot, EngineError> {
+    let fields = read_form_fields(model, cancel)?;
+    let widgets = read_form_widgets(document, model, cancel)?;
+    Ok(FormSnapshot {
+        form_kind: fields.form_kind,
+        needs_appearances: fields.needs_appearances,
+        fields: fields.fields,
+        widgets,
+        calculation_order: fields.calculation_order,
+    })
+}
+
+/// Every widget the document's pages show, in page order and `/Annots` order
+/// within a page (`readFormWidgets`). Only widget rows are built: another
+/// annotation's subtype is read, never its row. A page stored inline has no
+/// object number, so nothing on it can be named: it is passed over, and the
+/// rest of the form still reads.
+pub fn read_form_widgets(
+    document: &Document,
+    model: &FormModel<'_>,
+    cancel: &CancelToken,
+) -> Result<Vec<WidgetAnnotation>, EngineError> {
+    let mut rows = Vec::new();
+    for page_index in 0..document.page_count() {
+        cancel.check()?;
+        let Ok(page) = PageObjectNumber::new(document.page_object_number_by_index(page_index))
+        else {
+            continue;
+        };
+        let count = document.raw_annotation_count(page_index).unwrap_or(0);
+        // One budget per page, as `collectPageAnnotations` keeps one.
+        let mut budget = ActionReadBudgetTracker::default();
+        for index in 0..count {
+            cancel.check()?;
+            let Some(annotation) = document.raw_annotation(page_index, index) else {
+                continue;
+            };
+            if annotation.subtype_code() != code::WIDGET {
+                continue;
+            }
+            let base =
+                read_annotation_record_base(document, &annotation, page, index, &mut budget)?;
+            let mut row = read_widget_annotation(&annotation, base)?;
+            join_widget_field(model, &mut row);
+            rows.push(row);
+        }
+    }
+    Ok(rows)
+}
+
+/// The rows of `widgets`, each read by its object number on its page: a
+/// form write's answer (`readWidgetRows`). A widget no page shows any more
+/// (deleted with its field), or one on no page, has no row; each is read
+/// once.
+pub fn read_widget_rows(
+    owned: &crate::access::OwnedDocument,
+    widgets: &[super::snapshot::FormWidgetRef],
+) -> Result<Vec<WidgetAnnotation>, EngineError> {
+    let document = owned.document();
+    let model = document.form_model();
+    let mut rows = Vec::new();
+    let mut seen = Vec::new();
+    for widget in widgets {
+        let Ok(page) = PageObjectNumber::new(widget.page_object_number) else {
+            continue;
+        };
+        if widget.annot_object_number == 0 || seen.contains(&widget.annot_object_number) {
+            continue;
+        }
+        seen.push(widget.annot_object_number);
+        let Ok(page_index) = owned.page_index(page) else {
+            continue;
+        };
+        let reference = crate::identity::AnnotationRef::ObjectNumber {
+            page,
+            annot: widget.annot_object_number,
+        };
+        let index = match crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+            document, page_index, &reference,
+        ) {
+            Ok(index) => index,
+            Err(e) if e.code == crate::error::EngineErrorCode::NotFound => continue,
+            Err(e) => return Err(e),
+        };
+        let Some(annotation) = document.raw_annotation(page_index, index) else {
+            continue;
+        };
+        if annotation.subtype_code() != code::WIDGET {
+            continue;
+        }
+        let mut budget = ActionReadBudgetTracker::default();
+        let base = read_annotation_record_base(document, &annotation, page, index, &mut budget)?;
+        let mut row = read_widget_annotation(&annotation, base)?;
+        if let Some(model) = &model {
+            join_widget_field(model, &mut row);
+        }
+        rows.push(row);
+    }
+    Ok(rows)
+}
+
+/// One widget's row, read at `index` of its page and joined to its field
+/// (`readAnnotationFromPtr` with `joinWidgetFieldNumbers`).
+pub fn read_widget_row(
+    document: &Document,
+    annotation: &pdfium::Annotation<'_>,
+    page: PageObjectNumber,
+    index: u32,
+) -> Result<WidgetAnnotation, EngineError> {
+    let mut budget = ActionReadBudgetTracker::default();
+    let base = read_annotation_record_base(document, annotation, page, index, &mut budget)?;
+    let mut row = read_widget_annotation(annotation, base)?;
+    if let Some(model) = document.form_model() {
+        join_widget_field(&model, &mut row);
+    }
+    Ok(row)
+}

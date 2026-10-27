@@ -1,22 +1,28 @@
 //! Changing an annotation.
 //!
-//! G11. Ports the `update` half of
-//! `services/src/features/annotations/AnnotationMutator.ts` and the patch
-//! side of `internal/write/*`. Operation: `annotations.update`.
+//! G11. Ports `services/src/features/annotations/AnnotationMutator.ts`
+//! (`update`) with the patch writers of `internal/write/`
+//! (`annotationWriterRegistry.ts` `applyPatch`, `preflightPatch`, and each
+//! kind's `apply*Patch`), `writeAnnotationBox.ts` (`applyAnnotationBoxPatch`),
+//! `writeAnnotationPoints.ts` (`updatePoints`),
+//! `writeAnnotationTransformMetadata.ts` (`settleAnnotationTurn`),
+//! `writeMeasurementFields.ts` ([`super::measurement`]),
+//! `writeAnnotationRelationship.ts` (`writeAnnotationRelationship`,
+//! `writePopupParent`, `writeLinkedOpen`) and `writeEmbedMetadata.ts`
+//! (`applyEmbedMetadataOnUpdate`). Operation: `annotations.update`, a single
+//! verb and a change op.
 //!
 //! # An update is not structural
 //!
-//! It does not touch `/Annots`, so no index moves, no revision is bumped and
-//! no client is asked to re-read. The one identity effect it can have is
-//! STRENGTHENING: a weak annotation gets an `/NM` stamped, which changes what
-//! it is called and not where it is.
+//! It does not touch `/Annots`, so the annotation keeps its place and its
+//! name through the write, and is read back where it was.
 //!
 //! # The appearance decision is made against the annotation as it was
 //!
-//! The classifier value-diffs the patch against the CURRENT DTO, which is
-//! read before anything is written. That is what lets a client send a whole
-//! object back and still have a colour-only edit recognized as one, and it is
-//! why the read happens first rather than being reconstructed from the patch.
+//! The patch is resolved against the read taken before anything is written
+//! ([`super::patch::pdf_resolve_annotation_patch`]), and the appearance
+//! verdict value-diffs the resolved patch against that read. A client that
+//! sends a whole read back with one change is classified by that change.
 //!
 //! # Blend mode is captured before the re-bake
 //!
@@ -24,45 +30,58 @@
 //! dictionary, so re-baking without carrying it forward would silently reset
 //! it on every unrelated edit.
 
-use pdfium::{AppearanceMode, PageView};
+use pdfium::{Annotation, Document};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
 use super::appearance::{AppearanceImpact, appearance_impact_of};
 use super::context::AnnotationWriteContext;
-use super::create::write;
-use super::impact::{AnnotationListMutationMeta, AnnotationMutationKind, compute_mutation_impact};
-use super::patch::{AnnotationPatch, AnnotationPatchBase, AnnotationPatchKind};
-use super::resolve::{capture_or_stamp_stable_id, resolve_annotation};
+use super::create::{
+    AnnotationMutationMeta, Link, link_popup, link_reply, link_target, open_existing,
+    set_default_appearance, write_link_target,
+};
+use super::draft::AnnotationActor;
+use super::measurement::{drawn_point, write_measurement_fields};
+use super::patch::{ResolvedPatch, pdf_resolve_annotation_patch, touches_caption};
+use super::prepare::{
+    DraftFields, DraftResources, Rgb, StampFit, assert_resources, intent_name, text_alignment_of,
+};
+use super::primitives::{
+    self as p, CurrentPoints, PlacedPoints, apply_annotation_box_patch, read_current_points,
+    set_color, set_opacity, shift_annot_rect, shift_between, update_points,
+};
+use super::stamp::{DrawingIndex, author_stamp_appearance, write_stamp_fit};
 use crate::cancel::CancelToken;
-use crate::clock::{Clock, format_pdf_date};
-use crate::dto::Patch;
+use crate::clock::{Clock, format_pdf_timestamp};
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::actions::vocabulary::ActionReadBudgetTracker;
-use crate::features::annotation::read::dto::AnnotationDto;
-use crate::features::annotation::read::page::read_page_annotations;
-use crate::features::annotation::read::style::Color;
-use crate::features::annotation::vocabulary::{AnnotationColorType, BlendMode};
+use crate::features::annotation::read::kinds::{AnnotationRecord, read_annotation_record_kind};
+use crate::features::annotation::read::record::read_annotation_record_base;
+use crate::features::annotation::subtype::AnnotationSubtype;
+use crate::features::annotation::vocabulary::{
+    AnnotationBorderStyle, AnnotationColorType as C, BlendMode, LineEnding, LineEndings,
+    RT_UNKNOWN, StandardFont,
+};
+use crate::geom::{NamedPdfQuad, PdfPoint};
 use crate::identity::{AnnotationRef, PageObjectNumber};
-use crate::ids::IdSource;
-use crate::revision::PageState;
+use crate::session::document::WriteStamp;
 
-/// What happened to the appearance stream.
+/// What happened to the appearance stream (`AppearanceAction`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AppearanceAction {
     Preserved,
     Regenerated,
-    /// The subtype has no generic generator, so nothing was written. A
-    /// widget is the usual case.
+    /// The kind has no generator, so nothing was written.
     GenerationUnavailable,
+    /// In an undo: put back as it was before the change being undone.
+    Restored,
 }
 
-/// The engine's appearance verdict.
+/// The engine's appearance verdict (`AppearanceOutcome`).
 ///
-/// `changed` rather than `action` is the raster-invalidation signal, and the
-/// difference matters: a regeneration that could not happen still changed the
-/// dictionary, so a form-layer renderer may draw differently even though no
-/// `/AP` was written.
+/// `changed` rather than `action` is the raster-invalidation signal: a
+/// regeneration that could not happen still changed the dictionary, so a
+/// renderer that draws from it may draw differently.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppearanceOutcome {
@@ -70,1402 +89,1120 @@ pub struct AppearanceOutcome {
     pub changed: bool,
 }
 
-/// What an update produced.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// What an update answers (`AnnotationUpdateResult`), in the file's
+/// coordinates: the annotation after the patch, read back as a listing reads
+/// it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AnnotationUpdateResult {
-    /// The annotation after the patch, read back through the ordinary
-    /// reader.
-    ///
-    /// `updated.ref` may be STRONGER than the reference that was passed in:
-    /// updating a weak annotation stamps an `/NM`, so a caller that addressed
-    /// by index gets an `nm` reference back and should update its cache key.
-    pub updated: AnnotationDto,
+    /// As a listing reads it; a widget as the form reads its row.
+    pub annotation: Map<String, Value>,
     pub appearance: AppearanceOutcome,
-    pub meta: AnnotationListMutationMeta,
+    pub meta: AnnotationMutationMeta,
+    /// The patch as it was written, resolved. Not on the wire: the change
+    /// op's undo reads which fields it named.
+    #[serde(skip)]
+    pub resolved: Map<String, Value>,
 }
 
-/// Apply a patch to one annotation.
-#[allow(clippy::too_many_arguments)]
+/// One update (`AnnotationMutator.update`'s arguments).
+#[derive(Debug)]
+pub struct UpdateRequest<'a> {
+    pub reference: AnnotationRef,
+    /// The patch as the caller sent it, in the file's coordinates.
+    pub patch: Map<String, Value>,
+    pub resources: DraftResources<'a>,
+    /// Who updates it, as the authority check answered: stamped as
+    /// `UpdatedBy`, and a new group.
+    pub actor: Option<AnnotationActor>,
+}
+
+/// What an update writes with besides the request.
+pub struct UpdateServices<'a> {
+    pub context: &'a AnnotationWriteContext<'a>,
+    pub drawings: &'a std::cell::RefCell<DrawingIndex>,
+    pub clock: &'a dyn Clock,
+}
+
+fn unknown(message: impl Into<String>) -> EngineError {
+    EngineError::with_message(EngineErrorCode::Unknown, message)
+}
+
+/// The annotation at `index` on the page, as a listing reads it, in the
+/// file's coordinates.
+pub fn read_record(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    page: PageObjectNumber,
+    index: u32,
+) -> Result<AnnotationRecord, EngineError> {
+    let mut budget = crate::features::actions::vocabulary::ActionReadBudgetTracker::default();
+    let base = read_annotation_record_base(document, annotation, page, index, &mut budget)?;
+    let kind = read_annotation_record_kind(document, annotation, &base, annotation.subtype_code())?;
+    Ok(AnnotationRecord { base, kind })
+}
+
+/// The annotation at `index`, as the JSON object the resolution reads: a
+/// widget as the form reads its row, joined to its field
+/// (`joinWidgetFieldNumbers`), every other kind as a listing reads it.
+pub fn read_record_json(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    page: PageObjectNumber,
+    index: u32,
+) -> Result<Map<String, Value>, EngineError> {
+    if annotation.subtype_code() == AnnotationSubtype::Widget.code() {
+        let row =
+            crate::features::forms::widgets::read_widget_row(document, annotation, page, index)?;
+        return match serde_json::to_value(row) {
+            Ok(Value::Object(fields)) => Ok(fields),
+            Ok(_) => Err(unknown("a widget row serialized to no object")),
+            Err(e) => Err(unknown(format!("a widget row did not serialize: {e}"))),
+        };
+    }
+    record_json(&read_record(document, annotation, page, index)?)
+}
+
+/// A record as the JSON object the resolution reads.
+pub fn record_json(record: &AnnotationRecord) -> Result<Map<String, Value>, EngineError> {
+    match serde_json::to_value(record) {
+        Ok(Value::Object(fields)) => Ok(fields),
+        Ok(_) => Err(unknown("a record serialized to no object")),
+        Err(e) => Err(unknown(format!("a record did not serialize: {e}"))),
+    }
+}
+
+/// `annotations.update`: edit an annotation in place, checked whole before
+/// the first write (`AnnotationMutator.update`).
 pub fn update_annotation(
-    document: &pdfium::Document,
-    page: &PageView<'_>,
+    document: &Document,
     page_index: u32,
-    page_object_number: PageObjectNumber,
-    annotation_ref: &AnnotationRef,
-    patch: &AnnotationPatch,
-    context: &AnnotationWriteContext<'_>,
-    state_before: &PageState,
-    state_after: &PageState,
-    clock: &dyn Clock,
-    ids: &dyn IdSource,
+    stamp: &WriteStamp,
+    request: UpdateRequest<'_>,
+    services: &UpdateServices<'_>,
     cancel: &CancelToken,
 ) -> Result<AnnotationUpdateResult, EngineError> {
     cancel.check()?;
-    let annotation = resolve_annotation(page, annotation_ref)?;
+    let UpdateRequest { reference, patch, resources, actor } = request;
+    let page = reference.page();
+    // An update edits in place, so the annotation keeps its position
+    // throughout: opened again there after its appearance is baked.
+    let index = super::resolve::resolve_annotation_index_raw(document, page_index, &reference)?;
+    let open = || -> Result<Annotation<'_>, EngineError> {
+        document
+            .raw_annotation(page_index, index)
+            .ok_or_else(|| unknown("the annotation is not where it was"))
+    };
+    let annotation = open()?;
+    let previous_blend = BlendMode::from_code(annotation.blend_mode_code());
+    let current = read_record_json(document, &annotation, page, index)?;
 
-    // Everything that can refuse comes first. After the identity stamp below
-    // this function has written to the document and cannot take it back.
-    preflight(&annotation, patch, context)?;
+    assert_caption_metadata_writable(&annotation, &current, &patch)?;
+    let describe = |key: &str| services.context.describe_font(key);
+    let resolved = pdf_resolve_annotation_patch(&current, patch, Some(&describe))?;
+    assert_resources(resolved.subtype, &resources, false)?;
+    preflight_patch(document, &resolved, &resources, services.context)?;
+    // The apply boundary: everything below writes.
     cancel.check()?;
 
-    let stable_id = capture_or_stamp_stable_id(&annotation, ids)?;
-    let previous_blend = BlendMode::from_code(annotation.blend_mode_code());
+    // The appearance decision depends only on the read and the patch. A
+    // write that redraws or re-places the drawing starts from the turn the
+    // annotation reads: our keys record it first.
+    let impact = if resources.appearance.is_some() {
+        AppearanceImpact::Regenerate
+    } else {
+        appearance_impact_of(&Value::Object(current.clone()), &Value::Object(resolved.data.clone()))
+    };
+    if impact != AppearanceImpact::Inert {
+        p::settle_annotation_turn(&annotation)?;
+    }
 
-    // The pre-patch DTO the classifier value-diffs against. Read through the
-    // ordinary reader so a full-object patch from a client that projects
-    // everything still diffs down to what actually changed.
-    let index = page.annotation_index(&annotation);
-    if index < 0 {
+    apply_patch(document, &annotation, &current, &resolved, &resources, services)?;
+    // A derived plain label supersedes imported rich contents: a stale `/RC`
+    // would show a different value where rich text is preferred.
+    if let Some(contents) = resolved.data.get("contents")
+        && Some(contents) != current.get("contents")
+        && is_dimension(&current, &resolved.data)
+    {
+        p::remove_key(&annotation, "RC")?;
+    }
+
+    // `/IRT` and `/RT`: only this annotation is written. A popup relink and
+    // a shared `/Open` also write the other annotation, which `meta.changed`
+    // names after this one.
+    if let Some(reply) = resolved.data.get("reply")
+        && !same_reply(reply, current.get("reply").unwrap_or(&Value::Null))
+    {
+        write_relationship(document, page_index, page, &annotation, &resolved.fields)?;
+    }
+    let mut linked: Vec<AnnotationRef> = Vec::new();
+    let mut relinked = false;
+    if resolved.subtype == AnnotationSubtype::Popup
+        && let Some(parent) = &resolved.parent
+        && !same_ref(Some(parent), ref_of(current.get("parent")).as_ref())
+    {
+        relinked = true;
+        let previous = ref_of(current.get("parent"));
+        if let Some(name) = write_popup_parent(
+            document,
+            page_index,
+            page,
+            &annotation,
+            Some(parent),
+            previous.as_ref(),
+        )? {
+            linked.push(name);
+        }
+    }
+    // A note and its popup hold one `/Open`: writing it on one writes the
+    // other (a relink has made them equal already).
+    let open_value = match resolved.subtype {
+        AnnotationSubtype::Text => resolved.fields.open,
+        AnnotationSubtype::Popup => resolved.fields.open_popup,
+        _ => None,
+    };
+    if let Some(open_value) = open_value
+        && !relinked
+    {
+        let other = match resolved.subtype {
+            AnnotationSubtype::Text => ref_of(current.get("popup")),
+            _ => ref_of(current.get("parent")),
+        };
+        if let Some(other) = other
+            && let Some(name) = write_linked_open(
+                document,
+                page_index,
+                page,
+                &other,
+                open_value,
+                resolved.subtype == AnnotationSubtype::Popup,
+            )?
+        {
+            linked.push(name);
+        }
+    }
+
+    // `/M` on every update, whatever the patch touched; then `UpdatedBy`
+    // (and a new group) when there is someone to name.
+    let modified = format_pdf_timestamp(services.clock.now())
+        .ok_or_else(|| unknown("the clock gave no PDF date"))?;
+    p::set_string(&annotation, "M", &modified)?;
+    apply_embed_metadata_on_update(&annotation, actor.as_ref())?;
+
+    // The appearance (`appearanceImpactOf`): an `/AP` is content, not
+    // cache. An inert patch never touches it, and a verified rigid
+    // translation keeps it as it is (a missing one stays missing: the
+    // renderer draws it in memory where the annotation now is). Everything
+    // else bakes one. New appearance bytes are a new drawing.
+    let appearance = match impact {
+        AppearanceImpact::Inert | AppearanceImpact::Translation => {
+            AppearanceOutcome { action: AppearanceAction::Preserved, changed: false }
+        }
+        AppearanceImpact::Regenerate => {
+            let blend = resolved.fields.blend_mode.unwrap_or(previous_blend);
+            // A widget is drawn as its field's family draws it; a widget in
+            // no field has no generator.
+            let drawn = if resolved.subtype == AnnotationSubtype::Widget {
+                annotation.generate_form_field_appearance()
+            } else {
+                annotation.generate_appearance(Some(blend.code()))
+            };
+            if drawn {
+                AppearanceOutcome { action: AppearanceAction::Regenerated, changed: true }
+            } else {
+                // No generator for this kind (a stamp keeps the appearance
+                // its writer placed). The dictionary still changed.
+                AppearanceOutcome { action: AppearanceAction::GenerationUnavailable, changed: true }
+            }
+        }
+    };
+
+    // PDFium caches the parsed appearance form on an annotation's handle;
+    // reopening is what makes the read describe the new stream.
+    drop(annotation);
+    let after = open()?;
+    let record = read_record_json(document, &after, page, index)?;
+    let own: AnnotationRef = serde_json::from_value(record.get("ref").cloned().unwrap_or_default())
+        .map_err(|e| unknown(format!("an annotation read back with no ref: {e}")))?;
+    let mut changed = vec![own];
+    for other in linked {
+        if !changed.iter().any(|seen| same_ref(Some(seen), Some(&other))) {
+            changed.push(other);
+        }
+    }
+    Ok(AnnotationUpdateResult {
+        annotation: record,
+        appearance,
+        meta: AnnotationMutationMeta::of(stamp, page, changed),
+        resolved: resolved.data,
+    })
+}
+
+/// The key two refs to one annotation share (`annotationKey`).
+fn key_of(reference: &AnnotationRef) -> String {
+    match reference {
+        AnnotationRef::ObjectNumber { page, annot } => format!("{}:o{annot}", page.get()),
+        AnnotationRef::BaseIndex { page, base_index } => format!("{}:b{base_index}", page.get()),
+        AnnotationRef::Nm { page, nm } => format!("{}:n{nm}", page.get()),
+        AnnotationRef::Index { page, index, .. } => format!("{}:i{index}", page.get()),
+    }
+}
+
+/// `sameRef`.
+fn same_ref(left: Option<&AnnotationRef>, right: Option<&AnnotationRef>) -> bool {
+    match (left, right) {
+        (Some(left), Some(right)) => key_of(left) == key_of(right),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn ref_of(value: Option<&Value>) -> Option<AnnotationRef> {
+    serde_json::from_value(value?.clone()).ok()
+}
+
+/// `sameReply`: the same annotation, the same type (`reply` when left out).
+fn same_reply(next: &Value, current: &Value) -> bool {
+    if next.is_null() || current.is_null() {
+        return next.is_null() == current.is_null();
+    }
+    let kind =
+        |reply: &Value| reply.get("type").and_then(Value::as_str).unwrap_or("reply").to_owned();
+    same_ref(ref_of(next.get("to")).as_ref(), ref_of(current.get("to")).as_ref())
+        && kind(next) == kind(current)
+}
+
+/// `isDimension`, of the annotation as the patch leaves it.
+fn is_dimension(current: &Map<String, Value>, patch: &Map<String, Value>) -> bool {
+    let subtype = current.get("subtype").and_then(Value::as_str);
+    let intent = patch.get("intent").or_else(|| current.get("intent")).and_then(Value::as_str);
+    matches!(
+        (subtype, intent),
+        (Some("line"), Some("line-dimension"))
+            | (Some("polyline"), Some("polyline-dimension"))
+            | (Some("polygon"), Some("polygon-dimension"))
+    )
+}
+
+/// `assertCaptionMetadataWritable`: a polygon or polyline keeps its caption
+/// in `/EMBD_Metadata`; when that entry is there and isn't a dictionary, a
+/// patch that touches the caption has nowhere to write it.
+fn assert_caption_metadata_writable(
+    annotation: &Annotation<'_>,
+    current: &Map<String, Value>,
+    patch: &Map<String, Value>,
+) -> Result<(), EngineError> {
+    let subtype = current.get("subtype").and_then(Value::as_str);
+    if !matches!(subtype, Some("polygon" | "polyline")) || !touches_caption(patch) {
+        return Ok(());
+    }
+    let present = annotation.has_key("EMBD_Metadata").unwrap_or(false);
+    // `FPDF_OBJECT_DICTIONARY`.
+    if present && annotation.value_type("EMBD_Metadata").unwrap_or(0) != 6 {
         return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            format!("the annotation is not in the page's /Annots (index {index})"),
+            EngineErrorCode::InvalidArg,
+            "Malformed annotation metadata cannot store a caption",
         ));
     }
-    let listing_before = read_page_annotations(
-        document,
-        page_index,
-        page_object_number,
-        &state_before.revision,
-        &mut ActionReadBudgetTracker::default(),
-        cancel,
-    )?;
-    let current = listing_before
-        .annotations
-        .get(index as usize)
-        .ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::Unknown,
-                format!("the annotation is at index {index} and the listing is shorter"),
-            )
-        })?
-        .clone();
+    Ok(())
+}
 
-    apply_base_patch(&annotation, &patch.base)?;
-    apply_kind_patch(document, page, &annotation, patch, context)?;
+/// `preflightPatch`: each kind's own checks of what the schema can't see,
+/// before the first write (`preflightStampPatch`).
+fn preflight_patch(
+    document: &Document,
+    resolved: &ResolvedPatch,
+    resources: &DraftResources<'_>,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    let f = &resolved.fields;
+    if resolved.subtype == AnnotationSubtype::Stamp {
+        if let Some(Some(name)) = &f.name
+            && name.is_empty()
+        {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "stamp name must be non-empty",
+            ));
+        }
+        if resources.appearance.is_some() {
+            super::stamp::require_stamp_content(document, resources.appearance)?;
+        }
+    }
+    // A font that isn't one of the fourteen is a key this thread must have
+    // registered: found out now rather than after the first write.
+    if let Some(family) = f.font_family.as_deref()
+        && StandardFont::from_family(family).is_none()
+        && matches!(resolved.subtype, AnnotationSubtype::FreeText | AnnotationSubtype::Redact)
+    {
+        context.resolve_font(family)?;
+    }
+    Ok(())
+}
 
-    let modified = format_pdf_date(clock.now()).ok_or_else(|| {
-        EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
-    })?;
-    write(annotation.set_string_value("M", &modified), "/M")?;
+// ── The writers ─────────────────────────────────────────────────────────────
 
-    let impact = appearance_impact_of(
-        &serde_json::to_value(&current).expect("serialize"),
-        &serde_json::to_value(patch).expect("serialize"),
-    );
-    let appearance = settle_appearance(
-        &annotation,
-        page,
-        impact,
-        patch.base.blend_mode.unwrap_or(previous_blend),
-    );
+/// `applyPatch`: the kind's writer.
+fn apply_patch(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    current: &Map<String, Value>,
+    resolved: &ResolvedPatch,
+    resources: &DraftResources<'_>,
+    services: &UpdateServices<'_>,
+) -> Result<(), EngineError> {
+    use AnnotationSubtype as S;
+    let f = &resolved.fields;
+    apply_base(annotation, f)?;
+    match resolved.subtype {
+        S::Highlight | S::Underline | S::Squiggly | S::Strikeout => {
+            if let Some(color) = f.color {
+                set_color(annotation, C::Color, color)?;
+            }
+            if let Some(opacity) = f.opacity {
+                set_opacity(annotation, opacity)?;
+            }
+            if resolved.subtype == S::Strikeout {
+                write_intent_patch(annotation, f)?;
+            }
+            if let Some(quads) = &f.quad_points {
+                let shift = shift_between(&current_quad_corners(annotation)?, &corners(quads));
+                replace_quad_points(annotation, quads)?;
+                match shift {
+                    Some(shift) => shift_annot_rect(annotation, shift)?,
+                    None => p::set_rect_from_quad_points(annotation, quads)?,
+                }
+            }
+        }
+        S::Square | S::Circle => {
+            apply_annotation_box_patch(annotation, f.r#box, f.rotation)?;
+            apply_filled_style_patch(annotation, f)?;
+            apply_cloudy_patch(annotation, f)?;
+        }
+        S::Polygon | S::Polyline => {
+            let points = read_current_points(annotation);
+            let placed = update_points(
+                annotation,
+                &points,
+                f.vertices.as_ref().map(std::slice::from_ref),
+                f.rotation,
+            )?;
+            let (caption, center) =
+                patch_with_drawn_caption(annotation, f, &points, placed.as_ref());
+            write_measurement_fields(annotation, resolved.subtype, &caption, center)?;
+            if let Some(placed) = placed {
+                p::set_vertices(
+                    annotation,
+                    placed.drawn.first().map(Vec::as_slice).unwrap_or_default(),
+                )?;
+            }
+            apply_filled_style_patch(annotation, f)?;
+            if resolved.subtype == S::Polygon {
+                apply_cloudy_patch(annotation, f)?;
+            } else if let Some(endings) = f.line_endings {
+                p::set_line_endings(annotation, endings)?;
+            }
+        }
+        S::Line => {
+            write_measurement_fields(annotation, resolved.subtype, f, None)?;
+            apply_filled_style_patch(annotation, f)?;
+            let points: Option<Vec<Vec<PdfPoint>>> =
+                f.line_points.map(|line| vec![vec![line.start, line.end]]);
+            let current_points: CurrentPoints = read_current_points(annotation);
+            if let Some(placed) =
+                update_points(annotation, &current_points, points.as_deref(), f.rotation)?
+                && let Some([start, end]) = placed
+                    .drawn
+                    .first()
+                    .map(Vec::as_slice)
+                    .and_then(|ends| <&[PdfPoint; 2]>::try_from(ends).ok())
+            {
+                p::set_line(annotation, *start, *end)?;
+            }
+            if let Some(endings) = f.line_endings {
+                p::set_line_endings(annotation, endings)?;
+            }
+        }
+        S::Ink => {
+            write_intent_patch(annotation, f)?;
+            apply_geometry_style_patch(annotation, f)?;
+            let points = read_current_points(annotation);
+            if let Some(drawn) =
+                update_points(annotation, &points, f.ink_list.as_deref(), f.rotation)?
+            {
+                p::set_ink_list(annotation, &drawn.drawn)?;
+            }
+        }
+        S::Text => {
+            use crate::features::annotation::state::{state_model_to_pdf, state_to_pdf};
+            if let Some(rect) = f.rect {
+                p::set_rect(annotation, rect)?;
+            }
+            if let Some(color) = f.color {
+                set_color(annotation, C::Color, color)?;
+            }
+            if let Some(opacity) = f.opacity {
+                set_opacity(annotation, opacity)?;
+            }
+            if let Some(icon) = f.note_icon {
+                p::set_name(annotation, icon.pdf_name())?;
+            }
+            // The popup's `/Open` follows in the mutator, which can reach it.
+            if let Some(open) = f.open {
+                p::set_boolean(annotation, "Open", open)?;
+            }
+            if let Some(model) = &f.state_model {
+                let model = model.as_deref().map(state_model_to_pdf);
+                p::set_string_or_clear(annotation, "StateModel", model.as_deref())?;
+            }
+            if let Some(state) = &f.state {
+                let state = state.as_deref().map(state_to_pdf);
+                p::set_string_or_clear(annotation, "State", state.as_deref())?;
+            }
+        }
+        S::Caret => {
+            apply_annotation_box_patch(annotation, f.r#box, f.rotation)?;
+            if let Some(color) = f.color {
+                set_color(annotation, C::Color, color)?;
+            }
+            if let Some(opacity) = f.opacity {
+                set_opacity(annotation, opacity)?;
+            }
+            write_intent_patch(annotation, f)?;
+        }
+        S::FreeText => apply_free_text_patch(annotation, f, services.context)?,
+        S::Redact => apply_redact_patch(annotation, f, services.context)?,
+        S::Link => {
+            if let Some(rect) = f.rect {
+                p::set_rect(annotation, rect)?;
+            }
+            match &f.target {
+                None => {}
+                // Both entries go: removing only `/A` would bring a stale
+                // direct `/Dest` back as the live target.
+                Some(None) => {
+                    if !annotation.remove_action() || !annotation.remove_destination() {
+                        return Err(unknown("failed to clear link target"));
+                    }
+                }
+                Some(Some(target)) => write_link_target(document, annotation, target)?,
+            }
+        }
+        S::FileAttachment => {
+            if let Some(rect) = f.rect {
+                p::set_rect(annotation, rect)?;
+            }
+            if let Some(color) = f.color {
+                set_color(annotation, C::Color, color)?;
+            }
+            if let Some(opacity) = f.opacity {
+                set_opacity(annotation, opacity)?;
+            }
+            if let Some(icon) = f.file_icon {
+                p::set_name(annotation, icon.pdf_name())?;
+            }
+            write_file_change(document, annotation, f.file.as_ref(), resources.file, services)?;
+        }
+        S::Stamp => apply_stamp_patch(document, annotation, current, f, resources, services)?,
+        S::Popup => {
+            if let Some(rect) = f.rect {
+                p::set_rect(annotation, rect)?;
+            }
+            if let Some(open) = f.open_popup {
+                p::set_boolean(annotation, "Open", open)?;
+            }
+        }
+        // `applyWidgetPatch`: its place, its look and its actions.
+        S::Widget => {
+            super::widget::apply_widget_box_patch(annotation, f.r#box, f.widget_rotation)?;
+            super::widget::apply_widget_style(annotation, &f.widget, services.context)?;
+            if let Some(actions) = &f.widget_actions {
+                crate::features::actions::write::write_widget_actions(
+                    document,
+                    annotation,
+                    actions.as_ref(),
+                )?;
+            }
+        }
+        S::Unsupported => {
+            return Err(EngineError::with_message(
+                EngineErrorCode::NotImplemented,
+                format!("no writer registered for subtype='{}'", resolved.subtype.as_str()),
+            ));
+        }
+    }
+    Ok(())
+}
 
-    // Closed before the read-back. PDFium caches the parsed appearance form
-    // on the annotation context, so a handle that saw the old stream can go
-    // on reporting its blend mode after a regeneration; reopening is what
-    // makes the returned DTO describe the document rather than the cache.
-    drop(annotation);
-    cancel.check()?;
+/// `applyAnnotationBasePatch`: contents and subject (tri-state), and the
+/// flags the patch names.
+fn apply_base(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
+    if let Some(contents) = &f.contents {
+        p::set_string_or_clear(annotation, "Contents", contents.as_deref())?;
+    }
+    if let Some(subject) = &f.subject {
+        p::set_string_or_clear(annotation, "Subj", subject.as_deref())?;
+    }
+    if f.flags.iter().any(Option::is_some) {
+        p::set_flags(annotation, &f.flags)?;
+    }
+    Ok(())
+}
 
-    let listing_after = read_page_annotations(
-        document,
-        page_index,
-        page_object_number,
-        &state_after.revision,
-        &mut ActionReadBudgetTracker::default(),
-        cancel,
-    )?;
-    let updated = listing_after.annotations.into_iter().nth(index as usize).ok_or_else(|| {
+/// `/IT` from a patch: a value, or `null` to remove it.
+fn write_intent_patch(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
+    match &f.intent {
+        None => Ok(()),
+        Some(None) => p::set_intent_or_clear(annotation, None),
+        Some(Some(intent)) => {
+            let name = intent_name(intent).ok_or_else(|| unknown("an intent with no /IT name"))?;
+            p::set_intent_or_clear(annotation, Some(name))
+        }
+    }
+}
+
+/// `applyBorderPatch`: `/BS` style and width in one call, the one the patch
+/// leaves out read so it is kept; then the dash (`null` or empty removes
+/// it).
+fn apply_border_patch(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
+    if f.border_style.is_some() || f.stroke_width.is_some() {
+        let current = annotation.border_style();
+        let style =
+            f.border_style.unwrap_or_else(|| AnnotationBorderStyle::from_code(current.style_code));
+        let width = f.stroke_width.unwrap_or(f64::from(current.width));
+        p::set_border_style(annotation, style.code(), width)?;
+    }
+    match &f.dash_array {
+        None => {}
+        Some(None) => p::clear_border_dash_pattern(annotation)?,
+        Some(Some(dashes)) if dashes.is_empty() => p::clear_border_dash_pattern(annotation)?,
+        Some(Some(dashes)) => p::set_border_dash_pattern(annotation, dashes)?,
+    }
+    Ok(())
+}
+
+/// `applyGeometryStylePatch`: `/C`, `/CA` and the border, each when named.
+fn apply_geometry_style_patch(
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+) -> Result<(), EngineError> {
+    if let Some(color) = f.color {
+        set_color(annotation, C::Color, color)?;
+    }
+    if let Some(opacity) = f.opacity {
+        set_opacity(annotation, opacity)?;
+    }
+    apply_border_patch(annotation, f)
+}
+
+/// `applyFilledStylePatch`: `/IC` (`null` removes it), then the geometry
+/// style.
+fn apply_filled_style_patch(
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+) -> Result<(), EngineError> {
+    match f.interior_color {
+        None => {}
+        Some(None) => p::clear_color(annotation, C::InteriorColor),
+        Some(Some(fill)) => set_color(annotation, C::InteriorColor, fill)?,
+    }
+    apply_geometry_style_patch(annotation, f)
+}
+
+/// `/BE`, tri-state: a value sets it, `null` (or a value that isn't
+/// positive) removes it, never leaving a degenerate entry.
+fn apply_cloudy_patch(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
+    match f.cloudy_intensity {
+        None => Ok(()),
+        Some(Some(intensity)) if intensity > 0.0 => p::set_border_effect(annotation, intensity),
+        Some(_) => {
+            p::clear_border_effect(annotation);
+            Ok(())
+        }
+    }
+}
+
+/// `patchWithDrawnCaption`: an update's caption centre, given upright,
+/// turned with the vertices. When the vertices or their turn change and the
+/// caption isn't sent, a manual centre is written again under the new turn,
+/// so it stays where it was on the shape. Answers the fields to write and
+/// the centre as drawn.
+fn patch_with_drawn_caption(
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+    current: &CurrentPoints,
+    placed: Option<&PlacedPoints>,
+) -> (DraftFields, Option<PdfPoint>) {
+    use crate::features::annotation::read::turn::upright_point;
+    let turn = placed.map_or(current.turn, |placed| placed.turn);
+    if let Some(Some(center)) = f.caption_center {
+        return (f.clone(), Some(drawn_point(center, turn)));
+    }
+    if placed.is_none() || f.caption_enabled.is_some() {
+        return (f.clone(), None);
+    }
+    let Some(caption) = annotation.shape_caption() else { return (f.clone(), None) };
+    let Some(center) = caption.center else { return (f.clone(), None) };
+    let center = PdfPoint { x: f64::from(center.x), y: f64::from(center.y) };
+    let mut fields = f.clone();
+    fields.caption_enabled = Some(Some(caption.enabled));
+    let upright = upright_point(center, current.turn);
+    fields.caption_center = Some(Some(upright));
+    (fields, Some(drawn_point(upright, turn)))
+}
+
+fn corners(quads: &[NamedPdfQuad]) -> Vec<PdfPoint> {
+    quads.iter().flat_map(|q| [q.upper_left, q.upper_right, q.lower_left, q.lower_right]).collect()
+}
+
+/// The quads the annotation holds, as corners in the order [`corners`]
+/// gives them (`readQuadPoints`, `cornersOf`).
+fn current_quad_corners(annotation: &Annotation<'_>) -> Result<Vec<PdfPoint>, EngineError> {
+    let quads = annotation.quad_points().map_err(|e| {
         EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "the annotation vanished from the page during its own update",
+            EngineErrorCode::RuntimeUnavailable,
+            format!("reading /QuadPoints failed: {e}"),
         )
     })?;
-
-    let meta = compute_mutation_impact(
-        AnnotationMutationKind::Update,
-        state_before,
-        state_after,
-        vec![stable_id],
-    )
-    .map_err(|e| EngineError::with_message(EngineErrorCode::InvalidArg, e.to_string()))?;
-
-    Ok(AnnotationUpdateResult { updated, appearance, meta })
+    let point = |x: f32, y: f32| PdfPoint { x: f64::from(x), y: f64::from(y) };
+    Ok(quads
+        .into_iter()
+        .flat_map(|q| [point(q.x1, q.y1), point(q.x2, q.y2), point(q.x3, q.y3), point(q.x4, q.y4)])
+        .collect())
 }
 
-/// Preserve or re-bake, and say which.
-///
-/// An `/AP` is content: a foreign producer's stream cannot be recomputed, so
-/// it survives an inert patch and a VERIFIED rigid translation. With no
-/// stream to preserve there is nothing to protect, so any appearance-relevant
-/// write bakes one, because the alternative is an annotation that renders as
-/// nothing.
-fn settle_appearance(
-    annotation: &pdfium::Annotation<'_>,
-    page: &PageView<'_>,
-    impact: AppearanceImpact,
-    blend: BlendMode,
-) -> AppearanceOutcome {
-    let preserve = match impact {
-        AppearanceImpact::Inert => true,
-        // With no stream to preserve there is nothing to protect, so a
-        // translation bakes one: the alternative is an annotation that moved
-        // and still renders as nothing.
-        //
-        // Unexercised. Every annotation these writers create ships with an
-        // appearance, so no case in the corpus reaches a translation with
-        // none, and a version that preserved unconditionally passes. It
-        // becomes reachable with a subtype whose appearance the generic
-        // generator cannot produce.
-        AppearanceImpact::Translation => annotation.has_appearance_stream(AppearanceMode::Normal),
-        AppearanceImpact::Regenerate => false,
-    };
-    if preserve {
-        return AppearanceOutcome { action: AppearanceAction::Preserved, changed: false };
-    }
-
-    let ok = annotation.generate_appearance(Some(blend.code()));
-    page.generate_content();
-    if ok {
-        AppearanceOutcome { action: AppearanceAction::Regenerated, changed: true }
-    } else {
-        AppearanceOutcome {
-            action: AppearanceAction::GenerationUnavailable,
-            // The dictionary changed even though no stream was written, so a
-            // renderer that draws from the dictionary may draw differently.
-            changed: impact == AppearanceImpact::Regenerate,
-        }
-    }
-}
-
-/// Everything that can refuse a patch, before anything is written.
-fn preflight(
-    annotation: &pdfium::Annotation<'_>,
-    patch: &AnnotationPatch,
-    context: &AnnotationWriteContext<'_>,
+/// `replaceQuadPoints`: `/QuadPoints` removed, then the new list appended,
+/// so a list can shrink.
+fn replace_quad_points(
+    annotation: &Annotation<'_>,
+    quads: &[NamedPdfQuad],
 ) -> Result<(), EngineError> {
-    let subtype = crate::features::annotation::subtype::AnnotationSubtype::from_code(
-        annotation.subtype_code(),
-    );
-    if subtype != patch.kind.subtype() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!(
-                "a {} patch cannot be applied to a {} annotation",
-                patch.kind.subtype().as_str(),
-                subtype.as_str()
-            ),
-        ));
-    }
-
-    if let AnnotationPatchKind::Highlight { fields }
-    | AnnotationPatchKind::Underline { fields }
-    | AnnotationPatchKind::Squiggly { fields }
-    | AnnotationPatchKind::Strikeout { fields, .. } = &patch.kind
-        && let Some(quads) = &fields.quad_points
-    {
-        refuse_shrinking_quads(annotation, quads, "a text-markup")?;
-    }
-
-    // A redaction's quads share the text-markup rule for the same reason:
-    // PDFium appends to `/QuadPoints` and cannot truncate it.
-    if let AnnotationPatchKind::Redact { fields } = &patch.kind
-        && let Some(quads) = &fields.quad_points
-    {
-        refuse_shrinking_quads(annotation, quads, "a redact")?;
-    }
-    match &patch.kind {
-        // A box kind's rotation needs the box it turns, and unlike a draft
-        // the box may already be on the annotation. That is the one case
-        // `write_box_transform` reads for, so preflight asks the same
-        // question here rather than letting the write find out.
-        AnnotationPatchKind::Caret { fields } => {
-            box_rotation_satisfiable(annotation, &fields.rotation, &fields.unrotated_rect)?;
-        }
-        AnnotationPatchKind::FreeText { fields } => {
-            box_rotation_satisfiable(annotation, &fields.rotation, &fields.unrotated_rect)?;
-            if let Some(family) = fields.font_family.as_deref() {
-                super::create::font_resolvable(family, context)?;
-            }
-            if let Some(size) = fields.font_size
-                && size <= 0.0
-            {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    format!("a free-text patch's fontSize must be positive, not {size}"),
-                ));
-            }
-            crate::features::annotation::rich_text::assert_agreement(
-                patch.base.contents.as_set().map(String::as_str),
-                fields.rich_text.as_deref(),
-            )?;
-        }
-        AnnotationPatchKind::Stamp { fields } => {
-            box_rotation_satisfiable(annotation, &fields.rotation, &fields.unrotated_rect)?;
-            if let Some(source) = &fields.source {
-                let resource = context.resource(&source.resource)?;
-                if crate::features::binary::sniff(resource.bytes).is_none() {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::InvalidArg,
-                        "a stamp's source must be PNG, JPEG or PDF bytes",
-                    ));
-                }
-            }
-            if let Some(name) = fields.name.as_deref()
-                && !crate::features::annotation::vocabulary::is_standard_stamp_name(name)
-            {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    format!("'{name}' is not one of the standard stamp labels"),
-                ));
-            }
-        }
-        AnnotationPatchKind::Redact { fields } => {
-            if let Some(family) = fields.font_family.as_deref() {
-                super::create::font_resolvable(family, context)?;
-            }
-        }
-        AnnotationPatchKind::Link { fields } => {
-            if let Patch::Set(super::draft::LinkTargetDraft::Uri { uri }) = &fields.target
-                && uri.is_empty()
-            {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    "a link's uri is empty: send target null to clear it instead",
-                ));
-            }
-        }
-        _ => {}
-    }
-
-    if let Some(opacity) = opacity_of(&patch.kind)
-        && !(0.0..=1.0).contains(&opacity)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!("opacity {opacity} is outside 0..=1"),
-        ));
-    }
-    Ok(())
+    p::remove_key(annotation, "QuadPoints")?;
+    p::append_quad_points(annotation, quads)
 }
 
-/// `/QuadPoints` can grow and cannot shrink.
-///
-/// PDFium appends to the list and has no way to truncate it, so a shorter
-/// one would leave stale quads behind: a markup marking text nobody selected,
-/// or a redaction declaring a region nobody asked to remove. An EMPTY list is
-/// refused separately, because it reads as deleting the attachment points
-/// rather than as supplying none.
-fn refuse_shrinking_quads(
-    annotation: &pdfium::Annotation<'_>,
-    quads: &[crate::geom::PdfQuad],
-    what: &str,
-) -> Result<(), EngineError> {
-    if quads.is_empty() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!(
-                "{what} patch's quadPoints, when present, must be non-empty: \
-                 an empty list would be read as deleting the attachment points"
-            ),
-        ));
-    }
-    let existing = annotation
-        .quad_points()
-        .map_err(|e| {
-            EngineError::with_message(
-                EngineErrorCode::RuntimeUnavailable,
-                format!("reading /QuadPoints failed: {e}"),
-            )
-        })?
-        .len();
-    if quads.len() < existing {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!(
-                "{what} patch cannot shrink quadPoints: the annotation has {existing} \
-                 and the patch supplies {}",
-                quads.len()
-            ),
-        ));
-    }
-    Ok(())
-}
-
-/// A box kind's rotation needs the box it turns, here or already on the
-/// annotation.
-///
-/// The difference from the draft rule is the second half. A patch that
-/// rotates an annotation which already carries an `/UnrotatedRect` is
-/// satisfiable and common: it is what rotating a box a second time looks
-/// like.
-fn box_rotation_satisfiable(
-    annotation: &pdfium::Annotation<'_>,
-    rotation: &Patch<f64>,
-    unrotated_rect: &Patch<crate::geom::PdfRect>,
-) -> Result<(), EngineError> {
-    let Patch::Set(degrees) = rotation else {
-        return Ok(());
-    };
-    if *degrees == 0.0 {
-        return Ok(());
-    }
-    let has_box = match unrotated_rect {
-        Patch::Set(_) => true,
-        Patch::Clear => false,
-        Patch::Keep => super::super::read::transform::read_unrotated_rect(annotation)?.is_some(),
-    };
-    if !has_box {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "rotation requires unrotatedRect: supply the pair together, or rely on one \
-             already on the annotation",
-        ));
-    }
-    Ok(())
-}
-
-fn opacity_of(kind: &AnnotationPatchKind) -> Option<f64> {
-    match kind {
-        AnnotationPatchKind::Highlight { fields }
-        | AnnotationPatchKind::Underline { fields }
-        | AnnotationPatchKind::Squiggly { fields }
-        | AnnotationPatchKind::Strikeout { fields, .. } => fields.opacity,
-        AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
-            fields.opacity
-        }
-        AnnotationPatchKind::Polygon { fields, .. }
-        | AnnotationPatchKind::Polyline { fields, .. } => fields.geometry.opacity,
-        AnnotationPatchKind::Line { fields, .. } => fields.opacity,
-        AnnotationPatchKind::Ink { fields, .. } => fields.opacity,
-        AnnotationPatchKind::Text { fields } => fields.opacity,
-        AnnotationPatchKind::Caret { fields } => fields.opacity,
-        AnnotationPatchKind::FreeText { fields } => fields.opacity,
-        AnnotationPatchKind::Redact { fields } => fields.opacity,
-        AnnotationPatchKind::FileAttachment { fields } => fields.opacity,
-        // A link, a stamp and a widget have no `/CA`, for the same reasons
-        // their drafts do not.
-        AnnotationPatchKind::Link { .. }
-        | AnnotationPatchKind::Stamp { .. }
-        | AnnotationPatchKind::Widget { .. } => None,
-    }
-}
-
-fn apply_base_patch(
-    annotation: &pdfium::Annotation<'_>,
-    base: &AnnotationPatchBase,
-) -> Result<(), EngineError> {
-    super::create::write_patch_string(annotation, "Contents", &base.contents)?;
-    super::create::write_patch_string(annotation, "Subj", &base.subject)?;
-    if let Some(flags) = base.flags {
-        // Onto the live word, which is what makes `{ hidden: true }` hide
-        // without also un-printing.
-        if !annotation.set_flags(flags.fold(annotation.flags())) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "FPDFAnnot_SetFlags refused the /F word",
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn apply_kind_patch(
-    document: &pdfium::Document,
-    page: &PageView<'_>,
-    annotation: &pdfium::Annotation<'_>,
-    patch: &AnnotationPatch,
-    context: &AnnotationWriteContext<'_>,
-) -> Result<(), EngineError> {
-    match &patch.kind {
-        AnnotationPatchKind::Highlight { fields }
-        | AnnotationPatchKind::Underline { fields }
-        | AnnotationPatchKind::Squiggly { fields } => apply_text_markup_patch(annotation, fields),
-        AnnotationPatchKind::Strikeout { fields, intent } => {
-            apply_text_markup_patch(annotation, fields)?;
-            if let Some(intent) = intent {
-                write(annotation.set_intent(intent.name()), "/IT")?;
-            }
-            Ok(())
-        }
-        AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
-            apply_shape_patch(annotation, fields)
-        }
-        AnnotationPatchKind::Polygon { fields, cloudy_intensity } => {
-            apply_vertex_patch(annotation, fields)?;
-            // Only a polygon takes `/BE`, and a clear or a non-positive
-            // value both remove it: never leave a degenerate entry the read
-            // side would normalize away.
-            match cloudy_intensity {
-                Patch::Keep => {}
-                Patch::Set(value) if *value > 0.0 => {
-                    if !annotation.set_border_effect(*value as f32) {
-                        return Err(EngineError::with_message(
-                            EngineErrorCode::Unknown,
-                            "EPDFAnnot_SetBorderEffect refused the intensity",
-                        ));
-                    }
-                }
-                _ => {
-                    annotation.clear_border_effect();
-                }
-            }
-            Ok(())
-        }
-        AnnotationPatchKind::Polyline { fields, line_endings } => {
-            apply_vertex_patch(annotation, fields)?;
-            if let Some(endings) = line_endings {
-                set_line_endings(annotation, *endings)?;
-            }
-            Ok(())
-        }
-        AnnotationPatchKind::Line { fields, line_points, line_endings } => {
-            apply_geometry_style_patch(annotation, fields)?;
-            if let Some(points) = line_points
-                && !annotation.set_line(point_to_native(points.start), point_to_native(points.end))
-            {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFAnnot_SetLine refused the endpoints",
-                ));
-            }
-            if let Some(endings) = line_endings {
-                set_line_endings(annotation, *endings)?;
-            }
-            Ok(())
-        }
-        AnnotationPatchKind::Ink { fields, ink_list, intent } => {
-            apply_stroke_style_patch(annotation, fields)?;
-            if let Some(intent) = intent {
-                write(annotation.set_intent(intent.name()), "/IT")?;
-            }
-            if let Some(strokes) = ink_list {
-                // There is no way to replace ONE stroke, so a patch that
-                // changes the pen path removes the whole list and appends
-                // the new one. Half of that would leave a drawing with the
-                // old strokes under the new ones.
-                if !annotation.remove_ink_list() {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        "FPDFAnnot_RemoveInkList refused",
-                    ));
-                }
-                for (index, stroke) in strokes.iter().enumerate() {
-                    let points: Vec<pdfium::PointF> =
-                        stroke.iter().copied().map(point_to_native).collect();
-                    if annotation.add_ink_stroke(&points) < 0 {
-                        return Err(EngineError::with_message(
-                            EngineErrorCode::Unknown,
-                            format!("FPDFAnnot_AddInkStroke refused stroke {index}"),
-                        ));
-                    }
-                }
-            }
-            Ok(())
-        }
-        AnnotationPatchKind::Text { fields } => apply_text_patch(annotation, fields),
-        AnnotationPatchKind::Caret { fields } => apply_caret_patch(annotation, fields),
-        AnnotationPatchKind::FreeText { fields } => {
-            apply_free_text_patch(annotation, fields, &patch.base.contents, context)
-        }
-        AnnotationPatchKind::Redact { fields } => apply_redact_patch(annotation, fields, context),
-        AnnotationPatchKind::Link { fields } => apply_link_patch(document, annotation, fields),
-        AnnotationPatchKind::FileAttachment { fields } => {
-            apply_file_attachment_patch(annotation, fields)
-        }
-        AnnotationPatchKind::Stamp { fields } => {
-            apply_stamp_patch(document, page, annotation, fields, context)
-        }
-        AnnotationPatchKind::Widget { fields } => apply_widget_patch(annotation, fields),
-    }
-}
-
-/// A polygon's or polyline's own geometry, plus the styling it shares.
-fn apply_vertex_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::VertexPatchFields,
-) -> Result<(), EngineError> {
-    apply_geometry_style_patch(annotation, &fields.geometry)?;
-    // Unlike `/QuadPoints`, a vertex list can shrink: `EPDFAnnot_SetVertices`
-    // replaces the array rather than appending to it, so there is no stale
-    // tail to leave behind and no preflight to refuse one.
-    if let Some(vertices) = &fields.vertices {
-        let points: Vec<pdfium::PointF> = vertices.iter().copied().map(point_to_native).collect();
-        if !annotation.set_vertices(&points) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetVertices refused the point list",
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// The styling a filled geometric patch may change.
-fn apply_geometry_style_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::GeometryPatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    set_opacity_patch(annotation, fields.opacity)?;
-    patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
-    match &fields.interior_color {
-        Patch::Keep => {}
-        Patch::Set(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
-        Patch::Clear => {
-            annotation.clear_color(AnnotationColorType::InteriorColor as i32);
-        }
-    }
-    super::transform::write_vertex_transform(annotation, fields.rotation.clone())
-}
-
-/// The same without a fill.
-fn apply_stroke_style_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::StrokePatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    set_opacity_patch(annotation, fields.opacity)?;
-    patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
-    super::transform::write_vertex_transform(annotation, fields.rotation.clone())
-}
-
-fn set_opacity_patch(
-    annotation: &pdfium::Annotation<'_>,
-    opacity: Option<f64>,
-) -> Result<(), EngineError> {
-    if let Some(opacity) = opacity
-        && !annotation.set_opacity(opacity)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetOpacity refused the value",
-        ));
-    }
-    Ok(())
-}
-
-/// `/BS` and `/D`, read-modify-write.
-///
-/// The native call takes the style AND the width together, so a patch naming
-/// either has to READ the other rather than defaulting it: defaulting would
-/// reset a width the caller never mentioned.
-fn patch_border(
-    annotation: &pdfium::Annotation<'_>,
-    style: Option<crate::features::annotation::vocabulary::AnnotationBorderStyle>,
-    width: Option<f64>,
-    dashes: &Option<Vec<f64>>,
-) -> Result<(), EngineError> {
-    if style.is_some() || width.is_some() {
-        let current = annotation.border_style();
-        let style = style.unwrap_or(
-            crate::features::annotation::vocabulary::AnnotationBorderStyle::from_code(
-                current.style_code,
-            ),
-        );
-        let width = width.unwrap_or(f64::from(current.width));
-        if !annotation.set_border_style(style.code(), width as f32) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetBorderStyle refused the border",
-            ));
-        }
-    }
-    if let Some(dashes) = dashes.as_ref().filter(|d| !d.is_empty()) {
-        let dashes: Vec<f32> = dashes.iter().map(|d| *d as f32).collect();
-        if !annotation.set_border_dash_pattern(&dashes) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetBorderDashPattern refused the pattern",
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// `/LE`, both ends.
-fn set_line_endings(
-    annotation: &pdfium::Annotation<'_>,
-    endings: crate::features::annotation::vocabulary::LineEndings,
-) -> Result<(), EngineError> {
-    if !annotation.set_line_endings(endings.start.code(), endings.end.code()) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetLineEndings refused the pair",
-        ));
-    }
-    Ok(())
-}
-
-fn point_to_native(point: crate::geom::PdfPoint) -> pdfium::PointF {
-    pdfium::PointF { x: point.x as f32, y: point.y as f32 }
-}
-
-fn apply_text_markup_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::TextMarkupPatchFields,
-) -> Result<(), EngineError> {
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    if let Some(opacity) = fields.opacity
-        && !annotation.set_opacity(opacity)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetOpacity refused the value",
-        ));
-    }
-    if let Some(quads) = &fields.quad_points {
-        // Overwrite what is there, then append the rest. Preflight has
-        // already refused a list shorter than the existing one.
-        let existing = annotation
-            .quad_points()
-            .map_err(|e| {
-                EngineError::with_message(
-                    EngineErrorCode::RuntimeUnavailable,
-                    format!("reading /QuadPoints failed: {e}"),
-                )
-            })?
-            .len();
-        for (index, quad) in quads.iter().enumerate() {
-            let native = quad_to_native(*quad);
-            let ok = if index < existing {
-                annotation.set_quad_point(index, native)
-            } else {
-                annotation.append_quad_point(native)
-            };
-            if !ok {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    format!("PDFium refused the quad at index {index}"),
-                ));
-            }
-        }
-        // `/Rect` is recomputed so it stays the smallest enclosing box.
-        set_rect(annotation, super::create::enclosing_rect(quads))?;
-    }
-    Ok(())
-}
-
-fn apply_shape_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::ShapePatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    if let Some(opacity) = fields.opacity
-        && !annotation.set_opacity(opacity)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetOpacity refused the value",
-        ));
-    }
-
-    // `/BS` is one native call taking both the style and the width, so a
-    // patch naming either has to read the other rather than defaulting it:
-    // defaulting would reset a width the caller never mentioned.
-    if fields.border_style.is_some() || fields.stroke_width.is_some() {
-        let current = annotation.border_style();
-        let style = fields.border_style.unwrap_or(
-            crate::features::annotation::vocabulary::AnnotationBorderStyle::from_code(
-                current.style_code,
-            ),
-        );
-        let width = fields.stroke_width.unwrap_or(f64::from(current.width));
-        if !annotation.set_border_style(style.code(), width as f32) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetBorderStyle refused the border",
-            ));
-        }
-    }
-    if let Some(dashes) = &fields.dash_array
-        && !dashes.is_empty()
-    {
-        let dashes: Vec<f32> = dashes.iter().map(|d| *d as f32).collect();
-        if !annotation.set_border_dash_pattern(&dashes) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetBorderDashPattern refused the pattern",
-            ));
-        }
-    }
-
-    match &fields.interior_color {
-        Patch::Keep => {}
-        Patch::Set(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
-        Patch::Clear => {
-            annotation.clear_color(AnnotationColorType::InteriorColor as i32);
-        }
-    }
-    {
-        match &fields.cloudy_intensity {
-            Patch::Keep => {}
-            Patch::Set(value) if *value > 0.0 => {
-                if !annotation.set_border_effect(*value as f32) {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        "EPDFAnnot_SetBorderEffect refused the intensity",
-                    ));
-                }
-            }
-            // A clear clears, and so does a non-positive value: never write
-            // a degenerate `/BE` the read side would normalize away.
-            _ => {
-                annotation.clear_border_effect();
-            }
-        }
-    }
-    {
-        match &fields.rect_differences {
-            Patch::Keep => {}
-            Patch::Set(rd) => {
-                if !annotation.set_rectangle_differences(
-                    rd.left as f32,
-                    rd.bottom as f32,
-                    rd.right as f32,
-                    rd.top as f32,
-                ) {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        "EPDFAnnot_SetRectangleDifferences refused the margins",
-                    ));
-                }
-            }
-            Patch::Clear => {
-                annotation.clear_rectangle_differences();
-            }
-        }
-    }
-    Ok(())
-}
-
-fn quad_to_native(quad: crate::geom::PdfQuad) -> pdfium::QuadF {
-    pdfium::QuadF {
-        x1: quad.p1.x as f32,
-        y1: quad.p1.y as f32,
-        x2: quad.p2.x as f32,
-        y2: quad.p2.y as f32,
-        x3: quad.p3.x as f32,
-        y3: quad.p3.y as f32,
-        x4: quad.p4.x as f32,
-        y4: quad.p4.y as f32,
-    }
-}
-
-fn set_rect(
-    annotation: &pdfium::Annotation<'_>,
-    rect: crate::geom::PdfRect,
-) -> Result<(), EngineError> {
-    let ok = annotation.set_rect(pdfium::RectF {
-        left: rect.left as f32,
-        top: rect.top as f32,
-        right: rect.right as f32,
-        bottom: rect.bottom as f32,
-    });
-    if !ok {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetRect refused the rectangle",
-        ));
-    }
-    Ok(())
-}
-
-fn set_color(
-    annotation: &pdfium::Annotation<'_>,
-    which: AnnotationColorType,
-    color: Color,
-) -> Result<(), EngineError> {
-    if !annotation.set_color(which as i32, color.r, color.g, color.b) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetColor refused the colour",
-        ));
-    }
-    Ok(())
-}
-
-/// A sticky note. The icon and the review state; the picture is the
-/// generator's, baked from `/C` and `/Name` after this returns.
-fn apply_text_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::TextPatchFields,
-) -> Result<(), EngineError> {
-    use crate::features::annotation::state::{state_model_to_pdf, state_to_pdf};
-
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    set_opacity_patch(annotation, fields.opacity)?;
-    if let Some(icon) = fields.icon
-        && !annotation.set_name(icon.pdf_name())
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetName refused the icon",
-        ));
-    }
-    // No cross-field rule here, unlike the draft. A patch touches what it
-    // states, and the other half of the pair may already be on the
-    // annotation.
-    write_patch_string_mapped(annotation, "StateModel", &fields.state_model, state_model_to_pdf)?;
-    write_patch_string_mapped(annotation, "State", &fields.state, state_to_pdf)
-}
-
-/// A tri-state string entry whose wire spelling is not its PDF spelling.
-fn write_patch_string_mapped(
-    annotation: &pdfium::Annotation<'_>,
-    key: &str,
-    value: &Patch<String>,
-    to_pdf: impl Fn(&str) -> String,
-) -> Result<(), EngineError> {
-    match value {
-        Patch::Keep => Ok(()),
-        Patch::Clear => super::create::write_patch_string(annotation, key, &Patch::Clear),
-        Patch::Set(value) => {
-            super::create::write_patch_string(annotation, key, &Patch::Set(to_pdf(value)))
-        }
-    }
-}
-
-/// A caret: a box, an inset and an `/IT`.
-fn apply_caret_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::CaretPatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    // Before the styling, so the bake at the end of the mutation sees it.
-    write_box_transform_patch(annotation, &fields.rotation, &fields.unrotated_rect)?;
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    set_opacity_patch(annotation, fields.opacity)?;
-    if let Some(intent) = fields.intent {
-        write(annotation.set_intent(intent.name()), "/IT")?;
-    }
-    patch_rect_differences(annotation, &fields.rect_differences)
-}
-
-/// The box-family rotation pair, as a patch.
-fn write_box_transform_patch(
-    annotation: &pdfium::Annotation<'_>,
-    rotation: &Patch<f64>,
-    unrotated_rect: &Patch<crate::geom::PdfRect>,
-) -> Result<(), EngineError> {
-    super::transform::write_box_transform(
-        annotation,
-        &super::transform::AnnotationTransform {
-            rotation: rotation.clone(),
-            unrotated_rect: unrotated_rect.clone(),
-        },
-        // Preflight already asked this question and refused the
-        // unsatisfiable case, so by here the answer only matters for the
-        // path that reads it, and it is the same read.
-        || Ok(super::super::read::transform::read_unrotated_rect(annotation)?.is_some()),
-    )
-}
-
-/// `/RD`, tri-state.
-fn patch_rect_differences(
-    annotation: &pdfium::Annotation<'_>,
-    value: &Patch<crate::features::annotation::read::shape::PdfRectDifferences>,
-) -> Result<(), EngineError> {
-    match value {
-        Patch::Keep => {}
-        Patch::Clear => {
-            annotation.clear_rectangle_differences();
-        }
-        Patch::Set(rd) => {
-            if !annotation.set_rectangle_differences(
-                rd.left as f32,
-                rd.bottom as f32,
-                rd.right as f32,
-                rd.top as f32,
-            ) {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFAnnot_SetRectangleDifferences refused the margins",
-                ));
-            }
-        }
-    }
-    Ok(())
-}
-
-/// A free text or a callout. `applyFreeTextPatch` in
-/// `writeFreeTextAnnotation.ts`.
-///
-/// Every text write goes through the rich document: the body style lives
-/// there and the fork derives `/DA` from it. So the `/DA` read-modify-write
-/// here carries only the `/DA` COLOUR (the border and the leader), and the
-/// font, size, text colour and alignment are body-style changes.
+/// `applyFreeTextPatch`. Colour model, as Acrobat draws it: `color` is the
+/// `/DA` colour (the border and a callout's line), `interiorColor` `/C`, the
+/// box's background; the text's style is the rich body's, which the patch
+/// reached here stating whole when it moves.
 fn apply_free_text_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::FreeTextPatchFields,
-    contents: &Patch<String>,
-    context: &super::context::AnnotationWriteContext<'_>,
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+    context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
+    apply_annotation_box_patch(annotation, f.r#box, f.rotation)?;
+    match f.interior_color {
+        None => {}
+        Some(None) => p::clear_color(annotation, C::Color),
+        Some(Some(background)) => set_color(annotation, C::Color, background)?,
     }
-    // `/C` here is the BOX BACKGROUND, not the mark.
-    match &fields.interior_color {
-        Patch::Keep => {}
-        Patch::Set(color) => set_color(annotation, AnnotationColorType::Color, *color)?,
-        Patch::Clear => {
-            annotation.clear_color(AnnotationColorType::Color as i32);
+    if let Some(opacity) = f.opacity {
+        set_opacity(annotation, opacity)?;
+    }
+    apply_border_patch(annotation, f)?;
+    match f.cloudy_intensity {
+        None => {}
+        Some(None) => p::clear_border_effect(annotation),
+        Some(Some(intensity)) => p::set_border_effect(annotation, intensity)?,
+    }
+    if let Some(Rgb(r, g, b)) = f.color {
+        // A border colour change keeps the font `/DA` names and its size.
+        match annotation.default_appearance() {
+            Some(da) => {
+                let size = if da.font_size > 0.0 { da.font_size } else { 12.0 };
+                if !annotation.set_default_appearance(KEEP_FONT_CODE, size, (r, g, b)) {
+                    return Err(unknown("EPDFAnnot_SetDefaultAppearance returned false"));
+                }
+            }
+            None => set_default_appearance(annotation, "helvetica", 12.0, Rgb(r, g, b), context)?,
         }
     }
-    set_opacity_patch(annotation, fields.opacity)?;
-    patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
-
-    use crate::features::annotation::rich_text;
-    let current = rich_text::read_rich_text(annotation);
-    if let Some(color) = fields.color {
-        let da = annotation.default_appearance();
-        let family = da
-            .map_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT, |da| {
-                crate::features::annotation::vocabulary::StandardFont::from_code(da.font_code)
-            })
-            .as_str();
-        let size = da
-            .map(|da| f64::from(da.font_size))
-            .filter(|size| *size > 0.0)
-            .unwrap_or(crate::features::annotation::read::free_text::DEFAULT_FONT_SIZE);
-        super::create::set_default_appearance(annotation, family, size, color, context)?;
+    if let Some(rich) = &f.rich_text {
+        // Everything regenerated: `/RC`, `/DS`, `/DA`, `/Contents` and the
+        // appearance.
+        let describe = |key: &str| context.describe_font(key);
+        crate::features::annotation::rich_text::write_rich_text(annotation, rich, Some(&describe))?;
     }
-    // After the `/DA`, on the same terms as the draft.
-    if let Some(font_color) = fields.font_color {
-        set_color(annotation, AnnotationColorType::TextColor, font_color)?;
+    if let Some(align) = f.text_align.as_deref() {
+        p::set_text_alignment(annotation, text_alignment_of(align).code())?;
     }
-    let describe = |key: &str| context.describe_font(key);
-    if let Some(rich) = &fields.rich_text {
-        // Rich replacement: everything regenerated. A `contents` given too
-        // was checked against its projection in preflight.
-        rich_text::write_rich_text(annotation, rich, Some(&describe))?;
-    } else if !contents.is_keep() {
-        // Plain-text replacement: body-style paragraphs, one per line break.
-        // Run formatting is lost by design: a plain-text client cannot
-        // preserve what it cannot see.
-        let input = rich_text::RichTextDocumentInput {
-            body: None,
-            paragraphs: rich_text::paragraphs_from_plain_text(
-                contents.as_set().map_or("", String::as_str),
-            ),
+    if let Some(Some(intent)) = &f.intent {
+        let name = intent_name(intent).ok_or_else(|| unknown("an intent with no /IT name"))?;
+        p::set_intent(annotation, name)?;
+    }
+    if let Some(align) = f.vertical_align.as_deref() {
+        let code = match align {
+            "middle" => 1.0,
+            "bottom" => 2.0,
+            _ => 0.0,
         };
-        rich_text::write_rich_text(annotation, &input, Some(&describe))?;
-    } else if let Some(current) = current
-        && (fields.font_family.is_some()
-            || fields.font_size.is_some()
-            || fields.font_color.is_some()
-            || fields.text_align.is_some())
-    {
-        // Default-style change: the body moves, and since runs are deltas,
-        // every run that did not override the property follows. Alignment
-        // is a body property too: the `/RC` body's alignment wins over `/Q`
-        // on regeneration, so `/Q` alone (set below) would not move it.
-        let mut body = current.body;
-        if let Some(family) = fields.font_family.as_deref() {
-            let face = rich_text::face_for_free_text_font(family, Some(&describe));
-            body.family = face.family;
-            if let Some(weight) = face.weight {
-                body.weight = weight;
-            }
-            if let Some(italic) = face.italic {
-                body.italic = italic;
-            }
-        }
-        if let Some(size) = fields.font_size {
-            body.size = size;
-        }
-        if let Some(color) = fields.font_color {
-            body.color = rich_text::hex_color(color.r, color.g, color.b);
-        }
-        if let Some(align) = fields.text_align {
-            body.align = align.as_str().to_owned();
-        }
-        let body = match serde_json::to_value(&body).expect("a rich body serializes") {
-            serde_json::Value::Object(body) => body,
-            _ => unreachable!("a struct serializes to an object"),
-        };
-        let input =
-            rich_text::RichTextDocumentInput { body: Some(body), paragraphs: current.paragraphs };
-        rich_text::write_rich_text(annotation, &input, Some(&describe))?;
-    }
-    if let Some(align) = fields.text_align
-        && !annotation.set_text_alignment(align.code())
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetTextAlignment refused the alignment",
-        ));
-    }
-    if let Some(intent) = fields.intent {
-        write(annotation.set_intent(intent.name()), "/IT")?;
-    }
-    patch_rect_differences(annotation, &fields.rect_differences)?;
-    if let Some(callout) = fields.callout_line.as_ref() {
-        let points: Vec<pdfium::PointF> = match callout {
-            crate::geom::CalloutLine::Straight(points) => {
-                points.iter().copied().map(point_to_native).collect()
-            }
-            crate::geom::CalloutLine::Kneed(points) => {
-                points.iter().copied().map(point_to_native).collect()
-            }
-        };
-        if !annotation.set_callout_line(&points) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetCalloutLine refused the leader",
-            ));
-        }
-    }
-    if let Some(ending) = fields.line_ending {
-        set_line_endings(
-            annotation,
-            crate::features::annotation::vocabulary::LineEndings {
-                start: crate::features::annotation::vocabulary::LineEnding::None,
-                end: ending,
-            },
+        p::written(
+            annotation.set_embed_metadata_number("VerticalAlignment", code),
+            "EPDFAnnot_SetEmbedMetadataNumber",
         )?;
     }
-    write_box_transform_patch(annotation, &fields.rotation, &fields.unrotated_rect)
+    match &f.callout_line {
+        None => {}
+        Some(None) => p::remove_key(annotation, "CL")?,
+        Some(Some(callout)) => {
+            let points: Vec<PdfPoint> = match callout {
+                crate::geom::CalloutLine::Straight(points) => points.to_vec(),
+                crate::geom::CalloutLine::Kneed(points) => points.to_vec(),
+            };
+            p::set_callout_line(annotation, &points)?;
+        }
+    }
+    match f.line_ending {
+        None => {}
+        Some(None) => p::remove_key(annotation, "LE")?,
+        Some(Some(ending)) => {
+            p::set_line_endings(annotation, LineEndings { start: LineEnding::None, end: ending })?;
+        }
+    }
+    Ok(())
 }
 
-/// A redaction marking.
+/// `KEEP_FONT_CODE`: a `/DA` write that keeps the font it names.
+const KEEP_FONT_CODE: i32 = -1;
+
+/// `applyRedactPatch`. `/DA` packs the label's font, size and colour into
+/// one string: a patch that names some keeps the others as they are (a size
+/// of 0 fits the label to the region, so it is kept too).
 fn apply_redact_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::RedactPatchFields,
-    context: &super::context::AnnotationWriteContext<'_>,
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+    context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
+    if let Some(rect) = f.rect {
+        p::set_rect(annotation, rect)?;
     }
-    if let Some(quads) = &fields.quad_points {
-        write_quads(annotation, quads)?;
-        // Derived only when the patch did not say. A redaction's box can
-        // carry a margin the quads do not describe, which is why the DRAFT
-        // takes one outright; a patch that moves the regions and says
-        // nothing about the box is asking for the box to follow, and one
-        // that supplies both has already decided.
-        if fields.rect.is_none() {
-            set_rect(annotation, super::create::enclosing_rect(quads))?;
+    if let Some(quads) = &f.quad_points {
+        replace_quad_points(annotation, quads)?;
+        if f.rect.is_none() {
+            p::set_rect_from_quad_points(annotation, quads)?;
         }
     }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
+    if let Some(color) = f.color {
+        set_color(annotation, C::Color, color)?;
     }
-    set_opacity_patch(annotation, fields.opacity)?;
-    match &fields.interior_color {
-        Patch::Keep => {}
-        Patch::Set(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
-        Patch::Clear => {
-            annotation.clear_color(AnnotationColorType::InteriorColor as i32);
+    if let Some(opacity) = f.opacity {
+        set_opacity(annotation, opacity)?;
+    }
+    match f.interior_color {
+        None => {}
+        Some(None) => p::clear_color(annotation, C::InteriorColor),
+        Some(Some(fill)) => set_color(annotation, C::InteriorColor, fill)?,
+    }
+    if let Some(text) = &f.overlay_text {
+        // The native setter removes the key for an empty string, so `null`
+        // (clear the label) is written as `""`.
+        if !annotation.set_overlay_text(text.as_deref().unwrap_or("")) {
+            return Err(unknown("EPDFAnnot_SetOverlayText returned false"));
         }
     }
-    match &fields.overlay_text {
-        Patch::Keep => {}
-        // There is no call that removes `/OverlayText`, so an empty string
-        // is how a label is cleared. PDFium reports an empty one as absent,
-        // which is what makes the two the same thing here.
-        Patch::Clear => {
-            if !annotation.set_overlay_text("") {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFAnnot_SetOverlayText refused the clear",
-                ));
-            }
-        }
-        Patch::Set(text) => {
-            if !annotation.set_overlay_text(text) {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFAnnot_SetOverlayText refused the label",
-                ));
-            }
-        }
-    }
-    if let Some(repeat) = fields.repeat
+    if let Some(repeat) = f.repeat
         && !annotation.set_overlay_text_repeat(repeat)
     {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetOverlayTextRepeat refused",
-        ));
+        return Err(unknown("EPDFAnnot_SetOverlayTextRepeat returned false"));
     }
-    // A redaction's `/DA` members are DEFAULTED rather than read, unlike a
-    // free text's. §12.5.6.14 ties the entry to `/OverlayText` rather than
-    // to the annotation, so it is written whole whenever the label's styling
-    // is touched at all, and a patch naming a colour alone resets the size.
-    // `redact-label-colour-only` records the twelve points that result from
-    // patching a nine-point label, on both engines.
-    if fields.font_family.is_some() || fields.font_size.is_some() || fields.font_color.is_some() {
-        let family = fields.font_family.clone().unwrap_or_else(|| {
-            crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT.as_str().to_owned()
-        });
-        let size = fields
-            .font_size
-            .unwrap_or(crate::features::annotation::read::redact::DEFAULT_FONT_SIZE);
-        let color = fields
+    let touches_label = matches!(f.overlay_text, Some(Some(_)))
+        || f.font_family.is_some()
+        || f.font_size.is_some()
+        || f.font_color.is_some();
+    if touches_label {
+        let current = annotation.default_appearance();
+        let family = match (&f.font_family, current) {
+            (Some(family), _) => family.clone(),
+            (None, Some(da)) => StandardFont::from_code(da.font_code).as_str().to_owned(),
+            (None, None) => "helvetica".to_owned(),
+        };
+        let size = f.font_size.or(current.map(|da| f64::from(da.font_size))).unwrap_or(12.0);
+        let color = f
             .font_color
-            .unwrap_or(crate::features::annotation::read::redact::DEFAULT_LABEL_COLOR);
-        super::create::set_default_appearance(annotation, &family, size, color, context)?;
+            .or(current.map(|da| Rgb(da.color.0, da.color.1, da.color.2)))
+            .unwrap_or(Rgb::BLACK);
+        set_default_appearance(annotation, &family, size, color, context)?;
     }
-    if let Some(align) = fields.text_align
-        && !annotation.set_text_alignment(align.code())
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetTextAlignment refused the alignment",
-        ));
+    if let Some(align) = f.text_align.as_deref() {
+        p::set_text_alignment(annotation, text_alignment_of(align).code())?;
     }
     Ok(())
 }
 
-/// Overwrite what is there and append the rest.
-///
-/// Preflight has already refused a list shorter than the existing one, so
-/// every index below the existing count is a replacement and the rest are
-/// appends.
-fn write_quads(
-    annotation: &pdfium::Annotation<'_>,
-    quads: &[crate::geom::PdfQuad],
+/// `writeFileChange`: a file attachment's file, the name, type and
+/// description replaced whole when the patch names it, and new bytes when
+/// the `file` resource comes with it. Its file can't be removed.
+fn write_file_change(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    metadata: Option<&Option<super::prepare::AttachmentFileWrite>>,
+    bytes: Option<&[u8]>,
+    services: &UpdateServices<'_>,
 ) -> Result<(), EngineError> {
-    let existing = annotation
-        .quad_points()
-        .map_err(|e| {
-            EngineError::with_message(
-                EngineErrorCode::RuntimeUnavailable,
-                format!("reading /QuadPoints failed: {e}"),
-            )
-        })?
-        .len();
-    for (index, quad) in quads.iter().enumerate() {
-        let native = quad_to_native(*quad);
-        let ok = if index < existing {
-            annotation.set_quad_point(index, native)
-        } else {
-            annotation.append_quad_point(native)
-        };
-        if !ok {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                format!("PDFium refused the quad at index {index}"),
+    if metadata.is_none() && bytes.is_none() {
+        return Ok(());
+    }
+    let refused = |message: &str| EngineError::with_message(EngineErrorCode::InvalidArg, message);
+    let mut attachment = annotation.file_attachment_for_write();
+    if let Some(None) = metadata {
+        if attachment.is_some() {
+            return Err(refused("a file attachment's file can't be removed"));
+        }
+        // The `null` a read returns for an annotation without a file, sent
+        // back: nothing changes.
+        if bytes.is_none() {
+            return Ok(());
+        }
+    }
+    let metadata = metadata.and_then(Option::as_ref);
+    // `readAttachmentFileInfo`: a read that fails is an error, not a
+    // missing value.
+    let read_error = |what: &str, e: pdfium::PdfiumError| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("reading the attachment's {what} failed: {e}"),
+        )
+    };
+    let current = match attachment.as_ref() {
+        Some(a) => Some((
+            a.name().map_err(|e| read_error("name", e))?,
+            a.mime_type().map_err(|e| read_error("type", e))?,
+            a.description().map_err(|e| read_error("description", e))?,
+        )),
+        None => None,
+    };
+    let had_file = current.is_some();
+    if attachment.is_none() {
+        // No file specification yet: writing one needs the name and the bytes.
+        let (Some(file), Some(_)) = (metadata, bytes) else {
+            return Err(refused(
+                "the file attachment has no file: send the file's name as `file` and its bytes as the `file` resource",
             ));
-        }
-    }
-    Ok(())
-}
-
-/// A link: its hit rectangle and where it goes.
-fn apply_link_patch(
-    document: &pdfium::Document,
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::LinkPatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    match &fields.target {
-        Patch::Keep => Ok(()),
-        // Both entries go. The model treats the target as ONE concept with
-        // two spellings, so removing only `/A` would resurrect a stale
-        // direct `/Dest` as the live target.
-        //
-        // The `/Dest` half is unexercised: nothing in this engine writes a
-        // direct `/Dest`, so every link the vectors build carries an `/A`
-        // alone and a build that removed only that one passes. It would
-        // take a fixture link written by something else to see it, and the
-        // case it guards is exactly the foreign file this engine did not
-        // write.
-        Patch::Clear => {
-            if !annotation.remove_action() || !annotation.remove_destination() {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "the link's target could not be cleared",
-                ));
-            }
-            Ok(())
-        }
-        Patch::Set(target) => super::create::write_link_target(document, annotation, target),
-    }
-}
-
-/// A file-attachment marker. Presentation only: the FILE is create-only.
-fn apply_file_attachment_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::FileAttachmentPatchFields,
-) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    if let Some(color) = fields.color {
-        set_color(annotation, AnnotationColorType::Color, color)?;
-    }
-    set_opacity_patch(annotation, fields.opacity)?;
-    if let Some(icon) = fields.icon
-        && !annotation.set_name(icon.pdf_name())
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetName refused the icon",
-        ));
-    }
-    Ok(())
-}
-
-/// A stamp.
-///
-/// Two paths, and which one runs depends on whether the bytes changed. With
-/// a `source` the picture is rebuilt from scratch; without one the existing
-/// appearance is re-fitted into the new geometry, which is the call that
-/// makes moving a stamp cheap.
-fn apply_stamp_patch(
-    document: &pdfium::Document,
-    page: &PageView<'_>,
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::StampPatchFields,
-    context: &super::context::AnnotationWriteContext<'_>,
-) -> Result<(), EngineError> {
-    if let Some(name) = fields.name.as_deref() {
-        super::create::set_stamp_name(annotation, name)?;
-    }
-    let fit = fields.fit.unwrap_or_default();
-
-    if let Some(source) = &fields.source {
-        let resource = context.resource(&source.resource)?;
-        // The box to author into is the patch's, or the one already there.
-        let rect = match fields.rect {
-            Some(rect) => rect,
-            None => read_rect(annotation)?,
         };
-        let logical = match &fields.unrotated_rect {
-            Patch::Set(logical) => Some(*logical),
-            Patch::Clear => None,
-            Patch::Keep => super::super::read::transform::read_unrotated_rect(annotation)?,
-        };
-        let rotation_is_live = match &fields.rotation {
-            Patch::Set(degrees) => *degrees != 0.0,
-            Patch::Clear => false,
-            Patch::Keep => super::super::read::transform::read_rotation(annotation)?.is_some(),
-        };
-        return super::create::author_stamp_appearance(
-            document,
-            page,
-            annotation,
-            resource.bytes,
-            fit,
-            rect,
-            logical.filter(|_| rotation_is_live),
-            &fields.rotation,
-            &fields.unrotated_rect,
+        attachment = Some(
+            annotation
+                .add_file_attachment(&file.name)
+                .ok_or_else(|| unknown("FPDFAnnot_AddFileAttachment returned NULL"))?,
         );
     }
-
-    // No new bytes: geometry only.
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    write_box_transform_patch(annotation, &fields.rotation, &fields.unrotated_rect)?;
-    if fields.rect.is_some()
-        || fields.fit.is_some()
-        || !fields.rotation.is_keep()
-        || !fields.unrotated_rect.is_keep()
+    let attachment = attachment.ok_or_else(|| unknown("the file attachment has no file"))?;
+    let (current_name, current_type, current_description) = current.unwrap_or((None, None, None));
+    // The type the file ends with: the data's when it gives one (none if it
+    // names none), else the one the file has.
+    let mime_type = match metadata {
+        Some(file) => file.mime_type.clone(),
+        None => current_type.clone(),
+    };
+    if let Some(bytes) = bytes {
+        // New bytes get a new embedded file stream, without the old one's type.
+        crate::features::files::attachments::write_file_payload(
+            document,
+            &attachment,
+            bytes,
+            // Only the type: the name and description are the file
+            // specification's, written below.
+            &crate::features::files::attachments::AttachmentFileBase {
+                name: String::new(),
+                mime_type: mime_type.clone(),
+                description: None,
+            },
+            services.clock,
+        )?;
+    } else if mime_type != current_type
+        && !matches!(attachment.set_mime_type(mime_type.as_deref().unwrap_or("")), Ok(true))
     {
-        // Re-fit the appearance that is already there into the new box. The
-        // fork recorded the content's own rect on the last write, which is
-        // what stops this from scaling an already-scaled picture again.
-        if !annotation.update_appearance_to_rect(fit.native()) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_UpdateAppearanceToRect refused the fit",
-            ));
-        }
+        return Err(refused("the file attachment's file has no embedded data to give a MIME type"));
+    }
+    let Some(file) = metadata else { return Ok(()) };
+    // A file just added is named already (`current !== null`).
+    if had_file && Some(&file.name) != current_name.as_ref() && !attachment.set_name(&file.name) {
+        return Err(unknown("EPDFAttachment_SetName returned false"));
+    }
+    if file.description != current_description
+        && !attachment.set_description(file.description.as_deref().unwrap_or(""))
+    {
+        return Err(unknown("EPDFAttachment_SetDescription returned false"));
     }
     Ok(())
 }
 
-/// The annotation's current `/Rect`.
-fn read_rect(annotation: &pdfium::Annotation<'_>) -> Result<crate::geom::PdfRect, EngineError> {
-    let rect = annotation.rect();
-    Ok(crate::geom::normalize_pdf_rect(crate::geom::PdfRect {
-        left: f64::from(rect.left),
-        bottom: f64::from(rect.bottom),
-        right: f64::from(rect.right),
-        top: f64::from(rect.top),
-    }))
+/// `applyStampPatch`. New bytes replace the drawing, authored in the
+/// unturned box; without them the box and its turn move, and the drawing
+/// it already has is re-fit (with a new opacity, its opacity layer
+/// replaced).
+fn apply_stamp_patch(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    current: &Map<String, Value>,
+    f: &DraftFields,
+    resources: &DraftResources<'_>,
+    services: &UpdateServices<'_>,
+) -> Result<(), EngineError> {
+    match &f.name {
+        None => {}
+        // The generic removal: the reader then reports the default; the
+        // artwork is untouched.
+        Some(None) => p::remove_key(annotation, "Name")?,
+        Some(Some(name)) => p::set_name(annotation, name)?,
+    }
+    // The fit the drawing is (re-)fit with: the patch's, else the recorded
+    // one, else `fill`, the way a PDF places any appearance in its `/Rect`.
+    let recorded = match current.get("fit").and_then(Value::as_str) {
+        Some("contain") => StampFit::Contain,
+        Some("cover") => StampFit::Cover,
+        _ => StampFit::Fill,
+    };
+    let fit = match f.fit {
+        Some(fit) => fit.unwrap_or(StampFit::Fill),
+        None => recorded,
+    };
+    match f.fit {
+        None => {}
+        Some(None) => {
+            annotation.clear_embed_metadata_key("AppearanceFit").map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::RuntimeUnavailable,
+                    format!("EPDFAnnot_ClearEmbedMetadataKey failed: {e}"),
+                )
+            })?;
+        }
+        Some(Some(fit)) => write_stamp_fit(annotation, fit)?,
+    }
+    if let Some(bytes) = resources.appearance {
+        // New bytes replace the drawing, so they only need the new value.
+        if let Some(opacity) = f.opacity {
+            set_opacity(annotation, opacity)?;
+        }
+        let shape = crate::features::annotation::read::turn::read_annotation_box(annotation);
+        let rotation = match f.rotation {
+            Some(rotation) => rotation,
+            None => shape.rotation,
+        };
+        return author_stamp_appearance(
+            document,
+            &mut services.drawings.borrow_mut(),
+            annotation,
+            bytes,
+            fit,
+            f.r#box.unwrap_or(shape.content_box),
+            rotation,
+        );
+    }
+    // No new bytes: the box and its turn only.
+    let moved = apply_annotation_box_patch(annotation, f.r#box, f.rotation)?;
+    if let Some(opacity) = f.opacity {
+        if !annotation.set_stamp_opacity(fit.native(), opacity as f32) {
+            return Err(unknown("EPDFAnnot_SetStampOpacity returned false"));
+        }
+    } else if (moved || f.fit.is_some()) && !annotation.update_appearance_to_rect(fit.native()) {
+        return Err(unknown("EPDFAnnot_UpdateAppearanceToRect returned false"));
+    }
+    Ok(())
 }
 
-/// A widget: move it and restyle it.
-fn apply_widget_patch(
-    annotation: &pdfium::Annotation<'_>,
-    fields: &super::patch::WidgetPatchFields,
+// ── Links between annotations ───────────────────────────────────────────────
+
+/// `writeAnnotationRelationship`: `null` makes the annotation top-level;
+/// a reply links it to an annotation on its own page (ISO 32000-2
+/// §12.5.6.2).
+fn write_relationship(
+    document: &Document,
+    page_index: u32,
+    page: PageObjectNumber,
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
 ) -> Result<(), EngineError> {
-    if let Some(rect) = fields.rect {
-        set_rect(annotation, rect)?;
-    }
-    super::create::set_mk_color_patch(annotation, 0, &fields.color)?;
-    super::create::set_mk_color_patch(annotation, 1, &fields.interior_color)?;
-    if fields.touches_border() {
-        patch_border(annotation, fields.border_style, fields.stroke_width, &None)?;
-    }
-    if fields.touches_text_style() {
-        // A widget's `/DA` members are DEFAULTED rather than read, which is
-        // the opposite of the free-text rule above. One writer serves this
-        // and `forms.createField`'s inline placements, so a widget's styling
-        // is a whole description rather than an edit: a patch naming a size
-        // alone resets the family. `widget-font-size-only` records the
-        // helvetica that results from patching a times-roman widget, on both
-        // engines.
-        let family = fields
-            .font_family
-            .unwrap_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT);
-        let size = fields
-            .font_size
-            .unwrap_or(crate::features::annotation::read::redact::DEFAULT_FONT_SIZE);
-        let color = fields
-            .font_color
-            .unwrap_or(crate::features::annotation::read::free_text::DEFAULT_FREE_TEXT_COLOR);
-        if !annotation.set_default_appearance(
-            family.code(),
-            size as f32,
-            (color.r, color.g, color.b),
-        ) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetDefaultAppearance refused the widget's text defaults",
-            ));
+    match &f.reply {
+        None => Ok(()),
+        Some(None) => {
+            p::remove_key(annotation, "IRT")?;
+            annotation.set_reply_type(RT_UNKNOWN);
+            Ok(())
+        }
+        Some(Some(reply)) => {
+            let at = link_target(document, page_index, page, &reply.to, Link::Reply)?;
+            let parent = open_existing(document, page_index, at)?;
+            link_reply(annotation, &parent, reply.reply_type)
         }
     }
-    // Best-effort, as on the draft: PDFium declines `/Q` on a widget with no
-    // `/FT`, and an inert widget has none.
-    if let Some(align) = fields.text_align {
-        let _ = annotation.set_text_alignment(align.code());
+}
+
+/// `writePopupParent`: a popup and the annotation it shows linked both ways;
+/// a previous parent loses its `/Popup` when it named this popup. Answers
+/// the parent's name, as the annotation the link wrote.
+fn write_popup_parent(
+    document: &Document,
+    page_index: u32,
+    page: PageObjectNumber,
+    popup: &Annotation<'_>,
+    parent: Option<&AnnotationRef>,
+    previous: Option<&AnnotationRef>,
+) -> Result<Option<AnnotationRef>, EngineError> {
+    if let Some(previous) = previous
+        && let Ok(at) = super::resolve::resolve_annotation_index_raw(document, page_index, previous)
+        && let Some(earlier) = document.raw_annotation(page_index, at)
+    {
+        let points_here = earlier
+            .linked_annotation("Popup")
+            .ok()
+            .flatten()
+            .is_some_and(|linked| linked.object_number() == popup.object_number());
+        if points_here {
+            p::remove_key(&earlier, "Popup")?;
+        }
     }
-    // A widget attached to a field re-bakes the family-correct appearance;
-    // on an inert one this does nothing, which is the right answer for it.
-    annotation.generate_form_field_appearance();
+    let Some(parent) = parent else {
+        p::remove_key(popup, "Parent")?;
+        return Ok(None);
+    };
+    let at = link_target(document, page_index, page, parent, Link::Popup)?;
+    let target = open_existing(document, page_index, at)?;
+    link_popup(popup, &target)?;
+    Ok(Some(crate::features::annotation::read::record::annotation_ref_of(
+        document, &target, page, at,
+    )))
+}
+
+/// `writeLinkedOpen`: `/Open` on the other half of a note and its popup.
+/// Only a note shares it: `onlyNote` skips another parent, which keeps its
+/// own. Answers the name of the annotation it wrote.
+fn write_linked_open(
+    document: &Document,
+    page_index: u32,
+    page: PageObjectNumber,
+    target: &AnnotationRef,
+    open: bool,
+    only_note: bool,
+) -> Result<Option<AnnotationRef>, EngineError> {
+    let at = super::resolve::resolve_annotation_index_raw(document, page_index, target)?;
+    let other = open_existing(document, page_index, at)?;
+    if only_note && other.subtype_code() != crate::features::annotation::subtype::code::TEXT {
+        return Ok(None);
+    }
+    p::set_boolean(&other, "Open", open)?;
+    Ok(Some(crate::features::annotation::read::record::annotation_ref_of(
+        document, &other, page, at,
+    )))
+}
+
+/// `applyEmbedMetadataOnUpdate`: `UpdatedBy`, and the group the update
+/// gives it, when there is someone to name. `UserID`, `CreatedBy` and the
+/// rest stay.
+fn apply_embed_metadata_on_update(
+    annotation: &Annotation<'_>,
+    actor: Option<&AnnotationActor>,
+) -> Result<(), EngineError> {
+    let Some(actor) = actor else { return Ok(()) };
+    let user = actor.user_id.as_deref().filter(|s| !s.is_empty());
+    let group = actor.group_id.as_deref().filter(|s| !s.is_empty());
+    if user.is_none() && group.is_none() {
+        return Ok(());
+    }
+    p::ensure_schema_version(annotation)?;
+    if let Some(user) = user {
+        p::set_embed_string(annotation, "UpdatedBy", user)?;
+    }
+    if let Some(group) = group {
+        p::set_embed_string(annotation, "GroupID", group)?;
+    }
     Ok(())
 }

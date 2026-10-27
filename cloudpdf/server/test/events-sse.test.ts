@@ -20,6 +20,7 @@ import {
 import { buildAppForTesting } from '../src/app/buildApp';
 import { InProcessRealtimeBus } from '../src/realtime/RealtimeBus';
 import { createValidTestLicenseGate } from '../src/licensing/testing';
+import { appliedResult, postChange } from './_helpers/changes';
 
 const STUB_ENTRY = new URL('./_helpers/stub-worker-entry.cjs', import.meta.url);
 const SECRET = 'events-sse-secret';
@@ -137,17 +138,13 @@ describe('GET /events — the SSE half of the document event stream', () => {
     const sse = new SseCollector();
     await sse.open(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/events`, token);
 
-    const res = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-Engine-Session-Id': 'engine-session-A',
-      },
-      body: JSON.stringify({ pages: [1].map(toPageRef), rotation: 90 }),
-    });
-    expect(res.status).toBe(200);
-    const responseBody = (await res.json()) as unknown;
+    const result = appliedResult(
+      await postChange(
+        { baseUrl: fx.baseUrl, docId, layerName, token },
+        [{ type: 'pages.rotate', pages: [1].map(toPageRef), rotation: 90 }],
+        { headers: { 'X-Engine-Session-Id': 'engine-session-A' } },
+      ),
+    );
 
     await sse.waitFor(1);
     const [event] = sse.events;
@@ -159,13 +156,66 @@ describe('GET /events — the SSE half of the document event stream', () => {
       payload: unknown;
       layerName: string;
     };
-    expect(row.kind).toBe('pages.rotate');
+    expect(row.kind).toBe('change');
     expect(row.layerName).toBe(layerName);
     expect(row.originSessionId).toBe('engine-session-A');
-    // The streamed payload IS the mutating caller's response — the
+    // The streamed payload is the change's result as the caller got it — the
     // three-way identity (response = audit payload = event payload).
-    expect(row.payload).toEqual(responseBody);
+    expect(row.payload).toEqual(result);
     await sse.close();
+  });
+
+  test('a stream sends only what its token may read; the rest arrives withheld, pins only', async () => {
+    const tenantId = 'tenant-sse-rights';
+    const docId = 'docsse009';
+    const layerName = 'alice';
+    await seedDocument(fx, tenantId, docId, { pageCount: 1 });
+    const url = `${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/events`;
+    const filler = new SseCollector();
+    await filler.open(
+      url,
+      docToken(tenantId, docId, layerName, 'filler', ['doc.open', 'doc.forms.fill']),
+    );
+    const reader = new SseCollector();
+    await reader.open(
+      url,
+      docToken(tenantId, docId, layerName, 'reader', ['doc.open', 'doc.annotate.read']),
+    );
+
+    const create = await fetch(
+      `${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/annotations/pages/obj:1/items`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${docToken(tenantId, docId, layerName)}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subtype: 'highlight',
+          quadPoints: [
+            {
+              upperLeft: { x: 0, y: 0 },
+              upperRight: { x: 10, y: 0 },
+              lowerLeft: { x: 0, y: 10 },
+              lowerRight: { x: 10, y: 10 },
+            },
+          ],
+        }),
+      },
+    );
+    expect(create.status, await create.clone().text()).toBe(200);
+    const created = (await create.json()) as { meta: { cacheDelta: unknown } };
+
+    await filler.waitFor(1);
+    await reader.waitFor(1);
+    const withheld = JSON.parse(filler.events[0]!.data) as Record<string, unknown>;
+    expect(withheld).toMatchObject({ kind: 'annot.create', withheld: true });
+    expect(withheld.payload).toEqual({ meta: { cacheDelta: created.meta.cacheDelta } });
+    const shown = JSON.parse(reader.events[0]!.data) as Record<string, unknown>;
+    expect(shown.withheld).toBeUndefined();
+    expect(shown.payload).toEqual(created);
+    await filler.close();
+    await reader.close();
   });
 
   test('the hijacked SSE response preserves wildcard CORS headers', async () => {
@@ -199,24 +249,17 @@ describe('GET /events — the SSE half of the document event stream', () => {
     const layerName = 'alice';
     await seedDocument(fx, tenantId, docId, { pageCount: 3 });
     const token = docToken(tenantId, docId, layerName);
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
+    const target = { baseUrl: fx.baseUrl, docId, layerName, token };
 
-    // Two mutations BEFORE any subscriber exists.
-    const first = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ pages: [1].map(toPageRef), rotation: 90 }),
-    });
-    expect(first.status).toBe(200);
-    const second = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/move`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ pages: [3].map(toPageRef), destIndex: 0 }),
-    });
-    expect(second.status).toBe(200);
+    // Two mutations before any subscriber exists.
+    appliedResult(
+      await postChange(target, [{ type: 'pages.rotate', pages: [1].map(toPageRef), rotation: 90 }]),
+    );
+    appliedResult(
+      await postChange(target, [
+        { type: 'pages.reorder', pages: [3].map(toPageRef), position: 'start' },
+      ]),
+    );
 
     // Resume from cursor 1 → only the second mutation replays.
     const sse = new SseCollector();
@@ -224,7 +267,12 @@ describe('GET /events — the SSE half of the document event stream', () => {
     await sse.waitFor(1);
     expect(sse.events).toHaveLength(1);
     expect(sse.events[0].id).toBe(2);
-    expect((JSON.parse(sse.events[0].data) as { kind: string }).kind).toBe('pages.move');
+    const row = JSON.parse(sse.events[0].data) as {
+      kind: string;
+      payload: { items: Array<{ type: string }> };
+    };
+    expect(row.kind).toBe('change');
+    expect(row.payload.items.map((item) => item.type)).toEqual(['pages.reorder']);
     await sse.close();
   });
 
@@ -234,30 +282,23 @@ describe('GET /events — the SSE half of the document event stream', () => {
     const layerName = 'alice';
     await seedDocument(fx, tenantId, docId, { pageCount: 3 });
     const token = docToken(tenantId, docId, layerName);
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
+    const target = { baseUrl: fx.baseUrl, docId, layerName, token };
 
-    const old = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ pages: [1].map(toPageRef), rotation: 180 }),
-    });
-    expect(old.status).toBe(200);
+    appliedResult(
+      await postChange(target, [
+        { type: 'pages.rotate', pages: [1].map(toPageRef), rotation: 180 },
+      ]),
+    );
 
     const sse = new SseCollector();
     await sse.open(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/events`, token);
 
-    const fresh = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ pages: [2].map(toPageRef), rotation: 90 }),
-    });
-    expect(fresh.status).toBe(200);
+    appliedResult(
+      await postChange(target, [{ type: 'pages.rotate', pages: [2].map(toPageRef), rotation: 90 }]),
+    );
 
     await sse.waitFor(1);
-    expect(sse.events).toHaveLength(1); // the old rotate did NOT replay
+    expect(sse.events).toHaveLength(1); // the old rotate did not replay
     expect(sse.events[0].id).toBe(2);
     await sse.close();
   });
@@ -308,12 +349,11 @@ describe('GET /events — the SSE half of the document event stream', () => {
     await fx.bus.publishRevocation('jti-someone-else', Date.now() + 60_000);
 
     // The stream must still deliver mutations afterwards.
-    const res = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pages: [1].map(toPageRef), rotation: 90 }),
-    });
-    expect(res.status).toBe(200);
+    appliedResult(
+      await postChange({ baseUrl: fx.baseUrl, docId, layerName, token }, [
+        { type: 'pages.rotate', pages: [1].map(toPageRef), rotation: 90 },
+      ]),
+    );
     await sse.waitFor(1);
     expect(sse.events[0].event).toBe('mutation');
     await sse.close();
@@ -333,12 +373,11 @@ describe('GET /events — the SSE half of the document event stream', () => {
     expect(before.status).toBe(200);
     expect(((await before.json()) as { auditHead: number }).auditHead).toBe(0);
 
-    const res = await fetch(`${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/pages/rotate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pages: [1].map(toPageRef), rotation: 90 }),
-    });
-    expect(res.status).toBe(200);
+    appliedResult(
+      await postChange({ baseUrl: fx.baseUrl, docId, layerName, token }, [
+        { type: 'pages.rotate', pages: [1].map(toPageRef), rotation: 90 },
+      ]),
+    );
 
     const after = await fetch(
       `${fx.baseUrl}/v1/docs/${docId}/layers/${layerName}/manifest@docVersion=2`,
@@ -390,9 +429,9 @@ describe('drain + readiness — shutdown ends streams instead of hanging on them
   test('shutdown() completes within its budget with a connected SSE viewer', async () => {
     const sse = await openStream('tenant-drain2', 'docdrain02', 'alice');
 
-    // THE regression this feature exists for: with a live SSE socket,
-    // app.close() used to wait forever (heartbeats keep it alive) and
-    // the supervisor's SIGKILL preempted pool/cache teardown.
+    // The failure this feature prevents: with a live SSE socket,
+    // app.close() alone waits forever (heartbeats keep it alive) and
+    // the supervisor's SIGKILL preempts pool/cache teardown.
     const started = Date.now();
     await fx.bundle.shutdown();
     expect(Date.now() - started).toBeLessThan(10_000);
@@ -402,7 +441,7 @@ describe('drain + readiness — shutdown ends streams instead of hanging on them
   test('teardown stays far inside the runner hook budget when a request is stuck', async () => {
     // The defect this locks: buildApp's production `shutdownTimeoutMs`
     // (30s — the budget real in-flight traffic gets before a supervisor
-    // kill) is EXACTLY vitest's `hookTimeout`, so one stuck connection
+    // kill) is exactly vitest's `hookTimeout`, so one stuck connection
     // at teardown consumed the entire hook budget and surfaced as
     // "Hook timed out in 30000ms" — a phantom flake that looked like
     // load. `buildAppForTesting` bounds it to 2s; if anyone restores the
@@ -482,13 +521,19 @@ async function tearDown(fx: Fixture | undefined): Promise<void> {
   await rm(fx.cacheRoot, { recursive: true, force: true });
 }
 
-function docToken(tenantId: string, docId: string, layerName: string, sub = 'user-1'): string {
+function docToken(
+  tenantId: string,
+  docId: string,
+  layerName: string,
+  sub = 'user-1',
+  scope: string[] = ['*'],
+): string {
   return signDevToken(SECRET, {
     sub,
     tenant_id: tenantId,
     doc_id: docId,
     layer_name: layerName,
-    scope: ['*'],
+    scope,
   });
 }
 

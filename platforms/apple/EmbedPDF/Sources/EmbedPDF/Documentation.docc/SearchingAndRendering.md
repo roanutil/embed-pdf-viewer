@@ -8,7 +8,7 @@ Start a viewer configured with `SearchConfig()` and `RenderConfig()`, then open 
 
 ## Choose independent or session search
 
-Use ``SearchCapability/findAll(_:mode:)`` for an independent query that returns all hits in page order without replacing the document's interactive search session. Use ``SearchCapability/search(_:startPage:)`` when you need current-query state, progress, active-hit navigation, and a session your UI can clear.
+Use ``SearchCapability/findAll(_:snippets:)`` for an independent query that returns all hits in page order without replacing the document's interactive search session. Use ``SearchCapability/search(_:from:)`` when you need current-query state, progress, active-hit navigation, and a session your UI can clear.
 
 The following helper receives an already open document and viewer:
 
@@ -19,11 +19,11 @@ func findReferences(
   to text: String, in document: DocumentInfo, viewer: PDFViewer
 ) async throws -> [SearchHit] {
   let search = try await viewer.search(in: document)
-  return try await search.findAll(SearchQuery(text: text), mode: .rects)
+  return try await search.findAll(SearchQuery(text: text), snippets: false)
 }
 ```
 
-`.rects` geometry needs `doc.text.search`; `.full` also needs `doc.text.copy` to expose text details. A `nil` mode selects rect-only output by default. Search matches extractable text, so an image-only scan can produce no hits without being a search failure.
+Hit geometry needs `doc.text.search`; snippets also need `doc.text.copy`. Passing `snippets: nil` asks for snippets and falls back to none when they are denied. Search matches extractable text, so an image-only scan can produce no hits without being a search failure.
 
 For session search, inspect the result status as well as the hit count. A new search supersedes the previous scan, an empty query clears the session, and cancellation can retain partial hits. Use `hits()` to read the current hit snapshot, `nextHit()` and `previousHit()` to navigate, and `clear()` to remove the session. Hit navigation indices are zero-based and `goToHit` wraps modulo the hit count. No active hit is represented by `nil`.
 

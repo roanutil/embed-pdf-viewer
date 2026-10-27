@@ -1,0 +1,1623 @@
+[
+  {
+    "name": "activate-resolves-the-annotation-tree",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "refused",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-failed",
+                  "message": "trigger resolution failed: no page 99"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 8,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 10,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 9,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 11,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 10,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 12,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 11,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "annotation-events-resolve-their-aa-tree",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 10,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 8,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "a-precedes-aa-u",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "an-incomplete-trigger-tree-is-refused",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "refused",
+              "steps": [
+                {
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 1
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  },
+                  "tree": {
+                    "root": null,
+                    "incomplete": true,
+                    "warningFlags": 0,
+                    "warnings": [
+                      "incomplete"
+                    ]
+                  },
+                  "result": {
+                    "status": "refused",
+                    "nodes": [],
+                    "diagnostics": [
+                      {
+                        "code": "incomplete-tree",
+                        "message": "refused: the action tree is incomplete"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "incomplete-tree",
+                "action": null,
+                "source": {
+                  "kind": "annotation",
+                  "annotation": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "resolution-never-rejects",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "refused",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-failed",
+                  "message": "trigger resolution failed: read exploded"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-failed",
+                "action": null,
+                "source": {
+                  "kind": "annotation",
+                  "annotation": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "refused",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-failed",
+                  "message": "trigger resolution failed: no page 77"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-failed",
+                "action": null,
+                "source": {
+                  "kind": "annotation",
+                  "annotation": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 77
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 77
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "refused",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-failed",
+                  "message": "trigger resolution failed: no page 77"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-failed",
+                "action": null,
+                "source": {
+                  "kind": "page",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 77
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "page-fan-out-order",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 8,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "a-failed-step-never-skips-its-siblings",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "steps": [
+                {
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 6
+                      },
+                      "objectNumber": 21
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 6
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "javascript",
+                      "subtype": "JavaScript",
+                      "script": "boom",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "partial",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "javascript",
+                        "status": "failed",
+                        "detail": "boom"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "executor-failed",
+                        "message": "javascript: boom"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "source": {
+                    "kind": "page",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 6
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "pageC",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "an-all-inert-fan-out-is-inert",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 2,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [
+                {
+                  "source": {
+                    "kind": "page",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 6
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "javascript",
+                      "subtype": "JavaScript",
+                      "script": "orphan()",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "javascript",
+                        "status": "inert"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "no-executor",
+                        "message": "javascript: no executor registered (scripting unavailable)"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 6
+                      },
+                      "objectNumber": 34
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 6
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "Print",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "blocked"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "trigger-gates",
+    "file": "plugins/actions-triggers.json",
+    "sourceOwner": "dispatch/dispatcher.ts,dispatch/triggers.ts,dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-disabled",
+                  "message": "page: trigger family disabled by config"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-disabled",
+                "action": null,
+                "source": {
+                  "kind": "page",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-disabled",
+                  "message": "annotation: trigger family disabled by config"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-disabled",
+                "action": null,
+                "source": {
+                  "kind": "annotation",
+                  "annotation": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 1
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-disabled",
+                  "message": "document: trigger family disabled by config"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-disabled",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 11,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "auto-fires-on-adapter-install",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "open-sequence-completed-event",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [],
+        "reports": [
+          {
+            "$error": {
+              "name": "Error",
+              "message": "listener broke"
+            }
+          }
+        ],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "headless-falls-back-to-the-first-page",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "headless-with-a-report",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "headless-with-no-pages",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "a-replayed-open-trigger",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "refused",
+              "steps": [
+                {
+                  "source": {
+                    "kind": "document"
+                  },
+                  "tree": {
+                    "root": null,
+                    "incomplete": true,
+                    "warningFlags": 0,
+                    "warnings": [
+                      "incomplete"
+                    ]
+                  },
+                  "result": {
+                    "status": "refused",
+                    "nodes": [],
+                    "diagnostics": [
+                      {
+                        "code": "incomplete-tree",
+                        "message": "refused: the action tree is incomplete"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "incomplete-tree",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "open-sequence-replayed",
+                  "message": "document open sequence already fired for this document"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "open-sequence-replayed",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "open-sequence-read-fails",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-failed",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "no-actions-service",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 2,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "open-sequence-replayed",
+                  "message": "document open sequence already fired for this document"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "cascade-budget",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/open-sequence.ts,page-lifecycle.ts; core context/event-hook report port",
+    "channels": [
+      {
+        "stepIndex": 13,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "cascade-budget",
+                "action": null,
+                "source": null
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 14,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "cascade-budget",
+                "action": null,
+                "source": null
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "missing-trees-are-inert",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 2,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 3,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "open-runs-before-the-first-document-event",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "open-sequence-replayed",
+                  "message": "document open sequence already fired for this document"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "open-sequence-replayed",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "a-rejected-catalog-read-is-evicted",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-failed",
+                  "message": "will-save: transient read failure"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "trigger-failed",
+                "action": null,
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "document-family-disabled",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-disabled",
+                  "message": "document: trigger family disabled by config"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "steps": [],
+              "diagnostics": [
+                {
+                  "code": "trigger-disabled",
+                  "message": "document: trigger family disabled by config"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "run-document-verb-failure-laws",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "rejected": [
+          {
+            "promise": 3,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "save failed"
+              }
+            }
+          }
+        ],
+        "actionResults": [],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [
+          {
+            "promise": 4,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "save rejected"
+              }
+            }
+          }
+        ],
+        "actionResults": [],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "run-document-verb-print-holds-the-latch",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "reentrant-print",
+                "action": "named",
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "rejected": [
+          {
+            "promise": 3,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "printer on fire"
+              }
+            }
+          }
+        ],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "reentrant-print",
+                "action": "named",
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "reentrant-print",
+                "action": "named",
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "print-verb-runs-wp-adapter-dp",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "rejected": [],
+        "actionResults": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "reentrant-print",
+                "action": "named",
+                "source": {
+                  "kind": "document"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "an-adapter-throw-skips-did-print",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "rejected": [
+          {
+            "promise": 2,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "dialog exploded"
+              }
+            }
+          }
+        ],
+        "actionResults": [],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "adapter-uninstalled-mid-print",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "rejected": [],
+        "actionResults": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "named",
+                  "status": "no-executor",
+                  "detail": "UI adapter uninstalled mid-print"
+                }
+              ],
+              "diagnostics": []
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "name": "an-open-uri-throw-rejects-execute",
+    "file": "plugins/actions-lifecycle.json",
+    "sourceOwner": "lifecycle/document-events.ts,dispatch/run.ts; scripting/executor.ts for supplemental M14",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "rejected": [
+          {
+            "promise": 2,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "popup blocked"
+              }
+            }
+          }
+        ],
+        "actionResults": [],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  }
+]

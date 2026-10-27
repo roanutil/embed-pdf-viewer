@@ -102,7 +102,8 @@ pub enum IdentityOverrides {
     Function(Rc<dyn Fn() -> PartialScriptIdentity>),
 }
 
-/// Engine JWT identity composed under embedder overrides.
+/// The session's identity, as Acrobat JavaScript's `identity` object, under
+/// embedder overrides.
 pub fn resolve_script_identity(
     doc: &dyn DocumentHandle,
     overrides: Option<&IdentityOverrides>,
@@ -110,9 +111,10 @@ pub fn resolve_script_identity(
     resolve_script_identity_from(&doc.security().identity(), overrides)
 }
 
-/// [`resolve_script_identity`] over the claims themselves.
+/// [`resolve_script_identity`] over the session's `Identity` itself
+/// (`userId`, `displayName`, `email`, `organization`, ...).
 pub fn resolve_script_identity_from(
-    claims: &Value,
+    identity: &Value,
     overrides: Option<&IdentityOverrides>,
 ) -> ScriptIdentity {
     let supplied = match overrides {
@@ -120,16 +122,16 @@ pub fn resolve_script_identity_from(
         Some(IdentityOverrides::Value(v)) => v.clone(),
         None => PartialScriptIdentity::default(),
     };
-    let claim = |key: &str| claims.get(key).and_then(Value::as_str).map(str::to_string);
+    let member = |key: &str| identity.get(key).and_then(Value::as_str).map(str::to_string);
     ScriptIdentity {
         name: supplied
             .name
-            .or_else(|| claim("display_name"))
-            .or_else(|| claim("user_id"))
+            .or_else(|| member("displayName"))
+            .or_else(|| member("userId"))
             .unwrap_or_default(),
-        login_name: supplied.login_name.or_else(|| claim("user_id")).unwrap_or_default(),
-        corporation: supplied.corporation.or_else(|| claim("group_id")).unwrap_or_default(),
-        email: supplied.email.unwrap_or_default(),
+        login_name: supplied.login_name.or_else(|| member("userId")).unwrap_or_default(),
+        corporation: supplied.corporation.or_else(|| member("organization")).unwrap_or_default(),
+        email: supplied.email.or_else(|| member("email")).unwrap_or_default(),
     }
 }
 
@@ -366,10 +368,12 @@ impl ScriptHost {
 ///
 /// `dispose()` releases the current realm, but a transaction enqueued before
 /// it still runs and lazily builds a fresh one (as the TypeScript does).
-/// The TypeScript leaves that realm alive forever; here the last such
-/// transaction to settle releases it, so a closed document never strands a
-/// QuickJS runtime. Script output is unchanged: no transaction can start
-/// after `dispose()`, and the realm lives until every queued one is done.
+/// The TypeScript releases that realm only at a repeated `dispose()`, and
+/// leaks it if `dispose()` is never called again (`host.ts:231-238`). Here
+/// the last such transaction to settle releases it (M13), so a closed
+/// document never strands a QuickJS runtime. Script output is unchanged: no
+/// transaction can start after `dispose()`, and the realm lives until every
+/// queued one is done.
 fn release_sandbox(inner: &Inner) {
     let dying = inner.sandbox.borrow_mut().take();
     inner.booted.set(false);
@@ -539,5 +543,151 @@ mod tests {
         // and it was disposed once they were done.
         assert_eq!(built.get(), 1);
         assert_eq!(disposals.get(), 1);
+    }
+
+    struct LoggingSandbox {
+        id: usize,
+        log: Rc<RefCell<Vec<String>>>,
+        disposed: Cell<bool>,
+    }
+
+    impl ScriptSandbox for LoggingSandbox {
+        fn disposed(&self) -> bool {
+            self.disposed.get()
+        }
+        fn boot(
+            &self,
+            _: &[String],
+            _: &ScriptInput,
+            _: Option<&ScriptBudget>,
+        ) -> Result<ScriptOutput, Error> {
+            self.log.borrow_mut().push(format!("boot {}", self.id));
+            Ok(ScriptOutput::empty())
+        }
+        fn run(
+            &self,
+            program: &str,
+            _: &ScriptInput,
+            _: Option<&ScriptBudget>,
+        ) -> Result<ScriptOutput, Error> {
+            self.log.borrow_mut().push(format!("run {} {program}", self.id));
+            Ok(ScriptOutput::empty())
+        }
+        fn dispose(&self) {
+            self.log.borrow_mut().push(format!("dispose {}", self.id));
+            self.disposed.set(true);
+        }
+    }
+
+    /// `host.ts:130` builds lazily with no disposed check, `:216` refuses only
+    /// new transactions, and `:231` releases the pending build once it
+    /// settles: so a run admitted before `dispose()` still finishes, on a
+    /// second realm (vector `dispose-pending-factory`, a Task 14 decision
+    /// carry). The first realm is released exactly once, the second exactly
+    /// once, and a repeated `dispose()` releases nothing twice.
+    #[test]
+    fn a_pending_factory_is_released_and_an_admitted_run_builds_a_second_realm() {
+        rt::reset();
+        let log = Rc::new(RefCell::new(Vec::<String>::new()));
+        let (gate, open) = Promise::<()>::pending();
+        let built = Rc::new(Cell::new(0usize));
+        let (factory_log, factory_built) = (log.clone(), built.clone());
+        let mut options = counting_options();
+        options.sandbox_factory = Rc::new(move || {
+            let id = factory_built.get();
+            factory_built.set(id + 1);
+            factory_log.borrow_mut().push(format!("factory {id}"));
+            let sandbox: Rc<dyn ScriptSandbox> = Rc::new(LoggingSandbox {
+                id,
+                log: factory_log.clone(),
+                disposed: Cell::new(false),
+            });
+            if id == 0 {
+                gate.clone().map(move |_| Ok(sandbox.clone()))
+            } else {
+                Promise::resolved(sandbox)
+            }
+        });
+        let host = ScriptHost::new(options);
+        let admitted =
+            host.transaction(|txn| Ok(txn.run("admitted()", world(), None).map(|_| Ok(()))));
+        rt::run_until_stalled();
+        assert_eq!(*log.borrow(), ["factory 0"]);
+        host.dispose();
+        rt::run_until_stalled();
+        assert_eq!(*log.borrow(), ["factory 0"], "the pending build is released when it settles");
+        let refused = host.transaction(|txn| Ok(txn.run("late()", world(), None).map(|_| Ok(()))));
+        rt::run_until_stalled();
+        assert_eq!(
+            refused.peek().and_then(|r| r.err()).map(|e| e.message),
+            Some("script host is disposed".to_string())
+        );
+        open.resolve(());
+        rt::run_until_stalled();
+        assert!(admitted.peek().is_some_and(|r| r.is_ok()), "the admitted run still finishes");
+        assert_eq!(log.borrow()[..4], ["factory 0", "dispose 0", "factory 1", "run 1 admitted()"]);
+        let before_repeat = log.borrow().len();
+        host.dispose();
+        rt::run_until_stalled();
+        let log = log.borrow();
+        assert_eq!(log.iter().filter(|e| *e == "dispose 0").count(), 1);
+        assert_eq!(log.iter().filter(|e| *e == "dispose 1").count(), 1);
+        // M13 (22ca510e6): Rust releases the second realm when the queue
+        // drains. The TypeScript keeps it until the repeated dispose()
+        // (vector `dispose-pending-factory`, step 4).
+        assert_eq!(log.len(), before_repeat, "the repeated dispose() finds nothing left");
+        assert_eq!(built.get(), 2);
+    }
+
+    fn counting_options() -> ScriptHostOptions {
+        ScriptHostOptions {
+            sandbox_factory: Rc::new(|| Promise::rejected(Error::new("unused"))),
+            document: Rc::new(|| ScriptDocumentInput {
+                id: "a".into(),
+                file_name: "a.pdf".into(),
+                page_count: 1.0,
+                page_number: 0.0,
+            }),
+            identity: Rc::new(Default::default),
+            environment: Rc::new(|_| ScriptEnvironment {
+                now_ms: 0.0,
+                utc_offset_minutes: 0.0,
+                random_seed: 1.0,
+            }),
+            boot_sources: Rc::new(|| Ok(Promise::resolved(Vec::new()))),
+            budget: None,
+        }
+    }
+
+    /// `resolveScriptIdentity` reads the session's `Identity`
+    /// (`host.ts:97-103`): `organization` is the corporation and `email`
+    /// falls through. The retired JWT claim spellings are not read.
+    #[test]
+    fn identity_reads_the_session_identity_members() {
+        let identity = serde_json::json!({
+            "userId": "u", "displayName": "Ada", "organization": "Org", "email": "ada@x.test",
+            "display_name": "old", "user_id": "old", "group_id": "old",
+        });
+        let resolved = resolve_script_identity_from(&identity, None);
+        assert_eq!(
+            resolved,
+            ScriptIdentity {
+                name: "Ada".into(),
+                login_name: "u".into(),
+                corporation: "Org".into(),
+                email: "ada@x.test".into(),
+            }
+        );
+        let overridden = resolve_script_identity_from(
+            &identity,
+            Some(&IdentityOverrides::Value(PartialScriptIdentity {
+                email: Some("over@x.test".into()),
+                ..Default::default()
+            })),
+        );
+        assert_eq!(overridden.email, "over@x.test");
+        let legacy =
+            serde_json::json!({ "display_name": "old", "user_id": "old", "group_id": "old" });
+        assert_eq!(resolve_script_identity_from(&legacy, None), ScriptIdentity::default());
     }
 }

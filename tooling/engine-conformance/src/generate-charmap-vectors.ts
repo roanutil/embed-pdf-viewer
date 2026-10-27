@@ -1,6 +1,6 @@
 /**
  * Emits `vectors/text/charmap.json`: what `boundaryTextOffset`,
- * `charBoundaryAtTextOffset`, `charRangeForTextOffsets`, `sliceTextByChars`
+ * `charBoundaryAtTextOffset`, `charRangeForTextOffsets`, `sliceText`
  * and `charMapViolation` produce.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run charmap
@@ -24,7 +24,7 @@ import {
   charBoundaryAtTextOffset,
   charMapViolation,
   charRangeForTextOffsets,
-  sliceTextByChars,
+  sliceText,
 } from '../../../packages/engine/core/src/text/charmap';
 import type { PageTextSnapshot } from '../../../packages/engine/core/src/dto/PageTextSnapshot';
 
@@ -46,6 +46,21 @@ function snapshotOf(entry: CharMapCase): PageTextSnapshot {
     : { text: entry.text, charCount: entry.charCount };
 }
 
+/**
+ * Upstream's charmap helpers take and return `TextRange { start, count }`
+ * (a10ed2659), and `sliceTextByChars` became `sliceText`. The vectors keep
+ * the half-open `{ start, end }` shape, so these two adapt at the edge. A
+ * negative count behaves as the old `end <= start` did: an empty result.
+ */
+function charRangeForHalfOpen(snapshot: PageTextSnapshot, start: number, end: number) {
+  const range = charRangeForTextOffsets(snapshot, { start, count: end - start });
+  return { start: range.start, end: range.start + range.count };
+}
+
+function sliceHalfOpen(snapshot: PageTextSnapshot, start: number, end: number): string {
+  return sliceText(snapshot, { start, count: end - start });
+}
+
 function runCase(entry: CharMapCase) {
   const snapshot = snapshotOf(entry);
   const boundaries = Array.from({ length: entry.charCount + 1 }, (_, b) => b);
@@ -61,11 +76,11 @@ function runCase(entry: CharMapCase) {
     endBiasBoundaries: offsets.map((o) => charBoundaryAtTextOffset(snapshot, o, 'end')),
     /** Every half-open text range's character range. */
     charRanges: offsets.flatMap((start) =>
-      offsets.map((end) => ({ start, end, range: charRangeForTextOffsets(snapshot, start, end) })),
+      offsets.map((end) => ({ start, end, range: charRangeForHalfOpen(snapshot, start, end) })),
     ),
     /** Every half-open character range's text. */
     slices: boundaries.flatMap((start) =>
-      boundaries.map((end) => ({ start, end, text: sliceTextByChars(snapshot, start, end) })),
+      boundaries.map((end) => ({ start, end, text: sliceHalfOpen(snapshot, start, end) })),
     ),
     /** The map validates, which every case in this list must. */
     violation: charMapViolation(entry.charCount, entry.text.length, entry.charMap),

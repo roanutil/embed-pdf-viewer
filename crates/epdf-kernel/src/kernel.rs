@@ -30,6 +30,10 @@ use crate::plugin::{
     AnyPlugin, ConnectFn, ControllerContext, EffectContext, PluginContext, PluginDef, Services,
     SessionView, slice_key,
 };
+use crate::print::{
+    HostPrinter, PRINT_HIGH, PRINT_PDF, PRINT_STANDARD, PreparedPrint, PrintOptions, PrintProgress,
+    PrintQuality, PrintSheet, StageOptions, StagedPrint,
+};
 use crate::rt::{self, Promise};
 use crate::scope::{Scope, cancelled, is_cancelled};
 use crate::signal::AbortSignal;
@@ -122,11 +126,19 @@ pub struct KernelOptions {
     /// off a closed session and its capabilities keep each other alive past
     /// the kernel.
     pub release_closed_sessions: bool,
+    /// The host's print dialog: where `documents.print()` sends the pages.
+    /// Without one, nothing prints (`can_print()` is false).
+    pub printer: Option<Rc<dyn HostPrinter>>,
 }
 
 impl Default for KernelOptions {
     fn default() -> Self {
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: true }
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: true,
+            printer: None,
+        }
     }
 }
 
@@ -175,6 +187,17 @@ fn collect_hosts(value: &Value, out: &mut Vec<Value>) {
 type Recorded = (OpenSource, OpenOptions, Option<Rc<HostHold>>);
 
 struct Session {
+    change_count: Cell<u64>,
+    settle_flushes: Rc<RefCell<Vec<crate::settle::SettleFlush>>>,
+    download_wraps: Rc<RefCell<Vec<crate::settle::DownloadWrap>>>,
+    print_wraps: Rc<RefCell<Vec<crate::settle::PrintWrap>>>,
+    /// `changesSeen`: changes the document had since it opened, on any
+    /// engine; a prepared print that saw fewer is prepared again.
+    changes_seen: Cell<u64>,
+    burst: RefCell<Option<(String, crate::store::StoreHold)>>,
+    changes: crate::changes::DocumentChanges,
+    mirror_starts: RefCell<Vec<(String, Rc<dyn Fn()>)>>,
+    constructing: RefCell<Vec<*const PluginDef>>,
     id: RefCell<String>,
     instance_id: String,
     name: RefCell<Option<String>>,
@@ -187,12 +210,15 @@ struct Session {
     held: RefCell<Option<Rc<HostHold>>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
-    staged_meta: RefCell<Option<DocumentMeta>>,
+    staged_meta: RefCell<Option<Rc<DocumentMeta>>>,
     scope: Scope,
     operation: RefCell<Option<Promise<Value>>>,
     engine_op: RefCell<Option<Rc<dyn Fn(Option<Value>)>>>,
     cancel: AbortSignal,
     capabilities: RefCell<Vec<(*const PluginDef, Rc<dyn Any>)>>,
+    /// Workspace capabilities as this document's scope sees them
+    /// (`inScope`), by token.
+    views: RefCell<Vec<(AnyToken, Rc<dyn Any>)>>,
     /// The `connect` halves of `create`, run in the effects phase.
     connectors: RefCell<Vec<(*const PluginDef, ConnectFn)>>,
     leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
@@ -200,6 +226,30 @@ struct Session {
 }
 
 impl SessionView for Session {
+    fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe {
+        if !self.settle_flushes.borrow().iter().any(|f| Rc::ptr_eq(f, &flush)) {
+            self.settle_flushes.borrow_mut().push(flush.clone());
+        }
+        let weak = Rc::downgrade(&self.settle_flushes);
+        Unsubscribe::new(move || {
+            if let Some(flushes) = weak.upgrade() {
+                flushes.borrow_mut().retain(|f| !Rc::ptr_eq(f, &flush));
+            }
+        })
+    }
+    fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe {
+        register_wrap(&self.download_wraps, wrap)
+    }
+    fn around_print(&self, wrap: crate::settle::PrintWrap) -> Unsubscribe {
+        register_wrap(&self.print_wraps, wrap)
+    }
+
+    fn changes(&self) -> crate::changes::DocumentChanges {
+        self.changes.clone()
+    }
+    fn add_mirror(&self, id: &str, start: Rc<dyn Fn()>) {
+        self.mirror_starts.borrow_mut().push((id.into(), start));
+    }
     fn id(&self) -> String {
         self.id.borrow().clone()
     }
@@ -209,7 +259,7 @@ impl SessionView for Session {
     fn handle(&self) -> Option<Rc<dyn DocumentHandle>> {
         self.handle.borrow().clone()
     }
-    fn staged_meta(&self) -> Option<DocumentMeta> {
+    fn staged_meta(&self) -> Option<Rc<DocumentMeta>> {
         self.staged_meta.borrow().clone()
     }
     fn scope(&self) -> Scope {
@@ -219,6 +269,23 @@ impl SessionView for Session {
         let key = plugin as *const PluginDef;
         self.leases.borrow().iter().find(|(p, _)| *p == key).map(|(_, l)| l.clone())
     }
+}
+
+/// Push `wrap` and return what removes it again (the first equal one).
+fn register_wrap<T: 'static>(
+    wraps: &Rc<RefCell<Vec<crate::settle::Wrap<T>>>>,
+    wrap: crate::settle::Wrap<T>,
+) -> Unsubscribe {
+    wraps.borrow_mut().push(wrap.clone());
+    let weak = Rc::downgrade(wraps);
+    Unsubscribe::new(move || {
+        if let Some(wraps) = weak.upgrade() {
+            let index = wraps.borrow().iter().position(|w| Rc::ptr_eq(w, &wrap));
+            if let Some(index) = index {
+                wraps.borrow_mut().remove(index);
+            }
+        }
+    })
 }
 
 /// Insertion-ordered sessions, as a JavaScript `Map` iterates.
@@ -249,10 +316,13 @@ impl Sessions {
 // ── the kernel ────────────────────────────────────────────────────────────────
 
 struct Inner {
+    viewer_settings: crate::settings::Settings,
     this: Weak<Inner>,
     engine: Rc<dyn Engine>,
+    clock: Rc<dyn crate::clock::HostClock>,
     store: Rc<Store>,
     plan: PluginPlan,
+    settings: RefCell<std::collections::HashMap<String, crate::settings::Settings>>,
     document_plugins: Vec<AnyPlugin>,
     workspace_capabilities: RefCell<Vec<(AnyToken, Rc<dyn Any>)>>,
     workspace_leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
@@ -269,6 +339,7 @@ struct Inner {
     report: Report,
     on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
     release_closed_sessions: bool,
+    printer: Option<Rc<dyn HostPrinter>>,
 }
 
 /// The kernel's lifecycle events, disposed at destroy.
@@ -280,6 +351,7 @@ pub struct LifecycleEvents {
     pub closed: EventHookSource<Value>,
     pub active_changed: EventHookSource<Value>,
     pub pages_changed: EventHookSource<Value>,
+    pub unsaved_changes_changed: EventHookSource<Value>,
 }
 
 impl LifecycleEvents {
@@ -292,6 +364,7 @@ impl LifecycleEvents {
             closed: hook(),
             active_changed: hook(),
             pages_changed: hook(),
+            unsaved_changes_changed: hook(),
         }
     }
 
@@ -303,6 +376,7 @@ impl LifecycleEvents {
             &self.closed,
             &self.active_changed,
             &self.pages_changed,
+            &self.unsaved_changes_changed,
         ] {
             hook.dispose();
         }
@@ -314,8 +388,14 @@ impl LifecycleEvents {
 pub struct Kernel(Rc<Inner>);
 
 /// The document registry capability (`DocumentsCapability`).
+///
+/// Seen from inside one document's scope (`documentsInScope`), every call
+/// whose document is optional uses that document instead of the active one.
 #[derive(Clone)]
-pub struct Documents(Weak<Inner>);
+pub struct Documents {
+    inner: Weak<Inner>,
+    scope: Option<Rc<str>>,
+}
 
 fn core_action(kind: &'static str) -> CoreAction {
     CoreAction { kind }
@@ -327,7 +407,8 @@ fn is_abort_like(error: &Error) -> bool {
 
 fn layout_from_event(event: &Value) -> Option<&Value> {
     match event.get("type").and_then(Value::as_str)? {
-        "pages.moved" | "pages.rotated" | "pages.deleted" | "pages.inserted" => event.get("layout"),
+        "pages.reordered" | "pages.rotated" | "pages.deleted" | "pages.inserted"
+        | "pages.restored" => event.get("layout"),
         _ => None,
     }
 }
@@ -374,25 +455,74 @@ impl Inner {
 
     fn create_session(&self, id: String, name: Option<String>) -> Rc<Session> {
         self.instance_counter.set(self.instance_counter.get() + 1);
-        Rc::new(Session {
-            instance_id: format!("{id}#{}", self.instance_counter.get()),
-            id: RefCell::new(id),
-            name: RefCell::new(name),
-            source: RefCell::new(None),
-            produced: RefCell::new(None),
-            held: RefCell::new(None),
-            phase: Cell::new(Phase::Opening),
-            handle: RefCell::new(None),
-            staged_meta: RefCell::new(None),
-            scope: Scope::new(self.report.clone()),
-            operation: RefCell::new(None),
-            engine_op: RefCell::new(None),
-            cancel: AbortSignal::new(),
-            capabilities: RefCell::new(Vec::new()),
-            connectors: RefCell::new(Vec::new()),
-            leases: RefCell::new(Vec::new()),
-            closing: RefCell::new(None),
-        })
+        let session = Rc::new_cyclic(|weak: &Weak<Session>| {
+            let w = weak.clone();
+            let store = Rc::downgrade(&self.store);
+            let changes = crate::changes::DocumentChanges::new(
+                Rc::new(move |change, options| match w.upgrade().and_then(|s| s.handle()) {
+                    Some(handle) => handle.call("apply", None, vec![change, options]),
+                    None => Promise::rejected(crate::error::plugin_error(
+                        "not-ready",
+                        "documents",
+                        "the document has not opened yet",
+                        None,
+                        None,
+                    )),
+                }),
+                Rc::new(move || {
+                    if let Some(store) = store.upgrade() {
+                        store.notify();
+                    }
+                }),
+                self.report.clone(),
+            );
+            Session {
+                change_count: Cell::new(0),
+                settle_flushes: Rc::default(),
+                download_wraps: Rc::default(),
+                print_wraps: Rc::default(),
+                changes_seen: Cell::new(0),
+                burst: RefCell::new(None),
+                changes,
+                mirror_starts: RefCell::new(Vec::new()),
+                constructing: RefCell::new(Vec::new()),
+                instance_id: format!("{id}#{}", self.instance_counter.get()),
+                id: RefCell::new(id),
+                name: RefCell::new(name),
+                source: RefCell::new(None),
+                produced: RefCell::new(None),
+                held: RefCell::new(None),
+                phase: Cell::new(Phase::Opening),
+                handle: RefCell::new(None),
+                staged_meta: RefCell::new(None),
+                scope: Scope::new(self.report.clone()),
+                operation: RefCell::new(None),
+                engine_op: RefCell::new(None),
+                cancel: AbortSignal::new(),
+                capabilities: RefCell::new(Vec::new()),
+                views: RefCell::new(Vec::new()),
+                connectors: RefCell::new(Vec::new()),
+                leases: RefCell::new(Vec::new()),
+                closing: RefCell::new(None),
+            }
+        });
+        let weak = Rc::downgrade(&session);
+        let reserve = weak.clone();
+        session.changes.set_object_numbers(
+            Rc::new(move || {
+                weak.upgrade()
+                    .and_then(|s| s.handle())
+                    .ok_or_else(|| Error::new("document not ready"))?
+                    .take_object_number()
+            }),
+            Rc::new(move |count| match reserve.upgrade().and_then(|s| s.handle()) {
+                Some(h) => h.reserve_object_numbers(count),
+                None => Promise::rejected(Error::new("document not ready")),
+            }),
+        );
+        let changes = session.changes.clone();
+        session.scope.defer_fn(move || changes.close());
+        session
     }
 
     /// `engineCall`: await an engine or network call under the session's
@@ -488,11 +618,19 @@ impl Inner {
             || core.documents.contains_key(next_id)
             || core.pending.contains_key(next_id)
         {
-            return Err(Error::new(format!("[documents] duplicate document id: {next_id}")));
+            return Err(crate::error::plugin_error(
+                "conflict",
+                "documents",
+                format!("duplicate document id: {next_id}"),
+                None,
+                None,
+            ));
         }
         self.sessions.borrow_mut().delete(&previous_id);
         *session.id.borrow_mut() = next_id.to_string();
         self.sessions.borrow_mut().set(next_id.to_string(), session.clone());
+        // A view is bound to the id it was built for (kernel.ts:537).
+        session.views.borrow_mut().clear();
         if let Some(slot) = core.pending.get(&previous_id).cloned() {
             let next = next_id.to_string();
             self.set_core(
@@ -530,6 +668,11 @@ impl Inner {
                 lease.revoke();
             }
             let reason = cancelled(&format!("closed while opening: {}", s.id()));
+            s.burst.borrow_mut().take();
+            s.mirror_starts.borrow_mut().clear();
+            // The change queue closes in the scope's teardown (`create`'s
+            // defer), as TS closes it: after the plugins' event sources are
+            // disposed, so no listener hears the refusals.
             s.cancel.abort(reason.clone());
             let engine_op = s.engine_op.borrow().clone();
             if let Some(abort) = engine_op {
@@ -557,6 +700,7 @@ impl Inner {
             if is_current {
                 this.sessions.borrow_mut().delete(&id);
             }
+            s.views.borrow_mut().clear();
             this.events.closed.emit(&serde_json::json!({ "documentId": id }));
             // Nothing retries a closed session, and something may hold it
             // long after: its source goes now, and with it the host's bytes
@@ -611,7 +755,9 @@ impl Inner {
                         error: None,
                     },
                 );
-                core.order.push(id.clone());
+                if !core.order.contains(&id) {
+                    core.order.push(id.clone());
+                }
                 if activate || core.active_id.is_none() {
                     core.active_id = Some(id.clone());
                 }
@@ -710,6 +856,464 @@ impl Inner {
         }));
     }
 
+    fn set_unsaved_changes(&self, session: &Session, dirty: bool) {
+        let id = session.id();
+        let published = self.store.core().documents.get(&id).cloned();
+        let Some(meta) = published else {
+            if let Some(meta) = session.staged_meta.borrow_mut().as_mut()
+                && meta.has_unsaved_changes != dirty
+            {
+                Rc::make_mut(meta).has_unsaved_changes = dirty;
+            }
+            return;
+        };
+        if meta.instance_id != session.instance_id || meta.has_unsaved_changes == dirty {
+            return;
+        }
+        self.set_core(
+            |core| {
+                if let Some(meta) = core.documents.get_mut(&id) {
+                    Rc::make_mut(meta).has_unsaved_changes = dirty;
+                }
+            },
+            &core_action("@@core/document-changed"),
+        );
+        self.events
+            .unsaved_changes_changed
+            .emit(&serde_json::json!({"documentId":id,"hasUnsavedChanges":dirty}));
+    }
+
+    fn download_file(
+        &self,
+        id: Option<&str>,
+        mode: Option<Value>,
+        layer: bool,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let verb = if layer { "downloadLayer" } else { "download" };
+        let not_ready = move || {
+            crate::error::plugin_error(
+                "not-ready",
+                "documents",
+                format!("no open document to {verb}"),
+                None,
+                None,
+            )
+        };
+        let Some(session) =
+            self.session_of(id).filter(|s| matches!(s.phase.get(), Phase::Bringup | Phase::Ready))
+        else {
+            return Promise::rejected(not_ready());
+        };
+        let Some(handle) = session.handle() else {
+            return Promise::rejected(not_ready());
+        };
+        if !handle.security().allows("doc.download") {
+            return Promise::rejected(
+                crate::error::plugin_error(
+                    "permission-denied",
+                    "documents",
+                    format!("documents.{verb} requires doc.download"),
+                    None,
+                    None,
+                )
+                .with("permission", "doc.download"),
+            );
+        }
+        if layer && (!handle.is_local() || !handle.has("downloadLayer")) {
+            return Promise::rejected(crate::error::plugin_error(
+                "unsupported",
+                "documents",
+                "only the local engine gives a layer to download",
+                None,
+                None,
+            ));
+        }
+        let this = self.this.upgrade().expect("kernel");
+        let settled = self.settle_session(&session, signal.as_ref());
+        document_errors(Promise::spawn(async move {
+            settled.await?;
+            // Keep the captured instance, never resolve the active tab again.
+            let live = this
+                .sessions
+                .borrow()
+                .get(&session.id())
+                .is_some_and(|current| Rc::ptr_eq(&current, &session));
+            if !live || !matches!(session.phase.get(), Phase::Bringup | Phase::Ready) {
+                return Err(not_ready());
+            }
+            let read_at = Rc::new(Cell::new(None));
+            let read_session = session.clone();
+            let read_signal = signal.clone();
+            let stamp = read_at.clone();
+            let read: crate::settle::DownloadRead = Rc::new(move || {
+                if read_session.cancel.aborted()
+                    || read_signal.as_ref().is_some_and(AbortSignal::aborted)
+                {
+                    return Promise::rejected(crate::error::plugin_error(
+                        "operation-cancelled",
+                        "documents",
+                        "operation cancelled",
+                        None,
+                        None,
+                    ));
+                }
+                stamp.set(Some(read_session.change_count.get()));
+                let task = if layer {
+                    handle.call("downloadLayer", None, vec![])
+                } else {
+                    let options = mode
+                        .clone()
+                        .map(|mode| serde_json::json!({"mode":mode}))
+                        .unwrap_or_else(crate::undefined);
+                    handle.call("download", None, vec![options])
+                };
+                let abort = task.abort_handle();
+                let task = crate::cancellable::cancellable(
+                    "documents",
+                    Some(read_session.cancel.clone()),
+                    task,
+                );
+                // Caller cancellation must still reach the original read after
+                // the document-lifetime wrapper has been applied.
+                let task = match abort {
+                    Some(abort) => task.with_abort_member(move |reason| abort(reason)),
+                    None => task,
+                };
+                crate::cancellable::cancellable("documents", read_signal.clone(), task)
+            });
+            let wraps = session.download_wraps.borrow().clone();
+            let bytes = crate::settle::run_wrapped(wraps, read).await?;
+            if read_at.get() == Some(session.change_count.get()) && !session.cancel.aborted() {
+                this.set_unsaved_changes(&session, false);
+            }
+            Ok(bytes)
+        }))
+    }
+
+    /// `settle(session.settleFlushes, [signal, session.signal], report)`:
+    /// what the document's plugins held back is sent and answered first.
+    fn settle_session(&self, session: &Rc<Session>, signal: Option<&AbortSignal>) -> Promise<()> {
+        let changes = session.changes.clone();
+        let queue_flush: crate::settle::SettleFlush = Rc::new(move |_| Ok(Some(changes.settle())));
+        let mut flushes = vec![queue_flush];
+        flushes.extend(session.settle_flushes.borrow().iter().cloned());
+        let mut signals = vec![session.cancel.clone()];
+        if let Some(signal) = signal {
+            signals.push(signal.clone());
+        }
+        crate::settle::settle(flushes, signals, self.report.clone())
+    }
+
+    // ── printing ──────────────────────────────────────────────────────────────
+
+    /// `allowsOn(documentId, permission)`: `sessionAllows` on the document's
+    /// handle, false without one.
+    fn allows_on(&self, document_id: Option<&str>, permission: &str) -> bool {
+        self.document_handle_of(document_id).is_some_and(|handle| {
+            let security = handle.security();
+            if permission == "annotations:create" {
+                security.allows_annotation_create()
+            } else {
+                security.allows(permission)
+            }
+        })
+    }
+
+    /// `canPrintOn`: a printer, and `doc.print`.
+    fn can_print_on(&self, document_id: Option<&str>) -> bool {
+        self.printer.is_some() && self.allows_on(document_id, "doc.print")
+    }
+
+    /// `printQualityOf`: the PDF copy with `doc.print.high`, a right to keep
+    /// the copy and a printer that prints a PDF; else pictures, at the
+    /// resolution `doc.print.high` or `doc.print` allows.
+    fn print_quality_of(&self, document_id: Option<&str>) -> Option<PrintQuality> {
+        if !self.can_print_on(document_id) {
+            return None;
+        }
+        if !self.allows_on(document_id, "doc.print.high") {
+            return Some(PRINT_STANDARD);
+        }
+        let may_keep_copy = self.allows_on(document_id, "doc.download")
+            || self.allows_on(document_id, "doc.download.flattened");
+        let prints_pdf = self.printer.as_ref().is_some_and(|printer| printer.prints_pdf());
+        Some(if may_keep_copy && prints_pdf { PRINT_PDF } else { PRINT_HIGH })
+    }
+
+    /// `printPagesOf`: the pages a print asks for, in its order; every page
+    /// when it names none.
+    fn print_pages_of(
+        &self,
+        session: &Session,
+        pages: Option<&[PageRef]>,
+    ) -> Result<Vec<Value>, Error> {
+        let all = self
+            .store
+            .core()
+            .documents
+            .get(&session.id())
+            .and_then(|meta| meta.pages.as_array().cloned())
+            .unwrap_or_default();
+        let Some(pages) = pages else { return Ok(all) };
+        if pages.is_empty() {
+            return Err(crate::error::plugin_error(
+                "invalid-input",
+                "documents",
+                "a print needs at least one page",
+                None,
+                None,
+            ));
+        }
+        let mut found: Vec<Value> = Vec::with_capacity(pages.len());
+        let mut indexes: Vec<usize> = Vec::with_capacity(pages.len());
+        for page in pages {
+            let Some(index) = all.iter().position(|info| page.names(info)) else {
+                return Err(crate::error::plugin_error(
+                    "not-found",
+                    "documents",
+                    format!("page {} is not in this document", page.page_object_number),
+                    None,
+                    None,
+                ));
+            };
+            indexes.push(index);
+            found.push(all[index].clone());
+        }
+        let mut unique = indexes.clone();
+        unique.sort_unstable();
+        unique.dedup();
+        if unique.len() != indexes.len() {
+            return Err(crate::error::plugin_error(
+                "invalid-input",
+                "documents",
+                "a print names a page twice",
+                None,
+                None,
+            ));
+        }
+        Ok(found)
+    }
+
+    /// `printLayersOf`: the annotations as the options ask, by default when
+    /// the user may read them; the form fields whenever the user may read
+    /// the form.
+    fn print_layers_of(&self, document_id: &str, options: &PrintOptions) -> Value {
+        let id = Some(document_id);
+        serde_json::json!({
+            "includeAnnotations": options
+                .include_annotations
+                .unwrap_or_else(|| self.allows_on(id, "doc.annotate.read")),
+            "includeFormFields": self.allows_on(id, "doc.forms.read"),
+        })
+    }
+
+    /// `stagePrint`: once the document settled, make the pages as they print
+    /// and hand them to the printer. The pages are looked up again each
+    /// time, so one deleted meanwhile refuses `not-found`.
+    fn stage_print(
+        self: &Rc<Self>,
+        session: &Rc<Session>,
+        printer: &Rc<dyn HostPrinter>,
+        quality: PrintQuality,
+        options: PrintOptions,
+    ) -> Promise<Rc<crate::print::Staged>> {
+        let this = self.clone();
+        let session = session.clone();
+        let printer = printer.clone();
+        let settled = self.settle_session(&session, options.signal.as_ref());
+        Promise::spawn(async move {
+            settled.await?;
+            let Some(handle) = this.document_handle_of(Some(&session.id())) else {
+                return Err(crate::error::plugin_error(
+                    "not-ready",
+                    "documents",
+                    "no open document to print",
+                    None,
+                    None,
+                ));
+            };
+            let changes_seen = session.changes_seen.get();
+            let pages = this.print_pages_of(&session, options.pages.as_deref())?;
+            let layers = this.print_layers_of(&session.id(), &options);
+            let name = session.name.borrow().clone().unwrap_or_else(|| "document".into());
+            let job = PrintJob { handle, pages, layers, name, options };
+            job.progress(0);
+            let staged = match quality {
+                PrintQuality::Images { dpi } => stage_pictures(&job, &printer, dpi).await?,
+                PrintQuality::Pdf => match stage_pdf_copy(&job, &printer).await {
+                    Ok(staged) => staged,
+                    // A printer can turn the PDF copy down: the same pages
+                    // print as pictures.
+                    Err(error) => {
+                        if job.options.signal.as_ref().is_some_and(AbortSignal::aborted) {
+                            return Err(error);
+                        }
+                        let PrintQuality::Images { dpi } = PRINT_HIGH else { unreachable!() };
+                        let staged = stage_pictures(&job, &printer, dpi).await?;
+                        return Ok(Rc::new(crate::print::Staged {
+                            staged,
+                            quality: PRINT_HIGH,
+                            changes_seen,
+                        }));
+                    }
+                },
+            };
+            Ok(Rc::new(crate::print::Staged { staged, quality, changes_seen }))
+        })
+    }
+
+    /// `preparePrint`: refused before anything runs without `doc.print` or a
+    /// printer, or for pages the document doesn't have. Its `print()` runs
+    /// inside every `aroundPrint` wrap, and prepares again first when the
+    /// document changed since.
+    fn prepare_print(
+        self: &Rc<Self>,
+        document_id: Option<&str>,
+        options: PrintOptions,
+    ) -> Promise<PreparedPrint> {
+        let Some(session) = self
+            .session_of(document_id)
+            .filter(|s| self.document_handle_of(Some(&s.id())).is_some())
+        else {
+            return Promise::rejected(crate::error::plugin_error(
+                "not-ready",
+                "documents",
+                "no open document to preparePrint",
+                None,
+                None,
+            ));
+        };
+        let id = session.id();
+        if !self.allows_on(Some(&id), "doc.print") {
+            return Promise::rejected(
+                crate::error::plugin_error(
+                    "permission-denied",
+                    "documents",
+                    "documents.preparePrint requires doc.print",
+                    None,
+                    None,
+                )
+                .with("permission", "doc.print"),
+            );
+        }
+        let quality = self.print_quality_of(Some(&id));
+        let (Some(printer), Some(quality)) = (self.printer.clone(), quality) else {
+            return Promise::rejected(crate::error::plugin_error(
+                "unsupported",
+                "documents",
+                "no printer: pass one to createKernel({ printer }), such as browserPrinter() from @embedpdf/web",
+                None,
+                None,
+            ));
+        };
+        let page_count = match self.print_pages_of(&session, options.pages.as_deref()) {
+            Ok(pages) => pages.len(),
+            Err(error) => return Promise::rejected(error),
+        };
+        let staging = self.stage_print(&session, &printer, quality, options.clone());
+        let this = self.clone();
+        document_errors(Promise::spawn(async move {
+            let first = staging.await?;
+            let current = Rc::new(RefCell::new(crate::print::Staged {
+                staged: first.staged.clone(),
+                quality: first.quality,
+                changes_seen: first.changes_seen,
+            }));
+            let disposed = Rc::new(Cell::new(false));
+            {
+                let (current, disposed) = (current.clone(), disposed.clone());
+                session.scope.defer_fn(move || crate::print::dispose_staged(&disposed, &current));
+            }
+            let print = {
+                let (current, disposed) = (current.clone(), disposed.clone());
+                let this = Rc::downgrade(&this);
+                let session = Rc::downgrade(&session);
+                Rc::new(move |signal: Option<AbortSignal>| -> Promise<()> {
+                    if disposed.get() {
+                        return Promise::rejected(crate::error::plugin_error(
+                            "invalid-input",
+                            "documents",
+                            "this print was disposed",
+                            None,
+                            None,
+                        ));
+                    }
+                    let (Some(this), Some(session)) = (this.upgrade(), session.upgrade()) else {
+                        return Promise::rejected(crate::error::plugin_error(
+                            "not-ready",
+                            "documents",
+                            "no open document to print",
+                            None,
+                            None,
+                        ));
+                    };
+                    let restage = Restage {
+                        this: this.clone(),
+                        session: session.clone(),
+                        printer: printer.clone(),
+                        options: options.clone(),
+                        current: current.clone(),
+                    };
+                    let run: crate::settle::PrintRun = Rc::new(move || {
+                        let restage = restage.clone();
+                        let signal = signal.clone();
+                        Promise::spawn(async move {
+                            let seen = restage.current.borrow().changes_seen;
+                            if restage.session.changes_seen.get() != seen {
+                                restage.run(quality, signal.clone()).await?;
+                            }
+                            if let Some(signal) = signal.as_ref().filter(|s| s.aborted()) {
+                                return Err(crate::error::plugin_error(
+                                    "operation-cancelled",
+                                    "documents",
+                                    "print cancelled",
+                                    signal.reason_value(),
+                                    None,
+                                ));
+                            }
+                            let staged = restage.current.borrow().staged.clone();
+                            if let Err(error) = staged.print().await {
+                                if restage.current.borrow().quality != PrintQuality::Pdf {
+                                    return Err(error);
+                                }
+                                restage.run(PRINT_HIGH, signal).await?;
+                                let staged = restage.current.borrow().staged.clone();
+                                staged.print().await?;
+                            }
+                            Ok(())
+                        })
+                    });
+                    let wraps = session.print_wraps.borrow().clone();
+                    document_errors(crate::settle::run_wrapped(wraps, run))
+                })
+            };
+            Ok(PreparedPrint {
+                current,
+                disposed,
+                page_count,
+                needs_tap: this.printer.as_ref().is_some_and(|p| p.needs_tap()),
+                print,
+            })
+        }))
+    }
+
+    /// `documents.print()`: prepare a print and print it, disposed after.
+    fn print_document(
+        self: &Rc<Self>,
+        document_id: Option<&str>,
+        options: PrintOptions,
+    ) -> Promise<()> {
+        let signal = options.signal.clone();
+        let prepared = self.prepare_print(document_id, options);
+        Promise::spawn(async move {
+            let prepared = prepared.await?;
+            let printed = prepared.print(signal).await;
+            prepared.dispose();
+            printed
+        })
+    }
+
     // ── capability resolution ─────────────────────────────────────────────────
 
     fn session_of(&self, document_id: Option<&str>) -> Option<Rc<Session>> {
@@ -718,6 +1322,43 @@ impl Inner {
             None => self.store.core().active_id.clone()?,
         };
         self.sessions.borrow().get(&id)
+    }
+
+    /// `workspaceViewOf`: a workspace capability as a document's scope sees
+    /// it, built once per document and kept on the session. Without a
+    /// document, or for one the kernel doesn't know, the capability itself.
+    fn workspace_view_of(
+        &self,
+        token: &AnyToken,
+        capability: Rc<dyn Any>,
+        document_id: Option<&str>,
+    ) -> Rc<dyn Any> {
+        let in_scope = self
+            .plan
+            .ordered
+            .iter()
+            .find(|p| p.token.as_ref() == Some(token) && p.scope != PluginScope::Document)
+            .and_then(|p| p.in_scope.clone());
+        let session = document_id.and_then(|id| self.sessions.borrow().get(id));
+        // The documents capability is built in, so its view is declared here
+        // (`inScopeByToken` starts with `[DocumentsToken, documentsInScope]`).
+        let in_scope: Option<crate::plugin::InScopeFn> = if token == DOCUMENTS.any() {
+            Some(Rc::new(|capability: &Rc<dyn Any>, document_id: &str| {
+                match capability.downcast_ref::<Documents>() {
+                    Some(documents) => Rc::new(documents.in_scope(document_id)) as Rc<dyn Any>,
+                    None => capability.clone(),
+                }
+            }))
+        } else {
+            in_scope
+        };
+        let (Some(in_scope), Some(session)) = (in_scope, session) else { return capability };
+        if let Some((_, view)) = session.views.borrow().iter().find(|(t, _)| t == token) {
+            return view.clone();
+        }
+        let view = in_scope(&capability, &session.id());
+        session.views.borrow_mut().push((token.clone(), view.clone()));
+        view
     }
 
     fn workspace_capability(&self, token: &AnyToken) -> Option<Rc<dyn Any>> {
@@ -748,7 +1389,16 @@ impl Inner {
                     session.cancel.clone(),
                     session.scope.clone(),
                 )?;
-                let created = create(cx)?;
+                if session.constructing.borrow().contains(&key) {
+                    return Err(Error::new(format!(
+                        "[kernel] plugin {} is still being created",
+                        plugin.id
+                    )));
+                }
+                session.constructing.borrow_mut().push(key);
+                let created = create(cx);
+                session.constructing.borrow_mut().retain(|p| *p != key);
+                let created = created?;
                 if let Some(connect) = created.connect {
                     session.connectors.borrow_mut().push((key, connect));
                 }
@@ -770,7 +1420,7 @@ impl Inner {
     ) -> Result<Rc<dyn Any>, Error> {
         self.guard_usable(&format!("capability(\"{}\")", token.name()))?;
         if let Some(capability) = self.workspace_capability(token) {
-            return Ok(capability);
+            return Ok(self.workspace_view_of(token, capability, document_id));
         }
         let Some(provider) = self.plan.provider_of(token).cloned() else {
             return Err(Error::new(format!("No capability \"{}\".", token.name())));
@@ -821,7 +1471,7 @@ impl Inner {
             return Ok(None);
         }
         if let Some(capability) = self.workspace_capability(token) {
-            return Ok(Some(capability));
+            return Ok(Some(self.workspace_view_of(token, capability, document_id)));
         }
         let Some(provider) = self.plan.provider_of(token).cloned() else { return Ok(None) };
         let Some(session) = self.session_of(document_id) else { return Ok(None) };
@@ -859,8 +1509,8 @@ impl Inner {
         let handle = session.handle().expect("handle");
         let mut render_policy = continuous_render_policy();
         if handle.has("render") {
-            // `(await handle.render?.policy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
-            if let Ok(policy) = handle.call("render.policy", None, Vec::new()).await
+            // `(await handle.render?.getPolicy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
+            if let Ok(policy) = handle.call("render.getPolicy", None, Vec::new()).await
                 && !policy.is_null()
                 && !crate::is_undefined(&policy)
             {
@@ -871,35 +1521,81 @@ impl Inner {
         }
         Self::checkpoint(&session)?;
         let page_count = snapshot.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32;
-        *session.staged_meta.borrow_mut() = Some(DocumentMeta {
+        *session.staged_meta.borrow_mut() = Some(Rc::new(DocumentMeta {
             id: session.id(),
             instance_id: session.instance_id.clone(),
             name: session.name.borrow().clone(),
             page_count,
+            has_unsaved_changes: false,
             // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
             pages: Rc::new(snapshot.get("pages").cloned().unwrap_or_else(crate::undefined)),
             revision: 0,
             render_policy,
-        });
+        }));
 
+        let burst = Rc::downgrade(&session);
+        session.scope.defer_fn(move || {
+            if let Some(session) = burst.upgrade() {
+                session.burst.borrow_mut().take();
+            }
+        });
         let weak = Rc::downgrade(&this);
         let s = Rc::downgrade(&session);
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
             let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
-            let Some(layout) = layout_from_event(event) else { return };
+            let tx = event.pointer("/origin/tx");
+            let id = tx.and_then(|t| t["id"].as_str());
+            let old = if session
+                .burst
+                .borrow()
+                .as_ref()
+                .is_some_and(|(open, _)| Some(open.as_str()) != id)
+            {
+                session.burst.borrow_mut().take()
+            } else {
+                None
+            };
+            drop(old);
+            if session.burst.borrow().is_none()
+                && tx.is_some_and(|t| t["index"] == 0 && t["count"].as_u64().is_some_and(|n| n > 1))
+                && let Some(id) = id
+            {
+                *session.burst.borrow_mut() = Some((id.into(), this.store.hold()));
+            }
+            let changes_document = !matches!(
+                event["type"].as_str(),
+                Some(
+                    "stream.desynced"
+                        | "document.versioned"
+                        | "signatures.prepared"
+                        | "signatures.cancelled"
+                )
+            );
+            if changes_document {
+                session.changes_seen.set(session.changes_seen.get() + 1);
+                if session.handle().is_some_and(|h| h.is_local()) {
+                    session.change_count.set(session.change_count.get() + 1);
+                    this.set_unsaved_changes(&session, true);
+                }
+            }
+            let Some(layout) = layout_from_event(event) else {
+                return;
+            };
             let id = session.id();
             let core = this.store.core();
-            let Some(existing) = core.documents.get(&id).cloned() else { return };
+            let Some(existing) = core.documents.get(&id).cloned() else {
+                return;
+            };
             let updated = DocumentMeta {
                 page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
                 pages: Rc::new(layout.get("pages").cloned().unwrap_or_else(crate::undefined)),
                 revision: existing.revision + 1,
-                ..existing
+                ..(*existing).clone()
             };
             let (revision, pages) = (updated.revision, updated.pages.clone());
             this.set_core(
                 |core| {
-                    core.documents.insert(id.clone(), updated);
+                    core.documents.insert(id.clone(), Rc::new(updated));
                 },
                 &core_action(CORE_DOCUMENT_PAGES_UPDATED),
             );
@@ -925,6 +1621,9 @@ impl Inner {
             session.scope.defer_fn(move || lease.revoke()); // LIFO: reverse dependency order
         }
         for plugin in &this.document_plugins {
+            if plugin.create.is_some() {
+                continue;
+            }
             if let Some(init) = &plugin.init {
                 let ctx = PluginContext::new(
                     this.services(),
@@ -940,6 +1639,7 @@ impl Inner {
             }
             Self::checkpoint(&session)?;
         }
+        let hold = this.store.hold();
         for plugin in &this.document_plugins {
             if let Some(effects) = &plugin.effects {
                 let ctx = PluginContext::new(
@@ -962,8 +1662,32 @@ impl Inner {
                 if let Some(connect) = connect {
                     connect()?;
                 }
+                let starts: Vec<_> = session
+                    .mirror_starts
+                    .borrow()
+                    .iter()
+                    .filter(|(id, _)| id == &plugin.id)
+                    .map(|(_, f)| f.clone())
+                    .collect();
+                for start in starts {
+                    start();
+                }
             }
         }
+        drop(hold);
+        let weak = Rc::downgrade(&session);
+        let off = handle.subscribe(Rc::new(move |event| {
+            if let Some(session) = weak.upgrade()
+                && let Some(id) = crate::mirror::last_event_of(event)
+            {
+                let close = session.burst.borrow().as_ref().is_some_and(|(open, _)| open == id);
+                if close {
+                    let held = session.burst.borrow_mut().take();
+                    drop(held);
+                }
+            }
+        }));
+        session.scope.defer_fn(move || off.call());
         Self::checkpoint(&session)
     }
 
@@ -988,17 +1712,42 @@ impl Inner {
         input: OpenSource,
         options: OpenOptions,
         hold: Option<Rc<HostHold>>,
-    ) -> Result<(String, Promise<Value>), Error> {
+    ) -> Result<(Rc<Session>, Promise<Value>), Error> {
+        self.reserve_and_open_as(input, options, hold, None)
+    }
+
+    fn reserve_and_open_as(
+        &self,
+        input: OpenSource,
+        options: OpenOptions,
+        hold: Option<Rc<HostHold>>,
+        reuse_id: Option<String>,
+    ) -> Result<(Rc<Session>, Promise<Value>), Error> {
         self.guard_usable("documents.open()")?;
         let hold = hold.or_else(|| HostHold::of(&input));
         let recorded = (input.clone(), options.clone(), hold);
-        let OpenOptions { activate, name, engine: engine_options } = options;
-        let requested_id = match &input {
+        let OpenOptions { activate, name, engine: mut engine_options } = options;
+        let viewer = self.viewer_settings.get();
+        for key in ["scope", "identity"] {
+            if engine_options.get(key).is_none_or(|v| v.is_null() || crate::is_undefined(v))
+                && let Some(value) =
+                    viewer.get(key).filter(|v| !v.is_null() && !crate::is_undefined(v))
+            {
+                engine_options.insert(key.into(), value.clone());
+            }
+        }
+        let requested_id = reuse_id.unwrap_or_else(|| match &input {
             OpenSource::Thunk(_) => self.next_ticket(),
             OpenSource::Input(value) => id_of_input(value).unwrap_or_else(|| self.next_ticket()),
-        };
+        });
         if self.sessions.borrow().has(&requested_id) {
-            return Err(Error::new(format!("[documents] document already open: {requested_id}")));
+            return Err(crate::error::plugin_error(
+                "conflict",
+                "documents",
+                format!("document already open: {requested_id}"),
+                None,
+                None,
+            ));
         }
         let session = self.create_session(requested_id.clone(), name);
         *session.source.borrow_mut() = Some(recorded);
@@ -1010,7 +1759,24 @@ impl Inner {
         let run = async move {
             let result = Self::open_steps(this.clone(), s.clone(), input, engine_options).await;
             match result {
-                Ok(id) => Ok(Value::String(id)),
+                Ok(id) => {
+                    let core = this.store.core();
+                    let document = core
+                        .documents
+                        .get(&id)
+                        .map(|meta| DocInfo::from_meta(meta))
+                        .or_else(|| core.pending.get(&id).map(DocInfo::from_pending))
+                        .ok_or_else(|| {
+                            crate::error::plugin_error(
+                                "instance-closed",
+                                "documents",
+                                format!("{id} was closed"),
+                                None,
+                                None,
+                            )
+                        })?;
+                    Ok(serde_json::json!({"document":document}))
+                }
                 Err(error) => {
                     if is_cancelled(&error) {
                         return Err(error);
@@ -1025,8 +1791,8 @@ impl Inner {
                 }
             }
         };
-        let id = session.id();
-        Ok((id, self.begin_operation(&session, run)?))
+        let done = self.begin_operation(&session, run)?;
+        Ok((session, done))
     }
 
     async fn open_steps(
@@ -1076,10 +1842,8 @@ impl Inner {
 
         let prompt = handle.security().password_prompt();
         if prompt.get("state").and_then(Value::as_str) == Some("required") {
-            // `password != null`: neither `null` nor `undefined`.
-            let given = |p: &Value| !p.is_null() && !crate::is_undefined(p);
-            let password_provided = engine_options.get("password").is_some_and(given)
-                || source.get("password").is_some_and(given);
+            let password_provided =
+                prompt.get("incorrect").and_then(Value::as_bool).unwrap_or(false);
             session.phase.set(Phase::Locked);
             this.publish_locked(&session, password_provided);
             return Ok(session.id());
@@ -1098,24 +1862,41 @@ impl Inner {
     }
 
     fn unlock_document(&self, id: &str, password: String) -> Promise<()> {
-        match self.unlock_document_sync(id, password) {
+        match self.unlock_document_sync(id, password, None) {
             Ok(promise) => promise,
             Err(error) => Promise::rejected(error),
         }
     }
 
-    fn unlock_document_sync(&self, id: &str, password: String) -> Result<Promise<()>, Error> {
+    fn unlock_document_sync(
+        &self,
+        id: &str,
+        password: String,
+        signal: Option<AbortSignal>,
+    ) -> Result<Promise<()>, Error> {
         self.guard_usable("documents.unlock()")?;
         let session = self.sessions.borrow().get(id);
         let session = match session {
             Some(s) if s.phase.get() == Phase::Locked && s.handle().is_some() => s,
-            _ => return Err(Error::new(format!("[documents] document is not locked: {id}"))),
+            _ => {
+                return Err(crate::error::plugin_error(
+                    "invalid-input",
+                    "documents",
+                    format!("document is not locked: {id}"),
+                    None,
+                    None,
+                ));
+            }
         };
         let handle = session.handle().expect("handle");
         let this = self.this.upgrade().expect("kernel");
         let s = session.clone();
         let run = async move {
-            let unlock = handle.security().unlock(serde_json::json!({ "password": password }));
+            let unlock = crate::cancellable::cancellable(
+                "documents",
+                signal,
+                handle.security().unlock(serde_json::json!({ "password": password })),
+            );
             if let Err(error) = rt::returned(Self::engine_call(&s, unlock, None)).await {
                 if s.phase.get() == Phase::Closing || is_abort_like(&error) {
                     return Err(cancelled(&format!("closed while opening: {}", s.id())));
@@ -1153,7 +1934,14 @@ impl Inner {
         // `return beginOperation(...)` from an async function adopts the
         // operation. It is still pending here, so the adoption settles one
         // turn after it does, which is what `.then` costs as well.
-        Ok(operation.map(|_| Ok(())))
+        Ok(Promise::spawn(async move {
+            let result = operation
+                .reaction()
+                .await
+                .map_err(|e| crate::error::to_plugin_error("documents", &e));
+            rt::tick().await;
+            result.map(|_| ())
+        }))
     }
 
     fn close_document(&self, id: &str) -> Promise<()> {
@@ -1174,6 +1962,12 @@ impl Inner {
 }
 
 impl Services for Inner {
+    fn clock(&self) -> Rc<dyn crate::clock::HostClock> {
+        self.clock.clone()
+    }
+    fn settings(&self, id: &str) -> Option<crate::settings::Settings> {
+        self.settings.borrow().get(id).cloned()
+    }
     fn engine(&self) -> Rc<dyn Engine> {
         self.engine.clone()
     }
@@ -1211,12 +2005,75 @@ impl Services for Inner {
 }
 
 impl Kernel {
+    pub fn settings_of(&self, token: &AnyToken) -> Result<crate::settings::Settings, Error> {
+        let plugin = self
+            .0
+            .plan
+            .ordered
+            .iter()
+            .find(|p| p.token.as_ref() == Some(token))
+            .ok_or_else(|| Error::new("[kernel] unknown settings token"))?;
+        self.0
+            .settings
+            .borrow()
+            .get(&plugin.id)
+            .cloned()
+            .ok_or_else(|| Error::new("[kernel] plugin declares no settings"))
+    }
+
     /// `createKernel`. Fails where the TypeScript throws: a bad plugin list,
     /// or a workspace capability whose constructor throws.
     pub fn new(
         engine: Rc<dyn Engine>,
         plugins: Vec<AnyPlugin>,
         options: KernelOptions,
+    ) -> Result<Kernel, Error> {
+        Self::new_with_clock(engine, plugins, options, Rc::new(crate::clock::TimerClock))
+    }
+
+    pub fn new_with_clock(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        clock: Rc<dyn crate::clock::HostClock>,
+    ) -> Result<Kernel, Error> {
+        Self::new_with_clock_and_settings(engine, plugins, options, clock, None)
+    }
+
+    pub fn new_with_viewer_settings(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        registered: Option<Value>,
+    ) -> Result<Kernel, Error> {
+        Self::new_with_clock_and_settings(
+            engine,
+            plugins,
+            options,
+            Rc::new(crate::clock::TimerClock),
+            registered,
+        )
+    }
+
+    pub fn get_settings(&self) -> Rc<Value> {
+        self.0.viewer_settings.get()
+    }
+    pub fn update_settings(&self, changes: &Value) {
+        self.0.viewer_settings.update_settings(changes);
+    }
+    pub fn reset_settings(&self) {
+        self.0.viewer_settings.reset_settings();
+    }
+    pub fn on_settings_changed(&self) -> EventHookSource<crate::settings::SettingsChanged> {
+        self.0.viewer_settings.on_settings_changed()
+    }
+
+    pub fn new_with_clock_and_settings(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        clock: Rc<dyn crate::clock::HostClock>,
+        registered: Option<Value>,
     ) -> Result<Kernel, Error> {
         let report = options
             .report
@@ -1231,12 +2088,31 @@ impl Kernel {
             let events = events.clone();
             workspace_scope.defer_fn(move || events.dispose());
         }
+        let weak_store = Rc::downgrade(&store);
+        let viewer_settings = crate::settings::Settings::new(
+            crate::settings::SettingsDeclaration {
+                defaults: serde_json::json!({"identity":null,"scope":null,"accent":"#3858e9","page":{"background":"#ffffff","shadow":"0 6px 18px rgb(0 0 0 / 0.18)"}}),
+                registered,
+                whole: vec!["identity".into()],
+            },
+            Rc::new(move || {
+                if let Some(store) = weak_store.upgrade() {
+                    store.notify();
+                }
+            }),
+            report.clone(),
+        );
+        let dispose_viewer = viewer_settings.clone();
+        workspace_scope.defer_fn(move || dispose_viewer.dispose());
         let release_closed_sessions = options.release_closed_sessions;
         let inner = Rc::new_cyclic(|this| Inner {
             this: this.clone(),
+            viewer_settings,
             engine,
+            clock,
             store,
             plan,
+            settings: RefCell::new(std::collections::HashMap::new()),
             document_plugins,
             workspace_capabilities: RefCell::new(Vec::new()),
             workspace_leases: RefCell::new(Vec::new()),
@@ -1253,11 +2129,27 @@ impl Kernel {
             report,
             on_dispatch: options.on_dispatch,
             release_closed_sessions,
+            printer: options.printer,
         });
-        let documents: Rc<dyn Any> = Rc::new(Documents(Rc::downgrade(&inner)));
+        let documents: Rc<dyn Any> =
+            Rc::new(Documents { inner: Rc::downgrade(&inner), scope: None });
         inner.workspace_capabilities.borrow_mut().push((DOCUMENTS.any().clone(), documents));
 
         for plugin in &inner.plan.ordered {
+            if let Some(declaration) = &plugin.settings {
+                let store = Rc::downgrade(&inner.store);
+                let settings = crate::settings::Settings::new(
+                    declaration.clone(),
+                    Rc::new(move || {
+                        if let Some(store) = store.upgrade() {
+                            store.notify();
+                        }
+                    }),
+                    inner.report.clone(),
+                );
+
+                inner.settings.borrow_mut().insert(plugin.id.clone(), settings);
+            }
             if plugin.scope != PluginScope::Document {
                 let lease = inner.store.lease_with_text(
                     &plugin.id,
@@ -1270,6 +2162,12 @@ impl Kernel {
                 inner.workspace_leases.borrow_mut().push((Rc::as_ptr(plugin), lease));
             }
         }
+        let stores = inner.settings.borrow().values().cloned().collect::<Vec<_>>();
+        inner.workspace_scope.defer_fn(move || {
+            for settings in stores {
+                settings.dispose();
+            }
+        });
         for plugin in &inner.plan.ordered {
             if plugin.scope == PluginScope::Document {
                 continue;
@@ -1303,7 +2201,7 @@ impl Kernel {
     }
 
     pub fn documents(&self) -> Documents {
-        Documents(Rc::downgrade(&self.0))
+        Documents { inner: Rc::downgrade(&self.0), scope: None }
     }
 
     pub fn status(&self) -> KernelStatus {
@@ -1537,7 +2435,7 @@ fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Promise<T> {
 }
 
 /// `Promise.allSettled`, awaited: settles one turn after the last input.
-async fn all_settled(promises: Vec<Promise<()>>) {
+pub(crate) async fn all_settled(promises: Vec<Promise<()>>) {
     let (all, resolver) = Promise::<()>::pending();
     let remaining = Rc::new(Cell::new(promises.len()));
     if promises.is_empty() {
@@ -1561,14 +2459,209 @@ async fn all_settled(promises: Vec<Promise<()>>) {
     let _ = all.await;
 }
 
+/// `PrintJob`: one print being staged.
+struct PrintJob {
+    handle: Rc<dyn DocumentHandle>,
+    pages: Vec<Value>,
+    layers: Value,
+    name: String,
+    options: PrintOptions,
+}
+
+impl PrintJob {
+    fn progress(&self, pages_rendered: usize) {
+        if let Some(on_progress) = &self.options.on_progress {
+            on_progress(PrintProgress { pages_rendered, page_count: self.pages.len() });
+        }
+    }
+
+    fn stage_options(&self) -> StageOptions {
+        StageOptions { name: self.name.clone(), signal: self.options.signal.clone() }
+    }
+
+    fn with_layers(&self, mut options: Value) -> Value {
+        if let (Some(target), Some(layers)) = (options.as_object_mut(), self.layers.as_object()) {
+            for (key, value) in layers {
+                target.insert(key.clone(), value.clone());
+            }
+        }
+        options
+    }
+}
+
+fn page_ref_of(page: &Value) -> Value {
+    page.get("ref").cloned().unwrap_or(Value::Null)
+}
+
+/// `stagePdfCopy`: the PDF copy of the pages as they print.
+async fn stage_pdf_copy(
+    job: &PrintJob,
+    printer: &Rc<dyn HostPrinter>,
+) -> Result<Rc<dyn StagedPrint>, Error> {
+    if !printer.prints_pdf() {
+        return Err(crate::error::plugin_error(
+            "unsupported",
+            "documents",
+            "this printer prints no PDF",
+            None,
+            None,
+        ));
+    }
+    let refs = Value::Array(job.pages.iter().map(page_ref_of).collect());
+    let options = job.with_layers(serde_json::json!({ "flatten": { "usage": "print" } }));
+    let pdf = crate::cancellable::cancellable(
+        "documents",
+        job.options.signal.clone(),
+        job.handle.call("pages.extract", None, vec![refs, options]),
+    )
+    .await?;
+    let staged = printer.stage_pdf(pdf, job.stage_options()).await?;
+    job.progress(job.pages.len());
+    Ok(staged)
+}
+
+/// `stagePictures`: a picture of each page, drawn by the print rules at
+/// `dpi`. The TypeScript awaits the image's `blob()` as one more turn; the
+/// engine here answers the PNG itself.
+async fn stage_pictures(
+    job: &PrintJob,
+    printer: &Rc<dyn HostPrinter>,
+    dpi: crate::print::PrintDpi,
+) -> Result<Rc<dyn StagedPrint>, Error> {
+    let mut sheets = Vec::with_capacity(job.pages.len());
+    for page in &job.pages {
+        let pon = PageRef::from_json(&page_ref_of(page)).map(|r| r.page_object_number);
+        let options = job.with_layers(serde_json::json!({
+            "usage": "print",
+            "viewport": { "kind": "dpi", "dpi": dpi },
+            "format": "png",
+        }));
+        let image = crate::cancellable::cancellable(
+            "documents",
+            job.options.signal.clone(),
+            job.handle.call("page.render.image", pon, vec![options]),
+        )
+        .await?;
+        let size = |axis: &str| page.get("size").and_then(|s| s.get(axis)).and_then(Value::as_f64);
+        sheets.push(PrintSheet {
+            image,
+            width_pt: size("width").unwrap_or(0.0),
+            height_pt: size("height").unwrap_or(0.0),
+        });
+        job.progress(sheets.len());
+    }
+    printer.stage(sheets, job.stage_options()).await
+}
+
+/// `restage(as, signal)`: stage the print again, as `quality`, in place of
+/// what was staged.
+#[derive(Clone)]
+struct Restage {
+    this: Rc<Inner>,
+    session: Rc<Session>,
+    printer: Rc<dyn HostPrinter>,
+    options: PrintOptions,
+    current: Rc<RefCell<crate::print::Staged>>,
+}
+
+impl Restage {
+    async fn run(&self, quality: PrintQuality, signal: Option<AbortSignal>) -> Result<(), Error> {
+        let options = PrintOptions {
+            pages: self.options.pages.clone(),
+            include_annotations: self.options.include_annotations,
+            on_progress: None,
+            signal,
+        };
+        let fresh = self.this.stage_print(&self.session, &self.printer, quality, options).await?;
+        let previous = self.current.borrow().staged.clone();
+        previous.dispose();
+        *self.current.borrow_mut() = crate::print::Staged {
+            staged: fresh.staged.clone(),
+            quality: fresh.quality,
+            changes_seen: fresh.changes_seen,
+        };
+        Ok(())
+    }
+}
+
+fn document_errors<T: Clone + 'static>(task: Promise<T>) -> Promise<T> {
+    let (out, resolver) = Promise::pending();
+    task.on_settle(move |result| {
+        resolver.settle(result.clone().map_err(|e| crate::error::to_plugin_error("documents", &e)))
+    });
+    out
+}
+
 impl Documents {
     fn inner(&self) -> Result<Rc<Inner>, Error> {
-        self.0.upgrade().ok_or_else(|| Error::new("[kernel] used after the kernel was dropped"))
+        self.inner.upgrade().ok_or_else(|| Error::new("[kernel] used after the kernel was dropped"))
+    }
+
+    /// `documentsInScope(documents, documentId)`: the registry as seen from
+    /// inside one document's scope.
+    pub fn in_scope(&self, document_id: &str) -> Documents {
+        Documents { inner: self.inner.clone(), scope: Some(Rc::from(document_id)) }
+    }
+
+    /// The document a call with an optional id acts on: `id`, else the one
+    /// in scope, else (`None`) the active one.
+    fn scoped<'a>(&'a self, id: Option<&'a str>) -> Option<&'a str> {
+        id.or(self.scope.as_deref())
+    }
+
+    pub fn open_with_signal(
+        &self,
+        input: OpenSource,
+        options: OpenOptions,
+        signal: AbortSignal,
+    ) -> Promise<Value> {
+        if signal.aborted() {
+            return Promise::rejected(crate::error::plugin_error(
+                "operation-cancelled",
+                "documents",
+                "the open was cancelled",
+                None,
+                None,
+            ));
+        }
+        let inner = match self.inner() {
+            Ok(i) => i,
+            Err(e) => return Promise::rejected(e),
+        };
+        let (session, done) = match inner.reserve_and_open(input, options, None) {
+            Ok(v) => v,
+            Err(e) => return Promise::rejected(crate::error::to_plugin_error("documents", &e)),
+        };
+        let cancel = inner.clone();
+        let registration = signal.on_abort(Rc::new(move |_| {
+            cancel.close_session(&session);
+        }));
+        let task = adopt(done);
+        let (out, resolver) = Promise::pending();
+        task.on_settle(move |result| {
+            signal.remove(registration);
+            resolver
+                .settle(result.clone().map_err(|e| crate::error::to_plugin_error("documents", &e)));
+        });
+        out
+    }
+
+    /// [`unlock`](Self::unlock) with the caller's signal: TS has one
+    /// `unlockDocument` taking it as an option, so the errors and the turn
+    /// the promise settles on are the same.
+    pub fn unlock_with_signal(&self, id: &str, password: &str, signal: AbortSignal) -> Promise<()> {
+        match self
+            .inner()
+            .and_then(|inner| inner.unlock_document_sync(id, password.into(), Some(signal)))
+        {
+            Ok(promise) => promise,
+            Err(error) => Promise::rejected(error),
+        }
     }
 
     pub fn open(&self, input: OpenSource, options: OpenOptions) -> Promise<Value> {
         match self.inner() {
-            Ok(inner) => inner.open_document(input, options, None),
+            Ok(inner) => document_errors(inner.open_document(input, options, None)),
             Err(error) => Promise::rejected(error),
         }
     }
@@ -1586,12 +2679,24 @@ impl Documents {
                 (s.phase.get() == Phase::Error).then(|| s.source.borrow().clone()).flatten()
             });
             let (Some(session), Some((source, options, hold))) = (session, recorded) else {
-                return Err(Error::new(format!(
-                    "[documents] \"{id}\" is not a failed open; nothing to retry"
-                )));
+                return Err(crate::error::plugin_error(
+                    "invalid-input",
+                    "documents",
+                    format!("{id} didn't fail to open; nothing to retry"),
+                    None,
+                    None,
+                ));
             };
-            inner.close_session(&session).await?;
-            let reopened = inner.open_document(source, options, hold);
+            inner.sessions.borrow_mut().delete(&id);
+            // Failure already disposed this session's scope. Keep the tab and
+            // its position while replacing only the failed session.
+            let _old = session;
+            let mut options = options;
+            options.activate = Some(false);
+            let reopened = match inner.reserve_and_open_as(source, options, hold, Some(id)) {
+                Ok((_, operation)) => adopt(operation),
+                Err(error) => Promise::rejected(error),
+            };
             // `return openDocument(...)` from an async function adopts it.
             rt::tick().await;
             reopened.reaction().await
@@ -1608,7 +2713,7 @@ impl Documents {
             inner.set_core(
                 move |core| {
                     if let Some(meta) = core.documents.get_mut(&i) {
-                        meta.name = Some(n);
+                        Rc::make_mut(meta).name = Some(n);
                     }
                 },
                 &core_action(CORE_DOCUMENT_RENAMED),
@@ -1646,9 +2751,9 @@ impl Documents {
                 OpenSource::Input(value) => id_of_input(value).unwrap_or_default(),
             };
             match inner.reserve_and_open(doc.source, options, None) {
-                Ok((id, done)) => {
+                Ok((session, done)) => {
                     done.ignore();
-                    ids.push(id);
+                    ids.push(session.id());
                 }
                 Err(_) => ids.push(asked),
             }
@@ -1743,8 +2848,12 @@ impl Documents {
         a.sort();
         b.sort();
         if ids.len() != current.len() || a != b {
-            return Err(Error::new(
-                "[documents] setOrder() needs a permutation of the current order",
+            return Err(crate::error::plugin_error(
+                "invalid-input",
+                "documents",
+                "setOrder() needs a permutation of the current order",
+                None,
+                None,
             ));
         }
         inner.reorder(ids.to_vec());
@@ -1777,45 +2886,42 @@ impl Documents {
         inner.reorder(next);
     }
 
-    /// The complete document as PDF bytes. `mode` goes to the engine only
-    /// when one is given.
+    /// Download after deferred plugin work and held changes have settled.
     pub fn save(&self, id: Option<&str>, mode: Option<Value>) -> Promise<Value> {
-        let Ok(inner) = self.inner() else {
-            return Promise::rejected(Error::new("[documents] no document to save"));
-        };
-        match inner.document_handle_of(id) {
-            None => Promise::rejected(Error::new("[documents] no document to save")),
-            Some(handle) => {
-                let options = match mode {
-                    Some(mode) => serde_json::json!({ "mode": mode }),
-                    None => crate::undefined(),
-                };
-                handle.call("download", None, vec![options])
-            }
+        self.save_with_signal(id, mode, None)
+    }
+    pub fn save_with_signal(
+        &self,
+        id: Option<&str>,
+        mode: Option<Value>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        match self.inner() {
+            Ok(inner) => inner.download_file(self.scoped(id), mode, false, signal),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
         }
     }
-
-    /// Just the document's layer.
     pub fn save_layer(&self, id: Option<&str>) -> Promise<Value> {
-        let Ok(inner) = self.inner() else {
-            return Promise::rejected(Error::new("[documents] no document to download"));
-        };
-        match inner.document_handle_of(id) {
-            None => Promise::rejected(Error::new("[documents] no document to download")),
-            Some(handle) if !handle.has("downloadLayer") => Promise::rejected(Error::new(
-                "[documents] this engine cannot export a layer (open with a layer on the local engine)",
-            )),
-            Some(handle) => handle.call("downloadLayer", None, Vec::new()),
+        self.save_layer_with_signal(id, None)
+    }
+    pub fn save_layer_with_signal(
+        &self,
+        id: Option<&str>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        match self.inner() {
+            Ok(inner) => inner.download_file(self.scoped(id), None, true, signal),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
         }
     }
 
     fn meta_of(&self, id: Option<&str>) -> Option<DocumentMeta> {
         let core = self.inner().ok()?.store.core();
-        let id = match id {
+        let id = match self.scoped(id) {
             Some(id) => id.to_string(),
             None => core.active_id.clone()?,
         };
-        core.documents.get(&id).cloned()
+        core.documents.get(&id).map(|meta| (**meta).clone())
     }
 
     fn pages_of(&self, id: Option<&str>) -> Option<Vec<Value>> {
@@ -1849,10 +2955,52 @@ impl Documents {
 
     /// The permissions.md chrome exception: print and download.
     pub fn allows(&self, capability: &str, id: Option<&str>) -> bool {
-        self.inner()
-            .ok()
-            .and_then(|inner| inner.document_handle_of(id))
-            .is_some_and(|handle| handle.security().allows(capability))
+        self.inner().is_ok_and(|inner| inner.allows_on(self.scoped(id), capability))
+    }
+
+    /// `canDownload(id?)`: `doc.download`.
+    pub fn can_download(&self, id: Option<&str>) -> bool {
+        self.allows("doc.download", id)
+    }
+
+    /// `getDocument(id?)`: the document's fields (the one in scope, else the
+    /// active one, without an id), or `None` when it isn't open.
+    pub fn get_document(&self, id: Option<&str>) -> Option<DocInfo> {
+        match self.scoped(id) {
+            Some(id) => self.get(id),
+            None => self.get_active(),
+        }
+    }
+
+    // ── printing ──────────────────────────────────────────────────────────────
+
+    /// `preparePrint(id?, options)`: wait for changes still on their way,
+    /// make the pages as they print, and stage them with the printer.
+    pub fn prepare_print(&self, id: Option<&str>, options: PrintOptions) -> Promise<PreparedPrint> {
+        match self.inner() {
+            Ok(inner) => inner.prepare_print(self.scoped(id), options),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
+        }
+    }
+
+    /// `print(id?, options)`: `preparePrint()`, then its `print()`, disposed
+    /// after.
+    pub fn print(&self, id: Option<&str>, options: PrintOptions) -> Promise<()> {
+        match self.inner() {
+            Ok(inner) => inner.print_document(self.scoped(id), options),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
+        }
+    }
+
+    /// `getPrintQuality(id?)`: how a print would come out, or `None` when the
+    /// document can't be printed.
+    pub fn get_print_quality(&self, id: Option<&str>) -> Option<PrintQuality> {
+        self.inner().ok().and_then(|inner| inner.print_quality_of(self.scoped(id)))
+    }
+
+    /// `canPrint(id?)`: `doc.print`, and the host gave a printer.
+    pub fn can_print(&self, id: Option<&str>) -> bool {
+        self.inner().is_ok_and(|inner| inner.can_print_on(self.scoped(id)))
     }
 
     /// The lifecycle events: `onOpened`, `onOpenFailed`, `onLocked`,

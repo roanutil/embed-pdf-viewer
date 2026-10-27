@@ -1,3 +1,3 @@
-//! `sync/`: the page's viewports into the slice.
+//! `sync/`: the pages' viewports, kept current with the engine.
 
 pub mod viewports;

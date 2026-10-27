@@ -136,11 +136,6 @@ pub fn number(x: f64) -> Value {
     epdf_kernel::js::number(x)
 }
 
-/// `Number(string)`.
-pub fn string_to_number(s: &str) -> f64 {
-    epdf_annotation_core::js::string_to_number(s)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -169,8 +164,8 @@ mod tests {
         assert_eq!(f64_of(&json!({ "a": 2.5 }), "a"), 2.5);
         assert!(f64_of(&json!({ "a": "2.5" }), "a").is_nan());
         assert!(f64_of(&json!({}), "a").is_nan());
-        assert_eq!(string_to_number(" 12 "), 12.0);
-        assert!(string_to_number("x").is_nan());
+        assert_eq!(epdf_kernel::mirror::string_to_number(" 12 "), 12.0);
+        assert!(epdf_kernel::mirror::string_to_number("x").is_nan());
     }
 
     #[test]
@@ -233,4 +228,24 @@ mod key_order_tests {
         // `Object.keys({b, 10, 2, a, '02', 0, 4294967295, 4294967294, '-1', '1.5'})`.
         assert_eq!(keys, ["0", "2", "10", "4294967294", "b", "a", "02", "4294967295", "-1", "1.5"]);
     }
+}
+
+/// `v[key]` as an array's items; none when it is not an array.
+pub fn items<'a>(v: &'a Value, key: &str) -> &'a [Value] {
+    get(v, key).and_then(Value::as_array).map_or(&[], Vec::as_slice)
+}
+
+/// `{ ...v, key: value, ... }`: each member replaced in place, or appended
+/// when new, as a spread over an object literal leaves them.
+pub fn spread(v: &Value, members: impl IntoIterator<Item = (&'static str, Value)>) -> Value {
+    let mut out = v.as_object().cloned().unwrap_or_default();
+    for (key, value) in members {
+        out.insert(key.to_string(), value);
+    }
+    Value::Object(out)
+}
+
+/// `String(n)` for a number used as an object key.
+pub fn number_key(n: f64) -> String {
+    epdf_geometry::js::number_to_string(n)
 }

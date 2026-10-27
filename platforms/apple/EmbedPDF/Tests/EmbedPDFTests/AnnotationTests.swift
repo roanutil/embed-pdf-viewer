@@ -28,7 +28,7 @@ extension BaseSuite {
     func opened(_ fixture: String = "annotation_kinds") async throws
       -> (PDFViewer, DocumentInfo, AnnotationCapability)
     {
-      let viewer = try PDFViewer(ViewerConfig(interaction: true, annotation: AnnotationConfig()))
+      let viewer = try PDFViewer(ViewerConfig(interaction: true, annotation: ""))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data(fixture))
       let annotations = try await viewer.annotations(for: document)
@@ -42,19 +42,13 @@ extension BaseSuite {
       return try Data(contentsOf: url)
     }
 
-    @Test func hydrationListsTheFixturesAnnotations() async throws {
+    @Test func loadingListsTheFixturesAnnotations() async throws {
       let (_, _, annotations) = try await opened()
-      // `refresh` during the hydration the open started answers when that
-      // one settles and runs once more after it (`rehydrate`), so wait for
-      // the second run's resync.
-      let events = annotations.events
-      if try await annotations.hydration() == .loading {
-        for await event in events {
-          if case .resynced = event { break }
-        }
-      }
-      let hydration = try await annotations.hydration()
-      expectNoDifference(hydration, .complete)
+      // `refresh` re-reads every annotation and waits for it; `whenSynced`
+      // waits for any page re-read still in flight.
+      try await annotations.whenSynced()
+      let status = try await annotations.status()
+      expectNoDifference(status, .ready)
       let all = try await annotations.list()
       #expect(!all.isEmpty)
     }
@@ -64,10 +58,8 @@ extension BaseSuite {
       let page = try await viewer.pages(of: document)[0].page
       let events = annotations.events
       let created = try await annotations.create(
-        CreateAnnotationInput(
-          page: page, subtype: "square",
-          bounds: Rect(x: 72, y: 72, width: 100, height: 50)))
-      try await annotations.update(created, AnnotationPatch(contents: "From Swift"))
+        #"{"subtype": "square", "box": {"x": 72, "y": 72, "width": 100, "height": 50}}"#, on: page)
+      try await annotations.update(created, #"{"contents": "From Swift"}"#)
       let read = try await annotations.get(created)
       expectNoDifference(read?.contents, "From Swift")
       try await annotations.delete(created)
@@ -84,7 +76,7 @@ extension BaseSuite {
       let page = try await viewer.pages(of: document)[0].page
       let stamp = try await annotations.drafts.placeStamp(
         AnnotationStampSource(bytes: try tinyPng(), mimeType: "image/png"),
-        at: AnnotationStampPlacement(page: page, at: Point(x: 200, y: 200), targetWidth: 80))
+        at: AnnotationStampPlacement(page: page, center: Point(x: 200, y: 200)), targetWidth: 80)
       let read = try await annotations.get(stamp)
       expectNoDifference(read?.subtype, "stamp")
     }
@@ -123,7 +115,7 @@ extension BaseSuite {
 
     @Test func createFromSelectionMarksTheSelectedText() async throws {
       let viewer = try PDFViewer(
-        ViewerConfig(interaction: true, selection: true, annotation: AnnotationConfig()))
+        ViewerConfig(interaction: true, selection: true, annotation: ""))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
       let page = try await viewer.pages(of: document)[0].page
@@ -134,7 +126,7 @@ extension BaseSuite {
       // selection has no segments to mark.
       try await selection.ensureLoaded(page)
       try await selection.selectPage(page)
-      let refs = try await annotations.drafts.createFromSelection("highlight")
+      let refs = try await annotations.drafts.createFromSelection(tool: "highlight")
       #expect(!refs.isEmpty)
       let marked = try await annotations.get(try #require(refs.first))
       expectNoDifference(marked?.subtype, "highlight")
@@ -164,14 +156,9 @@ extension BaseSuite {
 
     @Test func statusIsAResourceStatus() async throws {
       let (_, _, annotations) = try await opened()
-      // `opened` refreshes during the open's own hydration, which runs once
-      // more after it: wait for that run's resync, as the hydration test does.
-      let events = annotations.events
-      if try await annotations.status() == .loading {
-        for await event in events {
-          if case .resynced = event { break }
-        }
-      }
+      // `opened` has refreshed; `whenSynced` settles any re-read the open
+      // itself started.
+      try await annotations.whenSynced()
       let status = try await annotations.status()
       expectNoDifference(status, .ready)
     }
@@ -216,7 +203,12 @@ extension BaseSuite {
     }
 
     // One per member that takes a `CancelToken`, beyond `refresh` and
-    // `create` above. Each is called in an already-cancelled task.
+    // `create` above. Each is called in an already-cancelled task. Members
+    // the re-ported plugin dropped (`reloadPage`, `createMany`,
+    // `updateMany`, `setRotation`, `rotateBy`, `deleteMany`,
+    // `updateFlags`, `setContents`) are checked through what replaced them:
+    // `whenSynced`, the field-bag `create` and `update`, `reorder`, and the
+    // selection's field-bag `update`.
 
     /// The fixture's first annotation and its page.
     func cancellable() async throws -> (AnnotationCapability, AnnotationRef, PageRef) {
@@ -225,41 +217,43 @@ extension BaseSuite {
       return (annotations, first.annotationRef, first.page)
     }
 
-    func square(on page: PageRef) -> CreateAnnotationInput {
-      CreateAnnotationInput(page: page, subtype: "square", bounds: Rect(x: 0, y: 0, width: 10, height: 10))
+    let square = #"{"subtype": "square", "box": {"x": 0, "y": 0, "width": 10, "height": 10}}"#
+
+    @Test func whenSyncedCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.whenSynced() }
     }
 
-    @Test func reloadCancelsWhenTheTaskIsCancelled() async throws {
-      let (annotations, _, page) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.reload(page) }
-    }
-
-    @Test func createManyCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func createWithFieldsCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, _, page) = try await cancellable()
       let before = try await annotations.list().count
-      await expectCancelledBeforeItStarts { try await annotations.create([square(on: page)]) }
+      await expectCancelledBeforeItStarts { try await annotations.create(square, on: page) }
       let after = try await annotations.list().count
       expectNoDifference(after, before)
     }
 
     @Test func updateCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.update(ref, AnnotationPatch(contents: "x")) }
+      await expectCancelledBeforeItStarts { try await annotations.update(ref, #"{"contents": "x"}"#) }
     }
 
-    @Test func updateManyCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func reorderCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.update([ref], AnnotationPatch(contents: "x")) }
+      await expectCancelledBeforeItStarts { try await annotations.reorder([ref], to: #""front""#) }
     }
 
-    @Test func setRotationCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func updateRotationCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.setRotation(ref, degrees: 90) }
+      await expectCancelledBeforeItStarts { try await annotations.update(ref, #"{"rotation": 90}"#) }
     }
 
-    @Test func rotateByCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func selectionRotateByDegreesLeavesTheRecordWhenCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.rotate(ref, by: 90) }
+      let before = try await annotations.get(ref)
+      try await annotations.selection.select([ref])
+      await expectCancelledBeforeItStarts { try await annotations.selection.rotate(by: 90) }
+      let after = try await annotations.get(ref)
+      expectNoDifference(after, before)
     }
 
     @Test func deleteCancelsWhenTheTaskIsCancelled() async throws {
@@ -269,9 +263,12 @@ extension BaseSuite {
       #expect(kept != nil)
     }
 
-    @Test func deleteManyCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func deleteLeavesTheSelectionWhenCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.delete([ref]) }
+      try await annotations.selection.select([ref])
+      await expectCancelledBeforeItStarts { try await annotations.delete(ref) }
+      let refs = try await annotations.selection.refs()
+      expectNoDifference(refs, [ref])
     }
 
     // The selection sub-capability, over a selected annotation.
@@ -284,12 +281,12 @@ extension BaseSuite {
 
     @Test func selectionUpdateCancelsWhenTheTaskIsCancelled() async throws {
       let (selection, _) = try await selected()
-      await expectCancelledBeforeItStarts { try await selection.update(AnnotationPropsPatch(opacity: 0.5)) }
+      await expectCancelledBeforeItStarts { try await selection.update(#"{"opacity": 0.5}"#) }
     }
 
-    @Test func selectionUpdateFlagsCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func selectionUpdateOfAFlagCancelsWhenTheTaskIsCancelled() async throws {
       let (selection, _) = try await selected()
-      await expectCancelledBeforeItStarts { try await selection.updateFlags(AnnotationFlagsPatch(hidden: true)) }
+      await expectCancelledBeforeItStarts { try await selection.update(#"{"hidden": true}"#) }
     }
 
     @Test func selectionDeleteCancelsWhenTheTaskIsCancelled() async throws {
@@ -301,7 +298,7 @@ extension BaseSuite {
 
     @Test func selectionRotateByCancelsWhenTheTaskIsCancelled() async throws {
       let (selection, _) = try await selected()
-      await expectCancelledBeforeItStarts { try await selection.rotate(.clockwise) }
+      await expectCancelledBeforeItStarts { try await selection.rotate(by: 90) }
     }
 
     @Test func selectionResetRotationCancelsWhenTheTaskIsCancelled() async throws {
@@ -331,9 +328,12 @@ extension BaseSuite {
       await expectCancelledBeforeItStarts { try await annotations.drafts.finishCreationDraft() }
     }
 
-    @Test func setContentsCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func updateOfContentsLeavesTheRecordWhenCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.drafts.setContents("x", of: ref) }
+      let before = try await annotations.get(ref)
+      await expectCancelledBeforeItStarts { try await annotations.update(ref, #"{"contents": "x"}"#) }
+      let after = try await annotations.get(ref)
+      expectNoDifference(after?.contents, before?.contents)
     }
 
     @Test func endTextEditCancelsWhenTheTaskIsCancelled() async throws {
@@ -343,7 +343,7 @@ extension BaseSuite {
 
     @Test func createFromSelectionCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.drafts.createFromSelection("highlight") }
+      await expectCancelledBeforeItStarts { try await annotations.drafts.createFromSelection(tool: "highlight") }
     }
 
     @Test func armStampCancelsWhenTheTaskIsCancelled() async throws {
@@ -358,7 +358,7 @@ extension BaseSuite {
       let (annotations, _, page) = try await cancellable()
       let source = AnnotationStampSource(bytes: try tinyPng(), mimeType: "image/png")
       await expectCancelledBeforeItStarts {
-        try await annotations.drafts.placeStamp(source, at: AnnotationStampPlacement(page: page, at: Point(x: 50, y: 50)))
+        try await annotations.drafts.placeStamp(source, at: AnnotationStampPlacement(page: page, center: Point(x: 50, y: 50)))
       }
     }
 
@@ -410,7 +410,7 @@ extension BaseSuite {
     @Test func setLinkCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
       await expectCancelledBeforeItStarts {
-        try await annotations.threads.setLink(.uri(uri: "https://example.invalid"), on: ref)
+        try await annotations.threads.setLink(#"{"kind": "uri", "uri": "https://example.invalid"}"#, on: ref)
       }
     }
 
@@ -425,8 +425,7 @@ extension BaseSuite {
       let before = try await annotations.list().count
       let task = Task {
         try await annotations.create(
-          CreateAnnotationInput(
-            page: page, subtype: "square", bounds: Rect(x: 0, y: 0, width: 10, height: 10)))
+          #"{"subtype": "square", "box": {"x": 0, "y": 0, "width": 10, "height": 10}}"#, on: page)
       }
       task.cancel()
       _ = try? await task.value

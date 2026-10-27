@@ -1,0 +1,14 @@
+{
+  "current-inputs-runtime.json": "897c69bfd51ac9089c45fb7bb53eac76201b5b0cdeb245e7fa6b33e330b1ad6b",
+  "original-inputs-runtime.json": "c63f40ac6b94bc433b15e0e7690b3e667249b684ce97d0e83c4e00a294ff8909",
+  "runtime-summary.json": "6b4979ce3b38e301d3d39a2dabf2ed785135a890717df634b515c6a5674197f6",
+  "preservation.json": "41a00c2528a97282a83cdb1513eab5970a85f0bc459a93c22c0aae11ac86f0f2",
+  "diagnostics.json": "be9a1c9ef01c158ae45b0f091f602e370ee859b7d062b58bafb23d10a0a14de2",
+  "original-commands.ts.txt": "efaf89480e0b0534419d95e2452637fd6c33dc66159f010be69ae35bb4d849f6",
+  "accounting.json": "8cb1add65528379a4fb054ed26abc87e40dc18b3949a3460606e8e23496b225c",
+  "original-inputs.json": "d463eae83ca65e49a65b88038620885c2f38bed694bb960b40dd177fd2d09dc5",
+  "named-diagnostics.json": "fc75f8b5b86febf5fc220307d51f366e7df59426f33ac18f5aca3f5829545a16",
+  "source-evidence.json": "3e5eda4b1fd6fc39bddbe055c702fe99d41d70dea720b3e01ae6fdc75313ae39",
+  "task11-current-drift.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+  "prelude-restoration.json": "700566fff27b4cc22b585c861943872e3ecd7a0eab9d91aaf3891a95fc0ca26a"
+}

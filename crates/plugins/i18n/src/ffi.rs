@@ -4,6 +4,10 @@
 //! Packs cross flat (`"zoom.in" -> "Acercar"`): uniffi has no recursive
 //! records, and lookup splits keys on `.`, so a dotted key reaches what the
 //! nested one did.
+//!
+//! Compiled and tested (`tests/ffi.rs`) since Task 13.33. Migrated by
+//! hand to the current contract (`direction`, settings-backed config,
+//! `set_locale` options, `fallback_key`); the Swift surface is unchanged.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -21,9 +25,10 @@ use epdf_kernel::rt::Promise;
 use epdf_kernel::store::Unsubscribe;
 use serde_json::Value;
 
+use crate::contract::LocaleLoader as Loader;
 use crate::contract::{
-    Dir, Loader, Locale, LocaleChangedEvent, LocaleLoadFailedEvent, Param, Params,
-    TranslateOptions, TranslationDictionary, TranslationNode,
+    Locale, LocaleChangedEvent, LocaleLoadFailedEvent, OperationOptions, Param, Params,
+    TextDirection as Direction, TranslateOptions, TranslationDictionary, TranslationNode,
 };
 use crate::controller::I18nCapability;
 use crate::js::JsRecord;
@@ -38,20 +43,20 @@ pub enum TextDirection {
     Rtl,
 }
 
-impl From<Dir> for TextDirection {
-    fn from(dir: Dir) -> Self {
-        match dir {
-            Dir::Ltr => TextDirection::Ltr,
-            Dir::Rtl => TextDirection::Rtl,
+impl From<Direction> for TextDirection {
+    fn from(direction: Direction) -> Self {
+        match direction {
+            Direction::Ltr => TextDirection::Ltr,
+            Direction::Rtl => TextDirection::Rtl,
         }
     }
 }
 
-impl From<TextDirection> for Dir {
-    fn from(dir: TextDirection) -> Self {
-        match dir {
-            TextDirection::Ltr => Dir::Ltr,
-            TextDirection::Rtl => Dir::Rtl,
+impl From<TextDirection> for Direction {
+    fn from(direction: TextDirection) -> Self {
+        match direction {
+            TextDirection::Ltr => Direction::Ltr,
+            TextDirection::Rtl => Direction::Rtl,
         }
     }
 }
@@ -137,7 +142,7 @@ impl TryFrom<LocalePack> for Locale {
         Ok(Locale {
             code: pack.code,
             name: pack.name,
-            dir: pack.dir.map(Dir::from),
+            direction: pack.dir.map(Direction::from),
             translations: unflatten(pack.translations)?,
         })
     }
@@ -150,13 +155,13 @@ impl From<&Locale> for LocalePack {
         LocalePack {
             code: locale.code.clone(),
             name: locale.name.clone(),
-            dir: locale.dir.map(TextDirection::from),
+            dir: locale.direction.map(TextDirection::from),
             translations,
         }
     }
 }
 
-/// Parse a locale file in the web's shape (`{code, name, dir?,
+/// Parse a locale file in the web's shape (`{code, name, direction?,
 /// translations}`, nested) into a flat pack.
 #[uniffi::export]
 pub fn locale_pack_from_json(json: String) -> Result<LocalePack, ViewerError> {
@@ -180,7 +185,7 @@ impl From<crate::LocaleInfo> for LocaleInfo {
         LocaleInfo {
             code: info.code,
             name: info.name,
-            direction: info.dir.into(),
+            direction: info.direction.into(),
             loaded: info.loaded,
         }
     }
@@ -344,12 +349,12 @@ impl I18nConfig {
                 Some(loaders)
             }
         };
+        // A member left out keeps the plugin's default.
         Ok(crate::I18nConfig {
-            locale: self.locale,
+            locale: self.locale.map(Some),
             fallback_locale: self.fallback_locale,
             locales: Some(locales),
             loaders,
-            warn: None,
         })
     }
 }
@@ -377,6 +382,11 @@ impl TryFrom<&LocaleLoadFailedEvent> for LocaleLoadFailure {
                 code: field("code")?,
                 message: field("message")?,
                 capability: field("capability")?,
+                permission: event
+                    .error
+                    .get("permission")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
             },
         })
     }
@@ -419,7 +429,11 @@ impl I18nHandle {
     ) -> Result<String, ViewerError> {
         self.cap
             .call(move |c| {
-                let options = TranslateOptions { params: self::params(params), fallback };
+                let options = TranslateOptions {
+                    params: self::params(params),
+                    fallback,
+                    ..TranslateOptions::default()
+                };
                 Ok(c.t(&key, Some(&options)))
             })
             .await
@@ -438,7 +452,9 @@ impl I18nHandle {
     }
 
     pub async fn locales(&self) -> Result<Vec<LocaleInfo>, ViewerError> {
-        self.cap.call(|c| Ok(c.list_locales().into_iter().map(LocaleInfo::from).collect())).await
+        self.cap
+            .call(|c| Ok(c.list_locales().iter().cloned().map(LocaleInfo::from).collect()))
+            .await
     }
 
     pub async fn loading_locale(&self) -> Result<Option<String>, ViewerError> {
@@ -449,7 +465,9 @@ impl I18nHandle {
     /// unknown code, `operation-failed` when the pack fails to load, and
     /// `operation-cancelled` when a newer call supersedes this one.
     pub async fn set_locale(&self, code: String) -> Result<(), ViewerError> {
-        self.cap.call_promise(move |c| Ok(c.set_locale(&code)), |()| ()).await
+        self.cap
+            .call_promise(move |c| Ok(c.set_locale(&code, OperationOptions::default())), |()| ())
+            .await
     }
 
     pub async fn register_locale(
