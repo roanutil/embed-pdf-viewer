@@ -329,11 +329,17 @@ impl HarnessPlugin for DocumentsAdapter {
 }
 
 /// `PrintOptions` as a step spells them: `pages` and `includeAnnotations`.
+///
+/// A page ref that is not one (`printPagesOf`'s `findPage` finds nothing
+/// for it, `kernel.ts:764-772`) goes in as object number 0, which no page
+/// has, so the kernel refuses it `not-found` in its place in the list, as
+/// TypeScript does; dropping it would print the other pages instead. Only
+/// the message's number differs: `0` where TypeScript prints the value.
 fn print_options(value: Option<&Value>) -> epdf_kernel::print::PrintOptions {
-    let pages = value
-        .and_then(|o| o.get("pages"))
-        .and_then(Value::as_array)
-        .map(|refs| refs.iter().filter_map(epdf_kernel::geometry::PageRef::from_json).collect());
+    use epdf_kernel::geometry::PageRef;
+    let pages = value.and_then(|o| o.get("pages")).and_then(Value::as_array).map(|refs| {
+        refs.iter().map(|r| PageRef::from_json(r).unwrap_or(PageRef::new(0))).collect()
+    });
     let include_annotations =
         value.and_then(|o| o.get("includeAnnotations")).and_then(Value::as_bool);
     epdf_kernel::print::PrintOptions { pages, include_annotations, ..Default::default() }
@@ -743,5 +749,29 @@ fn invoke(step: &Value, kernel: &Kernel, h: &Harness) -> Outcome {
                 Err(error) => Outcome::Threw(error),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use epdf_kernel::geometry::PageRef;
+    use serde_json::json;
+
+    use super::print_options;
+
+    #[test]
+    fn a_malformed_print_page_stays_in_its_place_as_no_page() {
+        let options = print_options(Some(&json!({
+            "pages": [
+                { "kind": "objectNumber", "objectNumber": 3 },
+                { "kind": "index", "index": 0 },
+                { "kind": "objectNumber", "objectNumber": 2.5 },
+                { "kind": "objectNumber", "objectNumber": 5 },
+            ],
+        })));
+        assert_eq!(
+            options.pages,
+            Some(vec![PageRef::new(3), PageRef::new(0), PageRef::new(0), PageRef::new(5)])
+        );
     }
 }

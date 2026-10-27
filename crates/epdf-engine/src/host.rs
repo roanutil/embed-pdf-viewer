@@ -447,6 +447,22 @@ impl JobEnvelope {
             authority,
         })
     }
+
+    /// The request's `authority` as a `ChangeAuthority`. [`Self::parse`]
+    /// requires one for every [`AUTHORITY_KINDS`] kind, so a handler of
+    /// one always has it; anything else is `WireFormat`, as a missing
+    /// field is there.
+    fn change_authority(
+        &self,
+    ) -> Result<crate::features::changes::applier::ChangeAuthority, EngineError> {
+        match &self.authority {
+            Some(wire) => change_authority(wire),
+            None => Err(EngineError::with_message(
+                EngineErrorCode::WireFormat,
+                "the request has no 'authority'",
+            )),
+        }
+    }
 }
 
 /// `WorkerHost`'s refusal of a kind it has no case for.
@@ -1105,7 +1121,7 @@ impl Host {
             }
             // ── Signatures (writes) ──────────────────────────────────
             // `WorkerHost.handleSignaturesPrepare`: the field must be the
-            // request authority's to sign (the session's without one).
+            // request authority's to sign.
             // Answers `{ result }`, the digest a payload its `digest` names.
             "signatures.prepare" => {
                 let input: f::signature::mutator::SignaturePrepareInput = field(body, "input")?;
@@ -1115,10 +1131,7 @@ impl Host {
                 if input.certify.is_some() {
                     session.require(DocCapability::DocSignCertify)?;
                 }
-                let authority = match &job.authority {
-                    Some(wire) => change_authority(wire)?,
-                    None => f::changes::applier::ChangeAuthority::of_session(session),
-                };
+                let authority = job.change_authority()?;
                 let appearance = match &input.appearance {
                     Some(appearance) => Some(resource_payload(&appearance.pdf, &payloads)?),
                     None => None,
@@ -1148,10 +1161,7 @@ impl Host {
                 let op_id = self.op_id_of(&job)?;
                 let session = self.sessions.session_mut(&key)?;
                 require_some_signing(session)?;
-                let authority = match &job.authority {
-                    Some(wire) => change_authority(wire)?,
-                    None => f::changes::applier::ChangeAuthority::of_session(session),
-                };
+                let authority = job.change_authority()?;
                 let result =
                     f::signature::mutator::complete(session, &input, &cms, &op_id, &authority)?;
                 let result = value(&result)?;
@@ -1531,10 +1541,7 @@ impl Host {
                     f::changes::op::Change::Ops(_) => None,
                 };
                 let session = self.sessions.session_mut(&key)?;
-                let authority = match &job.authority {
-                    Some(wire) => change_authority(wire)?,
-                    None => f::changes::applier::ChangeAuthority::of_session(session),
-                };
+                let authority = job.change_authority()?;
                 let answered = f::changes::transaction::run_change(
                     session,
                     &op_id,
@@ -1825,7 +1832,7 @@ impl Host {
             }
             // `WorkerHost.handleFormsImport` and `handleFormsImportValues`: a
             // bundle's design, or its values, as a one-op change, under the
-            // request's authority (the session's without one), its identity
+            // request's authority, its identity
             // the actor (`actorOf`). Answered `{result, mutationSequence,
             // events}`: one `forms.created` or `forms.valueSet` per field.
             "forms.import" | "forms.importValues" => {
@@ -1835,12 +1842,7 @@ impl Host {
                 let limits: f::transfer::BundleLimits =
                     optional(body, "limits")?.unwrap_or_default();
                 let job = JobEnvelope::parse(&header.kind, body)?;
-                let authority = match &job.authority {
-                    Some(wire) => change_authority(wire)?,
-                    None => f::changes::applier::ChangeAuthority::of_session(
-                        self.sessions.session(&key)?,
-                    ),
-                };
+                let authority = job.change_authority()?;
                 let actor = Some(f::annotation::write::draft::AnnotationActor {
                     display_name: authority.identity.display_name.clone(),
                     user_id: authority.identity.user_id.clone(),

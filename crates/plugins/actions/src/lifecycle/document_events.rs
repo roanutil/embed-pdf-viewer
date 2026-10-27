@@ -366,6 +366,8 @@ mod tests {
     struct Printer {
         log: Rc<RefCell<Vec<String>>>,
         latch: Rc<RefCell<Option<ActionsCapability>>>,
+        /// `stage` rejects: the host could not get the pages ready.
+        refuse: bool,
     }
     struct Staged(Rc<RefCell<Vec<String>>>, Rc<RefCell<Option<ActionsCapability>>>);
     impl epdf_kernel::print::StagedPrint for Staged {
@@ -385,15 +387,22 @@ mod tests {
             _: epdf_kernel::print::StageOptions,
         ) -> Promise<Rc<dyn epdf_kernel::print::StagedPrint>> {
             self.log.borrow_mut().push(format!("stage {}", sheets.len()));
+            if self.refuse {
+                return Promise::rejected(epdf_kernel::Error::new("the printer is offline"));
+            }
             Promise::resolved(Rc::new(Staged(self.log.clone(), self.latch.clone()))
                 as Rc<dyn epdf_kernel::print::StagedPrint>)
         }
     }
 
     fn with_printer() -> (Kernel, ActionsCapability, Rc<RefCell<Vec<String>>>) {
+        printing(false)
+    }
+
+    fn printing(refuse: bool) -> (Kernel, ActionsCapability, Rc<RefCell<Vec<String>>>) {
         let log: Rc<RefCell<Vec<String>>> = Rc::default();
         let latch: Rc<RefCell<Option<ActionsCapability>>> = Rc::default();
-        let printer = Printer { log: log.clone(), latch: latch.clone() };
+        let printer = Printer { log: log.clone(), latch: latch.clone(), refuse };
         let (kernel, actions) = opened_with(Some(Rc::new(printer)));
         *latch.borrow_mut() = Some(actions.clone());
         (kernel, actions, log)
@@ -431,6 +440,21 @@ mod tests {
         rt::run_until_stalled();
         assert_eq!(outcome.peek().unwrap().unwrap(), (ActionNodeStatus::Executed, None));
         assert_eq!(*log.borrow(), ["stage 0", "print latch=Some(true)", "dispose"]);
+    }
+
+    #[test]
+    fn with_a_printer_a_print_that_fails_is_executed_and_reported_trigger_failed() {
+        // document-events.ts firePrintThroughAdapter: the request is
+        // executed once `start()` is called; its failure comes later, as a
+        // `trigger-failed` diagnostic `print: <message>`.
+        let (_kernel, actions, log) = printing(true);
+        let (outcome, said) = script_print(&actions, ActionOrigin::User);
+        assert_eq!(outcome, (ActionNodeStatus::Executed, None));
+        assert_eq!(*log.borrow(), ["stage 0"]);
+        let [diagnostic] = said.as_slice() else { panic!("{said:?}") };
+        assert_eq!(diagnostic.code, crate::contract::ActionDiagnosticCode::TriggerFailed);
+        assert_eq!(diagnostic.message, "print: the printer is offline");
+        assert!(!actions.0.print_latch.get());
     }
 
     #[test]

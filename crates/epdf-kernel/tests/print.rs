@@ -14,7 +14,7 @@ use epdf_kernel::{
         HostPrinter, PRINT_HIGH, PRINT_PDF, PRINT_STANDARD, PrintOptions, PrintProgress,
         PrintQuality, PrintSheet, StageOptions, StagedPrint,
     },
-    rt,
+    rt::{self, Resolver},
     signal::AbortSignal,
     store::Unsubscribe,
     token::Token,
@@ -123,20 +123,37 @@ impl DocumentHandle for Doc {
     }
 }
 
+/// An input's `download: true` grants that document `doc.download` beside
+/// the shared permissions. A `handleId` names the handle differently from
+/// the input's `id`, and holds the open in `held` until the test answers it.
 struct TestEngine {
     log: Log,
     permissions: Rc<RefCell<Vec<&'static str>>>,
     docs: RefCell<Vec<Rc<Doc>>>,
+    held: RefCell<Option<(Rc<Doc>, Resolver<Rc<dyn DocumentHandle>>)>>,
 }
 impl Engine for TestEngine {
     fn open(&self, input: Value, _: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
+        let permissions = if input["download"] == json!(true) {
+            let mut own = self.permissions.borrow().clone();
+            own.push("doc.download");
+            Rc::new(RefCell::new(own))
+        } else {
+            self.permissions.clone()
+        };
+        let id = input["handleId"].as_str().or(input["id"].as_str()).unwrap_or("doc");
         let doc = Rc::new(Doc {
-            id: input["id"].as_str().unwrap_or("doc").into(),
+            id: id.into(),
             log: self.log.clone(),
-            security: Rc::new(Security(self.permissions.clone())),
+            security: Rc::new(Security(permissions)),
             events: EventHookSource::new(None),
         });
         self.docs.borrow_mut().push(doc.clone());
+        if input.get("handleId").is_some() {
+            let (opened, resolver) = Promise::pending();
+            *self.held.borrow_mut() = Some((doc, resolver));
+            return opened;
+        }
         Promise::resolved(doc as Rc<dyn DocumentHandle>)
     }
     fn destroy(&self) -> EngineCall<()> {
@@ -153,6 +170,8 @@ struct Printer {
     needs_tap: bool,
     refuse_pdf: bool,
     fail_pdf_print: bool,
+    /// `stagePdf` aborts the job's signal, then rejects with its reason.
+    abort_in_pdf: bool,
     staged: Cell<u32>,
 }
 
@@ -197,6 +216,12 @@ impl HostPrinter for Printer {
         self.pdf
     }
     fn stage_pdf(&self, pdf: Value, options: StageOptions) -> Promise<Rc<dyn StagedPrint>> {
+        if self.abort_in_pdf {
+            self.log.borrow_mut().push("stagePdf aborted".into());
+            let signal = options.signal.expect("a print with a signal");
+            signal.abort_value(Error::abort(Some(json!("stop"))), json!("stop"));
+            return Promise::rejected(Error::abort(Some(json!("stop"))));
+        }
         if self.refuse_pdf {
             self.log.borrow_mut().push("stagePdf refused".into());
             return Promise::rejected(Error::new("no PDF viewer"));
@@ -218,6 +243,7 @@ fn printer(log: &Log) -> Printer {
         needs_tap: false,
         refuse_pdf: false,
         fail_pdf_print: false,
+        abort_in_pdf: false,
         staged: Cell::new(0),
     }
 }
@@ -238,6 +264,7 @@ fn rig(log: &Log, printer: Option<Printer>, plugins: Vec<epdf_kernel::AnyPlugin>
         log: log.clone(),
         permissions: permissions.clone(),
         docs: RefCell::default(),
+        held: RefCell::default(),
     });
     let options = KernelOptions {
         report: Some(Rc::new(|e| panic!("unexpected report: {e}"))),
@@ -544,6 +571,31 @@ fn a_print_cancelled_before_the_dialog_rejects_operation_cancelled() {
 }
 
 #[test]
+fn a_print_cancelled_while_staging_the_pdf_copy_does_not_fall_back_to_pictures() {
+    // stagePrint's catch (kernel.ts:820-825) rethrows when the signal was
+    // aborted: no pictures are rendered in place of the PDF copy.
+    let log: Log = Rc::default();
+    let mut aborting = printer(&log);
+    aborting.pdf = true;
+    aborting.abort_in_pdf = true;
+    let rig = rig(&log, Some(aborting), vec![]);
+    rig.permissions.borrow_mut().extend(["doc.print.high", "doc.download"]);
+    open(&rig.kernel, "doc");
+    let signal = AbortSignal::new();
+    let error = run(rig
+        .kernel
+        .documents()
+        .prepare_print(None, PrintOptions { signal: Some(signal.clone()), ..Default::default() }))
+    .unwrap_err();
+    assert!(signal.aborted());
+    assert_eq!(code(&error), "operation-cancelled", "{error:?}");
+    let lines = take(&rig.log);
+    assert!(lines.contains(&"stagePdf aborted".to_string()), "{lines:?}");
+    assert!(!lines.iter().any(|l| l.contains(":render ")), "no pictures: {lines:?}");
+    assert!(!lines.iter().any(|l| l.starts_with("stage sheets")), "{lines:?}");
+}
+
+#[test]
 fn a_document_scope_sees_the_documents_capability_for_its_document() {
     // documentsInScope (kernel.ts:249-265): every call whose document is
     // optional uses the scope's document instead of the active one.
@@ -560,28 +612,38 @@ fn a_document_scope_sees_the_documents_capability_for_its_document() {
         .build();
     let log: Log = Rc::default();
     let rig = rig(&log, Some(printer(&log)), vec![plugin]);
-    open(&rig.kernel, "a");
+    // Only "a" may be downloaded.
+    run(rig
+        .kernel
+        .documents()
+        .open(OpenSource::Input(json!({ "id": "a", "download": true })), OpenOptions::default()))
+    .unwrap();
     open(&rig.kernel, "b");
     rig.kernel.documents().set_active("b");
     assert_eq!(rig.kernel.documents().get_active_id().as_deref(), Some("b"));
-    let views = views.borrow();
-    assert_eq!(views.len(), 2);
-    for (id, documents) in views.iter() {
-        assert_eq!(documents.get_document(None).map(|d| d.id).as_deref(), Some(id.as_str()));
-        assert_eq!(documents.list_pages(None).len(), 2);
-        assert!(documents.can_print(None));
-        assert!(documents.can_download(None) == rig.kernel.documents().can_download(Some(id)));
-        assert_eq!(documents.get_print_quality(None), Some(PRINT_STANDARD));
-        assert_eq!(documents.get_page_index(PageRef::new(7), None), 1);
-        assert!(documents.get_page(PageRef::new(3), None).is_some());
-        assert_eq!(documents.get_revision(None), rig.kernel.documents().get_revision(Some(id)));
-        // An explicit id still wins.
-        assert_eq!(documents.get_document(Some("b")).map(|d| d.id).as_deref(), Some("b"));
+    {
+        let views = views.borrow();
+        assert_eq!(views.len(), 2);
+        for (id, documents) in views.iter() {
+            assert_eq!(documents.get_document(None).map(|d| d.id).as_deref(), Some(id.as_str()));
+            assert_eq!(documents.list_pages(None).len(), 2);
+            assert!(documents.can_print(None));
+            assert_eq!(documents.can_download(None), id == "a", "{id}");
+            assert_eq!(documents.get_print_quality(None), Some(PRINT_STANDARD));
+            assert_eq!(documents.get_page_index(PageRef::new(7), None), 1);
+            assert!(documents.get_page(PageRef::new(3), None).is_some());
+            assert_eq!(documents.get_revision(None), rig.kernel.documents().get_revision(Some(id)));
+            // An explicit id still wins.
+            assert_eq!(documents.get_document(Some("b")).map(|d| d.id).as_deref(), Some("b"));
+            assert!(!documents.can_download(Some("b")));
+        }
     }
-    // Without a scope, the active document.
+    // Without a scope, the active document, which may not be downloaded.
     assert_eq!(rig.kernel.documents().get_document(None).map(|d| d.id).as_deref(), Some("b"));
+    assert!(!rig.kernel.documents().can_download(None));
+    assert!(rig.kernel.documents().can_download(Some("a")));
     // The view in a's scope prints "a", though "b" is active.
-    let a = views.iter().find(|(id, _)| id == "a").unwrap().1.clone();
+    let a = views.borrow().iter().find(|(id, _)| id == "a").unwrap().1.clone();
     run(a.print(None, PrintOptions::default())).unwrap();
     assert!(log.borrow().iter().any(|l| l.starts_with("a:render 3")), "{:?}", log.borrow());
     assert!(!log.borrow().iter().any(|l| l.starts_with("b:")));
@@ -590,4 +652,34 @@ fn a_document_scope_sees_the_documents_capability_for_its_document() {
     take(&log);
     run(rig.kernel.documents().print(None, PrintOptions::default())).unwrap();
     assert!(log.borrow().iter().any(|l| l.starts_with("b:render 3")), "{:?}", log.borrow());
+}
+
+#[test]
+fn a_documents_view_is_kept_per_document_and_rebuilt_after_a_rekey() {
+    // `session.views` (kernel.ts:537): one view per document, the same on
+    // every get, and cleared when the session takes a new id.
+    let log: Log = Rc::default();
+    let rig = rig(&log, Some(printer(&log)), vec![]);
+    open(&rig.kernel, "a");
+    let first = rig.kernel.capability_any(DOCUMENTS.any(), Some("a")).unwrap();
+    let again = rig.kernel.capability_any(DOCUMENTS.any(), Some("a")).unwrap();
+    assert!(Rc::ptr_eq(&first, &again), "a repeat get is the same view");
+
+    // An engine whose handle names the document "c2" rekeys the "c" session
+    // once the open answers.
+    let opening = rig
+        .kernel
+        .documents()
+        .open(OpenSource::Input(json!({ "id": "c", "handleId": "c2" })), OpenOptions::default());
+    rt::run_until_stalled();
+    let before = rig.kernel.capability_any(DOCUMENTS.any(), Some("c")).unwrap();
+    let (doc, resolver) = rig.engine.held.borrow_mut().take().expect("the open is held");
+    resolver.resolve(doc as Rc<dyn DocumentHandle>);
+    run(opening).unwrap();
+    let after = rig.kernel.capability_any(DOCUMENTS.any(), Some("c2")).unwrap();
+    assert!(!Rc::ptr_eq(&before, &after), "the rekey builds the view again");
+    let after = after.downcast_ref::<epdf_kernel::Documents>().unwrap();
+    assert_eq!(after.get_document(None).map(|d| d.id).as_deref(), Some("c2"));
+    let before = before.downcast_ref::<epdf_kernel::Documents>().unwrap();
+    assert_eq!(before.get_document(None).map(|d| d.id), None, "the old view names no document");
 }

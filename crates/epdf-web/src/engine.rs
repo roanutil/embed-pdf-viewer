@@ -190,6 +190,9 @@ impl JsEngine {
     }
 }
 
+/// `is_local` is the trait default (false) until Task 14: the
+/// `packages/core-wasm` bridge does not report `LOCAL_ENGINE_BRAND` yet
+/// (`.superpowers/sdd/multiplatform-upstream-catchup/task-13.33-web-bridge-proposal.md`).
 impl Engine for JsEngine {
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
         // An open the abort beat by a microtask (the bridge's promise had
@@ -248,6 +251,11 @@ impl Drop for Subscription {
     }
 }
 
+/// `is_local`, `call_with` (call options such as priority and view) and the
+/// object-number pool (`held_object_numbers`, `take_object_number`,
+/// `reserve_object_numbers`, `on_lost_object_numbers`) answer the trait
+/// defaults until Task 14 adds the bridge members they need
+/// (`.superpowers/sdd/multiplatform-upstream-catchup/task-13.33-web-bridge-proposal.md`).
 impl DocumentHandle for JsDocumentHandle {
     fn id(&self) -> String {
         self.id.clone()
