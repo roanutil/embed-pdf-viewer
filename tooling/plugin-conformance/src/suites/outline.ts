@@ -421,7 +421,7 @@ const cases: ScenarioCase[] = [
       ol('get', [ref(99)]),
       ol('isExpanded', [ref(10)]),
       ol('isExpanded', [ref(13)]),
-      ol('ensureLoaded'),
+      ol('ensureLoaded', [], 4),
     ],
   ),
   scenario(

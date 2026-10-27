@@ -29,6 +29,13 @@ selection, i18n and history plugins beside this one. `tests/behavior.rs` pins th
 settlement order, a refused write's rollback, the build with no optional plugin, the local
 refusals, and the turns each read and write settles on, measured on the TypeScript with `tsx`.
 
+The unit tests need the `harness` feature to load. `build.rs` emits the rpath for
+`libembedpdf.dylib` only under `harness`, as every sibling crate's does, but the dev-dependencies
+link the engine whatever the features. So `cargo test --no-default-features --lib` aborts with
+`Library not loaded: @rpath/libembedpdf.dylib`. Run `cargo test -p epdf-plugin-outline --lib`
+instead; the pure build is checked with `cargo clippy --no-default-features --target
+wasm32-unknown-unknown`.
+
 ## Rust-only divergences
 
 None is reached by a vector or by an outline the engine sends.

@@ -996,7 +996,8 @@
             "doc": "a"
           },
           "method": "ensureLoaded",
-          "args": []
+          "args": [],
+          "meter": 4
         }
       ],
       "trace": [
@@ -7030,7 +7031,38 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
