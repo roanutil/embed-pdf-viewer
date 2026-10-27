@@ -136,11 +136,6 @@ pub fn number(x: f64) -> Value {
     epdf_kernel::js::number(x)
 }
 
-/// `Number(string)`.
-pub fn string_to_number(s: &str) -> f64 {
-    epdf_annotation_core::js::string_to_number(s)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -169,8 +164,8 @@ mod tests {
         assert_eq!(f64_of(&json!({ "a": 2.5 }), "a"), 2.5);
         assert!(f64_of(&json!({ "a": "2.5" }), "a").is_nan());
         assert!(f64_of(&json!({}), "a").is_nan());
-        assert_eq!(string_to_number(" 12 "), 12.0);
-        assert!(string_to_number("x").is_nan());
+        assert_eq!(epdf_kernel::mirror::string_to_number(" 12 "), 12.0);
+        assert!(epdf_kernel::mirror::string_to_number("x").is_nan());
     }
 
     #[test]

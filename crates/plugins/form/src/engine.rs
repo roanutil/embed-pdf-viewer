@@ -669,7 +669,7 @@ fn widget_named_by(widgets: &[Value], state: &str) -> i64 {
     if named >= 0 || !digits {
         return named;
     }
-    let at = crate::value::string_to_number(state);
+    let at = epdf_kernel::mirror::string_to_number(state);
     if at < widgets.len() as f64 { at as i64 } else { -1 }
 }
 

@@ -351,7 +351,7 @@ pub fn index_loaded_fields(previous: &FieldIndex, snapshot: Rc<Snapshot>) -> Fie
     for (number, version) in &previous.picture_versions {
         // `Number(number)` as the key again: the same key for every key a
         // number wrote.
-        let key = number_key(crate::value::string_to_number(number));
+        let key = number_key(epdf_kernel::mirror::string_to_number(number));
         versions.insert(key, version + 1.0);
     }
     for row in snapshot.widgets() {
@@ -914,7 +914,7 @@ pub fn widget_at(
         if !box_contains(&bx, x, y) {
             continue;
         }
-        let number = crate::value::string_to_number(key);
+        let number = epdf_kernel::mirror::string_to_number(key);
         let Some(field) = field_for_widget(index, number) else { continue };
         let area = bx.width * bx.height;
         if best.as_ref().is_none_or(|(_, best_area)| area < *best_area) {
