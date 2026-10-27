@@ -248,7 +248,9 @@ impl Error {
         self.members.get("code").and_then(Value::as_str)
     }
 
-    /// `toPluginErrorInfo(error)`: `{code, message, capability}`.
+    /// `toPluginErrorInfo(error)` (`errors.ts:58-65`): `{code, message,
+    /// capability, permission}`, a member the error lacks as `null`. The one
+    /// converter: [`to_plugin_error_info`] reads this into the typed struct.
     pub fn plugin_error_info(&self) -> Value {
         serde_json::json!({
             "code": self.members.get("code").cloned().unwrap_or(Value::Null),
@@ -259,17 +261,18 @@ impl Error {
     }
 }
 
-/// `toPluginErrorInfo(error)` as the typed `PluginErrorInfo`, for a
-/// `PluginError` (`to_plugin_error`'s answer): its `code`, `message`,
-/// `capability` and `permission`.
+/// [`Error::plugin_error_info`] as the typed `PluginErrorInfo` a contract
+/// carries. A `PluginError` (`to_plugin_error`'s answer) always has `code`
+/// and `capability`; on another error the struct's strings read a missing
+/// one as empty, where the JSON says `null`.
 pub fn to_plugin_error_info(error: &Error) -> crate::types::PluginErrorInfo {
-    let text =
-        |key: &str| error.member(key).and_then(Value::as_str).unwrap_or_default().to_string();
+    let info = error.plugin_error_info();
+    let text = |key: &str| info[key].as_str().unwrap_or_default().to_string();
     crate::types::PluginErrorInfo {
         code: text("code"),
-        message: error.message.clone(),
+        message: text("message"),
         capability: text("capability"),
-        permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
+        permission: info["permission"].as_str().map(str::to_string),
     }
 }
 
