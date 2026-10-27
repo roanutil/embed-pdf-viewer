@@ -572,6 +572,13 @@ mod tests {
         assert_eq!(json_number(9_007_199_254_740_992.0).to_string(), "9007199254740992");
         assert_eq!(json_number(-9_007_199_254_740_994.0).to_string(), "-9007199254740994");
         assert_eq!(json_number(1e19).to_string(), "10000000000000000000");
+        // 2^63 is past `i64`: written from `u64`, not cut to `i64::MAX`.
+        assert_eq!(json_number(9_223_372_036_854_775_808.0).to_string(), "9223372036854775808");
+        // From 2^64 up, and below `i64`, the float: the same number read
+        // back, never a `u64` cut to its range.
+        let two_to_64 = 18_446_744_073_709_551_616.0;
+        assert_eq!(json_number(two_to_64), Value::from(two_to_64));
+        assert_eq!(json_number(-1e19), Value::from(-1e19));
         assert_eq!(json_number(f64::NAN), json!({ "$number": "NaN" }));
         assert_eq!(json_number(f64::NEG_INFINITY), json!({ "$number": "-Infinity" }));
     }

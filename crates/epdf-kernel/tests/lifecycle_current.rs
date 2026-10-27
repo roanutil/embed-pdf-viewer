@@ -950,3 +950,83 @@ fn watch_runs_its_handler_only_when_the_selection_moves() {
     assert_eq!(selects.get(), after_close, "close unsubscribed the second watch");
     run(kernel.destroy()).unwrap();
 }
+
+/// `bursts.ts`: the first event of a transaction of more than one event
+/// holds the store's notifications, and the transaction's last event lets
+/// them go at once, not when the next event arrives. A rename made inside
+/// the burst lands on the document's record.
+#[test]
+fn a_burst_holds_notifications_until_its_last_event() {
+    rt::reset();
+    let document = doc(false);
+    let kernel = Kernel::new(Rc::new(TestEngine(document.clone())), vec![], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let woken = Rc::new(Cell::new(0));
+    let count = woken.clone();
+    kernel.subscribe(Rc::new(move || {
+        count.set(count.get() + 1);
+        Ok(())
+    }));
+    let event = |index: u32| json!({"type":"metadata.changed","origin":{"kind":"remote","tx":{"id":"burst","index":index,"count":2}}});
+    document.events.emit(&event(0));
+    let held = woken.get();
+    kernel.documents().rename("doc", "held.pdf");
+    assert_eq!(woken.get(), held, "the burst holds the store's notifications");
+    document.events.emit(&event(1));
+    assert!(woken.get() > held, "its last event lets them go");
+    assert_eq!(kernel.documents().get("doc").unwrap().name.as_deref(), Some("held.pdf"));
+    run(kernel.destroy()).unwrap();
+}
+
+/// `ctx.notify()` wakes the store's readers without an action, and
+/// `ctx.serialQueue(key)` is one queue per key for the instance
+/// (`controller.ts`): an operation queued under the same key waits for the
+/// one before it. An engine that keeps the default `list_fonts` lists none.
+#[test]
+fn notify_wakes_readers_and_a_serial_queue_is_one_per_key() {
+    use epdf_kernel::plugin::Controller;
+    rt::reset();
+    assert!(TestEngine(doc(false)).list_fonts().is_empty());
+    let document = doc(false);
+    let retained: Rc<RefCell<Option<Controller<Value, CoreAction>>>> = Rc::default();
+    let save = retained.clone();
+    let token = Token::<()>::new("queued");
+    let plugin = define::<Value, CoreAction>("queued")
+        .document_scoped()
+        .create(&token, move |ctx| {
+            *save.borrow_mut() = Some(ctx);
+            Ok(((), None))
+        })
+        .build();
+    let kernel =
+        Kernel::new(Rc::new(TestEngine(document.clone())), vec![plugin], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let ctx = retained.borrow().clone().unwrap();
+    let woken = Rc::new(Cell::new(0));
+    let count = woken.clone();
+    kernel.subscribe(Rc::new(move || {
+        count.set(count.get() + 1);
+        Ok(())
+    }));
+    ctx.notify();
+    assert_eq!(woken.get(), 1, "notify wakes the readers once");
+
+    let (gate, open) = Promise::<()>::pending();
+    let first = ctx.serial_queue("k").run(move || Ok(gate));
+    let started = Rc::new(Cell::new(false));
+    let flag = started.clone();
+    let second = ctx.serial_queue("k").run(move || {
+        flag.set(true);
+        Ok(Promise::resolved(()))
+    });
+    rt::run_until_stalled();
+    assert!(!started.get(), "the second operation waits for the first");
+    open.resolve(());
+    rt::run_until_stalled();
+    assert!(started.get());
+    assert!(matches!(first.peek(), Some(Ok(()))));
+    assert!(matches!(second.peek(), Some(Ok(()))));
+    run(kernel.destroy()).unwrap();
+}
