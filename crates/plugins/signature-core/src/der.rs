@@ -139,15 +139,17 @@ impl Node {
 
 // ── reading ──────────────────────────────────────────────────────────────────
 
-/// How deep elements may nest. Real CMS stays near a dozen levels; asn1js has
-/// no cap but throws a RangeError when the JS stack runs out, which the
-/// callers turn into `malformed`. The cap keeps the recursion off the native
-/// or wasm stack's end, and bounds the `raw` copies to this many times the
-/// input.
-const MAX_DEPTH: usize = 64;
+/// How deep elements may nest: asn1js 3.0.10's own limit
+/// ([`crate::asn1js::MAX_DEPTH`]), past which it refuses the input. Real CMS
+/// stays near a dozen levels. The cap keeps the recursion off the native or
+/// wasm stack's end, and bounds the `raw` copies to this many times the
+/// input (H1).
+const MAX_DEPTH: usize = crate::asn1js::MAX_DEPTH;
 
-/// `asn1js.fromBER(bytes)`: the first element, or `None` where asn1js answers
-/// `offset: -1` (or would run out of stack).
+/// The first element of `bytes`, as asn1js reads its tree, or `None` where
+/// it cannot be read. Whether asn1js accepts the bytes at all is
+/// [`crate::asn1js::from_ber`]'s answer; a caller that must refuse what
+/// asn1js refuses asks that first.
 pub fn from_ber(bytes: &[u8]) -> Option<Node> {
     read(bytes, 0, 0).map(|(node, _)| node)
 }

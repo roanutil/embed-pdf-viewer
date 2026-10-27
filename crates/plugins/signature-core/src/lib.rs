@@ -18,6 +18,7 @@
 //! as are trust anchors ([`trust::TrustPort`]) and key storage
 //! ([`signers::PersonalKeyStore`]).
 
+pub mod asn1js;
 pub mod cert;
 pub mod cms;
 pub mod crypto;

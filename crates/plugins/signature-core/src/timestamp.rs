@@ -3,6 +3,7 @@
 
 use epdf_kernel::Error;
 
+use crate::asn1js;
 use crate::cert::{AlgId, Certificate};
 use crate::cms::{RawSigner, attribute, cms_signature_value, signature_algorithm_for};
 use crate::der::{self, Node};
@@ -216,85 +217,27 @@ fn match_members(slots: &[(Slot, bool)], input: &[Node]) -> Option<Vec<Option<us
     last.then_some(taken)
 }
 
-/// What asn1js's `fromBER` does beyond the reader in `der`, in document
-/// order. More than [`ASN1JS_MAX_NODES`] elements, a constructed encoding
-/// of a primitive-only universal type, or a constructed OCTET or BIT STRING
-/// with a member of another type fails the parse (`None` from `fromBER`,
-/// here `Err(false)`); a GeneralizedTime its `fromString` cannot read
-/// throws (`Err(true)`).
-fn asn1js_parse_checks(node: &Node, nodes: &mut usize) -> Result<(), bool> {
-    const PRIMITIVE_ONLY: &[u32] = &[1, 2, 5, 6, 9, 13, 14, 23, 24, 31, 32, 33, 34];
-    count_node(nodes)?;
-    if node.class == UNIVERSAL && node.constructed {
-        if PRIMITIVE_ONLY.contains(&node.tag) {
-            return Err(false);
-        }
-        if (node.tag == der::OCTET_STRING || node.tag == der::BIT_STRING)
-            && node.children.iter().any(|c| !c.is_universal(node.tag))
-        {
-            return Err(false);
-        }
-    }
-    for child in &node.children {
-        asn1js_parse_checks(child, nodes)?;
-    }
-    if is_indefinite(node) {
-        // The end-of-contents marker is an element to asn1js too.
-        count_node(nodes)?;
-    }
-    if node.class == UNIVERSAL && !node.constructed && node.tag == der::GENERALIZED_TIME {
-        der::asn1js_generalized_time(&node.content).ok_or(true)?;
-    }
-    Ok(())
-}
-
-/// asn1js 3.0.10's `DEFAULT_MAX_NODES`: one more element fails the parse.
-/// asn1js also counts the elements it finds by speculatively decoding each
-/// primitive OCTET STRING's contents; those are not counted here.
-const ASN1JS_MAX_NODES: usize = 10_000;
-
-fn count_node(nodes: &mut usize) -> Result<(), bool> {
-    *nodes += 1;
-    if *nodes > ASN1JS_MAX_NODES { Err(false) } else { Ok(()) }
-}
-
-/// Whether a constructed element used the indefinite length form.
-fn is_indefinite(node: &Node) -> bool {
-    if !node.constructed {
-        return false;
-    }
-    let mut at = 1;
-    if node.raw.first().is_some_and(|b| b & 0x1f == 0x1f) {
-        while node.raw.get(at).is_some_and(|b| b & 0x80 != 0) {
-            at += 1;
-        }
-        at += 1;
-    }
-    node.raw.get(at) == Some(&0x80)
-}
-
 fn tst_info_error(detail: &str) -> ParseError {
     ParseError::Cms { reason: "malformed", message: format!("TSTInfo does not parse: {detail}") }
 }
 
 /// `readTimestampInfo`: a token's TSTInfo (the encapsulated content of an
 /// RFC 3161 token), read as `new pkijs.TSTInfo({ schema })` reads it. Fails
-/// with `CmsError` as the TypeScript throws it, or with the plain `Error`
-/// asn1js throws for a GeneralizedTime it cannot read.
+/// with `CmsError` as the TypeScript throws it, or with what asn1js throws
+/// reading the bytes (a GeneralizedTime its `fromString` cannot read, a
+/// BMPString of odd length, ...: [`asn1js::from_ber`]).
 ///
 /// A GeneralizedTime without `Z` is local time to asn1js; this reads it as
 /// asn1js does on a host whose time zone is UTC.
 pub fn read_timestamp_info(e_content: &[u8]) -> Result<TimestampInfo, ParseError> {
     let not_ber =
         || ParseError::Cms { reason: "malformed", message: "TSTInfo is not valid BER".into() };
+    match asn1js::from_ber(e_content) {
+        asn1js::Verdict::Accepted => {}
+        asn1js::Verdict::Refused => return Err(not_ber()),
+        asn1js::Verdict::Throws(error) => return Err(ParseError::Other(error)),
+    }
     let node = der::from_ber(e_content).ok_or_else(not_ber)?;
-    asn1js_parse_checks(&node, &mut 0).map_err(|throws| {
-        if throws {
-            ParseError::Other(Error::new("Wrong input string for conversion"))
-        } else {
-            not_ber()
-        }
-    })?;
     let schema_error = || tst_info_error(&der::schema_error("TSTInfo").message);
     if !same_id(&node, UNIVERSAL, der::SEQUENCE, true) {
         return Err(schema_error());

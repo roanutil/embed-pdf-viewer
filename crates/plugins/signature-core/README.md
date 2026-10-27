@@ -72,33 +72,33 @@ These are recorded rather than fixed; the TypeScript is the oracle.
 
 ## Deliberate deviations from the TypeScript
 
-- The CMS parse accepts encodings pkijs refuses. A constructed OCTET STRING for the signature,
-  the message-digest or the ESS certHash is joined and read (`parse.rs:188`, `:400`, `:434`), and
-  the reader takes a constructed encoding of a primitive-only type (a constructed INTEGER version)
-  or an OCTET STRING with a non-OCTET STRING member. asn1js refuses the last two as not valid BER,
-  and pkijs's schema wants a primitive OCTET STRING in the first. So a genuine signature
-  re-encoded that way verifies as `valid` here and as `invalid` (or a `malformed` gate refusal)
-  in the TypeScript. Nobody without the key can use this: the signed attributes still verify
-  under the carried certificate and the message digest still binds the `/ByteRange`. The code fix
-  is carried to Task 14 (`docs/research/rust-plugins-branch-review.md`, Task 13.9). Other
-  malformed input can refuse with different text, and one kind is refused only here: `der`
-  refuses a constructed element whose last member runs past the declared length, which asn1js
-  reads on while the buffer lasts. That is stricter than the TypeScript and applies to the whole
-  CMS parse, so it is kept.
+- Every BER read the TypeScript makes with `asn1js.fromBER` (the CMS, a TSTInfo, a certificate,
+  a subject key identifier) first asks `asn1js::from_ber` whether asn1js 3.0.10 would accept it.
+  That walk follows asn1js's `localFromBER` byte for byte: its 100-level and 10,000-element
+  limits, the elements it counts while speculatively decoding each primitive OCTET STRING (and
+  each BIT STRING whose unused-bits octet is 0), its identifier, length and value-block refusals,
+  and the readers that throw (a GeneralizedTime `fromString` cannot read, a BMPString of odd
+  length, a UniversalString whose length is not a multiple of 4). `tests/asn1js_parity.rs`
+  carries the TypeScript's verdicts: re-encodings of `rsaCades`, the node limit over a whole CMS
+  (9,817 extra NULLs read, 9,818 do not) and a TSTInfo (9,989 NULL parameters read, 9,990 do
+  not), and the depth limit. Against 47,413 fuzzed and limit-straddling inputs the walk and
+  `asn1js.fromBER` gave the same answer every time. The signature, message-digest, ESS certHash
+  and certificate `extnValue` read as pkijs reads them: a constructed signature or `extnValue`
+  fails pkijs's schema, and a constructed message-digest or certHash reads as no bytes, which is
+  `valueHexView` of a constructed OCTET STRING. `der` still builds the tree, and where its tree
+  and asn1js's differ it is the stricter one or only the text differs. It refuses a constructed
+  element whose last member runs past the declared length, which asn1js reads on while the
+  buffer lasts, and it reads a constructed string's content as members, so content that is not
+  BER fails here and reads as bytes in asn1js. One throw is not modelled:
+  `String.fromCharCode.apply` over a string of more than about 120,000 octets throws a
+  RangeError at a threshold set by the host's stack.
 - `timestamp::read_timestamp_info` reads a TSTInfo as `new pkijs.TSTInfo({ schema })` does. The
   schema match follows asn1js's `compareSchema`, including its rule that a trailing member no
   optional slot can place fails the whole schema, and genTime goes through a port of asn1js's
   `GeneralizedTime.fromString`. `tests/timestamp.rs` replays 66 TSTInfo inputs with the verdicts
-  pkijs 3.4.0 and asn1js 3.0.10 gave for them. Two corners stay apart. A GeneralizedTime without
-  `Z` is local time to asn1js, so its value depends on the host's time zone; this reads it as a
-  host on UTC does. Accepting or refusing it doesn't depend on the zone, and the gate never reads
-  the time. And asn1js counts toward its 10,000-node limit the elements it finds by speculatively
-  decoding each primitive OCTET STRING's contents; this reader counts real elements only, so a
-  TSTInfo just under the limit can pass here where asn1js refuses it (9,990 NULL parameters: one
-  speculative element from the imprint tips asn1js over). Everywhere else this reader is the
-  stricter one or only the text differs: it stops at 64 levels (H1) where asn1js allows 100,
-  refuses the length overrun above, and reports a later BER error where asn1js first throws for
-  a bad GeneralizedTime.
+  pkijs 3.4.0 and asn1js 3.0.10 gave for them. A GeneralizedTime without `Z` is local time to
+  asn1js, so its value depends on the host's time zone; this reads it as a host on UTC does.
+  Accepting or refusing it doesn't depend on the zone, and the gate never reads the time.
 - A constructed eContent joins its primitive pieces only, as asn1js's `OctetString.getValue()`
   does: a nested constructed piece adds no bytes.
 - An ECDSA hash shorter than half the curve's field (SHA-256 over P-521) is left-padded before
