@@ -3,28 +3,52 @@ public import EmbedPDFBindings
 import Foundation
 import ImageIO
 
+/// Configuration for stamp previews and dynamic asset evaluation.
 public typealias StampConfig = EmbedPDFBindings.StampConfig
+/// The metadata and ordered asset identifiers of a PDF-backed stamp library.
 public typealias StampLibrary = EmbedPDFBindings.StampLibrary
+/// A library asset's identifier, label, intrinsic PDF-point size and source page.
 public typealias StampAsset = EmbedPDFBindings.StampAsset
+/// Whether an asset represents a stamp, signature or initials.
 public typealias StampAssetKind = EmbedPDFBindings.StampAssetKind
+/// An ink, text, image or PDF source used to author an asset.
 public typealias StampMark = EmbedPDFBindings.StampMark
+/// The source, library and metadata for a new stamp asset.
 public typealias StampAddAssetInput = EmbedPDFBindings.StampAddAssetInput
+/// Library metadata and fallback asset settings used during PDF import.
 public typealias StampImportOptions = EmbedPDFBindings.StampImportOptions
+/// The identifier, kind and categories of a newly created library.
 public typealias StampCreateLibraryOptions = EmbedPDFBindings.StampCreateLibraryOptions
+/// Changes to a library's editable name and categories.
 public typealias StampLibraryPatch = EmbedPDFBindings.StampLibraryPatch
+/// Changes to an asset's label, subject and categories.
 public typealias StampAssetPatch = EmbedPDFBindings.StampAssetPatch
+/// Library, kind and category criteria for listing assets.
 public typealias StampAssetFilter = EmbedPDFBindings.StampAssetFilter
+/// Applied, skipped and failed placements from stamping several pages.
 public typealias StampBatchResult = EmbedPDFBindings.StampBatchResult
+/// The page and error associated with a failed stamp placement.
 public typealias StampBatchFailure = EmbedPDFBindings.StampBatchFailure
+/// The error details associated with a stamp operation.
 public typealias StampErrorInfo = EmbedPDFBindings.StampErrorInfo
+/// The library or asset mutation that changed a library's canonical bytes.
 public typealias StampLibraryChangeReason = EmbedPDFBindings.StampLibraryChangeReason
+/// A library, asset or document arming change.
 public typealias StampEvent = EmbedPDFBindings.StampEvent
+/// A persisted library identifier paired with its canonical PDF bytes.
 public typealias StoredStampLibrary = EmbedPDFBindings.StoredStampLibrary
+/// Host storage for listing, writing and deleting canonical library PDFs.
+///
+/// `list()` supplies identifier/byte pairs to restore. `put(id:bytes:)` replaces a
+/// library's stored PDF, and `delete(id:)` removes it. Methods are synchronous host
+/// callbacks; report storage failures with `HostError`.
 public typealias StampLibraryStore = EmbedPDFBindings.StampLibraryStore
 
 /// A stamp preview: the encoded bytes and, decoded once, the image.
 public struct StampPreview: @unchecked Sendable {
+  /// Encoded preview bytes, or `nil` when rendering supplied no bytes.
   public let data: Data?
+  /// The encoded preview's MIME type, when supplied by the engine.
   public let mimeType: String?
   /// `nil` when there are no bytes or ImageIO can't read them.
   public let image: CGImage?
@@ -58,14 +82,17 @@ public struct StampCapability: Sendable {
     try await bridged { try await handle.libraries(kinds: kinds) }
   }
 
+  /// Returns library metadata for `id`, or `nil` for an unknown library.
   public func library(_ id: String) async throws(PDFError) -> StampLibrary? {
     try await bridged { try await handle.library(id: id) }
   }
 
+  /// Lists assets matching `filter`; `nil` includes every asset.
   public func assets(_ filter: StampAssetFilter? = nil) async throws(PDFError) -> [StampAsset] {
     try await bridged { try await handle.assets(filter: filter) }
   }
 
+  /// Returns asset metadata for `id`, or `nil` for an unknown asset.
   public func asset(_ id: String) async throws(PDFError) -> StampAsset? {
     try await bridged { try await handle.asset(id: id) }
   }
@@ -97,6 +124,7 @@ public struct StampCapability: Sendable {
     try await bridged { try await handle.canPlace(documentId: document?.id) }
   }
 
+  /// Returns whether the asset engine exposes the operations required to import libraries.
   public func canImport() async throws(PDFError) -> Bool {
     try await bridged { try await handle.canImport() }
   }
@@ -110,6 +138,7 @@ public struct StampCapability: Sendable {
     }
   }
 
+  /// Changes a library's editable metadata and updates its canonical PDF.
   public func updateLibrary(_ id: String, _ patch: StampLibraryPatch) async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.updateLibrary(id: id, patch: patch, cancel: token) }
   }
@@ -125,6 +154,7 @@ public struct StampCapability: Sendable {
     }
   }
 
+  /// Removes a library and its assets from the viewer catalog.
   public func deleteLibrary(_ id: String) async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.deleteLibrary(id: id, cancel: token) }
   }
@@ -146,10 +176,12 @@ public struct StampCapability: Sendable {
     }
   }
 
+  /// Changes an asset's editable metadata and updates its library PDF.
   public func updateAsset(_ id: String, _ patch: StampAssetPatch) async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.updateAsset(id: id, patch: patch, cancel: token) }
   }
 
+  /// Removes an asset from its library and updates the library PDF.
   public func deleteAsset(_ id: String) async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.deleteAsset(id: id, cancel: token) }
   }
@@ -161,11 +193,20 @@ public struct StampCapability: Sendable {
     }
   }
 
+  /// Copies an asset within its library and returns the new identifier.
+  ///
+  /// `label` optionally replaces the display label.
   public func duplicateAsset(_ id: String, label: String? = nil) async throws(PDFError) -> String {
     try await bridgedCancellable { token in try await handle.duplicateAsset(id: id, label: label, cancel: token) }
   }
 
   /// The next tap in `document` places the asset.
+  ///
+  /// - Parameters:
+  ///   - assetId: The library asset to place on the next tap.
+  ///   - document: The target document, with annotation and interaction installed.
+  ///   - targetWidth: Optional placed width in page-space points; the asset's
+  ///     intrinsic size is used when no width override is supplied.
   public func arm(_ assetId: String, in document: DocumentInfo, targetWidth: Double? = nil) async throws(PDFError) {
     try await bridgedCancellable { token in
       try await handle.armAsset(documentId: document.id, assetId: assetId, targetWidth: targetWidth, cancel: token)
@@ -173,6 +214,14 @@ public struct StampCapability: Sendable {
   }
 
   /// Place the asset at `point` (page space) and return the annotation.
+  ///
+  /// - Parameters:
+  ///   - assetId: The library asset to place.
+  ///   - document: The open document to receive the annotation.
+  ///   - page: A page reference belonging to the target document.
+  ///   - point: The target location in page space.
+  ///   - targetWidth: Width in page-space points; `nil` uses the asset's intrinsic size.
+  ///   - rotation: Rotation in degrees; `nil` uses zero.
   public func place(
     _ assetId: String, in document: DocumentInfo, on page: PageRef, at point: Point,
     targetWidth: Double? = nil, rotation: Double? = nil
@@ -196,10 +245,12 @@ public struct StampCapability: Sendable {
     }
   }
 
+  /// Cancels the prepared asset placement in `document`.
   public func disarm(in document: DocumentInfo) async throws(PDFError) {
     try await bridged { try await handle.disarm(documentId: document.id) }
   }
 
+  /// Returns the asset awaiting placement in `document`, or `nil` when none is armed.
   public func armedAsset(in document: DocumentInfo) async throws(PDFError) -> StampAsset? {
     try await bridged { try await handle.armedAsset(documentId: document.id) }
   }
@@ -239,8 +290,12 @@ extension EventRelay: StampEventListener where Event == StampEvent {
 
 /// A `StampLibraryStore` over one file per library in `directory`.
 public final class FileStampLibraryStore: StampLibraryStore, Sendable {
+  /// The directory containing one percent-encoded library identifier and `.pdf` file per library.
   public let directory: URL
 
+  /// Creates a file-backed store, creating `directory` and its parents if needed.
+  ///
+  /// Throws the file-system error if the directory cannot be created.
   public init(directory: URL) throws {
     self.directory = directory
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -251,6 +306,9 @@ public final class FileStampLibraryStore: StampLibraryStore, Sendable {
     return directory.appending(path: "\(safe).pdf")
   }
 
+  /// Reads `.pdf` files in filename order and decodes their filenames into library identifiers.
+  ///
+  /// Throws `HostError.Failed` if listing or reading a library fails.
   public func list() throws -> [StoredStampLibrary] {
     do {
       return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
@@ -265,6 +323,9 @@ public final class FileStampLibraryStore: StampLibraryStore, Sendable {
     }
   }
 
+  /// Atomically writes or replaces the PDF bytes for `id`.
+  ///
+  /// Throws `HostError.Failed` if writing fails.
   public func put(id: String, bytes: Data) throws {
     do {
       try bytes.write(to: url(id), options: .atomic)
@@ -273,6 +334,9 @@ public final class FileStampLibraryStore: StampLibraryStore, Sendable {
     }
   }
 
+  /// Deletes the stored PDF for `id`; an already missing file is ignored.
+  ///
+  /// Throws `HostError.Failed` for other deletion failures.
   public func delete(id: String) throws {
     do {
       try FileManager.default.removeItem(at: url(id))
@@ -284,6 +348,11 @@ public final class FileStampLibraryStore: StampLibraryStore, Sendable {
 }
 
 extension PDFViewer {
+  /// Returns the viewer-wide stamp library capability.
+  ///
+  /// Enable `ViewerConfig.stamp` before starting the viewer. The capability retains the viewer.
+  ///
+  /// - Throws: `PDFError` if the stamp plugin is unavailable.
   public func stamps() async throws(PDFError) -> StampCapability {
     let handle = try await bridged { try await host.stamp() }
     return StampCapability(handle: handle, viewer: self)

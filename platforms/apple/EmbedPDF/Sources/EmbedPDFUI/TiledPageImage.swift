@@ -1,11 +1,13 @@
 import EmbedPDF
 import SwiftUI
 
-/// Paints a `TiledPageModel`: the base raster stretched over the page, and
-/// the tiles placed over it in page points, coarse under fine.
+/// Composes a page's budgeted base image and detail tiles in SwiftUI.
 ///
-/// The view is laid out in the page's unrotated space. Give it the page's
-/// unrotated aspect ratio, and rotate it as a whole for a rotated page.
+/// Give the view the page's unrotated aspect ratio and bounded dimensions;
+/// rotate the completed view as a whole if needed. The view starts updates
+/// when scale, visibility, or revision changes, acknowledges displayed tiles,
+/// and releases page demand on disappearance. Retain the model in the host.
+/// Images are decorative; the host supplies accessible labels and text.
 public struct TiledPageImage: View {
   let model: TiledPageModel
   let unrotatedSize: CGSize
@@ -14,25 +16,36 @@ public struct TiledPageImage: View {
   let revision: Int
   let onPhase: (@MainActor (Phase) -> Void)?
 
-  /// Where an update is, for hosts that time renders.
+  /// Main-actor notifications for a view-driven raster update.
+  ///
+  /// These describe update execution, not guaranteed successful rendering.
   public enum Phase: Sendable {
-    /// A new demand is being declared.
+    /// The view is about to submit its current scale and visible region.
     case began
-    /// The base is current and every tile the plan wants has its pixels.
+    /// The base is current and a nonwaiting plan has all its requested pixels.
+    ///
+    /// May occur for a base-only plan; does not confirm physical display.
     case painted
-    /// The tile plan has stopped changing.
+    /// The update returned while its SwiftUI task was not cancelled.
+    ///
+    /// Can also occur after a suppressed error or the model's polling timeout;
+    /// it is not proof that the tile plan settled successfully.
     case settled
   }
 
+  /// Creates a tiled image driven by the supplied page model.
+  ///
   /// - Parameters:
+  ///   - model: Retained model for one page and the surface's shared demand.
   ///   - unrotatedSize: The page's size in points, without its rotation.
-  ///   - deviceScale: Device pixels per page point at the current zoom.
+  ///   - deviceScale: Positive device pixels per page point at the current zoom.
   ///   - visibleRect: Unrotated page points; `nil` is the whole page and
-  ///     `.zero` is a page built but off screen.
-  ///   - revision: Change it when the page's pixels change, after
-  ///     `RenderCapability.invalidate`, so the base is fetched again.
-  ///   - onPhase: Called as each update begins and settles. A cancelled
-  ///     update never settles.
+  ///     a zero-area rectangle is a page built but off screen.
+  ///   - revision: Host revision token, initially zero. Change it after
+  ///     `RenderCapability.invalidate` to restart the update and check the base
+  ///     key, even when scale and visibility are unchanged.
+  ///   - onPhase: Optional main-actor update observer. A cancelled task does
+  ///     not send `.settled`; `.painted` is not guaranteed for every update.
   public init(
     model: TiledPageModel,
     unrotatedSize: CGSize,
@@ -49,6 +62,7 @@ public struct TiledPageImage: View {
     self.onPhase = onPhase
   }
 
+  /// The base-and-tile composition, with demand updates and page cleanup.
   public var body: some View {
     GeometryReader { geometry in
       let scale = geometry.size.width / max(unrotatedSize.width, 1)

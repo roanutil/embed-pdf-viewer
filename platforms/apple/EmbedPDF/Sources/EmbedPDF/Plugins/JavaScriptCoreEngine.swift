@@ -2,9 +2,17 @@ public import EmbedPDFBindings
 import Foundation
 import JavaScriptCore
 
+/// A JavaScript realm with globals retained across synchronous evaluations.
+///
+/// Evaluation runs from the kernel thread, which waits for its result. Implementations must honor
+/// timeLimitMs and return a string completion value as value, an exception as threw, or timedOut.
+/// A timed-out realm cannot be reused. dispose must release the realm and be idempotent.
 public typealias ScriptEngine = EmbedPDFBindings.ScriptEngine
+/// A host factory that creates independent realms for each document and detached script run.
 public typealias ScriptEngineFactory = EmbedPDFBindings.ScriptEngineFactory
+/// An evaluation's string completion value, exception detail, or timeout outcome.
 public typealias ScriptEvaluation = EmbedPDFBindings.ScriptEvaluation
+/// Alerts, script error, and disposal state observed by an isolated engine check.
 public typealias ScriptCheck = EmbedPDFBindings.ScriptCheck
 
 /// PDF JavaScript in JavaScriptCore, one `JSContext` per realm. Pass it as
@@ -16,8 +24,10 @@ public typealias ScriptCheck = EmbedPDFBindings.ScriptCheck
 /// exits. Memory and stack budgets aren't enforced; JavaScriptCore's own
 /// stack limit applies.
 public final class JavaScriptCoreEngineFactory: ScriptEngineFactory, Sendable {
+  /// Creates a factory that gives each script realm its own JavaScriptCore context and execution queue.
   public init() {}
 
+  /// Creates an independent script realm and initializes its context on a dedicated execution queue.
   public func create() throws -> any ScriptEngine {
     JavaScriptCoreEngine()
   }
@@ -84,6 +94,7 @@ final class JavaScriptCoreEngine: ScriptEngine, @unchecked Sendable {
   }
 }
 
+/// Runs an isolated PDF JavaScript sample to check a host engine implementation.
 public enum ScriptEngineCheck {
   /// Runs `source` once in a fresh realm from `factory`, outside any
   /// document, with the default budget.

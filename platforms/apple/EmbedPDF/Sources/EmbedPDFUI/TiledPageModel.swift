@@ -2,35 +2,47 @@ import CoreGraphics
 import EmbedPDF
 import Observation
 
-/// One page painted from the render plugin's two planes: a base raster held
-/// to the full-page budget, and the tile plane above it once the view's
-/// demand outgrows that budget.
+/// Main-actor raster state for one page with a budgeted base and detail tiles.
 ///
-/// Everything here is in the page's unrotated space: demand, visible rect,
-/// and tile rects. A host showing a rotated page rotates the whole view.
+/// Retain one model per page, sharing a `RenderViewDemand` across pages in the
+/// same reader surface. Demand, visibility, and tile rectangles all use the
+/// page's unrotated point space, with x rightward and y downward. Rotate the
+/// composed view as a whole when displaying a rotated page.
 ///
-/// The FFI reports base rasters through `RenderCapability.events`, but no
-/// event says a tile finished, so `update` polls `plan()` until nothing is in
-/// flight and the plan's `stamp` stops changing.
+/// ``update(deviceScale:unrotatedWidth:visibleRect:onPainted:)`` polls for tiles
+/// rather than subscribing to render events. The host must request an update
+/// after pixel changes. Errors are suppressed; a missing base or incomplete
+/// tiles do not provide a diagnostic error property.
 @MainActor
 @Observable
 public final class TiledPageModel {
-  /// A tile with its pixels, placed in page points.
+  /// An owned tile image positioned in unrotated page points.
+  ///
+  /// Equality compares identity, rectangle, and stacking order, not image bytes.
   public struct Tile: Identifiable, Equatable {
+    /// Opaque raster-source key used for display acknowledgments.
     public let id: String
+    /// Placement rectangle in unrotated page points with a top-left origin.
     public let rect: Rect
+    /// Stacking order; larger values draw above coarser tiles.
     public let z: Double
+    /// Immutable image that owns its pixel buffer independently of the document.
     public let image: CGImage
 
+    /// Compares tile identity and placement without comparing pixel bytes.
     public static func == (lhs: Tile, rhs: Tile) -> Bool {
       lhs.id == rhs.id && lhs.rect == rhs.rect && lhs.z == rhs.z
     }
   }
 
+  /// Budgeted whole-page raster, initially `nil`; retained by ``release()``.
   public private(set) var base: CGImage?
+  /// Current plan's available tile images in paint order; initially empty.
   public private(set) var tiles: [Tile] = []
 
+  /// Stable page reference served by this model for its entire lifetime.
   public let page: PageRef
+  /// Whether both raster planes include annotations; fixed at initialization.
   public let includeAnnotations: Bool
 
   @ObservationIgnored private let render: RenderCapability
@@ -52,8 +64,16 @@ public final class TiledPageModel {
   /// poll forever.
   @ObservationIgnored static let pollLimit: Duration = .seconds(5)
 
-  /// `demand` is the view's handle from `RenderCapability.viewDemand(_:)`,
-  /// shared by every page the view shows.
+  /// Creates a tiled raster model for one page in a reader surface.
+  ///
+  /// - Parameters:
+  ///   - render: Render capability for the page's open document.
+  ///   - demand: Surface handle from `RenderCapability.viewDemand(_:)`, shared
+  ///     across this surface's pages. The owner must dispose it when done.
+  ///   - page: Page belonging to the renderer's document.
+  ///   - includeAnnotations: Whether to include annotations; defaults to `true`.
+  ///
+  /// The model does not dispose the shared demand handle or close the document.
   public init(render: RenderCapability, demand: RenderViewDemand, page: PageRef, includeAnnotations: Bool = true) {
     self.render = render
     self.demand = demand
@@ -61,17 +81,24 @@ public final class TiledPageModel {
     self.includeAnnotations = includeAnnotations
   }
 
-  /// Declares what the view needs, refreshes the base raster, and paints
-  /// tiles until the plan settles.
+  /// Declares raster demand, refreshes the base, and polls for detail tiles.
+  ///
+  /// Polls at 32-millisecond intervals until the plan stays quiet for 250
+  /// milliseconds, the calling task is cancelled, a plan request fails, or
+  /// five seconds elapse. Returns without throwing and suppresses capability
+  /// failures; returning does not guarantee that every requested pixel exists.
+  /// Retains an earlier image if refreshing fails. Cancel an earlier update
+  /// before starting another for the same model.
   ///
   /// - Parameters:
-  ///   - deviceScale: Device pixels per page point at the current zoom.
-  ///   - unrotatedWidth: The page's width in points, without its rotation.
+  ///   - deviceScale: Positive device pixels per page point at the current zoom.
+  ///   - unrotatedWidth: Positive page width in points, without its rotation.
   ///   - visibleRect: The visible region in unrotated page points, y-down;
-  ///     `nil` is the whole page and `.zero` is a page built but off screen.
-  ///   - onPainted: Called once, when the base is current and every tile
-  ///     the plan wants has its pixels: what the view shows from then on is
-  ///     sharp. The update keeps polling after it, until the plan settles.
+  ///     `nil` is the whole page and a zero-area rectangle is a page built but off screen.
+  ///   - onPainted: Main-actor callback invoked at most once after the base is
+  ///     current and every tile in a nonwaiting plan has pixels. It can run
+  ///     for a base-only plan. It acknowledges available pixels, not display
+  ///     completion, and may never run on error, cancellation, or timeout.
   public func update(
     deviceScale: Double,
     unrotatedWidth: Double,
@@ -97,8 +124,13 @@ public final class TiledPageModel {
     await pollUntilSettled(onPainted: onPainted)
   }
 
-  /// Report that `key`'s tile has been on screen, so the plan can drop the
-  /// coarser tiles under it.
+  /// Acknowledges that a tile has appeared so coarser covering tiles can retire.
+  ///
+  /// - Parameter key: A key from ``Tile/id`` currently held by this model.
+  ///
+  /// Ignores unknown and already acknowledged keys; suppresses capability
+  /// errors and starts background polling. ``TiledPageImage`` calls this after
+  /// a short display delay; custom painters should call it after presentation.
   public func tileDisplayed(_ key: String) async {
     guard !painted.contains(key), images[key] != nil else { return }
     painted.insert(key)
@@ -106,8 +138,14 @@ public final class TiledPageModel {
     startPolling()
   }
 
-  /// Stops painting the page and drops its pixels. The raster store keeps
-  /// its cached bytes for the next time the page shows.
+  /// Releases this page's tile demand and clears local tile images.
+  ///
+  /// Cancels background polling started by ``tileDisplayed(_:)`` and suppresses
+  /// release failures. The base raster and its key remain retained, and the
+  /// render store may keep cached bytes. Cancel any caller-owned ``update(deviceScale:unrotatedWidth:visibleRect:onPainted:)``
+  /// task before releasing to avoid repopulating tiles. Dispose the shared
+  /// demand separately after all pages stop using it; discard this model to
+  /// release its retained base image.
   public func release() async {
     pollTask?.cancel()
     pollTask = nil

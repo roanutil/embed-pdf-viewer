@@ -1,12 +1,19 @@
 public import EmbedPDFBindings
 public import Foundation
 
+/// An insertion position anchored before or after a page, at an index or at the end.
 public typealias PageEditPlacement = EmbedPDFBindings.PageEditPlacement
+/// A relative quarter or half turn applied to a page's current rotation.
 public typealias PageEditTurn = EmbedPDFBindings.PageEditTurn
+/// An absolute page rotation in quarter-turn increments.
 public typealias PageEditRotation = EmbedPDFBindings.PageEditRotation
+/// The size in PDF points, count and placement of new blank pages.
 public typealias PageEditBlankOptions = EmbedPDFBindings.PageEditBlankOptions
+/// The source page indexes and placement used when inserting PDF bytes.
 public typealias PageEditBytesOptions = EmbedPDFBindings.PageEditBytesOptions
+/// The resulting document page order and page metadata after a structural edit.
 public typealias PageEditLayout = EmbedPDFBindings.PageEditLayout
+/// The inserted page references and resulting document layout.
 public typealias PageEditInsertion = EmbedPDFBindings.PageEditInsertion
 
 /// Structural page edits, addressed by `PageRef`: rotate, move, delete,
@@ -30,6 +37,7 @@ public struct PageEditCapability: Sendable {
     try await bridgedCancellable { token in try await handle.rotateBy(pages: pages, turn: turn, cancel: token) }
   }
 
+  /// Sets every supplied page to the same absolute quarter-turn rotation and returns the resulting layout.
   public func setRotation(_ rotation: PageEditRotation, of pages: [PageRef]) async throws(PDFError)
     -> PageEditLayout
   {
@@ -40,10 +48,8 @@ public struct PageEditCapability: Sendable {
 
   /// Reorder pages as a contiguous block at `placement`. `.end` puts the
   /// block last. An index counts the pages left once the moved ones are
-  /// detached, as the engine does, so an `.index` or an `.after` past them
-  /// is refused with `invalid-input`, as it is in the TypeScript plugin.
-  /// (That plugin's `'end'` sends the full page count and is refused too;
-  /// here it works.)
+  /// detached. An `.index` or `.after` placement beyond that remaining
+  /// range throws `invalid-input`.
   public func movePages(_ pages: [PageRef], to placement: PageEditPlacement) async throws(PDFError)
     -> PageEditLayout
   {
@@ -57,6 +63,7 @@ public struct PageEditCapability: Sendable {
     try await bridgedCancellable { token in try await handle.deletePages(pages: pages, cancel: token) }
   }
 
+  /// Inserts blank pages using the supplied size, count and placement and returns their references and layout.
   public func insertBlank(_ options: PageEditBlankOptions = PageEditBlankOptions()) async throws(PDFError)
     -> PageEditInsertion
   {
@@ -98,6 +105,12 @@ public struct PageEditCapability: Sendable {
 }
 
 extension PDFViewer {
+  /// Returns the pageedit capability bound to an open document.
+  ///
+  /// The viewer must have the `pageEdit` plugin enabled. The capability retains the viewer
+  /// and becomes invalid when the document closes.
+  ///
+  /// - Throws: `PDFError` if the plugin or document scope is unavailable.
   public func pageEdit(for document: DocumentInfo) async throws(PDFError) -> PageEditCapability {
     let handle = try await bridged { try await host.pageEdit(documentId: document.id) }
     return PageEditCapability(handle: handle, viewer: self)

@@ -2,25 +2,41 @@ public import CoreGraphics
 public import EmbedPDFBindings
 import Foundation
 
+/// The raster policy and defaults installed for a document renderer.
 public typealias RenderConfig = EmbedPDFBindings.RenderConfig
+/// Options for rasterizing a complete PDF page.
 public typealias RenderFullPageOptions = EmbedPDFBindings.RenderFullPageOptions
+/// The scale quantization applied when choosing a reusable raster source.
 public typealias RenderQuantize = EmbedPDFBindings.RenderQuantize
+/// The requested raster width or scale and annotation inclusion for a page.
 public typealias RenderPageOptions = EmbedPDFBindings.RenderPageOptions
+/// Which page appearance layers an invalidation affects.
 public typealias RenderInvalidateScope = EmbedPDFBindings.RenderInvalidateScope
+/// A page and the error that prevented it from rendering in a batch.
 public typealias RenderBatchFailure = EmbedPDFBindings.RenderBatchFailure
+/// An event describing raster invalidations and render completion or failure.
 public typealias RenderEvent = EmbedPDFBindings.RenderEvent
+/// The policy that chooses reusable raster scales and tile behavior.
 public typealias RenderPolicy = EmbedPDFBindings.RenderPolicy
+/// The scale lattice used to conform render sources.
 public typealias RenderLatticePolicy = EmbedPDFBindings.RenderLatticePolicy
+/// The conformed dimensions and scale used for a page raster.
 public typealias RenderViewport = EmbedPDFBindings.RenderViewport
+/// The settings a view uses when painting rendered page content.
 public typealias RenderPaintSettings = EmbedPDFBindings.RenderPaintSettings
+/// The visible region and scale a view requests for one page's tiles.
 public typealias RenderPageViewDemand = EmbedPDFBindings.RenderPageViewDemand
+/// A tile's raster source and placement information.
 public typealias RenderTileSource = EmbedPDFBindings.RenderTileSource
+/// The current tiles a view should paint for a page.
 public typealias RenderTilePlan = EmbedPDFBindings.RenderTilePlan
 
 /// A rendered page. `image` owns its pixels: it outlives the document and
 /// the viewer.
 public struct RenderedPage: @unchecked Sendable {
+  /// The raster's width in device pixels.
   public let width: Int
+  /// The raster's height in device pixels.
   public let height: Int
   /// Device pixels per PDF point across the page's width.
   public let scale: Double
@@ -30,13 +46,17 @@ public struct RenderedPage: @unchecked Sendable {
 
 /// One page of a batch.
 public struct RenderedPageResult: Sendable {
+  /// The durable identity of the page that rendered successfully.
   public let page: PageRef
+  /// The owned page raster produced for this batch entry.
   public let rendered: RenderedPage
 }
 
 /// A batch, best effort per page, each list in input order.
 public struct RenderBatchResult: Sendable {
+  /// Successfully rendered pages, preserving their order in the request.
   public let applied: [RenderedPageResult]
+  /// Pages that failed to render, preserving their order in the request.
   public let failed: [RenderBatchFailure]
 }
 
@@ -117,6 +137,7 @@ public struct RenderCapability: Sendable {
     try await bridged { try await handle.invalidate(pages: pages, scope: scope) }
   }
 
+  /// Returns the policy used to conform reusable raster sources and tile plans.
   public func renderPolicy() async throws(PDFError) -> RenderPolicy {
     try await bridged { try await handle.renderPolicy() }
   }
@@ -132,14 +153,18 @@ public struct RenderCapability: Sendable {
     return try RenderedPage(image)
   }
 
+  /// Returns the cache identity of the raster source selected for this page, scale, and annotation setting.
   public func sourceKey(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil) async throws(PDFError) -> String {
     try await bridged { try await handle.sourceKey(page: page, scale: scale, includeAnnotations: includeAnnotations) }
   }
 
+  /// Returns the raster dimensions and scale selected by policy for the requested device
+  /// pixels per PDF point.
   public func conformViewport(_ page: PageRef, scale: Double) async throws(PDFError) -> RenderViewport {
     try await bridged { try await handle.conformViewport(page: page, scale: scale) }
   }
 
+  /// Returns the current settings for painting page rasters in a view.
   public func paintSettings() async throws(PDFError) -> RenderPaintSettings {
     try await bridged { try await handle.paintSettings() }
   }
@@ -161,10 +186,14 @@ public struct RenderViewDemand: Sendable {
   let handle: RenderViewDemandHandle
   let render: RenderCapability
 
+  /// Updates this view's visible region and raster demand for the page, allowing the renderer
+  /// to plan its tiles.
   public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil) async throws(PDFError) {
     try await bridged { try await handle.setDemand(page: page, demand: demand, includeAnnotations: includeAnnotations) }
   }
 
+  /// Returns the page's current tile plan for this view; tile images can become available
+  /// after the plan is produced.
   public func plan(_ page: PageRef) async throws(PDFError) -> RenderTilePlan {
     try await bridged { try await handle.plan(page: page) }
   }
@@ -175,9 +204,13 @@ public struct RenderViewDemand: Sendable {
     return try RenderedPage(image)
   }
 
+  /// Records that this view is painting the tile identified by key.
   public func markPainted(_ page: PageRef, key: String) async throws(PDFError) { try await bridged { try await handle.markPainted(page: page, key: key) } }
+  /// Records that this view no longer paints the tile identified by key.
   public func markUnpainted(_ page: PageRef, key: String) async throws(PDFError) { try await bridged { try await handle.markUnpainted(page: page, key: key) } }
+  /// Releases this view's demand and tile state for the page.
   public func release(_ page: PageRef) async throws(PDFError) { try await bridged { try await handle.release(page: page) } }
+  /// Releases all page demand associated with this view; call when the view stops using the renderer.
   public func dispose() async throws(PDFError) { try await bridged { try await handle.dispose() } }
 }
 
@@ -220,6 +253,8 @@ extension EventRelay: RenderEventListener where Event == RenderEvent {
 }
 
 extension PDFViewer {
+  /// Returns this document's renderer; enable render support in the viewer configuration
+  /// before requesting it.
   public func render(in document: DocumentInfo) async throws(PDFError) -> RenderCapability {
     let handle = try await bridged { try await host.render(documentId: document.id) }
     return RenderCapability(handle: handle, viewer: self)

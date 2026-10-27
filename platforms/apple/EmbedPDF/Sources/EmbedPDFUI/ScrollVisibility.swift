@@ -1,13 +1,16 @@
 import SwiftUI
 
 extension View {
-  /// Writes whether any part of this view is on screen in its scroll view,
-  /// for `PageImageView(isOnScreen:)` and other renders that should drop to
-  /// a placeholder off screen.
+  /// Tracks scroll visibility for selecting a page's raster resolution.
   ///
-  /// iOS 18 reports scroll visibility directly. iOS 17 falls back to
-  /// appear and disappear, which in a lazy stack also counts the neighbors
-  /// the stack keeps built.
+  /// On iOS 18 and later, writes `true` when the scroll visibility threshold
+  /// of 1% is met. On iOS 17, uses appear/disappear callbacks; lazy stacks may
+  /// report built neighboring pages as visible even outside the viewport.
+  ///
+  /// - Parameter isOnScreen: Destination binding, typically passed to
+  ///   ``PageImageView/init(render:page:scale:isOnScreen:)``. The modifier writes
+  ///   it as visibility changes; choose the initial value in the host.
+  /// - Returns: A view that reports visibility through the supplied binding.
   public func trackingScrollVisibility(_ isOnScreen: Binding<Bool>) -> some View {
     modifier(ScrollVisibilityModifier(isOnScreen: isOnScreen))
   }

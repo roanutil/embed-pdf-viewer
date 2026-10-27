@@ -30,8 +30,15 @@ import Foundation
 /// logging rather than matching. `code` is optional only so a handler can
 /// build one without a code; nothing the viewer throws leaves it `nil`.
 public struct PDFError: Error, Sendable, Equatable {
+  /// The reporting error type, intended for diagnostics rather than branching.
   public let name: String
+  /// The stable failure category used for application recovery decisions.
+  ///
+  /// Viewer calls supply a code. Application-defined callback failures may omit one.
   public let code: String?
+  /// A human-readable diagnostic that can include an underlying engine code.
+  ///
+  /// Match ``code`` for recovery instead of parsing this message.
   public let detail: String
 
   init(_ error: ViewerError) {
@@ -61,6 +68,11 @@ public struct PDFError: Error, Sendable, Equatable {
 
   /// For a handler or port that fails with a kernel code of its own, such
   /// as `permission-denied`. The completion it fails passes the code on.
+  ///
+  /// - Parameters:
+  ///   - name: The reporting type or subsystem name, for logging.
+  ///   - code: A plugin error category, or `nil` for an uncategorized host error.
+  ///   - detail: A useful description of the failure.
   public init(name: String, code: String?, detail: String) {
     self.name = name
     self.code = code

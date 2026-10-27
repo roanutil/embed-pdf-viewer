@@ -2,15 +2,22 @@ public import EmbedPDFBindings
 public import Foundation
 public import Security
 
-/// A `SignatureSigner` over a `SecKey` that never leaves the Keychain (or
-/// the Secure Enclave), and its certificate chain. Build one from a
-/// `SecIdentity` the app imported, or from a key and certificates.
+/// Signs PDF signature data with a retained Security framework key and certificate chain.
+///
+/// Create one from a `SecIdentity` or a `SecKey` and leaf-first certificates,
+/// then install it with `PDFViewer.setSigner(_:)`. Signing uses the supplied key
+/// through Security framework; a Keychain or Secure Enclave key retains its own
+/// storage and access-control policy. This type does not import the key into either store.
 public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
   let key: SecKey
   let chain: [Data]
   let keyAlgorithm: SignatureKeyAlgorithm
   let fieldSize: Int
 
+  /// Creates a signer from an identity's private key and certificate chain.
+  ///
+  /// Throws `KeychainSignerError.unreadableIdentity` if the private key or leaf certificate cannot be read,
+  /// or `KeychainSignerError.unreadableKey` if the key's attributes cannot be read.
   public convenience init(identity: SecIdentity) throws {
     var key: SecKey?
     var certificate: SecCertificate?
@@ -20,7 +27,14 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
     try self.init(privateKey: key, certificates: Self.chain(from: certificate))
   }
 
-  /// `certificates` leaf first.
+  /// Creates a signer that retains `privateKey` and copies the certificate chain as DER.
+  ///
+  /// - Parameters:
+  ///   - privateKey: The key used by Security framework for each signing operation.
+  ///   - certificates: The signer certificate first, followed by its issuing chain.
+  /// - Throws: `KeychainSignerError.unreadableKey` if key attributes cannot be read.
+  ///
+  /// The initializer does not verify that the certificates match the key.
   public init(privateKey: SecKey, certificates: [SecCertificate]) throws {
     guard let attributes = SecKeyCopyAttributes(privateKey) as? [CFString: Any],
       let type = attributes[kSecAttrKeyType] as? String,
@@ -32,8 +46,11 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
     fieldSize = (bits + 7) / 8
   }
 
+  /// Returns the supplied certificate chain as DER bytes, leaf certificate first.
   public func certificateChain() throws -> [Data] { chain }
+  /// Returns ECDSA for an EC key, or RSA PKCS#1 for other key types.
   public func algorithm() -> SignatureKeyAlgorithm { keyAlgorithm }
+  /// Returns SHA-256, the digest used by this signer.
   public func digest() -> SignatureDigest { .sha256 }
 
   /// Called on the kernel thread, and returns at once: the signing, and any
@@ -52,6 +69,10 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
 
   /// Sign `message` on the calling thread, which waits for any prompt the
   /// key raises. A cancelled prompt throws `operation-cancelled`.
+  ///
+  /// - Parameter message: The message bytes to hash with SHA-256 and sign.
+  /// - Returns: An RSA PKCS#1 signature, or fixed-width ECDSA `r || s` bytes.
+  /// - Throws: `ViewerError` with `operation-failed` when signing or ECDSA decoding fails.
   public func sign(message: Data) throws -> Data {
     let algorithm: SecKeyAlgorithm =
       keyAlgorithm == .ecdsa ? .ecdsaSignatureMessageX962SHA256 : .rsaSignatureMessagePKCS1v15SHA256
@@ -89,7 +110,11 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
     return chain
   }
 
-  /// An RSA private key from a PKCS#8 PEM (`-----BEGIN PRIVATE KEY-----`).
+  /// Reads an RSA private key from an unencrypted PKCS#8 PEM (`-----BEGIN PRIVATE KEY-----`).
+  ///
+  /// - Parameter pkcs8PEM: PEM text containing the PKCS#8 private key.
+  /// - Returns: A Security framework key; this method does not save it to the Keychain.
+  /// - Throws: `KeychainSignerError.unreadableKey` for malformed or unsupported key data.
   public static func privateKey(pkcs8PEM: String) throws -> SecKey {
     // SecKeyCreateWithData takes PKCS#1 for RSA: strip the PKCS#8 wrapper.
     let pkcs1 = try unwrapPKCS8(pemBody(pkcs8PEM))
@@ -101,7 +126,11 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
     return key
   }
 
-  /// A certificate from a PEM (`-----BEGIN CERTIFICATE-----`).
+  /// Reads a certificate from PEM text (`-----BEGIN CERTIFICATE-----`).
+  ///
+  /// - Parameter pem: PEM text containing one DER-encoded certificate.
+  /// - Returns: The parsed Security framework certificate.
+  /// - Throws: `KeychainSignerError.unreadableCertificate` for invalid base64 or certificate data.
   public static func certificate(pem: String) throws -> SecCertificate {
     guard let certificate = SecCertificateCreateWithData(nil, try pemBody(pem, else: .unreadableCertificate) as CFData)
     else {
@@ -127,7 +156,11 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
   }
 }
 
+/// Failures reading Security framework identities, keys, certificates or signature encodings.
 public enum KeychainSignerError: Error, Sendable {
+  /// The identity lacks a readable key or certificate (`unreadableIdentity`), key
+  /// attributes or encoding cannot be read (`unreadableKey`), certificate data
+  /// cannot be parsed (`unreadableCertificate`), or ECDSA DER is malformed (`badSignature`).
   case unreadableIdentity, unreadableKey, unreadableCertificate, badSignature
 }
 
@@ -174,8 +207,10 @@ struct DERReader {
 /// Trust anchors the app supplies, DER. iOS can't list the system's roots,
 /// so anchors are the app's own (its organisation's CA, say).
 public final class TrustAnchors: SignatureTrust, Sendable {
+  /// The app-supplied trust-anchor certificates in DER format.
   public let certificates: [Data]
 
+  /// Creates a trust provider from DER bytes without parsing or validating them.
   public init(der: [Data]) { certificates = der }
 
   /// Throws `unreadableCertificate` for a PEM that isn't a certificate.
@@ -183,5 +218,6 @@ public final class TrustAnchors: SignatureTrust, Sendable {
     certificates = try pem.map { SecCertificateCopyData(try KeychainSigner.certificate(pem: $0)) as Data }
   }
 
+  /// Returns the app-supplied DER trust anchors for signature validation.
   public func anchors() throws -> [Data] { certificates }
 }

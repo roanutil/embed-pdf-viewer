@@ -14,7 +14,9 @@ instead, from `xcrun simctl list devices`:
 `-destination 'platform=iOS Simulator,id=<UDID>'`.
 
 The package has two products over a third, internal target. `EmbedPDF` is the
-Swift facade and `EmbedPDFUI` is its SwiftUI layer; both are empty for now.
+Swift facade and `EmbedPDFUI` is its SwiftUI layer. Start with the
+[Swift package documentation](EmbedPDF/README.md) for installation, API guides,
+and commands to build both DocC catalogs.
 `EmbedPDFBindings` is the internal target under them, holding the uniffi
 Swift for every crate in the archive: `epdf_uniffi`, `epdf_ffi` and
 `epdf_viewer_host` today, and each plugin's `ffi` module as it lands. It

@@ -5,7 +5,10 @@ internal import EmbedPDFBindings
 public struct Registration: Sendable {
   let handle: RegistrationHandle
 
-  /// Idempotent.
+  /// Removes the registration; repeated calls have no additional effect.
+  ///
+  /// Call this when the tool, handler, command, or locale leaves its owning
+  /// application scope. Releasing the Swift value alone does not unregister it.
   public func unregister() {
     handle.unregister()
   }

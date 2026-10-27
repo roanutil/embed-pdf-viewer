@@ -1,16 +1,27 @@
 import EmbedPDF
 import SwiftUI
 
-/// A scrolling, zooming reader over a document's stage. Each visible page
-/// sits where the stage put it and renders at the stage's render scale.
+/// A SwiftUI reader with drag scrolling, pinch zoom, and double-tap zoom.
+///
+/// Positions the stage's visible pages and renders each as a whole-page image
+/// subject to ``StageReaderModel/maxPagePixels``. The host supplies bounded
+/// layout space and retains the model. The view manages stage observation and
+/// viewport sizing for its lifetime; it does not close the document.
+///
+/// This rendering surface does not add selection, search highlights, annotation
+/// controls, or an accessible text layer. Provide those in the host as needed.
 public struct StageReaderView: View {
   let model: StageReaderModel
   @Environment(\.displayScale) private var displayScale
 
+  /// Creates a reader using a retained model for one open document.
+  ///
+  /// - Parameter model: Main-actor reader state shared by this reader instance.
   public init(model: StageReaderModel) {
     self.model = model
   }
 
+  /// Visible page images and gestures inside a clipped stage viewport.
   public var body: some View {
     GeometryReader { geometry in
       ZStack(alignment: .topLeading) {

@@ -1,22 +1,39 @@
 public import EmbedPDFBindings
 import Foundation
 
+/// A command's identity, presentation, routing, and optional handler hooks.
 public typealias CommandDefinition = EmbedPDFBindings.CommandDefinition
+/// A command behavior supplied by a registered runner.
 public typealias CommandHook = EmbedPDFBindings.CommandHook
+/// The panel routing information attached to a command.
 public typealias CommandPanel = EmbedPDFBindings.CommandPanel
+/// The document and invocation context passed to command hooks.
 public typealias CommandContext = EmbedPDFBindings.CommandContext
+/// The host callbacks that execute commands and derive their presentation state.
 public typealias CommandRunner = EmbedPDFBindings.CommandRunner
+/// The callback a command runner must finish or fail after execution.
 public typealias CommandCompletion = EmbedPDFBindings.CommandCompletion
+/// The registered presentation and routing information for a command.
 public typealias CommandSummary = EmbedPDFBindings.CommandSummary
+/// A command with enabled, active, visible, and accent hooks evaluated for a context.
 public typealias ResolvedCommand = EmbedPDFBindings.ResolvedCommand
+/// An accent applied to a resolved command's icon.
 public typealias IconAccent = EmbedPDFBindings.IconAccent
+/// The outcome of attempting to execute or route a command.
 public typealias CommandExecuteResult = EmbedPDFBindings.CommandExecuteResult
+/// The reason a command execution request was rejected.
 public typealias CommandRejectReason = EmbedPDFBindings.CommandRejectReason
+/// A registered keyboard shortcut associated with a command.
 public typealias CommandShortcutBinding = EmbedPDFBindings.CommandShortcutBinding
+/// The menu routing target associated with a command.
 public typealias CommandMenuTarget = EmbedPDFBindings.CommandMenuTarget
+/// A key and modifier state to match against command shortcuts.
 public typealias CommandKeyStroke = EmbedPDFBindings.CommandKeyStroke
+/// An event describing command registry and execution changes.
 public typealias CommandsEvent = EmbedPDFBindings.CommandsEvent
+/// An event describing a command execution.
 public typealias CommandExecuted = EmbedPDFBindings.CommandExecuted
+/// The error reported when a command runner fails.
 public typealias CommandExecutionFailure = EmbedPDFBindings.CommandExecutionFailure
 
 /// A `CommandRunner` from closures. `enabled`, `active`, `visible` and
@@ -34,6 +51,8 @@ public final class CommandHandler: CommandRunner, Sendable {
   let visible: (@Sendable (CommandContext) -> Bool)?
   let accent: (@Sendable (CommandContext) -> IconAccent?)?
 
+  /// Creates a handler from optional execution and state-derivation closures. Only supplied
+  /// closures appear in ``hooks``.
   public init(
     run: (@Sendable (CommandContext) async throws -> Void)? = nil,
     enabled: (@Sendable (CommandContext) -> Bool)? = nil,
@@ -59,6 +78,8 @@ public final class CommandHandler: CommandRunner, Sendable {
     return hooks
   }
 
+  /// Invokes the asynchronous run closure and finishes or fails the supplied completion;
+  /// finishes immediately when no run closure was supplied.
   public func run(context: CommandContext, completion: CommandCompletion) {
     guard let runBody else {
       completion.finish()
@@ -74,6 +95,8 @@ public final class CommandHandler: CommandRunner, Sendable {
     }
   }
 
+  /// Evaluates a Boolean hook synchronously; absent enabled and visible hooks default to
+  /// true, and absent active defaults to false.
   public func derive(context: CommandContext, hook: CommandHook) throws -> Bool {
     switch hook {
     case .enabled: enabled?(context) ?? true
@@ -83,6 +106,8 @@ public final class CommandHandler: CommandRunner, Sendable {
     }
   }
 
+  /// Evaluates the optional accent hook for the supplied context, returning nil when no
+  /// accent closure was supplied.
   public func iconAccent(context: CommandContext) throws -> IconAccent? {
     accent?(context)
   }
@@ -134,36 +159,47 @@ public struct CommandsCapability: Sendable {
     Registration(handle: try await bridged { try await handle.registerCommand(definition: definition, replace: replace) })
   }
 
+  /// Registers command definitions as a group and returns a registration that can explicitly
+  /// remove them; replace permits existing identifiers to be replaced.
   public func register(_ definitions: [CommandDefinition], replace: Bool = false)
     async throws(PDFError) -> Registration
   {
     Registration(handle: try await bridged { try await handle.registerCommands(definitions: definitions, replace: replace) })
   }
 
+  /// Returns whether an identifier is registered in the workspace command registry.
   public func hasCommand(_ id: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.hasCommand(id: id) }
   }
 
+  /// Returns a registered command's summary, or nil for an unknown identifier.
   public func command(_ id: String) async throws(PDFError) -> CommandSummary? {
     try await bridged { try await handle.command(id: id) }
   }
 
+  /// Returns the identifiers currently registered in the command registry.
   public func commandIds() async throws(PDFError) -> [String] {
     try await bridged { try await handle.commandIds() }
   }
 
+  /// Evaluates a command's presentation hooks in the supplied document context, or returns
+  /// nil for an unknown identifier.
   public func resolve(_ id: String, document: DocumentInfo? = nil) async throws(PDFError) -> ResolvedCommand? {
     try await bridged { try await handle.resolveCommand(id: id, documentId: document?.id) }
   }
 
+  /// Resolves the registered commands for the supplied document context.
   public func commands(document: DocumentInfo? = nil) async throws(PDFError) -> [ResolvedCommand] {
     try await bridged { try await handle.commands(documentId: document?.id) }
   }
 
+  /// Searches registered commands for the query and resolves matching commands in the
+  /// supplied document context.
   public func search(_ query: String, document: DocumentInfo? = nil) async throws(PDFError) -> [ResolvedCommand] {
     try await bridged { try await handle.searchCommands(query: query, documentId: document?.id) }
   }
 
+  /// Returns the keyboard shortcuts associated with registered commands.
   public func shortcuts() async throws(PDFError) -> [CommandShortcutBinding] {
     try await bridged { try await handle.shortcuts() }
   }
@@ -186,34 +222,43 @@ public struct CommandsCapability: Sendable {
     return try await bridged { try await handle.execute(id: id, documentId: document?.id, argsJson: json) }
   }
 
+  /// Checks whether the command is executable in the supplied document context without running it.
   public func canExecute(_ id: String, document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
     try await bridged { try await handle.canExecute(id: id, documentId: document?.id) }
   }
 
+  /// Returns the command categories currently disabled in the workspace.
   public func disabledCategories() async throws(PDFError) -> [String] {
     try await bridged { try await handle.disabledCategories() }
   }
 
+  /// Returns whether the named command category is disabled.
   public func isCategoryDisabled(_ category: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.isCategoryDisabled(category: category) }
   }
 
+  /// Disables a command category for subsequent command resolution and execution.
   public func disableCategory(_ category: String) async throws(PDFError) {
     try await bridged { try await handle.disableCategory(category: category) }
   }
 
+  /// Enables a previously disabled command category.
   public func enableCategory(_ category: String) async throws(PDFError) {
     try await bridged { try await handle.enableCategory(category: category) }
   }
 
+  /// Replaces the workspace's disabled command categories with the supplied list.
   public func setDisabledCategories(_ categories: [String]) async throws(PDFError) {
     try await bridged { try await handle.setDisabledCategories(categories: categories) }
   }
 
+  /// Returns the matching command identifier, or nil when no shortcut matches; isMac selects
+  /// macOS modifier interpretation.
   public func matchStroke(_ stroke: CommandKeyStroke, isMac: Bool) async throws(PDFError) -> String? {
     try await bridged { try await handle.matchStroke(stroke: stroke, isMac: isMac) }
   }
 
+  /// Returns a command's menu routing target, or nil when it has none.
   public func menuTarget(_ id: String) async throws(PDFError) -> CommandMenuTarget? {
     try await bridged { try await handle.menuTarget(id: id) }
   }
@@ -231,6 +276,8 @@ extension EventRelay: CommandsEventListener where Event == CommandsEvent {
 }
 
 extension PDFViewer {
+  /// Returns the workspace command registry; enable commands in the viewer configuration
+  /// before requesting it.
   public func commands() async throws(PDFError) -> CommandsCapability {
     let handle = try await bridged { try await host.commands() }
     return CommandsCapability(handle: handle, viewer: self)

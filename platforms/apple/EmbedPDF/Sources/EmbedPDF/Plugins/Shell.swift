@@ -1,11 +1,17 @@
 public import EmbedPDFBindings
 import Foundation
 
+/// A named document UI surface's open state, exclusive tag, and optional JSON props.
 public typealias ShellSurface = EmbedPDFBindings.ShellSurface
+/// An exclusive group tag and JSON object props used when opening a surface.
 public typealias ShellOpenOptions = EmbedPDFBindings.ShellOpenOptions
+/// The document shell's surface and menu state for persistence and restoration.
 public typealias ShellSnapshot = EmbedPDFBindings.ShellSnapshot
+/// An event describing a document surface's state change.
 public typealias ShellSurfaceEvent = EmbedPDFBindings.ShellSurfaceEvent
+/// An event describing a document menu's state change.
 public typealias ShellMenuEvent = EmbedPDFBindings.ShellMenuEvent
+/// An event describing surface and menu state changes.
 public typealias ShellEvent = EmbedPDFBindings.ShellEvent
 
 /// Which named surfaces (panels, sheets, inspectors) and menus are open in
@@ -18,6 +24,7 @@ public struct ShellCapability: Sendable {
   let handle: ShellHandle
   let viewer: PDFViewer
 
+  /// Returns whether the named document surface is currently open.
   public func isOpen(_ id: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.isOpen(id: id) }
   }
@@ -30,6 +37,7 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.surface(id: id) }
   }
 
+  /// Returns the document surfaces that are currently open.
   public func openSurfaces() async throws(PDFError) -> [ShellSurface] {
     try await bridged { try await handle.openSurfaces() }
   }
@@ -40,16 +48,20 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.openSurface(id: id, options: options) }
   }
 
+  /// Opens a named surface with encoded object props; throws invalid-input if encoding fails
+  /// or the value is not a JSON object.
   public func open<Props: Encodable & Sendable>(_ id: String, exclusive: String? = nil, props: Props)
     async throws(PDFError)
   {
     try await open(id, exclusive: exclusive, propsJSON: try encoded(props))
   }
 
+  /// Closes the named surface in this document's shell state.
   public func close(_ id: String) async throws(PDFError) {
     try await bridged { try await handle.closeSurface(id: id) }
   }
 
+  /// Toggles the named surface, applying the exclusive tag and JSON object props when opening it.
   public func toggle(_ id: String, exclusive: String? = nil, propsJSON: String? = nil) async throws(PDFError) {
     let options = ShellOpenOptions(exclusive: exclusive, propsJson: propsJSON)
     try await bridged { try await handle.toggleSurface(id: id, options: options) }
@@ -60,14 +72,18 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.updateSurfaceProps(id: id, propsJson: propsJSON) }
   }
 
+  /// Replaces a surface's props with an encoded JSON object without reopening it; throws
+  /// invalid-input for invalid props.
   public func updateProps<Props: Encodable & Sendable>(of id: String, props: Props) async throws(PDFError) {
     try await updateProps(of: id, propsJSON: try encoded(props))
   }
 
+  /// Closes every document surface while retaining the shell's surface records.
   public func closeAll() async throws(PDFError) {
     try await bridged { try await handle.closeAllSurfaces() }
   }
 
+  /// Returns whether the named document menu is currently open.
   public func isMenuOpen(_ id: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.isMenuOpen(id: id) }
   }
@@ -77,18 +93,22 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.openMenus() }
   }
 
+  /// Opens the named menu in this document's menu stack.
   public func openMenu(_ id: String) async throws(PDFError) {
     try await bridged { try await handle.openMenu(id: id) }
   }
 
+  /// Closes the named document menu.
   public func closeMenu(_ id: String) async throws(PDFError) {
     try await bridged { try await handle.closeMenu(id: id) }
   }
 
+  /// Toggles the named menu's presence in the document's menu stack.
   public func toggleMenu(_ id: String) async throws(PDFError) {
     try await bridged { try await handle.toggleMenu(id: id) }
   }
 
+  /// Closes every menu in this document's shell.
   public func closeAllMenus() async throws(PDFError) {
     try await bridged { try await handle.closeAllMenus() }
   }
@@ -98,6 +118,7 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.snapshot() }
   }
 
+  /// Restores the document's surface and menu state from a previously captured snapshot.
   public func applySnapshot(_ snapshot: ShellSnapshot) async throws(PDFError) {
     try await bridged { try await handle.applySnapshot(snapshot: snapshot) }
   }
@@ -118,13 +139,17 @@ public struct ShellCapability: Sendable {
 }
 
 extension ShellSurface {
-  /// The props decoded as `Props`, or `nil` when the surface has none.
+  /// Decodes the surface's props as `Props`, or returns nil when it has none.
+  ///
+  /// - Throws: A JSON decoding error when props do not match the requested type.
   public func props<Props: Decodable>(as type: Props.Type) throws -> Props? {
     try propsJson.map { try JSONDecoder().decode(type, from: Data($0.utf8)) }
   }
 }
 
 extension ShellSurfaceEvent {
+  /// Decodes this event's JSON props as the requested type, returning nil when no props are
+  /// present and throwing a decoding error on mismatch.
   public func props<Props: Decodable>(as type: Props.Type) throws -> Props? {
     try propsJson.map { try JSONDecoder().decode(type, from: Data($0.utf8)) }
   }
@@ -141,6 +166,8 @@ extension EventRelay: ShellEventListener where Event == ShellEvent {
 }
 
 extension PDFViewer {
+  /// Returns this document's UI surface state; enable shell support in the viewer
+  /// configuration before requesting it.
   public func shell(for document: DocumentInfo) async throws(PDFError) -> ShellCapability {
     let handle = try await bridged { try await host.shell(documentId: document.id) }
     return ShellCapability(handle: handle, viewer: self)

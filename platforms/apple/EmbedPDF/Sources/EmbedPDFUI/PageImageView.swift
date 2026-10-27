@@ -1,6 +1,13 @@
 import EmbedPDF
 import SwiftUI
 
+/// Renders one PDF page as a SwiftUI image with loading and error states.
+///
+/// A task restarts when the page, scale, or visibility changes. Cancelled
+/// results are ignored; a previous image remains visible during a scale
+/// change. Render failures show an error only when no image is already held.
+/// The image is decorative: hosts should provide a page accessibility label
+/// and any accessible document text needed by their interface.
 public struct PageImageView: View {
   let render: RenderCapability
   let page: PageRef
@@ -10,10 +17,19 @@ public struct PageImageView: View {
   @State private var error: PDFError?
   @State private var renderedPage: PageRef?
 
-  /// `isOnScreen` false renders a placeholder at
-  /// `PageRenderResolution.offScreenDeviceWidth` instead of `scale`. Hosts
-  /// that keep off-screen pages built, like a lazy stack in a scroll view,
-  /// drive it with `trackingScrollVisibility(_:)`.
+  /// Creates a page image whose raster resolution follows its visibility.
+  ///
+  /// - Parameters:
+  ///   - render: Render capability for the page's open document.
+  ///   - page: Stable page reference belonging to that document.
+  ///   - scale: Positive device pixels per PDF point for an on-screen page.
+  ///   - isOnScreen: Whether to use `scale`; defaults to `true`. When `false`,
+  ///     renders at `PageRenderResolution.offScreenDeviceWidth` instead.
+  ///
+  /// Lazy scroll hosts can drive visibility with
+  /// ``SwiftUICore/View/trackingScrollVisibility(_:)``. Changing document pixels
+  /// alone does not restart this view's task; recreate its identity after
+  /// invalidation if the page, scale, and visibility remain unchanged.
   public init(render: RenderCapability, page: PageRef, scale: Double, isOnScreen: Bool = true) {
     self.render = render
     self.page = page
@@ -21,6 +37,7 @@ public struct PageImageView: View {
     self.isOnScreen = isOnScreen
   }
 
+  /// The current page image, loading indicator, or render error.
   public var body: some View {
     Group {
       if let rendered {

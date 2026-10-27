@@ -1,19 +1,32 @@
 public import EmbedPDFBindings
 import Foundation
 
+/// The initial locale, fallback, packs, and lazy loader used for viewer translations.
 public typealias I18nConfig = EmbedPDFBindings.I18nConfig
+/// A locale's code, name, text direction, and flat translation keys.
 public typealias LocalePack = EmbedPDFBindings.LocalePack
+/// The display information for a registered or lazily available locale.
 public typealias LocaleInfo = EmbedPDFBindings.LocaleInfo
+/// The reading direction used by a locale's interface text.
 public typealias TextDirection = EmbedPDFBindings.TextDirection
+/// A string or number used for translation interpolation and plural selection.
 public typealias I18nParam = EmbedPDFBindings.I18nParam
+/// An event describing locale changes and lazy-load failures.
 public typealias I18nEvent = EmbedPDFBindings.I18nEvent
+/// An event describing a completed locale switch.
 public typealias LocaleChangedEvent = EmbedPDFBindings.LocaleChangedEvent
+/// The locale code and error information for a failed lazy load.
 public typealias LocaleLoadFailure = EmbedPDFBindings.LocaleLoadFailure
+/// The host callback that loads a requested locale and completes with a pack or failure.
 public typealias LocaleLoader = EmbedPDFBindings.LocaleLoader
+/// The callback a locale loader must finish or fail.
 public typealias LocaleLoadCompletion = EmbedPDFBindings.LocaleLoadCompletion
 
 extension LocalePack {
-  /// A locale file in the web's shape (`{code, name, dir?, translations}`).
+  /// Decodes a locale file in the web's shape (`{code, name, dir?, translations}`).
+  ///
+  /// - Parameter json: JSON text containing locale metadata and translations.
+  /// - Throws: A `PDFError` when the JSON is invalid or does not describe a locale pack.
   public static func decode(json: String) throws(PDFError) -> LocalePack {
     do {
       return try localePackFromJson(json: json)
@@ -38,14 +51,17 @@ public struct I18nCapability: Sendable {
     try await bridged { try await handle.t(key: key, params: params, fallback: fallback) }
   }
 
+  /// Returns whether the current or fallback locale translates the key, without a missing-key warning.
   public func hasKey(_ key: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.hasKey(key: key) }
   }
 
+  /// Returns the code of the currently active locale.
   public func locale() async throws(PDFError) -> String {
     try await bridged { try await handle.locale() }
   }
 
+  /// Returns the active locale's text direction for interface layout.
   public func direction() async throws(PDFError) -> TextDirection {
     try await bridged { try await handle.direction() }
   }
@@ -55,6 +71,7 @@ public struct I18nCapability: Sendable {
     try await bridged { try await handle.locales() }
   }
 
+  /// Returns the code of the locale currently loading, or nil when no lazy switch is pending.
   public func loadingLocale() async throws(PDFError) -> String? {
     try await bridged { try await handle.loadingLocale() }
   }
@@ -92,6 +109,7 @@ extension EventRelay: I18nEventListener where Event == I18nEvent {
 }
 
 extension PDFViewer {
+  /// Returns the workspace translation capability; configure i18n before requesting it.
   public func i18n() async throws(PDFError) -> I18nCapability {
     let handle = try await bridged { try await host.i18n() }
     return I18nCapability(handle: handle, viewer: self)
@@ -112,11 +130,15 @@ public final class BundleLocaleLoader: LocaleLoader, @unchecked Sendable {
   let bundle: Bundle
   let subdirectory: String?
 
+  /// Creates a lazy loader that reads locale-code JSON files from the supplied bundle and
+  /// optional resource subdirectory.
   public init(bundle: Bundle = .main, subdirectory: String? = nil) {
     self.bundle = bundle
     self.subdirectory = subdirectory
   }
 
+  /// Reads code.json on a background queue and finishes with its decoded pack, or fails the
+  /// completion if the resource is missing or invalid.
   public func load(code: String, completion: LocaleLoadCompletion) {
     let (bundle, subdirectory) = (bundle, subdirectory)
     DispatchQueue.global(qos: .userInitiated).async {

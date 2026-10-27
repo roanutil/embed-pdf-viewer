@@ -1,9 +1,14 @@
 public import EmbedPDFBindings
 
+/// A pane's document tabs and active document.
 public typealias PaneInfo = EmbedPDFBindings.PaneInfo
+/// An event describing a pane change.
 public typealias PaneEvent = EmbedPDFBindings.PaneEvent
+/// An event describing a focused-pane change.
 public typealias PaneFocusChangedEvent = EmbedPDFBindings.PaneFocusChangedEvent
+/// An event describing a document tab moving between panes.
 public typealias DocumentMovedEvent = EmbedPDFBindings.DocumentMovedEvent
+/// An event describing pane and document-tab changes.
 public typealias ViewManagerEvent = EmbedPDFBindings.ViewManagerEvent
 
 /// Panes over the open documents: each pane is a tab strip with one active
@@ -27,14 +32,17 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.panes() }
   }
 
+  /// Returns the pane with this identifier, or nil when no pane matches.
   public func pane(_ id: String) async throws(PDFError) -> PaneInfo? {
     try await bridged { try await handle.pane(id: id) }
   }
 
+  /// Returns pane identifiers in their current display order.
   public func paneOrder() async throws(PDFError) -> [String] {
     try await bridged { try await handle.paneOrder() }
   }
 
+  /// Returns the focused pane identifier, or nil when no pane has focus.
   public func focusedPaneId() async throws(PDFError) -> String? {
     try await bridged { try await handle.focusedPaneId() }
   }
@@ -59,6 +67,7 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.movePane(id: id, toIndex: index) }
   }
 
+  /// Changes the focused pane identifier; nil clears focus.
   public func setFocusedPane(_ id: String?) async throws(PDFError) {
     try await bridged { try await handle.setFocusedPane(id: id) }
   }
@@ -68,6 +77,7 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.splitPane(documentId: document.id) }
   }
 
+  /// Changes a pane's active tab; nil clears its active document.
   public func setActiveDocument(_ document: DocumentInfo?, in paneId: String) async throws(PDFError) {
     try await bridged { try await handle.setActiveDocument(paneId: paneId, documentId: document?.id) }
   }
@@ -79,6 +89,7 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.addDocument(paneId: paneId, documentId: document.id, index: index) }
   }
 
+  /// Removes a document tab from the pane without closing the document.
   public func removeDocument(_ document: DocumentInfo, from paneId: String) async throws(PDFError) {
     try await bridged { try await handle.removeDocument(paneId: paneId, documentId: document.id) }
   }
@@ -120,6 +131,8 @@ extension EventRelay: ViewManagerEventListener where Event == ViewManagerEvent {
 }
 
 extension PDFViewer {
+  /// Returns the workspace pane and tab manager; enable viewManager in the viewer
+  /// configuration before requesting it.
   public func viewManager() async throws(PDFError) -> ViewManagerCapability {
     let handle = try await bridged { try await host.viewManager() }
     return ViewManagerCapability(handle: handle, viewer: self)

@@ -1,26 +1,48 @@
 public import EmbedPDFBindings
 
+/// Text or a supported regular expression and matching options for a document search.
 public typealias SearchQuery = EmbedPDFBindings.SearchQuery
+/// One match with a durable page identity, engine character offsets, geometry, and optional snippet.
 public typealias SearchHit = EmbedPDFBindings.SearchHit
+/// One visual line of a search match in page coordinates.
 public typealias TextSegment = EmbedPDFBindings.TextSegment
+/// Context around a full-mode search hit; match offsets count UTF-16 code units.
 public typealias SearchSnippet = EmbedPDFBindings.SearchSnippet
+/// The state of the current document search session.
 public typealias SearchStatus = EmbedPDFBindings.SearchStatus
+/// The detail returned by search: rectangles, or full results including copied text snippets.
 public typealias SearchMode = EmbedPDFBindings.SearchMode
+/// The progress reported while scanning document pages.
 public typealias SearchProgress = EmbedPDFBindings.SearchProgress
+/// The completion status and hit count of a session search.
 public typealias SearchResult = EmbedPDFBindings.SearchResult
+/// Whether a search completed, was cancelled, or was superseded.
 public typealias SearchResultStatus = EmbedPDFBindings.SearchResultStatus
+/// Per-call overrides for revealing a navigated search hit in the stage.
 public typealias SearchRevealOptions = EmbedPDFBindings.SearchRevealOptions
+/// The horizontal and vertical anchor used to reveal a search hit.
 public typealias SearchRevealAnchor = EmbedPDFBindings.SearchRevealAnchor
+/// An alignment value for one axis of a search reveal.
 public typealias SearchRevealAxis = EmbedPDFBindings.SearchRevealAxis
+/// Whether search navigation reveals a hit immediately or smoothly.
 public typealias SearchScrollBehavior = EmbedPDFBindings.SearchScrollBehavior
+/// Defaults for document search and revealing active hits.
 public typealias SearchConfig = EmbedPDFBindings.SearchConfig
+/// An event describing search-session progress and active-hit changes.
 public typealias SearchEvent = EmbedPDFBindings.SearchEvent
+/// An event describing a session search starting.
 public typealias SearchStartedEvent = EmbedPDFBindings.SearchStartedEvent
+/// An event describing a search progress update.
 public typealias SearchProgressEvent = EmbedPDFBindings.SearchProgressEvent
+/// An event describing a completed session search.
 public typealias SearchCompletedEvent = EmbedPDFBindings.SearchCompletedEvent
+/// An event describing a session search cancellation.
 public typealias SearchCancelledEvent = EmbedPDFBindings.SearchCancelledEvent
+/// The reason a session search stopped before completion.
 public typealias SearchCancelReason = EmbedPDFBindings.SearchCancelReason
+/// An event describing a session search failure.
 public typealias SearchFailedEvent = EmbedPDFBindings.SearchFailedEvent
+/// An event describing an active search-hit change.
 public typealias SearchActiveHitChangedEvent = EmbedPDFBindings.SearchActiveHitChangedEvent
 
 /// A document's text search: one session (`search`, navigated with
@@ -67,10 +89,14 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.clear() }
   }
 
+  /// Activates the next session hit and optionally reveals it, wrapping through the available
+  /// hits; returns nil when there are none.
   public func nextHit(reveal: SearchRevealOptions? = nil) async throws(PDFError) -> SearchHit? {
     try await bridged { try await handle.nextHit(reveal: reveal) }
   }
 
+  /// Activates the previous session hit and optionally reveals it, wrapping through the
+  /// available hits; returns nil when there are none.
   public func previousHit(reveal: SearchRevealOptions? = nil) async throws(PDFError) -> SearchHit? {
     try await bridged { try await handle.previousHit(reveal: reveal) }
   }
@@ -82,14 +108,17 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.goToHit(index: index, reveal: reveal) }
   }
 
+  /// Reveals the active hit using the configured stage and per-call arrival options.
   public func revealActiveHit(reveal: SearchRevealOptions? = nil) async throws(PDFError) {
     try await bridged { try await handle.revealActiveHit(reveal: reveal) }
   }
 
+  /// Returns the current session query, or nil when the session is clear.
   public func query() async throws(PDFError) -> SearchQuery? {
     try await bridged { try await handle.query() }
   }
 
+  /// Returns the current search session's scan state.
   public func status() async throws(PDFError) -> SearchStatus {
     try await bridged { try await handle.status() }
   }
@@ -101,10 +130,12 @@ public struct SearchCapability: Sendable {
     }
   }
 
+  /// Returns the number of hits found so far, restricted to one page when supplied.
   public func hitCount(on page: PageRef? = nil) async throws(PDFError) -> UInt32 {
     try await bridged { try await handle.hitCount(page: page) }
   }
 
+  /// Returns the page identities on which the current session has found matches.
   public func pagesWithHits() async throws(PDFError) -> [PageRef] {
     try await bridged { try await handle.pagesWithHits() }
   }
@@ -114,10 +145,12 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.activeHitIndex() }
   }
 
+  /// Returns the active session match, or nil when no hit is active.
   public func activeHit() async throws(PDFError) -> SearchHit? {
     try await bridged { try await handle.activeHit() }
   }
 
+  /// Returns the current session's page-scanning progress.
   public func progress() async throws(PDFError) -> SearchProgress {
     try await bridged { try await handle.progress() }
   }
@@ -155,6 +188,7 @@ extension EventRelay: SearchEventListener where Event == SearchEvent {
 }
 
 extension PDFViewer {
+  /// Returns this document's search capability; configure search before requesting it.
   public func search(in document: DocumentInfo) async throws(PDFError) -> SearchCapability {
     let handle = try await bridged { try await host.search(documentId: document.id) }
     return SearchCapability(handle: handle, viewer: self)
