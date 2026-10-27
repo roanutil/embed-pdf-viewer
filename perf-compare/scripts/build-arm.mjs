@@ -96,12 +96,18 @@ function hostClangWorks(src) {
   return ['cffaedfe', 'cafebabe'].includes(magic);
 }
 
-function depsSupportTargets(src) {
+// Whether the seeded deps were synced for the OS a native target builds for.
+// gclient always adds the host OS to target_os, so a Mac host has the macOS
+// deps whatever the stamp lists; only iOS has to be named.
+function depsSupportTarget(src, target) {
+  const os = target.startsWith('ios-') ? 'ios' : process.platform === 'darwin' ? null : 'mac';
+  if (!os) return true;
   const stamp = path.join(src, '.embedpdf-runtime/deps-sync.stamp');
-  return (
-    existsSync(stamp) &&
-    readFileSync(stamp, 'utf8').includes(`target_os_list=${FORK_TARGET_OS_LIST}\n`)
-  );
+  if (!existsSync(stamp)) return false;
+  const line = readFileSync(stamp, 'utf8')
+    .split('\n')
+    .find((l) => l.startsWith('target_os_list='));
+  return !!line && line.slice('target_os_list='.length).split(/\s+/).includes(os);
 }
 
 // Builds the PDFium fork at the worktree's recorded runtime-src commit, for
@@ -177,14 +183,14 @@ export function buildFork(dir, target = FORK_TARGET) {
       DEPOT_TOOLS_UPDATE: '0',
       PDF_RUNTIME_TARGET_OS_LIST: FORK_TARGET_OS_LIST,
       // Seeded deps match this commit's DEPS but were synced for another
-      // target_os, which would otherwise force a full gclient resync. iOS
-      // resyncs ('always', which also replaces llvm-build) only when the
-      // clang there can't run on this host.
+      // target_os, which would otherwise force a full gclient resync. A
+      // native target resyncs ('always', which also replaces llvm-build) only
+      // when the clang there can't run on this host or its OS wasn't synced.
       PDF_RUNTIME_SYNC: native
-        ? hostClangWorks(src) && depsSupportTargets(src)
+        ? hostClangWorks(src) && depsSupportTarget(src, target)
           ? 'skip'
           : 'always'
-        : seeded && depsSupportTargets(src)
+        : seeded
           ? 'skip'
           : 'auto',
       PDF_RUNTIME_ARTIFACT_DIR: artifacts,
