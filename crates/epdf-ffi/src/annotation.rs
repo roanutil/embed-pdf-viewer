@@ -12,14 +12,9 @@
 
 use epdf_annotation_core as core;
 use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error};
 use serde_json::{Map, Value, json};
 
 use crate::PageRef;
-
-fn invalid(message: impl Into<String>) -> Error {
-    plugin_error(code::INVALID_INPUT, "annotation", message.into(), None, None)
-}
 
 fn invalid_state(message: impl Into<String>) -> Error {
     Error::named("InvalidState", message.into()).with("code", "invalid-state")
@@ -50,9 +45,14 @@ impl PageRef {
     }
 }
 
-impl From<core::PageRef> for PageRef {
-    fn from(p: core::PageRef) -> Self {
-        PageRef { page_object_number: p.object_number as u32 }
+/// The core's `PageRef` holds a JavaScript number: one that is not a
+/// whole `u32` is `invalid-state`, as [`PageRef::from_json`] refuses it.
+impl TryFrom<core::PageRef> for PageRef {
+    type Error = Error;
+
+    fn try_from(p: core::PageRef) -> Result<Self, Error> {
+        let n = Value::from(p.object_number);
+        Ok(PageRef { page_object_number: whole(Some(&n), "a page's object number")? })
     }
 }
 
@@ -271,7 +271,159 @@ impl PdfLinkTarget {
             Some("javascript") => PdfLinkTarget::Javascript,
             Some("named") => PdfLinkTarget::Named { name: text(value, "name")? },
             Some("unsupported") => PdfLinkTarget::Unsupported,
-            _ => return Err(invalid("a link target of a kind the engine does not write")),
+            _ => return Err(invalid_state("a link target of a kind the engine does not write")),
+        })
+    }
+}
+
+/// `PageDestination` (`dto/PdfDestination.ts:49-57`): a destination in page
+/// space, the page it goes to and where on it, from the top-left of the
+/// page's visible box, y down. The engine hands these out: a link's or an
+/// outline item's `goto` goes to one. `None` keeps the viewer's current
+/// value, as absent and `null` do.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum PageDestination {
+    Xyz { page: PageRef, x: Option<f64>, y: Option<f64>, zoom: Option<f64> },
+    Fit { page: PageRef },
+    FitH { page: PageRef, y: Option<f64> },
+    FitV { page: PageRef, x: Option<f64> },
+    FitR { page: PageRef, x: f64, y: f64, width: f64, height: f64 },
+    FitB { page: PageRef },
+    FitBH { page: PageRef, y: Option<f64> },
+    FitBV { page: PageRef, x: Option<f64> },
+}
+
+impl PageDestination {
+    pub fn page(&self) -> PageRef {
+        match self {
+            PageDestination::Xyz { page, .. }
+            | PageDestination::Fit { page }
+            | PageDestination::FitH { page, .. }
+            | PageDestination::FitV { page, .. }
+            | PageDestination::FitR { page, .. }
+            | PageDestination::FitB { page }
+            | PageDestination::FitBH { page, .. }
+            | PageDestination::FitBV { page, .. } => *page,
+        }
+    }
+
+    /// The engine's record; a `None` coordinate is left out.
+    pub fn to_json(&self) -> Value {
+        let mut record = Map::new();
+        let mut members: Vec<(&str, Option<f64>)> = Vec::new();
+        let kind = match self {
+            PageDestination::Xyz { x, y, zoom, .. } => {
+                members.extend([("x", *x), ("y", *y), ("zoom", *zoom)]);
+                "xyz"
+            }
+            PageDestination::Fit { .. } => "fit",
+            PageDestination::FitH { y, .. } => {
+                members.push(("y", *y));
+                "fitH"
+            }
+            PageDestination::FitV { x, .. } => {
+                members.push(("x", *x));
+                "fitV"
+            }
+            PageDestination::FitR { x, y, width, height, .. } => {
+                members.extend([
+                    ("x", Some(*x)),
+                    ("y", Some(*y)),
+                    ("width", Some(*width)),
+                    ("height", Some(*height)),
+                ]);
+                "fitR"
+            }
+            PageDestination::FitB { .. } => "fitB",
+            PageDestination::FitBH { y, .. } => {
+                members.push(("y", *y));
+                "fitBH"
+            }
+            PageDestination::FitBV { x, .. } => {
+                members.push(("x", *x));
+                "fitBV"
+            }
+        };
+        record.insert("kind".into(), json!(kind));
+        record.insert("page".into(), self.page().to_json());
+        for (key, value) in members {
+            if let Some(value) = value {
+                record.insert(key.into(), json!(value));
+            }
+        }
+        Value::Object(record)
+    }
+
+    pub fn from_json(value: &Value) -> Result<PageDestination, Error> {
+        let page = PageRef::from_json(value.get("page").unwrap_or(&Value::Null))?;
+        Ok(match value.get("kind").and_then(Value::as_str) {
+            Some("xyz") => PageDestination::Xyz {
+                page,
+                x: coordinate(value, "x")?,
+                y: coordinate(value, "y")?,
+                zoom: coordinate(value, "zoom")?,
+            },
+            Some("fit") => PageDestination::Fit { page },
+            Some("fitH") => PageDestination::FitH { page, y: coordinate(value, "y")? },
+            Some("fitV") => PageDestination::FitV { page, x: coordinate(value, "x")? },
+            Some("fitR") => PageDestination::FitR {
+                page,
+                x: required(value, "x")?,
+                y: required(value, "y")?,
+                width: required(value, "width")?,
+                height: required(value, "height")?,
+            },
+            Some("fitB") => PageDestination::FitB { page },
+            Some("fitBH") => PageDestination::FitBH { page, y: coordinate(value, "y")? },
+            Some("fitBV") => PageDestination::FitBV { page, x: coordinate(value, "x")? },
+            _ => return Err(invalid_state("a destination of a kind the engine does not write")),
+        })
+    }
+}
+
+/// `PdfLinkTarget` (`dto/PdfLinkTarget.ts:28`, its default
+/// `PageDestination`): where a link or an outline item points, as the
+/// plugins carry it. [`PdfLinkTarget`] is the readers' file-space form.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum PageLinkTarget {
+    Goto { destination: PageDestination },
+    Uri { uri: String },
+    GotoRemote { file: String },
+    Launch { path: String },
+    Javascript,
+    Named { name: String },
+    Unsupported,
+}
+
+impl PageLinkTarget {
+    pub fn to_json(&self) -> Value {
+        match self {
+            PageLinkTarget::Goto { destination } => {
+                json!({ "kind": "goto", "destination": destination.to_json() })
+            }
+            PageLinkTarget::Uri { uri } => json!({ "kind": "uri", "uri": uri }),
+            PageLinkTarget::GotoRemote { file } => json!({ "kind": "goto-remote", "file": file }),
+            PageLinkTarget::Launch { path } => json!({ "kind": "launch", "path": path }),
+            PageLinkTarget::Javascript => json!({ "kind": "javascript" }),
+            PageLinkTarget::Named { name } => json!({ "kind": "named", "name": name }),
+            PageLinkTarget::Unsupported => json!({ "kind": "unsupported" }),
+        }
+    }
+
+    pub fn from_json(value: &Value) -> Result<PageLinkTarget, Error> {
+        Ok(match value.get("kind").and_then(Value::as_str) {
+            Some("goto") => PageLinkTarget::Goto {
+                destination: PageDestination::from_json(
+                    value.get("destination").unwrap_or(&Value::Null),
+                )?,
+            },
+            Some("uri") => PageLinkTarget::Uri { uri: text(value, "uri")? },
+            Some("goto-remote") => PageLinkTarget::GotoRemote { file: text(value, "file")? },
+            Some("launch") => PageLinkTarget::Launch { path: text(value, "path")? },
+            Some("javascript") => PageLinkTarget::Javascript,
+            Some("named") => PageLinkTarget::Named { name: text(value, "name")? },
+            Some("unsupported") => PageLinkTarget::Unsupported,
+            _ => return Err(invalid_state("a link target of a kind the engine does not write")),
         })
     }
 }
@@ -289,16 +441,18 @@ pub struct CreationDraftAnchor {
     pub can_finish: bool,
 }
 
-impl From<core::CreationDraftAnchor> for CreationDraftAnchor {
-    fn from(a: core::CreationDraftAnchor) -> Self {
+impl TryFrom<core::CreationDraftAnchor> for CreationDraftAnchor {
+    type Error = Error;
+
+    fn try_from(a: core::CreationDraftAnchor) -> Result<Self, Error> {
         let count = |n: f64| if n >= f64::from(u32::MAX) { u32::MAX } else { n.max(0.0) as u32 };
-        CreationDraftAnchor {
+        Ok(CreationDraftAnchor {
             closed: a.subtype == "polygon",
-            page: a.page.into(),
+            page: a.page.try_into()?,
             bounds: a.bounds.into(),
             point_count: count(a.point_count),
             min_points: count(a.min_points),
             can_finish: a.can_finish,
-        }
+        })
     }
 }

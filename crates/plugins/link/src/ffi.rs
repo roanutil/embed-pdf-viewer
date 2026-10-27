@@ -4,8 +4,11 @@
 //! Compiled and tested since Task 13.33. Since Task
 //! 13.21 the plugin carries links, targets and destinations as the engine's
 //! records (JSON), as the annotation plugin does since 13.17, so they cross
-//! here as JSON strings (`target_json`, `destination_json`); a host decodes
-//! them with `epdf_ffi::PdfLinkTarget::from_json`. A link's action tree stays in
+//! here as JSON strings (`target_json`, `destination_json`). They are in page
+//! space, so a host decodes a target with `epdf_ffi::PageLinkTarget::from_json`
+//! and a destination with `epdf_ffi::PageDestination::from_json`;
+//! `epdf_ffi::PdfLinkTarget` is the readers' file-space form and drops a
+//! page-space `x`/`y`. A link's action tree stays in
 //! Rust: Swift activates a link by page and id, and the handle looks it up
 //! again so the tree goes with it. A `goto` resolves to its page-space
 //! destination; the stage reveal happens on activation.

@@ -51,7 +51,7 @@ For the viewer host and `epdf-web` (Task 13.33).
 | `LinkActivatedEvent.origin` | removed with the TypeScript's |
 | `ensure_loaded(&PageRef)`, `list_all_links()` | `ensure_loaded(page, OperationOptions)`, `list_all_links(OperationOptions)` |
 | `get_input_label` | `get_label`, which takes either |
-| ffi `PdfLinkTarget`, `PdfDestination` members, `LinkHandle::with_report` | `target_json`, `destination_json`; activation no longer fails, so there is no report |
+| ffi `PdfLinkTarget`, `PdfDestination` members, `LinkHandle::with_report` | `target_json`, `destination_json`, in page space: a host decodes them with `epdf_ffi::PageLinkTarget::from_json` and `epdf_ffi::PageDestination::from_json` (not the file-space `PdfLinkTarget`). Activation no longer fails, so there is no report |
 | ffi `all_links` skipping a link with no page | an `invalid-input` error |
 
 `src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33,

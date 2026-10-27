@@ -229,14 +229,14 @@ impl From<AnnotationFilter> for crate::read::annotations::AnnotationFilter {
 }
 
 /// A `PluginErrorInfo` the plugin already wrote as JSON.
+/// [`PluginErrorInfo::from_json`], so a missing code reads as
+/// `operation-failed` here too; a missing capability is this plugin's.
 pub(crate) fn plugin_error_info_of(info: &Value) -> PluginErrorInfo {
-    let s = |k: &str, or: &str| info.get(k).and_then(Value::as_str).unwrap_or(or).to_string();
-    PluginErrorInfo {
-        code: s("code", "unknown"),
-        message: s("message", ""),
-        capability: s("capability", "annotation"),
-        permission: info.get("permission").and_then(Value::as_str).map(str::to_string),
+    let mut out = PluginErrorInfo::from_json(info);
+    if out.capability.is_empty() {
+        out.capability = "annotation".into();
     }
+    out
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]

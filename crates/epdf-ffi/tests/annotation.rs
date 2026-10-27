@@ -2,7 +2,9 @@
 //! (`packages/engine/core/src/identity/AnnotationRef.ts`,
 //! `dto/PdfDestination.ts`, `dto/PdfLinkTarget.ts`).
 
-use epdf_ffi::{AnnotationRef, PageRef, PdfDestination, PdfLinkTarget};
+use epdf_ffi::{
+    AnnotationRef, PageDestination, PageLinkTarget, PageRef, PdfDestination, PdfLinkTarget,
+};
 use serde_json::json;
 
 const PAGE: PageRef = PageRef { page_object_number: 7 };
@@ -79,4 +81,84 @@ fn an_annotation_ref_with_a_fractional_number_is_invalid_state() {
         AnnotationRef::from_json(&ok).unwrap(),
         AnnotationRef::ObjectNumber { page: PAGE, annot_object_number: 8 }
     );
+}
+
+#[test]
+fn an_unknown_target_kind_is_invalid_state() {
+    let error = PdfLinkTarget::from_json(&json!({ "kind": "submit-form" })).unwrap_err();
+    assert_eq!(error.code(), Some("invalid-state"));
+    let error = PageLinkTarget::from_json(&json!({ "kind": "submit-form" })).unwrap_err();
+    assert_eq!(error.code(), Some("invalid-state"));
+}
+
+// A link's target is in page space (`packages/plugin/link/src/contract.ts:16-22`).
+
+#[test]
+fn a_page_space_xyz_target_keeps_its_x_and_y() {
+    let json = json!({
+        "kind": "goto",
+        "destination": {
+            "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 7 }, "x": 0.0, "y": 10.0
+        }
+    });
+    let target = PageLinkTarget::from_json(&json).unwrap();
+    assert_eq!(
+        target,
+        PageLinkTarget::Goto {
+            destination: PageDestination::Xyz {
+                page: PAGE,
+                x: Some(0.0),
+                y: Some(10.0),
+                zoom: None
+            }
+        }
+    );
+    assert_eq!(target.to_json(), json);
+}
+
+#[test]
+fn a_page_space_fit_r_target_keeps_its_rectangle() {
+    let json = json!({
+        "kind": "goto",
+        "destination": {
+            "kind": "fitR", "page": { "kind": "objectNumber", "objectNumber": 7 },
+            "x": 1.0, "y": 2.0, "width": 30.0, "height": 40.0
+        }
+    });
+    let target = PageLinkTarget::from_json(&json).unwrap();
+    assert_eq!(
+        target,
+        PageLinkTarget::Goto {
+            destination: PageDestination::FitR {
+                page: PAGE,
+                x: 1.0,
+                y: 2.0,
+                width: 30.0,
+                height: 40.0
+            }
+        }
+    );
+    assert_eq!(target.to_json(), json);
+    // A fitR without its size is refused, not read as a smaller rectangle.
+    let short = json!({
+        "kind": "fitR", "page": { "kind": "objectNumber", "objectNumber": 7 }, "x": 1, "y": 2
+    });
+    assert_eq!(PageDestination::from_json(&short).unwrap_err().code(), Some("invalid-state"));
+}
+
+#[test]
+fn every_page_destination_kind_round_trips() {
+    for destination in [
+        PageDestination::Xyz { page: PAGE, x: Some(1.0), y: None, zoom: Some(2.0) },
+        PageDestination::Fit { page: PAGE },
+        PageDestination::FitH { page: PAGE, y: Some(3.0) },
+        PageDestination::FitV { page: PAGE, x: None },
+        PageDestination::FitR { page: PAGE, x: 1.0, y: 2.0, width: 3.0, height: 4.0 },
+        PageDestination::FitB { page: PAGE },
+        PageDestination::FitBH { page: PAGE, y: None },
+        PageDestination::FitBV { page: PAGE, x: Some(5.0) },
+    ] {
+        let json = destination.to_json();
+        assert_eq!(PageDestination::from_json(&json).unwrap(), destination);
+    }
 }

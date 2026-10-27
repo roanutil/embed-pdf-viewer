@@ -18,7 +18,10 @@ pub mod status;
 pub mod subscription;
 pub mod view;
 
-pub use annotation::{AnnotationRef, CreationDraftAnchor, PdfDestination, PdfLinkTarget};
+pub use annotation::{
+    AnnotationRef, CreationDraftAnchor, PageDestination, PageLinkTarget, PdfDestination,
+    PdfLinkTarget,
+};
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
