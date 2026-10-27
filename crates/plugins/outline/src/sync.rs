@@ -15,6 +15,23 @@ use serde_json::{Map, Value, json};
 
 use crate::model::*;
 
+thread_local! {
+    static TREE_COPIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many times this thread deep-copied a whole outline tree (its items)
+/// to fold or predict a change. The guard (`tree_copies_per_change` below)
+/// holds it at one per change that changes the tree, none for one that
+/// doesn't, and one for a run of predictions replayed over each other.
+#[cfg(test)]
+fn tree_copies() -> usize {
+    TREE_COPIES.with(std::cell::Cell::get)
+}
+
+fn count_copy() {
+    TREE_COPIES.with(|n| n.set(n.get() + 1));
+}
+
 // ── engine-core's outline rules (`outline/predict.ts`, `PdfLinkTarget.ts`) ───
 
 /// `actionTreeOf(target)`: the `/A` a target is written as, as a read of it
@@ -160,76 +177,91 @@ fn inserted(keys: &[OutlineKey], at: usize, added: &[OutlineKey]) -> Vec<Outline
 }
 
 // ── tree edits ────────────────────────────────────────────────────────────────
+//
+// The TypeScript's edits spread the tree (`{ ...tree, items: { ...tree.items,
+// [key]: item } }`), sharing every item. A JSON tree can't share its items,
+// so a change copies the tree once ([`owned`]) and the edits below change
+// that copy in place. A change that changes nothing copies nothing.
 
-fn object_of(tree: &Value) -> Map<String, Value> {
-    tree.as_object().cloned().unwrap_or_default()
+/// The tree to change: the mirror's own when nothing else holds it (a run
+/// of predictions replayed over each other), else one copy of it.
+fn owned(tree: Rc<Value>) -> Value {
+    Rc::try_unwrap(tree).unwrap_or_else(|shared| {
+        count_copy();
+        (*shared).clone()
+    })
+}
+
+/// The tree's `name` member as an object, made empty where it is missing
+/// (`{ ...tree, [name]: { ...tree[name] } }`).
+fn member_mut<'a>(tree: &'a mut Value, name: &str) -> &'a mut Map<String, Value> {
+    if !tree.is_object() {
+        *tree = Value::Object(Map::new());
+    }
+    let object = tree.as_object_mut().expect("an object");
+    let entry = object.entry(name).or_insert_with(|| Value::Object(Map::new()));
+    if !entry.is_object() {
+        *entry = Value::Object(Map::new());
+    }
+    entry.as_object_mut().expect("an object")
+}
+
+/// Put a member map back in JavaScript key order.
+fn reorder(map: &mut Map<String, Value>) {
+    *map = js_ordered(std::mem::take(map));
 }
 
 /// `withChildren(tree, parent, keys)`: `parent`'s children set, and its open
 /// state kept true to them.
-fn with_children(tree: &Value, parent: &str, keys: &[OutlineKey]) -> Value {
-    let mut children = children_map(tree).cloned().unwrap_or_default();
+fn with_children(tree: &mut Value, parent: &str, keys: &[OutlineKey]) {
+    let opened =
+        item_at(tree, parent).and_then(|item| outline_item_with_children(item, !keys.is_empty()));
+    let children = member_mut(tree, "children");
     if keys.is_empty() {
-        js_delete(&mut children, parent);
+        js_delete(children, parent);
     } else {
         children.insert(parent.to_string(), keys_value(keys));
     }
-    let mut next = object_of(tree);
-    next.insert("children".into(), Value::Object(js_ordered(children)));
-    if let Some(opened) =
-        item_at(tree, parent).and_then(|item| outline_item_with_children(item, !keys.is_empty()))
-    {
-        let mut items = items_map(tree).cloned().unwrap_or_default();
-        items.insert(parent.to_string(), opened);
-        next.insert("items".into(), Value::Object(items));
+    reorder(children);
+    if let Some(opened) = opened {
+        member_mut(tree, "items").insert(parent.to_string(), opened);
     }
-    Value::Object(next)
 }
 
 /// `withItems(tree, items)`: these items put in, replacing ones with the
-/// same key. `None` for no items.
-fn with_items(tree: &Value, items: Vec<Value>) -> Option<Value> {
+/// same key. Nothing for no items.
+fn with_items(tree: &mut Value, items: Vec<Value>) {
     if items.is_empty() {
-        return None;
+        return;
     }
-    let mut next_items = items_map(tree).cloned().unwrap_or_default();
+    let map = member_mut(tree, "items");
     for item in items {
-        next_items.insert(outline_key_of(item.get("ref")), item);
+        map.insert(outline_key_of(item.get("ref")), item);
     }
-    let mut next = object_of(tree);
-    next.insert("items".into(), Value::Object(js_ordered(next_items)));
-    Some(Value::Object(next))
-}
-
-fn with_items_or(tree: Value, items: Vec<Value>) -> Value {
-    with_items(&tree, items).unwrap_or(tree)
+    reorder(map);
 }
 
 /// `withoutSubtree(tree, key)`: `key` and the items under it gone; their
-/// parent keeps its other children. `None` for a key the tree lacks.
-fn without_subtree(tree: &Value, key: &str) -> Option<Value> {
-    let item = item_at(tree, key)?;
-    let gone = subtree_of(tree, key);
-    let mut items = items_map(tree).cloned().unwrap_or_default();
-    let mut children = children_map(tree).cloned().unwrap_or_default();
-    let gone_set: HashSet<&String> = gone.iter().collect();
-    items.retain(|k, _| !gone_set.contains(k));
-    children.retain(|k, _| !gone_set.contains(k));
+/// parent keeps its other children. False, and nothing changed, for a key
+/// the tree lacks.
+fn without_subtree(tree: &mut Value, key: &str) -> bool {
+    let Some(item) = item_at(tree, key) else { return false };
     let parent = outline_key_of(item.get("parent"));
+    let gone = subtree_of(tree, key);
     let siblings: Vec<OutlineKey> =
         children_of(tree, &parent).into_iter().filter(|child| child != key).collect();
-    let mut next = object_of(tree);
-    next.insert("items".into(), Value::Object(items));
-    next.insert("children".into(), Value::Object(children));
-    Some(with_children(&Value::Object(next), &parent, &siblings))
+    let gone_set: HashSet<&String> = gone.iter().collect();
+    member_mut(tree, "items").retain(|k, _| !gone_set.contains(k));
+    member_mut(tree, "children").retain(|k, _| !gone_set.contains(k));
+    with_children(tree, &parent, &siblings);
+    true
 }
 
 /// `withRestored(tree, items)`: each item as given, and the children of each
 /// restored item rebuilt from the items' parents, in the given order. The
 /// first item's place among its parent's children is set by the caller.
-fn with_restored(tree: &Value, items: &[Value]) -> Value {
-    let restored = with_items(tree, items.to_vec()).unwrap_or_else(|| tree.clone());
-    let mut children = children_map(&restored).cloned().unwrap_or_default();
+fn with_restored(tree: &mut Value, items: &[Value]) {
+    with_items(tree, items.to_vec());
     // `new Set(keys)`: insertion order, each once.
     let mut keys: Vec<OutlineKey> = Vec::new();
     for item in items {
@@ -249,17 +281,36 @@ fn with_restored(tree: &Value, items: &[Value]) -> Value {
             }
         }
     }
+    let children = member_mut(tree, "children");
     for key in &keys {
         match rebuilt.iter().find(|(p, _)| p == key) {
             Some((_, list)) => {
                 children.insert(key.clone(), keys_value(list));
             }
-            None => js_delete(&mut children, key),
+            None => js_delete(children, key),
         }
     }
-    let mut next = object_of(&restored);
-    next.insert("children".into(), Value::Object(js_ordered(children)));
-    Value::Object(next)
+    reorder(children);
+}
+
+/// `reparented`: the moved items whose parent isn't `parent` any more, each
+/// with its new parent.
+fn reparented<'a>(
+    tree: &Value,
+    moved: impl Iterator<Item = &'a OutlineKey>,
+    target: &str,
+    parent: &Value,
+) -> Vec<Value> {
+    moved
+        .filter_map(|key| {
+            let item = item_at(tree, key)?;
+            (outline_key_of(item.get("parent")) != target).then(|| {
+                let mut item = item.clone();
+                item["parent"] = parent.clone();
+                item
+            })
+        })
+        .collect()
 }
 
 fn keys_of(refs: Option<&Value>) -> Vec<OutlineKey> {
@@ -308,51 +359,56 @@ pub fn fold_outline(tree: Rc<Value>, event: &Value) -> Result<Fold, Error> {
             let parent = outline_key_of(order.get("parent"));
             let keys: Vec<OutlineKey> =
                 array_member(order, "children")?.iter().map(|r| outline_key_of(Some(r))).collect();
-            let with = with_items_or((*tree).clone(), vec![item]);
-            with_children(&with, &parent, &keys)
+            let mut next = owned(tree);
+            with_items(&mut next, vec![item]);
+            with_children(&mut next, &parent, &keys);
+            next
         }
         "outline.updated" => {
-            with_items_or((*tree).clone(), vec![object_member(event, "item")?.clone()])
+            let item = object_member(event, "item")?.clone();
+            let mut next = owned(tree);
+            with_items(&mut next, vec![item]);
+            next
         }
         "outline.moved" => {
-            let mut next = (*tree).clone();
-            for order in array_member(event, "orders")? {
+            let orders = array_member(event, "orders")?;
+            for order in orders {
+                array_member(order, "children")?;
+            }
+            let mut next = owned(tree);
+            for order in orders {
                 let parent = outline_key_of(order.get("parent"));
-                let children = array_member(order, "children")?;
-                let keys: Vec<OutlineKey> =
-                    children.iter().map(|r| outline_key_of(Some(r))).collect();
-                next = with_children(&next, &parent, &keys);
-                let reparented: Vec<Value> = children
+                let keys: Vec<OutlineKey> = array_member(order, "children")?
                     .iter()
-                    .filter_map(|r| {
-                        let item = item_at(&next, &outline_key_of(Some(r)))?;
-                        (outline_key_of(item.get("parent")) != parent).then(|| {
-                            let mut item = item.clone();
-                            item["parent"] = order.get("parent").cloned().unwrap_or(Value::Null);
-                            item
-                        })
-                    })
+                    .map(|r| outline_key_of(Some(r)))
                     .collect();
-                next = with_items_or(next, reparented);
+                with_children(&mut next, &parent, &keys);
+                let parent_ref = order.get("parent").cloned().unwrap_or(Value::Null);
+                let moved = reparented(&next, keys.iter(), &parent, &parent_ref);
+                with_items(&mut next, moved);
             }
             next
         }
         "outline.deleted" => {
             let deleted = array_member(event, "deleted")?;
-            match deleted.first() {
-                Some(first) => match without_subtree(&tree, &outline_key_of(Some(first))) {
-                    Some(next) => next,
-                    None => return Ok(Fold::Value(tree)),
-                },
-                None => return Ok(Fold::Value(tree)),
+            let Some(first) = deleted.first() else { return Ok(Fold::Value(tree)) };
+            let key = outline_key_of(Some(first));
+            if item_at(&tree, &key).is_none() {
+                return Ok(Fold::Value(tree));
             }
+            let mut next = owned(tree);
+            without_subtree(&mut next, &key);
+            next
         }
         "outline.restored" => {
             let items = array_member(event, "items")?;
             let order = object_member(event, "order")?;
             let keys: Vec<OutlineKey> =
                 array_member(order, "children")?.iter().map(|r| outline_key_of(Some(r))).collect();
-            with_children(&with_restored(&tree, items), &outline_key_of(order.get("parent")), &keys)
+            let mut next = owned(tree);
+            with_restored(&mut next, items);
+            with_children(&mut next, &outline_key_of(order.get("parent")), &keys);
+            next
         }
         _ => return Ok(Fold::Value(tree)),
     };
@@ -364,7 +420,7 @@ pub fn fold_outline(tree: Rc<Value>, event: &Value) -> Result<Fold, Error> {
 /// `predictOutline(tree, op)`: one op of a change this session staged, shown
 /// before the engine answers, by the engine's rules. An op the tree already
 /// holds changes nothing; an op the engine would refuse leaves the tree as
-/// it is.
+/// it is. A tree nothing else holds is changed in place.
 pub fn predict_outline(tree: Rc<Value>, op: &Value) -> Result<Rc<Value>, Error> {
     if tree.is_null() {
         return Ok(tree);
@@ -386,15 +442,21 @@ pub fn predict_outline(tree: Rc<Value>, op: &Value) -> Result<Rc<Value>, Error> 
             let parent_ref = op.get("parent").cloned().unwrap_or_else(epdf_kernel::undefined);
             let item =
                 outline_item_of_draft(item_ref, parent_ref, &member_or_undefined(op, "data"))?;
-            let with = with_items_or((*tree).clone(), vec![item]);
-            with_children(&with, &parent, &inserted(&siblings, at, &[key]))
+            let mut next = owned(tree);
+            with_items(&mut next, vec![item]);
+            with_children(&mut next, &parent, &inserted(&siblings, at, &[key]));
+            next
         }
         Some("outline.update") => {
             let key = outline_key_of(op.get("ref"));
             let Some(item) = item_at(&tree, &key) else { return Ok(tree) };
             let has_children = !children_of(&tree, &key).is_empty();
             match outline_item_after(item, &member_or_undefined(op, "patch"), has_children)? {
-                Some(next) => with_items_or((*tree).clone(), vec![next]),
+                Some(item) => {
+                    let mut next = owned(tree);
+                    with_items(&mut next, vec![item]);
+                    next
+                }
                 None => return Ok(tree),
             }
         }
@@ -402,35 +464,54 @@ pub fn predict_outline(tree: Rc<Value>, op: &Value) -> Result<Rc<Value>, Error> 
             let moved = keys_of(op.get("refs"));
             let parent = op.get("parent").cloned().unwrap_or_else(epdf_kernel::undefined);
             let position = member_or_undefined(op, "position");
-            match moved_tree(&tree, &moved, &parent, &position) {
-                Some(next) => next,
-                None => return Ok(tree),
-            }
+            let Some(plan) = move_plan(&tree, &moved, &parent, &position) else {
+                return Ok(tree);
+            };
+            let mut next = owned(tree);
+            moved_tree(&mut next, &moved, &parent, plan);
+            next
         }
-        Some("outline.delete") => match without_subtree(&tree, &outline_key_of(op.get("ref"))) {
-            Some(next) => next,
-            None => return Ok(tree),
-        },
+        Some("outline.delete") => {
+            let key = outline_key_of(op.get("ref"));
+            if item_at(&tree, &key).is_none() {
+                return Ok(tree);
+            }
+            let mut next = owned(tree);
+            without_subtree(&mut next, &key);
+            next
+        }
         Some("outline.restore") => {
             let items = op.get("items").and_then(Value::as_array).cloned().unwrap_or_default();
-            match restored_tree(&tree, &items, op.get("index")) {
-                Some(next) => next,
-                None => return Ok(tree),
+            let Some(first) = items.first() else { return Ok(tree) };
+            let parent = outline_key_of(first.get("parent"));
+            if parent != TOP && item_at(&tree, &parent).is_none() {
+                return Ok(tree);
             }
+            let mut next = owned(tree);
+            restored_tree(&mut next, &items, op.get("index"));
+            next
         }
         _ => return Ok(tree),
     };
     Ok(Rc::new(next))
 }
 
-/// `movedTree`: the items, with the items under them, at `position` among
-/// `parent`'s children. `None` where the TypeScript returns `tree`.
-fn moved_tree(
+/// What a move does: the target's key, its new children, and the parents
+/// the moved items leave, in the order `new Set(moved.map(parent key))`
+/// gives them.
+struct MovePlan {
+    target: OutlineKey,
+    order: Vec<OutlineKey>,
+    left: Vec<OutlineKey>,
+}
+
+/// `movedTree`'s checks: `None` where the TypeScript returns `tree`.
+fn move_plan(
     tree: &Value,
     moved: &[OutlineKey],
     parent: &Value,
     position: &Value,
-) -> Option<Value> {
+) -> Option<MovePlan> {
     let target = outline_key_of(Some(parent));
     if target != TOP && item_at(tree, &target).is_none() {
         return None;
@@ -456,8 +537,6 @@ fn moved_tree(
     if order == current {
         return None;
     }
-    let mut next = tree.clone();
-    // `new Set(moved.map(parent key))` without the target, in that order.
     let mut left: Vec<OutlineKey> = Vec::new();
     for key in moved {
         let from = outline_key_of(item_at(tree, key).and_then(|item| item.get("parent")));
@@ -465,24 +544,21 @@ fn moved_tree(
             left.push(from);
         }
     }
-    for old in left {
+    Some(MovePlan { target, order, left })
+}
+
+/// `movedTree`: the items, with the items under them, at the planned place
+/// among `parent`'s children.
+fn moved_tree(tree: &mut Value, moved: &[OutlineKey], parent: &Value, plan: MovePlan) {
+    let moved_set: HashSet<&OutlineKey> = moved.iter().collect();
+    for old in plan.left {
         let kept: Vec<OutlineKey> =
-            children_of(&next, &old).into_iter().filter(|k| !moved_set.contains(k)).collect();
-        next = with_children(&next, &old, &kept);
+            children_of(tree, &old).into_iter().filter(|k| !moved_set.contains(k)).collect();
+        with_children(tree, &old, &kept);
     }
-    next = with_children(&next, &target, &order);
-    let reparented: Vec<Value> = moved
-        .iter()
-        .filter_map(|key| {
-            let item = item_at(&next, key)?;
-            (outline_key_of(item.get("parent")) != target).then(|| {
-                let mut item = item.clone();
-                item["parent"] = parent.clone();
-                item
-            })
-        })
-        .collect();
-    Some(with_items_or(next, reparented))
+    with_children(tree, &plan.target, &plan.order);
+    let reparented = reparented(tree, moved.iter(), &plan.target, parent);
+    with_items(tree, reparented);
 }
 
 /// `Math.max(0, Math.min(index, length))`, NaN (and so a missing index)
@@ -499,27 +575,24 @@ fn clamp_index(index: Option<&Value>, length: usize) -> usize {
 
 /// `restoredTree(tree, items, index)`: the items as they were, the first at
 /// `index` among its parent's children, wherever they are now and whether
-/// or not they are here.
-fn restored_tree(tree: &Value, items: &[Value], index: Option<&Value>) -> Option<Value> {
-    let first = items.first()?;
+/// or not they are here. The caller has checked the first item's parent.
+fn restored_tree(tree: &mut Value, items: &[Value], index: Option<&Value>) {
+    let Some(first) = items.first() else { return };
     let parent = outline_key_of(first.get("parent"));
-    if parent != TOP && item_at(tree, &parent).is_none() {
-        return None;
-    }
     let key = outline_key_of(first.get("ref"));
-    let mut next = tree.clone();
     // Take out what is here now, so nothing is listed twice.
     for item in items {
         let item_key = outline_key_of(item.get("ref"));
-        let Some(current) = item_at(&next, &item_key) else { continue };
+        let Some(current) = item_at(tree, &item_key) else { continue };
         let from = outline_key_of(current.get("parent"));
         let kept: Vec<OutlineKey> =
-            children_of(&next, &from).into_iter().filter(|child| *child != item_key).collect();
-        next = with_children(&next, &from, &kept);
+            children_of(tree, &from).into_iter().filter(|child| *child != item_key).collect();
+        with_children(tree, &from, &kept);
     }
-    let siblings = children_of(&next, &parent);
+    let siblings = children_of(tree, &parent);
     let at = clamp_index(index, siblings.len());
-    Some(with_children(&with_restored(&next, items), &parent, &inserted(&siblings, at, &[key])))
+    with_restored(tree, items);
+    with_children(tree, &parent, &inserted(&siblings, at, &[key]));
 }
 
 /// `restoreOf(tree, key)`: the item and the items under it, as the tree holds
@@ -580,7 +653,7 @@ pub fn undo_of(tree: &Rc<Value>, ops: &[Value]) -> Result<Vec<Value>, Error> {
     for op in ops {
         undo.push(undo_of_op(&current, op));
         // `predictOutline(current, op) ?? current`: a throw leaves `undoOf`.
-        current = predict_outline(current.clone(), op)?;
+        current = predict_outline(current, op)?;
     }
     Ok(undo.into_iter().rev().flatten().collect())
 }
@@ -681,5 +754,51 @@ mod tests {
         assert!(Rc::ptr_eq(&predict_outline(t.clone(), &op).unwrap(), &t));
         let op = json!({"type": "outline.update", "ref": r(1), "patch": {"open": false}});
         assert_eq!(item_at(&predict_outline(t, &op).unwrap(), "1").unwrap()["open"], false);
+    }
+
+    /// M39: a fold or a prediction copies the tree once when it changes
+    /// it and not at all when it doesn't, and a run of predictions over
+    /// each other (the view's replay, `undoOf`) copies it once. The
+    /// TypeScript spreads `items` and `children` per change (O(n) pointer
+    /// copies); this port copies the items once (O(n) deep).
+    #[test]
+    fn tree_copies_per_change() {
+        let mut listed = Vec::new();
+        for n in 1..=1000u32 {
+            listed.push(item(n, (n % 10 != 1).then(|| n - (n - 1) % 10)));
+        }
+        let t = Rc::new(tree_of(&json!({ "items": listed, "incomplete": false })));
+        let ops = [
+            json!({"type": "outline.create", "parent": r(1), "position": "end", "data": {"title": "N"}, "objectNumber": 5001}),
+            json!({"type": "outline.update", "ref": r(2), "patch": {"title": "renamed"}}),
+            json!({"type": "outline.move", "refs": [r(3)], "parent": r(11), "position": "start"}),
+            json!({"type": "outline.delete", "ref": r(21)}),
+        ];
+        let before = tree_copies();
+        for op in &ops {
+            let next = predict_outline(t.clone(), op).unwrap();
+            assert!(!Rc::ptr_eq(&next, &t));
+        }
+        assert_eq!(tree_copies(), before + ops.len(), "one copy per prediction");
+        let unchanged = json!({"type": "outline.update", "ref": r(2), "patch": {"title": "t2"}});
+        assert!(Rc::ptr_eq(&predict_outline(t.clone(), &unchanged).unwrap(), &t));
+        assert_eq!(tree_copies(), before + ops.len(), "none for a prediction that changes nothing");
+        let before = tree_copies();
+        let mut replayed = t.clone();
+        for op in &ops {
+            replayed = predict_outline(replayed, op).unwrap();
+        }
+        assert_eq!(tree_copies(), before + 1, "a replay copies the tree once");
+        let undo = undo_of(&t, &ops).unwrap();
+        assert_eq!(undo.len(), 4);
+        assert_eq!(tree_copies(), before + 2, "undoOf copies it once");
+        let before = tree_copies();
+        let mut folded = t.clone();
+        for n in 1..=10u32 {
+            let event = json!({"type": "outline.updated", "item": item(n * 7, None)});
+            let Fold::Value(next) = fold_outline(folded.clone(), &event).unwrap() else { panic!() };
+            folded = next;
+        }
+        assert_eq!(tree_copies(), before + 10, "one copy per fold");
     }
 }

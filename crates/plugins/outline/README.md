@@ -56,3 +56,14 @@ None is reached by a vector or by an outline the engine sends.
   ...`, where `controller.ts:212-216` passes the raw object to `goToDestination`. This is the link
   plugin's rule (`crates/plugins/link/src/controller.rs:388-410`). An engine read never sends such a
   destination.
+
+## Cost of a change
+
+The tree is JSON, so it can't share its items the way `sync/tree.ts` shares them with
+`{ ...tree.items, [key]: item }`. A fold or prediction that changes the tree copies it once and
+edits the copy in place; one that changes nothing copies nothing, and a run of predictions replayed
+over each other copies it once (M39, `tree_copies_per_change` in `src/sync.rs`). On a 5,000-item
+outline in a release build a rename costs about 3.3 ms per fold or prediction, from 9.7 ms when
+each edit copied the tree again (15 copies for four predictions, now four). The TypeScript's spread
+copies pointers, which this port would match only with a typed tree of shared items behind a mirror
+token, as the form keeps its `FieldIndex`.
