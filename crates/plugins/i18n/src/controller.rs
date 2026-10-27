@@ -192,6 +192,7 @@ impl I18nCapability {
     /// `resetSettings()`: back to what the app registered.
     pub fn reset_settings(&self) {
         self.0.settings.store.reset_settings();
+        self.0.table.release_unnamed(&self.0.settings.store);
     }
 
     /// `onSettingsChanged(listener)`.

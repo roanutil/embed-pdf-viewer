@@ -826,3 +826,22 @@ fn the_kernel_hands_out_the_scoped_view() {
     assert_eq!(ran(&rig.kernel.capability(&COMMANDS, Some("a")).unwrap()).as_deref(), Some("a"));
     assert_eq!(ran(&rig.kernel.capability(&COMMANDS, None).unwrap()).as_deref(), Some("b"));
 }
+
+/// M37: the registration's table keeps only the definitions the registered
+/// and current settings name, as the TypeScript store holds them; a
+/// definition a change or a reset replaced is released.
+#[test]
+fn a_replaced_definition_is_released_from_the_command_table() {
+    let rig = rig(config(vec![def("open")]));
+    assert_eq!(rig.commands.retained_commands(), 1);
+    for _ in 0..30 {
+        rig.commands.update_settings(&config(vec![CommandDef {
+            run: Some(Rc::new(|_| Ok(None))),
+            ..def("save")
+        }]));
+    }
+    assert_eq!(rig.commands.retained_commands(), 2, "the registered one and the current one");
+    rig.commands.reset_settings();
+    assert_eq!(rig.commands.retained_commands(), 1, "only the registered one");
+    assert!(rig.commands.get_command("open").is_ok_and(|c| c.is_some()));
+}

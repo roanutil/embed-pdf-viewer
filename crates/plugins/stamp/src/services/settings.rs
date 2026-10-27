@@ -14,7 +14,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
-use epdf_kernel::settings::Settings;
+use epdf_kernel::settings::{Settings, WeakSettings};
 
 use serde_json::{Map, Value, json};
 
@@ -29,6 +29,9 @@ pub struct EngineTable {
     next: Cell<u64>,
     /// Holds by handle, from [`EngineTable::hold`].
     held: RefCell<HashMap<u64, usize>>,
+    /// The registration's settings store, for a hold that ends with no
+    /// settings change after it.
+    settings: RefCell<Option<WeakSettings>>,
 }
 
 /// An instance's hold on a handle's engine; dropping it lets
@@ -41,12 +44,17 @@ pub(crate) struct EngineHold {
 impl Drop for EngineHold {
     fn drop(&mut self) {
         let Some(table) = self.table.upgrade() else { return };
-        let mut held = table.held.borrow_mut();
-        if let Some(count) = held.get_mut(&self.handle) {
+        let released = {
+            let mut held = table.held.borrow_mut();
+            let Some(count) = held.get_mut(&self.handle) else { return };
             *count -= 1;
-            if *count == 0 {
-                held.remove(&self.handle);
-            }
+            *count == 0 && held.remove(&self.handle).is_some()
+        };
+        // `resolved.from` let go: the engine is garbage now unless a
+        // setting still names it.
+        let settings = table.settings.borrow().as_ref().and_then(WeakSettings::upgrade);
+        if let (true, Some(settings)) = (released, settings) {
+            table.release_unnamed(&settings);
         }
     }
 }
@@ -79,6 +87,12 @@ impl EngineTable {
         let named = settings.named_handles(ENGINE_KEY);
         let held = self.held.borrow();
         self.engines.borrow_mut().retain(|(n, _)| named.contains(n) || held.contains_key(n));
+    }
+
+    /// Name the registration's settings store, so a hold that ends can
+    /// release its engine at once when no setting names it.
+    pub(crate) fn attach(&self, settings: &Settings) {
+        *self.settings.borrow_mut() = Some(settings.downgrade());
     }
 
     /// Keep the engine behind `handle` while the hold lives: an instance's

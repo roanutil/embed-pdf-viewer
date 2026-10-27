@@ -462,3 +462,18 @@ fn a_replaced_key_is_released_from_the_port_table() {
     signature.reset_settings();
     assert!(signature.get_settings().key.is_none());
 }
+
+/// M37: a reset drops the current key the store no longer holds, as the
+/// TypeScript store lets the replaced value go.
+#[test]
+fn a_reset_releases_the_key_it_replaced() {
+    let rig = Rig::open(SignatureConfig::default(), engine_of("nothing-signed-reads"));
+    let signature = &rig.signature;
+    signature.update_settings(&SignatureConfig {
+        key: Some(Some(cms_key(|| {}))),
+        ..Default::default()
+    });
+    assert_eq!(signature.retained_ports(), 1);
+    signature.reset_settings();
+    assert_eq!(signature.retained_ports(), 0, "nothing registered, nothing kept");
+}

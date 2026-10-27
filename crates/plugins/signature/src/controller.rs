@@ -166,6 +166,7 @@ impl SignatureCapability {
     /// `resetSettings()`: back to the registered settings.
     pub fn reset_settings(&self) {
         self.0.settings.store.reset_settings();
+        self.0.table.release_unnamed(&self.0.settings.store);
     }
 
     /// `onSettingsChanged(listener)`.

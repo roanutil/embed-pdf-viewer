@@ -45,6 +45,10 @@ impl Settings {
     pub fn get_settings(&self) -> Rc<Value> {
         self.get()
     }
+    /// A handle that doesn't keep the store alive.
+    pub fn downgrade(&self) -> WeakSettings {
+        WeakSettings(Rc::downgrade(&self.0))
+    }
     /// The registered settings, which `reset_settings` goes back to.
     pub fn initial(&self) -> Rc<Value> {
         self.0.initial.clone()
@@ -103,6 +107,14 @@ impl Settings {
     }
     pub fn dispose(&self) {
         self.0.events.dispose();
+    }
+}
+/// A [`Settings`] store held weakly ([`Settings::downgrade`]).
+#[derive(Clone)]
+pub struct WeakSettings(std::rc::Weak<Inner>);
+impl WeakSettings {
+    pub fn upgrade(&self) -> Option<Settings> {
+        self.0.upgrade().map(Settings)
     }
 }
 #[derive(Clone)]

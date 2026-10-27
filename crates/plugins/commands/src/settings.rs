@@ -20,10 +20,11 @@
 //! one already given, where the TypeScript takes the new objects: a
 //! registered divergence (README), visible only as identity.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use epdf_kernel::Error;
+use epdf_kernel::settings::Settings;
 use serde_json::{Map, Value, json};
 
 use crate::contract::{
@@ -36,8 +37,9 @@ const FAMILY_HANDLE: &str = "$commandFamily";
 /// The registration's definitions and families, by handle.
 #[derive(Default)]
 pub struct CommandTable {
-    commands: RefCell<Vec<Rc<CommandDef>>>,
-    families: RefCell<Vec<Rc<CommandFamily>>>,
+    commands: RefCell<Vec<(u64, Rc<CommandDef>)>>,
+    families: RefCell<Vec<(u64, Rc<CommandFamily>)>>,
+    next: Cell<u64>,
 }
 
 fn not_allowed_json(mode: NotAllowedMode) -> Value {
@@ -48,21 +50,35 @@ fn not_allowed_json(mode: NotAllowedMode) -> Value {
 }
 
 impl CommandTable {
+    fn mint(&self) -> u64 {
+        let n = self.next.get();
+        self.next.set(n + 1);
+        n
+    }
+
     fn item_json(&self, item: &CommandItem) -> Value {
         match item {
             CommandItem::Command(def) => {
-                let mut commands = self.commands.borrow_mut();
-                let n = commands.iter().position(|d| d.same_value(def)).unwrap_or_else(|| {
-                    commands.push(def.clone());
-                    commands.len() - 1
+                let found =
+                    self.commands.borrow().iter().find(|(_, d)| d.same_value(def)).map(|(n, _)| *n);
+                let n = found.unwrap_or_else(|| {
+                    let n = self.mint();
+                    self.commands.borrow_mut().push((n, def.clone()));
+                    n
                 });
                 json!({ COMMAND_HANDLE: n })
             }
             CommandItem::Family(family) => {
-                let mut families = self.families.borrow_mut();
-                let n = families.iter().position(|f| f.same_value(family)).unwrap_or_else(|| {
-                    families.push(family.clone());
-                    families.len() - 1
+                let found = self
+                    .families
+                    .borrow()
+                    .iter()
+                    .find(|(_, f)| f.same_value(family))
+                    .map(|(n, _)| *n);
+                let n = found.unwrap_or_else(|| {
+                    let n = self.mint();
+                    self.families.borrow_mut().push((n, family.clone()));
+                    n
                 });
                 json!({ FAMILY_HANDLE: n })
             }
@@ -70,12 +86,34 @@ impl CommandTable {
     }
 
     fn item_of(&self, value: &Value) -> Option<CommandItem> {
-        let handle = |key: &str| value.get(key).and_then(Value::as_u64).map(|n| n as usize);
+        let handle = |key: &str| value.get(key).and_then(Value::as_u64);
         if let Some(n) = handle(COMMAND_HANDLE) {
-            return self.commands.borrow().get(n).cloned().map(CommandItem::Command);
+            let found =
+                self.commands.borrow().iter().find(|(m, _)| *m == n).map(|(_, d)| d.clone());
+            return found.map(CommandItem::Command);
         }
         let n = handle(FAMILY_HANDLE)?;
-        self.families.borrow().get(n).cloned().map(CommandItem::Family)
+        let found = self.families.borrow().iter().find(|(m, _)| *m == n).map(|(_, f)| f.clone());
+        found.map(CommandItem::Family)
+    }
+
+    /// Drop the definitions and families neither the registered settings
+    /// nor the current ones name. The TypeScript store holds the objects
+    /// themselves, so one a change replaced is garbage once nothing else
+    /// holds it; here the table would keep every one for the
+    /// registration's life. Handles are never reused.
+    pub fn release_unnamed(&self, settings: &Settings) {
+        let commands = settings.named_handles(COMMAND_HANDLE);
+        let families = settings.named_handles(FAMILY_HANDLE);
+        self.commands.borrow_mut().retain(|(n, _)| commands.contains(n));
+        self.families.borrow_mut().retain(|(n, _)| families.contains(n));
+    }
+
+    /// How many definitions and families the table holds (the retention
+    /// guard's count).
+    #[doc(hidden)]
+    pub fn retained(&self) -> usize {
+        self.commands.borrow().len() + self.families.borrow().len()
     }
 
     /// The JSON a `DeepPartial<CommandsSettings>` change is in the store:

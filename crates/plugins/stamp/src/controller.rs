@@ -52,6 +52,7 @@ pub fn create_stamp_controller(
         Ok(None)
     }));
     let settings = cx.settings()?;
+    table.attach(&settings.store);
     let asset_engine = Rc::new(AssetEngineState::default());
     let released = asset_engine.clone();
     cx.defer(Box::new(move || {
@@ -141,6 +142,7 @@ impl StampCapability {
     /// `resetSettings()`: back to the registered settings.
     pub fn reset_settings(&self) {
         self.0.settings.store.reset_settings();
+        self.0.table.release_unnamed(&self.0.settings.store);
     }
 
     /// `onSettingsChanged(listener)`.

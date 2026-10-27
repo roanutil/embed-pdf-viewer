@@ -295,11 +295,19 @@ impl CommandsCapability {
     /// `on_settings_changed` once when a setting changed.
     pub fn update_settings(&self, changes: &CommandsConfig) {
         self.inner.settings.store.update_settings(&self.inner.table.encode(changes));
+        self.inner.table.release_unnamed(&self.inner.settings.store);
+    }
+
+    /// How many definitions the registration's table holds (M37's guard).
+    #[doc(hidden)]
+    pub fn retained_commands(&self) -> usize {
+        self.inner.table.retained()
     }
 
     /// `resetSettings()`: back to what the app registered.
     pub fn reset_settings(&self) {
         self.inner.settings.store.reset_settings();
+        self.inner.table.release_unnamed(&self.inner.settings.store);
     }
 
     /// `onSettingsChanged(listener)`.

@@ -761,3 +761,17 @@ fn a_replaced_loader_is_released_from_the_loader_table() {
     rt::run_until_stalled();
     assert!(rig.i18n.get_settings().loaders.contains_key("he"), "the registered loader reads back");
 }
+
+/// M37: a reset keeps the registered loader and drops the one it replaced.
+#[test]
+fn a_reset_releases_the_loader_it_replaced() {
+    let rig = Rig::with(loaders(vec![("he", ready(he()))]));
+    rig.i18n.update_settings(&I18nConfig {
+        loaders: Some(loaders(vec![("fr", ready(pack("fr", "Français", json!({}))))])),
+        ..I18nConfig::default()
+    });
+    assert_eq!(rig.i18n.retained_loaders(), 2);
+    rig.i18n.reset_settings();
+    rt::run_until_stalled();
+    assert_eq!(rig.i18n.retained_loaders(), 1, "only the registered loader");
+}

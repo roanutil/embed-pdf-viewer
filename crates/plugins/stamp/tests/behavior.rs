@@ -599,3 +599,42 @@ fn a_replaced_asset_engine_is_released_and_the_resolved_one_kept() {
     set(StampAssetEngine::Engine(LocalEngine::new(engine)));
     assert_eq!(rig.stamp.retained_engines(), 2, "the new engine and the still-resolved function");
 }
+
+/// M37: the resolved engine is released the moment the instance resolves
+/// another, with no settings change after it, and a reset drops the
+/// engine it replaced; the TypeScript's `resolved.from` and store let go
+/// of them at those points.
+#[test]
+fn an_engine_is_released_when_its_hold_ends_or_on_reset() {
+    let rig = Rig::with(library(Vec::new()), Vec::new(), false);
+    let made = Rc::new(std::cell::Cell::new(0));
+    let (calls, fake) = (made.clone(), rig.fake.clone());
+    let factory: epdf_plugin_stamp::AssetEngineFactory = Rc::new(move || {
+        calls.set(calls.get() + 1);
+        let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(fake.clone()));
+        Ok(epdf_plugin_stamp::MadeAssetEngine::Ready(LocalEngine::new(engine)))
+    });
+    let set = |engine: StampAssetEngine| {
+        rig.stamp.update_settings(&StampConfig {
+            asset_engine: Some(Some(engine)),
+            ..StampConfig::default()
+        })
+    };
+    set(StampAssetEngine::Factory(factory));
+    success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(rig.fake.clone()));
+    set(StampAssetEngine::Engine(LocalEngine::new(engine)));
+    assert_eq!(rig.stamp.retained_engines(), 2, "the current engine and the resolved function");
+    // The next library operation resolves the current engine; the
+    // function's hold ends there, with no settings change after it.
+    success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(rig.stamp.retained_engines(), 1, "the function went with its hold");
+    assert_eq!(made.get(), 1);
+    rig.stamp.reset_settings();
+    assert_eq!(rig.stamp.retained_engines(), 1, "the resolved engine is still held");
+    // Reset to no engine: the kernel's, which is not local, refuses the
+    // import, but the operation resolved it and let the old one go.
+    let refused = failure(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(refused.plugin_code(), Some(code::UNSUPPORTED));
+    assert_eq!(rig.stamp.retained_engines(), 0, "reset and re-resolved: nothing named or held");
+}
