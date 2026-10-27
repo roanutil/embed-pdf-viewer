@@ -463,6 +463,25 @@ fn a_replaced_key_is_released_from_the_port_table() {
     assert!(signature.get_settings().key.is_none());
 }
 
+/// M37's count covers both ports: a trust port the settings name is held
+/// beside the key.
+#[test]
+fn the_port_table_counts_the_trust_port_beside_the_key() {
+    struct NoAnchors;
+    impl epdf_signature_core::trust::TrustPort for NoAnchors {
+        fn anchors(&self) -> Promise<Vec<Vec<u8>>> {
+            Promise::resolved(Vec::new())
+        }
+    }
+    let rig = Rig::open(SignatureConfig::default(), engine_of("nothing-signed-reads"));
+    rig.signature.update_settings(&SignatureConfig {
+        key: Some(Some(cms_key(|| {}))),
+        trust: Some(Some(Rc::new(NoAnchors))),
+        ..Default::default()
+    });
+    assert_eq!(rig.signature.retained_ports(), 2, "the key and the trust port");
+}
+
 /// M37: a reset drops the current key the store no longer holds, as the
 /// TypeScript store lets the replaced value go.
 #[test]
