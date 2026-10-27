@@ -27,14 +27,14 @@ function ensureEmsdk(version) {
 }
 
 const RUNTIME_SRC = 'packages/engine/runtime/runtime-src';
-const FORK_TARGETS = ['wasm32-eh', 'ios-arm64', 'ios-sim-arm64'];
+const FORK_TARGETS = ['wasm32-eh', 'ios-arm64', 'ios-sim-arm64', 'darwin-static-arm64', 'darwin-static-x64'];
 // One list for every target, so the fork's deps-sync.stamp (which records it)
 // stays valid when one checkout builds wasm and iOS in turn.
-const FORK_TARGET_OS_LIST = 'emscripten ios';
+const FORK_TARGET_OS_LIST = 'emscripten ios mac';
 const FORK_TARGET = 'wasm32-eh';
 // Bump to rebuild every cached fork archive. Not tied to this file's hash,
 // because a fork build takes minutes and most edits here don't touch it.
-const FORK_RECIPE = 3;
+const FORK_RECIPE = 4;
 // The Emscripten the wasm32-eh target needs, for both the fork build and the
 // Rust-core link. Hard-coded, unlike every other emsdk version here, because
 // no branch declares it anywhere a script can read: compile.esm.sh passes
@@ -85,6 +85,11 @@ function hostClangWorks(src) {
   return ['cffaedfe', 'cafebabe'].includes(magic);
 }
 
+function depsSupportTargets(src) {
+  const stamp = path.join(src, '.embedpdf-runtime/deps-sync.stamp');
+  return existsSync(stamp) && readFileSync(stamp, 'utf8').includes(`target_os_list=${FORK_TARGET_OS_LIST}\n`);
+}
+
 // Builds the PDFium fork at the worktree's recorded runtime-src commit, for
 // the wasm32-eh target the Rust engine core links against, or an iOS target
 // the Swift package's XCFramework is made from. No fork release publishes
@@ -93,14 +98,15 @@ function hostClangWorks(src) {
 // Rust-core recipes can't use a published archive. Cached by commit and target.
 export function buildFork(dir, target = FORK_TARGET) {
   if (!FORK_TARGETS.includes(target)) throw new Error(`unknown fork target ${target}`);
-  const ios = target.startsWith('ios-');
+  const native = !target.startsWith('wasm');
   const [, , sha] = git(['ls-tree', 'HEAD', RUNTIME_SRC], dir).split(/\s+/);
   const root = path.join(workDir(), 'fork', sha);
   const src = path.join(root, 'runtime-src');
   const stampFile = path.join(root, `${target}.json`);
   if (existsSync(stampFile)) {
     const stamp = JSON.parse(readFileSync(stampFile, 'utf8'));
-    if (stamp.recipe === FORK_RECIPE && existsSync(stamp.staging)) return stamp;
+    const lib = path.join(stamp.staging, 'lib/libembedpdf.a');
+    if (stamp.recipe === FORK_RECIPE && existsSync(lib) && sha256(readFileSync(lib)) === stamp.libSha256) return stamp;
   }
   console.log(`  building fork ${sha.slice(0, 9)} for ${target}`);
   const seededMarker = path.join(root, 'seeded');
@@ -130,7 +136,7 @@ export function buildFork(dir, target = FORK_TARGET) {
   // release workflow puts it.
   // iOS targets use the fork's own clang and the Xcode SDK instead.
   let source = '';
-  if (!ios) {
+  if (!native) {
     const forkEmsdk = path.join(src, 'third_party/emsdk');
     if (!existsSync(forkEmsdk)) sh(`git clone https://github.com/emscripten-core/emsdk.git ${forkEmsdk}`, src);
     sh(`./emsdk install ${EH_EMSDK_VERSION} && ./emsdk activate ${EH_EMSDK_VERSION}`, forkEmsdk);
@@ -151,7 +157,7 @@ export function buildFork(dir, target = FORK_TARGET) {
       // target_os, which would otherwise force a full gclient resync. iOS
       // resyncs ('always', which also replaces llvm-build) only when the
       // clang there can't run on this host.
-      PDF_RUNTIME_SYNC: ios ? (hostClangWorks(src) ? 'skip' : 'always') : seeded ? 'skip' : 'auto',
+      PDF_RUNTIME_SYNC: native ? (hostClangWorks(src) && depsSupportTargets(src) ? 'skip' : 'always') : seeded && depsSupportTargets(src) ? 'skip' : 'auto',
       PDF_RUNTIME_ARTIFACT_DIR: artifacts,
     },
   );
