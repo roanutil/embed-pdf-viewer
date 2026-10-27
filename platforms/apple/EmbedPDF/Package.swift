@@ -13,6 +13,7 @@ let package = Package(
   name: "EmbedPDF",
   platforms: [
     .iOS(.v17),
+    .macOS(.v14),
   ],
   products: [
     .library(name: "EmbedPDF", targets: ["EmbedPDF"]),
@@ -35,6 +36,8 @@ let package = Package(
         .linkedLibrary("c++"),
         .linkedFramework("CoreFoundation"),
         .linkedFramework("CoreGraphics"),
+        .linkedFramework("AppKit", .when(platforms: [.macOS])),
+        .linkedFramework("Foundation"),
       ]
     ),
     .target(
@@ -116,6 +119,8 @@ if !usesLocalEngine {
       .linkedLibrary("c++"),
       .linkedFramework("CoreFoundation"),
       .linkedFramework("CoreGraphics"),
+      .linkedFramework("AppKit", .when(platforms: [.macOS])),
+      .linkedFramework("Foundation"),
     ]
   }
 }

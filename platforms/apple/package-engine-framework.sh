@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Packages the iOS engine as a binary framework a Swift package can download.
+# Packages the iOS/macOS engine as a binary framework SwiftPM can download.
 #
 # Runs after build-xcframework.sh and reads what it left in .build/: each
 # slice's merged archive (Rust core and PDFium), the uniffi-generated Swift,
 # and the C headers that Swift imports. Per slice, the Swift is compiled as one
 # library-evolution module, EmbedPDFBindings, and its objects join the archive
-# in a static EmbedPDFBindings.framework. The two frameworks become one
+# in a static EmbedPDFBindings.framework. The platform frameworks become one
 # XCFramework, zipped for a GitHub release.
 #
 #   bash platforms/apple/build-xcframework.sh
@@ -25,12 +25,15 @@ PUBLISH="$BUILD/publish"
 NAME=EmbedPDFBindings
 # Package.swift's `.iOS(.v17)`.
 MIN_IOS=17.0
+MIN_MACOS=14.0
 
-# Fork target : Swift target triple : SDK. The fork targets name the slice
+# Fork target : Swift triple : SDK : module triple : minimum OS. Targets name the slice
 # directories build-xcframework.sh writes.
 SLICES=(
-  "ios-arm64:arm64-apple-ios$MIN_IOS:iphoneos"
-  "ios-sim-arm64:arm64-apple-ios$MIN_IOS-simulator:iphonesimulator"
+  "ios-arm64:arm64-apple-ios$MIN_IOS:iphoneos:arm64-apple-ios:$MIN_IOS"
+  "ios-sim-arm64:arm64-apple-ios$MIN_IOS-simulator:iphonesimulator:arm64-apple-ios-simulator:$MIN_IOS"
+  "darwin-static-arm64:arm64-apple-macosx$MIN_MACOS:macosx:arm64-apple-macos:$MIN_MACOS"
+  "darwin-static-x64:x86_64-apple-macosx$MIN_MACOS:macosx:x86_64-apple-macos:$MIN_MACOS"
 )
 
 for slice in "${SLICES[@]}"; do
@@ -53,10 +56,7 @@ mkdir -p "$WORK" "$PUBLISH"
 
 frameworks=()
 for slice in "${SLICES[@]}"; do
-  fork="${slice%%:*}"
-  rest="${slice#*:}"
-  triple="${rest%%:*}"
-  sdk="${rest##*:}"
+  IFS=: read -r fork triple sdk arch minimum <<<"$slice"
   echo "compiling $NAME for $triple"
 
   # uniffi guards each C import as `#if canImport(<crate>FFI)` / `import
@@ -93,10 +93,18 @@ for slice in "${SLICES[@]}"; do
   done
 
   fw="$WORK/$fork/$NAME.framework"
+  contents="$fw"
+  if [[ "$sdk" == macosx ]]; then
+    contents="$fw/Versions/A"
+    mkdir -p "$contents/Resources" "$contents/Modules"
+    ln -s A "$fw/Versions/Current"
+    ln -s Versions/Current/Modules "$fw/Modules"
+    ln -s Versions/Current/Resources "$fw/Resources"
+    ln -s "Versions/Current/$NAME" "$fw/$NAME"
+  fi
   module="$fw/Modules/$NAME.swiftmodule"
   # Inside a .swiftmodule directory each file is named for the triple without
   # its OS version, the way Xcode names them.
-  arch="${triple/$MIN_IOS/}"
   mkdir -p "$module"
   # Swift 5 language mode, as the source target it replaces. Library evolution
   # is what makes the .swiftinterface, which a newer compiler than this one can
@@ -121,10 +129,16 @@ for slice in "${SLICES[@]}"; do
 
   # One archive with the Swift objects and the slice's Rust-and-PDFium archive.
   # Rust's empty codegen units warn once each, as in build-xcframework.sh.
-  libtool -static -no_warning_for_no_symbols -o "$fw/$NAME" \
+  libtool -static -no_warning_for_no_symbols -o "$contents/$NAME" \
     "$WORK/$fork/lib$NAME-swift.a" "$BUILD/$fork/libEmbedPDFFFI.a"
 
-  cat > "$fw/Info.plist" <<PLIST
+  plist="$fw/Info.plist"
+  version_key=MinimumOSVersion
+  if [[ "$sdk" == macosx ]]; then
+    plist="$contents/Resources/Info.plist"
+    version_key=LSMinimumSystemVersion
+  fi
+  cat > "$plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -145,12 +159,14 @@ for slice in "${SLICES[@]}"; do
   <string>1.0</string>
   <key>CFBundleVersion</key>
   <string>1</string>
-  <key>MinimumOSVersion</key>
-  <string>$MIN_IOS</string>
+  <key>$version_key</key>
+  <string>$minimum</string>
 </dict>
 </plist>
 PLIST
-  frameworks+=(-framework "$fw")
+  if [[ "$sdk" != macosx ]]; then
+    frameworks+=(-framework "$fw")
+  fi
 done
 
 # The compiler writes build-path metadata beside the interfaces: .abi.json and
@@ -160,6 +176,18 @@ for slice in "${SLICES[@]}"; do
   rm -f "$WORK/${slice%%:*}/$NAME.framework/Modules/$NAME.swiftmodule"/*.abi.json \
     "$WORK/${slice%%:*}/$NAME.framework/Modules/$NAME.swiftmodule"/*.swiftsourceinfo
 done
+
+# XCFrameworks require one library per platform/variant. Keep both native
+# architectures and both Swift interfaces in one versioned macOS framework.
+mac="$WORK/macos-universal/$NAME.framework"
+mkdir -p "$(dirname "$mac")"
+cp -R "$WORK/darwin-static-arm64/$NAME.framework" "$mac"
+lipo -create "$WORK/darwin-static-arm64/$NAME.framework/$NAME" \
+  "$WORK/darwin-static-x64/$NAME.framework/$NAME" \
+  -output "$mac/Versions/A/$NAME"
+cp "$WORK/darwin-static-x64/$NAME.framework/Modules/$NAME.swiftmodule/"* \
+  "$mac/Modules/$NAME.swiftmodule/"
+frameworks+=(-framework "$mac")
 
 echo "creating the xcframework"
 # xcodebuild drops each binary .swiftmodule when a .swiftinterface sits beside

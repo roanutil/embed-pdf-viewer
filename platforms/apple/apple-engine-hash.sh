@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The canonical identity of the prebuilt iOS engine XCFramework: a hash over
+# The canonical identity of the prebuilt Apple engine XCFramework: a hash over
 # every input that determines its contents. Prints 16 hex chars.
 #
 # scripts/publish-engine-payload.mjs names the `apple-engine-<hash>` release
