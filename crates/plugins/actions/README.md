@@ -113,7 +113,7 @@ applies.
 
 ## Coverage
 
-Stale since Task 13.12; Task 14 regenerates it. The generators reach 3,184 of the package's 3,195 statements and 754 of its 780 branches. This port
+Stale since Task 13.12; Task 14 did not regenerate it (not re-run since 172f5369d). The generators reach 3,184 of the package's 3,195 statements and 754 of its 780 branches. This port
 added nine scenarios to `src/suites/actions.ts` (`policy-rows-merge-and-update-live`,
 `execute-named`, `get-action-tree`, `open-sequence-completed-event`, `detached-script-realm`,
 `detached-script-realm-without-metadata`, `no-detached-realm-without-scripting`,
@@ -147,7 +147,7 @@ statements and 26 branches left are unreachable from the public surface or don't
 
 ## Mutation testing
 
-Stale since Task 13.12 (the re-port moved most lines and removed `model.rs`); Task 14 re-measures.
+Stale since Task 13.12 (the re-port moved most lines and removed `model.rs`); Task 14 did not re-measure it (not re-run since 172f5369d).
 `scripts/mutants.sh -p epdf-plugin-actions --test-package epdf-plugin-actions --file <file>`, file
 by file over every module but `harness.rs`, catches 307 of 314 viable mutants (295 caught, 12
 timeouts; 142 unviable). The timeouts are all in `hover_pump.rs`: a `same_target` that never

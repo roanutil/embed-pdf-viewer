@@ -101,17 +101,17 @@ The palette's form-only early return is kept as the TypeScript has it. With no a
 field the view already shows ends the placement before `created` is awaited, so an engine refusal of
 that create reaches no console line. The TypeScript raises an unhandled rejection there; Rust has no
 such channel, and nothing catches the refusal on the plugin's behalf.
-`a_form_only_placement_refusal_ends_before_it_is_awaited` pins it. This is the Task 14 decision.
+`a_form_only_placement_refusal_ends_before_it_is_awaited` pins it. Task 14 kept it: the TypeScript edge is the user's to fix.
 
 The form pipeline's script print still skips the `print` policy row, as
 `packages/plugin/actions/src/scripting/surface.ts:120` does. The form surfaces its results through
-`ActionsCapability::surface_script_commit` (`services/scripting.rs`); the Task 14 decision covers
-it.
+`ActionsCapability::surface_script_commit` (`services/scripting.rs`); Task 14 kept
+it as the TypeScript has it.
 
 Default QuickJS execution has no Rust counterpart. With JavaScript on and no sandbox factory the
 actions plugin rejects every sandbox build (`NO_DEFAULT_SANDBOX`), so the form's scripts fail where
 the TypeScript would load QuickJS. No vector runs that configuration. It is the separate loader gap
-the Task 14 decision covers.
+Task 14 left it open.
 
 `flags.raw` is gone with the TypeScript. `DoNotSpellCheck` and `Sort` are not derived from anything
 in its place.

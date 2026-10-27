@@ -164,7 +164,7 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 These counts are from the port before the re-port to the current `packages/core/annotation`
 layout, and the line numbers point into it: `measure.rs` and `update.rs` are gone (their code is
 now in `src/engine/` and `src/update/`), and `tests/api.rs` with them. The table is stale and the
-run has not been repeated on the current modules; Task 14 regenerates it.
+run has not been repeated on the current modules; Task 14 did not regenerate it (not re-run since 172f5369d).
 
 `scripts/mutants.sh -p epdf-annotation-core --test-package epdf-annotation-core --file <file>`,
 file by file over every module but `harness.rs`, catches 4,577 of 4,669 viable mutants (4,556

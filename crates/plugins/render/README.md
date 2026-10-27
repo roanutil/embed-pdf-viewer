@@ -203,8 +203,8 @@ needs `doc.forms.read`.
 
 ## Coverage
 
-Stale since Task 13.16 (the counts and lines below are the pre-13.16 port's); Task 14 regenerates
-them.
+Stale since Task 13.16 (the counts and lines below are the pre-13.16 port's); Task 14 did not regenerate
+them (not re-run since 172f5369d).
 
 The generators reach 2,283 of 2,293 statements and 469 of 483 branches of the package. None of the
 rest is reachable from the public surface, or from this port's:
@@ -235,7 +235,7 @@ have no entry there.
 
 ## Mutation testing
 
-Stale since Task 13.16: the lines below name the pre-13.16 code. Task 14 reruns it.
+Stale since Task 13.16: the lines below name the pre-13.16 code. Task 14 did not re-run it (not re-run since 172f5369d).
 
 `scripts/mutants.sh -p epdf-plugin-render --test-package epdf-plugin-render --file <file>`, file by
 file over every module but `harness.rs`, catches 527 of 543 viable mutants (521 caught, 6

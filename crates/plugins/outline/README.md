@@ -24,7 +24,7 @@ without them. The attachment plugin is not a dependency.
 
 The crate has no `uniffi` feature. `epdf-viewer-host` installs it (`ViewerConfig.outline`) and
 `epdf-web` builds it by factory; no foreign handle exposes it yet, so Swift cannot reach it until
-Task 14 adds one.
+one is added; Task 14 did not add one.
 
 ## Tests
 

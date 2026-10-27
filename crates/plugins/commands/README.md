@@ -71,8 +71,8 @@ These are reached by no vector and stay divergent:
 - A family's `command` returns a whole `CommandDef`; its `id` and `shortcut` are ignored, as the
   TypeScript type omits them. The TypeScript spread would keep a returned `shortcut`.
 - A family's commands are cached for the controller's life, where the TypeScript `WeakMap` lets
-  them go with the family. The settings table likewise keeps every definition set for the
-  registration's life (Task 14 retention note, as i18n's loader table).
+  them go with the family. The settings table keeps a definition set until no stored
+  settings name it (Task 14.5, `868a998b6`), as i18n's loader table does.
 - A settings value that doesn't decode (one no `update_settings` wrote) is reported to the kernel
   and read as empty, as i18n does.
 - A derivation answer outside the TypeScript types (a non-boolean, a promise) and accent members

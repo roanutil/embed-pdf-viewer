@@ -23,7 +23,7 @@ stacks.
 
 The crate has no `uniffi` feature. `epdf-viewer-host` installs it (`ViewerConfig.history`) and
 `epdf-web` builds it by factory; no foreign handle exposes it yet, so Swift cannot reach it until
-Task 14 adds one.
+one is added; Task 14 did not add one.
 
 ## Where the port differs in shape
 

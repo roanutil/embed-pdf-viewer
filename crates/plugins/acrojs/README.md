@@ -43,7 +43,7 @@ the package index, which loads it. That file doesn't port, so its number is not 
 
 These counts are from the port before Task 13.8, and the line numbers point into it: the field
 view in `input.rs` and the identity members in `host.rs` have changed since. The list is stale
-and the run has not been repeated; Task 14 regenerates it.
+and the run has not been repeated; Task 14 did not regenerate it (not re-run since 172f5369d).
 
 `cargo mutants -p epdf-acrojs --test-package epdf-acrojs` catches 177 of 185 viable mutants (33
 unviable). Each survivor builds the same observable result:

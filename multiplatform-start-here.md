@@ -64,8 +64,11 @@ mostly Stage B's 65-op `Host`, and that growth hasn't been timed on its own.
 
 - Port coverage, with the tests that pin it:
   [`multiplatform-port-status.md`](multiplatform-port-status.md) for the engine and
-  [`multiplatform-plugins-status.md`](multiplatform-plugins-status.md) for the plugins. Both date
-  from late September.
+  [`multiplatform-plugins-status.md`](multiplatform-plugins-status.md) for the plugins. The engine
+  page is from late September with its counts refreshed at `172f5369d`; the plugins page now
+  carries a "Catch-up to upstream" section (Task 13 and Task 14.1 to 14.7, `63f1219c7` to
+  `172f5369d`) with what is left for you: the XCFramework and iOS run, the 10 `core-wasm` `test:wasm`
+  failures that predate Task 14, and the generator-owned carries.
 - Review findings on the plugins branch (0 critical, 4 high, 34 medium, 89 low):
   [`docs/research/rust-plugins-branch-review.md`](docs/research/rust-plugins-branch-review.md).
 - Native packaging, built locally and published nowhere:

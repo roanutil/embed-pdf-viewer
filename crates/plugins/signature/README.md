@@ -101,17 +101,18 @@ None is reached by a vector.
   element by element and each buffer by identity: a raw port rebuilt with new buffers is a change
   on both sides, one reusing the same buffers and `sign` is a change only here. Task 13.11 made the same choice for
   interaction's tools (`docs/research/rust-plugins-branch-review.md:92`).
-- `PortTable` keeps every key and trust port it has handed a handle for, for the registration's
-  life: the store's registered value still names the first ones, and `resetSettings` must find
-  them. A host that swaps keys often grows the table by one entry per swap. Task 14 carries this
-  with stamp's `EngineTable` and interaction's `ToolTable`, which have the same shape.
+- `PortTable` keeps a key or trust port for as long as a stored setting names it, as the
+  TypeScript's `resolved.from` does: the store's registered value still names the first ones, and
+  `resetSettings` must find them. Since Task 14.5 (M37, `2f61c24ba`, `868a998b6`) the table
+  releases an entry once no stored settings name it, so a host that swaps keys no longer grows it
+  by one entry per swap. Stamp's `EngineTable` and i18n's loader table got the same release.
 
 ## Pinned TypeScript behaviour
 
 `foldSignatureEvent` clears a parked signing on any `signatures.cancelled`, whatever its
 `signingId` (`model.ts:145-146`), and the Rust fold does the same
 (`a_cancellation_clears_the_parked_signing_whatever_its_id`). A cancellation published for another
-signing therefore unparks this one. That is upstream behaviour, carried to Task 14 for a decision.
+signing therefore unparks this one. That is upstream behaviour; Task 14 did not change it, and the decision is the user's.
 
 ## Stale case descriptions
 
@@ -133,4 +134,4 @@ current TypeScript's; the generator is not changed here.
 ## Mutation testing
 
 Not rerun for this port. The counts the pre-13.25 README gave were over files this task replaced
-(`sync/hydration.rs`, `sync/document_events.rs`); Task 14 reruns `scripts/mutants.sh` file by file.
+(`sync/hydration.rs`, `sync/document_events.rs`); Task 14 did not rerun `scripts/mutants.sh` file by file (not re-run since 172f5369d).

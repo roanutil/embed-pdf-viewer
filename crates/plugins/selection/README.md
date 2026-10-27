@@ -18,7 +18,7 @@ char map.
 
 ## Coverage
 
-Stale since Task 13.15 re-ported the controller (refreshed with the coverage metadata in Task 14).
+Stale since Task 13.15 re-ported the controller (the figures below were not refreshed in Task 14).
 The generators reach 1,446 of the package's 1,447 statements and 287 of its 296 branches. None of
 the 9 missing branches, nor the one statement, is reachable from the public surface:
 
@@ -124,7 +124,7 @@ type.
 
 ## Mutation testing
 
-Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; Task 14 reruns it.
+Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; Task 14 did not re-run it (not re-run since 172f5369d).
 `scripts/mutants.sh -p epdf-plugin-selection --test-package epdf-plugin-selection --file <file>`,
 file by file over every module but `harness.rs`, catches 699 of 716 viable mutants (693 caught, 6
 timeouts; 79 unviable). Sixteen of those are killed by new cases, each checked by applying the
