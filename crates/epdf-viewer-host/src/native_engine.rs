@@ -293,7 +293,15 @@ impl Engine for NativeEngine {
             let security = answer.get_mut("security").map(Value::take).unwrap_or(Value::Null);
             let state = Rc::new(NativeDocumentState::new(doc.clone(), inner.clone(), security));
             state.take_protection(answer.get("protection").unwrap_or(&Value::Null));
-            state.pool.add(answer.get("objectNumbers"));
+            // The open asked for numbers: a range it cannot hold is the
+            // host's malformed answer, and the open fails rather than
+            // handing out fewer numbers than it reserved.
+            if let Some(range) = answer.get("objectNumbers")
+                && !state.pool.add(Some(range))
+            {
+                inner.close(&doc);
+                return settled.reject(malformed_range(range));
+            }
             if answer["passwordRejected"] == Value::Bool(true) {
                 state.password_rejected.set(true);
             }
@@ -366,6 +374,25 @@ struct ObjectNumberPool {
     refilling: Cell<bool>,
     lost: RefCell<Vec<(u64, LostListener)>>,
     next_listener: Cell<u64>,
+}
+
+/// A host range the pool refused (`ObjectNumberPool::add`): the answer is
+/// malformed, as any unreadable answer is.
+fn malformed_range(range: &Value) -> Error {
+    Error::engine("WireFormat", format!("WireFormat: the host reserved a malformed range {range}"))
+}
+
+/// `objectNumbers.reserve`'s continuation: the host's range goes into the
+/// pool through `add`, and one `add` refuses rejects the reserve, which
+/// would otherwise resolve holding fewer numbers than it promised.
+fn reserved_from(
+    request: Promise<Value>,
+    add: impl FnOnce(&Value) -> bool + 'static,
+) -> Promise<()> {
+    Promise::spawn(async move {
+        let range = request.await?;
+        if add(&range) { Ok(()) } else { Err(malformed_range(&range)) }
+    })
 }
 
 impl ObjectNumberPool {
@@ -644,11 +671,7 @@ impl DocumentHandle for NativeDocument {
         let request = self.state.request_numbers(count - held);
         let abort = request.abort_handle();
         let state = self.state.clone();
-        let reserved = Promise::spawn(async move {
-            let range = request.await?;
-            state.pool.add(Some(&range));
-            Ok(())
-        });
+        let reserved = reserved_from(request, move |range| state.pool.add(Some(range)));
         match abort {
             Some(abort) => reserved.with_abort(move |reason| abort(reason)),
             None => reserved,
@@ -923,7 +946,7 @@ mod tests {
     use futures::channel::oneshot;
     use serde_json::{Value, json};
 
-    use super::{NativeEngine, ObjectNumberPool, publish};
+    use super::{NativeEngine, ObjectNumberPool, publish, reserved_from};
     use crate::engine_worker::EngineWorker;
     use crate::host_table::HostTable;
     use crate::translate;
@@ -948,6 +971,30 @@ mod tests {
         // The last number a `u32` holds is still a number.
         assert!(pool.add(Some(&json!({ "first": u32::MAX, "count": 1 }))));
         assert_eq!(*pool.numbers.borrow(), vec![5, 6, 7, u32::MAX]);
+    }
+
+    #[test]
+    fn a_malformed_reserved_range_rejects_the_reserve_and_leaves_the_pool() {
+        epdf_kernel::rt::reset();
+        let pool = Rc::new(ObjectNumberPool::default());
+        let into = pool.clone();
+        let reserved = reserved_from(
+            epdf_kernel::Promise::resolved(json!({ "first": 1.5, "count": 10 })),
+            move |range| into.add(Some(range)),
+        );
+        epdf_kernel::rt::run_until_stalled();
+        let error = reserved.peek().expect("settled").unwrap_err();
+        assert_eq!(error.code(), Some("WireFormat"), "{error:?}");
+        assert!(pool.numbers.borrow().is_empty());
+        // A whole range fills it and resolves.
+        let into = pool.clone();
+        let reserved = reserved_from(
+            epdf_kernel::Promise::resolved(json!({ "first": 70, "count": 2 })),
+            move |range| into.add(Some(range)),
+        );
+        epdf_kernel::rt::run_until_stalled();
+        assert!(reserved.peek().expect("settled").is_ok());
+        assert_eq!(*pool.numbers.borrow(), vec![70, 71]);
     }
 
     struct Versioned {

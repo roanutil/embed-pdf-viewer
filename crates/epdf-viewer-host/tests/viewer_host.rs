@@ -84,7 +84,9 @@ fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
     assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
     let error = tab.error.as_ref().expect("a failed tab without its error");
     assert_eq!(error.capability, "documents", "{error:?}");
-    // The kernel's `toPluginError` keeps the engine code in the message.
+    // The `DocOpenFailed: ` prefix is this host's own decode of the engine
+    // error (`translate::decode`); TS says "failed to open document", a
+    // difference carried to Task 14.
     assert_eq!(
         error.message, "DocOpenFailed: the bytes are not a document PDFium can open",
         "{error:?}"
