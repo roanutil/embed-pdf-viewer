@@ -139,7 +139,7 @@ type.
 ## Mutation testing
 
 Stale since Task 13.24: the counts and lines below are the pre-13.24 port's, over code that no
-longer exists. Not re-run since 172f5369d.
+longer exists. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 19 of 20 viable mutants (11 unviable); the one left is equivalent (`.superpowers/sdd/multiplatform-upstream-catchup/task-14.8b-report.md`).
 
 `scripts/mutants.sh -p epdf-plugin-stamp --test-package epdf-plugin-stamp --file <file>`, file by
 file over every module but `harness.rs`, catches 239 of 251 viable mutants (228 caught, 11

@@ -93,4 +93,5 @@ the scoped view are not exposed yet.
 ## Coverage and mutation testing
 
 The coverage figure and the mutation results this README recorded before Task 13.29 measured the
-old reducer port. Neither was rerun for this port.
+old reducer port. Neither was rerun for this port. Task 14's changed lines (`4a0b9c126..172f5369d`) were
+run in-diff on 2026-10-27: 17 of 17 viable mutants caught (1 unviable).

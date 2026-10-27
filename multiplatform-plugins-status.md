@@ -153,6 +153,7 @@ Mutation testing for the catch-up is not complete. A run restricted to Task 14's
 the uniffi-gated ffi files, have no mutation evidence. Every crate README marks the counts it still
 carries as not re-run since `172f5369d`, and the unreached-line lists some READMEs carry are stale in
 the same way.
+Task 14.8b finished that run (`task-14.8b-report.md` in the plan directory): of 853 mutants tested (198 unviable), 639 are caught and 3 time out (infinite loops, counted caught); the 13 still missed are 12 equivalent and 1 accepted, and `epdf-web`'s 22 never ran because its baseline build fails.
 
 Left for you, none of it a code failure:
 

@@ -102,6 +102,12 @@ also exercise it. 67 of those kills come from new tests, each checked by applyin
 hand. Five more mutants no longer exist, because the code they mutated was wrong and is rewritten.
 
 The file and line numbers in this section are as of `76ae3b597`, the commit that recorded the run.
+
+Task 14's changed lines (`4a0b9c126..172f5369d`) were run in-diff on 2026-10-27: 87 of 89 viable
+mutants caught (86 caught, 1 timeout; 60 unviable). The two left are equivalent: `list_fonts`
+mutated to the empty list it already returns, and `json_number`'s `value > 0.0` against `>=`, which
+no zero reaches. `.superpowers/sdd/multiplatform-upstream-catchup/task-14.8b-report.md` lists the
+tests Task 14.8b added for the rest.
 The code has moved since: `kernel.rs:419`, for one, was line 481 when this note was added.
 
 The new vectors in `kernel.ts`:

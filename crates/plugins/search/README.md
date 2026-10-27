@@ -109,4 +109,4 @@ settle in at close.
 ## Coverage and mutation testing
 
 The statement, branch and mutant counts that stood here were measured on the pre-catch-up port and
-are stale. Not re-run since 172f5369d.
+are stale. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) gave 4 mutants, all unviable.

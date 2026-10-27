@@ -234,7 +234,7 @@ have no entry there.
 
 ## Mutation testing
 
-Stale since Task 13.16: the lines below name the pre-13.16 code. Not re-run since 172f5369d.
+Stale since Task 13.16: the lines below name the pre-13.16 code. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) gave 8 mutants, all unviable.
 
 `scripts/mutants.sh -p epdf-plugin-render --test-package epdf-plugin-render --file <file>`, file by
 file over every module but `harness.rs`, catches 527 of 543 viable mutants (521 caught, 6

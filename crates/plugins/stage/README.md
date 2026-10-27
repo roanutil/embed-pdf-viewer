@@ -162,7 +162,7 @@ unbounded stage fires none.
 
 ## Mutation testing
 
-Stale: these counts and line numbers are from the pre-catch-up port. Not re-run since 172f5369d.
+Stale: these counts and line numbers are from the pre-catch-up port. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 5 of 5 viable mutants (4 caught, 1 timeout).
 
 `scripts/mutants.sh -p epdf-plugin-stage --test-package epdf-plugin-stage --file <file>`, file by
 file over every module but `harness.rs`, catches 874 of 899 viable mutants (870 caught, 4

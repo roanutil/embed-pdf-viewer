@@ -167,7 +167,7 @@ The 99 unreached branches are mostly the `??` and optional-chaining arms of the 
 
 ## Mutation testing
 
-Stale since Task 13.17: the files and lines below name the pre-13.17 code. Not re-run since 172f5369d.
+Stale since Task 13.17: the files and lines below name the pre-13.17 code. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 13 of 16 viable mutants (2 unviable); the 3 left are equivalent (`.superpowers/sdd/multiplatform-upstream-catchup/task-14.8b-report.md`).
 
 `scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file <file>`,
 file by file over every module but `harness/`, catches 1,412 of 1,449 viable mutants (1,411 caught,

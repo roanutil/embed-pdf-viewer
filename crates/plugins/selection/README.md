@@ -124,7 +124,7 @@ type.
 
 ## Mutation testing
 
-Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; not re-run since 172f5369d.
+Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 1 of 1 viable mutant (1 unviable).
 `scripts/mutants.sh -p epdf-plugin-selection --test-package epdf-plugin-selection --file <file>`,
 file by file over every module but `harness.rs`, catches 699 of 716 viable mutants (693 caught, 6
 timeouts; 79 unviable). Sixteen of those are killed by new cases, each checked by applying the

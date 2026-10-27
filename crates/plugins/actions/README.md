@@ -147,7 +147,7 @@ statements and 26 branches left are unreachable from the public surface or don't
 
 ## Mutation testing
 
-Stale since Task 13.12 (the re-port moved most lines and removed `model.rs`); not re-run since 172f5369d.
+Stale since Task 13.12 (the re-port moved most lines and removed `model.rs`); the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) gave 4 mutants, all unviable.
 `scripts/mutants.sh -p epdf-plugin-actions --test-package epdf-plugin-actions --file <file>`, file
 by file over every module but `harness.rs`, catches 307 of 314 viable mutants (295 caught, 12
 timeouts; 142 unviable). The timeouts are all in `hover_pump.rs`: a `same_target` that never

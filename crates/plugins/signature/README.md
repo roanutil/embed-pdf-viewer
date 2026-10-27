@@ -134,4 +134,4 @@ current TypeScript's; the generator is not changed here.
 ## Mutation testing
 
 Not rerun for this port. The counts the pre-13.25 README gave were over files this task replaced
-(`sync/hydration.rs`, `sync/document_events.rs`); not re-run since 172f5369d.
+(`sync/hydration.rs`, `sync/document_events.rs`); the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 9 of 9 viable mutants.
