@@ -65,9 +65,8 @@ engine is used when `Engine::is_local` says it carries the brand (Ruling13.24, `
 `isLocalEngine` reads it at `services/asset-engine.ts:56`; an unbranded engine, the cloud one or
 the conformance fake, is refused before any open. The native host's engine is local (Task 13.33).
 `an_unconfigured_plugin_imports_on_a_local_kernel_engine` pins both cases. The web host's
-`JsEngine` (`crates/epdf-web/src/engine.rs`) keeps the default `false`: until the JS bridge reports
-the brand (Task 13.33's bridge proposal), a web viewer over a local WASM engine with no
-`assetEngine` refuses every import.
+`JsEngine` (`crates/epdf-web/src/engine.rs`) forwards the bridge's `isLocal` since Task 14.1
+(`9a2ff3217`), so a web viewer over the local WASM engine imports with no `assetEngine` too.
 
 The settings live in the kernel's JSON store. The asset engine is stored as a handle,
 `{"$assetEngine": n}`, into a table the registration owns, as the actions plugin stores a function
