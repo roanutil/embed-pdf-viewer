@@ -436,22 +436,18 @@ impl Harness {
                 Err(error) => json!({ "promise": id, "rejected": error.to_canonical() }),
             };
             h.entry.borrow_mut().settled.push(record);
-            if h.metering.get() {
-                // The TypeScript logs from the `.then` reaction it attached
-                // when it tracked the promise: one turn after settlement.
-                let h = Rc::downgrade(&h);
-                epdf_kernel::rt::spawn(async move {
-                    epdf_kernel::rt::tick().await;
-                    if let Some(h) = h.upgrade()
-                        && h.metering.get()
-                    {
-                        h.entry
-                            .borrow_mut()
-                            .callbacks
-                            .push(json!({ "fn": "@@settled", "args": [id] }));
-                    }
-                });
-            }
+            // The TypeScript logs from the `.then` reaction it attached when
+            // it tracked the promise: one turn after settlement, or after the
+            // tracking for one already settled, and it reads `metering` then.
+            let h = Rc::downgrade(&h);
+            epdf_kernel::rt::spawn(async move {
+                epdf_kernel::rt::tick().await;
+                if let Some(h) = h.upgrade()
+                    && h.metering.get()
+                {
+                    h.entry.borrow_mut().callbacks.push(json!({ "fn": "@@settled", "args": [id] }));
+                }
+            });
         });
         json!({ "$promise": id })
     }
