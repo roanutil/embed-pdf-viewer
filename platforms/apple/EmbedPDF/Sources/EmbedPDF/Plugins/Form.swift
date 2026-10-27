@@ -32,7 +32,6 @@ public typealias FormCreateFieldInput = EmbedPDFBindings.FormCreateFieldInput
 public typealias FormFieldPatch = EmbedPDFBindings.FormFieldPatch
 public typealias FormFieldPatchKey = EmbedPDFBindings.FormFieldPatchKey
 public typealias FormImportResult = EmbedPDFBindings.FormImportResult
-public typealias FormValidationResult = EmbedPDFBindings.FormValidationResult
 public typealias FormActivationResult = EmbedPDFBindings.FormActivationResult
 public typealias FormEvent = EmbedPDFBindings.FormEvent
 
@@ -75,11 +74,6 @@ public struct FormCapability: Sendable {
   /// Every value by full name, as plain data, JSON (`exportValues()`).
   public func exportValues() async throws(PDFError) -> String {
     try await bridged { try await handle.exportValues() }
-  }
-
-  /// The required fields you may fill in that are empty, in page order.
-  public func validate() async throws(PDFError) -> FormValidationResult {
-    try await bridged { try await handle.validate() }
   }
 
   /// One control per widget on a page: what a native form overlay draws.
@@ -194,14 +188,6 @@ public struct FormCapability: Sendable {
 
   public func canDesign() async throws(PDFError) -> Bool {
     try await bridged { try await handle.canDesign() }
-  }
-
-  public func canRestoreAttribution() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canRestoreAttribution() }
-  }
-
-  public func canWriteScripts() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canWriteScripts() }
   }
 
   /// Confirmed changes. Finishes when the document closes (at once if it

@@ -40,7 +40,6 @@ public typealias StageRevealAnchor = EmbedPDFBindings.StageRevealAnchor
 public typealias StageRevealZoom = EmbedPDFBindings.StageRevealZoom
 public typealias StageRevealOptions = EmbedPDFBindings.StageRevealOptions
 public typealias StagePageHit = EmbedPDFBindings.StagePageHit
-public typealias StagePageDestination = EmbedPDFBindings.StagePageDestination
 public typealias StageZoomMode = EmbedPDFBindings.StageZoomMode
 public typealias StageZoomTarget = EmbedPDFBindings.StageZoomTarget
 public typealias StageInitialViewProvider = EmbedPDFBindings.StageInitialViewProvider
@@ -72,8 +71,6 @@ public struct StageCapability: Sendable {
   public func isPageVisible(_ page: PageRef) async throws(PDFError) -> Bool { try await bridged { try await handle.isPageVisible(page: page) } }
   public func currentPageIndex() async throws(PDFError) -> UInt32 { try await bridged { try await handle.currentPageIndex() } }
   public func currentPage() async throws(PDFError) -> PageRef? { try await bridged { try await handle.currentPage() } }
-  /// Where the view is, as a destination; `nil` before a page is on screen.
-  public func currentDestination() async throws(PDFError) -> StagePageDestination? { try await bridged { try await handle.currentDestination() } }
   public func currentItemPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentItemPages() } }
   public func pageFrame(_ page: PageRef) async throws(PDFError) -> StageVisiblePage? { try await bridged { try await handle.pageFrame(page: page) } }
   public func page(at point: Point) async throws(PDFError) -> StagePageHit? { try await bridged { try await handle.pageAt(point: point) } }
@@ -112,8 +109,6 @@ public struct StageCapability: Sendable {
   public func nextPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.nextPage(options: options) } }
   public func previousPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.previousPage(options: options) } }
   public func resetView() async throws(PDFError) { try await bridged { try await handle.resetView() } }
-  /// Go where a destination says. It may change the zoom, as the destination asks.
-  public func goToDestination(_ destination: StagePageDestination, behavior: StageScrollBehavior? = nil) async throws(PDFError) { try await bridged { try await handle.goToDestination(destination: destination, behavior: behavior) } }
   public func reveal(_ page: PageRef, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.reveal(page: page, options: options) } }
   public func revealIndex(_ index: UInt32, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealIndex(index: index, options: options) } }
 

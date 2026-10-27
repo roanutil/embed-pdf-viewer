@@ -1,5 +1,6 @@
 import CustomDump
 import EmbedPDF
+import Foundation
 import Testing
 
 extension BaseSuite {
@@ -77,10 +78,14 @@ extension BaseSuite {
       try await measurement.ensureLoaded(page)
       let ref = try await measurement.createMeasurement(
         CreateMeasurementInput(kind: .distance, page: page, points: [Point(x: 10, y: 10), Point(x: 82, y: 10)]))
-      // `ref` is the engine's `AnnotationRef` record.
+      // `ref` is the engine's `AnnotationRef` record: its object number
+      // names the line the annotation plugin lists.
+      let record = try #require(try JSONSerialization.jsonObject(with: Data(ref.utf8)) as? [String: Any])
+      let objectNumber = try #require(record["objectNumber"] as? UInt32)
       let annotations = try await viewer.annotations(for: document)
-      let lines = try await annotations.list(AnnotationFilter(pages: [page], subtype: "line"))
-      expectNoDifference(lines.count, 1)
+      let found = try #require(
+        try await annotations.get(.objectNumber(page: page, annotObjectNumber: objectNumber)))
+      expectNoDifference(found.subtype, "line")
       // `epdf-engine`'s line create now writes `/IT /LineDimension` and
       // `/Measure`, so the read-back line is a dimension: 72 points, one
       // inch, in the page's default metric scale.

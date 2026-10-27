@@ -54,7 +54,7 @@ extension BaseSuite {
       }
     }
 
-    @Test func aWrongPasswordIsPermissionDenied() async throws {
+    @Test func aWrongPasswordParksTheTabAndAWrongUnlockIsPermissionDenied() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents
       // At open, a wrong password parks the document as a locked tab whose

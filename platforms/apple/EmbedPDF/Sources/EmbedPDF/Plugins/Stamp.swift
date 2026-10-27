@@ -46,9 +46,10 @@ public struct StampPreview: @unchecked Sendable {
 /// capability for the whole viewer, and it keeps the viewer alive.
 ///
 /// Libraries open on their own engine thread. On that engine an asset can
-/// come from PDF bytes (a library, or `StampAddAssetInput.source`); ink and
-/// text marks and `createAsset(from:in:on:)` need annotation appearance
-/// export, which the native engine doesn't have yet.
+/// come from PDF bytes (a library, or `StampAddAssetInput.source`), from ink
+/// and text marks, or from a document's annotations
+/// (`createAsset(from:in:on:)`); the last two export through the engine's
+/// `page.annotations.exportAppearance`.
 public struct StampCapability: Sendable {
   let handle: StampHandle
   let viewer: PDFViewer

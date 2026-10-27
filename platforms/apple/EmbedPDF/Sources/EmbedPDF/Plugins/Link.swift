@@ -24,7 +24,7 @@ public typealias LinkLoadedEvent = EmbedPDFBindings.LinkLoadedEvent
 /// `events`, is the app's to open.
 ///
 /// Targets cross as the engine's JSON: `LinkItem.targetJson` is the page-space
-/// `PdfLinkTarget` record (`{"kind": "uri", "uri": …}`), and a
+/// `PageLinkTarget` record (`{"kind": "uri", "uri": …}`), and a
 /// `.destination` resolution or activation carries the `PageDestination`
 /// record.
 public struct LinkCapability: Sendable {
@@ -55,11 +55,6 @@ public struct LinkCapability: Sendable {
 
   public func isLoaded(_ page: PageRef) async throws(PDFError) -> Bool {
     try await bridged { try await handle.isLoaded(page: page) }
-  }
-
-  /// `idle`, `loading`, `ready`, `error` or `forbidden`.
-  public func status(_ page: PageRef) async throws(PDFError) -> String {
-    try await bridged { try await handle.status(page: page) }
   }
 
   /// What activating a target would do, with no side effect.

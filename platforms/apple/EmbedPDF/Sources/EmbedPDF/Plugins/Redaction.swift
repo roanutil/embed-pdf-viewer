@@ -97,14 +97,6 @@ public struct RedactionCapability: Sendable {
     try await bridged { try await handle.canApply() }
   }
 
-  public func canUnmark(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canUnmark(annotationRef: ref) }
-  }
-
-  public func canUpdateLabel(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canUpdateLabel(annotationRef: ref) }
-  }
-
   public func isApplying() async throws(PDFError) -> Bool {
     try await bridged { try await handle.isApplying() }
   }
