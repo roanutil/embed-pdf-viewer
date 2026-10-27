@@ -97,14 +97,14 @@ impl BufferLayout {
         if width == 0 || height == 0 {
             return Err(invalid("zero width or height"));
         }
-        let minimum_stride =
-            width.checked_mul(format.bytes_per_pixel()).ok_or_else(|| invalid("width overflows"))?;
+        let minimum_stride = width
+            .checked_mul(format.bytes_per_pixel())
+            .ok_or_else(|| invalid("width overflows"))?;
         if stride < minimum_stride {
             return Err(invalid("stride is narrower than one row of pixels"));
         }
-        let bytes = stride
-            .checked_mul(height)
-            .ok_or_else(|| invalid("stride * height overflows"))?;
+        let bytes =
+            stride.checked_mul(height).ok_or_else(|| invalid("stride * height overflows"))?;
         if usize::try_from(bytes).map_err(|_| invalid("byte length exceeds usize"))?
             > isize::MAX as usize
         {
@@ -159,11 +159,7 @@ impl PixelBuffer {
         if bytes.len() != layout.byte_len() {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
-                format!(
-                    "buffer is {} bytes, layout describes {}",
-                    bytes.len(),
-                    layout.byte_len()
-                ),
+                format!("buffer is {} bytes, layout describes {}", bytes.len(), layout.byte_len()),
             ));
         }
         Ok(Self { layout, bytes })

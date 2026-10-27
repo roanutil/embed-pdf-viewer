@@ -395,9 +395,7 @@ impl SearchQueryIssue {
 /// looking at the text at all. The order matters: a query that is both
 /// diacritic-sensitive and an invalid pattern reports the flag conflict,
 /// because that is the one the caller can fix without rewriting the pattern.
-pub fn validate_search_query(
-    query: &matcher::SearchQuery,
-) -> Result<(), SearchQueryIssue> {
+pub fn validate_search_query(query: &matcher::SearchQuery) -> Result<(), SearchQueryIssue> {
     if !query.regex {
         return Ok(());
     }

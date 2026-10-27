@@ -67,7 +67,8 @@ fn a_document_that_needs_a_password_parks_rather_than_failing() {
     assert_eq!(security["encryptionRequiresPassword"], true);
 
     // The session exists and holds the key, which is what "parked" means.
-    let json = call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "locked" }), Vec::new());
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "locked" }), Vec::new());
     assert_eq!(
         json["error"]["code"],
         format!("{:?}", EngineErrorCode::DocPasswordRequired),
@@ -81,11 +82,7 @@ fn opening_the_same_key_twice_is_refused_rather_than_replacing() {
     // Silently dropping the first session would close a document another
     // caller is still reading through.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
     let json = call(
         &mut host,
         serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
@@ -100,11 +97,8 @@ fn an_open_without_its_bytes_is_refused_before_a_session_exists() {
     // The bytes are a payload, never a field, and an open that arrived
     // without them has to leave no half-made session behind.
     let mut host = Host::new();
-    let json = call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        Vec::new(),
-    );
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), Vec::new());
     assert_eq!(json["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat));
     assert_eq!(host.sessions().len(), 0, "a failed open left a session behind");
 }
@@ -114,11 +108,7 @@ fn a_close_answers_the_tag_alone_and_a_second_one_answers_the_same() {
     // `WorkerHost.handleClose` answers `{ tag: 'close' }` whether or not a
     // session was there: closing nothing is the state the caller asked for.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
 
     let json = call(&mut host, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
     assert_eq!(json, serde_json::json!({ "result": null }));
@@ -156,11 +146,7 @@ fn a_shutdown_refuses_new_work_rather_than_serving_it() {
     // away, and an engine that quietly came back would let a supervisor keep
     // using one it had decided to discard.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
     call(&mut host, serde_json::json!({ "kind": "shutdown" }), Vec::new());
     assert_eq!(host.sessions().len(), 0);
 
@@ -177,11 +163,7 @@ fn checking_a_password_answers_without_changing_the_session() {
     // "Would this password help?" is what a prompt asks before it commits to
     // a reopen, so it must not unlock anything on the way.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
 
     let json = call(
         &mut host,
@@ -197,7 +179,8 @@ fn checking_a_password_answers_without_changing_the_session() {
     // that the session is still readable afterwards.
     assert!(json["result"].is_object() || json["error"].is_object(), "no answer: {json}");
 
-    let json = call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
     assert!(json["result"]["pages"].is_array(), "the check disturbed the session: {json}");
 }
 
