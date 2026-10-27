@@ -788,6 +788,33 @@ impl ControllerContext {
         self.0.scope.defer_fn(move || unsubscribe.call());
     }
 
+    /// `ctx.watch(select, handler, isEqual)` (`context.ts`): run `handler(next,
+    /// previous)` after any store change that moves `select()`. `select` runs
+    /// once now; the subscription goes when the instance closes, or earlier
+    /// through the returned unsubscribe.
+    ///
+    /// The TypeScript's default `isEqual` is `Object.is`; a Rust caller passes
+    /// the comparison that is `Object.is` for its value: `==` for a string or
+    /// a number, `Rc::ptr_eq` for a value held by reference.
+    pub fn watch<R: Clone + 'static>(
+        &self,
+        select: impl Fn() -> Result<R, Error> + 'static,
+        handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
+        is_equal: impl Fn(&R, &R) -> bool + 'static,
+    ) -> Result<Unsubscribe, Error> {
+        let previous = RefCell::new(select()?);
+        let unsubscribe = self.subscribe(Rc::new(move || {
+            let next = select()?;
+            if is_equal(&previous.borrow(), &next) {
+                return Ok(());
+            }
+            let prior = previous.replace(next.clone());
+            handler(&next, &prior)
+        }));
+        self.listen(unsubscribe.clone());
+        Ok(unsubscribe)
+    }
+
     /// `ctx.waitFor(predicate, {signal})`: resolves when the predicate holds,
     /// checked now and on every store change; rejects `operation-cancelled`
     /// on the signal, `instance-closed` at close, or with what the predicate

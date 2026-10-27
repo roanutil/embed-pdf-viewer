@@ -18,7 +18,6 @@ use epdf_kernel::{Controller, Error};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::connect::watch;
 use crate::contract::VisiblePage;
 use crate::controller::StageCapability;
 use crate::model::StageState;
@@ -116,11 +115,6 @@ pub(crate) fn connect_working_set(
     let tell = Rc::new(tell);
     let select = stage.clone();
     let on_change = tell.clone();
-    watch(
-        ctx,
-        move || Ok(select.list_visible_pages()),
-        Rc::ptr_eq,
-        move |next, _| on_change(next),
-    )?;
+    ctx.watch(move || Ok(select.list_visible_pages()), move |next, _| on_change(next), Rc::ptr_eq)?;
     tell(&stage.list_visible_pages())
 }

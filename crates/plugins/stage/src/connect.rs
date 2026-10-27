@@ -4,7 +4,6 @@
 //! the navigation executors of the actions plugin. A thumbnail lens must
 //! never report page state or win the last-wins executor registry.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_kernel::geometry::PageRef;
@@ -24,28 +23,6 @@ use crate::working_set::connect_working_set;
 /// The id of the main lens; additional lenses register under their own id.
 pub const DEFAULT_LENS_ID: &str = "stage";
 
-/// `ctx.watch(select, handler, isEqual)`: `handler(next, previous)` after
-/// any store change that moves `select()`, released with the instance.
-pub(crate) fn watch<R: Clone + 'static>(
-    ctx: &Controller<StageState, Value>,
-    select: impl Fn() -> Result<R, Error> + 'static,
-    is_equal: impl Fn(&R, &R) -> bool + 'static,
-    handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
-) -> Result<(), Error> {
-    let previous = RefCell::new(select()?);
-    let unsubscribe = ctx.subscribe(Rc::new(move || {
-        let next = select()?;
-        let prior = previous.borrow().clone();
-        if is_equal(&prior, &next) {
-            return Ok(());
-        }
-        *previous.borrow_mut() = next.clone();
-        handler(&next, &prior)
-    }));
-    ctx.listen(unsubscribe);
-    Ok(())
-}
-
 /// `connectStage(ctx, stage)`.
 pub(crate) fn connect_stage(
     ctx: &Controller<StageState, Value>,
@@ -56,11 +33,10 @@ pub(crate) fn connect_stage(
     // it cannot race the level-triggered initial placement.
     let revision_ctx = ctx.clone();
     let refit = stage.clone();
-    watch(
-        ctx,
+    ctx.watch(
         move || Ok(revision_ctx.document().map_or(0, |d| d.revision)),
-        |a, b| a == b,
         move |_, _| refit.refit(),
+        |a, b| a == b,
     )?;
     connect_working_set(ctx, stage)?;
 
@@ -106,8 +82,7 @@ fn feed_page_state(
     let signature = snapshot.clone();
     let signature_placed = placed.clone();
     let actions = actions.clone();
-    watch(
-        ctx,
+    ctx.watch(
         move || {
             if !signature_placed() {
                 return Ok("unplaced".to_string());
@@ -121,7 +96,6 @@ fn feed_page_state(
                 current.current_page.map_or("-1".to_string(), |p| p.page_object_number.to_string());
             Ok(format!("{page}|{}", numbers.join(",")))
         },
-        |a: &String, b: &String| a == b,
         move |_, _| {
             if !placed() {
                 return Ok(());
@@ -138,7 +112,9 @@ fn feed_page_state(
             });
             Ok(())
         },
-    )
+        |a: &String, b: &String| a == b,
+    )?;
+    Ok(())
 }
 
 fn resolved(result: ActionExecutorResult) -> Result<Promise<ActionExecutorResult>, Error> {

@@ -61,8 +61,8 @@ impl StampCapability {
     /// The annotation plugin owns the arm itself and drops it on its own (a
     /// tool switch, a closed document). Forget those arms here too, so
     /// `getArmedAsset` and `onArmChanged` follow: `ctx.watch(droppedArms,
-    /// ...)`, over the ids joined by newlines as the TypeScript compares
-    /// them.
+    /// ...)`, over the ids joined by newlines, which `Object.is` compares as
+    /// strings.
     pub(crate) fn watch_dropped_arms(&self) -> Result<(), Error> {
         let reader = self.clone();
         let dropped_arms = move || -> String {
@@ -75,21 +75,18 @@ impl StampCapability {
                 .collect::<Vec<_>>()
                 .join("\n")
         };
-        let previous = RefCell::new(dropped_arms());
         let updater = self.clone();
-        let unsubscribe = self.cx().subscribe(Rc::new(move || {
-            let next = dropped_arms();
-            if *previous.borrow() == next {
-                return Ok(());
-            }
-            *previous.borrow_mut() = next.clone();
-            if !next.is_empty() {
-                let ids: Vec<String> = next.split('\n').map(str::to_string).collect();
-                updater.update_state(|s| disarm_documents(s, &ids));
-            }
-            Ok(())
-        }));
-        self.cx().listen(unsubscribe);
+        self.cx().watch(
+            move || Ok(dropped_arms()),
+            move |dropped: &String, _| {
+                if !dropped.is_empty() {
+                    let ids: Vec<String> = dropped.split('\n').map(str::to_string).collect();
+                    updater.update_state(|s| disarm_documents(s, &ids));
+                }
+                Ok(())
+            },
+            |a, b| a == b,
+        )?;
         Ok(())
     }
 

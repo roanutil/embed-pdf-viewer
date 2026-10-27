@@ -112,7 +112,7 @@ equality). A setting added to `StageSettings` without a row fails to compile, wh
 TypeScript's `Record<keyof StageSettings, ...>` guarantee. `eqSetting`'s one level of own-key
 equality is `PartialEq` on the typed values, `NaN` unequal to itself included.
 
-`connect.ts`'s `ctx.watch` calls are `connect::watch`, a store subscription the instance releases.
+`connect.ts`'s `ctx.watch` calls are the kernel's `ControllerContext::watch`.
 The working-set watch (`working-set.ts`) runs as in the TypeScript, because reading the visible pages
 on every store change builds the scene when it does there. It tells the engine through
 `DocumentHandle::set_working_set(view, pages)`, the pages as JSON, once per change of the set's key.

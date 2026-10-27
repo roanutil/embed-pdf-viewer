@@ -893,3 +893,60 @@ fn a_workspace_view_is_kept_per_document_and_dropped_on_rekey_and_close() {
     assert_eq!(*kernel.capability(&token, Some("renamed")).unwrap(), "workspace");
     run(kernel.destroy()).unwrap();
 }
+
+/// `ctx.watch(select, handler, isEqual)` (context.ts:305): `select` runs
+/// once at the call, `handler(next, previous)` runs after a store change
+/// that moves it and not after one that leaves it equal, the returned
+/// unsubscribe stops it, and the instance's close stops another one.
+#[test]
+fn watch_runs_its_handler_only_when_the_selection_moves() {
+    use epdf_kernel::store::Unsubscribe;
+    rt::reset();
+    let (plugin, token) = controller_plugin();
+    let second = doc(false);
+    *second.id.borrow_mut() = "second".into();
+    let engine = QueueEngine(RefCell::new([doc(false), second].into()));
+    let kernel = Kernel::new(Rc::new(engine), vec![plugin], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let ctx = kernel.try_capability(&token, Some("doc")).unwrap().unwrap();
+    let selects = Rc::new(Cell::new(0));
+    let seen: Rc<RefCell<Vec<(String, i64, i64)>>> = Rc::default();
+    let watch = |name: &'static str| -> Unsubscribe {
+        let (reader, count, log) = (ctx.clone(), selects.clone(), seen.clone());
+        ctx.watch(
+            move || {
+                count.set(count.get() + 1);
+                Ok(reader.state()["n"].as_i64().unwrap_or(0) / 2)
+            },
+            move |next, previous| {
+                log.borrow_mut().push((name.into(), *next, *previous));
+                Ok(())
+            },
+            |a, b| a == b,
+        )
+        .unwrap()
+    };
+    let first = watch("first");
+    let _second = watch("second");
+    assert_eq!(selects.get(), 2, "select runs once at the call");
+    let set = |n: i64| {
+        ctx.update_state(|_| Rc::new(json!({ "n": n })));
+        rt::run_until_stalled();
+    };
+    set(1);
+    assert!(seen.borrow().is_empty(), "1 / 2 selects 0 again");
+    set(2);
+    assert_eq!(*seen.borrow(), [("first".to_string(), 1, 0), ("second".to_string(), 1, 0)]);
+    first.call();
+    set(4);
+    assert_eq!(seen.borrow().last(), Some(&("second".to_string(), 2, 1)));
+    assert_eq!(seen.borrow().len(), 3);
+    run(kernel.documents().close("doc")).unwrap();
+    let after_close = selects.get();
+    // Opening another document changes the store; a watch the close left
+    // subscribed would select again.
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    assert_eq!(selects.get(), after_close, "close unsubscribed the second watch");
+    run(kernel.destroy()).unwrap();
+}
