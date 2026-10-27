@@ -365,7 +365,7 @@ impl AnnotationDraftsHandle {
                     let input = source.input(target_width);
                     Ok(open(c)?.stamps_place(input, &placement.json(), None))
                 },
-                |made: Value| ref_out(&made["ref"]).map_err(ViewerError::from),
+                |made: Value| ref_out(&made["annotation"]["ref"]).map_err(ViewerError::from),
             )
             .await?
     }

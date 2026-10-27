@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, FormFieldRef, KernelThread, ResourceStatus, ViewerError};
-use epdf_plugin_form::{FormConfig, form_plugin};
+use epdf_plugin_form::form_plugin;
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_signature::ffi::{
     SignatureCoverage, SignatureEvent, SignatureEventListener, SignatureHandle, SignatureMode,
@@ -141,7 +141,7 @@ fn handle_with(
         TestKernel::open(
             vec![
                 interaction_plugin(InteractionConfig::default()),
-                form_plugin(FormConfig::default()),
+                form_plugin(None),
                 signature_plugin(config()),
             ],
             spec(),
@@ -405,7 +405,16 @@ fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
             event["origin"] = origin();
             Ok(Reply { value: completed, events: vec![event] })
         })
-        .respond("signatures.cancel", |_| Ok(Reply::value(json!({ "status": "cancelled" }))))
+        // A cancel that discards the parked candidate publishes its notice,
+        // as the engine's host does; the mirror clears `pending` on it
+        // (`model.ts:145-146`).
+        .respond("signatures.cancel", |args| {
+            let signing_id = args.first().cloned().unwrap_or(Value::Null);
+            let event = json!({
+                "type": "signatures.cancelled", "signingId": signing_id, "origin": origin()
+            });
+            Ok(Reply { value: json!({ "status": "cancelled" }), events: vec![event] })
+        })
 }
 
 /// A local session's event origin.

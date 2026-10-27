@@ -18,19 +18,13 @@ pub mod status;
 pub mod subscription;
 pub mod view;
 
-pub use annotation::{
-    AnnotationBlendMode, AnnotationBorder, AnnotationCallout, AnnotationFlags,
-    AnnotationFlagsPatch, AnnotationLineEnding, AnnotationLineEndings, AnnotationLineEndingsPatch,
-    AnnotationPropKey, AnnotationProps, AnnotationPropsPatch, AnnotationTextAlign,
-    CreationDraftAnchor,
-};
-pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, PdfLinkTarget};
+pub use annotation::{AnnotationRef, CreationDraftAnchor, PdfDestination, PdfLinkTarget};
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
 pub use foreign::{ForeignSettle, HostError, HostFailure};
 pub use form::{FormFieldFamily, FormFieldRef};
-pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
+pub use geometry::{PageRef, Point, Quad, Rect, Size};
 pub use input::{
     Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample,
 };

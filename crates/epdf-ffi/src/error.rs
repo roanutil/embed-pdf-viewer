@@ -49,4 +49,35 @@ pub struct PluginErrorInfo {
     pub code: String,
     pub message: String,
     pub capability: String,
+    /// The permission the session lacks (`PluginError.permission`), or none.
+    pub permission: Option<String>,
+}
+
+impl PluginErrorInfo {
+    /// `toPluginErrorInfo(toPluginError(capability, error))`.
+    pub fn of(capability: &str, error: &epdf_kernel::Error) -> Self {
+        Self::from_json(&epdf_kernel::error::to_plugin_error(capability, error).plugin_error_info())
+    }
+
+    /// A `PluginErrorInfo` as a plugin keeps it in state (JSON).
+    pub fn from_json(info: &serde_json::Value) -> Self {
+        let text = |key: &str| info.get(key).and_then(serde_json::Value::as_str);
+        PluginErrorInfo {
+            code: text("code").unwrap_or(epdf_kernel::error::code::OPERATION_FAILED).into(),
+            message: text("message").unwrap_or_default().into(),
+            capability: text("capability").unwrap_or_default().into(),
+            permission: text("permission").map(str::to_string),
+        }
+    }
+}
+
+impl From<epdf_kernel::types::PluginErrorInfo> for PluginErrorInfo {
+    fn from(info: epdf_kernel::types::PluginErrorInfo) -> Self {
+        PluginErrorInfo {
+            code: info.code,
+            message: info.message,
+            capability: info.capability,
+            permission: info.permission,
+        }
+    }
 }

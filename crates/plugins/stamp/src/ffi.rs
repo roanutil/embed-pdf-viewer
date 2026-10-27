@@ -84,7 +84,6 @@ fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
         Some("baseIndex") => Ok(AnnotationRef::Index {
             page,
             index: whole(reference.get("baseIndex"), "an annotation ref")?,
-            revision: Default::default(),
         }),
         _ => Err(invalid_state("an annotation ref", reference)),
     }
@@ -95,12 +94,9 @@ fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
         AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
             "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
         })),
-        AnnotationRef::Index { page, index, .. } => Ok(json!({
+        AnnotationRef::Index { page, index } => Ok(json!({
             "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
         })),
-        AnnotationRef::Nm { .. } => {
-            Err(invalid_state("an annotation ref", "the engine refers by number, not by /NM"))
-        }
     }
 }
 

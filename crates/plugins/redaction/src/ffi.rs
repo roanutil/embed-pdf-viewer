@@ -76,12 +76,9 @@ fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
         AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
             "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
         })),
-        AnnotationRef::Index { page, index, .. } => Ok(json!({
+        AnnotationRef::Index { page, index } => Ok(json!({
             "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
         })),
-        AnnotationRef::Nm { .. } => {
-            Err(invalid("the engine refers to annotations by number, not by /NM"))
-        }
     }
 }
 
@@ -102,7 +99,6 @@ fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
         Some("baseIndex") => Ok(AnnotationRef::Index {
             page,
             index: whole(reference.get("baseIndex"), "an annotation's base index")?,
-            revision: Default::default(),
         }),
         _ => Err(invalid("a ref of a kind the engine does not write")),
     }

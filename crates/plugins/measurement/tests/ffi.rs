@@ -119,8 +119,9 @@ fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
     }
     let read = viewports.clone();
     let write = viewports.clone();
-    TestSpec::new(engine)
-        .respond_page("page.measure.listViewports", move |pon, _| {
+    let spec =
+        if service { TestSpec::new(engine) } else { TestSpec::new(engine).lacking("page.measure") };
+    spec.respond_page("page.measure.listViewports", move |pon, _| {
             let list = read.borrow().get(&pon).cloned().unwrap_or(json!([]));
             Ok(Reply::value(json!({ "viewports": list })))
         })
@@ -358,17 +359,10 @@ fn calibrating_writes_the_scale_and_completes() {
 }
 
 #[test]
-#[ignore = "13.33: needs a handle whose has(\"page.measure\") is false; the fake builds it on every page since 83fb65435"]
 fn without_a_service_the_scale_is_in_memory() {
     // The defensive absent-service branch (`sync/viewports.ts:47`,
-    // `write/scale.ts:81`): a scale kept in memory, not persistent. Since
-    // `83fb65435` (Ruling13.22) the fake answers `page.measure` on every
-    // page, as `fake-engine.ts:678` does, with no `services` or `lacks`
-    // gate, and `TestKernel` forwards `has` to it (`test_kernel.rs:238`).
-    // So `spec(false, ..)` takes the service path and the last assertion
-    // would fail. 13.33 rewrites this over a `TestHandle` that answers
-    // `has("page.measure")` false (a `TestSpec` hook it would add), or
-    // drops it by ruling.
+    // `write/scale.ts:81`): a scale kept in memory, not persistent, on a
+    // handle whose `has("page.measure")` is false (`TestSpec::lacking`).
     let (_thread, m) = handle_over(|| spec(false, false, None));
     block_on(m.set_scale(
         MeasurementPageTarget::Page { page: P1 },

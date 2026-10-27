@@ -142,7 +142,7 @@ impl AnnotationThreadsHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| Ok(open(c)?.comments_reply(&ref_json(&annotation_ref)?, &text, None)),
-                |made: Value| ref_out(&made["ref"]).map_err(ViewerError::from),
+                |made: Value| ref_out(&made["annotation"]["ref"]).map_err(ViewerError::from),
             )
             .await?
     }

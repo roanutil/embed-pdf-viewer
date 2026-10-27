@@ -73,7 +73,7 @@ fn hits_carry_their_page_geometry_and_snippet() {
     // The engine's page-space segment, and its rect as the bounds.
     let bounds = hit.bounds.unwrap();
     assert_eq!((bounds.x, bounds.y, bounds.width, bounds.height), (10.0, 760.0, 40.0, 20.0));
-    assert_eq!(hit.segments[0].quad.upper_start.y, 760.0);
+    assert_eq!(hit.segments[0].quad.upper_left.y, 760.0);
     let snippet = hit.snippet.as_ref().unwrap();
     assert_eq!(
         (snippet.before.as_str(), snippet.matched.as_str(), snippet.after.as_str()),

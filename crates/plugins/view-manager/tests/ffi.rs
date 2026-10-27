@@ -55,7 +55,7 @@ fn open_b(thread: &KernelThread<TestKernel>) -> String {
             OpenSource::Input(json!({ "kind": "bytes", "id": "b", "bytes": { "$bytes": "" } })),
             OpenOptions::default(),
         );
-        settle(&opened).unwrap().as_str().unwrap().to_string()
+        settle(&opened).unwrap()["document"]["id"].as_str().unwrap().to_string()
     }))
     .unwrap()
 }

@@ -40,7 +40,7 @@ fn pons(op: &Value) -> Vec<u64> {
     op["pages"].as_array().unwrap().iter().map(|r| r["objectNumber"].as_u64().unwrap()).collect()
 }
 
-const META: fn(&Value) -> Value = |args| json!({ "affectedPages": [], "cacheDelta": null, "opId": args[1]["opId"], "undoable": true });
+const META: fn(&[Value]) -> Value = |args| json!({ "affectedPages": [], "cacheDelta": null, "opId": args[1]["opId"], "undoable": true });
 
 /// What the engine answers one page op and the fact it publishes first.
 fn applied(args: &[Value], op: &Value, pages: &[Value], inserted: Option<Vec<u32>>) -> Reply {

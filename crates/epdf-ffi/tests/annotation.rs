@@ -1,5 +1,9 @@
-use epdf_annotation_core as ac;
+//! The annotation records against the engine's JSON
+//! (`packages/engine/core/src/identity/AnnotationRef.ts`,
+//! `dto/PdfDestination.ts`, `dto/PdfLinkTarget.ts`).
+
 use epdf_ffi::{AnnotationRef, PageRef, PdfDestination, PdfLinkTarget};
+use serde_json::json;
 
 const PAGE: PageRef = PageRef { page_object_number: 7 };
 
@@ -15,34 +19,28 @@ fn every_destination_kind_round_trips() {
         PdfDestination::FitBH { page: PAGE, top: None },
         PdfDestination::FitBV { page: PAGE, left: Some(5.0) },
     ] {
-        let core = ac::PdfDestination::from(destination.clone());
-        assert_eq!(PdfDestination::from(&core), destination);
+        let json = destination.to_json();
+        assert_eq!(PdfDestination::from_json(&json).unwrap(), destination);
     }
 }
 
 #[test]
 fn an_absent_coordinate_goes_back_as_absent() {
-    let core = ac::PdfDestination::from(PdfDestination::Xyz {
-        page: PAGE,
-        left: None,
-        top: None,
-        zoom: None,
-    });
-    let json = serde_json::to_value(&core).unwrap();
+    let json = PdfDestination::Xyz { page: PAGE, left: None, top: None, zoom: None }.to_json();
     assert_eq!(
         json,
-        serde_json::json!({ "kind": "xyz", "page": { "kind": "objectNumber", "pageObjectNumber": 7 } })
+        json!({ "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 7 } })
     );
 }
 
 #[test]
 fn a_null_coordinate_arrives_as_none() {
-    let core: ac::PdfDestination = serde_json::from_value(serde_json::json!({
-        "kind": "xyz", "page": { "kind": "objectNumber", "pageObjectNumber": 7 }, "left": null, "top": 9
+    let destination = PdfDestination::from_json(&json!({
+        "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 7 }, "left": null, "top": 9
     }))
     .unwrap();
     assert_eq!(
-        PdfDestination::from(&core),
+        destination,
         PdfDestination::Xyz { page: PAGE, left: None, top: Some(9.0), zoom: None }
     );
 }
@@ -58,21 +56,27 @@ fn every_target_kind_round_trips() {
         PdfLinkTarget::Named { name: "NextPage".into() },
         PdfLinkTarget::Unsupported,
     ] {
-        let core = ac::PdfLinkTarget::from(target.clone());
-        assert_eq!(PdfLinkTarget::from(&core), target);
+        let json = target.to_json();
+        assert_eq!(PdfLinkTarget::from_json(&json).unwrap(), target);
     }
+    // The kinds as the engine spells them.
+    assert_eq!(
+        PdfLinkTarget::GotoRemote { file: "f".into() }.to_json(),
+        json!({ "kind": "goto-remote", "file": "f" })
+    );
 }
 
 #[test]
 fn an_annotation_ref_with_a_fractional_number_is_invalid_state() {
-    let core =
-        ac::AnnotationRef::ObjectNumber { page: ac::PageRef::new(7), annot_object_number: 8.5 };
-    let error = AnnotationRef::try_from(&core).unwrap_err();
+    let page = json!({ "kind": "objectNumber", "objectNumber": 7 });
+    let error = AnnotationRef::from_json(
+        &json!({ "kind": "objectNumber", "page": page, "objectNumber": 8.5 }),
+    )
+    .unwrap_err();
     assert_eq!(error.code(), Some("invalid-state"));
-    let ok =
-        ac::AnnotationRef::ObjectNumber { page: ac::PageRef::new(7), annot_object_number: 8.0 };
+    let ok = json!({ "kind": "objectNumber", "page": page, "objectNumber": 8 });
     assert_eq!(
-        AnnotationRef::try_from(&ok).unwrap(),
+        AnnotationRef::from_json(&ok).unwrap(),
         AnnotationRef::ObjectNumber { page: PAGE, annot_object_number: 8 }
     );
 }

@@ -353,8 +353,7 @@ fn invalid_input(message: String) -> Error {
 }
 
 fn error_info(info: epdf_kernel::types::PluginErrorInfo) -> PluginErrorInfo {
-    // `permission` waits for `epdf_ffi::PluginErrorInfo` to carry it (13.33).
-    PluginErrorInfo { code: info.code, message: info.message, capability: info.capability }
+    info.into()
 }
 
 /// A finite, positive size or scale, or `invalid-input`.

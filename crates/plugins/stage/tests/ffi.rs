@@ -96,11 +96,42 @@ fn three_pages() -> TestSpec {
 type Reports = Arc<Mutex<Vec<String>>>;
 
 fn handle_with(config: StageConfig) -> (KernelThread<TestKernel>, Arc<StageHandle>, Reports) {
+    handle_on(config, false)
+}
+
+/// A host clock with 16 ms frames on the kernel thread's timers, as a
+/// browser's `browserClock()` gives the stage its frames.
+struct FrameClock;
+
+impl epdf_kernel::clock::HostClock for FrameClock {
+    fn now(&self) -> f64 {
+        epdf_kernel::rt::now()
+    }
+    fn after(&self, ms: f64, run: Box<dyn FnOnce()>) -> epdf_kernel::Unsubscribe {
+        let timer = epdf_kernel::rt::set_timeout(ms, run);
+        epdf_kernel::Unsubscribe::new(move || epdf_kernel::rt::clear_timer(timer))
+    }
+    fn has_frames(&self) -> bool {
+        true
+    }
+    fn next_frame(&self, run: Box<dyn FnOnce(f64)>) -> epdf_kernel::Unsubscribe {
+        self.after(16.0, Box::new(move || run(epdf_kernel::rt::now())))
+    }
+}
+
+fn handle_on(
+    config: StageConfig,
+    frames: bool,
+) -> (KernelThread<TestKernel>, Arc<StageHandle>, Reports) {
     let thread = KernelThread::spawn(move |_| {
         let config = config.into_config()?;
-        TestKernel::open(
+        let clock: Rc<dyn epdf_kernel::clock::HostClock> =
+            if frames { Rc::new(FrameClock) } else { Rc::new(epdf_kernel::clock::TimerClock) };
+        TestKernel::open_with_clock(
             vec![stage_plugin(StagePluginOptions { config, ..Default::default() })],
             three_pages(),
+            epdf_kernel::KernelOptions::default(),
+            clock,
         )
     })
     .unwrap();
@@ -285,11 +316,11 @@ fn concurrent_pans_all_land() {
     assert_eq!(end, block_on(serial.camera()).unwrap());
 }
 
-// Motion runs on the kernel's host clock: this needs the test kernel built
-// with a frame clock (owner 13.33, with the epdf-ffi build).
+// Motion runs on the kernel's host clock: the test kernel gets one with
+// frames.
 #[test]
 fn motion_in_flight_at_close_stops() {
-    let (thread, stage, reports) = handle_with(StageConfig::default());
+    let (thread, stage, reports) = handle_on(StageConfig::default(), true);
     sized(&stage);
     block_on(stage.fling(0.0, -4000.0)).unwrap();
     assert!(block_on(stage.is_moving()).unwrap());

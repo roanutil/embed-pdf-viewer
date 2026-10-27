@@ -361,7 +361,7 @@ fn a_tool_without_link_nav_does_not_follow_links() {
             Tool::new("ink", "crosshair", ["annotation-draw"]),
             RegisterToolOptions::default(),
         );
-        hub.activate_tool("ink", None).unwrap();
+        hub.activate_tool("ink").unwrap();
     }))
     .unwrap();
     assert!(!block_on(link.is_navigation_engaged()).unwrap());

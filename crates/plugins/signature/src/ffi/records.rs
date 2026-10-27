@@ -57,16 +57,14 @@ fn page_from_json(value: &Value) -> Result<Option<PageRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    let core: epdf_annotation_core::PageRef = decode("a page ref", value)?;
-    Ok(Some(core.into()))
+    Ok(Some(PageRef::from_json(value)?))
 }
 
 fn annotation_from_json(value: &Value) -> Result<Option<AnnotationRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    let core: epdf_annotation_core::AnnotationRef = decode("an annotation ref", value)?;
-    Ok(Some(AnnotationRef::try_from(&core)?))
+    Ok(Some(AnnotationRef::from_json(value)?))
 }
 
 // ── enums ────────────────────────────────────────────────────────────────────

@@ -383,6 +383,11 @@ impl TryFrom<&LocaleLoadFailedEvent> for LocaleLoadFailure {
                 code: field("code")?,
                 message: field("message")?,
                 capability: field("capability")?,
+                permission: event
+                    .error
+                    .get("permission")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
             },
         })
     }

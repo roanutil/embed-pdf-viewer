@@ -1,7 +1,6 @@
+#![recursion_limit = "256"]
 #![cfg(feature = "uniffi")]
-//! The uniffi handles over a kernel thread. Migrated by hand onto the
-//! re-ported capability (Task 13.17); not compiled until `epdf-ffi` builds
-//! again (Task 13.33).
+//! The uniffi handles over a kernel thread, on the re-ported capability.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -68,7 +67,7 @@ fn answer(op: &Value, op_id: &str) -> Result<(Value, Value), epdf_kernel::Error>
         Some("annotations.create") => {
             let n = op["objectNumber"].as_u64().unwrap_or(10) as u32;
             let mut made = square(n, json!({}));
-            made["subtype"] = op["annotation"]["subtype"].clone();
+            made["subtype"] = op["data"]["subtype"].clone();
             let item = json!({ "type": "annotations.create", "page": page_json(), "annotation": made,
                                "meta": meta(json!([ref_json(n)])) });
             let event = json!({ "type": "annotations.created", "page": page_json(), "annotation": made,
@@ -371,7 +370,7 @@ fn a_stamp_placed_from_png_bytes_sends_its_bytes() {
     .unwrap();
     let ops = sent_ops(&thread);
     let create = ops.iter().find(|op| op["type"] == "annotations.create").expect("a create");
-    assert_eq!(create["annotation"]["subtype"], "stamp", "{create}");
+    assert_eq!(create["data"]["subtype"], "stamp", "{create}");
 }
 
 #[test]
@@ -400,7 +399,7 @@ use epdf_plugin_annotation::ffi::{
 /// Make `id` the hub's active tool, as a toolbar tap would.
 fn activate(thread: &KernelThread<TestKernel>, id: &'static str) {
     block_on(thread.call(move |k| {
-        k.capability(&epdf_plugin_interaction::INTERACTION).unwrap().activate_tool(id, None)
+        k.capability(&epdf_plugin_interaction::INTERACTION).unwrap().activate_tool(id)
     }))
     .unwrap()
     .unwrap();
@@ -465,7 +464,7 @@ fn a_requested_stamp_asks_the_picker_and_places_what_it_returns() {
         .unwrap()
     );
     let create = wait_for_create(&thread).expect("a stamp was created");
-    assert_eq!(create["annotation"]["subtype"], "stamp", "{create}");
+    assert_eq!(create["data"]["subtype"], "stamp", "{create}");
     assert_eq!(picker.0.lock().unwrap().len(), 1);
 }
 

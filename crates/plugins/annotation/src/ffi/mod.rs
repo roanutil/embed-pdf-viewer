@@ -111,12 +111,9 @@ pub(crate) fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
         AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
             "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
         })),
-        AnnotationRef::Index { page, index, .. } => Ok(json!({
+        AnnotationRef::Index { page, index } => Ok(json!({
             "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
         })),
-        AnnotationRef::Nm { .. } => {
-            Err(invalid("the engine refers to annotations by number, not by /NM"))
-        }
     }
 }
 
@@ -124,8 +121,7 @@ pub(crate) fn refs_json(refs: &[AnnotationRef]) -> Result<Vec<Value>, Error> {
     refs.iter().map(ref_json).collect()
 }
 
-/// An engine ref as the foreign enum. A base-index ref has no revision any
-/// more; 13.33 drops the token from `AnnotationRef::Index`.
+/// An engine ref as the foreign enum.
 pub(crate) fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
     let page = page_out(reference.get("page").unwrap_or(&Value::Null))?;
     match reference.get("kind").and_then(Value::as_str) {
@@ -139,7 +135,6 @@ pub(crate) fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
         Some("baseIndex") => Ok(AnnotationRef::Index {
             page,
             index: whole(reference.get("baseIndex"), "an annotation's base index")?,
-            revision: Default::default(),
         }),
         _ => Err(invalid("a ref of a kind the engine does not write")),
     }
@@ -252,6 +247,7 @@ pub(crate) fn plugin_error_info(error: &Error) -> PluginErrorInfo {
         code: info.get("code").and_then(Value::as_str).unwrap_or("unknown").into(),
         message: info.get("message").and_then(Value::as_str).unwrap_or(&error.message).into(),
         capability: info.get("capability").and_then(Value::as_str).unwrap_or("annotation").into(),
+        permission: info.get("permission").and_then(Value::as_str).map(str::to_string),
     }
 }
 
@@ -262,6 +258,7 @@ pub(crate) fn plugin_error_info_of(info: &Value) -> PluginErrorInfo {
         code: s("code", "unknown"),
         message: s("message", ""),
         capability: s("capability", "annotation"),
+        permission: info.get("permission").and_then(Value::as_str).map(str::to_string),
     }
 }
 

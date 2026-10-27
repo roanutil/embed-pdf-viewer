@@ -61,12 +61,19 @@ fn page_json(page: PageRef) -> Value {
     json!({ "kind": "objectNumber", "objectNumber": page.page_object_number })
 }
 
+/// A whole number the plugin wrote, as JavaScript numbers are (`101` or
+/// `101.0`), that fits a `u32`.
+fn whole(value: Option<&Value>) -> Option<u32> {
+    value
+        .and_then(Value::as_f64)
+        .filter(|n| n.fract() == 0.0 && *n >= 0.0 && *n <= f64::from(u32::MAX))
+        .map(|n| n as u32)
+}
+
 fn page_of(value: &Value) -> Result<PageRef, Error> {
-    let n = value
-        .get("objectNumber")
-        .and_then(Value::as_u64)
+    let n = whole(value.get("objectNumber"))
         .ok_or_else(|| invalid_state(format!("[form] not a page ref: {value}")))?;
-    Ok(PageRef { page_object_number: n as u32 })
+    Ok(PageRef { page_object_number: n })
 }
 
 fn field_ref_json(reference: &FormFieldRef) -> Value {
@@ -81,8 +88,7 @@ fn field_ref_json(reference: &FormFieldRef) -> Value {
 fn field_ref_of(value: &Value) -> Result<FormFieldRef, Error> {
     match value.get("kind").and_then(Value::as_str) {
         Some("objectNumber") => Ok(FormFieldRef::ObjectNumber {
-            field_object_number: value.get("objectNumber").and_then(Value::as_u64).unwrap_or(0)
-                as u32,
+            field_object_number: whole(value.get("objectNumber")).unwrap_or(0),
         }),
         Some("fqn") => Ok(FormFieldRef::Fqn {
             name: value.get("name").and_then(Value::as_str).unwrap_or_default().to_string(),
@@ -92,31 +98,14 @@ fn field_ref_of(value: &Value) -> Result<FormFieldRef, Error> {
 }
 
 fn annotation_ref_json(reference: &AnnotationRef) -> Value {
-    match reference {
-        AnnotationRef::ObjectNumber { page, annot_object_number } => json!({
-            "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number,
-        }),
-        AnnotationRef::Nm { page, nm } => {
-            json!({ "kind": "nm", "page": page_json(*page), "nm": nm })
-        }
-        AnnotationRef::Index { page, index, .. } => {
-            json!({ "kind": "baseIndex", "page": page_json(*page), "baseIndex": index })
-        }
-    }
+    reference.to_json()
 }
 
 fn annotation_ref_of(value: &Value) -> Result<Option<AnnotationRef>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    match value.get("kind").and_then(Value::as_str) {
-        Some("objectNumber") => Ok(Some(AnnotationRef::ObjectNumber {
-            page: page_of(value.get("page").unwrap_or(&Value::Null))?,
-            annot_object_number: value.get("objectNumber").and_then(Value::as_u64).unwrap_or(0)
-                as u32,
-        })),
-        _ => Err(invalid_state(format!("[form] an annotation ref of another kind: {value}"))),
-    }
+    AnnotationRef::from_json(value).map(Some)
 }
 
 fn rect_of(value: &Value) -> Rect {
@@ -596,6 +585,10 @@ fn batch_result(value: &Value) -> Result<FormBatchResult, ViewerError> {
                         code: text(error, "code"),
                         message: text(error, "message"),
                         capability: text(error, "capability"),
+                        permission: error
+                            .get("permission")
+                            .and_then(Value::as_str)
+                            .map(str::to_string),
                     },
                 }
             })
@@ -657,7 +650,7 @@ fn fill_item(item: &Value) -> Result<FormFillItem, Error> {
             value: text("value"),
             multiline: flag("multiline"),
             password: flag("password"),
-            max_length: item.get("maxLength").and_then(Value::as_u64).map(|n| n as u32),
+            max_length: whole(item.get("maxLength")),
             comb: flag("comb"),
         },
         Some("toggle") => FormFillControl::Toggle {
@@ -678,8 +671,7 @@ fn fill_item(item: &Value) -> Result<FormFillItem, Error> {
     };
     Ok(FormFillItem {
         field_ref: field_ref_of(item.get("fieldRef").unwrap_or(&Value::Null))?,
-        annot_object_number: item.get("annotObjectNumber").and_then(Value::as_u64).unwrap_or(0)
-            as u32,
+        annot_object_number: whole(item.get("annotObjectNumber")).unwrap_or(0),
         annotation_ref: annotation_ref_of(item.get("annotationRef").unwrap_or(&Value::Null))?,
         bounds: rect_of(item.get("box").unwrap_or(&Value::Null)),
         look_json: item.get("look").cloned().unwrap_or(Value::Null).to_string(),

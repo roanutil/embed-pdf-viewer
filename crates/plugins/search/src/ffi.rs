@@ -11,16 +11,11 @@
 //! `SearchConfig`), and `TextSegment`, whose quad and rect are
 //! `epdf-geometry` types. A count that does not fit a `u32` is an
 //! `invalid-state` error, never a clamp.
-//!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33): its `TextQuad`
-//! still names `upper_start`..`lower_end`, so [`quad`] maps the named
-//! corners onto it, and its `PluginErrorInfo` has no `permission` yet. The
-//! settings API is not bridged yet either.
 
 use std::sync::Arc;
 
 use epdf_ffi::{
-    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Rect, Subscription, TextQuad,
+    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Quad, Rect, Subscription,
     ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
@@ -39,20 +34,15 @@ pub use crate::{
 /// One merged visual line of a match, in page space.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TextSegment {
-    pub quad: TextQuad,
+    pub quad: Quad,
     pub rect: Rect,
     /// The reading direction along the baseline: `1` or `-1`.
     pub advance: f64,
 }
 
-/// A quad's named corners on the mirror's.
-fn quad(q: epdf_geometry::Quad) -> TextQuad {
-    TextQuad {
-        upper_start: q.upper_left.into(),
-        upper_end: q.upper_right.into(),
-        lower_start: q.lower_left.into(),
-        lower_end: q.lower_right.into(),
-    }
+/// A quad's named corners.
+fn quad(q: epdf_geometry::Quad) -> Quad {
+    q.into()
 }
 
 impl From<&crate::TextSegment> for TextSegment {
@@ -260,10 +250,9 @@ pub trait SearchEventListener: Send + Sync {
     fn on_end(&self);
 }
 
-/// The kernel's `{code, message, capability, permission}` on the mirror,
-/// which has no `permission` until 13.33.
+/// The kernel's `{code, message, capability, permission}` on the mirror.
 fn error_info(info: crate::PluginErrorInfo) -> PluginErrorInfo {
-    PluginErrorInfo { code: info.code, message: info.message, capability: info.capability }
+    info.into()
 }
 
 /// A count or index as a `u32`, or `invalid-state`. Shared with the
@@ -418,7 +407,7 @@ impl SearchHandle {
             .call(move |c| {
                 open(c)?
                     .next_hit(reveal.map(Into::into))?
-                    .as_ref()
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })
@@ -434,7 +423,7 @@ impl SearchHandle {
             .call(move |c| {
                 open(c)?
                     .previous_hit(reveal.map(Into::into))?
-                    .as_ref()
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })
@@ -451,7 +440,7 @@ impl SearchHandle {
             .call(move |c| {
                 open(c)?
                     .go_to_hit(HitTarget::Index(index as isize), reveal.map(Into::into))?
-                    .as_ref()
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })

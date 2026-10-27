@@ -142,11 +142,7 @@ impl SignatureHandle {
 
     /// The signed fields.
     pub async fn signatures(&self) -> Result<Vec<SignatureInfo>, ViewerError> {
-        self.cap
-            .call(|c| {
-                SignatureInfo::list_from_json(&Value::Array((*open(c)?.list_signatures()).clone()))
-            })
-            .await
+        self.cap.call(|c| SignatureInfo::list_from_json(&open(c)?.list_signatures())).await
     }
 
     /// The signature fields nobody has signed.

@@ -8,15 +8,11 @@
 //! origin.
 //!
 //! Every method hops to the kernel thread through `KernelBound`.
-//!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33): its `TextQuad`
-//! still names `upper_start`..`lower_end`, so [`quad`] maps the named
-//! corners onto it; 13.33 renames the mirror.
 
 use std::sync::Arc;
 
 use epdf_ffi::{
-    CancelToken, KernelBound, KernelPost, PageRef, Point, Rect, Subscription, TextQuad, ViewerError,
+    CancelToken, KernelBound, KernelPost, PageRef, Point, Quad, Rect, Subscription, ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::geometry::PageRef as KernelPageRef;
@@ -86,20 +82,15 @@ impl From<SelectionInput> for crate::SelectionRangeInput {
 /// One merged visual line of a selection, in page space.
 #[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
 pub struct SelectionSegment {
-    pub quad: TextQuad,
+    pub quad: Quad,
     pub rect: Rect,
     /// Reading direction along the baseline: 1 or -1.
     pub advance: i32,
 }
 
-/// A quad's named corners on the mirror's.
-fn quad(q: epdf_geometry::Quad) -> TextQuad {
-    TextQuad {
-        upper_start: q.upper_left.into(),
-        upper_end: q.upper_right.into(),
-        lower_start: q.lower_left.into(),
-        lower_end: q.lower_right.into(),
-    }
+/// A quad's named corners.
+fn quad(q: epdf_geometry::Quad) -> Quad {
+    q.into()
 }
 
 impl From<&crate::SelectionSegment> for SelectionSegment {
@@ -112,7 +103,7 @@ impl From<&crate::SelectionSegment> for SelectionSegment {
 #[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
 pub struct SelectionEndpoint {
     pub page: PageRef,
-    pub glyph_quad: TextQuad,
+    pub glyph_quad: Quad,
     pub advance: i32,
     pub rect: Rect,
 }
