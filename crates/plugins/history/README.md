@@ -21,6 +21,10 @@ refusal drops the entry and everything before it. The document events `redaction
 `pages.flattened`, `signatures.completed`, `forms.repaired` and `document.versioned` clear both
 stacks.
 
+The crate has no `uniffi` feature. `epdf-viewer-host` installs it (`ViewerConfig.history`) and
+`epdf-web` builds it by factory; no foreign handle exposes it yet, so Swift cannot reach it until
+Task 14 adds one.
+
 ## Where the port differs in shape
 
 `undo()` and `redo()` return `Result<(), Error>`. The TypeScript throws from the same place: when

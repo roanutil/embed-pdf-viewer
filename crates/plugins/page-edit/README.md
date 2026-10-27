@@ -70,7 +70,7 @@ For viewer-host and the Swift package (13.33).
 | one `SerialQueue` for every verb but `extract` | the document's change queue; edits apply in the order they were staged |
 | new | `get_selected`, `select`, `page_edit_state`, `PageEditState`, `initial_page_edit_state` |
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds.
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33.
 The handle keeps its layout records by reading the page list when each verb settles.
 `PageEditPlacement::Index` is gone and `Start` is new. The ffi's `move_pages_to_end` is gone: `End`
 is the engine's own `'end'`, so the index the engine used to refuse is no longer sent.

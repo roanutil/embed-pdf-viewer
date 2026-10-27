@@ -128,7 +128,7 @@ For form (13.18), link, measurement, redaction, signature and stamp, and viewer-
 | `host_contract::serialize_error` | the kernel's `Error::to_canonical` |
 | `promise::{await_engine, spawn, then, all}`, `binary::{resolve_binary_source, sniff_binary_metadata}` | unchanged |
 | new | `lend(AnnotationLender)`, `register_behavior`, `commit_script_effects`, `import`, `export`, `reorder`, `is_pending`, `is_editable`, `get_hovered`, `selection_update_link` |
-| ffi typed `AnnotationRecord` (`geometry`, `props`, `flags`), `AnnotationPatch`, `CreateAnnotationInput`, `AnnotationHydration`, `AnnotationQuarterTurn`, `AnnotationSnapSettings` | the record carries `rect`, the text members and authority typed and the rest as `fields_json`; patches, create fields and tool defaults are JSON strings. `src/ffi/` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33), which also types the JSON against the renamed mirror |
+| ffi typed `AnnotationRecord` (`geometry`, `props`, `flags`), `AnnotationPatch`, `CreateAnnotationInput`, `AnnotationHydration`, `AnnotationQuarterTurn`, `AnnotationSnapSettings` | the record carries `rect`, the text members and authority typed and the rest as `fields_json`; patches, create fields and tool defaults are JSON strings. `src/ffi/` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33 |
 
 Known call sites, by crate:
 

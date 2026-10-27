@@ -178,7 +178,7 @@ For annotation (13.17), form (13.18), page-edit (13.19) and viewer-host and epdf
 | tile request `target.rect` as PDF edges via `pageRectToPdf` | page space `{x, y, width, height}`, as `render.image` takes it |
 | `DocumentHandle::call` for renders | `DocumentHandle::call_with(&CallFacts { priority: High, view }, ..)`, defaulting to `call` (kernel, Ruling13.16) |
 | new | `render_defaults`, `RenderSettingsChanged`, `get_layer_rights`, `render_appearances`, `kept_appearances`, `get_appearance_scale`, `AppearanceStore`, `RecentPictures`, `same_page_view_demand`, `resolve_page_layers`, `layers_key_of`, `render_epoch_of` |
-| ffi `RenderPaintSettings.fade_ms` | removed. The ffi doors add an `include_form_fields` argument beside `include_annotations`, and `RenderInvalidateScope` adds `Fields`. `src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33) |
+| ffi `RenderPaintSettings.fade_ms` | removed. The ffi doors add an `include_form_fields` argument beside `include_annotations`, and `RenderInvalidateScope` adds `Fields`. `src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33 |
 
 Known call sites: `crates/epdf-viewer-host/src/session.rs` builds `RenderHost { release_image,
 ..RenderHost::default() }`, which still compiles, but its comment about the default 16 ms frame

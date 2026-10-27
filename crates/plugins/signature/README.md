@@ -54,7 +54,7 @@ For `epdf-viewer-host` and `epdf-web` (Task 13.33).
 |---|---|
 | `signature_plugin(SignatureConfig { mode, signer, trust, allow_certify, host })` | `signature_plugin(SignatureConfig { key, mode, trust, allow_certify })`, each `Option<Option<_>>` for "not given" and `null`; `SignatureHost` is `console::set_sink` |
 | `SignerSource::{Port, Thunk, Host { resolve, available }}` | `SignatureKey::{Port, Thunk}`. The mode follows the key setting, as `services/authority.ts` reads it: a host that wants `visual` until its slot holds a signer registers the mode or updates the key setting |
-| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` keep the public field name `attribution` and send it as `signer`; 13.33 decides whether Swift renames it |
+| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` keep the public field name `attribution` and send it as `signer`. Renaming it to `signer` is carried to Task 14, where the Swift callers are rebuilt |
 | `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc` and compared by identity: a clone is the same key, a port rebuilt from the same parts is another (a Rust-only divergence, below) |
 | `create_signature_capability`, `signature_reducer`, `SignatureAction`, `ResourceStatus` | removed with the TypeScript; `get_status` answers the kernel's `mirror::ResourceStatus` |
 | `abort_pending()` | `cancel_pending(options)`, over `signatures.cancel` |
@@ -65,8 +65,7 @@ For `epdf-viewer-host` and `epdf-web` (Task 13.33).
 | `PlaceTarget::Free(StampPlacement)` | `PlaceTarget::Free(Value)`, a `StampPlacement` as JSON (`page`, `center`, `targetWidth`) |
 | `is_target`, `same_ref` | `set_target`, `same_field_ref`; refs are `{ kind: 'objectNumber', objectNumber }` |
 
-`src/ffi/` and `tests/ffi.rs` were migrated by hand and are not compiled: `epdf-ffi` does not build
-at this commit. `SignatureHandle::abort_pending` is `cancel_pending`, `can_sign` and `can_fill` take
+`src/ffi/` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33. `SignatureHandle::abort_pending` is `cancel_pending`, `can_sign` and `can_fill` take
 a field, `SignatureEvent::Invalidating` is `InvalidationPredicted`, `SignatureSignerClaims` reads
 `signedAt`, and a signer completion's `fail` raises a plain error, which the verb answers as
 `operation-failed` with that cause, as a rejecting TypeScript signer port is answered

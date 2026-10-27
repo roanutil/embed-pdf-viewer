@@ -22,6 +22,10 @@ The stage, actions, link, selection and i18n plugins are optional, as in `outlin
 are looked up when needed. The vector runs every activation path and the default title with and
 without them. The attachment plugin is not a dependency.
 
+The crate has no `uniffi` feature. `epdf-viewer-host` installs it (`ViewerConfig.outline`) and
+`epdf-web` builds it by factory; no foreign handle exposes it yet, so Swift cannot reach it until
+Task 14 adds one.
+
 ## Tests
 
 `tests/conformance.rs` replays the vector with the real interaction, actions, stage, link,
