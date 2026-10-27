@@ -370,3 +370,47 @@ fn reads_and_writes_settle_on_the_typescripts_turns() {
     rt::run_until_stalled();
     assert_eq!(rejected.get(), 4);
 }
+
+#[test]
+fn the_reads_keep_their_rc_until_an_input_changes() {
+    let rig = Rig::loaded(vec![read(), updated(1)]);
+    let o = &rig.outline;
+    let (list, rows, selected) = (o.list(), o.list_rows(), o.get_selected());
+    let (top, under) = (o.get_children(None), o.get_children(Some(&r(10))));
+    assert!(Rc::ptr_eq(&list, &o.list()));
+    assert!(Rc::ptr_eq(&rows, &o.list_rows()));
+    assert!(Rc::ptr_eq(&selected, &o.get_selected()));
+    assert!(Rc::ptr_eq(&top, &o.get_children(None)));
+    assert!(Rc::ptr_eq(&under, &o.get_children(Some(&r(10)))));
+
+    // The expanded items are an input of the rows only.
+    o.expand(&r(10));
+    assert!(!Rc::ptr_eq(&rows, &o.list_rows()));
+    assert!(Rc::ptr_eq(&list, &o.list()));
+    let rows = o.list_rows();
+    // The selection is an input of `get_selected` only.
+    o.select(&[r(12)]);
+    assert!(!Rc::ptr_eq(&selected, &o.get_selected()));
+    assert!(Rc::ptr_eq(&rows, &o.list_rows()));
+    let selected = o.get_selected();
+
+    // A write changes the view, every read's input.
+    settled(&o.update(r(10), titled("X"), none())).unwrap().unwrap();
+    assert!(!Rc::ptr_eq(&list, &o.list()));
+    assert!(!Rc::ptr_eq(&rows, &o.list_rows()));
+    assert!(!Rc::ptr_eq(&selected, &o.get_selected()));
+    assert!(!Rc::ptr_eq(&top, &o.get_children(None)));
+    assert!(!Rc::ptr_eq(&under, &o.get_children(Some(&r(10)))));
+    assert!(Rc::ptr_eq(&o.list(), &o.list()));
+}
+
+#[test]
+fn a_colour_that_is_not_a_string_rejects_the_write_before_it_is_staged() {
+    let rig = Rig::loaded(vec![read()]);
+    // `undoOf` predicts the op, and `colorAsRead` throws on `5.toLowerCase`.
+    let error =
+        settled(&rig.outline.update(r(10), json!({ "color": 5 }), none())).unwrap().unwrap_err();
+    assert_eq!(error.name, "TypeError");
+    assert_eq!(rig.calls("apply"), 0);
+    assert_eq!(rig.outline.get(&r(10)).unwrap()["color"], Value::Null);
+}

@@ -365,7 +365,7 @@ impl Core {
             None => json!({ "key": key }),
             Some(count) => json!({ "key": key, "count": count }),
         };
-        let undo = undo_of(&self.view(), &ops);
+        let undo = undo_of(&self.view(), &ops)?;
         let mut change = StagedChange::ops(label, ops);
         change.undo = undo;
         self.cx.changes()?.stage(change)

@@ -99529,7 +99529,7 @@
     },
     {
       "name": "refused-writes",
-      "covers": "controller.ts:229-246: without doc.outline.modify every write rejects permission-denied before anything is staged; canEdit; a ref the outline lacks rejects not-found; an engine refusal rejects and the view drops the change with no onChanged",
+      "covers": "controller.ts:229-235,377: without doc.outline.modify canEdit is false and every write rejects permission-denied before anything is staged or the engine is asked",
       "plugins": [
         {
           "factory": "outline"
@@ -99930,15 +99930,6 @@
                     }
                   ],
                   "incomplete": false
-                }
-              },
-              {
-                "path": "apply",
-                "times": 1,
-                "error": {
-                  "name": "EngineError",
-                  "message": "no",
-                  "code": "Refused"
                 }
               }
             ]
@@ -112619,7 +112610,7 @@
     },
     {
       "name": "close",
-      "covers": "a read and a write on their way when the document closes reject instance-closed; reopening starts idle",
+      "covers": "a read on its way when the document closes resolves undefined (the mirror drops an instance-closed load), a write on its way rejects instance-closed; reopening starts idle",
       "plugins": [
         {
           "factory": "outline"

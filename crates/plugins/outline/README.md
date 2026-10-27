@@ -46,5 +46,9 @@ None is reached by a vector or by an outline the engine sends.
   the TypeScript.
 - A selected-text title cut at 32,767 UTF-16 units through a surrogate pair drops the half the
   TypeScript keeps as a lone surrogate.
-- A truthy `color` that is not a string is kept as given by the prediction, where `toLowerCase`
-  would throw a `TypeError`.
+- `activate` without the link plugin hands a page destination to the stage's typed
+  `PageDestination`. One of a known kind that does not decode (a member of the wrong type) still
+  reveals its page and is reported to the kernel as `[outline] the stage cannot read destination
+  ...`, where `controller.ts:212-216` passes the raw object to `goToDestination`. This is the link
+  plugin's rule (`crates/plugins/link/src/controller.rs:388-410`). An engine read never sends such a
+  destination.

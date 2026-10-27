@@ -45,39 +45,50 @@ fn target_fields_of(target: Option<&Value>) -> (Value, Value) {
     }
 }
 
-/// `colorAsRead(color)`: `#rrggbb` in lowercase digits, or `null`.
-fn color_as_read(color: Option<&Value>) -> Value {
+/// `colorAsRead(color)`: `#rrggbb` in lowercase digits, or `null`. A truthy
+/// colour that isn't a string throws as `color.toLowerCase()` does.
+fn color_as_read(color: Option<&Value>) -> Result<Value, Error> {
     match color {
-        Some(Value::String(s)) if !s.is_empty() => Value::String(s.to_lowercase()),
-        other if truthy(other) => other.cloned().unwrap_or(Value::Null),
-        _ => Value::Null,
+        Some(Value::String(s)) if !s.is_empty() => Ok(Value::String(s.to_lowercase())),
+        other if truthy(other) => {
+            Err(Error::named("TypeError", "color.toLowerCase is not a function"))
+        }
+        _ => Ok(Value::Null),
     }
 }
 
 /// `outlineItemOfDraft(ref, parent, draft)`: the new item. It has no
 /// children yet, so it isn't open.
-pub fn outline_item_of_draft(item_ref: Value, parent: Value, draft: &Value) -> Value {
+pub fn outline_item_of_draft(
+    item_ref: Value,
+    parent: Value,
+    draft: &Value,
+) -> Result<Value, Error> {
     let (target, action) = target_fields_of(member(draft, "target"));
     let or_false = |name: &str| {
         member(draft, name).filter(|v| !v.is_null()).cloned().unwrap_or(Value::Bool(false))
     };
-    json!({
+    Ok(json!({
         "ref": item_ref,
         "parent": parent,
         "title": member_or_undefined(draft, "title"),
         "target": target,
         "action": action,
         "open": false,
-        "color": color_as_read(member(draft, "color")),
+        "color": color_as_read(member(draft, "color"))?,
         "bold": or_false("bold"),
         "italic": or_false("italic"),
-    })
+    }))
 }
 
 /// `outlineItemAfter(item, patch, hasChildren)`: the item with the fields
 /// the patch names; `None` when the patch changes nothing (the TypeScript
 /// returns `item` itself). `open` holds only on an item with children.
-pub fn outline_item_after(item: &Value, patch: &Value, has_children: bool) -> Option<Value> {
+pub fn outline_item_after(
+    item: &Value,
+    patch: &Value,
+    has_children: bool,
+) -> Result<Option<Value>, Error> {
     let mut next = item.as_object().cloned().unwrap_or_default();
     if let Some(title) = member(patch, "title") {
         next.insert("title".into(), title.clone());
@@ -89,7 +100,7 @@ pub fn outline_item_after(item: &Value, patch: &Value, has_children: bool) -> Op
         next.insert("action".into(), action);
     }
     if let Some(color) = member(patch, "color") {
-        next.insert("color".into(), color_as_read(Some(color)));
+        next.insert("color".into(), color_as_read(Some(color))?);
     }
     if let Some(bold) = member(patch, "bold") {
         next.insert("bold".into(), bold.clone());
@@ -108,7 +119,7 @@ pub fn outline_item_after(item: &Value, patch: &Value, has_children: bool) -> Op
         |name: &str| member(patch, name).is_none() || strict_equals(next.get(name), item.get(name));
     let same =
         !target_given && ["title", "color", "bold", "italic", "open"].into_iter().all(same_member);
-    (!same).then_some(Value::Object(next))
+    Ok((!same).then_some(Value::Object(next)))
 }
 
 /// `outlineItemWithChildren(item, hasChildren)`: one left without children
@@ -374,7 +385,7 @@ pub fn predict_outline(tree: Rc<Value>, op: &Value) -> Result<Rc<Value>, Error> 
             let Some(at) = index_at(&siblings, &position) else { return Ok(tree) };
             let parent_ref = op.get("parent").cloned().unwrap_or_else(epdf_kernel::undefined);
             let item =
-                outline_item_of_draft(item_ref, parent_ref, &member_or_undefined(op, "data"));
+                outline_item_of_draft(item_ref, parent_ref, &member_or_undefined(op, "data"))?;
             let with = with_items_or((*tree).clone(), vec![item]);
             with_children(&with, &parent, &inserted(&siblings, at, &[key]))
         }
@@ -382,7 +393,7 @@ pub fn predict_outline(tree: Rc<Value>, op: &Value) -> Result<Rc<Value>, Error> 
             let key = outline_key_of(op.get("ref"));
             let Some(item) = item_at(&tree, &key) else { return Ok(tree) };
             let has_children = !children_of(&tree, &key).is_empty();
-            match outline_item_after(item, &member_or_undefined(op, "patch"), has_children) {
+            match outline_item_after(item, &member_or_undefined(op, "patch"), has_children)? {
                 Some(next) => with_items_or((*tree).clone(), vec![next]),
                 None => return Ok(tree),
             }
@@ -557,18 +568,21 @@ fn undo_of_op(tree: &Value, op: &Value) -> Vec<Value> {
 }
 
 /// `undoOf(tree, ops)`: what undoing `ops` looks like, each op read off the
-/// tree the ops before it leave; the last op is undone first.
-pub fn undo_of(tree: &Rc<Value>, ops: &[Value]) -> Vec<Value> {
+/// tree the ops before it leave; the last op is undone first. An op the
+/// prediction throws on (a colour that isn't a string) throws here, as
+/// `predictOutline` does inside the TypeScript's `undoOf`.
+pub fn undo_of(tree: &Rc<Value>, ops: &[Value]) -> Result<Vec<Value>, Error> {
     if tree.is_null() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
     let mut undo: Vec<Vec<Value>> = Vec::new();
     let mut current = tree.clone();
     for op in ops {
         undo.push(undo_of_op(&current, op));
-        current = predict_outline(current.clone(), op).unwrap_or(current);
+        // `predictOutline(current, op) ?? current`: a throw leaves `undoOf`.
+        current = predict_outline(current.clone(), op)?;
     }
-    undo.into_iter().rev().flatten().collect()
+    Ok(undo.into_iter().rev().flatten().collect())
 }
 
 /// `js_string` of a key, re-exported for the controller's messages.
@@ -635,7 +649,7 @@ mod tests {
     fn undoing_a_delete_restores_the_subtree_in_place() {
         let t = tree();
         let ops = [json!({"type": "outline.delete", "ref": r(1)})];
-        let undo = undo_of(&t, &ops);
+        let undo = undo_of(&t, &ops).unwrap();
         assert_eq!(undo.len(), 1);
         assert_eq!(undo[0]["index"], 0);
         let gone = predict_outline(t.clone(), &ops[0]).unwrap();
@@ -643,6 +657,20 @@ mod tests {
         let back = predict_outline(gone, &undo[0]).unwrap();
         assert_eq!(children_of(&back, TOP), ["1", "4"]);
         assert_eq!(children_of(&back, "1"), ["2", "3"]);
+    }
+
+    #[test]
+    fn a_colour_that_is_not_a_string_throws_as_to_lower_case_does() {
+        let t = tree();
+        let op = json!({"type": "outline.update", "ref": r(2), "patch": {"color": 5}});
+        let error = predict_outline(t.clone(), &op).unwrap_err();
+        assert_eq!(
+            (error.name.as_str(), error.message.as_str()),
+            ("TypeError", "color.toLowerCase is not a function")
+        );
+        assert!(undo_of(&t, &[op]).is_err());
+        let cleared = json!({"type": "outline.update", "ref": r(2), "patch": {"color": null}});
+        assert!(predict_outline(t, &cleared).is_ok());
     }
 
     #[test]

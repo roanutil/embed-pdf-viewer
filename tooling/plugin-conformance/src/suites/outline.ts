@@ -255,7 +255,6 @@ const applied = (n: number, ...answers: Answer[]): ResponseSpec => ({
   events: factsOf(operationAt(n), answers),
 });
 const deferApply = (label: string): ResponseSpec => ({ path: 'apply', times: 1, defer: label });
-const refusedApply = (error: ErrorSpec): ResponseSpec => ({ path: 'apply', times: 1, error });
 
 // ── steps ─────────────────────────────────────────────────────────────────────
 
@@ -764,8 +763,8 @@ const cases: ScenarioCase[] = [
   ),
   scenario(
     'refused-writes',
-    'controller.ts:229-246: without doc.outline.modify every write rejects permission-denied before anything is staged; canEdit; a ref the outline lacks rejects not-found; an engine refusal rejects and the view drops the change with no onChanged',
-    doc([read(), refusedApply(refusedByEngine)], { security: { allows: ['doc.outline.read'] } }),
+    'controller.ts:229-235,377: without doc.outline.modify canEdit is false and every write rejects permission-denied before anything is staged or the engine is asked',
+    doc([read()], { security: { allows: ['doc.outline.read'] } }),
     [
       ol('canEdit'),
       ol('ensureLoaded'),
@@ -818,7 +817,7 @@ const cases: ScenarioCase[] = [
   ),
   scenario(
     'close',
-    'a read and a write on their way when the document closes reject instance-closed; reopening starts idle',
+    'a read on its way when the document closes resolves undefined (the mirror drops an instance-closed load), a write on its way rejects instance-closed; reopening starts idle',
     doc([deferRead('r'), read(), deferApply('c')]),
     [
       ol('ensureLoaded'),
