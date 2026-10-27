@@ -583,6 +583,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-attachment"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-annotation",
+ "epdf-plugin-history",
+ "epdf-plugin-interaction",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-commands"
 version = "0.0.0"
 dependencies = [
