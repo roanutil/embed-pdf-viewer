@@ -2444,7 +2444,7 @@ fn sign_input(field: epdf_ffi::FormFieldRef) -> SignatureSignInput {
     SignatureSignInput {
         field,
         mark: Some(epdf_plugin_signature::ffi::SignatureMark::Source { bytes: artwork }),
-        attribution: None,
+        signer: None,
         certify: None,
         lock: None,
     }

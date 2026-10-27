@@ -297,7 +297,7 @@ fn closing_the_document_ends_its_subscriptions() {
 
 use epdf_plugin_signature::ffi::{
     SignatureDigest, SignatureKeyAlgorithm, SignatureMark, SignatureSignCompletion,
-    SignatureSignInput, SignatureSigner,
+    SignatureSignInput, SignatureSigner, SignatureSignerInput,
 };
 use rsa::pkcs8::DecodePrivateKey;
 use rsa::{Pkcs1v15Sign, RsaPrivateKey};
@@ -370,10 +370,16 @@ fn signed_14() -> Value {
     s
 }
 
+thread_local! {
+    /// The input `signatures.prepare` was last sent, on the kernel thread.
+    static PREPARE_INPUT: std::cell::RefCell<Value> = const { std::cell::RefCell::new(Value::Null) };
+}
+
 /// `spec()` plus prepare and complete responders that record the CMS.
 fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
     spec()
-        .respond("signatures.prepare", |_| {
+        .respond("signatures.prepare", |args| {
+            PREPARE_INPUT.with(|p| *p.borrow_mut() = args.first().cloned().unwrap_or(Value::Null));
             let prepared = json!({
                 "signingId": "s1", "digest": { "$bytes": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=" },
                 "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSize": 8192,
@@ -425,7 +431,7 @@ fn origin() -> Value {
 fn unsigned_input(s: &SignatureHandle) -> SignatureSignInput {
     block_on(s.refresh(CancelToken::new())).unwrap();
     let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
-    SignatureSignInput { field, mark: None, attribution: None, certify: None, lock: None }
+    SignatureSignInput { field, mark: None, signer: None, certify: None, lock: None }
 }
 
 #[test]
@@ -467,13 +473,17 @@ fn signing_without_a_signer_is_invalid_input() {
 
 #[test]
 fn a_two_phase_signing_parks_then_completes() {
-    let (_thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
+    let (thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
     let input = unsigned_input(&s);
     let prepared = block_on(s.prepare_signature(
         epdf_plugin_signature::ffi::SignaturePrepareInput {
             field: input.field.clone(),
             mark: None,
-            attribution: None,
+            signer: Some(SignatureSignerInput {
+                name: Some("Ada".into()),
+                reason: Some("Approved".into()),
+                ..Default::default()
+            }),
             certify: None,
             lock: None,
             sub_filter: None,
@@ -483,6 +493,9 @@ fn a_two_phase_signing_parks_then_completes() {
     ))
     .unwrap();
     assert_eq!(prepared.digest.len(), 32);
+    // The signer's facts go to the engine as the input's `signer`.
+    let sent = block_on(thread.call(|_| PREPARE_INPUT.with(|p| p.borrow().clone()))).unwrap();
+    assert_eq!(sent["signer"], json!({ "name": "Ada", "reason": "Approved" }), "{sent}");
     assert_eq!(block_on(s.pending()).unwrap().map(|p| p.signing_id), Some("s1".to_string()));
     let done =
         block_on(s.complete_signature("s1".into(), vec![0x30, 0], CancelToken::new())).unwrap();

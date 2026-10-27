@@ -54,7 +54,7 @@ For `epdf-viewer-host` and `epdf-web` (Task 13.33).
 |---|---|
 | `signature_plugin(SignatureConfig { mode, signer, trust, allow_certify, host })` | `signature_plugin(SignatureConfig { key, mode, trust, allow_certify })`, each `Option<Option<_>>` for "not given" and `null`; `SignatureHost` is `console::set_sink` |
 | `SignerSource::{Port, Thunk, Host { resolve, available }}` | `SignatureKey::{Port, Thunk}`. The mode follows the key setting, as `services/authority.ts` reads it: a host that wants `visual` until its slot holds a signer registers the mode or updates the key setting |
-| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` keep the public field name `attribution` and send it as `signer`. Renaming it to `signer` is carried to Task 14, where the Swift callers are rebuilt |
+| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` name it `signer` (`SignatureSignerInput`), as the TypeScript does, since Task 14.7 |
 | `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc` and compared by identity: a clone is the same key, a port rebuilt from the same parts is another (a Rust-only divergence, below) |
 | `create_signature_capability`, `signature_reducer`, `SignatureAction`, `ResourceStatus` | removed with the TypeScript; `get_status` answers the kernel's `mirror::ResourceStatus` |
 | `abort_pending()` | `cancel_pending(options)`, over `signatures.cancel` |

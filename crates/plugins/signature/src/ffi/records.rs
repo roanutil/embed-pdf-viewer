@@ -904,10 +904,10 @@ pub(crate) fn register_hooks(
 // ── signing inputs ───────────────────────────────────────────────────────────
 
 /// What the signature dictionary says about the signer
-/// (`SignatureSignerInput`, sent as the prepare input's `signer`). Every
-/// member optional; the certificate's common name is the default `name`.
+/// (`SignatureSignerInput`, the input's `signer`). Every member optional;
+/// the certificate's common name is the default `name`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, uniffi::Record)]
-pub struct SignatureAttribution {
+pub struct SignatureSignerInput {
     #[uniffi(default = None)]
     pub name: Option<String>,
     #[uniffi(default = None)]
@@ -918,7 +918,7 @@ pub struct SignatureAttribution {
     pub contact_info: Option<String>,
 }
 
-impl SignatureAttribution {
+impl SignatureSignerInput {
     /// The members that are set, in the engine's spelling.
     pub(crate) fn to_json(&self) -> Value {
         let mut out = serde_json::Map::new();
@@ -944,7 +944,7 @@ pub struct SignatureSignInput {
     #[uniffi(default = None)]
     pub mark: Option<SignatureMark>,
     #[uniffi(default = None)]
-    pub attribution: Option<SignatureAttribution>,
+    pub signer: Option<SignatureSignerInput>,
     /// The DocMDP permission (1, 2 or 3) to certify with. Needs
     /// `allow_certify` and `doc.sign.certify`, and no earlier signature.
     #[uniffi(default = None)]
@@ -961,7 +961,7 @@ impl SignatureSignInput {
             field: field_json(&self.field),
             mark: self.mark.map(Into::into),
             key,
-            signer: self.attribution.map(|a| a.to_json()),
+            signer: self.signer.map(|s| s.to_json()),
             appearance: None,
             certify: self.certify.map(|p| json!({ "permission": p })),
             lock: self.lock.map(|l| l.to_json()),
@@ -977,7 +977,7 @@ pub struct SignaturePrepareInput {
     #[uniffi(default = None)]
     pub mark: Option<SignatureMark>,
     #[uniffi(default = None)]
-    pub attribution: Option<SignatureAttribution>,
+    pub signer: Option<SignatureSignerInput>,
     #[uniffi(default = None)]
     pub certify: Option<u8>,
     #[uniffi(default = None)]
@@ -995,7 +995,7 @@ impl SignaturePrepareInput {
             field: field_json(&self.field),
             mark: self.mark.map(Into::into),
             appearance: None,
-            signer: self.attribution.map(|a| a.to_json()),
+            signer: self.signer.map(|s| s.to_json()),
             certify: self.certify.map(|p| json!({ "permission": p })),
             lock: self.lock.map(|l| l.to_json()),
             sub_filter: self.sub_filter.map(Value::String),
