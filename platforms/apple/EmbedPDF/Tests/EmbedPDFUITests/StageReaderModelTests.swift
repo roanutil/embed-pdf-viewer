@@ -8,7 +8,7 @@ import Testing
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct StageReaderModelTests {
   func model() async throws -> (StageReaderModel, Task<Void, Never>) {
-    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig(frames: false)))
+    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig()))
     try await viewer.start()
     let url = try #require(Bundle.module.url(forResource: "report", withExtension: "pdf", subdirectory: "Fixtures"))
     let document = try await viewer.open(try Data(contentsOf: url))

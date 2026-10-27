@@ -8,7 +8,7 @@ extension BaseSuite {
     func opened() async throws -> (PDFViewer, DocumentInfo, RedactionCapability, SearchCapability) {
       let viewer = try PDFViewer(
         ViewerConfig(
-          search: SearchConfig(), interaction: true, annotation: AnnotationConfig(),
+          search: SearchConfig(), interaction: true, annotation: "",
           redaction: RedactionConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
@@ -22,11 +22,11 @@ extension BaseSuite {
       let events = redaction.events
       let mark = try await redaction.markArea(Rect(x: 72, y: 72, width: 200, height: 20), on: page)
       let pending = try await redaction.pending(on: page)
-      expectNoDifference(pending.map(\.annotationRef), [mark])
+      expectNoDifference(pending, [mark])
       for await event in events {
         if case .pendingChanged = event { break }
       }
-      _ = try await redaction.unmark([mark])
+      _ = try await redaction.unmark([mark.annotationRef])
       let after = try await redaction.pendingCount(on: page)
       expectNoDifference(after, 0)
     }
@@ -96,7 +96,7 @@ extension BaseSuite {
       let (viewer, document, redaction, _) = try await opened()
       let page = try await viewer.pages(of: document)[0].page
       let mark = try await redaction.markArea(Rect(x: 72, y: 72, width: 200, height: 20), on: page)
-      return (redaction, mark, page)
+      return (redaction, mark.annotationRef, page)
     }
 
     @Test func markSelectionCancelsWhenTheTaskIsCancelled() async throws {
@@ -151,7 +151,7 @@ extension BaseSuite {
 
     @Test func markingTheSelectionCreatesOneMarkPerPage() async throws {
       let viewer = try PDFViewer(
-        ViewerConfig(interaction: true, selection: true, annotation: AnnotationConfig(), redaction: RedactionConfig()))
+        ViewerConfig(interaction: true, selection: true, annotation: "", redaction: RedactionConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
       try await viewer.annotations(for: document).refresh()

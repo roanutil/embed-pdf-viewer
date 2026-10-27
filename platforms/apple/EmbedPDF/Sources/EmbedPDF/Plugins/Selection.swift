@@ -9,11 +9,9 @@ public typealias SelectionAnchor = EmbedPDFBindings.SelectionAnchor
 public typealias SelectionDirection = EmbedPDFBindings.SelectionDirection
 public typealias SelectionSnapshotPage = EmbedPDFBindings.SelectionSnapshotPage
 public typealias SelectionSnapshot = EmbedPDFBindings.SelectionSnapshot
-public typealias SelectionChangeTrigger = EmbedPDFBindings.SelectionChangeTrigger
 public typealias SelectionEvent = EmbedPDFBindings.SelectionEvent
 public typealias SelectionChangedEvent = EmbedPDFBindings.SelectionChangedEvent
 public typealias SelectionCommittedEvent = EmbedPDFBindings.SelectionCommittedEvent
-public typealias SelectionClearedEvent = EmbedPDFBindings.SelectionClearedEvent
 
 /// A document's text selection: select by range, span, word, line or
 /// page; read its geometry and its text. Get one with
@@ -43,7 +41,7 @@ public struct SelectionCapability: Sendable {
 
   /// Select a search hit's characters.
   public func select(_ hit: SearchHit) async throws(PDFError) {
-    try await select(.span(page: hit.page, start: Int64(hit.charStart), count: Int64(hit.charCount)))
+    try await select(.span(page: hit.page, start: Int64(hit.start), count: Int64(hit.count)))
   }
 
   public func selectAll() async throws(PDFError) {
@@ -136,8 +134,9 @@ public struct SelectionCapability: Sendable {
     try await bridged { try await handle.endGesture() }
   }
 
-  public func isGestureActive() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.isGestureActive() }
+  /// Whether a selecting gesture is in flight.
+  public func isSelecting() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.isSelecting() }
   }
 
   public func setHighlightVisible(_ visible: Bool) async throws(PDFError) {

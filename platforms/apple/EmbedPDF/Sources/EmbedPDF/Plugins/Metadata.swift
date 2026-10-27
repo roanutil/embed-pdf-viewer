@@ -26,8 +26,16 @@ public struct MetadataCapability: Sendable {
     try await bridged { try await handle.status() }
   }
 
-  public func canEdit() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canEdit() }
+  /// Whether this caller may change the Info dict (`doc.metadata.modify`).
+  public func canUpdate() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canUpdate() }
+  }
+
+  /// Read the fields unless they are loaded or loading. Nothing reads them
+  /// until this or `refresh()` asks. Cancelling throws here; the shared
+  /// read still lands.
+  public func ensureLoaded() async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.ensureLoaded(cancel: token) }
   }
 
   /// Returns once the confirmed change has reached the snapshot and `events`.

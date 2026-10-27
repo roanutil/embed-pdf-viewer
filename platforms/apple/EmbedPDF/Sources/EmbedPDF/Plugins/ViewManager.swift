@@ -63,9 +63,12 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.setFocusedPane(id: id) }
   }
 
-  /// A new pane showing the document.
-  public func splitPane(showing document: DocumentInfo) async throws(PDFError) -> String {
-    try await bridged { try await handle.splitPane(documentId: document.id) }
+  /// A new pane showing the document, beside `paneId` (or the focused
+  /// pane), focused. Returns the new pane's id.
+  public func splitPane(showing document: DocumentInfo, from paneId: String? = nil) async throws(PDFError)
+    -> String
+  {
+    try await bridged { try await handle.splitPane(documentId: document.id, from: paneId) }
   }
 
   public func setActiveDocument(_ document: DocumentInfo?, in paneId: String) async throws(PDFError) {

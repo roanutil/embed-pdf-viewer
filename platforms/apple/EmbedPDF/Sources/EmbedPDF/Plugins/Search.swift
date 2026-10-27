@@ -5,7 +5,6 @@ public typealias SearchHit = EmbedPDFBindings.SearchHit
 public typealias TextSegment = EmbedPDFBindings.TextSegment
 public typealias SearchSnippet = EmbedPDFBindings.SearchSnippet
 public typealias SearchStatus = EmbedPDFBindings.SearchStatus
-public typealias SearchMode = EmbedPDFBindings.SearchMode
 public typealias SearchProgress = EmbedPDFBindings.SearchProgress
 public typealias SearchResult = EmbedPDFBindings.SearchResult
 public typealias SearchResultStatus = EmbedPDFBindings.SearchResultStatus
@@ -16,7 +15,7 @@ public typealias SearchScrollBehavior = EmbedPDFBindings.SearchScrollBehavior
 public typealias SearchConfig = EmbedPDFBindings.SearchConfig
 public typealias SearchEvent = EmbedPDFBindings.SearchEvent
 public typealias SearchStartedEvent = EmbedPDFBindings.SearchStartedEvent
-public typealias SearchProgressEvent = EmbedPDFBindings.SearchProgressEvent
+public typealias SearchProgressChangedEvent = EmbedPDFBindings.SearchProgressChangedEvent
 public typealias SearchCompletedEvent = EmbedPDFBindings.SearchCompletedEvent
 public typealias SearchCancelledEvent = EmbedPDFBindings.SearchCancelledEvent
 public typealias SearchCancelReason = EmbedPDFBindings.SearchCancelReason
@@ -32,22 +31,23 @@ public struct SearchCapability: Sendable {
   let handle: SearchHandle
   let viewer: PDFViewer
 
-  /// Whether a search would be served now. `nil` or `.rects` needs
-  /// `doc.text.search`; `.full` also `doc.text.copy`.
-  public func canSearch(mode: SearchMode? = nil) async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canSearch(mode: mode) }
+  /// Whether a search would be served now: `doc.text.search`, and with
+  /// `snippets: true` also `doc.text.copy`.
+  public func canSearch(snippets: Bool? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canSearch(snippets: snippets) }
   }
 
   /// Start a new search, superseding a running one. Returns when the scan
   /// completes, is superseded or is cancelled (cancelling the task cancels
   /// the scan and keeps the hits found so far). An empty `query.text` clears
-  /// the session.
-  public func search(_ query: SearchQuery, startPage: PageRef? = nil) async throws(PDFError)
+  /// the session. `from` is where the scan starts; `nil` is the stage's
+  /// current page when a stage is installed.
+  public func search(_ query: SearchQuery, from page: PageRef? = nil) async throws(PDFError)
     -> SearchResult
   {
     try await measured("search") { () async throws(PDFError) in
       try await bridgedCancellable { token in
-        try await handle.search(query: query, startPage: startPage, cancel: token)
+        try await handle.search(query: query, from: page, cancel: token)
       }
     }
   }
@@ -127,13 +127,14 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.error() }
   }
 
-  /// Every hit, in page order, touching no session state. Cancelling the
-  /// task throws `operation-cancelled`.
-  public func findAll(_ query: SearchQuery, mode: SearchMode? = nil) async throws(PDFError)
+  /// Every hit, in page order, touching no session state. `snippets: nil`
+  /// asks for snippets and falls back to none when they are denied.
+  /// Cancelling the task throws `operation-cancelled`.
+  public func findAll(_ query: SearchQuery, snippets: Bool? = nil) async throws(PDFError)
     -> [SearchHit]
   {
     try await bridgedCancellable { token in
-      try await handle.findAll(query: query, mode: mode, cancel: token)
+      try await handle.findAll(query: query, snippets: snippets, cancel: token)
     }
   }
 

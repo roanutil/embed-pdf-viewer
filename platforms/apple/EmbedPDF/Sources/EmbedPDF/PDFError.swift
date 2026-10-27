@@ -24,8 +24,8 @@ import Foundation
 /// It is a bug to report, not something a caller did.
 ///
 /// An engine's own code (`NotFound`, `DocPasswordIncorrect`) never appears
-/// here: it maps as `toPluginError` maps it, and a wire error's `detail`
-/// still begins with it. `name` says what raised the error (`PluginError`,
+/// here: it maps as `toPluginError` maps it, and `detail` is the engine's
+/// message with no code in front. `name` says what raised the error (`PluginError`,
 /// `EngineError`, `AbortError`, or a foreign error's type), and is for
 /// logging rather than matching. `code` is optional only so a handler can
 /// build one without a code; nothing the viewer throws leaves it `nil`.

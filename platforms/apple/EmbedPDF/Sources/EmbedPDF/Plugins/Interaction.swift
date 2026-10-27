@@ -75,9 +75,9 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.popTool() }
   }
 
-  /// `nil` removes the skin.
-  public func setToolCursor(_ id: String, skin: [String: String]?) async throws(PDFError) {
-    try await bridged { try await handle.setToolCursor(id: id, skin: skin) }
+  /// Replace a tool's cursors by name; `nil` brings the tool's own back.
+  public func setToolCursor(_ id: String, cursors: [String: String]?) async throws(PDFError) {
+    try await bridged { try await handle.setToolCursor(id: id, cursors: cursors) }
   }
 
   /// Throws `conflict` for an id already registered unless `replace`.

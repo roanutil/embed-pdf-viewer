@@ -15,6 +15,9 @@ public typealias CommandRejectReason = EmbedPDFBindings.CommandRejectReason
 public typealias CommandShortcutBinding = EmbedPDFBindings.CommandShortcutBinding
 public typealias CommandMenuTarget = EmbedPDFBindings.CommandMenuTarget
 public typealias CommandKeyStroke = EmbedPDFBindings.CommandKeyStroke
+public typealias CommandShortcutMatch = EmbedPDFBindings.CommandShortcutMatch
+public typealias CommandRefusalInfo = EmbedPDFBindings.CommandRefusalInfo
+public typealias CommandRefusalReason = EmbedPDFBindings.CommandRefusalReason
 public typealias CommandsEvent = EmbedPDFBindings.CommandsEvent
 public typealias CommandExecuted = EmbedPDFBindings.CommandExecuted
 public typealias CommandExecutionFailure = EmbedPDFBindings.CommandExecutionFailure
@@ -210,8 +213,14 @@ public struct CommandsCapability: Sendable {
     try await bridged { try await handle.setDisabledCategories(categories: categories) }
   }
 
-  public func matchStroke(_ stroke: CommandKeyStroke, isMac: Bool) async throws(PDFError) -> String? {
-    try await bridged { try await handle.matchStroke(stroke: stroke, isMac: isMac) }
+  /// The command whose shortcut the stroke matches, for the active
+  /// document: one that may run wins; a refused one counts only while it
+  /// would show, and comes with its refusal. `inTextField` is whether focus
+  /// is in a text field.
+  public func matchStroke(_ stroke: CommandKeyStroke, isMac: Bool, inTextField: Bool = false)
+    async throws(PDFError) -> CommandShortcutMatch?
+  {
+    try await bridged { try await handle.matchStroke(stroke: stroke, isMac: isMac, inTextField: inTextField) }
   }
 
   public func menuTarget(_ id: String) async throws(PDFError) -> CommandMenuTarget? {

@@ -133,7 +133,7 @@ extension BaseSuite {
         CommandDefinition(id: "zoom:in", labelKey: "Zoom in", shortcuts: ["Mod+="])
       )
       let matched = try await commands.matchStroke(CommandKeyStroke(key: "=", meta: true), isMac: true)
-      expectNoDifference(matched, "zoom:in")
+      expectNoDifference(matched, CommandShortcutMatch(commandId: "zoom:in", refusal: nil))
     }
 
     @Test func unregisterRemovesTheCommand() async throws {

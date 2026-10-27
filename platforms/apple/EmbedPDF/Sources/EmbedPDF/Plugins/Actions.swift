@@ -34,7 +34,6 @@ public typealias ActionStepResult = EmbedPDFBindings.ActionStepResult
 public typealias ActionTriggerResult = EmbedPDFBindings.ActionTriggerResult
 public typealias ActionDiagnostic = EmbedPDFBindings.ActionDiagnostic
 public typealias ActionDiagnosticCode = EmbedPDFBindings.ActionDiagnosticCode
-public typealias ActionDispatchEvent = EmbedPDFBindings.ActionDispatchEvent
 public typealias OpenSequenceCompleted = EmbedPDFBindings.OpenSequenceCompleted
 public typealias ScriptDiagnostic = EmbedPDFBindings.ScriptDiagnostic
 public typealias ScriptDiagnosticCode = EmbedPDFBindings.ScriptDiagnosticCode

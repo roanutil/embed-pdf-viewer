@@ -42,7 +42,7 @@ public struct StampPreview: @unchecked Sendable {
 
 /// The workspace's stamp libraries. Get it with `PDFViewer.stamps()`; the
 /// viewer needs `ViewerConfig(stamp: StampConfig())`, plus
-/// `interaction: true, annotation: AnnotationConfig()` to place. One
+/// `interaction: true, annotation: ""` to place. One
 /// capability for the whole viewer, and it keeps the viewer alive.
 ///
 /// Libraries open on their own engine thread. On that engine an asset can
@@ -134,8 +134,9 @@ public struct StampCapability: Sendable {
     try await bridgedCancellable { token in try await handle.createAsset(input: input, cancel: token) }
   }
 
-  /// Throws `unsupported`: the native engine can't export annotation
-  /// appearances yet.
+  /// Annotations on a page of `document` become one stamp, through the
+  /// engine's `page.annotations.exportAppearance`. An empty list throws
+  /// `invalid-input`.
   public func createAsset(
     from annotations: [AnnotationRef], in document: DocumentInfo, on page: PageRef,
     input: StampAddAssetInput = StampAddAssetInput()
@@ -172,26 +173,27 @@ public struct StampCapability: Sendable {
     }
   }
 
-  /// Place the asset at `point` (page space) and return the annotation.
+  /// Place the asset with its middle on `center` (page space) and return
+  /// the annotation.
   public func place(
-    _ assetId: String, in document: DocumentInfo, on page: PageRef, at point: Point,
+    _ assetId: String, in document: DocumentInfo, on page: PageRef, center: Point,
     targetWidth: Double? = nil, rotation: Double? = nil
   ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
       try await handle.placeAsset(
-        documentId: document.id, assetId: assetId, page: page, at: point, targetWidth: targetWidth,
+        documentId: document.id, assetId: assetId, page: page, center: center, targetWidth: targetWidth,
         rotation: rotation, cancel: token)
     }
   }
 
   /// The same placement on every page (`nil`) or those listed.
   public func place(
-    _ assetId: String, in document: DocumentInfo, onPages pages: [PageRef]?, at point: Point,
+    _ assetId: String, in document: DocumentInfo, onPages pages: [PageRef]?, center: Point,
     targetWidth: Double? = nil, rotation: Double? = nil
   ) async throws(PDFError) -> StampBatchResult {
     try await bridgedCancellable { token in
       try await handle.placeAssetOnPages(
-        documentId: document.id, assetId: assetId, pages: pages, at: point, targetWidth: targetWidth,
+        documentId: document.id, assetId: assetId, pages: pages, center: center, targetWidth: targetWidth,
         rotation: rotation, cancel: token)
     }
   }
@@ -210,17 +212,17 @@ public struct StampCapability: Sendable {
     try await bridgedCancellable { token in try await handle.restore(store: store, cancel: token) }
   }
 
-  /// Writes each changed library to `store` once changes stop for
-  /// `debounce` (250 ms when `nil`), until `unregister()`, which flushes
-  /// pending writes. Dropping the registration keeps it writing, as every
-  /// `Registration` does; it stops when the viewer is destroyed.
-  public func persist(to store: some StampLibraryStore, except: [String] = [], debounce: Duration? = nil)
+  /// Writes each changed library to `store`, except the ids in `except`:
+  /// one line of store work per library, a burst of changes one save. Runs
+  /// until `unregister()` (work already asked for still finishes) or until
+  /// the viewer is destroyed. Dropping the registration keeps it writing,
+  /// as every `Registration` does.
+  public func persist(to store: some StampLibraryStore, except: [String] = [])
     async throws(PDFError) -> Registration
   {
-    let ms = debounce.map { Double($0.components.seconds) * 1000 + Double($0.components.attoseconds) / 1e15 }
     let handle = handle
     return Registration(handle: try await bridged {
-      try await handle.persist(store: store, except: except, debounceMs: ms)
+      try await handle.persist(store: store, except: except)
     })
   }
 
