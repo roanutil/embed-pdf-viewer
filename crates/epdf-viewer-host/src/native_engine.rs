@@ -1123,6 +1123,35 @@ mod tests {
         assert_eq!(*pool.numbers.borrow(), vec![70, 71]);
     }
 
+    /// `password_prompt` on a probe that does not read as a
+    /// `DocumentSecurityProbeInfo`: one that parks the document (a password
+    /// needed, opened as nobody) prompts as a parked document does, `hint`
+    /// null; any other prompts for nothing.
+    #[test]
+    fn a_probe_that_does_not_read_prompts_by_whether_it_parks_the_document() {
+        use epdf_kernel::engine::DocumentSecurity;
+        let worker = EngineWorker::spawn();
+        let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post, None))).unwrap();
+        let prompts = futures::executor::block_on(thread.call(|engine: &mut NativeEngine| {
+            [
+                json!({ "encryptionRequiresPassword": true, "pdfOpenedAs": null }),
+                json!({ "encryptionRequiresPassword": false }),
+            ]
+            .map(|probe| {
+                let state = Rc::new(super::NativeDocumentState::new(
+                    "unread-probe".into(),
+                    engine.inner.clone(),
+                    probe,
+                ));
+                assert!(state.security_state().is_none(), "the probe does not read");
+                super::NativeSecurity { state }.password_prompt()
+            })
+        }))
+        .unwrap();
+        assert_eq!(prompts[0], json!({ "state": "required", "hint": null, "incorrect": false }));
+        assert_eq!(prompts[1], json!({ "state": "none" }));
+    }
+
     struct Versioned {
         held_before: usize,
         held_numbers: Vec<u32>,
