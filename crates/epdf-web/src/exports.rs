@@ -360,6 +360,7 @@ impl WasmKernel {
             })),
             on_dispatch: None,
             release_closed_sessions: true,
+            printer: None,
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;

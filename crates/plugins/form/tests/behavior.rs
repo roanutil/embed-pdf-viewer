@@ -279,7 +279,12 @@ fn a_lost_object_number_leaves_the_held_pool() {
     let kernel = Kernel::new(
         Rc::new(LosingEngine(AsEngine(fake.clone()), engines)),
         vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();
@@ -340,7 +345,12 @@ fn the_painter_draws_a_text_field_a_checkbox_and_a_listbox() {
     let kernel = Kernel::new(
         Rc::new(AsEngine(FakeEngine::new(spec))),
         vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();

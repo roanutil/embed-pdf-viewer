@@ -49,10 +49,9 @@ not visited (`re-entrant-registry`, `a_walk_reads_the_ids_it_started_with`).
 A run that completes later keeps it pending; a signal rejects `operation-cancelled` without a
 failure event.
 
-A derivation or `run` that reads `c.get(&DOCUMENTS)` gets the kernel's documents capability
-unscoped. The TypeScript hands a document's context the `documentsInScope` view, whose calls
-default to that document; the Rust kernel has no such view yet (a Task 13.33 / Task 14 carry).
-`CommandCtx::document_id` is the command's document either way.
+A derivation or `run` that reads `c.get(&DOCUMENTS)` for a command's document gets the kernel's
+`documentsInScope` view, as the TypeScript does, so its calls without an id default to that
+document. `CommandCtx::document_id` is the command's document either way.
 
 ## Kept Rust-only divergences
 

@@ -108,7 +108,12 @@ impl Fixture {
         let kernel = Kernel::new(
             Rc::new(AsEngine(fake.clone())),
             vec![page_edit_plugin(), probe_plugin()],
-            KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+            KernelOptions {
+                report: None,
+                on_dispatch: None,
+                release_closed_sessions: false,
+                printer: None,
+            },
         )
         .unwrap();
         let _ = kernel.start();

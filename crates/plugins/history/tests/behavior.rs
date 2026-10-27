@@ -31,7 +31,12 @@ fn kernel(config: HistoryConfig) -> Kernel {
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
         vec![history_plugin(config), feature_plugin()],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();

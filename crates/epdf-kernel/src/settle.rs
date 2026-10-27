@@ -3,8 +3,16 @@ use crate::{Error, Promise, error::plugin_error, signal::AbortSignal, store::Rep
 use std::rc::Rc;
 
 pub type SettleFlush = Rc<dyn Fn(AbortSignal) -> Result<Option<Promise<()>>, Error>>;
-pub type DownloadRead = Rc<dyn Fn() -> Promise<serde_json::Value>>;
-pub type DownloadWrap = Rc<dyn Fn(DownloadRead) -> Result<Promise<serde_json::Value>, Error>>;
+/// What a wrap runs inside itself: a read of the file, or a print.
+pub type WrappedRun<T> = Rc<dyn Fn() -> Promise<T>>;
+/// Something of the document's own that runs around a run: it gets the run
+/// and returns its promise (`DownloadWrap`, `PrintWrap` in `context.ts`).
+pub type Wrap<T> = Rc<dyn Fn(WrappedRun<T>) -> Result<Promise<T>, Error>>;
+pub type DownloadRead = WrappedRun<serde_json::Value>;
+pub type DownloadWrap = Wrap<serde_json::Value>;
+/// `PrintWrap`: what runs around each print of the document.
+pub type PrintRun = WrappedRun<()>;
+pub type PrintWrap = Wrap<()>;
 
 /// Flush failures are reported after all flushes finish. Caller or document
 /// cancellation stops waiting immediately; flushes receive the combined signal.
@@ -69,8 +77,8 @@ pub fn settle(flushes: Vec<SettleFlush>, signals: Vec<AbortSignal>, report: Repo
     })
 }
 
-/// First registered wraps outermost, as in `context.ts`.
-pub fn run_wrapped(wraps: Vec<DownloadWrap>, read: DownloadRead) -> Promise<serde_json::Value> {
+/// `runWrapped`: first registered wraps outermost, as in `context.ts`.
+pub fn run_wrapped<T: Clone + 'static>(wraps: Vec<Wrap<T>>, read: WrappedRun<T>) -> Promise<T> {
     let mut run = read;
     for wrap in wraps.into_iter().rev() {
         let next = run;

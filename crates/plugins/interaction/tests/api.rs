@@ -33,7 +33,12 @@ fn kernel_with(config: InteractionConfig) -> Kernel {
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
         vec![interaction_plugin(config), feedback_plugin(FeedbackPluginOptions::default())],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();

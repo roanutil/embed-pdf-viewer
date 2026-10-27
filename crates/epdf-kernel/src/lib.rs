@@ -34,6 +34,7 @@ pub mod mirror;
 pub mod page_mirror;
 pub mod plan;
 pub mod plugin;
+pub mod print;
 pub mod rt;
 pub mod scope;
 pub mod serial_queue;

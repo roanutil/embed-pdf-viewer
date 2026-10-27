@@ -75,10 +75,13 @@ longer one: it goes to the kernel's reporter, as every `ctx.events` source's doe
 - `-new Date(nowMs).getTimezoneOffset()` is `javascript.host_utc_offset_minutes`, default zero. The
   generator pins `TZ=UTC`, so the vectors record zero.
 
-The kernel's print (`DocumentsToken.canPrint()`/`print()` and `ctx.aroundPrint`) has no Rust API
-yet. The print door and the script surface keep the printer branch, with `available` false, so every
-print falls back to the UI adapter as the TypeScript does without a printer. Task 13.33 owns the
-kernel API and the `/WP` `/DP` wrap around it.
+Print requests go to the kernel's print when the host gave the kernel a printer
+(`KernelOptions::printer`): `DocumentPrint` reads `can_print()` and `print()` on the documents
+capability as this document's scope sees it, and `around_print` runs `/WP` and `/DP` around every
+kernel print, as `controller.ts` does with `ctx.aroundPrint`. Without a printer every print falls back
+to the UI adapter. The printer branches (user prints, the M14 non-user refusal, the form pipeline's
+print effect, the wrap holding the print latch) are tested in `lifecycle/document_events.rs`; no
+vector configures a printer.
 
 ## Scripting without a sandbox
 

@@ -102,6 +102,7 @@ pub(crate) trait Services {
 pub(crate) trait SessionView {
     fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe;
     fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe;
+    fn around_print(&self, wrap: crate::settle::PrintWrap) -> Unsubscribe;
     fn changes(&self) -> crate::changes::DocumentChanges;
     fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
     fn id(&self) -> String;
@@ -691,6 +692,19 @@ impl ControllerContext {
                 Error::new("[kernel] workspace plugin has no document to download")
             })?;
         self.listen(session.around_download(wrap));
+        Ok(())
+    }
+
+    /// `ctx.aroundPrint(wrap)`: run `wrap` around each print of the
+    /// document (`documents.print()`, a prepared print's `print()`); first
+    /// registered runs outermost. Removed with the instance.
+    pub fn around_print(&self, wrap: crate::settle::PrintWrap) -> Result<(), Error> {
+        let session = self
+            .0
+            .session
+            .as_ref()
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document to print"))?;
+        self.listen(session.around_print(wrap));
         Ok(())
     }
 

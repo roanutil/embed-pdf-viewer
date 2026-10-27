@@ -211,7 +211,7 @@ pub(crate) fn create_actions_controller(
             queue,
             script_nodes: Cell::new(0.0),
             catalog: RefCell::new(None),
-            document_print: DocumentPrint::none(),
+            document_print: DocumentPrint::new(&cx),
             print_latch: Cell::new(false),
             realms,
             script_host,
@@ -264,9 +264,14 @@ impl ActionsCapability {
             let Some(this) = ActionsCapability::upgrade(&weak) else { return Ok(read()) };
             Ok(this.run_document_verb(DocumentVerb::Save, move || Ok(read()), None))
         }))?;
-        // The TypeScript also wraps every kernel print in /WP and /DP
-        // (`ctx.aroundPrint`). The Rust kernel has no print yet; Task 13.33
-        // adds it and this wrap with it.
+        // Its print actions (/WP, /DP) run around every print, so what
+        // WillPrint changes is on the paper: the kernel prepares a print
+        // again when the document changed.
+        let weak = self.weak();
+        self.0.cx.around_print(Rc::new(move |print| {
+            let Some(this) = ActionsCapability::upgrade(&weak) else { return Ok(print()) };
+            Ok(this.run_document_verb(DocumentVerb::Print, move || Ok(print()), None))
+        }))?;
         Ok(())
     }
 }

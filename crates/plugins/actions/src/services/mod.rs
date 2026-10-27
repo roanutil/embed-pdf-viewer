@@ -265,10 +265,12 @@ impl ActionsCapability {
 }
 
 /// `services/document-print.ts`: the kernel's print, where the document's
-/// own print requests go when the host gave the kernel a printer. The Rust
-/// kernel has no print API yet (carried to Task 13.33 with the kernel
-/// contract repair), so `available` is false and every request falls back
-/// to the UI adapter, as the TypeScript does without a printer.
+/// own print requests go (the Named Print verb, a script's `print()`) when
+/// the host gave the kernel a printer. The kernel prints the document's
+/// pages and runs /WP and /DP around the dialog through this plugin's
+/// `around_print` wrap. Without a printer, requests fall back to the UI
+/// adapter's `print`. The documents capability is read through the
+/// document's scope, so both default to this plugin's document.
 #[derive(Clone)]
 pub(crate) struct DocumentPrint {
     pub(crate) available: Rc<dyn Fn() -> bool>,
@@ -276,10 +278,18 @@ pub(crate) struct DocumentPrint {
 }
 
 impl DocumentPrint {
-    pub(crate) fn none() -> Self {
+    /// `createDocumentPrint(ctx)`: `documents().canPrint()` and
+    /// `documents().print()`, with `documents = () => ctx.get(DocumentsToken)`.
+    pub(crate) fn new(cx: &ActionsController) -> Self {
+        let (ask, print) = (cx.clone(), cx.clone());
         DocumentPrint {
-            available: Rc::new(|| false),
-            start: Rc::new(|| Promise::rejected(Error::new("[actions] the kernel has no printer"))),
+            available: Rc::new(move || {
+                ask.get(&epdf_kernel::DOCUMENTS).is_ok_and(|documents| documents.can_print(None))
+            }),
+            start: Rc::new(move || match print.get(&epdf_kernel::DOCUMENTS) {
+                Ok(documents) => documents.print(None, Default::default()),
+                Err(error) => Promise::rejected(error),
+            }),
         }
     }
 }

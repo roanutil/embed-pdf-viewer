@@ -265,6 +265,12 @@ mod tests {
     use crate::{ActionsCapability, actions_plugin};
 
     fn opened() -> (Kernel, ActionsCapability) {
+        opened_with(None)
+    }
+
+    fn opened_with(
+        printer: Option<Rc<dyn epdf_kernel::print::HostPrinter>>,
+    ) -> (Kernel, ActionsCapability) {
         rt::reset();
         let fake = FakeEngine::new(json!({
             "documents": { "a": {
@@ -280,7 +286,7 @@ mod tests {
         let kernel = Kernel::new(
             Rc::new(AsEngine(fake)),
             vec![actions_plugin(config)],
-            KernelOptions::default(),
+            KernelOptions { printer, ..KernelOptions::default() },
         )
         .expect("kernel");
         kernel.start();
@@ -352,5 +358,136 @@ mod tests {
         let (outcome, said) = script_print(&actions, ActionOrigin::User);
         assert_eq!(outcome, (ActionNodeStatus::Executed, None));
         assert!(said.is_empty());
+    }
+
+    /// A printer that logs what it stages and prints, and whether the
+    /// document's print verb (the actions plugin's `aroundPrint` wrap) held
+    /// the print latch while the dialog opened.
+    struct Printer {
+        log: Rc<RefCell<Vec<String>>>,
+        latch: Rc<RefCell<Option<ActionsCapability>>>,
+    }
+    struct Staged(Rc<RefCell<Vec<String>>>, Rc<RefCell<Option<ActionsCapability>>>);
+    impl epdf_kernel::print::StagedPrint for Staged {
+        fn print(&self) -> Promise<()> {
+            let held = self.1.borrow().as_ref().map(|a| a.0.print_latch.get());
+            self.0.borrow_mut().push(format!("print latch={held:?}"));
+            Promise::resolved(())
+        }
+        fn dispose(&self) {
+            self.0.borrow_mut().push("dispose".into());
+        }
+    }
+    impl epdf_kernel::print::HostPrinter for Printer {
+        fn stage(
+            &self,
+            sheets: Vec<epdf_kernel::print::PrintSheet>,
+            _: epdf_kernel::print::StageOptions,
+        ) -> Promise<Rc<dyn epdf_kernel::print::StagedPrint>> {
+            self.log.borrow_mut().push(format!("stage {}", sheets.len()));
+            Promise::resolved(Rc::new(Staged(self.log.clone(), self.latch.clone()))
+                as Rc<dyn epdf_kernel::print::StagedPrint>)
+        }
+    }
+
+    fn with_printer() -> (Kernel, ActionsCapability, Rc<RefCell<Vec<String>>>) {
+        let log: Rc<RefCell<Vec<String>>> = Rc::default();
+        let latch: Rc<RefCell<Option<ActionsCapability>>> = Rc::default();
+        let printer = Printer { log: log.clone(), latch: latch.clone() };
+        let (kernel, actions) = opened_with(Some(Rc::new(printer)));
+        *latch.borrow_mut() = Some(actions.clone());
+        (kernel, actions, log)
+    }
+
+    #[test]
+    fn with_a_printer_a_user_print_prints_through_the_kernel_inside_the_print_verb() {
+        // document-events.ts firePrintThroughAdapter: documentPrint.available()
+        // → documentPrint.start(), status executed, the adapter never called;
+        // controller.ts:94 aroundPrint runs the print inside
+        // runDocumentVerb('print'), which holds the print latch.
+        let (_kernel, actions, log) = with_printer();
+        let adapter_prints = Rc::new(RefCell::new(0));
+        let count = adapter_prints.clone();
+        let _adapter = actions.set_ui_adapter(Some(Rc::new(ActionUiAdapter {
+            open_uri: Rc::new(|_, _| Ok(())),
+            print: Rc::new(move |_| {
+                *count.borrow_mut() += 1;
+                Ok(())
+            }),
+            alert: None,
+            goto_page: None,
+        })));
+        let (outcome, said) = script_print(&actions, ActionOrigin::User);
+        assert_eq!(outcome, (ActionNodeStatus::Executed, None));
+        assert!(said.is_empty());
+        assert_eq!(*log.borrow(), ["stage 0", "print latch=Some(true)", "dispose"]);
+        assert_eq!(*adapter_prints.borrow(), 0);
+        assert!(!actions.0.print_latch.get());
+
+        // The dispatch path (no UI context) prints too.
+        log.borrow_mut().clear();
+        let outcome =
+            Promise::spawn(actions.clone().fire_print_through_adapter(None, Rc::new(|_| {})));
+        rt::run_until_stalled();
+        assert_eq!(outcome.peek().unwrap().unwrap(), (ActionNodeStatus::Executed, None));
+        assert_eq!(*log.borrow(), ["stage 0", "print latch=Some(true)", "dispose"]);
+    }
+
+    #[test]
+    fn m14_with_a_printer_a_non_user_print_request_never_prints() {
+        // document-events.ts: `if (uiContext && uiContext.origin !== 'user')`
+        // diagnoses `print: a <origin> request never prints`, blocked.
+        let (_kernel, actions, log) = with_printer();
+        for origin in [ActionOrigin::Lifecycle, ActionOrigin::Hover] {
+            let (outcome, said) = script_print(&actions, origin);
+            let name = origin.as_str();
+            assert_eq!(outcome, (ActionNodeStatus::Blocked, Some(format!("{name} print request"))));
+            assert_eq!(messages(&said), [format!("print: a {name} request never prints").as_str()]);
+        }
+        assert!(log.borrow().is_empty(), "{:?}", log.borrow());
+    }
+
+    #[test]
+    fn with_a_printer_a_form_pipeline_print_effect_prints_for_the_user_only() {
+        // scripting/surface.ts:85-97.
+        use crate::host_contract::{ScriptRealmKind, ScriptSurfaceResult};
+        let (_kernel, actions, log) = with_printer();
+        let suppressed: Rc<RefCell<Vec<String>>> = Rc::default();
+        let sink = suppressed.clone();
+        let _off = actions.on_script_diagnostic_reported(move |d| {
+            sink.borrow_mut().push(d.message.clone());
+            Ok(())
+        });
+        let result = |origin| ScriptSurfaceResult {
+            ui_effects: vec![epdf_acrojs::ScriptUiEffect::Print],
+            diagnostics: vec![],
+            error: None,
+            origin,
+            phase: ScriptPhase::User,
+            realm: ScriptRealmKind::Document,
+            source: None,
+        };
+        actions.surface_script_result(&result(ActionOrigin::Lifecycle)).unwrap();
+        rt::run_until_stalled();
+        assert_eq!(
+            *suppressed.borrow(),
+            ["script print request from a lifecycle event suppressed"]
+        );
+        assert!(log.borrow().is_empty());
+        actions.surface_script_result(&result(ActionOrigin::User)).unwrap();
+        rt::run_until_stalled();
+        assert_eq!(*log.borrow(), ["stage 0", "print latch=Some(true)", "dispose"]);
+    }
+
+    #[test]
+    fn the_kernels_print_runs_inside_the_documents_print_actions() {
+        // controller.ts:94: every kernel print, whoever starts it, runs inside
+        // runDocumentVerb('print').
+        let (kernel, actions, log) = with_printer();
+        let printed = kernel.documents().print(Some("a"), Default::default());
+        rt::run_until_stalled();
+        printed.peek().expect("settled").expect("printed");
+        assert_eq!(*log.borrow(), ["stage 0", "print latch=Some(true)", "dispose"]);
+        assert!(!actions.0.print_latch.get());
     }
 }

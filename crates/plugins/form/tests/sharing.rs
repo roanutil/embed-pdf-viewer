@@ -171,7 +171,12 @@ fn kernel_with(fields: usize) -> (Kernel, Rc<FakeEngine>) {
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake.clone())),
         vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .expect("the kernel");
     let _ = kernel.start();

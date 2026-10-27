@@ -208,7 +208,7 @@ impl HarnessPlugin for DocumentsAdapter {
             ),
             "list" => Outcome::Returned(serde_json::to_value(docs.list()).unwrap()),
             "get" => Outcome::Returned(
-                docs.get(str_arg(&args, 0).unwrap_or_default())
+                docs.get_document(str_arg(&args, 0))
                     .map_or(Value::Null, |d| serde_json::to_value(d).unwrap()),
             ),
             "has" => Outcome::Returned(json!(docs.has(str_arg(&args, 0).unwrap_or_default()))),
@@ -251,17 +251,32 @@ impl HarnessPlugin for DocumentsAdapter {
                 )
                 .unwrap_or(Value::Null),
             ),
-            // re-port (kernel print, owner pending in task-13-ledger-carries.md):
-            // the Rust kernel has no printer or print API. TS answers
-            // `printer !== null && allowsOn(id, 'doc.print')` (kernel.ts:738);
-            // the replayed vectors pass no printer, so false is that answer,
-            // not a check of the permission. preparePrint, print and
-            // getPrintQuality are listed members with no handler for the same
-            // reason.
-            "canPrint" => Outcome::Returned(json!(false)),
-            "canDownload" => {
-                Outcome::Returned(json!(docs.allows("doc.download", str_arg(&args, 0))))
+            // The replayed vectors pass the kernel no printer, so these
+            // answer as TS does without one (kernel.ts:736-752, 887-897).
+            "canPrint" => Outcome::Returned(json!(docs.can_print(str_arg(&args, 0)))),
+            "getPrintQuality" => Outcome::Returned(
+                docs.get_print_quality(str_arg(&args, 0))
+                    .map_or(Value::Null, |quality| quality.to_json()),
+            ),
+            "preparePrint" | "print" => {
+                let options = print_options(arg(&args, 1));
+                if method == "print" {
+                    Outcome::Promise(
+                        docs.print(str_arg(&args, 0), options).convert(|_| Ok(undefined())),
+                    )
+                } else {
+                    Outcome::Promise(docs.prepare_print(str_arg(&args, 0), options).convert(
+                        |prepared| {
+                            Ok(json!({
+                                "quality": prepared.quality().to_json(),
+                                "pageCount": prepared.page_count(),
+                                "needsTap": prepared.needs_tap(),
+                            }))
+                        },
+                    ))
+                }
             }
+            "canDownload" => Outcome::Returned(json!(docs.can_download(str_arg(&args, 0)))),
             "getPage" => Outcome::Returned(
                 page_ref(arg(&args, 0))
                     .and_then(|r| docs.get_page(r, str_arg(&args, 1)))
@@ -311,6 +326,17 @@ impl HarnessPlugin for DocumentsAdapter {
         capability.downcast_ref::<Documents>()?;
         Some(DOCUMENTS_MEMBERS.to_vec())
     }
+}
+
+/// `PrintOptions` as a step spells them: `pages` and `includeAnnotations`.
+fn print_options(value: Option<&Value>) -> epdf_kernel::print::PrintOptions {
+    let pages = value
+        .and_then(|o| o.get("pages"))
+        .and_then(Value::as_array)
+        .map(|refs| refs.iter().filter_map(epdf_kernel::geometry::PageRef::from_json).collect());
+    let include_annotations =
+        value.and_then(|o| o.get("includeAnnotations")).and_then(Value::as_bool);
+    epdf_kernel::print::PrintOptions { pages, include_annotations, ..Default::default() }
 }
 
 /// One replayed case: the trace, and any engine call nothing answered.
@@ -585,6 +611,7 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
                 .push(json!({ "slice": slice, "action": scrub(&action.to_json()) }));
         })),
         release_closed_sessions: false,
+        printer: None,
     };
     let kernel = match Kernel::new_with_clock(
         Rc::new(crate::fake_engine::AsEngine(fake.clone())),

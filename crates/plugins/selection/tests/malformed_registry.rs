@@ -44,7 +44,12 @@ fn kernel() -> Kernel {
             interaction_plugin(InteractionConfig::default()),
             selection_plugin(SelectionConfig::default()),
         ],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();
