@@ -369,6 +369,7 @@ fn the_walk_answers_as_asn1js_from_ber_does() {
         ("3080", asn1js::Verdict::Accepted),    // indefinite, nothing after
         ("1f810100", asn1js::Verdict::Refused), // UNIVERSAL 129, primitive, long form
         ("0488000000000000000100", asn1js::Verdict::Accepted), // eight length octets
+        ("048100", asn1js::Verdict::Accepted),  // length octets end the buffer
         ("000100", asn1js::Verdict::Accepted),  // primitive EOC with content
         ("2000", asn1js::Verdict::Accepted),    // constructed EOC, no content
         ("28020f00", asn1js::Verdict::Refused), // constructed EXTERNAL, member refused
