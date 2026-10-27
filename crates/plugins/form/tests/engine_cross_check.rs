@@ -249,8 +249,12 @@ fn agree<T: std::fmt::Debug>(
 }
 
 /// Patches as the TypeScript types them. A list default on a text field is
-/// not one: the engine refuses it, where the TypeScript (and this copy)
-/// writes it as given; that pair is left out.
+/// not one: `formFieldAfter` (and this copy) writes it as given, an array in
+/// `defaultValue` and in a `scalar` entry, which the engine's typed field
+/// can't hold, so the engine's copy refuses it; that pair is left out
+/// (Task 14.3, NEEDS_CONTEXT). No engine write reaches it: the wire patch is
+/// refused first by `assertPatchFitsFamily` with the same words, in both
+/// engines.
 fn patches() -> Vec<Value> {
     vec![
         json!({}),
@@ -419,10 +423,18 @@ fn a_reordered_list_is_the_engine_order() {
 fn a_reordered_part_is_the_engine_part() {
     let list: Vec<u32> = (1..=8).collect();
     let parts: [&dyn Fn(&u32) -> bool; 3] = [&|n| n % 2 == 0, &|n| *n > 4, &|_| true];
-    // Keys named once each, as `reordered_list` leaves them: it refuses a
-    // row named twice. With a key named twice the TypeScript (and this copy)
-    // places that item twice, where the native engine places it once.
-    let orders: [&[u32]; 5] = [&[], &[8, 2], &[6, 4], &[9, 7, 2], &[1, 3, 5, 7]];
+    // `reordered_list` refuses a row named twice, but `reorderPart` takes
+    // any order: a key named twice places its item twice, in both copies.
+    let orders: [&[u32]; 8] = [
+        &[],
+        &[8, 2],
+        &[6, 4],
+        &[9, 7, 2],
+        &[1, 3, 5, 7],
+        &[8, 8],
+        &[2, 6, 2, 4],
+        &[5, 1, 5, 1, 5],
+    ];
     for in_part in parts {
         for order in orders {
             let keys: Vec<String> = order.iter().map(u32::to_string).collect();

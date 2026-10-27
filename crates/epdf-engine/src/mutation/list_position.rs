@@ -117,6 +117,12 @@ pub fn reordered_list<Ref: Clone, Key: PartialEq + std::fmt::Display>(
 /// them, by key, in the slots those items have: every other item keeps its
 /// place (`reorderPart`). Items of the part `order` doesn't name follow the
 /// named ones, in their order.
+///
+/// As the TypeScript's `Map` does, a key two items share finds the later
+/// one, and a key `order` names twice places its item twice: the part's
+/// slots take the first `part.len()` of what results. An item is placed by
+/// its position in `list`, the identity the TypeScript's `Set` gives an
+/// object.
 pub fn reorder_part<Item: Clone, Key: PartialEq>(
     list: &[Item],
     in_part: impl Fn(&Item) -> bool,
@@ -124,17 +130,18 @@ pub fn reorder_part<Item: Clone, Key: PartialEq>(
     key_of: impl Fn(&Item) -> Key,
 ) -> Vec<Item> {
     let part: Vec<&Item> = list.iter().filter(|item| in_part(item)).collect();
+    let keys: Vec<Key> = part.iter().map(|item| key_of(item)).collect();
+    let named: Vec<usize> =
+        order.iter().filter_map(|key| keys.iter().rposition(|k| k == key)).collect();
     let mut placed = vec![false; part.len()];
-    let mut next: Vec<&Item> = Vec::with_capacity(part.len());
-    for key in order {
-        if let Some(at) = part.iter().position(|item| key_of(item) == *key)
-            && !placed[at]
-        {
-            placed[at] = true;
-            next.push(part[at]);
-        }
+    for &at in &named {
+        placed[at] = true;
     }
-    next.extend(part.iter().zip(&placed).filter(|(_, placed)| !**placed).map(|(item, _)| *item));
+    let next: Vec<&Item> = named
+        .iter()
+        .map(|&at| part[at])
+        .chain(part.iter().zip(&placed).filter(|(_, placed)| !**placed).map(|(item, _)| *item))
+        .collect();
     let mut slot = 0;
     list.iter()
         .map(|item| {
@@ -245,6 +252,24 @@ mod tests {
         assert_eq!(serde_json::to_value(ListPosition::<String>::END).unwrap(), "end");
         assert!(
             serde_json::from_value::<ListPosition<String>>(serde_json::json!("middle")).is_err()
+        );
+    }
+
+    #[test]
+    fn a_key_named_twice_places_its_item_twice() {
+        // `order.flatMap` finds the item once per mention, and the slots
+        // take the first ones: `C` twice, then `A`; `B` is left out.
+        let list = ["A", "B", "C"];
+        assert_eq!(reorder_part(&list, |_| true, &["C", "C"], |s: &&str| *s), ["C", "C", "A"]);
+    }
+
+    #[test]
+    fn a_key_two_items_share_finds_the_later_one() {
+        // `new Map(part.map(...))` keeps the last item of a key.
+        let list = [("a", 1), ("b", 2), ("a", 3)];
+        assert_eq!(
+            reorder_part(&list, |_| true, &["a"], |item: &(&str, i32)| item.0),
+            [("a", 3), ("a", 1), ("b", 2)]
         );
     }
 }
