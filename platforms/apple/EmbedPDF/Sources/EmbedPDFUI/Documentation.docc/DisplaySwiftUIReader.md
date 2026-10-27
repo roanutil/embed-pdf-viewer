@@ -8,7 +8,7 @@ Follow **Render your first PDF page** in the `EmbedPDF` module documentation to
 install the products and start a viewer.
 Enable both `RenderConfig()` and `StageConfig()` in its `ViewerConfig` before
 startup. Open an unlocked document and keep the viewer and document available
-while their UI is displayed. This guide uses iOS 17 or later.
+while their UI is displayed. This guide uses iOS 17 or macOS 14 or later.
 
 ## Add the reader surface
 

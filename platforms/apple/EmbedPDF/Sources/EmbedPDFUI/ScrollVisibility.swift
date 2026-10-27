@@ -3,8 +3,8 @@ import SwiftUI
 extension View {
   /// Tracks scroll visibility for selecting a page's raster resolution.
   ///
-  /// On iOS 18 and later, writes `true` when the scroll visibility threshold
-  /// of 1% is met. On iOS 17, uses appear/disappear callbacks; lazy stacks may
+  /// On iOS 18 and macOS 15 and later, writes `true` when the scroll visibility
+  /// threshold of 1% is met. On iOS 17 and macOS 14, uses appear/disappear callbacks; lazy stacks may
   /// report built neighboring pages as visible even outside the viewport.
   ///
   /// - Parameter isOnScreen: Destination binding, typically passed to
@@ -20,7 +20,7 @@ private struct ScrollVisibilityModifier: ViewModifier {
   @Binding var isOnScreen: Bool
 
   func body(content: Content) -> some View {
-    if #available(iOS 18, *) {
+    if #available(iOS 18, macOS 15, *) {
       content.onScrollVisibilityChange(threshold: 0.01) { isOnScreen = $0 }
     } else {
       content
