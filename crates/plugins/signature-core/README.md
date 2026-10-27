@@ -85,11 +85,11 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   `asn1js.fromBER` gave the same answer every time. The signature, message-digest, ESS certHash
   and certificate `extnValue` read as pkijs reads them: a constructed signature or `extnValue`
   fails pkijs's schema, and a constructed message-digest or certHash reads as no bytes, which is
-  `valueHexView` of a constructed OCTET STRING. `der` still builds the tree, and where its tree
-  and asn1js's differ it is the stricter one or only the text differs. It refuses a constructed
-  element whose last member runs past the declared length, which asn1js reads on while the
-  buffer lasts, and it reads a constructed string's content as members, so content that is not
-  BER fails here and reads as bytes in asn1js. One throw is not modelled:
+  `valueHexView` of a constructed OCTET STRING. `der` still builds the tree. It keeps a constructed string's content as bytes, as asn1js's
+  `HexBlock` does (an indefinite one's runs to the end of its input). Where its tree and
+  asn1js's still differ it is the stricter one: it refuses a constructed element whose last
+  member runs past the declared length, which asn1js reads on while the buffer lasts. One throw
+  is not modelled:
   `String.fromCharCode.apply` over a string of more than about 120,000 octets throws a
   RangeError at a threshold set by the host's stack.
 - `timestamp::read_timestamp_info` reads a TSTInfo as `new pkijs.TSTInfo({ schema })` does. The
@@ -99,6 +99,15 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   pkijs 3.4.0 and asn1js 3.0.10 gave for them. A GeneralizedTime without `Z` is local time to
   asn1js, so its value depends on the host's time zone; this reads it as a host on UTC does.
   Accepting or refusing it doesn't depend on the zone, and the gate never reads the time.
+- Three reads still differ from pkijs, none reached by a vector. An extension's value is read
+  lazily by pkijs (`Extension.parsedValue`, pkijs 3.4.0 `build/index.js:7441-7447`); here
+  `Extension::parsed` and the chain engine's key identifiers (`cert.rs:117`, `trust.rs:214`) go
+  through `der` without asking `asn1js::from_ber`, so an extension asn1js refuses or throws on
+  can still be read. The timestamp token is the unsigned attribute's bytes as they arrived,
+  where TS re-encodes them with `toBER(false)`, so a token with non-DER lengths reaches the
+  timestamp check unchanged here and normalised there. And `signingTime` takes its value from
+  `Node::time`, not asn1js's `toDate()`: accept and refuse match through the walk, but a
+  GeneralizedTime asn1js reads oddly (no `Z`, a comma fraction) can give a different instant.
 - A constructed eContent joins its primitive pieces only, as asn1js's `OctetString.getValue()`
   does: a nested constructed piece adds no bytes.
 - An ECDSA hash shorter than half the curve's field (SHA-256 over P-521) is left-padded before

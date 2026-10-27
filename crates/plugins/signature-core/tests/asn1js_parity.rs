@@ -246,6 +246,8 @@ fn asn1js_rules_apply_anywhere_in_the_cms() {
         ("unsignedPrimitiveSequenceNotBer", with_unsigned(&unhex("1001ff")), NOT_BER),
         ("unsignedPrimitiveSequenceBer", with_unsigned(&unhex("10020500")), VALID),
         ("unsignedConstructedUtf8Ber", with_unsigned(&unhex("2c040c024142")), VALID),
+        // asn1js reads a constructed string's content as bytes, BER or not.
+        ("unsignedConstructedUtf8NotBer", with_unsigned(&unhex("2c024142")), VALID),
         ("unsignedEocWithContent", with_unsigned(&unhex("30040002ffff")), NOT_BER),
         ("unsignedBitStringUnused8", with_unsigned(&unhex("03020800")), NOT_BER),
         // A throw inside a speculative OCTET STRING decode is caught there.
@@ -340,6 +342,31 @@ fn the_walk_answers_as_asn1js_from_ber_does() {
         ("180161", throws("Error", "Wrong input string for conversion")),
         ("170161", asn1js::Verdict::Accepted),
         ("04051e03004100", asn1js::Verdict::Accepted),
+        // The refusal branches, and inputs beside them that asn1js reads.
+        ("30ff0500", asn1js::Verdict::Refused), // 0xFF length
+        ("30890100000000000000000500", asn1js::Verdict::Refused), // nine length octets
+        ("308201", asn1js::Verdict::Refused),   // length octets past the end
+        ("04800000", asn1js::Verdict::Refused), // indefinite primitive
+        ("0f00", asn1js::Verdict::Refused),     // UNIVERSAL 15
+        ("1f2500", asn1js::Verdict::Refused),   // UNIVERSAL 37
+        ("3f810100", asn1js::Verdict::Refused), // UNIVERSAL 129, long form
+        ("1f81818181818181810100", asn1js::Verdict::Accepted), // a 10-octet tag is hex-only
+        ("3f0200", asn1js::Verdict::Refused),   // constructed INTEGER, long form
+        ("2203020101", asn1js::Verdict::Refused), // constructed INTEGER
+        ("20020500", asn1js::Verdict::Refused), // constructed EOC with content
+        ("06028181", asn1js::Verdict::Refused), // OID's last arc continues
+        ("03020800", asn1js::Verdict::Refused), // 8 unused bits
+        ("23080302010003020100", asn1js::Verdict::Refused), // two members with unused bits
+        ("230803020100030200ff", asn1js::Verdict::Accepted), // only the first has them
+        ("2403020101", asn1js::Verdict::Refused), // OCTET STRING with an INTEGER
+        ("240400000400", asn1js::Verdict::Refused), // OCTET STRING with an EOC
+        ("0505", asn1js::Verdict::Refused),     // NULL past the end
+        ("0400", asn1js::Verdict::Accepted),    // empty OCTET STRING
+        ("30030403010203", asn1js::Verdict::Accepted), // a member overruns its parent
+        ("2c024142", asn1js::Verdict::Accepted), // constructed string, not BER
+        ("2c8041420000", asn1js::Verdict::Accepted), // indefinite constructed string
+        ("30800500", asn1js::Verdict::Refused), // no end-of-contents
+        ("3080", asn1js::Verdict::Accepted),    // indefinite, nothing after
     ];
     for (hex, expected) in rows {
         assert_eq!(asn1js::from_ber(&unhex(hex)), expected, "{hex}");
@@ -386,6 +413,20 @@ fn a_subject_key_identifier_is_read_as_value_hex_view() {
             "parse: Error: Wrong input string for conversion",
         ),
         ("skiInnerNotBer", with_ski(|_| unhex("040501")), not_carried),
+        // A constructed string's `valueHexView` is its content as bytes; an
+        // indefinite one's runs to the end of the input, end-of-contents
+        // included.
+        ("skiInnerUtf8Definite", with_ski(|s| der::tlv(0x2c, s)), "parse: ok md=32 sig=256 ess=32"),
+        (
+            "skiInnerUtf8Indefinite",
+            with_ski(|s| [&[0x2c, 0x80][..], s].concat()),
+            "parse: ok md=32 sig=256 ess=32",
+        ),
+        (
+            "skiInnerUtf8IndefiniteClosed",
+            with_ski(|s| [&[0x2c, 0x80][..], s, &[0, 0][..]].concat()),
+            not_carried,
+        ),
     ];
     for (name, bytes, expected) in rows {
         assert_eq!(parse_only(&bytes), expected, "{name}");

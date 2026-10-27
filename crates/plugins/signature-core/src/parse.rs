@@ -518,10 +518,9 @@ fn value_hex(node: &Node) -> Vec<u8> {
         (der::UNIVERSAL, der::BIT_STRING, false) => node.bits(),
         (der::UNIVERSAL, der::OCTET_STRING | der::BIT_STRING, true) => Vec::new(),
         (der::UNIVERSAL, 0 | der::NULL | der::OID | 13 | der::SEQUENCE | der::SET, _) => Vec::new(),
-        // A constructed string's value block reads its content as bytes.
-        (der::UNIVERSAL, 1..=34, true) if !matches!(node.tag, 7 | 8 | 9 | 11) => {
-            node.children.iter().flat_map(|c| c.raw.clone()).collect()
-        }
+        // A constructed string's value block reads its content as bytes, as
+        // `der` keeps it (an indefinite one's: the rest of the input).
+        (der::UNIVERSAL, 10 | 12 | 18..=22 | 25..=30, true) => node.content.clone(),
         (_, _, true) => Vec::new(),
         (_, _, false) => node.content.clone(),
     }

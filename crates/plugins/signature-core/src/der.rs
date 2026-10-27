@@ -193,6 +193,11 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
         }
         Some(n)
     };
+    // asn1js reads a constructed string of these types with a `HexBlock`:
+    // its content is bytes, never members (a definite one's body; an
+    // indefinite one's whole remaining input, end-of-contents included).
+    let bytes_block =
+        class == UNIVERSAL && constructed && matches!(tag, 10 | 12 | 18..=22 | 25..=30);
     match length {
         Some(n) => {
             let end = at.checked_add(n)?;
@@ -210,7 +215,7 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
                 return None;
             }
             let mut children = Vec::new();
-            if constructed {
+            if constructed && !bytes_block {
                 let mut cursor = 0;
                 while cursor < body.len() {
                     let (child, next) = read(body, cursor, depth + 1)?;
@@ -224,7 +229,7 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
                     constructed,
                     tag,
                     raw: bytes[start..end].to_vec(),
-                    content: if constructed { Vec::new() } else { body.to_vec() },
+                    content: if constructed && !bytes_block { Vec::new() } else { body.to_vec() },
                     children,
                 },
                 end,
@@ -233,6 +238,19 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
         None => {
             if !constructed {
                 return None;
+            }
+            if bytes_block {
+                return Some((
+                    Node {
+                        class,
+                        constructed,
+                        tag,
+                        raw: bytes[start..].to_vec(),
+                        content: bytes[at..].to_vec(),
+                        children: Vec::new(),
+                    },
+                    bytes.len(),
+                ));
             }
             let mut children = Vec::new();
             loop {
