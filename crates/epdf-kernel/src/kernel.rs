@@ -2067,7 +2067,7 @@ fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Promise<T> {
 }
 
 /// `Promise.allSettled`, awaited: settles one turn after the last input.
-async fn all_settled(promises: Vec<Promise<()>>) {
+pub(crate) async fn all_settled(promises: Vec<Promise<()>>) {
     let (all, resolver) = Promise::<()>::pending();
     let remaining = Rc::new(Cell::new(promises.len()));
     if promises.is_empty() {

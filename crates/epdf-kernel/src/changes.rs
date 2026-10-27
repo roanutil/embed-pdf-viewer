@@ -261,12 +261,19 @@ impl DocumentChanges {
     pub fn send_holds(&self) {
         self.send_before(u64::MAX);
     }
+    /// `whenSettled`: `await Promise.allSettled(results)` in an `async`
+    /// function, so it settles two turns after the last result (the
+    /// `allSettled` reaction, then the `await`), and one turn after the call
+    /// with nothing pending.
     pub fn when_settled(&self) -> Promise<()> {
-        let pending: Vec<_> = self.shown().into_iter().filter(|e| !e.held()).collect();
+        let pending: Vec<Promise<()>> = self
+            .shown()
+            .into_iter()
+            .filter(|e| !e.held())
+            .map(|e| e.result().convert(|_| Ok(())))
+            .collect();
         Promise::spawn(async move {
-            for e in pending {
-                let _ = e.result().await;
-            }
+            crate::kernel::all_settled(pending).await;
             Ok(())
         })
     }
