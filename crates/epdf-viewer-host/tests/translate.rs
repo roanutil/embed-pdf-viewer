@@ -812,10 +812,129 @@ fn a_locked_open_parks_and_unlocks_with_its_password() {
                 });
             });
         });
-    assert_eq!(opened, json!({ "state": "required", "hint": "user", "incorrect": true }));
-    assert_eq!(after_wrong, json!({ "state": "required", "hint": "user", "incorrect": true }));
-    assert_eq!(after_right, json!({ "state": "none" }));
+    // The TypeScript's prompts for the same steps (`passwordPromptFromState`
+    // under `LocalEngine`, encrypted-hello.pdf): parked, the permissions
+    // are unknown, so no hint; the user password opens it with an owner
+    // still to upgrade to.
+    assert_eq!(opened, json!({ "state": "required", "hint": null, "incorrect": true }));
+    assert_eq!(after_wrong, json!({ "state": "required", "hint": null, "incorrect": true }));
+    assert_eq!(after_right, json!({ "state": "optional", "hint": "owner" }));
     assert!(pages.is_some_and(|p| p["pages"].as_array().is_some_and(|p| !p.is_empty())));
+}
+
+#[test]
+fn the_security_state_is_the_typescripts_state_not_the_probe() {
+    // `LocalDocumentSecurityService.state`, `securityStateFromProbe` of the
+    // host's probe, as the TypeScript answered it for the same files.
+    let plain = with_document(test_support::REPORT, |doc, tx| {
+        let _ = tx.send(doc.security().current());
+    });
+    assert_eq!(
+        plain,
+        json!({ "encryption": { "state": "none", "requiresPassword": false },
+            "permissions": { "known": true, "bits": 4_294_967_295_u32, "allAllowed": true,
+                "openedAs": "none", "securityHandlerRevision": null, "canUpgradeToOwner": false },
+            "access": { "required": false, "reasons": [] } })
+    );
+    let (parked, unlocked) = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        engine.open(open_input(test_support::ENCRYPTED), None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().expect("a parked open still opens");
+            let parked = doc.security().current();
+            let doc2 = doc.clone();
+            doc.security().unlock(json!({ "password": "hôtel" })).on_settle(move |right| {
+                assert!(right.is_ok(), "{right:?}");
+                let _ = tx.send((parked, doc2.security().current()));
+            });
+        });
+    });
+    assert_eq!(parked["permissions"]["known"], false, "{parked}");
+    assert_eq!(parked["access"], json!({ "required": true, "reasons": ["password"] }));
+    assert_eq!(
+        unlocked,
+        json!({ "encryption": { "state": "encrypted", "requiresPassword": false },
+            "permissions": { "known": true, "bits": 4_294_967_292_u32, "allAllowed": true,
+                "openedAs": "user", "securityHandlerRevision": 6, "canUpgradeToOwner": true },
+            "access": { "required": false, "reasons": [] } })
+    );
+}
+
+/// What a native handle opened under `scope` answers to `calls`, made in
+/// order against REPORT's first page: each refusal's `required`, or `ok`.
+fn refusals_under(scope: &[&str], calls: Vec<(&'static str, Vec<Value>)>) -> Vec<String> {
+    let scope: Vec<String> = scope.iter().map(|s| s.to_string()).collect();
+    let worker = EngineWorker::spawn();
+    let thread =
+        KernelThread::spawn(move |post| Ok(NativeEngine::new(worker, post, Some(scope)))).unwrap();
+    let answer = futures::executor::block_on(thread.call(move |engine: &mut NativeEngine| {
+        let (tx, rx) = oneshot::channel();
+        engine.open(open_input(test_support::REPORT), None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().expect("opened");
+            let doc2 = doc.clone();
+            doc.call("pages.list", None, vec![]).on_settle(move |list| {
+                let pon = list
+                    .as_ref()
+                    .ok()
+                    .and_then(|l| l["pages"][0]["ref"]["objectNumber"].as_u64())
+                    .map(|n| n as u32);
+                // A refusal rejects at once, before anything is sent.
+                let answers: Vec<String> = calls
+                    .into_iter()
+                    .map(|(path, args)| {
+                        let page = path.starts_with("page.").then_some(pon).flatten();
+                        match doc2.call(path, page, args).peek() {
+                            Some(Err(e)) => e
+                                .member("required")
+                                .and_then(Value::as_str)
+                                .map_or_else(|| format!("{e:?}"), str::to_owned),
+                            _ => "sent".to_owned(),
+                        }
+                    })
+                    .collect();
+                let _ = tx.send(answers);
+            });
+        });
+        rx
+    }))
+    .unwrap();
+    futures::executor::block_on(answer).unwrap()
+}
+
+#[test]
+fn a_native_create_or_import_takes_the_handles_collab_and_group_checks() {
+    // `LocalPageAnnotationsService.create` and `assertMayCreate`: another
+    // group than the caller's takes `assertSetGroup`, and every create
+    // takes `assertCollab('create')`, before the call is sent; a restoring
+    // import takes `doc.annotate.modify` and `doc.annotate.import`.
+    let square = |group: Value| {
+        json!({ "subtype": "square", "box": { "x": 10, "y": 20, "width": 30, "height": 40 },
+            "groupId": group })
+    };
+    let bundle = |group: &str| {
+        json!({ "format": "embedpdf/annotations", "version": 1,
+            "items": [{ "data": { "subtype": "square", "groupId": group } }], "resources": {} })
+    };
+    let stamp = json!({ "attribution": "stamp" });
+    let read_only = refusals_under(
+        &["doc.open", "doc.annotate.read"],
+        vec![
+            ("page.annotations.create", vec![square(Value::Null)]),
+            ("annotations.import", vec![bundle("legal"), Value::Null]),
+            ("annotations.import", vec![json!({ "items": [] }), stamp.clone()]),
+        ],
+    );
+    assert_eq!(read_only, ["annotations:create", "doc.annotate.modify", "annotations:create"]);
+    let creator = refusals_under(
+        &["doc.open", "doc.annotate.read", "annotations:create:all"],
+        vec![
+            ("page.annotations.create", vec![square(json!("legal"))]),
+            ("annotations.import", vec![bundle("legal"), stamp]),
+            ("page.annotations.create", vec![square(Value::Null)]),
+        ],
+    );
+    assert_eq!(
+        creator,
+        ["annotations:set-group:group=legal", "annotations:set-group:group=legal", "sent"]
+    );
 }
 
 #[test]
@@ -825,7 +944,7 @@ fn a_locked_open_without_a_password_is_not_incorrect() {
             let _ = tx.send(doc.as_ref().ok().map(|d| d.security().password_prompt()));
         });
     });
-    assert_eq!(prompt, Some(json!({ "state": "required", "hint": "user", "incorrect": false })));
+    assert_eq!(prompt, Some(json!({ "state": "required", "hint": null, "incorrect": false })));
 }
 
 #[test]

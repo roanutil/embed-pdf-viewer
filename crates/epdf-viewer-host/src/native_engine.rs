@@ -19,6 +19,7 @@ use std::rc::Rc;
 use epdf_engine::auth::scope::{
     CollabAction, CollabTarget, DocCapability, FieldWriteAction, IdentityClaims, decode_pdf_bits,
 };
+use epdf_engine::features::signature::protection::{describe_protection, protected_capabilities};
 use epdf_engine::host::HostResponse;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_ffi::KernelPost;
@@ -379,7 +380,7 @@ struct ObjectNumberPool {
 /// A host range the pool refused (`ObjectNumberPool::add`): the answer is
 /// malformed, as any unreadable answer is.
 fn malformed_range(range: &Value) -> Error {
-    Error::engine("WireFormat", format!("WireFormat: the host reserved a malformed range {range}"))
+    Error::engine("WireFormat", format!("the host reserved a malformed range {range}"))
 }
 
 /// `objectNumbers.reserve`'s continuation: the host's range goes into the
@@ -512,7 +513,109 @@ impl NativeDocumentState {
         args: &[Value],
         job: u64,
     ) -> Result<WireCall, Error> {
-        translate::translate(&self.id, path, pon, args, job, &self.client())
+        let call = translate::translate(&self.id, path, pon, args, job, &self.client())?;
+        // The handle's own checks, after `opIdOf` as the TypeScript makes
+        // them, and before anything is sent.
+        match path {
+            "page.annotations.create" => {
+                let group = args.first().and_then(|draft| draft.get("groupId"));
+                self.assert_may_create([group.and_then(Value::as_str).map(str::to_owned)])?;
+            }
+            "annotations.import" => self.assert_may_import(args)?,
+            _ => {}
+        }
+        Ok(call)
+    }
+
+    /// `ScopeGuard.assertCapability`: a capability the signatures forbid is
+    /// `ProtectedDocument`, one the scope doesn't grant `PermissionDenied`.
+    fn assert_capability(&self, capability: DocCapability) -> Result<(), Error> {
+        let authority = self.authority.borrow();
+        if authority.allows(capability) {
+            return Ok(());
+        }
+        match authority
+            .protection()
+            .filter(|p| protected_capabilities(Some(p)).contains(&capability))
+        {
+            Some(protection) => {
+                Err(Error::engine("ProtectedDocument", describe_protection(capability, protection)))
+            }
+            None => Err(Error::permission_denied(capability.as_str(), Some("engine-local"))),
+        }
+    }
+
+    /// `LocalPageAnnotationsService.create`'s and `assertMayCreate`'s
+    /// checks, for each group an annotation is made in (`None`: the
+    /// caller's own): putting it in another group than the caller's takes
+    /// `assertSetGroup`, and making it takes `assertCollab('create')`
+    /// against the caller in that group (`targetForSelfCreate`).
+    fn assert_may_create(
+        &self,
+        groups: impl IntoIterator<Item = Option<String>>,
+    ) -> Result<(), Error> {
+        let authority = self.authority.borrow();
+        let identity = authority.identity();
+        for group in groups {
+            if let Some(group) = &group
+                && identity.group_id.as_ref() != Some(group)
+                && !authority.allows_set_group(group)
+            {
+                return Err(Error::permission_denied(
+                    format!("annotations:set-group:group={group}"),
+                    Some("engine-local"),
+                ));
+            }
+            // `assertAnnotationsUnprotected`, then the collab check.
+            if let Some(protection) = authority.protection().filter(|p| {
+                protected_capabilities(Some(p)).contains(&DocCapability::DocAnnotateModify)
+            }) {
+                return Err(Error::engine(
+                    "ProtectedDocument",
+                    describe_protection(DocCapability::DocAnnotateModify, protection),
+                ));
+            }
+            let target = CollabTarget {
+                user_id: identity.user_id.clone(),
+                group_id: group.or_else(|| identity.group_id.clone()),
+            };
+            if !authority.allows_collab(CollabAction::Create, &target) {
+                return Err(Error::permission_denied("annotations:create", Some("engine-local")));
+            }
+        }
+        Ok(())
+    }
+
+    /// `LocalDocumentAnnotationsService.import`'s checks: a restoring import
+    /// writes attribution that isn't the session's, so it takes
+    /// `doc.annotate.modify` and `doc.annotate.import`; one that stamps the
+    /// session makes each annotation as `create` would, for every group its
+    /// items name (an empty bundle still takes the authority to create).
+    fn assert_may_import(&self, args: &[Value]) -> Result<(), Error> {
+        let present = |v: &&Value| !v.is_null() && !epdf_kernel::is_undefined(v);
+        let attribution = args
+            .get(1)
+            .and_then(|options| options.get("attribution"))
+            .filter(present)
+            .and_then(Value::as_str)
+            .unwrap_or("restore");
+        if attribution == "restore" {
+            self.assert_capability(DocCapability::DocAnnotateModify)?;
+            return self.assert_capability(DocCapability::DocAnnotateImport);
+        }
+        // A `Set` of groups, in the order the items first name them.
+        let mut groups: Vec<Option<String>> = Vec::new();
+        let items = args.first().and_then(|bundle| bundle.get("items")).and_then(Value::as_array);
+        for item in items.into_iter().flatten() {
+            let group = item["data"].get("groupId").and_then(Value::as_str).map(str::to_owned);
+            if !groups.contains(&group) {
+                groups.push(group);
+            }
+        }
+        if groups.is_empty() {
+            groups.push(None);
+        }
+        self.assert_may_create(groups)
     }
 
     /// `request(count)`: `objectNumbers.reserve`, answering the range.
@@ -551,6 +654,17 @@ impl NativeDocumentState {
         .ok()
         .filter(|p| p.judged.is_some());
         self.authority.borrow_mut().set_protection(protection);
+    }
+
+    /// The security state the probe gives (`securityStateFromProbe`), or
+    /// `None` when the host's probe doesn't read as one.
+    fn security_state(&self) -> Option<epdf_engine::features::security::state::SecurityState> {
+        use epdf_engine::features::security::state::{
+            SecurityProbeInfo, StateOptions, security_state_from_probe,
+        };
+        let probe: SecurityProbeInfo =
+            serde_json::from_value(self.security.borrow().clone()).ok()?;
+        Some(security_state_from_probe(&probe, &StateOptions::default()))
     }
 
     /// Adopt a security probe: the permission bits for `pdf.permissions`,
@@ -756,7 +870,7 @@ impl DocumentHandle for NativeDocument {
             .and_then(|pages| pages.iter().find(|p| page.names(p)))
             .and_then(|p| p.get("index").and_then(Value::as_u64))
             .and_then(|i| u32::try_from(i).ok())
-            .ok_or_else(|| Error::engine("NotFound", format!("NotFound: no page {pon}")))
+            .ok_or_else(|| Error::engine("NotFound", format!("no page {pon}")))
     }
 
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe {
@@ -871,19 +985,31 @@ impl DocumentSecurity for NativeSecurity {
         Value::Null
     }
 
+    /// `securityStateFromProbe(probe)`, as `LocalDocumentSecurityService`
+    /// keeps it: the host answers the probe at open and at unlock. A probe
+    /// that doesn't read is handed on as the host gave it.
     fn current(&self) -> Value {
-        self.state.security.borrow().clone()
+        match self.state.security_state() {
+            Some(state) => serde_json::to_value(state).unwrap_or(Value::Null),
+            None => self.state.security.borrow().clone(),
+        }
     }
 
-    /// `passwordPromptFromState(state, incorrect)` for a document that is
-    /// parked on its user password, else none.
+    /// `passwordPromptFromState(this.state, this.passwordRejected)`: `hint`
+    /// is `null` while the permissions are unknown (a document parked on
+    /// its password), and a document opened as its user that has an owner
+    /// to upgrade to is `optional`. A probe that doesn't read prompts as a
+    /// parked document does, or not at all.
     fn password_prompt(&self) -> Value {
-        if self.state.locked.get() {
-            json!({
-                "state": "required", "hint": "user", "incorrect": self.state.password_rejected.get(),
-            })
-        } else {
-            json!({ "state": "none" })
+        use epdf_engine::features::security::state::password_prompt_from_state;
+        let incorrect = self.state.password_rejected.get();
+        match self.state.security_state() {
+            Some(state) => serde_json::to_value(password_prompt_from_state(&state, incorrect))
+                .unwrap_or(Value::Null),
+            None if self.state.locked.get() => {
+                json!({ "state": "required", "hint": null, "incorrect": incorrect })
+            }
+            None => json!({ "state": "none" }),
         }
     }
 

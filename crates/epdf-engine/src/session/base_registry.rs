@@ -158,15 +158,16 @@ fn open_error(error: PdfiumError, password_supplied: bool) -> EngineError {
     match error {
         PdfiumError::Password if password_supplied => EngineError::with_message(
             EngineErrorCode::DocPasswordIncorrect,
-            "incorrect base document password",
+            "incorrect document password",
         ),
         PdfiumError::Password => EngineError::with_message(
             EngineErrorCode::DocPasswordRequired,
-            "base document requires a password",
+            "document requires a password",
         ),
-        other => EngineError::with_message(
+        // `baseOpenError`'s words, whatever PDFium said.
+        _ => EngineError::with_message(
             EngineErrorCode::DocOpenFailed,
-            format!("failed to open base document: {other}"),
+            "failed to open base document",
         ),
     }
 }

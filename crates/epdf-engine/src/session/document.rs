@@ -253,7 +253,11 @@ fn open_bytes_as_layer(bytes: &[u8], password: Option<&str>) -> Result<Document,
                 EngineErrorCode::DocPasswordRequired,
                 "document requires a password",
             ),
-            other => EngineError::with_message(EngineErrorCode::DocOpenFailed, other.to_string()),
+            // `baseOpenError`'s words, whatever PDFium said.
+            _ => EngineError::with_message(
+                EngineErrorCode::DocOpenFailed,
+                "failed to open base document",
+            ),
         })?;
     let layer = Rc::new(base)
         .open_layer()

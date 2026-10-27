@@ -762,8 +762,11 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
-        let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
-        let mut refused = Error::engine(code, format!("{code}: {message}"));
+        // The engine's own words, as `EngineError.message` carries them to
+        // `toPluginError` (`new EngineError(code, message ?? code)`): no
+        // code in front.
+        let message = error.get("message").and_then(Value::as_str).unwrap_or(code);
+        let mut refused = Error::engine(code, message);
         if let Some(details) = error.get("details") {
             refused = refused.with("details", details.clone());
         }

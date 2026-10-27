@@ -298,3 +298,116 @@ pub fn security_state_from_probe(info: &SecurityProbeInfo, opts: &StateOptions) 
         },
     }
 }
+
+/// Who a password prompt asks for (`PasswordPrompt`'s `hint`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PromptHint {
+    User,
+    Owner,
+}
+
+/// Whether to ask for a password (`PasswordPrompt`,
+/// `packages/engine/core/src/engine/passwordPrompt.ts`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "lowercase")]
+pub enum PasswordPrompt {
+    None,
+    /// Nothing can be read until a password is given. `hint` is `None`
+    /// when the permissions are unknown; `incorrect` when the last
+    /// password tried was wrong.
+    Required {
+        hint: Option<PromptHint>,
+        incorrect: bool,
+    },
+    /// Open and readable; the owner password would allow more.
+    Optional {
+        hint: PromptHint,
+    },
+}
+
+/// `passwordPromptFromState(state, incorrect)`: the first rule that
+/// matches, top to bottom.
+pub fn password_prompt_from_state(state: &SecurityState, incorrect: bool) -> PasswordPrompt {
+    let permissions = &state.permissions;
+    if state.encryption.state == EncryptionState::None {
+        return PasswordPrompt::None;
+    }
+    if !permissions.known {
+        return PasswordPrompt::Required { hint: None, incorrect };
+    }
+    if state.encryption.requires_password == Some(true)
+        && permissions.opened_as == Some(OpenedAs::None)
+    {
+        return PasswordPrompt::Required { hint: Some(PromptHint::User), incorrect };
+    }
+    if permissions.opened_as == Some(OpenedAs::Owner) {
+        return PasswordPrompt::None;
+    }
+    if permissions.can_upgrade_to_owner {
+        return PasswordPrompt::Optional { hint: PromptHint::Owner };
+    }
+    PasswordPrompt::None
+}
+
+#[cfg(test)]
+mod prompt_tests {
+    //! `packages/engine/core/test/engine/passwordPrompt.test.ts`'s rules.
+    use super::*;
+    use serde_json::json;
+
+    fn state(
+        encryption: EncryptionState,
+        requires_password: Option<bool>,
+        known: bool,
+        opened_as: Option<OpenedAs>,
+        can_upgrade_to_owner: bool,
+    ) -> SecurityState {
+        SecurityState {
+            encryption: EncryptionSummary { state: encryption, requires_password },
+            permissions: PermissionState {
+                known,
+                bits: None,
+                all_allowed: None,
+                opened_as,
+                security_handler_revision: None,
+                can_upgrade_to_owner,
+            },
+            access: AccessSummary { required: false, reasons: Vec::new(), endpoint: None },
+        }
+    }
+
+    fn prompt(state: &SecurityState, incorrect: bool) -> serde_json::Value {
+        serde_json::to_value(password_prompt_from_state(state, incorrect)).unwrap()
+    }
+
+    #[test]
+    fn each_rule_answers_the_typescripts_prompt() {
+        use EncryptionState::{Encrypted, None as Plain};
+        use OpenedAs::{None as Anonymous, Owner, User};
+        assert_eq!(
+            prompt(&state(Plain, Some(false), true, Some(Anonymous), false), true),
+            json!({ "state": "none" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), false, None, true), true),
+            json!({ "state": "required", "hint": null, "incorrect": true })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), true, Some(Anonymous), true), false),
+            json!({ "state": "required", "hint": "user", "incorrect": false })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(Owner), false), false),
+            json!({ "state": "none" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(User), true), false),
+            json!({ "state": "optional", "hint": "owner" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(User), false), false),
+            json!({ "state": "none" })
+        );
+    }
+}

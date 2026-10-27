@@ -84,13 +84,11 @@ fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
     assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
     let error = tab.error.as_ref().expect("a failed tab without its error");
     assert_eq!(error.capability, "documents", "{error:?}");
-    // The `DocOpenFailed: ` prefix is this host's own decode of the engine
-    // error (`translate::decode`); TS says "failed to open document", a
-    // difference carried to Task 14.
-    assert_eq!(
-        error.message, "DocOpenFailed: the bytes are not a document PDFium can open",
-        "{error:?}"
-    );
+    // The engine's words, as the TypeScript's tab says them: bytes open
+    // through a memory base (`WorkerHost.openBytesAsLayer`), whose
+    // `baseOpenError` says "failed to open base document", and
+    // `toPluginError` passes `EngineError.message` on with no code in front.
+    assert_eq!(error.message, "failed to open base document", "{error:?}");
 }
 
 /// A wrong password parks the document as a locked tab whose prompt says
@@ -168,7 +166,7 @@ fn a_failed_open_announces_the_tabs_error_with_its_code() {
     assert_eq!(Some(&error), tab.error.as_ref());
     assert_eq!(error.code, "operation-failed", "{error:?}");
     assert_eq!(error.capability, "documents");
-    assert!(error.message.starts_with("DocOpenFailed"), "{error:?}");
+    assert_eq!(error.message, "failed to open base document", "{error:?}");
 }
 
 #[test]
@@ -201,7 +199,13 @@ fn a_wrong_password_is_permission_denied_with_the_engine_code_in_the_detail() {
             .unwrap();
     let error = block_on(host.unlock_document(locked.id.clone(), "nope".into())).unwrap_err();
     assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
-    assert!(format!("{error}").contains("DocPasswordIncorrect"), "{error}");
+    // `DocPasswordIncorrect` maps to `permission-denied`, and the message is
+    // the engine's own words, as `toPluginError` passes them on (no code in
+    // front since Task 14.3).
+    assert!(
+        matches!(&error, ViewerError::Kernel { detail, .. } if detail == "incorrect document password"),
+        "{error:?}"
+    );
     // The tab stays locked, its prompt now saying the password was wrong.
     let tab = block_on(host.documents()).unwrap().into_iter().find(|d| d.id == locked.id).unwrap();
     assert_eq!(tab.status, DocumentStatus::Locked);
@@ -1423,8 +1427,11 @@ fn a_form_bundle_export_fills_a_fresh_copy() {
     let fresh = block_on(host.form(second.id)).unwrap();
     block_on(fresh.refresh(CancelToken::new())).unwrap();
     // The text field's value, by its full name. (The whole export would
-    // also name `inline.direct`, a field with no object number, which this
-    // engine's write resolves to object 0 and refuses, failing the batch.)
+    // also name `inline.direct`, a field with no object number. Its write
+    // resolves the field again by the number the read found, 0, and is
+    // refused `NotFound` ("form field not found: object 0"), failing the
+    // batch: the TypeScript engine answers the same (`formChanges.ts`
+    // `writeValue`, the `direct-field-refused` vector).)
     let values: serde_json::Value = serde_json::from_str(&values).unwrap();
     let one = serde_json::json!({ text.name.clone(): values[&text.name].clone() });
     assert_eq!(one[&text.name], "Round trip");
@@ -2027,8 +2034,13 @@ fn bytes_that_are_not_a_pdf_are_refused() {
     ))
     .unwrap_err();
     // `MalformedPdf`, as `PagesInserter.insert` refuses a source it can't
-    // open (`runPageInsertConformance`).
-    assert!(format!("{error:?}").contains("MalformedPdf"), "{error:?}");
+    // open (`runPageInsertConformance`): `invalid-input` with its words.
+    assert_eq!(kernel_code(&error), Some("invalid-input"), "{error:?}");
+    assert!(
+        matches!(&error, ViewerError::Kernel { detail, .. }
+            if detail == "pages.insert source PDF could not be opened"),
+        "{error:?}"
+    );
     assert_eq!(block_on(host.pages(doc.id)).unwrap().len(), 14);
 }
 
