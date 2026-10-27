@@ -860,7 +860,9 @@ impl Inner {
         let id = session.id();
         let published = self.store.core().documents.get(&id).cloned();
         let Some(meta) = published else {
-            if let Some(meta) = session.staged_meta.borrow_mut().as_mut() {
+            if let Some(meta) = session.staged_meta.borrow_mut().as_mut()
+                && meta.has_unsaved_changes != dirty
+            {
                 Rc::make_mut(meta).has_unsaved_changes = dirty;
             }
             return;

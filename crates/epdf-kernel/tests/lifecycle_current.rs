@@ -562,6 +562,48 @@ fn construction_mutations_are_dirty_and_only_unchanged_successful_download_clear
 }
 
 #[test]
+fn staged_meta_keeps_its_identity_when_dirty_does_not_change() {
+    rt::reset();
+    let document = doc(false);
+    document.local.set(true);
+    let seen: Rc<RefCell<Vec<Rc<epdf_kernel::types::DocumentMeta>>>> =
+        Rc::new(RefCell::new(Vec::new()));
+    let token = Token::<()>::new("writer");
+    let sink = seen.clone();
+    let plugin = define::<Value, CoreAction>("writer")
+        .document_scoped()
+        .create(&token, move |ctx| {
+            let handle = ctx.doc()?;
+            let ctx = ctx.clone();
+            let sink = sink.clone();
+            Ok((
+                (),
+                Some(Rc::new(move || {
+                    for op in ["one", "two"] {
+                        handle.call(
+                            "apply",
+                            None,
+                            vec![json!({"ops":[{"type":"metadata.set"}]}), json!({"opId": op})],
+                        );
+                        sink.borrow_mut().push(ctx.document_rc().expect("staged meta"));
+                    }
+                    Ok(())
+                })),
+            ))
+        })
+        .build();
+    let kernel =
+        Kernel::new(Rc::new(TestEngine(document.clone())), vec![plugin], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let seen = seen.borrow();
+    assert_eq!(seen.len(), 2);
+    assert!(seen[0].has_unsaved_changes, "the first local change stages dirty");
+    assert!(Rc::ptr_eq(&seen[0], &seen[1]), "a second dirty write leaves the staged Rc alone");
+    run(kernel.destroy()).unwrap();
+}
+
+#[test]
 fn download_flushes_report_failures_and_wraps_preserve_post_read_mutations() {
     rt::reset();
     let document = doc(false);
