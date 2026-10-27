@@ -339,13 +339,19 @@ impl Core {
         };
         let page = self.annotation_page_of(reference);
         let pon = page.get("objectNumber").and_then(Value::as_u64).map(|n| n as u32);
-        self.cancellable(
+        let call = self.cancellable(
             signal,
             doc.call(
                 "page.annotations.downloadResource",
                 pon,
                 vec![reference.clone(), json!(role)],
             ),
-        )
+        );
+        // `return` from the `async` function: its promise adopts the call's,
+        // a turn for the resolve-thenable job, then the reaction.
+        Promise::spawn(async move {
+            epdf_kernel::rt::tick().await;
+            call.reaction().await
+        })
     }
 }
