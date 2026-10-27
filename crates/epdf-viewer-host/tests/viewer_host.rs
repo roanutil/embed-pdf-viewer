@@ -192,7 +192,7 @@ fn kernel_code(error: &ViewerError) -> Option<&str> {
 }
 
 #[test]
-fn a_wrong_password_is_permission_denied_with_the_engine_code_in_the_detail() {
+fn a_wrong_password_is_permission_denied_with_the_engines_message() {
     let host = started();
     let locked =
         block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))

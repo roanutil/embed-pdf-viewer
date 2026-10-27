@@ -592,14 +592,14 @@ impl NativeDocumentState {
     /// session makes each annotation as `create` would, for every group its
     /// items name (an empty bundle still takes the authority to create).
     fn assert_may_import(&self, args: &[Value]) -> Result<(), Error> {
-        let present = |v: &&Value| !v.is_null() && !epdf_kernel::is_undefined(v);
+        // `options.attribution ?? 'restore'`, then `=== 'restore'`: only an
+        // absent or `null` attribution, or the string itself, restores; any
+        // other value stamps.
         let attribution = args
             .get(1)
             .and_then(|options| options.get("attribution"))
-            .filter(present)
-            .and_then(Value::as_str)
-            .unwrap_or("restore");
-        if attribution == "restore" {
+            .filter(|v| !v.is_null() && !epdf_kernel::is_undefined(v));
+        if attribution.is_none_or(|a| a.as_str() == Some("restore")) {
             self.assert_capability(DocCapability::DocAnnotateModify)?;
             return self.assert_capability(DocCapability::DocAnnotateImport);
         }

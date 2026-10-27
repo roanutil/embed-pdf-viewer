@@ -920,9 +920,22 @@ fn a_native_create_or_import_takes_the_handles_collab_and_group_checks() {
             ("page.annotations.create", vec![square(Value::Null)]),
             ("annotations.import", vec![bundle("legal"), Value::Null]),
             ("annotations.import", vec![json!({ "items": [] }), stamp.clone()]),
+            // `attribution ?? 'restore'` keeps a value that isn't a string,
+            // and it isn't `'restore'`, so the import stamps.
+            ("annotations.import", vec![json!({ "items": [] }), json!({ "attribution": 5 })]),
+            ("annotations.import", vec![json!({ "items": [] }), json!({ "attribution": null })]),
         ],
     );
-    assert_eq!(read_only, ["annotations:create", "doc.annotate.modify", "annotations:create"]);
+    assert_eq!(
+        read_only,
+        [
+            "annotations:create",
+            "doc.annotate.modify",
+            "annotations:create",
+            "annotations:create",
+            "doc.annotate.modify"
+        ]
+    );
     let creator = refusals_under(
         &["doc.open", "doc.annotate.read", "annotations:create:all"],
         vec![
