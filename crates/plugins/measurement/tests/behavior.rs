@@ -330,3 +330,28 @@ fn closing_mid_change_reports_each_page_and_refuses_the_queued_write() {
         .collect();
     assert_eq!(closed_updates, vec!["a state update after the instance closed (a#1); dropped"]);
 }
+
+/// `write/scale.ts:61`: `ctx.onSettle` makes a download wait for the scale
+/// changes on their way (`Promise.all` over each page queue's `idle()`), so
+/// the file has the scale in it.
+#[test]
+fn a_download_waits_for_a_scale_change_on_its_way() {
+    let rig = Rig::new(vec![
+        json!({ "path": "page.measure.setScale", "pon": 1, "defer": "set1" }),
+        json!({ "path": "download", "value": { "$bytes": "" } }),
+    ]);
+    let options = ScaleChangeOptions { recalculate: Some(false), ..ScaleChangeOptions::default() };
+    let change = rig.measurement.set_scale(PageRef::new(1), feet(), options);
+    rt::run_until_stalled();
+    assert_eq!(rig.calls_to("page.measure.setScale"), 1);
+    let saved = rig.kernel.documents().save(Some("a"), None);
+    rt::run_until_stalled();
+    assert_eq!(rig.calls_to("download"), 0, "the download waits for the scale change");
+    assert!(saved.peek().is_none());
+    let answer = json!({ "page": pr(1), "meta": { "affectedPages": [pr(1)], "cacheDelta": null, "opId": "set1", "undoable": true } });
+    assert!(rig.fake.settle("set1", Ok(answer)));
+    rt::run_until_stalled();
+    assert!(change.peek().is_some());
+    assert_eq!(rig.calls_to("download"), 1, "then downloads");
+    assert!(saved.peek().is_some());
+}
