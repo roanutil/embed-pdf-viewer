@@ -18,7 +18,7 @@
 4. Default consumer builds need no Rust, fork checkout, generated Swift, or local engine artifacts. Preserve `EMBEDPDF_LOCAL_ENGINE=1`, `EMBEDPDF_PREBUILT_ENGINE=local`, and the experimental bridge's existing opt-in behavior.
 5. Preserve PDFium thread confinement and the existing shared `darwin-*` runtime artifacts. New macOS static artifacts need separate identities and caches. No release upload is part of writing this plan.
 
-## Findings and evidence
+## Findings at planning time
 
 | Location | Current behavior | Required change |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ Relevant Apple references: [scroll visibility](https://developer.apple.com/docum
 
 Extend the existing static engine distribution. Keep standard shared macOS PDFium artifacts available to other consumers and introduce `darwin-static-arm64` / `darwin-static-x64` for this package. This costs a fork change and two native builds, but keeps SwiftPM consumption self-contained. Shipping a second dylib introduces embedding and runtime search-path obligations; supporting only the core product leaves `EmbedPDFUI` broken. Neither meets the proposed contract as directly.
 
-This document is a proposal for review. Product code and manifests remain unchanged.
+The user approved execution. Task checkboxes track implementation; the verification record below records what has been exercised.
 
 ## Review focus
 
@@ -80,25 +80,25 @@ This document is a proposal for review. Product code and manifests remain unchan
 
 **Interfaces:** Task 1's static staging root is consumed through `LIB_ROOT`. Outputs retain `EmbedPDFFFI.xcframework`, `Sources/EmbedPDFBindings`, test fixtures, and per-target archives under `platforms/apple/.build`.
 
-- [ ] Add an artifact test that reads an XCFramework path argument and asserts three platform entries: iOS arm64 device, iOS arm64 simulator, and macOS with arm64/x86_64. Run it on the current local FFI artifact; expect failure for missing macOS.
-- [ ] Add `x86_64-apple-darwin` to the pinned Rust targets. Extend slice records with `aarch64-apple-darwin:darwin-static-arm64` and `x86_64-apple-darwin:darwin-static-x64`. Set `EMBEDPDF_FORK_TARGET` per Cargo invocation so build-support resolves the static variant, and set `MACOSX_DEPLOYMENT_TARGET=14.0` / `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the corresponding builds. Preserve existing duplicate-symbol checks and the experimental feature flags.
-- [ ] Merge the two macOS archives with `lipo` into one universal library before `xcodebuild -create-xcframework`. Do not pass two independent libraries for the same macOS platform. Keep UniFFI generation from one existing iOS simulator archive and reuse its headers for every slice.
-- [ ] Run `LIB_ROOT=<static-and-ios-staging-root> bash platforms/apple/build-xcframework.sh`, then `python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFFFI.xcframework`. Expect success; inspect `lipo -archs` for `arm64 x86_64` on macOS and verify both macOS architectures contain PDFium and UniFFI symbols. Confirm the experimental bridge can still be assembled when explicitly requested.
-- [ ] Commit toolchain, builder, and layout test changes. Generated archives, bindings, and fixtures remain ignored.
+- [x] Add an artifact test that reads an XCFramework path argument and asserts three platform entries: iOS arm64 device, iOS arm64 simulator, and macOS with arm64/x86_64. Run it on the current local FFI artifact; expect failure for missing macOS.
+- [x] Add `x86_64-apple-darwin` to the pinned Rust targets. Extend slice records with `aarch64-apple-darwin:darwin-static-arm64` and `x86_64-apple-darwin:darwin-static-x64`. Set `EMBEDPDF_FORK_TARGET` per Cargo invocation so build-support resolves the static variant, and set `MACOSX_DEPLOYMENT_TARGET=14.0` / `IPHONEOS_DEPLOYMENT_TARGET=17.0` for the corresponding builds. Preserve existing duplicate-symbol checks and the experimental feature flags.
+- [x] Merge the two macOS archives with `lipo` into one universal library before `xcodebuild -create-xcframework`. Do not pass two independent libraries for the same macOS platform. Keep UniFFI generation from one existing iOS simulator archive and reuse its headers for every slice.
+- [x] Run `LIB_ROOT=<static-and-ios-staging-root> bash platforms/apple/build-xcframework.sh`, then `python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFFFI.xcframework`. Expect success; inspect `lipo -archs` for `arm64 x86_64` on macOS and verify both macOS architectures contain PDFium and UniFFI symbols. Confirm the experimental bridge can still be assembled when explicitly requested.
+- [x] Commit toolchain, builder, and layout test changes. Generated archives, bindings, and fixtures remain ignored.
 
 ### Task 3: Package a distributable macOS Swift engine
 
 **Estimate:** 3–5 hours, plus 20–60 minutes for packaging and consumer builds.
 
-**Files:** Modify `platforms/apple/package-engine-framework.sh`, `platforms/apple/EmbedPDF/Package.swift`, and `platforms/apple/tests/xcframework-layout.test.py`. Modify `apple-engine-hash.sh` if new shared recipe files are introduced.
+**Files:** Modify `platforms/apple/package-engine-framework.sh`, `platforms/apple/EmbedPDF/Package.swift`, and `platforms/apple/tests/xcframework-layout.test.py`. Add `platforms/apple/tests/package-engine-framework.test.py` for a real-toolchain packaging regression without PDFium. Modify `apple-engine-hash.sh` if new shared recipe files are introduced.
 
 **Interfaces:** Consume Task 2's per-architecture native archives and generated Swift. Produce the existing `EmbedPDFBindings.xcframework.zip` and extracted local-prebuilt directory, now including a universal macOS static framework.
 
-- [ ] Extend the artifact test to validate `EmbedPDFBindings`: macOS contains `arm64-apple-macos.swiftinterface` and `x86_64-apple-macos.swiftinterface`, iOS interfaces remain present, and public interfaces leak no private `*FFI` modules. Run against the existing package artifact if available; otherwise capture its absence as the initial failing check.
-- [ ] Declare `.macOS(.v14)` beside `.iOS(.v17)`. Supply macOS-only AppKit/Foundation linkage required by native PDFium in both source and prebuilt manifest paths, preserving existing C++/CoreFoundation/CoreGraphics settings and module names. Keep non-macOS framework requirements platform-conditioned.
-- [ ] Compile generated Swift with `arm64-apple-macosx14.0` and `x86_64-apple-macosx14.0`, using the macOS SDK. Replace iOS-only module filename derivation with explicit versionless triples per slice. Combine native and Swift archives per architecture, then merge macOS framework binaries and both interface sets into one framework. Use macOS-appropriate bundle layout/version metadata; retain iOS metadata at 17.0. Preserve interface sanitization, frozen declarations, zip checks, and checksum generation.
-- [ ] Run `bash platforms/apple/package-engine-framework.sh` and the extended layout test against its extracted output. Build and run a temporary external package depending only on the `EmbedPDF` product, opening/rendering/closing a fixture. Use `EMBEDPDF_PREBUILT_ENGINE=local swift build` and `swift run` on the host; cross-build with `--triple x86_64-apple-macosx14.0`. Inspect the linked executable with `otool -L`: no `libembedpdf.dylib`, fork staging paths, or builder paths. Build an iOS core consumer as a regression check.
-- [ ] Confirm packaging-script changes alter `bash platforms/apple/apple-engine-hash.sh`; include any new recipe files in that hash. Commit tracked changes. Keep the remote pin unchanged until a verified artifact is actually published in Task 5.
+- [x] Extend the artifact test to validate `EmbedPDFBindings`: macOS contains `arm64-apple-macos.swiftinterface` and `x86_64-apple-macos.swiftinterface`, iOS interfaces remain present, and public interfaces leak no private `*FFI` modules. Run against the existing package artifact if available; otherwise capture its absence as the initial failing check.
+- [x] Declare `.macOS(.v14)` beside `.iOS(.v17)`. Supply macOS-only AppKit/Foundation linkage required by native PDFium in both source and prebuilt manifest paths, preserving existing C++/CoreFoundation/CoreGraphics settings and module names. Keep non-macOS framework requirements platform-conditioned.
+- [x] Compile generated Swift with `arm64-apple-macosx14.0` and `x86_64-apple-macosx14.0`, using the macOS SDK. Replace iOS-only module filename derivation with explicit versionless triples per slice. Combine native and Swift archives per architecture, then merge macOS framework binaries and both interface sets into one framework. Use macOS-appropriate bundle layout/version metadata; retain iOS metadata at 17.0. Preserve interface sanitization, frozen declarations, zip checks, and checksum generation.
+- [x] Run `bash platforms/apple/package-engine-framework.sh` and the extended layout test against its extracted output. Build and run a temporary external package depending only on the `EmbedPDF` product, opening/rendering/closing a fixture. Use `EMBEDPDF_PREBUILT_ENGINE=local swift build` and `swift run` on the host; cross-build with `--triple x86_64-apple-macosx14.0`. Inspect the linked executable with `otool -L`: no `libembedpdf.dylib`, fork staging paths, or builder paths. Build an iOS core consumer as a regression check.
+- [x] Confirm packaging-script changes alter `bash platforms/apple/apple-engine-hash.sh`; include any new recipe files in that hash. Commit tracked changes. Keep the remote pin unchanged until a verified artifact is actually published in Task 5.
 
 ### Task 4: Make the UI product portable
 
@@ -108,11 +108,11 @@ This document is a proposal for review. Product code and manifests remain unchan
 
 **Interfaces:** Preserve `HapticFeedback.init()`, `selection()`, `impact(weight:)`, and `notify(kind:)`, satisfying the existing `PlatformFeedback` protocol on both OSes. Preserve `trackingScrollVisibility(_:)` and its 1% threshold.
 
-- [ ] Build the `EmbedPDFUI` product for macOS 14 with Task 3's local-prebuilt engine and record compiler errors. Add a smoke test constructing `HapticFeedback` and calling selection, all impact weights including nil, and each notification kind. Run it on macOS; expect the current unconditional UIKit import to prevent compilation.
-- [ ] Use conditional imports/implementations inside `HapticFeedback.swift`: UIKit on iOS, AppKit on macOS. Keep calls nonblocking and dispatch native delivery to the main actor. Map macOS selection to `.alignment` and impact/notification requests to `.generic` through `NSHapticFeedbackManager.defaultPerformer.perform(_:performanceTime:)` with `.default`; document that macOS cannot express the iOS intensity/outcome distinctions. Do not assert physical output in automated tests.
-- [ ] Change the visibility guard to `#available(iOS 18, macOS 15, *)`; retain appear/disappear behavior on iOS 17 and macOS 14. Audit every remaining UI API against the declared floors; address only demonstrated compilation blockers. Keep desktop wheel/keyboard interaction redesign outside this buildability change.
-- [ ] Run `EMBEDPDF_PREBUILT_ENGINE=local swift test --package-path platforms/apple/EmbedPDF` on macOS. Compile with explicit macOS 14 deployment for both architectures and build/test the package on an iOS simulator. Expect existing search, stage, rendering, signing, and JavaScriptCore tests plus the feedback smoke test to pass; inspect failures before adding further platform conditions.
-- [ ] Commit UI portability and its smoke test. Manually display a rendered page on macOS and confirm the adapter tolerates a machine without a haptic trackpad.
+- [x] Build the `EmbedPDFUI` product for macOS 14 with Task 3's local-prebuilt engine and record compiler errors. Add a smoke test constructing `HapticFeedback` and calling selection, all impact weights including nil, and each notification kind. Run it on macOS; expect the current unconditional UIKit import to prevent compilation.
+- [x] Use conditional imports/implementations inside `HapticFeedback.swift`: UIKit on iOS, AppKit on macOS. Keep calls nonblocking and dispatch native delivery to the main actor. Map macOS selection to `.alignment` and impact/notification requests to `.generic` through `NSHapticFeedbackManager.defaultPerformer.perform(_:performanceTime:)` with `.default`; document that macOS cannot express the iOS intensity/outcome distinctions. Do not assert physical output in automated tests.
+- [x] Change the visibility guard to `#available(iOS 18, macOS 15, *)`; retain appear/disappear behavior on iOS 17 and macOS 14. Audit every remaining UI API against the declared floors; address only demonstrated compilation blockers. Keep desktop wheel/keyboard interaction redesign outside this buildability change.
+- [x] Run `EMBEDPDF_PREBUILT_ENGINE=local swift test --package-path platforms/apple/EmbedPDF` on macOS. Compile with explicit macOS 14 deployment for both architectures and build/test the package on an iOS simulator. Expect existing search, stage, rendering, signing, and JavaScriptCore tests plus the feedback smoke test to pass; inspect failures before adding further platform conditions.
+- [x] Commit UI portability and its smoke test. Manually display a rendered page on macOS and confirm the adapter tolerates a machine without a haptic trackpad.
 
 ### Task 5: Verify delivery paths and ship the supported contract
 
@@ -139,3 +139,9 @@ Run Swift commands from `platforms/apple/EmbedPDF`. Obtain an available iPhone s
 | Downloaded binary: all engine overrides unset | Clean external consumer linking both products; package tests after fixture setup | Clean external consumer linking both products; simulator package tests after fixture setup |
 
 Also cross-build the macOS external consumer for x86_64, inspect both architectures' archive/interface metadata, and compile at macOS 14. Runtime coverage on Intel/macOS 14 is recorded separately. Success means both public products build on both supported OSes, the existing functional tests pass, and a fresh consumer resolves the newly published engine without local native tooling.
+
+## Execution verification record
+
+On 2026-10-27, source-mode tests passed on macOS and iOS: 331 core tests, 13 UI tests, and 8 bindings smoke tests per platform. Packaged-mode tests passed 331 core and 13 UI tests on each OS, and the generic iOS device build succeeded. A separate consumer rendered a PDF on arm64 and on x86_64 through Rosetta; both executables link only system frameworks/libraries. A rendered 612×792 page was inspected visually. The real packager also passes a regression using tiny compiled inputs and validates deployment metadata and every architecture's Swift interface.
+
+Native Intel hardware and macOS 14 runtime execution remain unverified locally; explicit macOS 14 compilation and Intel binary execution through Rosetta passed. CI includes native Intel coverage. Release and clean downloaded-consumer verification are the final execution steps.

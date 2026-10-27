@@ -1,18 +1,22 @@
 name: apple-swift
 
-# Manual only. The fork release pins no ios-* artifacts yet:
-# engine-runtime-build.json covers darwin, linux, linuxmusl, wasm32 and win32.
-# The file passed here must point at iOS artifacts built from the fork's
-# scripts (packages/engine/runtime/runtime-src), the same way the local
-# iOS build does. When ios-arm64 and ios-sim-arm64 land in
-# engine-runtime-build.json, switch this to pull_request with
-# paths: [crates/**, platforms/apple/**].
 on:
+  pull_request:
+    paths:
+      - 'platforms/apple/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'packages/engine/runtime/runtime-src'
+      - 'rust-toolchain.toml'
+      - 'perf-compare/scripts/build-arm.mjs'
+      - 'scripts/publish-engine-payload.mjs'
+      - '.github/workflows/apple-swift.yml'
   workflow_dispatch:
     inputs:
       runtime_build_file:
-        description: "URL of an engine-runtime-build JSON that pins ios-arm64 and ios-sim-arm64"
-        required: true
+        description: 'Optional runtime JSON pinning iOS and darwin-static arm64/x64 artifacts for source tests'
+        required: false
 
 permissions:
   contents: read
@@ -22,43 +26,83 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: macos-15
-    timeout-minutes: 60
+  downloaded:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            platform: macOS
+          - runner: macos-26-intel
+            platform: macOS
+          - runner: macos-26
+            platform: iOS
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '14.0'
     steps:
       - uses: actions/checkout@v4
-
-      # platforms/apple/EmbedPDF/Package.swift is swift-tools-version 6.2, which
-      # the Xcode 16.x that macos-15 selects by default cannot parse. Xcode 26
-      # ships Swift 6.2, so take the newest stable Xcode on the image.
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
+      - run: bash platforms/apple/copy-test-fixtures.sh
+      - name: Verify XCFramework packager with compiled fixtures
+        if: matrix.platform == 'macOS' && matrix.runner == 'macos-26'
+        run: python3 platforms/apple/tests/package-engine-framework.test.py
+      - name: Test downloaded engine on macOS
+        if: matrix.platform == 'macOS'
+        working-directory: platforms/apple/EmbedPDF
+        run: swift test
+      - name: Test downloaded engine on iOS
+        if: matrix.platform == 'iOS'
+        working-directory: platforms/apple/EmbedPDF
+        run: |
+          id=$(xcrun simctl list devices available iPhone -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          test -n "$id" && test "$id" != null
+          xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$id"
+          xcodebuild build -scheme EmbedPDF-Package -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
 
-      # rust-toolchain.toml pins the channel and lists aarch64-apple-ios and
-      # aarch64-apple-ios-sim, so rustup installs both for the pinned toolchain.
+  source-and-packaged:
+    if: github.event_name == 'workflow_dispatch' && inputs.runtime_build_file != ''
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
       - name: Install Rust
         run: rustup show active-toolchain || rustup toolchain install
-
       - uses: Swatinem/rust-cache@v2
-
-      - name: Fetch PDFium
+      - name: Fetch static PDFium inputs
         env:
           RUNTIME_BUILD_FILE: ${{ inputs.runtime_build_file }}
         run: |
           curl -fsSL "$RUNTIME_BUILD_FILE" -o engine-runtime-build.ci.json
-          for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
-            PDF_RUNTIME_BUILD_FILE=$PWD/engine-runtime-build.ci.json bash packages/engine/runtime/scripts/fetch-libpdfium.sh $t
+          for t in ios-arm64 ios-sim-arm64 darwin-static-arm64 darwin-static-x64; do
+            PDF_RUNTIME_BUILD_FILE=$PWD/engine-runtime-build.ci.json bash packages/engine/runtime/scripts/fetch-libpdfium.sh "$t"
           done
-      - run: cargo test -p epdf-ffi -p epdf-viewer-host
       - run: bash platforms/apple/build-xcframework.sh
-      # The simulator is looked up after Xcode is selected, so the job names
-      # whichever iPhone that Xcode ships rather than a model that may be gone.
+      - run: python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFFFI.xcframework
       - name: Pick an iPhone simulator
         run: |
-          id=$(xcrun simctl list devices available iPhone -j \
-            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          id=$(xcrun simctl list devices available iPhone -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
           test -n "$id" && test "$id" != null
           echo "SIM_ID=$id" >> "$GITHUB_ENV"
-      - working-directory: platforms/apple/EmbedPDF
-        run: xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID"
+      - name: Test source engine on both platforms
+        working-directory: platforms/apple/EmbedPDF
+        env:
+          EMBEDPDF_LOCAL_ENGINE: '1'
+        run: |
+          swift test --scratch-path /tmp/embedpdf-source-swift
+          xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID" -derivedDataPath /tmp/embedpdf-source-xcode
+      - run: bash platforms/apple/package-engine-framework.sh
+      - run: python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFBindings.xcframework
+      - name: Test packaged engine on both platforms
+        working-directory: platforms/apple/EmbedPDF
+        env:
+          EMBEDPDF_PREBUILT_ENGINE: local
+        run: |
+          swift test --scratch-path /tmp/embedpdf-packaged-swift
+          xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID" -derivedDataPath /tmp/embedpdf-packaged-xcode

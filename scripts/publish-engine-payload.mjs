@@ -4,7 +4,7 @@
 //
 // - the wasm32 payload with the Rust core linked in, as `runtime-payloads-<hash>`,
 //   where packages/engine/runtime/scripts/fetch-payload.sh looks for it;
-// - the iOS EmbedPDFBindings.xcframework.zip, as `apple-engine-<hash>`, which
+// - the iOS/macOS EmbedPDFBindings.xcframework.zip, as `apple-engine-<hash>`, which
 //   platforms/apple/EmbedPDF/Package.swift downloads.
 //
 // Each half has its own hash and is skipped when its release already exists,
@@ -273,12 +273,15 @@ function publishApple() {
   }
 
   console.log(`building ${tag} at ${head.slice(0, 9)}`);
-  const device = buildFork(repo, 'ios-arm64');
-  const simulator = buildFork(repo, 'ios-sim-arm64');
-  // Both targets stage under the same root, as <target>/lib/libembedpdf.a.
-  sh(
-    `LIB_ROOT=${JSON.stringify(path.dirname(device.staging))} bash platforms/apple/build-xcframework.sh`,
-  );
+  const forkTargets = ['ios-arm64', 'ios-sim-arm64', 'darwin-static-arm64', 'darwin-static-x64'];
+  const slices = forkTargets.map((target) => ({ target, ...buildFork(repo, target) }));
+  const device = slices[0];
+  // All targets stage under the same root, as <target>/lib/libembedpdf.a.
+  execFileSync('bash', [path.join(apple, 'build-xcframework.sh')], {
+    cwd: repo,
+    env: { ...process.env, LIB_ROOT: path.dirname(device.staging) },
+    stdio: 'inherit',
+  });
   console.log('  $ bash platforms/apple/package-engine-framework.sh');
   const packaged = execFileSync('bash', [path.join(apple, 'package-engine-framework.sh')], {
     cwd: repo,
@@ -300,25 +303,41 @@ function publishApple() {
 
   // The framework as published, which only this build exercises: a manifest
   // evaluated in a fresh derived data directory, so it reads the variable.
-  const derived = mkdtempSync(path.join(tmpdir(), 'apple-engine-dd-'));
-  const destination =
-    process.env.EMBEDPDF_TEST_DESTINATION ?? 'platform=iOS Simulator,name=iPhone 17';
-  sh(
-    `EMBEDPDF_PREBUILT_ENGINE=local xcodebuild test -scheme EmbedPDF-Package ` +
-      `-destination ${JSON.stringify(destination)} -derivedDataPath ${JSON.stringify(derived)}`,
-    path.join(apple, 'EmbedPDF'),
-  );
-  rmSync(derived, { recursive: true, force: true });
+  for (const destination of [
+    process.env.EMBEDPDF_TEST_DESTINATION ?? 'platform=iOS Simulator,name=iPhone 17',
+    process.env.EMBEDPDF_MACOS_TEST_DESTINATION ?? 'platform=macOS',
+  ]) {
+    const derived = mkdtempSync(path.join(tmpdir(), 'apple-engine-dd-'));
+    const env = { ...process.env, EMBEDPDF_PREBUILT_ENGINE: 'local' };
+    delete env.EMBEDPDF_LOCAL_ENGINE;
+    delete env.EMBEDPDF_EXPERIMENTAL_BRIDGE;
+    try {
+      execFileSync(
+        'xcodebuild',
+        [
+          'test',
+          '-scheme',
+          'EmbedPDF-Package',
+          '-destination',
+          destination,
+          '-derivedDataPath',
+          derived,
+        ],
+        { cwd: path.join(apple, 'EmbedPDF'), env, stdio: 'inherit' },
+      );
+    } finally {
+      rmSync(derived, { recursive: true, force: true });
+    }
+  }
 
   const xcode = run('xcodebuild', ['-version']).split('\n')[0];
   const notes = [
-    `iOS engine for platforms/apple/EmbedPDF/Package.swift: the uniffi Swift, Rust core and PDFium in one static framework.`,
+    `iOS and macOS engine for platforms/apple/EmbedPDF/Package.swift: the uniffi Swift, Rust core and PDFium in one static framework.`,
     '',
     `- Engine hash: \`${hash}\``,
     `- Viewer commit: \`${head}\``,
-    `- Fork commit (runtime-src): \`${device.sha}\`, built for ios-arm64 and ios-sim-arm64`,
-    `- ios-arm64 libembedpdf.a sha256: \`${device.libSha256}\``,
-    `- ios-sim-arm64 libembedpdf.a sha256: \`${simulator.libSha256}\``,
+    `- Fork commit (runtime-src): \`${device.sha}\``,
+    ...slices.map((slice) => `- ${slice.target} libembedpdf.a sha256: \`${slice.libSha256}\``),
     `- ${rustc}`,
     `- ${xcode}`,
     `- SwiftPM checksum (${ZIP} sha256): \`${checksum}\``,

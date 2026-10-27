@@ -1,12 +1,15 @@
 # Apple
 
-`multiplatform-plan.md` Phase 1 asks for an "Apple XCFramework in a Swift
-Package" plus a smoke app. This is that, built locally and published nowhere.
+The Swift package provides `EmbedPDF` and `EmbedPDFUI` for iOS 17 and macOS 14
+and later. Native engine builds cover arm64 iOS devices/simulators and macOS
+arm64/x86_64. The downloadable engine must include matching slices; an old
+iOS-only pin does not gain macOS support from the manifest declaration alone.
 
 ```bash
 bash platforms/apple/build-xcframework.sh
 cd platforms/apple/EmbedPDF
-xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFBindingsSmokeTests
+EMBEDPDF_LOCAL_ENGINE=1 swift test
+EMBEDPDF_LOCAL_ENGINE=1 xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 When two simulators share a name, `name=` is ambiguous. Pass the device's id
@@ -64,9 +67,10 @@ node scripts/publish-engine-payload.mjs --only apple
 It wants a clean, committed tree, since the release notes record `HEAD`. It first checks
 `APPLE_CRATES` in `apple-engine-hash.sh` against what `epdf-viewer-host` links according to
 `cargo metadata`, and stops on a mismatch. On exit 1 it builds the fork's `ios-arm64` and
-`ios-sim-arm64` slices (cached under `perf-compare/.work`, or `PERF_WORK_DIR`), then runs
+`ios-sim-arm64`, `darwin-static-arm64`, and `darwin-static-x64` slices (cached under
+`perf-compare/.work`, or `PERF_WORK_DIR`), then runs
 `build-xcframework.sh` and `package-engine-framework.sh`. Then it runs the `EmbedPDF-Package`
-tests against the packaged framework with `EMBEDPDF_PREBUILT_ENGINE=local`, so a broken framework
+tests on iOS and macOS against the packaged framework with `EMBEDPDF_PREBUILT_ENGINE=local`, so a broken framework
 never reaches a release. Last, it creates `apple-engine-<hash>` with the zip and its `.sha256`, and
 rewrites `engineRelease` and `engineChecksum`. On exit 2 it builds nothing and pins from the
 release's `.sha256`. `--dry-run` does everything except create the release and rewrite the
@@ -74,6 +78,28 @@ manifest.
 
 The test run uses the simulator named iPhone 17. When two share that name, set
 `EMBEDPDF_TEST_DESTINATION='platform=iOS Simulator,id=<UDID>'`.
+The macOS destination defaults to `platform=macOS`; override it with
+`EMBEDPDF_MACOS_TEST_DESTINATION`.
+
+The macOS static fork targets are separate from the shared `darwin-*` targets
+used by other runtimes. `build-xcframework.sh` needs all four static archives
+under `LIB_ROOT/<target>/lib/libembedpdf.a`; a shared macOS dylib cannot replace
+them. Both XCFrameworks contain one universal macOS slice, including both Swift
+interfaces in the packaged engine. The release builder handles fork staging.
+
+For prebuilt-engine tests, copy resources without rebuilding Rust:
+
+```sh
+bash platforms/apple/copy-test-fixtures.sh
+EMBEDPDF_PREBUILT_ENGINE=local swift test --package-path platforms/apple/EmbedPDF --scratch-path /tmp/embedpdf-packaged-tests
+```
+
+The `apple-swift` workflow runs downloaded-engine tests on iOS and both Mac
+architectures. Its optional manual source job needs a runtime JSON pinning the
+four static input artifacts; it checks source and extracted-prebuilt modes
+separately. Compile checks pin macOS 14, while runtime coverage depends on the
+available runner OS. The current local host cannot prove macOS 14 runtime
+behavior merely by compiling for its deployment target.
 
 Either way the script leaves `platforms/apple/EmbedPDF/Package.swift` modified for you to commit.
 That costs a window: on the commit the release was built from, `check-apple-engine.sh` exits 2.

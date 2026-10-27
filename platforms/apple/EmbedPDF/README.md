@@ -4,8 +4,25 @@ Use `EmbedPDF` to open, render, search, and edit PDF documents. Add `EmbedPDFUI`
 for SwiftUI reader surfaces and observable models. The application owns file
 access, document lifetime, surrounding controls, and persistence.
 
-The package declares iOS 17 or later and Swift tools 6.2. Use Xcode 27.1 or
-later with the pinned engine binary and an arm64 device or simulator.
+The package declares iOS 17 or later, macOS 14 or later, and Swift tools 6.2.
+The engine build supports arm64 iOS devices/simulators and native macOS on
+Apple silicon and Intel. Use Xcode 27.1 or later with the pinned engine binary.
+The existing iOS-only engine pin must be replaced by a verified iOS/macOS
+release before downloaded macOS builds work; contributors can build the local
+engine using the [Apple contributor notes](../README.md).
+
+To test a prepared local engine on macOS from this directory:
+
+```sh
+bash ../copy-test-fixtures.sh
+EMBEDPDF_LOCAL_ENGINE=1 swift test
+```
+
+After packaging the engine, use `EMBEDPDF_PREBUILT_ENGINE=local swift test`
+with a separate scratch directory. `EmbedPDFUI.HapticFeedback` uses AppKit on
+macOS; feedback depends on the input device and does not distinguish iOS impact
+weights or notification outcomes. The reader retains its existing drag,
+magnify, and double-tap gestures; desktop wheel/keyboard controls are host-owned.
 
 ## Read the documentation
 
