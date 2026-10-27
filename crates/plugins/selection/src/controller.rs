@@ -337,20 +337,19 @@ pub(crate) fn create_selection_controller(
     let this = api.clone();
     let connect: ConnectFn = Rc::new(move || {
         let cx = &this.0.cx;
-        // Registry changes (rotate, move, delete, insert) bump the revision.
-        let last_revision = Rc::new(Cell::new(this.revision()));
-        let watcher = Rc::downgrade(&this.0);
-        cx.listen(cx.subscribe(Rc::new(move || {
-            let Some(core) = watcher.upgrade() else { return Ok(()) };
-            let api = SelectionCapability(core);
-            let revision = api.revision();
-            if revision == last_revision.get() {
-                return Ok(());
-            }
-            last_revision.set(revision);
-            api.on_pages_updated();
-            Ok(())
-        })));
+        // Registry changes (rotate, move, delete, insert) bump the revision:
+        // `ctx.watch(() => ctx.document()?.revision ?? 0, onPagesUpdated)`.
+        let (reader, watcher) = (Rc::downgrade(&this.0), Rc::downgrade(&this.0));
+        cx.watch(
+            move || Ok(reader.upgrade().map(|core| SelectionCapability(core).revision())),
+            move |_, _| {
+                if let Some(core) = watcher.upgrade() {
+                    SelectionCapability(core).on_pages_updated();
+                }
+                Ok(())
+            },
+            |a, b| a == b,
+        )?;
         let doc = cx.doc()?;
         let listener = Rc::downgrade(&this.0);
         cx.listen(doc.subscribe(Rc::new(move |event: &Value| {

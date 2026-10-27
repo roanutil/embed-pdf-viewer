@@ -4,7 +4,6 @@
 //! state (a start language still to load), so a load asked for before
 //! `connect` ran is picked up here.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_kernel::Error;
@@ -96,17 +95,12 @@ impl Loaders {
             }
         };
         load_requested(&self.cx.state().loading)?;
-        let previous = RefCell::new(self.cx.state().loading.clone());
         let this = self.clone();
-        let unsubscribe = self.cx.subscribe(Rc::new(move || {
-            let next = this.cx.state().loading.clone();
-            if *previous.borrow() == next {
-                return Ok(());
-            }
-            *previous.borrow_mut() = next.clone();
-            load_requested(&next)
-        }));
-        self.cx.listen(unsubscribe);
+        self.cx.watch(
+            move || Ok(this.cx.state().loading.clone()),
+            move |next, _| load_requested(next),
+            |a, b| a == b,
+        )?;
         Ok(())
     }
 }

@@ -106,8 +106,6 @@ pub struct StoreState {
     kept: RefCell<IndexMap<String, (Vec<Id>, Vec<Id>)>>,
     /// The model the selection, draft, editing and hover events last saw.
     announced: RefCell<Option<Rc<Model>>>,
-    /// The view the forget watch last saw.
-    watched: RefCell<Option<crate::read::view::AnnotationView>>,
     watching_lost: Cell<bool>,
 }
 
@@ -118,7 +116,6 @@ impl StoreState {
             mine: Rc::default(),
             kept: RefCell::new(IndexMap::new()),
             announced: RefCell::new(None),
-            watched: RefCell::new(None),
             watching_lost: Cell::new(false),
         }
     }
@@ -202,14 +199,24 @@ impl Core {
             core.on_staged(change)
         });
         self.cx.listen(off);
-        // A record that left the view leaves the session: synchronous forget (H3).
-        *self.store.watched.borrow_mut() = Some(self.annotation_view());
-        let me = self.weak();
-        let off = self.cx.subscribe(Rc::new(move || {
-            let Some(core) = me.upgrade() else { return Ok(()) };
-            core.watch_view()
-        }));
-        self.cx.listen(off);
+        // A record that left the view leaves the session: synchronous forget
+        // (H3). `ctx.watch(view.view, ...)`, whose `Object.is` on the memoized
+        // view is the identity of its two members here.
+        let (reader, me) = (self.weak(), self.weak());
+        self.cx.watch(
+            move || Ok(reader.upgrade().map(|core| core.annotation_view())),
+            move |next, previous| match (me.upgrade(), next, previous) {
+                (Some(core), Some(next), Some(previous)) => core.forget_gone(next, previous),
+                _ => Ok(()),
+            },
+            |a, b| match (a, b) {
+                (Some(a), Some(b)) => {
+                    Rc::ptr_eq(&a.by_id, &b.by_id) && Rc::ptr_eq(&a.order, &b.order)
+                }
+                (None, None) => true,
+                _ => false,
+            },
+        )?;
         // The selection, draft, editing and hover events.
         *self.store.announced.borrow_mut() = Some(self.model());
         let me = self.weak();
@@ -221,21 +228,12 @@ impl Core {
         Ok(())
     }
 
-    fn watch_view(&self) -> Result<(), Error> {
-        let next = self.annotation_view();
-        let previous = {
-            let mut watched = self.store.watched.borrow_mut();
-            let previous = watched.clone();
-            if let Some(p) = &previous
-                && Rc::ptr_eq(&p.by_id, &next.by_id)
-                && Rc::ptr_eq(&p.order, &next.order)
-            {
-                return Ok(());
-            }
-            *watched = Some(next.clone());
-            previous
-        };
-        let Some(previous) = previous else { return Ok(()) };
+    /// `previous.order.filter((id) => !(id in next.byId))` leaves the session.
+    fn forget_gone(
+        &self,
+        next: &crate::read::view::AnnotationView,
+        previous: &crate::read::view::AnnotationView,
+    ) -> Result<(), Error> {
         let gone: Vec<Id> =
             previous.order.iter().filter(|id| !next.by_id.contains_key(*id)).cloned().collect();
         if !gone.is_empty() {

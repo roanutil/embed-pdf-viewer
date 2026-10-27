@@ -284,17 +284,14 @@ impl ViewManagerCapability {
         sync(&documents.get_order(), &[]);
         // `ctx.watch(() => documents.getOrder(), sync, sameIds)`: the
         // baseline is read after the initial sync, as `watch` reads it.
-        let previous = RefCell::new(documents.get_order());
-        let unsubscribe = self.0.cx.subscribe(Rc::new(move || {
-            let next = documents.get_order();
-            if *previous.borrow() == next {
-                return Ok(());
-            }
-            let prior = previous.replace(next.clone());
-            sync(&next, &prior);
-            Ok(())
-        }));
-        self.0.cx.listen(unsubscribe);
+        self.0.cx.watch(
+            move || Ok(documents.get_order()),
+            move |next, prior| {
+                sync(next, prior);
+                Ok(())
+            },
+            |a, b| a == b,
+        )?;
         Ok(())
     }
 }

@@ -286,19 +286,17 @@ impl MeasurementCapability {
             }
         };
         hydrate(core.registry.pages());
-        // `ctx.watch(() => ctx.document()?.pages, hydrate)`.
+        // `ctx.watch(() => ctx.document()?.pages, hydrate)`. The select
+        // can't fail, so neither can the watch.
         let registry = core.registry.clone();
-        let previous = std::cell::RefCell::new(registry.pages());
-        let watch = core.cx.subscribe(Rc::new(move || {
-            let next = registry.pages();
-            if same(&previous.borrow(), &next) {
-                return Ok(());
-            }
-            *previous.borrow_mut() = next.clone();
-            hydrate(next);
-            Ok(())
-        }));
-        core.cx.listen(watch);
+        let _ = core.cx.watch(
+            move || Ok(registry.pages()),
+            move |next, _| {
+                hydrate(next.clone());
+                Ok(())
+            },
+            same,
+        );
         // A new default scale reaches the pages without one: the annotation
         // plugin measures new drawings on them with it.
         let this = std::rc::Rc::downgrade(&self.0);
