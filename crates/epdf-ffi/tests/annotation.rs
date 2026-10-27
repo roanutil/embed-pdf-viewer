@@ -3,7 +3,8 @@
 //! `dto/PdfDestination.ts`, `dto/PdfLinkTarget.ts`).
 
 use epdf_ffi::{
-    AnnotationRef, PageDestination, PageLinkTarget, PageRef, PdfDestination, PdfLinkTarget,
+    AnnotationRef, CreationDraftAnchor, PageDestination, PageLinkTarget, PageRef, PdfDestination,
+    PdfLinkTarget,
 };
 use serde_json::json;
 
@@ -161,4 +162,27 @@ fn every_page_destination_kind_round_trips() {
         let json = destination.to_json();
         assert_eq!(PageDestination::from_json(&json).unwrap(), destination);
     }
+}
+
+/// A creation draft's anchor as the core reads it, with `count` points.
+fn draft_anchor(count: serde_json::Value) -> epdf_annotation_core::types::CreationDraftAnchor {
+    let object = json!({
+        "kind": "creation", "subtype": "polygon",
+        "page": { "kind": "objectNumber", "objectNumber": 7 },
+        "bounds": { "x": 0, "y": 0, "width": 10, "height": 10 },
+        "pointCount": count, "minPoints": 3, "canFinish": false,
+    });
+    epdf_annotation_core::types::CreationDraftAnchor::from_object(object.as_object().unwrap())
+        .unwrap()
+}
+
+#[test]
+fn a_draft_point_count_that_is_not_a_whole_u32_is_invalid_state() {
+    // As a page number is: refused, not clamped to 0 or `u32::MAX`.
+    for count in [json!(-1), json!(1.5), json!(4_294_967_296_u64), json!(1e300)] {
+        let error = CreationDraftAnchor::try_from(draft_anchor(count.clone())).unwrap_err();
+        assert_eq!(error.code(), Some("invalid-state"), "{count}");
+    }
+    let anchor = CreationDraftAnchor::try_from(draft_anchor(json!(2))).unwrap();
+    assert_eq!((anchor.point_count, anchor.min_points, anchor.closed), (2, 3, true));
 }

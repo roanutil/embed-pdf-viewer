@@ -444,14 +444,18 @@ pub struct CreationDraftAnchor {
 impl TryFrom<core::CreationDraftAnchor> for CreationDraftAnchor {
     type Error = Error;
 
+    /// A count that is not a whole `u32` (negative, fractional, past
+    /// `u32::MAX`, `NaN`) is refused as `invalid-state`, as a page number
+    /// is: the TypeScript hands the number on as it is, and a `u32` can't
+    /// hold it.
     fn try_from(a: core::CreationDraftAnchor) -> Result<Self, Error> {
-        let count = |n: f64| if n >= f64::from(u32::MAX) { u32::MAX } else { n.max(0.0) as u32 };
+        let count = |n: f64, what: &str| whole(Some(&Value::from(n)), what);
         Ok(CreationDraftAnchor {
             closed: a.subtype == "polygon",
             page: a.page.try_into()?,
             bounds: a.bounds.into(),
-            point_count: count(a.point_count),
-            min_points: count(a.min_points),
+            point_count: count(a.point_count, "a draft's point count")?,
+            min_points: count(a.min_points, "a draft's minimum point count")?,
             can_finish: a.can_finish,
         })
     }
