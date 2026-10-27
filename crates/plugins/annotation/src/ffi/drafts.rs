@@ -310,9 +310,11 @@ impl AnnotationDraftsHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| Ok(open(c)?.create_from_selection(&tool_id, clear != Some(false), None)),
+                // `{ annotations }`, the created records.
                 |made: Value| {
                     let refs: Value = made
-                        .as_array()
+                        .get("annotations")
+                        .and_then(Value::as_array)
                         .map(|list| list.iter().filter_map(|a| a.get("ref").cloned()).collect())
                         .unwrap_or_default();
                     refs_out(&refs).map_err(ViewerError::from)

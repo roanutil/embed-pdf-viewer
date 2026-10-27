@@ -518,3 +518,63 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
     assert!(block_on(annotations.list(None)).unwrap().is_empty());
     assert!(sent_ops(&thread).is_empty());
 }
+
+/// `createFromSelection` resolves `{ annotations }` (`write/markup.ts`
+/// `createFromSelection`); the handle answers the created annotations'
+/// refs. Over the engine of the `annotation-markup.json` vector
+/// `create-from-selection-anchors-at-the-end-glyph`, which has the text a
+/// selection needs, with that case's selection and tool: its tables answer
+/// the creates the case recorded.
+#[test]
+fn creating_from_the_selection_answers_the_created_refs() {
+    use epdf_ffi::KernelBound;
+    use epdf_plugin_selection::{SELECTION, SelectionRangeInput, selection_plugin};
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tooling/plugin-conformance/vectors/plugins/annotation-markup.json"
+    );
+    let vectors: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let engine = vectors["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "create-from-selection-anchors-at-the-end-glyph")
+        .expect("the vector case")["engine"]
+        .clone();
+    let thread = KernelThread::spawn(move |_| {
+        TestKernel::open(
+            vec![
+                interaction_plugin(InteractionConfig::default()),
+                selection_plugin(Default::default()),
+                annotation_plugin(None),
+            ],
+            TestSpec::new(engine),
+        )
+    })
+    .unwrap();
+    let post = thread.post();
+    let (annotations, selection) = block_on(thread.call(move |k| {
+        (
+            AnnotationHandle::new(k.capability(&ANNOTATION).unwrap(), post.clone()),
+            KernelBound::new(k.capability(&SELECTION).unwrap(), post),
+        )
+    }))
+    .unwrap();
+    block_on(annotations.refresh(token())).unwrap();
+    let page = epdf_kernel::geometry::PageRef::new(1);
+    block_on(selection.call_promise(move |s| Ok(s.ensure_loaded(page)), |_| ())).unwrap();
+    block_on(
+        selection.call(move |s| s.select(SelectionRangeInput::Span { page, start: 0, count: 3 })),
+    )
+    .unwrap();
+    let before = block_on(annotations.list(None)).unwrap().len();
+    let refs =
+        block_on(annotations.drafts().create_from_selection("replace-text".into(), None, token()))
+            .unwrap();
+    assert!(!refs.is_empty(), "no refs answered");
+    let listed = block_on(annotations.list(None)).unwrap();
+    assert!(listed.len() > before, "{listed:?}");
+    for made in &refs {
+        assert!(listed.iter().any(|a| &a.annotation_ref == made), "{made:?} is not listed");
+    }
+}
