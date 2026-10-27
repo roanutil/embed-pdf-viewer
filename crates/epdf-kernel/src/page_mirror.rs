@@ -40,7 +40,7 @@ pub struct PageMirrorSpec {
     pub changed: Option<Rc<dyn Fn(PageMirrorChange) -> Result<(), Error>>>,
 }
 #[derive(Clone)]
-struct Entry {
+pub(crate) struct Entry {
     page: Value,
     value: Option<Rc<Value>>,
     status: ResourceStatus,
@@ -49,7 +49,10 @@ struct Inner {
     spec: PageMirrorSpec,
     env: MirrorEnvironment,
     cell: SliceLease,
-    entries: RefCell<indexmap::IndexMap<String, Entry>>,
+    /// Shared with the store cell's [`PageMirrorCell`]: a write copies the
+    /// map (its pointers) only while a cell still holds it, as
+    /// `page-mirror.ts` spreads `{ ...entries, [key]: entry }`.
+    entries: RefCell<Rc<indexmap::IndexMap<String, Entry>>>,
     epochs: RefCell<HashMap<String, u64>>,
     running: RefCell<HashMap<String, Promise<()>>>,
     kept: RefCell<HashMap<String, HashMap<String, (PendingChange, u64)>>>,
@@ -60,6 +63,40 @@ struct Inner {
 }
 #[derive(Clone)]
 pub struct PageMirror(Rc<Inner>);
+thread_local! {
+    static VALUE_COPIES: Cell<usize> = const { Cell::new(0) };
+}
+/// How many page reads this thread has deep-copied into a page mirror's
+/// store cell. The guard (`tests/current_contracts.rs`) holds it at none
+/// across loads and at one per page per store dump.
+#[doc(hidden)]
+pub fn page_cell_value_copies() -> usize {
+    VALUE_COPIES.with(Cell::get)
+}
+fn count_value_copy() {
+    VALUE_COPIES.with(|n| n.set(n.get() + 1));
+}
+/// A page mirror's store cell: its entries, kept by pointer and serialised
+/// only when the store is dumped (`mirror::cell_json`), as
+/// `{ [key]: { page, status, value? } }`.
+pub struct PageMirrorCell(Rc<indexmap::IndexMap<String, Entry>>);
+impl PageMirrorCell {
+    pub(crate) fn to_json(&self) -> Value {
+        let cells: serde_json::Map<String, Value> = self
+            .0
+            .iter()
+            .map(|(k, e)| {
+                let mut value = json!({"page":e.page,"status":e.status.as_str()});
+                if let Some(v) = &e.value {
+                    count_value_copy();
+                    value["value"] = (**v).clone();
+                }
+                (k.clone(), value)
+            })
+            .collect();
+        Value::Object(cells)
+    }
+}
 fn key(page: &Value) -> String {
     format!("obj:{}", page["objectNumber"])
 }
@@ -70,7 +107,7 @@ impl PageMirror {
             spec,
             env: env.clone(),
             cell: cell.clone(),
-            entries: RefCell::new(indexmap::IndexMap::new()),
+            entries: RefCell::new(Rc::new(indexmap::IndexMap::new())),
             epochs: RefCell::new(HashMap::new()),
             running: RefCell::new(HashMap::new()),
             kept: RefCell::new(HashMap::new()),
@@ -103,27 +140,16 @@ impl PageMirror {
         if !self.live() {
             return;
         }
-        {
+        let entries = {
             let mut entries = self.0.entries.borrow_mut();
-            entries.shift_remove(&k);
+            let map = Rc::make_mut(&mut entries);
+            map.shift_remove(&k);
             if let Some(entry) = entry {
-                entries.insert(k, entry);
+                map.insert(k, entry);
             }
-        }
-        let snapshot: serde_json::Map<String, Value> = self
-            .0
-            .entries
-            .borrow()
-            .iter()
-            .map(|(k, e)| {
-                let mut value = json!({"page":e.page,"status":e.status.as_str()});
-                if let Some(v) = &e.value {
-                    value["value"] = (**v).clone();
-                }
-                (k.clone(), value)
-            })
-            .collect();
-        self.0.cell.write(Rc::new(Value::Object(snapshot)));
+            entries.clone()
+        };
+        self.0.cell.write(Rc::new(PageMirrorCell(entries)));
     }
     fn bump(&self, k: &str) -> u64 {
         let mut epochs = self.0.epochs.borrow_mut();

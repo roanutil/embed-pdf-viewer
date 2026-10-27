@@ -102,8 +102,14 @@ pub struct MirrorCell {
     to_json: Option<Rc<dyn Fn(&Value) -> Value>>,
 }
 /// The JSON of a cell leased through [`MirrorEnvironment::cell`]: a
-/// [`MirrorCell`], or the plain value a page mirror writes.
+/// [`MirrorCell`], a page mirror's [`PageMirrorCell`], or a plain value (a
+/// page mirror's initial `{}`).
+///
+/// [`PageMirrorCell`]: crate::page_mirror::PageMirrorCell
 pub fn cell_json(state: &dyn std::any::Any) -> Value {
+    if let Some(cell) = state.downcast_ref::<crate::page_mirror::PageMirrorCell>() {
+        return cell.to_json();
+    }
     if let Some(cell) = state.downcast_ref::<MirrorCell>() {
         let value = match &cell.to_json {
             Some(to_json) => to_json(&cell.value),
