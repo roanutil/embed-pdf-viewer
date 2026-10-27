@@ -2,13 +2,12 @@
 //! model (mark, then apply), typed records, one event enum. Every method
 //! hops to the kernel thread through `KernelBound`.
 //!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Since Task 13.23
+//! Compiled and tested since Task 13.33. Since Task 13.23
 //! the plugin carries annotation refs and apply results as the engine's
 //! records (JSON), so the records here decode them; a value that does not
 //! decode is an `invalid-state` error. Refs map onto `epdf_ffi::AnnotationRef`
 //! as the annotation handle maps them (`objectNumber`, `baseIndex` as
-//! `Index` with no revision); 13.33 may retype them against the renamed
-//! mirror. An apply result's pages are `applied` or `unchanged`: the
+//! `Index`). An apply result's pages are `applied` or `unchanged`: the
 //! engine's apply is all or nothing, so the retired `failed` and `skipped`
 //! statuses and the per-page error are gone.
 

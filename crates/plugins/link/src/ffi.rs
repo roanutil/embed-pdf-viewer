@@ -1,11 +1,11 @@
 //! The link plugin through uniffi: a page's links, what each targets, and
 //! activating them, as one handle and one event enum.
 //!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Since Task
+//! Compiled and tested since Task 13.33. Since Task
 //! 13.21 the plugin carries links, targets and destinations as the engine's
 //! records (JSON), as the annotation plugin does since 13.17, so they cross
-//! here as JSON strings (`target_json`, `destination_json`); 13.33 may type
-//! them against `epdf-ffi`'s renamed mirrors. A link's action tree stays in
+//! here as JSON strings (`target_json`, `destination_json`); a host decodes
+//! them with `epdf_ffi::PdfLinkTarget::from_json`. A link's action tree stays in
 //! Rust: Swift activates a link by page and id, and the handle looks it up
 //! again so the tree goes with it. A `goto` resolves to its page-space
 //! destination; the stage reveal happens on activation.

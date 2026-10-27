@@ -2,17 +2,15 @@
 //! JSON, one handle, one event enum. Every method hops to the kernel thread
 //! through `KernelBound`.
 //!
-//! Migrated by hand in Task 13.18 to the current plugin and not compiled:
-//! `epdf-ffi` does not build at this commit, and Task 13.33 brings it,
-//! `epdf-viewer-host` and Swift up together. Refs are written here in the
-//! engine's current spelling (`objectNumber`), since `epdf-ffi`'s own
-//! `to_json` still writes the retired one.
+//! Migrated by hand in Task 13.18 to the current plugin; compiled and
+//! tested since Task 13.33. Refs are written in the engine's current
+//! spelling (`objectNumber`).
 //!
 //! Not exported: the actions plugin's seams (`resetFormAction`,
 //! `resolveSubmitDataset`, `commitScriptFormEffects`, `notifyWidgetEvent`),
 //! which the plugin wires itself, and the painter reads (`getWidgetPainting`,
 //! `getTextEditorLayout`, `listShownWidgets`), which a native layer reaches
-//! once 13.33 types the scene. Removed with the TypeScript: `setText`,
+//! once a host types the scene. Removed with the TypeScript: `setText`,
 //! `setChecked`, `setChoice`, `resetAll`, `attachWidget` (now `add_widget`),
 //! `detachWidget` (now `remove_widget`), `exportData` and `importData` (now
 //! `export` and `import`, with bundles), `getFillItem`, and `flags.raw`.

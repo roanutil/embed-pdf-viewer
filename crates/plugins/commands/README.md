@@ -86,11 +86,9 @@ TypeScript.
 ## Native exposure
 
 `src/ffi.rs` and `tests/ffi.rs` are migrated by hand (fallible reads, `focus` on a panel,
-`match_stroke` with its refusal) and not compiled until Task 13.33 rebuilds `epdf-ffi`. The
-settings calls, `get_refusal`, per-command turning off, families, `requires` and `allowed`, an
-`execute` signal and the scoped view are not exposed yet. `crates/epdf-web/src/exports.rs:27-33`
-still documents a `ctx.core` marker on a command's context, which the harness no longer emits
-(the current `CommandContext` has no `core`); that is a Task 13.33 carry.
+`match_stroke` with its refusal), and compiled and tested since Task 13.33. The settings calls,
+`get_refusal`, per-command turning off, families, `requires` and `allowed`, an `execute` signal and
+the scoped view are not exposed yet.
 
 ## Coverage and mutation testing
 

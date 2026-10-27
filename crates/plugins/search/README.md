@@ -61,9 +61,8 @@ For redaction (Task 13.23), the viewer host, `epdf-manual-bridge` and `epdf-web`
 | `go_to_hit(index: isize, ..)`, hits as `SearchHit` | `go_to_hit(impl Into<HitTarget>, ..)`, hits as `Rc<SearchHit>` |
 | ffi `start_search(.., start_page)`, `start_find_all(.., mode)` | `start_search(.., from)`, `start_find_all(.., snippets)` |
 
-`src/ffi.rs` and `tests/ffi.rs` are migrated by hand and not compiled until `epdf-ffi` builds again
-(13.33). They map the named quad corners onto `epdf_ffi::TextQuad`, drop `PluginErrorInfo`'s
-`permission`, and bridge no settings yet.
+`src/ffi.rs` and `tests/ffi.rs` are migrated by hand, and compiled and tested since Task 13.33. Quads
+cross as `epdf_ffi::Quad` with the named corners; no settings are bridged yet.
 
 ## Harness shim
 

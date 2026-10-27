@@ -1,6 +1,6 @@
 //! The page-edit plugin through uniffi, modelled on
 //! `packages/plugin/page-edit`'s contract. Migrated by hand in Task 13.19
-//! and not compiled until `epdf-ffi` builds again (13.33).
+//! and compiled and tested since Task 13.33.
 //!
 //! The TypeScript verbs resolve nothing (an insert resolves its new pages):
 //! the confirmed layout reaches the document's page list before the verb's
@@ -11,7 +11,7 @@
 //! A token cancelled before the job runs skips the edit with
 //! `operation-cancelled`; once the job has run, the edit is on its way to the
 //! engine and lands. The plugin's own `signal` option is not wired to the
-//! token yet (13.33).
+//! token yet.
 
 use std::sync::Arc;
 
@@ -254,7 +254,12 @@ impl PageEditHandle {
 
     /// Make these pages the selection; an empty list clears it.
     pub async fn select(&self, pages: Vec<PageRef>) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.select(&refs(pages)))).await
+        self.cap
+            .call(move |c| {
+                open(c)?.select(&refs(pages));
+                Ok(())
+            })
+            .await
     }
 
     /// Turn each page from its own rotation, the one it has once the edits

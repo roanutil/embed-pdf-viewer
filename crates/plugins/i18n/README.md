@@ -84,5 +84,4 @@ The harness replays every member a vector calls. `getSettings`, `onSettingsChang
 `getTranslator` answer with functions the replay does not print, so the harness refuses them by
 name; `tests/behavior.rs` covers them through the typed API.
 
-`src/ffi.rs` and `tests/ffi.rs` are migrated by hand and not compiled until Task 13.33 rebuilds
-`epdf-ffi`.
+`src/ffi.rs` and `tests/ffi.rs` are migrated by hand, and compiled and tested since Task 13.33.

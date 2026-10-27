@@ -1,6 +1,5 @@
 #![cfg(feature = "uniffi")]
-//! Migrated by hand to the 13.28 port; not compiled until Task 13.33 brings
-//! `epdf-ffi` back.
+//! The shell handle through uniffi, migrated by hand to the 13.28 port.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};

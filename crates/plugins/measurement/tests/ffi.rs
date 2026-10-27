@@ -1,8 +1,7 @@
 #![cfg(feature = "uniffi")]
 //! The uniffi handle over a test kernel. Migrated by hand in Task 13.22 to
 //! the current plugin (page-space viewports from `page.measure.listViewports`,
-//! `rectilinear` measures, the annotation plugin's 13.17 records); not
-//! compiled until `epdf-ffi` builds again (Task 13.33).
+//! `rectilinear` measures, the annotation plugin's 13.17 records).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};

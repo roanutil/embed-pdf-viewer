@@ -1,7 +1,6 @@
 #![cfg(feature = "uniffi")]
 //! The uniffi handle over the current page-edit contract. Migrated by hand
-//! in Task 13.19 against the change-queue wire (`apply` with page ops); not
-//! compiled until `epdf-ffi` builds again (13.33).
+//! in Task 13.19 against the change-queue wire (`apply` with page ops).
 
 use std::cell::RefCell;
 use std::rc::Rc;

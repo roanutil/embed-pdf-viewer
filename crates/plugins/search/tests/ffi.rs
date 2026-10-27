@@ -1,6 +1,6 @@
 #![cfg(feature = "uniffi")]
-//! The search handle through uniffi. Not compiled until `epdf-ffi` builds
-//! again (Task 13.33); its assertions follow the current TypeScript.
+//! The search handle through uniffi; its assertions follow the current
+//! TypeScript.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};

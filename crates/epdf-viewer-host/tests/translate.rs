@@ -202,7 +202,8 @@ fn a_download_defaults_to_an_incremental_save() {
 fn an_extract_resolves_its_flatten_against_the_handles_rights() {
     // `resolvePageExtract` (`dto/PageExtract.ts:59-89`).
     let pages = json!([{ "kind": "objectNumber", "objectNumber": 3 }]);
-    let call = translate("d", "pages.extract", None, &[pages.clone()], 1, &client()).unwrap();
+    let call =
+        translate("d", "pages.extract", None, std::slice::from_ref(&pages), 1, &client()).unwrap();
     assert!(call.request.get("flatten").is_none());
     let error = translate(
         "d",
@@ -245,7 +246,9 @@ fn an_extract_resolves_its_flatten_against_the_handles_rights() {
         json!({ "usage": "display", "includeAnnotations": false, "includeFormFields": false })
     );
     let error =
-        translate("d", "pages.extract", None, &[pages.clone()], 1, &only_flattened).err().unwrap();
+        translate("d", "pages.extract", None, std::slice::from_ref(&pages), 1, &only_flattened)
+            .err()
+            .unwrap();
     assert_eq!(error.member("required"), Some(&json!("doc.download")));
     let error = translate(
         "d",
@@ -839,5 +842,44 @@ fn an_annotation_listing_of_the_kinds_fixture_names_its_refs() {
     for annotation in annotations {
         let kind = annotation["ref"]["kind"].as_str().unwrap();
         assert!(matches!(kind, "objectNumber" | "baseIndex"), "{annotation}");
+    }
+}
+
+#[test]
+fn appearance_pictures_come_back_as_raw_pixels() {
+    // `renderAppearanceRasters` (`document/appearanceBatch.ts`): one raster
+    // per appearance of the family on the page.
+    let mut host = host_with(ANNOTATION_KINDS);
+    let page = first_page(&mut host);
+    let options = json!({ "viewport": { "kind": "scale", "scale": 1 }, "modes": ["normal"] });
+    let call = translate(
+        "d",
+        "page.annotations.renderAppearances",
+        Some(page),
+        std::slice::from_ref(&options),
+        1,
+        &client(),
+    )
+    .unwrap();
+    assert_eq!(call.request["family"], "annotations");
+    let forms = translate(
+        "d",
+        "page.forms.renderAppearances",
+        Some(page),
+        std::slice::from_ref(&options),
+        1,
+        &client(),
+    )
+    .unwrap();
+    assert_eq!(forms.request["family"], "widgets");
+    let result =
+        run(&mut host, "page.annotations.renderAppearances", Some(page), &[options]).unwrap().value;
+    let appearances = result["appearances"].as_array().expect("appearances");
+    assert!(!appearances.is_empty(), "{result}");
+    for appearance in appearances {
+        assert!(appearance["ref"].is_object(), "{appearance}");
+        assert_eq!(appearance["image"]["source"]["kind"], "pixels", "{appearance}");
+        let id = appearance["image"]["$host"].as_u64().unwrap();
+        assert!(HostTable::take(id).is_some());
     }
 }

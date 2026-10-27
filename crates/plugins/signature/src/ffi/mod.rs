@@ -3,9 +3,8 @@
 //! hops to the kernel thread through `KernelBound`.
 //!
 //! Migrated by hand to the Task 13.25 plugin (settings, per-field authority,
-//! `cancelPending`, verbs taking `OperationOptions`) and not compiled until
-//! `epdf-ffi` builds: Task 13.33 brings it, `epdf-viewer-host` and Swift up
-//! together.
+//! `cancelPending`, verbs taking `OperationOptions`); compiled and tested
+//! since Task 13.33.
 
 pub mod ports;
 pub mod records;

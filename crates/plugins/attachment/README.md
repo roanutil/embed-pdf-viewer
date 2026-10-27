@@ -54,4 +54,5 @@ None is reached by a vector.
   not revealed, where the TypeScript hands `record.ref.page` to the stage as it is. A record always
   names its page.
 
-The crate has no `uniffi` feature; a host binding is 13.33's.
+The crate has no `uniffi` feature. `epdf-viewer-host` installs it (`ViewerConfig.attachment`) and
+`epdf-web` builds it by factory; no foreign handle exposes it yet.

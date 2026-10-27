@@ -6,7 +6,7 @@
 //! and decode into typed records, and a value that does not decode is
 //! `invalid-state`.
 //!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Migrated by
+//! Compiled and tested since Task 13.33. Migrated by
 //! hand in Task 13.24 to the current verbs: the writes resolve the library
 //! or asset they made, so the handle answers its id as before; `arm_asset`
 //! and the placements take the document in their options; a placement is
@@ -14,7 +14,7 @@
 //! annotation, whose ref the handle answers; persistence has no debounce
 //! (one store line per library, `persistence.ts`); `ArmChanged` carries the
 //! armed asset. With no asset engine configured, the kernel's engine is
-//! used when `Engine::is_local` is true (the native host's override, 13.33).
+//! used when `Engine::is_local` is true, as the native host's is.
 
 use std::rc::Rc;
 use std::sync::Arc;

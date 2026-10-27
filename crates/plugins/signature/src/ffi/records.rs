@@ -3,10 +3,9 @@
 //! them as JSON; each record here decodes from that JSON through a private
 //! serde twin, and a value that doesn't decode is `invalid-state`.
 //!
-//! Migrated by hand to the Task 13.25 plugin and not compiled until
-//! `epdf-ffi` builds (Task 13.33): refs are written in the engine's current
-//! spelling (`objectNumber`), since `epdf-ffi`'s `FormFieldRef::to_json`
-//! still writes the retired `fieldObjectNumber`.
+//! Migrated by hand to the Task 13.25 plugin; compiled and tested since
+//! Task 13.33. Refs are written in the engine's current spelling
+//! (`objectNumber`).
 
 use epdf_ffi::{AnnotationRef, FormFieldRef, PageRef};
 use epdf_kernel::Error;

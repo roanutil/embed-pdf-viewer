@@ -127,10 +127,8 @@ from 461,992 to 34,554 bytes; one that also loads a program went from 467,202 to
 
 ## The ffi
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled: `epdf-ffi` does not build
-at this commit, and Task 13.33 brings it, `epdf-viewer-host` and Swift up together. Refs are written
-there in the engine's current spelling, since `epdf-ffi`'s `to_json` still writes the retired
-`fieldObjectNumber`. The handle follows the current verbs: `set_text`, `set_checked`, `set_choice`,
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task
+13.33. Refs are written there in the engine's current spelling. The handle follows the current verbs: `set_text`, `set_checked`, `set_choice`,
 `reset_all`, `attach_widget`, `detach_widget`, `export_data` and `import_data` are gone, and
 `add_widget`, `remove_widget`, `export` and `import` (bundles as JSON) replace them.
 

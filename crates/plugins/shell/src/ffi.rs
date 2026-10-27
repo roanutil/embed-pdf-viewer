@@ -7,8 +7,7 @@
 //! with `invalid-input` before the plugin sees it.
 //!
 //! Migrated by hand to the 13.28 port (named transitions, `focusRequest`,
-//! per-kind surface events); it is not compiled until Task 13.33 brings
-//! `epdf-ffi` back.
+//! per-kind surface events); compiled and tested since Task 13.33.
 
 use std::sync::Arc;
 
@@ -29,7 +28,7 @@ use crate::record::JsRecord;
 /// A surface's open flag, exclusivity tag, props and focus request. A name
 /// the plugin finds on `Object.prototype` (`toString`) has no flag there;
 /// it reads as closed here. Not `Eq`, because `focus_request` is an `f64`
-/// (the JavaScript number). 13.33: check no Swift caller needs `Hashable`.
+/// (the JavaScript number).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ShellSurface {
     pub id: String,

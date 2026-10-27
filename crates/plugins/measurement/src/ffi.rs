@@ -2,14 +2,13 @@
 //! event enum. Every method hops to the kernel thread through
 //! `KernelBound`.
 //!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Since Task 13.22
+//! Compiled and tested since Task 13.33. Since Task 13.22
 //! the plugin carries measures, viewports, readouts and re-measurement
 //! reports as the engine's records (JSON), so the records here decode them.
 //! A value that does not decode is an `invalid-state` error: the record and
 //! the engine disagree, and a default would hide it. Annotation refs cross
 //! as JSON strings (`annotation_json`), as the link and annotation handles
-//! carry them since 13.17; 13.33 may type them against `epdf-ffi`'s renamed
-//! mirror.
+//! carry them since 13.17.
 
 use std::rc::Rc;
 use std::sync::Arc;

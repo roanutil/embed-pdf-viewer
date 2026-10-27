@@ -25,8 +25,8 @@ read at open, the one queued reread, the exact `previous`, `changedKeys` and `or
 custom keys removed, added and set to `''`, key order alone changing no key, the local refusals,
 and the turns each verb settles on, measured on the TypeScript with `tsx`.
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand in Task 13.26 and are not compiled:
-`epdf-ffi` builds again with Task 13.33, which owns running them.
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand in Task 13.26, and are compiled and tested
+since Task 13.33.
 
 ## Rust-only divergences
 

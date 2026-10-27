@@ -1,8 +1,7 @@
 #![cfg(feature = "uniffi")]
 //! The redaction handle through uniffi.
 //!
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Migrated by hand
-//! in Task 13.23 to the current engine wire: records and refs in page space
+//! Migrated by hand in Task 13.23 to the current engine wire: records and refs in page space
 //! (`{kind, objectNumber}` page refs), annotation writes through `doc.apply`
 //! (`{ops}` plus `{opId}`, answered with `{items}` and the confirmed
 //! events), `redaction.apply` scopes `{pages}` or `{annotations}`, and

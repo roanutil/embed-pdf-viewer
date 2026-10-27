@@ -1,9 +1,7 @@
 #![cfg(feature = "uniffi")]
 
 //! The uniffi handle over the current plugin. Migrated by hand in Task 13.18
-//! with `src/ffi.rs`; not compiled until `epdf-ffi` builds (Task 13.33).
-//! Task 13.33: compile and run these, the five restored in 13.18's fix
-//! round among them (refresh and status, the widget projection, a closed
+//! with `src/ffi.rs`, including the five restored in 13.18's fix round (refresh and status, the widget projection, a closed
 //! document's refusal, `on_end` at close, a cancelled write).
 
 use std::cell::RefCell;

@@ -38,6 +38,7 @@ use crate::translate::{self, Client, Decode, WireCall};
 type Pending = (u64, HashMap<u64, (String, Decode, Resolver<Value>)>);
 type Listener = Rc<dyn Fn(&Value)>;
 type Listeners = (u64, HashMap<String, Vec<(u64, Listener)>>);
+type LostListener = Rc<dyn Fn(&ObjectNumbersLost)>;
 
 thread_local! {
     static PENDING: RefCell<Pending> = RefCell::new((0, HashMap::new()));
@@ -363,7 +364,7 @@ struct NativeDocument {
 struct ObjectNumberPool {
     numbers: RefCell<Vec<u32>>,
     refilling: Cell<bool>,
-    lost: RefCell<Vec<(u64, Rc<dyn Fn(&ObjectNumbersLost)>)>>,
+    lost: RefCell<Vec<(u64, LostListener)>>,
     next_listener: Cell<u64>,
 }
 
@@ -575,7 +576,7 @@ impl NativeDocument {
             let result = applied.await?;
             let item = result.get("items").and_then(|items| items.get(0)).cloned();
             // A fresh op is never skipped: only an undo leaves one alone.
-            let Some(item) = item.filter(|item| item["type"] == Value::from(ty.as_str())) else {
+            let Some(item) = item.filter(|item| item["type"].as_str() == Some(ty.as_str())) else {
                 return Err(Error::engine("Unknown", format!("{ty} wrote nothing")));
             };
             let mut answer = serde_json::Map::new();

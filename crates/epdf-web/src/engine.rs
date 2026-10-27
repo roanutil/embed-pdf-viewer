@@ -316,6 +316,14 @@ impl DocumentHandle for JsDocumentHandle {
     fn last_server_id(&self) -> Option<String> {
         self.bridge.last_server_id(&self.id).ok().flatten()
     }
+
+    /// `doc.setWorkingSet(view, pages)`, through the bridge's `call`: a
+    /// hint nobody waits on. A refusal is observed rather than left
+    /// unhandled.
+    fn set_working_set(&self, view: &str, pages: Value) {
+        let args = args_json(&[Value::String(view.to_string()), pages]);
+        drop(engine_call(self.bridge.call(&self.id, "setWorkingSet", None, &args)));
+    }
 }
 
 /// `doc.security`, read live through the bridge.

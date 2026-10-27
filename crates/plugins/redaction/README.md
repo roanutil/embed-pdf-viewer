@@ -66,9 +66,8 @@ For the viewer host and `epdf-web` (Task 13.33).
 | ffi `RedactionPageStatus::{Failed, Skipped}`, `RedactionPageResult.error` | gone: the engine's apply is all or nothing (`applied` or `unchanged`) |
 | ffi verbs resolving refs | resolving `RedactionMark`s |
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds
-(13.33). Known call sites: `epdf-viewer-host/src/session.rs:114`, `src/api.rs:76`, `src/lib.rs:488`
-and `tests/viewer_host.rs:1342-1397`, `2554`.
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33,
+with the viewer host's call sites.
 
 ## Where the port differs
 
@@ -90,11 +89,12 @@ turn, since the Rust signature takes a slice. The function table's `markOf` refu
 that is not a whole number with a `TypeError`, where the TypeScript passes any number through; the
 typed mark holds an `i64`.
 
-For 13.33 to decide: the ffi handle's `last_result` decodes the stored result each call, so after a
-remote event that names a page status the engine no longer writes (`failed`, `skipped`), every
-`last_result()` refuses `invalid-state` until the next apply replaces it
-(`a_retired_failed_status_is_refused_as_invalid_state` in `tests/ffi.rs`). Decoding once at the
-event, or dropping the undecodable result, are the alternatives.
+The ffi handle's `last_result` decodes the stored result each call, so after a remote event that
+names a page status the engine no longer writes (`failed`, `skipped`), every `last_result()` refuses
+`invalid-state` until the next apply replaces it
+(`a_retired_failed_status_is_refused_as_invalid_state` in `tests/ffi.rs`). Task 13.33 keeps that:
+no current engine writes those statuses, so only a malformed event reaches the branch, and a refusal
+says so where decoding once or dropping the result would hide it.
 
 The kernel's serial queue has no `signal` option and no `idle()`. `write/apply.rs` keeps both over
 it, as the form and measurement plugins do; Task 14 carries moving them into the kernel.

@@ -74,6 +74,5 @@ For viewer-host and the Swift package (13.33).
 The handle keeps its layout records by reading the page list when each verb settles.
 `PageEditPlacement::Index` is gone and `Start` is new. The ffi's `move_pages_to_end` is gone: `End`
 is the engine's own `'end'`, so the index the engine used to refuse is no longer sent.
-`epdf_ffi::page::decode_pages` still reads the retired `pageObjectNumber` ref, and the plugin's
-`signal` is not wired to the `CancelToken` yet; both belong to 13.33.
-`crates/epdf-viewer-host/tests/viewer_host.rs:1844` uses `PageEditPlacement::Index`.
+`epdf_ffi::page::decode_pages` reads the current `objectNumber` ref (Task 13.33). The plugin's
+`signal` is not wired to the `CancelToken` yet.

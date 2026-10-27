@@ -1,9 +1,8 @@
 //! The metadata plugin through uniffi: typed records, one handle, one event
 //! enum. Every method hops to the kernel thread through `KernelBound`.
 //!
-//! Migrated by hand to the current plugin (Task 13.26) and not compiled:
-//! `epdf-ffi` builds again with Task 13.33, which owns compiling and testing
-//! this file and `tests/ffi.rs`.
+//! Migrated by hand to the current plugin (Task 13.26); compiled and tested
+//! (`tests/ffi.rs`) since Task 13.33.
 //!
 //! The plugin keeps the engine's metadata as JSON, so the records here
 //! mirror the engine's wire shape (`epdf-engine`'s `DocumentMetadata`,
@@ -176,6 +175,8 @@ pub struct CustomMetadataUpdatedEvent {
     pub changed_keys: Vec<String>,
 }
 
+// One event per call; boxing a variant would change the foreign enum.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Enum)]
 pub enum MetadataEvent {
     Updated { event: MetadataUpdatedEvent },

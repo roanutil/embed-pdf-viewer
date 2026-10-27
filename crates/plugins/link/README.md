@@ -54,10 +54,8 @@ For the viewer host and `epdf-web` (Task 13.33).
 | ffi `PdfLinkTarget`, `PdfDestination` members, `LinkHandle::with_report` | `target_json`, `destination_json`; activation no longer fails, so there is no report |
 | ffi `all_links` skipping a link with no page | an `invalid-input` error |
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds
-(Task 13.33). The viewer host's call sites move with them: `crates/epdf-viewer-host/src/session.rs:106`
-(`link_plugin(Default::default())`) and `crates/epdf-viewer-host/src/lib.rs:452`
-(`LinkHandle::with_report`).
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33,
+when the viewer host moved to `link_plugin()` and `LinkHandle::new`.
 
 ## Where the port differs
 

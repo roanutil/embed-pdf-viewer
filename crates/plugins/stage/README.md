@@ -117,7 +117,7 @@ The working-set watch (`working-set.ts`) runs as in the TypeScript, because read
 on every store change builds the scene when it does there. It tells the engine through
 `DocumentHandle::set_working_set(view, pages)`, the pages as JSON, once per change of the set's key.
 The kernel's default is a no-op, and so is the conformance fake's, as the TypeScript fake's is
-(`fake-engine.ts:625`); forwarding it to the local engine is the host's (Task 13.33).
+(`fake-engine.ts:625`); the native and web handles forward it to the engine (Task 13.33).
 `the_working_set_is_told_at_connect_and_on_each_change` pins the calls with a recording handle.
 
 A page transform whose view scale squares to zero (a huge device ratio over a tiny unbounded zoom)

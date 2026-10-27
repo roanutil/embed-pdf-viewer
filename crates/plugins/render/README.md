@@ -122,7 +122,8 @@ for, as `ctx.doc.with({priority, view})` does: `DocumentHandle::call_with` with 
 (Ruling13.16). The host door passes `RenderSourceOptions.view`, tiles pass their view, and the
 public door names none. The facts change queue order, never an answer, so the vectors' fake ignores
 them as the TypeScript fake's `with` does; `every_render_carries_high_priority_and_its_view` checks
-they reach the handle. Forwarding them in the web and native handles is Task 13.33's.
+they reach the handle. The native handle answers them as `call` (its worker runs calls in order),
+and the web handle can't forward them until the JS bridge has `with` (Task 13.33's proposal).
 
 Not ported: inputs outside the TypeScript's types, which crash it. A handle that isn't an object, an
 invalidate scope other than `content`, `annotations` or `fields`, and a render policy this port
@@ -182,12 +183,12 @@ For annotation (13.17), form (13.18), page-edit (13.19) and viewer-host and epdf
 Known call sites: `crates/epdf-viewer-host/src/session.rs` builds `RenderHost { release_image,
 ..RenderHost::default() }`, which still compiles, but its comment about the default 16 ms frame
 timer (`session.rs:68-70`) is stale now that frames are the kernel clock's. Its
-`render_plugin_with_host(render.into(), host)` keeps its shape and waits on the ffi build (13.33).
+`render_plugin_with_host(render.into(), host)` keeps its shape.
 `crates/epdf-viewer-host/src/lib.rs` and `api.rs` use the ffi handle and config, `crates/epdf-manual-bridge/src/render.rs` (`start_render_page`), and
 `crates/epdf-web/src/adapters.rs` (the harness, whose live `host` drops `requestFrame`).
 `crates/plugins/annotation/src/read/render.rs` uses only `policy`, which is unchanged. Appearance
-paths are `page.annotations.renderAppearances` and `page.forms.renderAppearances`; a native or web
-handle must route them (13.33).
+paths are `page.annotations.renderAppearances` and `page.forms.renderAppearances`; the native
+handle routes both to `annotations.renderAppearances` (Task 13.33).
 
 Annotation (13.17): the TypeScript annotation plugin draws its pictures through render
 (`packages/plugin/annotation/src/read/render.ts:257` `renderAppearances`, `:271`

@@ -1,6 +1,6 @@
 #![cfg(feature = "uniffi")]
-//! Migrated by hand to the Task 13.25 plugin and not compiled until
-//! `epdf-ffi` builds (Task 13.33): the engine's current ref spelling, the
+//! Migrated by hand to the Task 13.25 plugin: the engine's current ref
+//! spelling, the
 //! `cancelPending` and per-field `can_sign`/`can_fill` verbs, and
 //! `SignatureEvent::InvalidationPredicted`.
 

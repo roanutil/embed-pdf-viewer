@@ -4,11 +4,11 @@
 //! A definition's closures are built only for the hooks Swift lists, so an
 //! unlisted hook keeps the plugin's default and never crosses the boundary.
 //!
-//! Migrated by hand to the Task 13.29 contract and not compiled until Task
-//! 13.33 rebuilds `epdf-ffi`: reads that throw in the TypeScript answer
+//! Migrated by hand to the Task 13.29 contract, compiled and tested since
+//! Task 13.33: reads that throw in the TypeScript answer
 //! `Result`, reads hand out `Rc`s (copied here), `panel` carries `focus`,
 //! and `match_stroke` answers the command with its refusal. Not exposed
-//! yet (13.33): the settings calls, `get_refusal`, the per-command
+//! yet: the settings calls, `get_refusal`, the per-command
 //! turning-off calls, families, `requires`/`allowed`, a signal on
 //! `execute`, and the scoped view.
 

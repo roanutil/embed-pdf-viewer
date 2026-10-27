@@ -5,8 +5,7 @@
 //! records, and lookup splits keys on `.`, so a dotted key reaches what the
 //! nested one did.
 //!
-//! Not compiled since the Task 13.27 re-port: `epdf-ffi` builds again with
-//! Task 13.33, which owns this module's tests (`tests/ffi.rs`). Migrated by
+//! Compiled and tested (`tests/ffi.rs`) since Task 13.33. Migrated by
 //! hand to the current contract (`direction`, settings-backed config,
 //! `set_locale` options, `fallback_key`); the Swift surface is unchanged.
 

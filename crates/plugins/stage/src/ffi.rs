@@ -1525,6 +1525,8 @@ pub struct StageViewportChangedEvent {
     pub size: Size,
 }
 
+// One event per call; boxing a variant would change the foreign enum.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum StageEvent {
     PageChanged { event: StagePageChangedEvent },

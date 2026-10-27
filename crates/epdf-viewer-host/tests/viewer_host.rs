@@ -932,7 +932,7 @@ fn with_links(stage: bool) -> Arc<ViewerHost> {
     let config = ViewerConfig {
         interaction: true,
         link: true,
-        stage: stage.then(|| epdf_plugin_stage::ffi::StageConfig::default()),
+        stage: stage.then(epdf_plugin_stage::ffi::StageConfig::default),
         ..Default::default()
     };
     let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();

@@ -81,4 +81,4 @@ with it, so a native reader wants it for the same reasons the web viewer does.
 Anything that isn't an object is refused with `invalid-input`. The Swift layer adds `Codable`
 helpers over the string and no schema of its own. `src/ffi.rs` and `tests/ffi.rs` were migrated by
 hand in Task 13.28 (`focus`, `focus_request`, `ShellSnapshotSurface`, a closed event without props)
-and are not compiled until Task 13.33.
+and are compiled and tested since Task 13.33.

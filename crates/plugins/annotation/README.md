@@ -84,8 +84,9 @@ Two Rust-only differences, both on paths no vector reaches, are registered in
 
 - `fonts()` is always none. The TypeScript reads the local engine's registered fonts
   (`services/index.ts:71`); the Rust plugin context has no engine font list, so registered faces
-  are not mapped on a local engine. The cloud path is the same in both (an empty list). Task
-  13.33 owns the host's font list. No vector registers a font.
+  are not mapped on a local engine. The cloud path is the same in both (an empty list). The
+  native host registers no fonts, so its list is empty too; a host font list needs an engine
+  member the kernel's `Engine` lacks (Task 13.33 report). No vector registers a font.
 - An attachment or icon placement that `iconPlacement` refuses (an attachment with no name) is
   logged as `[annotation] icon placement failed:` and the click counts as handled
   (`write/icons.rs`). The TypeScript throws inside the picker's `.then`, an unhandled rejection

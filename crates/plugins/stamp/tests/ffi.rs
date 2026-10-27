@@ -5,8 +5,7 @@
 //! arming errors, events and persistence over a fake store. The host tests
 //! and the Swift tests cover import over real PDFium.
 //!
-//! Migrated by hand in Task 13.24; not compiled until `epdf-ffi` builds
-//! again (Task 13.33).
+//! Migrated by hand in Task 13.24.
 
 use std::sync::{Arc, Mutex};
 

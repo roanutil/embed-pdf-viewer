@@ -1,6 +1,5 @@
-//! The uniffi handle over the current plugin. Migrated by hand in Task 13.26
-//! and not compiled: `epdf-ffi` builds again with Task 13.33, which owns
-//! running these.
+//! The uniffi handle over the current plugin, migrated by hand in Task
+//! 13.26.
 #![cfg(feature = "uniffi")]
 
 use std::cell::RefCell;

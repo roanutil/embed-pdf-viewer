@@ -53,7 +53,7 @@ pub trait Engine {
     /// `isLocalEngine(engine)`: the engine carries the local brand
     /// (`LOCAL_ENGINE_BRAND`), so a plugin may open scratch documents on it
     /// (stamp's library imports, `services/asset-engine.ts:56`). A cloud or
-    /// fake engine is unbranded; the native host overrides this (13.33).
+    /// fake engine is unbranded; the native host answers true.
     fn is_local(&self) -> bool {
         false
     }

@@ -68,10 +68,8 @@ For the viewer host and `epdf-web` (Task 13.33).
 | ffi `ScaleChangeOptions` | ffi `MeasurementScaleChangeOptions` |
 | ffi `AnnotationRef` in readouts and reports | `annotation_json` strings |
 
-`src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds
-(Task 13.33). The native host must answer `page.measure.listViewports` with `{ viewports }`; its
-translator still maps the retired `page.measure.viewports`
-(`crates/epdf-viewer-host/src/translate.rs:149`).
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task
+13.33. The native host answers `page.measure.listViewports` with `{ viewports }`.
 
 ## Defensive absent-service branches
 
@@ -80,8 +78,9 @@ when `doc.page(page).measure` is undefined. The current engine contract requires
 the TypeScript fake supplies it on every page, so no vector reaches either branch: the vectors cover
 the required service and its refusals. The port keeps both branches line for line
 (`sync/viewports.rs`, `write/scale.rs::save`) without a case of its own, as the Task 12b ruling on
-malformed absent services asks. `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` is
-ignored until 13.33 gives the test kernel a handle that answers `has("page.measure")` false.
+malformed absent services asks. `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` runs the
+in-memory branch over a test kernel whose handle answers `has("page.measure")` false
+(`TestSpec::lacking`, Task 13.33).
 
 ## Where the port differs
 

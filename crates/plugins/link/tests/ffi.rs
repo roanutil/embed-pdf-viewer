@@ -1,5 +1,5 @@
 #![cfg(feature = "uniffi")]
-//! Not compiled until `epdf-ffi` builds again (Task 13.33). Migrated by
+//! Migrated by
 //! hand in Task 13.21: current page-space link records, JSON targets and
 //! destinations, and `resolve` answering a page destination (the stage
 //! reveal happens on activation). `a_target_that_does_not_decode_is_invalid_state`
@@ -22,7 +22,6 @@ use plugin_conformance::test_kernel::{DOCUMENT, Reply, TestKernel, TestSpec};
 use serde_json::{Value, json};
 
 const PAGE_1: PageRef = PageRef { page_object_number: 1 };
-const PAGE_3: PageRef = PageRef { page_object_number: 3 };
 
 fn page(pon: u32, index: u32) -> Value {
     let box_ = json!({ "x": 0, "y": 0, "width": 600, "height": 400 });

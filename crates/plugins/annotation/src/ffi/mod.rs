@@ -1,15 +1,14 @@
 //! The annotation plugin through uniffi: five handles over the one
 //! capability, records decoded from the engine's JSON, one event enum.
 //!
-//! Migrated by hand onto the re-ported capability (Task 13.17) and not
-//! compiled until `epdf-ffi` builds again (Task 13.33). The capability now
+//! Migrated by hand onto the re-ported capability (Task 13.17); compiled and
+//! tested since Task 13.33. The capability now
 //! speaks the engine's records (`Annotation` is the engine DTO), so the typed
 //! projection the old plugin made (`AnnotationGeometry`, `AnnotationProps`,
 //! `AnnotationFlags`) is gone from this surface: a record carries its ref,
 //! page, subtype, rect, text members and authority typed, and the rest of the
 //! DTO as JSON (`fields_json`). Patches, create fields, tool defaults and
-//! selection values are engine field bags, passed as JSON objects. Task 13.33
-//! types them against the renamed `epdf-ffi` mirror.
+//! selection values are engine field bags, passed as JSON objects.
 //!
 //! Not exported: the hub's pointer and chrome members (`editPointer`,
 //! `marqueePointer`, `createPointer`, `hoverAt`, `getHitKind`,
