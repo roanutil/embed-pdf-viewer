@@ -4,10 +4,9 @@ import PackageDescription
 
 // Where the engine comes from. Written by the engine release scripts: the
 // release tag on embed-pdf-runtime and the SHA-256 of its
-// EmbedPDFBindings.xcframework.zip. Both are "unpublished" until the first
-// publish.
-let engineRelease = "apple-engine-c862f03a668726e9"
-let engineChecksum = "959d535de8e7510fdaa3a0682b34b3399d9c2f0fd46826251225f54d85433f45"
+// EmbedPDFBindings.xcframework.zip.
+let engineRelease = "apple-engine-546d8c97ab7c9eed"
+let engineChecksum = "5b55e49779cdc08f441d26d6cb353773de9e23a67b350b787e2d5269235cf486"
 
 let package = Package(
   name: "EmbedPDF",
