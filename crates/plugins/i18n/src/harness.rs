@@ -27,7 +27,8 @@ use crate::js::{Inherited, JsRecord};
 use crate::model::{self, I18nState};
 use crate::{
     I18N, I18nCapability, I18nConfig, Locale, TranslationDictionary, TranslationSources,
-    i18n_plugin_warning_to, initial_i18n_state, interpolate, negotiate_locale, translate,
+    Translator, i18n_plugin_warning_to, initial_i18n_state, interpolate, negotiate_locale,
+    translate,
 };
 
 pub struct I18n;
@@ -70,6 +71,35 @@ fn listen<E: serde::Serialize>(
         off.call();
         Outcome::undefined()
     })))
+}
+
+thread_local! {
+    /// The function last handed out for a translator, so `getTranslator()`
+    /// answers the same function until the translator changes, as the
+    /// TypeScript one does: a selector over it compares by identity.
+    static TRANSLATOR_FN: std::cell::RefCell<Option<(Translator, Value)>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// `translator` as a function the caller can call with `(key, options)`.
+fn translator_fn(translator: Translator, h: &Harness) -> Value {
+    TRANSLATOR_FN.with(|cached| {
+        if let Some((held, value)) = &*cached.borrow()
+            && Rc::ptr_eq(held, &translator)
+        {
+            return value.clone();
+        }
+        let call = translator.clone();
+        let value = h.register_fn(Rc::new(move |args: Vec<Value>| {
+            let key = args.first().and_then(Value::as_str).unwrap_or_default();
+            match options(args.get(1)) {
+                Ok(options) => Outcome::Returned(json!(call(key, options.as_ref()))),
+                Err(error) => Outcome::Threw(error),
+            }
+        }));
+        *cached.borrow_mut() = Some((translator, value.clone()));
+        value
+    })
 }
 
 fn bad(what: &str, e: impl std::fmt::Display) -> Error {
@@ -249,9 +279,10 @@ impl HarnessPlugin for I18n {
             }
             "onLocaleChanged" => listen(h, arg(&args, 0), |f| cap.on_locale_changed(f)),
             "onLocaleLoadFailed" => listen(h, arg(&args, 0), |f| cap.on_locale_load_failed(f)),
-            // Their answers hold functions (the loaders, the translator),
-            // which no vector reads.
-            "getSettings" | "onSettingsChanged" | "getTranslator" => Outcome::Threw(bad(
+            "getTranslator" => Outcome::Returned(translator_fn(cap.get_translator(), h)),
+            // Their answers hold functions (the loaders), which no vector
+            // reads.
+            "getSettings" | "onSettingsChanged" => Outcome::Threw(bad(
                 method,
                 "returns functions the replay does not print; no vector calls it",
             )),
