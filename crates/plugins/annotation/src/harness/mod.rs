@@ -48,6 +48,65 @@ pub struct Noun {
 
 const NOUNS: [&str; 7] = ["links", "selection", "draft", "text", "tools", "stamps", "comments"];
 
+/// Each noun's methods, in its TypeScript interface's member order, so
+/// `describe` prints `capability.tools` as an object with them rather than
+/// `{}`: what a live caller (`packages/core-wasm`) builds the noun from.
+fn noun_members(noun: &str) -> &'static [&'static str] {
+    match noun {
+        "selection" => &[
+            "set",
+            "add",
+            "selectAll",
+            "selectInRect",
+            "clear",
+            "list",
+            "update",
+            "updateLink",
+            "getProperties",
+            "delete",
+            "rotateBy",
+            "resetRotation",
+            "group",
+            "ungroup",
+            "canGroup",
+            "canUngroup",
+            "getAnchor",
+            "getRotationAnchor",
+        ],
+        "draft" => &["get", "finish", "cancel"],
+        "text" => &["begin", "end", "getEditing", "toggleFormat"],
+        "tools" => &[
+            "list",
+            "get",
+            "register",
+            "getDefaults",
+            "updateDefaults",
+            "getProperties",
+            "onDefaultsChanged",
+        ],
+        "stamps" => &["arm", "disarm", "isArmed", "place"],
+        "links" => &["get", "set", "clear"],
+        "comments" => &[
+            "listThreads",
+            "getThread",
+            "reply",
+            "setText",
+            "setStatus",
+            "setMarked",
+            "delete",
+            "deleteThread",
+            "canReply",
+            "canSetText",
+            "canSetStatus",
+            "canSetMarked",
+            "canDelete",
+            "canDeleteThread",
+            "onThreadChanged",
+        ],
+        _ => &[],
+    }
+}
+
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !epdf_kernel::is_undefined(v))
 }
@@ -482,6 +541,9 @@ impl HarnessPlugin for Annotation {
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
         if capability.downcast_ref::<AnnotationCapability>().is_some() {
             return Some(MEMBERS.to_vec());
+        }
+        if let Some(noun) = capability.downcast_ref::<Noun>() {
+            return Some(noun_members(noun.name).to_vec());
         }
         None
     }
