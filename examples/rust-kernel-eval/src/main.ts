@@ -53,8 +53,8 @@ const el = EmbedPDF.init({
 const label = document.querySelector<HTMLSpanElement>('#doc-label')!;
 el.addEventListener('epdf:ready', () => {
   const viewer = el.viewer!;
-  document.querySelector('#zoom-in')!.addEventListener('click', () => viewer.execute('zoom:in'));
-  document.querySelector('#zoom-out')!.addEventListener('click', () => viewer.execute('zoom:out'));
+  document.querySelector('#zoom-in')!.addEventListener('click', () => void viewer.commands.execute('zoom:in'));
+  document.querySelector('#zoom-out')!.addEventListener('click', () => void viewer.commands.execute('zoom:out'));
   const show = () => {
     const docs = viewer.documents.list();
     label.textContent = docs.length
@@ -62,6 +62,6 @@ el.addEventListener('epdf:ready', () => {
       : 'no document';
   };
   show();
-  viewer.on('opened', show);
-  viewer.on('closed', show);
+  viewer.documents.onOpened(show);
+  viewer.documents.onClosed(show);
 });
