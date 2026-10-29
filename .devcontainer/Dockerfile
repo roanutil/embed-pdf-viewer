@@ -98,4 +98,11 @@ RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@$
     && wasm-opt --version | grep -F "version ${BINARYEN_VERSION}" \
     && wasm-bindgen --version | grep -F "$WASM_BINDGEN_VERSION"
 
+# Login shells (`bash -l`, which VS Code may open) reset PATH in /etc/profile
+# and lose the ENV entries above that no ~/.profile hook restores.
+RUN printf '%s\n' \
+      'export PATH="/home/node/.npm-global/bin:/opt/emsdk/upstream/emscripten:/opt/emsdk/upstream/bin:/opt/binaryen/bin:$PATH"' \
+    | sudo tee /etc/profile.d/embedpdf-toolchain.sh >/dev/null \
+    && bash -lc 'command -v wasm-opt && command -v emcc && command -v claude'
+
 CMD ["sleep", "infinity"]
