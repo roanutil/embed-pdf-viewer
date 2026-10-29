@@ -452,6 +452,22 @@ export function hostBytes(n: number): Uint8Array {
  *  that owns an id. */
 const liveBridges = new Set<{ owns(n: number): boolean; release(n: number): void }>();
 
+type Security = DocumentHandle['security'];
+
+/** The security service's members by the names the Rust engine core still
+ *  asks for: the service folded its annotation checks into
+ *  `allowsAnnotation`, `current` became `state`, and `effectiveScope`
+ *  became `scope`. */
+const LEGACY_SECURITY: Record<string, (security: Security, args: unknown[]) => unknown> = {
+  allowsAnnotationCreate: (security) => security.allowsAnnotation('create'),
+  allowsAnnotationMutation: (security, [action, target]) =>
+    security.allowsAnnotation(action as 'update' | 'delete', target as never),
+  allowsAnnotationGroupAssignment: (security, [groupId]) =>
+    security.allowsAnnotation('set-group', { groupId: groupId as string }),
+  current: (security) => security.state,
+  effectiveScope: (security) => security.scope,
+};
+
 /** `bridge.release(n)` on whichever live bridge holds `n`: both entries of
  *  a rendered image, deleted on the next macrotask. This is the one
  *  function `set_host_release` installs into the wasm module, for a Rust
@@ -694,11 +710,16 @@ export function createEngineBridge(engine: Engine): EngineBridge {
       }
     },
 
-    capabilities(docId) {
-      return encode(document(docId).capabilities);
+    // The engine dropped `capabilities` (its one field said whether
+    // annotation edits need weak sessions) and `PageHandle.pageIndex`; the
+    // Rust engine core still reads both, so answer what they now always are.
+    capabilities() {
+      return encode({ weakAnnotationEditSessions: 'not-needed' });
     },
 
     security(docId, member, argsJson) {
+      const legacy = LEGACY_SECURITY[member];
+      if (legacy) return encode(legacy(document(docId).security, decodeArgs(argsJson)));
       const security = document(docId).security as unknown as Record<string, unknown>;
       const read = security[member];
       if (typeof read !== 'function') return encode(read);
@@ -706,7 +727,8 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     pageIndex(docId, pon) {
-      return document(docId).page(toPageRef(pon)).pageIndex;
+      document(docId).page(toPageRef(pon));
+      return -1;
     },
 
     lastServerId(docId) {
