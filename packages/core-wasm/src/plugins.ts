@@ -4,7 +4,9 @@
  * that `createKernel` hands to the Rust plugin's conformance adapter
  * (`crates/plugins/<id>/src/harness.rs`, `build`), so `config` is the JSON
  * that adapter reads. Functions in it become `{"$fn": "js:<id>"}` when the
- * kernel is built.
+ * kernel is built. Where an adapter names its plugin's factory apart from
+ * its test companions (`annotation-live`, `form-current`, `stamp-current`,
+ * ...), the descriptor names that factory.
  */
 import type { AnyPlugin } from '@embedpdf/core';
 import type { actionsPlugin as ActionsPlugin } from '@embedpdf/plugin-actions';
@@ -115,11 +117,11 @@ export const feedbackPlugin: typeof FeedbackPlugin = (options = {}) =>
 
 export const selectionPlugin: typeof SelectionPlugin = (config = {}) => rust('selection', config);
 export const annotationPlugin: typeof AnnotationPlugin = (config = {}) =>
-  rust('annotation', hosts.annotation ? { ...config, host: hosts.annotation } : config);
+  rust('annotation-live', hosts.annotation ? { ...config, host: hosts.annotation } : config);
 
 /** `assetEngine` is not carried: the adapter only knows its scripted ones. */
 export const stampPlugin: typeof StampPlugin = (config = {}) =>
-  rust('stamp', { previewWidth: config.previewWidth, dynamic: config.dynamic });
+  rust('stamp-current', { previewWidth: config.previewWidth, dynamic: config.dynamic });
 
 /**
  * With scripting on, the sandbox is `sandboxFactory` or, as in the
@@ -135,13 +137,12 @@ export const actionsPlugin: typeof ActionsPlugin = (config) => {
     javascript: { ...settings, sandbox: createSandboxBridge(sandboxFactory) },
   });
 };
-/** The adapter builds the form plugin from no config. */
-export const formPlugin: typeof FormPlugin = (config = {}) => rust('form', config);
+export const formPlugin: typeof FormPlugin = (config = {}) => rust('form-current', config);
 export const signaturePlugin: typeof SignaturePlugin = (config = {}) => rust('signature', config);
 export const linkPlugin: typeof LinkPlugin = () => rust('link');
-export const redactionPlugin: typeof RedactionPlugin = (config = {}) => rust('redaction', config);
+export const redactionPlugin: typeof RedactionPlugin = (config = {}) => rust('redaction-current', config);
 export const measurementPlugin: typeof MeasurementPlugin = (config = {}) =>
-  rust('measurement', config);
+  rust('measurement-current', config);
 export const searchPlugin: typeof SearchPlugin = (config) => rust('search', config);
 export const i18nPlugin: typeof I18nPlugin = (config = {}) => rust('i18n', config);
 export const commandsPlugin: typeof CommandsPlugin = (config = {}) => rust('commands', config);
