@@ -9,8 +9,10 @@
 import type { AnyPlugin } from '@embedpdf/core';
 import type { actionsPlugin as ActionsPlugin } from '@embedpdf/plugin-actions';
 import type { annotationPlugin as AnnotationPlugin } from '@embedpdf/plugin-annotation';
+import type { attachmentPlugin as AttachmentPlugin } from '@embedpdf/plugin-attachment';
 import type { commandsPlugin as CommandsPlugin } from '@embedpdf/plugin-commands';
 import type { formPlugin as FormPlugin } from '@embedpdf/plugin-form';
+import type { historyPlugin as HistoryPlugin } from '@embedpdf/plugin-history';
 import type { i18nPlugin as I18nPlugin } from '@embedpdf/plugin-i18n';
 import type {
   feedbackPlugin as FeedbackPlugin,
@@ -19,6 +21,7 @@ import type {
 import type { linkPlugin as LinkPlugin } from '@embedpdf/plugin-link';
 import type { measurementPlugin as MeasurementPlugin } from '@embedpdf/plugin-measurement';
 import type { metadataPlugin as MetadataPlugin } from '@embedpdf/plugin-metadata';
+import type { outlinePlugin as OutlinePlugin } from '@embedpdf/plugin-outline';
 import type { pageEditPlugin as PageEditPlugin } from '@embedpdf/plugin-page-edit';
 import type { redactionPlugin as RedactionPlugin } from '@embedpdf/plugin-redaction';
 import type { renderPlugin as RenderPlugin } from '@embedpdf/plugin-render';
@@ -145,3 +148,6 @@ export const commandsPlugin: typeof CommandsPlugin = (config = {}) => rust('comm
 export const shellPlugin: typeof ShellPlugin = () => rust('shell');
 export const metadataPlugin: typeof MetadataPlugin = () => rust('metadata');
 export const viewManagerPlugin: typeof ViewManagerPlugin = () => rust('view-manager');
+export const historyPlugin: typeof HistoryPlugin = (config) => rust('history', config);
+export const outlinePlugin: typeof OutlinePlugin = () => rust('outline');
+export const attachmentPlugin: typeof AttachmentPlugin = () => rust('attachment');
