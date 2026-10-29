@@ -90,9 +90,14 @@ async fn a_getter_ref_returns() {
     reset();
     let plugins = json!([{ "factory": "metadata" }, { "factory": "shell" }]).to_string();
     let log = js_sys::Array::new();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&log, "() => undefined"), no_release())
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&log, "() => undefined"),
+        no_release(),
+        None,
+    )
+    .unwrap();
     start_with_document(&kernel).await;
 
     let shell = parse(&kernel.capability("shell".into(), None).unwrap());
@@ -114,6 +119,7 @@ async fn a_document_capability_with_no_document_throws() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -138,6 +144,7 @@ async fn a_config_callback_calls_into_javascript_and_its_promise_resolves() {
         stub_engine(),
         call_js(&log, "() => Promise.resolve(7)"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -173,6 +180,7 @@ async fn a_promise_is_taken_once_and_a_second_take_throws() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -214,6 +222,7 @@ async fn abort_promise_after_the_take_is_still_a_safe_call() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -239,6 +248,7 @@ async fn a_subscriber_hears_a_store_change_until_it_unsubscribes() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -270,6 +280,7 @@ async fn the_same_capability_describes_to_the_same_text() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -292,6 +303,7 @@ async fn release_ref_frees_a_returned_ref_and_ignores_a_pinned_one() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -323,6 +335,7 @@ async fn status_scope_and_try_capability_follow_the_kernel() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     assert_eq!(kernel.status(), "created");
@@ -352,6 +365,7 @@ async fn a_throw_in_javascript_is_the_callback_throwing() {
         stub_engine(),
         call_js(&log, "() => { throw new TypeError('boom'); }"),
         no_release(),
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -387,7 +401,8 @@ async fn a_run_callback_reenters_the_kernel_through_its_ctx_marker() {
       log.isOpen = k.invoke_ref(shell.isOpen.$ref, '["panel"]');
       return undefined;
     }"#;
-    let kernel = WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer), no_release());
+    let kernel =
+        WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer), no_release(), None);
     let kernel = kernel.unwrap();
     start_with_document(&kernel).await;
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
@@ -432,7 +447,8 @@ async fn an_export_reentered_from_a_callback_leaves_timers_and_the_queue_to_the_
       return undefined;
     }"#;
     let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer), no_release()).unwrap();
+        WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer), no_release(), None)
+            .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
     let execute = ref_of(&commands, "execute");
@@ -483,6 +499,7 @@ async fn an_unregistered_handler_releases_its_functions_once_each() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => undefined"),
         release_into(&log),
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -529,9 +546,14 @@ async fn a_callback_dropped_and_remade_in_one_call_keeps_its_function() {
       return undefined;
     }"#;
     let log = js_sys::Array::new();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer), release_into(&log))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&holder, answer),
+        release_into(&log),
+        None,
+    )
+    .unwrap();
     start_with_document(&kernel).await;
     let interaction = parse(&kernel.capability("interaction".into(), None).unwrap());
     let register = ref_of(&interaction, "registerHandler");
@@ -574,6 +596,7 @@ async fn closing_a_document_drops_its_capabilities_from_the_memo() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -609,6 +632,7 @@ async fn a_dropped_kernel_leaves_another_in_the_instance_working() {
             stub_engine(),
             call_js(&js_sys::Array::new(), "() => 0"),
             no_release(),
+            None,
         )
         .unwrap()
     };
@@ -666,6 +690,7 @@ async fn a_closed_documents_plugins_go_once_their_refs_are_released() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => undefined"),
         release_into(&log),
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -701,9 +726,14 @@ async fn a_behavior_described_again_keeps_its_functions() {
     let plugins = json!([{ "factory": "interaction" }, { "factory": "annotation" }]).to_string();
     let calls = js_sys::Array::new();
     let log = js_sys::Array::new();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&calls, "() => true"), release_into(&log))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&calls, "() => true"),
+        release_into(&log),
+        None,
+    )
+    .unwrap();
     start_with_document(&kernel).await;
     let annotation = parse(&kernel.capability("annotation".into(), None).unwrap());
     let behavior =

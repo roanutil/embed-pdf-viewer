@@ -23,6 +23,7 @@ import type {
   Kernel,
   KernelStatus,
   PluginScope,
+  SettingsApi,
   Unsubscribe,
 } from '@embedpdf/core';
 import { createEngineBridge, type EngineBridge } from './engine-bridge';
@@ -127,6 +128,12 @@ export function createKernel(opts: {
   plugins: AnyPlugin[];
   /** Kept for the signature; the Rust kernel reports to `console.error`. */
   report?: (error: unknown) => void;
+  /** The viewer settings the app registered (`kernel.getSettings()`). */
+  settings?: unknown;
+  /** Kept for the signature: the Rust kernel keeps its own timers, and
+   *  prints nothing. */
+  clock?: unknown;
+  printer?: unknown;
 }): Kernel {
   const { engine } = opts;
   const report = opts.report ?? ((error: unknown) => console.error('[kernel]', error));
@@ -151,7 +158,9 @@ export function createKernel(opts: {
   const Rust = RustKernel;
   const rust = (() => {
     try {
-      return new Rust(JSON.stringify(specs), bridge, wire.callJs, wire.releaseJs);
+      const settings =
+        opts.settings === undefined ? undefined : JSON.stringify(wire.encode(opts.settings));
+      return new Rust(JSON.stringify(specs), bridge, wire.callJs, wire.releaseJs, settings);
     } catch (error) {
       throw toError(error);
     }
@@ -187,6 +196,37 @@ export function createKernel(opts: {
     if (wait > 0) setTimeout(flush, wait);
     else queueMicrotask(flush);
   });
+
+  /** The settings calls over the Rust store for `token` (the kernel's own
+   *  with none). `getSettings()` keeps its object until a setting changes,
+   *  as the TS store does, so a selector over it can compare by identity. */
+  const settingsApi = (token?: string): SettingsApi<unknown> => {
+    let text: string | undefined;
+    let value: unknown;
+    return {
+      getSettings: () => {
+        const next = rusty(() => wire.rust.get_settings(token));
+        if (next !== text) {
+          text = next;
+          value = JSON.parse(next);
+        }
+        return value;
+      },
+      updateSettings: (changes) =>
+        rusty(() => wire.rust.update_settings(token, JSON.stringify(wire.encode(changes) ?? {}))),
+      resetSettings: () => rusty(() => wire.rust.reset_settings(token)),
+      onSettingsChanged: (listener, options) => {
+        const id = rusty(() =>
+          wire.rust.on_settings_changed(token, (json) => listener(JSON.parse(json))),
+        );
+        const off = () => wire.rust.unsubscribe(id);
+        options?.signal?.addEventListener('abort', off, { once: true });
+        return off;
+      },
+    };
+  };
+  const viewerSettings = settingsApi();
+  const pluginSettings = new Map<string, SettingsApi<unknown>>();
 
   const documents = wire.documents() as DocumentsCapability;
   // After the kernel's own listener, which evicted the closed document's
@@ -319,6 +359,17 @@ export function createKernel(opts: {
         ? null
         : (wire.tryCapability(name(token), documentId) as T | null),
     scopeOf: (token) => rusty(() => wire.rust.scope_of(name(token))) as PluginScope,
+    ...(viewerSettings as SettingsApi<ReturnType<Kernel['getSettings']>>),
+    settingsOf: ((token: CapabilityToken<unknown>) => {
+      let api = pluginSettings.get(name(token));
+      if (!api) {
+        api = settingsApi(name(token));
+        // Throws here, as the TS kernel's does, for a plugin with no settings.
+        api.getSettings();
+        pluginSettings.set(name(token), api);
+      }
+      return api;
+    }) as Kernel['settingsOf'],
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);

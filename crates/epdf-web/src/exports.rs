@@ -56,6 +56,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Once;
 
+use epdf_kernel::settings::{Settings, SettingsChanged};
 use epdf_kernel::types::PluginScope;
 use epdf_kernel::{
     AnyToken, DOCUMENTS, Error, Kernel, KernelOptions, Promise, Unsubscribe, undefined,
@@ -300,19 +301,22 @@ impl WasmKernel {
     /// is the object `createEngineBridge` returns; `call_js(id, argsJson)`
     /// calls a `{"$fn": "js:<id>"}` function and `release_js(id)` says the
     /// kernel holds it no more. Throws the canonical error if a plugin does
-    /// not build or the kernel refuses the list.
+    /// not build or the kernel refuses the list. `settings_json` is the
+    /// viewer settings the app registered (`createKernel`'s `settings`).
     #[wasm_bindgen(constructor)]
     pub fn new(
         plugins_json: &str,
         engine: JsValue,
         call_js: js_sys::Function,
         release_js: js_sys::Function,
+        settings_json: Option<String>,
     ) -> Result<WasmKernel, JsValue> {
         report_panics();
         // Before anything can schedule a timer.
         runtime::start_clock();
         entry(|| {
-            WasmKernel::build(plugins_json, engine, call_js, release_js).map_err(|e| thrown(&e))
+            WasmKernel::build(plugins_json, engine, call_js, release_js, settings_json.as_deref())
+                .map_err(|e| thrown(&e))
         })
     }
 
@@ -321,6 +325,7 @@ impl WasmKernel {
         engine: JsValue,
         call_js: js_sys::Function,
         release_js: js_sys::Function,
+        settings_json: Option<&str>,
     ) -> Result<WasmKernel, Error> {
         let adapters = adapters();
         let mut tokens: HashMap<String, AnyToken> = HashMap::new();
@@ -362,7 +367,16 @@ impl WasmKernel {
             printer: None,
         };
         let bridge: EngineBridge = engine.unchecked_into();
-        let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
+        let registered = settings_json
+            .map(serde_json::from_str::<Value>)
+            .transpose()
+            .map_err(|e| Error::named("TypeError", format!("malformed viewer settings: {e}")))?;
+        let kernel = Kernel::new_with_viewer_settings(
+            Rc::new(JsEngine::new(bridge)),
+            plugins,
+            options,
+            registered,
+        )?;
         // The capability `kernel.capability(DocumentsToken)` answers, so the
         // two describe as one proxy with one set of pinned refs.
         let documents = kernel.capability_any(DOCUMENTS.any(), None)?;
@@ -466,6 +480,78 @@ impl WasmKernel {
                 PluginScope::Workspace => "workspace".into(),
             }
         })
+    }
+
+    /// `kernel.getSettings()` with no token, else
+    /// `kernel.settingsOf(token).getSettings()`, as JSON.
+    pub fn get_settings(&self, token_name: Option<String>) -> Result<String, JsValue> {
+        entry(|| {
+            let settings = match token_name {
+                None => self.kernel.get_settings(),
+                Some(name) => self.settings_of(&name)?.get_settings(),
+            };
+            Ok(settings.to_string())
+        })
+    }
+
+    /// `updateSettings(changes)`, on the kernel or on `settingsOf(token)`.
+    pub fn update_settings(
+        &self,
+        token_name: Option<String>,
+        changes_json: &str,
+    ) -> Result<(), JsValue> {
+        entry(|| {
+            let changes: Value = serde_json::from_str(changes_json).map_err(|e| {
+                thrown(&Error::named("TypeError", format!("malformed settings: {e}")))
+            })?;
+            match token_name {
+                None => self.kernel.update_settings(&changes),
+                Some(name) => self.settings_of(&name)?.update_settings(&changes),
+            }
+            Ok(())
+        })
+    }
+
+    /// `resetSettings()`, on the kernel or on `settingsOf(token)`.
+    pub fn reset_settings(&self, token_name: Option<String>) -> Result<(), JsValue> {
+        entry(|| {
+            match token_name {
+                None => self.kernel.reset_settings(),
+                Some(name) => self.settings_of(&name)?.reset_settings(),
+            }
+            Ok(())
+        })
+    }
+
+    /// `onSettingsChanged(listener)`, on the kernel or on `settingsOf(token)`:
+    /// `listener(eventJson)` with `{settings, changed}` until
+    /// [`unsubscribe`](Self::unsubscribe) with the id this returns.
+    pub fn on_settings_changed(
+        &self,
+        token_name: Option<String>,
+        listener: js_sys::Function,
+    ) -> Result<u32, JsValue> {
+        entry(|| {
+            let source = match token_name {
+                None => self.kernel.on_settings_changed(),
+                Some(name) => self.settings_of(&name)?.on_settings_changed(),
+            };
+            let off = source.on(move |event: &SettingsChanged| {
+                let text = json!({ "settings": &*event.settings, "changed": event.changed });
+                listener
+                    .call1(&JsValue::NULL, &JsValue::from_str(&text.to_string()))
+                    .map(|_| ())
+                    .map_err(|e| js_to_error(&e))
+            });
+            let id = self.next_subscription.get();
+            self.next_subscription.set(id + 1);
+            self.subscriptions.borrow_mut().insert(id, off);
+            Ok(id)
+        })
+    }
+
+    fn settings_of(&self, token_name: &str) -> Result<Settings, JsValue> {
+        self.kernel.settings_of(&self.token(token_name)).map_err(|e| thrown(&e))
     }
 
     /// `kernel.status()`.

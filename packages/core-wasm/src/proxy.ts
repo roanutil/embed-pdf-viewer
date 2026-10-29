@@ -98,6 +98,13 @@ export interface RustKernel {
   holds_js(id: string): boolean;
   status(): string;
   scope_of(tokenName: string): string;
+  /** The kernel's viewer settings with no token, else `settingsOf(token)`'s,
+   *  as JSON text. */
+  get_settings(tokenName?: string): string;
+  update_settings(tokenName: string | undefined, changesJson: string): void;
+  reset_settings(tokenName?: string): void;
+  /** `listener(eventJson)` until `unsubscribe` with the id this returns. */
+  on_settings_changed(tokenName: string | undefined, listener: (eventJson: string) => void): number;
   start(): Promise<unknown>;
   destroy(): Promise<unknown>;
   /** The harness's live-table counts plus `described`, as JSON text. */
@@ -111,6 +118,7 @@ export type RustKernelClass = new (
   engine: EngineBridge,
   callJs: (id: string, argsJson: string) => unknown,
   releaseJs: (id: string) => void,
+  settingsJson?: string,
 ) => RustKernel;
 
 type Fn = (...args: unknown[]) => unknown;
