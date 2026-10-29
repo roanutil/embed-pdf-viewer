@@ -13,7 +13,7 @@
     "NPM_TOKEN": ""
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "forwardPorts": [3000, 5173],
+  "forwardPorts": [3000, 5173, 5250, 5251],
   "customizations": {
     "vscode": {
       "extensions": [

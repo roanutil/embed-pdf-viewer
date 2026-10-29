@@ -23,7 +23,8 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 | pnpm                                                      | `package.json` `packageManager`                      |
 | Rust, Cargo, rustfmt, Clippy, rust-src, cross-target std  | `rust-toolchain.toml`                                |
 | Clang/libclang, LLD, CMake, Ninja, C/C++ compiler, Python | Debian Trixie packages                               |
-| Emscripten / Binaryen                                     | 3.1.72 / 132; `EM_BINARYEN_ROOT` selects Binaryen    |
+| Emscripten / Binaryen                                     | 3.1.72 / 133; `EM_BINARYEN_ROOT` selects Binaryen    |
+| wasm-bindgen-cli                                          | 0.2.127, matching `crates/epdf-web/Cargo.toml`       |
 | Android NDK / cargo-ndk                                   | 29.0.14206865 (amd64 only) / 4.1.2                   |
 | swiftly / Swift toolchain                                 | 1.1.4 / 6.3.1; `swiftly` manages further toolchains  |
 | Git, Git LFS, GitHub CLI, ripgrep, jq, ShellCheck         | Debian packages                                      |
@@ -84,8 +85,8 @@ and [Claude Code npm installation](https://code.claude.com/docs/en/setup#install
 instructions. To pin the agents, add `CODEX_VERSION` and `CLAUDE_CODE_VERSION` under
 `build.args` in `devcontainer.json`.
 
-For viewer development, bind the dev server to `0.0.0.0`; ports 3000 and 5173 are
-forwarded. Viewer E2E requires the viewer build described in
+For viewer development, bind the dev server to `0.0.0.0`; ports 3000, 5173, and
+5250/5251 (`examples/rust-kernel-eval` dev and preview) are forwarded. Viewer E2E requires the viewer build described in
 [`tooling/viewer-e2e/README.md`](../tooling/viewer-e2e/README.md).
 
 ## Build without VS Code
