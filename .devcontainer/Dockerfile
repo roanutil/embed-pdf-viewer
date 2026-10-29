@@ -5,8 +5,10 @@ FROM node:24.20.0-trixie
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG TARGETARCH
 ARG EMSDK_VERSION=3.1.72
-ARG BINARYEN_VERSION=132
+ARG BINARYEN_VERSION=133
 ARG CARGO_NDK_VERSION=4.1.2
+# Must equal the `wasm-bindgen` pin in crates/epdf-web/Cargo.toml.
+ARG WASM_BINDGEN_VERSION=0.2.127
 ARG SWIFTLY_VERSION=1.1.4
 ARG SWIFT_VERSION=6.3.1
 # swiftly has no Debian 13 entry and swift.org publishes no trixie toolchain;
@@ -72,7 +74,8 @@ RUN curl -fsSL --retry 3 https://sh.rustup.rs -o /tmp/install-rust.sh \
     && rustup toolchain install "$rust_version" --profile minimal --component rustfmt,clippy,rust-src \
     && rustup default "$rust_version" \
     && python3 -c 'import subprocess,tomllib; t=tomllib.load(open("/opt/embedpdf-pins/rust-toolchain.toml", "rb"))["toolchain"]; subprocess.run(["rustup", "target", "add", "--toolchain", t["channel"], *t["targets"]], check=True)' \
-    && cargo install --locked cargo-ndk --version "$CARGO_NDK_VERSION"
+    && cargo install --locked cargo-ndk --version "$CARGO_NDK_VERSION" \
+    && cargo install --locked wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION"
 
 # swiftly writes ~/.profile so login shells, which reset PATH via /etc/profile,
 # still find the toolchain; the ENV above covers non-login shells.
@@ -92,6 +95,7 @@ ENV PATH="/opt/binaryen/bin:${PATH}"
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && codex --version && claude --version \
     && rustc --version && swift --version && pnpm --version && emcc --version \
-    && wasm-opt --version | grep -F "version ${BINARYEN_VERSION}"
+    && wasm-opt --version | grep -F "version ${BINARYEN_VERSION}" \
+    && wasm-bindgen --version | grep -F "$WASM_BINDGEN_VERSION"
 
 CMD ["sleep", "infinity"]

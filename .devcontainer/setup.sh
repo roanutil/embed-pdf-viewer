@@ -21,6 +21,8 @@ pnpm --filter @embedpdf/engine-runtime build
 pnpm --filter @embedpdf/engine-core build
 pnpm --filter @embedpdf/engine-services build
 pnpm --filter @embedpdf/engine build
+# The engine worker and stamp locales the Rust kernel eval app's chrome needs.
+pnpm --filter @embedpdf/example-rust-kernel-eval bootstrap
 
 # Browser versions follow the workspace's Playwright dependency.
 pnpm --filter @embedpdf/tooling-viewer-e2e exec playwright install --with-deps chromium firefox webkit
