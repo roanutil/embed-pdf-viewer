@@ -8,7 +8,7 @@ toolchain, no Vite plugin on the consumer side.
 ## Use
 
 ```sh
-npm i ./vendor/mfb-embedpdf-rust-viewer-0.0.0-hackathon.1.tgz
+npm i ./vendor/mfb-embedpdf-rust-viewer-0.0.0-hackathon.2.tgz
 ```
 
 ```ts
