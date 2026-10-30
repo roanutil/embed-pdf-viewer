@@ -310,7 +310,9 @@ Build Rust 1.98.0/Cargo.lock and .NET SDK 10.0.403. Linux builds/tests use the
 rebuilt project dev container; record source commit, image ID and OS/arch in
 results. Rebuilt merged-base ARM64 image is
 `sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703`.
-macOS/Windows native legs use their hosts/CI and record the exception.
+macOS/Windows native legs run manually on those hosts and record the exception.
+The fork has a standing no-CI-change hold: do not add or modify any
+`.github/**` file, trigger new CI, or make a slice depend on CI availability.
 
 | RID         | Rust target               | PDFium manifest target |
 | ----------- | ------------------------- | ---------------------- |
@@ -328,12 +330,31 @@ Windows explicitly load the packaged dependency from its absolute package
 path before the wrapper; do not mutate process-global DLL search directories.
 Do not regress existing Rust/native/mobile loader consumers while doing so.
 
-Create five native CI legs and clean relocated NuGet consumer tests per RID;
-existing Linux-only engine CI is not sufficient. Emit checksum-pinned tar/zip
-artifacts and an unsigned local nupkg as reviewable build outputs, with a
-manifest of full source/runtime SHA, ABI, SDK/compiler, RID, OS/libc floors,
-font inventory and SHA256 for every shipped file. Carry notices. No release,
-NuGet push or merge occurs as a side effect of these build jobs.
+Run the five-platform build/test matrix manually: Linux inside the rebuilt
+dev container, macOS and Windows on those hosts. Test clean relocated NuGet
+consumers per RID. Produce and verify checksum-pinned tar/zip artifacts and a
+local nupkg without publishing them. Carry the full source/runtime SHA, ABI,
+SDK/compiler, RID, OS/libc floors, font inventory and SHA256 for each shipped
+file and archive/package. Carry notices. No release, NuGet push, artifact
+publication or merge is a side effect of a build/validation command.
+
+Every run produces a checked-in record under `platforms/dotnet/validation/`:
+environment (image ID or host OS/arch, emulation status and tool versions),
+source/runtime/font/corpus pins, exact commands and exit codes, artifact paths
+and SHA256 values, suite results, and explicit failures/skips/limitations.
+Retain sanitized log references/hashes; no credentials or private PDF content.
+Re-run the manual differential gate and update the record on every relevant
+engine/viewer/runtime/font bump before accepting persisted geometry or a
+consumer upgrade. There is no automated CI guarantee under this hold.
+
+At design time this worker has macOS arm64 and Linux containers; no Windows
+host is available, and native macOS x64 validation is not established. Those
+RIDs remain unvalidated until an owner supplies a manual native-host record.
+Cross-compilation, an emulated run, or a successful package build must be
+labelled accurately and does not substitute for missing native-host evidence.
+If the manual matrix cannot be completed, report the exact platform limitation
+and withhold a full five-platform compatibility claim; do not work around the
+hold by using hosted CI or silently dropping a requested RID.
 
 Proposed support floors must be checked against the downloaded libraries and
 MCP's actual image: glibc Linux, macOS 13+, Windows 10 x64. Inspect actual

@@ -23,13 +23,16 @@ C ABI, NuGet, current TS viewer as differential reference.
   Linux builds/tests run in that image; record image ID/source/OS/arch per run.
   Current rebuilt ARM64 ID is
   `sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703`.
-  macOS/Windows native CI uses those hosts; declare the exception.
+  macOS/Windows tests run manually on those hosts; declare the exception.
 - Preserve existing OwnerThread/Host callers. Native pointer validity remains
   the C caller's obligation; checked handles do not validate arbitrary memory.
 - Double geometry stays unrounded until PDFAbner's actual serialized-token
   decimal parse + 4dp AwayFromZero gate. No geometry persistence before parity.
 - Five RIDs: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64. No merge,
   release tag, NuGet push or public artifact publication is implicit.
+- Standing hold: no `.github/**` changes, new CI or CI dependencies. Every
+  validation run has a checked-in environment/commands/SHA256/results record;
+  missing platform access is a declared limitation, never a CI workaround.
 
 ## Review focus
 
@@ -52,7 +55,7 @@ These are proposed allocations, not claims that implementation has started.
 | 3     | Helper implementer: epdf-capi helpers only                              | 1 ABI freeze                           | Existing text-layout and page/view transforms               |
 | 4     | Managed implementer: platforms/dotnet                                   | 1 header, 2, 3                         | Typed .NET facade + wire-vector/interop tests               |
 | 5     | Parity implementer + PDFAbner consumer owner                            | 2, 3, 4                                | Live browser/native storage-boundary gate                   |
-| 6     | Packaging implementer: build-support/capi build + workflow/tooling      | 2, 3, 4; release acceptance requires 5 | Five relocated native/NuGet outputs, checksums              |
+| 6     | Packaging implementer: build-support/capi build + manual tooling        | 2, 3, 4; release acceptance requires 5 | Five locally verified RID/NuGet outputs and run records     |
 | 7     | Primary + independent reviewer                                          | 1–6                                    | Docs, final review and consumer handoff PRs                 |
 
 Slices 2 and 3 can run independently after header/registry freeze. Slice 6 can
@@ -66,6 +69,9 @@ interfaces rather than modifying them concurrently.
 src/buffers.rs,src/jobs.rs,src/engine.rs,include/epdf.h,tests/lifecycle.rs,
 tests/c_smoke.c}`; modify root `Cargo.toml`/`Cargo.lock` and
 `crates/epdf-engine/src/dispatch.rs`.
+Create `platforms/dotnet/validation/{README.md,record.schema.json}` and this
+slice's manual run records. The schema is shared test infrastructure available
+before parity/packaging; its fields are listed in slice 6.
 
 **Interfaces:** Export the spec header verbatim. Rust registry typed wrappers
 are EngineId/DocumentId/JobId/ResultId over u64. Add
@@ -92,7 +98,7 @@ are EngineId/DocumentId/JobId/ResultId over u64. Add
 - [ ] Run `cargo test -p epdf-capi --test lifecycle` and
       `cargo test -p epdf-engine dispatch::tests`; compile/run c_smoke.c against the
       cdylib/header to verify calling convention, sizes and exported symbols.
-      Commit only when the tests pass; publish the frozen header for slices 2–4.
+      Commit only when tests pass; share the frozen header with slices 2–4.
 
 ### Slice 2: Existing Host reads and cooperative cancellation
 
@@ -223,41 +229,56 @@ decimal parse/round harness; it does not reimplement a binary-double tolerance.
 - [ ] PDFAbner consumer owner verifies one-based page conversion, complete
       provenance and actual API serialization/decimal behavior. Until deployment
       font inventory, libc floor and normalizeRotation are settled and the gate
-      passes, prohibit persisted-geometry switchover. Keep the gate in ongoing CI.
+      passes, prohibit persisted-geometry switchover. Re-run this gate manually
+      on each relevant pin bump and check in the environment, exact commands,
+      artifact SHA256s and results using slice 1's validation-record schema.
 
 ### Slice 6: Relocated native builds and five-RID packaging
 
 **Files:** Create `crates/epdf-capi/build.rs`,
-`platforms/dotnet/{pack.sh,package-manifest.schema.json}`, native asset packing
-rules and `.github/workflows/dotnet-native.yml`; modify build-support narrowly
-only if needed. Keep existing native/mobile loader paths working.
-The new workflow path is an explicit part of design/plan approval. If an
-existing branch-specific CI hold applies, coordinator must identify its source
-and obtain the required exception before this slice; local/manual matrix runs
-can produce interim evidence but do not replace the ongoing parity CI gate.
+`platforms/dotnet/{pack.sh,package-manifest.schema.json,validate.sh,validate.ps1}`,
+per-run JSON records under `platforms/dotnet/validation/`; consume the schema
+created in slice 1. Add native asset packing rules and modify build-support narrowly only
+if needed. Keep existing native/mobile loader paths working. Do not create or
+modify `.github/**`; no step relies on a hosted runner or CI result.
 
 **Interfaces:** `bash platforms/dotnet/pack.sh --rid <rid> --out <directory>`
 consumes Cargo release library, the existing checksum-verified runtime manifest,
 font manifest and managed build; emits RID archive, SHA256 manifest and local
 nupkg. No command invokes a release publication or runtime download.
+`validate.sh --rid <rid> --record <path>` runs manually in the Linux container
+or macOS host; `validate.ps1 -Rid win-x64 -Record <path>` does so on Windows.
+Both validate the same checked-in record schema. Each record includes
+source/runtime/font/corpus pins, image digest or host OS/arch, emulation,
+toolchain versions, exact commands/exit codes, artifact relative paths/SHA256s,
+suite counts and failures/skips/limitations. Commit records, not private PDFs,
+credentials or generated binaries. Slice 5 uses the same slice-1 schema before
+packaging is complete; parity/facade tests never depend on package generation.
 
 - [ ] Add loader tests that relocate packed outputs away from the build tree
       and fail on missing/wrong RID, dependency, ABI or runtime identity. Verify
       all shipped dynamic dependencies and symbols; a build-machine rpath fails.
 - [ ] Implement $ORIGIN/@loader_path+install-name handling for this cdylib;
       Windows resolver loads packaged PDFium by absolute path before wrapper.
-      Test on native OS runners; do not widen process DLL search paths.
+      Test manually on native OS hosts; do not widen process DLL search paths.
 - [ ] Build/test the five spec targets with libclang and exact Rust/SDK pins.
-      Linux legs use project-container builds; OS runners record platform-specific
-      exceptions, image/source/compiler/OS floors. Validate the MCP libc requirement
+      Linux legs use project-container builds; macOS/Windows use their hosts
+      manually and record exceptions, image/source/compiler/OS floors. Validate the MCP libc requirement
       against actual ELF symbols before declaring Linux compatibility.
 - [ ] Pack runtimes/{rid}/native with both libraries and required font/notices;
       checksum every delivered file, verify source/runtime/RID metadata and unpack
       a fresh .NET consumer for each RID. Run its open/text/region render/helper
-      smoke and the applicable parity corpus. Upload CI artifacts only.
+      smoke and applicable parity corpus manually. Record artifact/package
+      SHA256s and outcomes in version control; keep produced binaries local.
 - [ ] Run `dotnet pack platforms/dotnet/EmbedPDF/EmbedPDF.csproj -c Release`
       using the verified RID assets. Release acceptance requires slice 5; package
       production claims remain blocked if any requested native leg is untested.
+- [ ] If a requested platform cannot be tested locally, record it as unvalidated
+      with the missing host/toolchain and required manual follow-up. Currently
+      this worker lacks Windows and established native macOS x64 validation.
+      Do not substitute hosted CI, emulation or cross-compilation for native
+      evidence, or claim all five targets pass. An unavailable leg is a stated
+      delivery limitation; slice 1 and other validated legs may still proceed.
 
 ### Slice 7: Final review and consumer handoff
 
@@ -276,6 +297,10 @@ slice records. Audit package changesets using embedpdf-changesets.
       implementation PR(s) into research/multi-platform-rust-core-impl-plugins.
       Provide PDFAbner the reviewed header/facade/artifact manifest and parity
       evidence. Human approval is required before merge or publication.
+- [ ] Confirm `git diff --name-only <base>...HEAD` contains no `.github/` paths.
+      Review the checked-in manual run records and verify every claimed RID's
+      commands, environment, artifact hashes and outcomes. State unvalidated
+      platforms explicitly in the handoff; do not infer support from packaging.
 
 ## Immediate next action and current status
 
