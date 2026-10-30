@@ -1,6 +1,6 @@
 {
   "name": "@mfb/embedpdf-rust-viewer",
-  "version": "0.0.0-hackathon.2",
+  "version": "0.0.0-hackathon.3",
   "private": true,
   "description": "Evaluation only: the full viewer on the Rust kernel and plugins (@embedpdf/core-wasm), as one self-contained folder. Packed into a tarball for the hackathon; never published.",
   "type": "module",
