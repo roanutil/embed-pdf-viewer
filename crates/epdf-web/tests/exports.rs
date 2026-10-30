@@ -82,7 +82,7 @@ async fn start_with_document(kernel: &WasmKernel) {
     let documents = parse(&kernel.documents());
     let outcome = invoke(kernel, ref_of(&documents, "open"), r#"[{"id":"doc-1"}]"#);
     let opened = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
-    assert_eq!(opened.as_string().as_deref(), Some("doc-1"));
+    assert_eq!(js_json(&opened)["document"]["id"], "doc-1");
 }
 
 #[wasm_bindgen_test]
@@ -425,7 +425,6 @@ async fn a_run_callback_reenters_the_kernel_through_its_ctx_marker() {
     assert_eq!(ctx["documentId"], json!("doc-1"));
     assert_eq!(ctx["tryGet"], json!({ "$kernel": "tryGet", "doc": "doc-1" }));
     assert_eq!(ctx["get"], json!({ "$kernel": "get", "doc": "doc-1" }));
-    assert_eq!(ctx["core"], json!({ "$kernel": "core", "doc": "doc-1" }));
     let is_open = js_sys::Reflect::get(&holder, &"isOpen".into()).unwrap();
     assert_eq!(parse(&is_open.as_string().unwrap()), json!({ "returned": false }));
 }
@@ -651,7 +650,7 @@ async fn a_dropped_kernel_leaves_another_in_the_instance_working() {
     let documents = parse(&second.documents());
     let outcome = invoke(&second, ref_of(&documents, "open"), r#"[{"id":"doc-2"}]"#);
     let opened = JsFuture::from(second.promise(promise_of(&outcome)).unwrap()).await.unwrap();
-    assert_eq!(opened.as_string().as_deref(), Some("doc-2"));
+    assert_eq!(js_json(&opened)["document"]["id"], "doc-2");
     let shell = parse(&second.capability("shell".into(), Some("doc-2".into())).unwrap());
     assert_eq!(invoke(&second, ref_of(&shell, "isOpen"), r#"["panel"]"#)["returned"], false);
     let wait = js_sys::Promise::new(&mut |resolve, _| {
@@ -723,7 +722,8 @@ async fn a_closed_documents_plugins_go_once_their_refs_are_released() {
 #[wasm_bindgen_test]
 async fn a_behavior_described_again_keeps_its_functions() {
     reset();
-    let plugins = json!([{ "factory": "interaction" }, { "factory": "annotation" }]).to_string();
+    let plugins =
+        json!([{ "factory": "interaction" }, { "factory": "annotation-live" }]).to_string();
     let calls = js_sys::Array::new();
     let log = js_sys::Array::new();
     let kernel = WasmKernel::new(
@@ -736,8 +736,7 @@ async fn a_behavior_described_again_keeps_its_functions() {
     .unwrap();
     start_with_document(&kernel).await;
     let annotation = parse(&kernel.capability("annotation".into(), None).unwrap());
-    let behavior =
-        r#"[{"id":"b","matches":{"$fn":"js:m"},"engaged":{"$fn":"js:e"},"extra":{"$fn":"js:x"}}]"#;
+    let behavior = r#"[{"id":"b","matches":{"$fn":"js:m"},"engaged":{"$fn":"js:e"}}]"#;
     invoke(&kernel, ref_of(&annotation, "registerBehavior"), behavior);
     let get = ref_of(&annotation, "getBehaviorFor");
     let query = r#"[{"subtype":"square","ref":null}]"#;
@@ -745,12 +744,77 @@ async fn a_behavior_described_again_keeps_its_functions() {
     let first = invoke(&kernel, get, query)["returned"].clone();
     let mut refs = Vec::new();
     ref_ids(&first, &mut refs);
-    assert_eq!(refs.len(), 3, "{first}");
+    assert_eq!(refs.len(), 2, "{first}");
     refs.into_iter().for_each(|id| kernel.release_ref(id));
     assert!(released(&log).is_empty(), "released {:?}", released(&log));
 
     let second = invoke(&kernel, get, query)["returned"].clone();
-    assert_eq!(invoke(&kernel, ref_of(&second, "extra"), "[]"), json!({ "returned": true }));
+    assert_eq!(invoke(&kernel, ref_of(&second, "engaged"), "[]"), json!({ "returned": true }));
     let last = js_sys::Array::from(&calls.get(calls.length() - 1));
-    assert_eq!(last.get(0).as_string().as_deref(), Some("x"));
+    assert_eq!(last.get(0).as_string().as_deref(), Some("e"));
+}
+
+#[wasm_bindgen_test]
+async fn a_staged_annotation_gets_a_live_operation_id_and_a_refusal_keeps_the_runtime_working() {
+    reset();
+    let make = js_sys::Function::new_no_args(&format!(
+        r#"
+const bridge = (() => {{ {STUB_ENGINE} }})();
+const call = bridge.call;
+bridge.applied = [];
+bridge.call = function(doc, path, pon, args) {{
+    if (path === 'pages.list') return Promise.resolve(JSON.stringify({{
+        pageCount: 1,
+        pages: [{{ ref: {{kind:'objectNumber',objectNumber:3}}, size: {{width:612,height:792}}, rotation:0, userUnit:1 }}]
+    }}));
+    if (path === 'annotations.list') return Promise.resolve('[]');
+    if (path === 'apply') {{
+        this.applied.push(JSON.parse(args));
+        return Promise.reject({{$error:{{name:'EngineError',code:'InvalidArg',message:'write refused'}}}});
+    }}
+    return call(doc, path, pon, args);
+}};
+bridge.callWith = function(doc, facts, path, pon, args) {{ return this.call(doc, path, pon, args); }};
+bridge.security = (doc, member) => member.startsWith('allows') ? 'true' : member === 'passwordPrompt' ? '{{"state":"none"}}' : 'null';
+bridge.pageIndex = () => 0;
+bridge.heldObjectNumbers = () => 100;
+bridge.takeObjectNumber = () => 100;
+bridge.onLostObjectNumbers = () => () => {{}};
+return bridge;
+"#
+    ));
+    let bridge = make.call0(&JsValue::NULL).unwrap();
+    let kernel = WasmKernel::new(
+        r#"[{"factory":"interaction"},{"factory":"annotation-live"}]"#,
+        bridge.clone(),
+        call_js(&js_sys::Array::new(), "() => undefined"),
+        no_release(),
+        None,
+    )
+    .unwrap();
+    start_with_document(&kernel).await;
+    let annotation = parse(&kernel.capability("annotation".into(), Some("doc-1".into())).unwrap());
+    assert_eq!(invoke(&kernel, ref_of(&annotation, "canCreate"), "[]")["returned"], true);
+    let before = js_sys::Date::now();
+    let outcome = invoke(
+        &kernel,
+        ref_of(&annotation, "create"),
+        r#"[{"kind":"objectNumber","objectNumber":3},{"subtype":"square","rect":{"x":72,"y":49,"width":204,"height":28}}]"#,
+    );
+    let error = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap_err();
+    assert!(js_json(&error)["$error"]["message"].as_str().unwrap().contains("write refused"));
+    let applied = js_json(&js_sys::Reflect::get(&bridge, &"applied".into()).unwrap());
+    assert_eq!(applied.as_array().unwrap().len(), 1);
+    let op_id = applied[0][1]["opId"].as_str().unwrap();
+    assert_eq!(op_id.len(), 36);
+    assert_eq!(&op_id[14..15], "7");
+    assert!(matches!(&op_id[19..20], "8" | "9" | "a" | "b"));
+    let millis = u64::from_str_radix(&op_id[..13].replace('-', ""), 16).unwrap() as f64;
+    assert!(millis >= before && millis <= js_sys::Date::now());
+    // Opening another document requires the Rust task queue to drain again.
+    let documents = parse(&kernel.documents());
+    let outcome = invoke(&kernel, ref_of(&documents, "open"), r#"[{"id":"doc-2"}]"#);
+    let opened = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
+    assert_eq!(js_json(&opened)["document"]["id"], "doc-2");
+    JsFuture::from(kernel.destroy()).await.unwrap();
 }

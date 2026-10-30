@@ -3,7 +3,13 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
-import { isCancelled, isPluginError, type Kernel, type PluginError } from '@embedpdf/core';
+import {
+  isCancelled,
+  isPluginError,
+  type Kernel,
+  type PluginContext,
+  type PluginError,
+} from '@embedpdf/core';
 import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { CommandsToken } from '@embedpdf/plugin-commands';
@@ -31,7 +37,6 @@ import {
   toError,
 } from '../src';
 import { hostBytes, releaseHost } from '../src/engine-bridge';
-import { demoToolsPlugin } from '../../viewer/chrome/src/config/demo-tools.plugin';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = resolve(here, '..', '..', 'engine', 'main', 'test', 'fixtures');
@@ -280,7 +285,19 @@ describe('the Kernel shim over the Rust kernel', () => {
   });
 
   test('an init-only JS plugin registers through the Rust capabilities', async () => {
-    const k = await openFixture([interactionPlugin(), demoToolsPlugin()]);
+    const k = await openFixture([
+      interactionPlugin(),
+      {
+        id: 'probe-tool',
+        scope: 'document',
+        requires: [InteractionToken],
+        init(ctx: PluginContext) {
+          ctx.cleanup(
+            ctx.get(InteractionToken).registerTool({ id: 'signature', cursor: 'crosshair' }),
+          );
+        },
+      },
+    ]);
     const interaction = k.capability(InteractionToken);
     await expect.poll(() => interaction.hasTool('signature')).toBe(true);
     interaction.activateTool('signature');
@@ -384,10 +401,9 @@ describe('the Kernel shim over the Rust kernel', () => {
     const stage = k.capability(StageToken);
     stage.setViewportSize({ width: 800, height: 600 });
     const page = stage.listVisiblePages()[0].ref;
-    await k.capability(AnnotationToken).create({
-      page,
+    await k.capability(AnnotationToken).create(page, {
       subtype: 'square',
-      bounds: { x: 10, y: 10, width: 50, height: 50 },
+      rect: { x: 10, y: 10, width: 50, height: 50 },
     });
     expect(randomUuid).toHaveBeenCalled();
   });
@@ -405,11 +421,10 @@ describe('the Kernel shim over the Rust kernel', () => {
     const annotation = k.capability(AnnotationToken);
     expect(annotation.comments.listThreads()).toEqual([]);
 
-    const root = await annotation.create({
-      page,
+    const { annotation: root } = await annotation.create(page, {
       subtype: 'square',
       contents: 'root',
-      bounds: { x: 10, y: 10, width: 20, height: 20 },
+      rect: { x: 10, y: 10, width: 20, height: 20 },
     });
     const threads = annotation.comments.listThreads();
     expect(threads).toHaveLength(1);
@@ -417,12 +432,12 @@ describe('the Kernel shim over the Rust kernel', () => {
 
     const changed = vi.fn();
     const off = annotation.comments.onThreadChanged(changed);
-    const reply = await annotation.comments.reply(root, 'agreed');
+    const reply = await annotation.comments.reply(root.ref, 'agreed');
     off();
     expect(reply).toBeTruthy();
     expect(changed).toHaveBeenCalledTimes(1);
-    expect(annotation.comments.getThread(root)?.replies).toHaveLength(1);
-    expect(annotation.links.get(root)).toBe(null);
+    expect(annotation.comments.getThread(root.ref)?.replies).toHaveLength(1);
+    expect(annotation.links.get(root.ref)).toBe(null);
   });
 
   test('a JS plugin with its own reducer is refused', () => {
