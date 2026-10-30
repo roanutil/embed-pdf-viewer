@@ -1,19 +1,12 @@
-//! Owner-thread dispatch, queues and budgets.
+//! Constructs, uses and destroys native state on one owner OS thread.
 //!
-//! One owner OS thread per engine, inside Rust. The exported engine object is
-//! thread-safe and submits jobs; handle types are `!Send + !Sync`. A Swift
-//! actor, a coroutine dispatcher or a mutex does not guarantee affinity, which
-//! is the whole reason this exists rather than a lock around a `Document`.
-//!
-//! The written contract, clause by clause with what implements each one and
-//! what is still owed, is
+//! Submission returns a completion independently of the job's execution.
+//! Close drains and joins; detached shutdown drains without blocking its caller.
+//! The channel is unbounded: bindings must reserve admission and byte budgets
+//! before submitting work. Confinement and disposal follow
 //! `docs/conventions/engine-lifecycle.md`.
-//! What is here is the minimum Phase 1's smoke apps need: a thread that owns
-//! PDFium state and runs closures on it, and a close that drains. Bounded
-//! queues, admission budgets and the reserved control route are G3 and are not
-//! here; the contract says so rather than implying otherwise.
 
-use std::sync::mpsc::{Sender, SyncSender, channel, sync_channel};
+use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::thread::JoinHandle;
 
 use crate::error::{EngineError, EngineErrorCode};
@@ -22,6 +15,23 @@ use crate::error::{EngineError, EngineErrorCode};
 /// because each one returns a different type; the result travels back through
 /// a channel the caller owns.
 type Job<S> = Box<dyn FnOnce(&mut S) + Send>;
+
+/// The completion of an accepted owner-thread job.
+pub struct OwnerResult<T> {
+    result: Receiver<T>,
+}
+
+impl<T> OwnerResult<T> {
+    /// Waits for the job; a stopped owner reports `RuntimeUnavailable`.
+    pub fn wait(self) -> Result<T, EngineError> {
+        self.result.recv().map_err(|_| {
+            EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                "the owner thread stopped before returning a result",
+            )
+        })
+    }
+}
 
 /// A thread that owns PDFium state, and the only thread that touches it.
 ///
@@ -83,6 +93,16 @@ impl<S: 'static> OwnerThread<S> {
         &self,
         job: impl FnOnce(&mut S) -> T + Send + 'static,
     ) -> Result<T, EngineError> {
+        self.submit(job)?.wait()
+    }
+
+    /// Submits without waiting, or returns `DocNotOpen` after shutdown.
+    ///
+    /// The caller reserves its own admission and byte budgets before this call.
+    pub fn submit<T: Send + 'static>(
+        &self,
+        job: impl FnOnce(&mut S) -> T + Send + 'static,
+    ) -> Result<OwnerResult<T>, EngineError> {
         let jobs = self.jobs.as_ref().ok_or_else(Self::closed)?;
         let (tx, rx): (SyncSender<T>, _) = sync_channel(1);
         jobs.send(Box::new(move |state| {
@@ -91,12 +111,7 @@ impl<S: 'static> OwnerThread<S> {
             let _ = tx.send(job(state));
         }))
         .map_err(|_| Self::closed())?;
-        rx.recv().map_err(|_| {
-            EngineError::with_message(
-                EngineErrorCode::RuntimeUnavailable,
-                "the owner thread stopped before returning a result",
-            )
-        })
+        Ok(OwnerResult { result: rx })
     }
 
     /// Stops accepting work and waits for the thread to finish what it has.
@@ -112,6 +127,16 @@ impl<S: 'static> OwnerThread<S> {
             // about learning what happened.
             let _ = handle.join();
         }
+    }
+
+    /// Stops admission without joining; accepted jobs drain on the owner.
+    ///
+    /// State is still destroyed on its owner thread. A caller needing to await
+    /// disposal must observe its state's completion signal rather than join
+    /// this detached handle. Repeated shutdown is harmless.
+    pub fn shutdown_detached(&mut self) {
+        self.jobs = None;
+        self.handle = None;
     }
 
     pub fn is_closed(&self) -> bool {
@@ -211,5 +236,81 @@ mod tests {
         let seen = owner.run(|state| state.get()).expect("read");
         assert_eq!(seen, 2, "the same state is handed to every job");
         owner.close();
+    }
+
+    #[test]
+    fn submitting_returns_before_the_job_finishes() {
+        let owner = OwnerThread::start(|| 0u32);
+        let (started_tx, started_rx) = sync_channel(1);
+        let (release_tx, release_rx) = sync_channel(1);
+        let result = owner
+            .submit(move |state| {
+                started_tx.send(()).unwrap();
+                release_rx.recv().unwrap();
+                *state += 7;
+                *state
+            })
+            .expect("accepted");
+        started_rx.recv_timeout(std::time::Duration::from_secs(2)).expect("started");
+        release_tx.send(()).unwrap();
+        assert_eq!(result.wait().expect("completed"), 7);
+    }
+
+    #[test]
+    fn close_drains_submitted_jobs_before_their_results_are_collected() {
+        let mut owner = OwnerThread::start(|| 0u32);
+        let results: Vec<_> = (0..4)
+            .map(|_| {
+                owner
+                    .submit(|state| {
+                        *state += 1;
+                        *state
+                    })
+                    .expect("accepted")
+            })
+            .collect();
+        owner.close();
+        let actual: Vec<_> = results.into_iter().map(|r| r.wait().unwrap()).collect();
+        assert_eq!(actual, [1, 2, 3, 4]);
+        assert!(owner.submit(|_| ()).is_err());
+    }
+
+    #[test]
+    fn detached_shutdown_returns_while_work_drains_and_drops_state_on_its_owner() {
+        struct State {
+            dropped: Sender<std::thread::ThreadId>,
+            _confined: std::rc::Rc<()>,
+        }
+        impl Drop for State {
+            fn drop(&mut self) {
+                let _ = self.dropped.send(std::thread::current().id());
+            }
+        }
+        let (drop_tx, drop_rx) = channel();
+        let mut owner =
+            OwnerThread::start(move || State { dropped: drop_tx, _confined: std::rc::Rc::new(()) });
+        let (started_tx, started_rx) = sync_channel(1);
+        let (release_tx, release_rx) = sync_channel(1);
+        let result = owner
+            .submit(move |_| {
+                started_tx.send(std::thread::current().id()).unwrap();
+                release_rx.recv().unwrap();
+                19
+            })
+            .expect("accepted");
+        let owner_id = started_rx.recv_timeout(std::time::Duration::from_secs(2)).unwrap();
+        let (shutdown_tx, shutdown_rx) = sync_channel(1);
+        let shutdown = std::thread::spawn(move || {
+            owner.shutdown_detached();
+            assert!(owner.is_closed());
+            owner.shutdown_detached();
+            shutdown_tx.send(()).unwrap();
+        });
+        let detached = shutdown_rx.recv_timeout(std::time::Duration::from_secs(2));
+        release_tx.send(()).unwrap();
+        shutdown.join().unwrap();
+        assert!(detached.is_ok(), "shutdown must not join a blocked job");
+        assert_eq!(result.wait().unwrap(), 19);
+        assert_eq!(drop_rx.recv_timeout(std::time::Duration::from_secs(2)).unwrap(), owner_id);
     }
 }
