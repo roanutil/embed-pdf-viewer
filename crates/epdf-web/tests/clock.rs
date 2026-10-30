@@ -1,7 +1,7 @@
 //! The started clock: once [`start_clock`] runs, the virtual clock follows
 //! `Date.now()` at every entry, and never runs backwards.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use epdf_kernel::identity::{generate_uuid_v7, with_uuid_source};
@@ -74,15 +74,48 @@ fn started_runtime_generates_live_uuid_v7() {
 }
 
 #[wasm_bindgen_test]
-fn same_millisecond_operation_ids_are_distinct() {
+fn same_millisecond_operation_ids_use_browser_entropy() {
     reset();
     start_clock();
-    let mut ids = std::collections::HashSet::new();
-    for _ in 0..100 {
-        let id = generate_uuid_v7(Some(123.0));
-        assert_eq!(uuid_millis(&id), 123.0);
-        assert!(ids.insert(id));
+    let ids = Rc::new(RefCell::new(Vec::new()));
+    let generated = ids.clone();
+    let generate = Closure::<dyn FnMut()>::new(move || {
+        for _ in 0..100 {
+            generated.borrow_mut().push(generate_uuid_v7(Some(123.0)));
+        }
+    });
+    let with_crypto = js_sys::Function::new_with_args(
+        "generate",
+        r#"
+const crypto = globalThis.crypto;
+const descriptor = Object.getOwnPropertyDescriptor(crypto, 'getRandomValues');
+let calls = 0;
+Object.defineProperty(crypto, 'getRandomValues', {
+    configurable: true,
+    value(bytes) {
+        bytes.fill(0xab);
+        bytes[bytes.length - 1] = ++calls;
+        return bytes;
     }
+});
+try {
+    generate();
+    return calls;
+} finally {
+    if (descriptor) Object.defineProperty(crypto, 'getRandomValues', descriptor);
+    else delete crypto.getRandomValues;
+}
+"#,
+    );
+    let calls = with_crypto.call1(&JsValue::NULL, generate.as_ref()).unwrap();
+    assert!(calls.as_f64().unwrap() > 0.0, "UUIDs must read Web Crypto entropy");
+    let mut distinct = std::collections::HashSet::new();
+    for (index, id) in ids.borrow().iter().enumerate() {
+        assert_eq!(uuid_millis(id), 123.0);
+        assert_eq!(id, &format!("00000000-007b-7bab-abab-ababababab{:02x}", index + 1));
+        assert!(distinct.insert(id.clone()));
+    }
+    assert_eq!(distinct.len(), 100);
     reset();
 }
 

@@ -749,9 +749,16 @@ async fn a_behavior_described_again_keeps_its_functions() {
     assert!(released(&log).is_empty(), "released {:?}", released(&log));
 
     let second = invoke(&kernel, get, query)["returned"].clone();
-    assert_eq!(invoke(&kernel, ref_of(&second, "engaged"), "[]"), json!({ "returned": true }));
-    let last = js_sys::Array::from(&calls.get(calls.length() - 1));
-    assert_eq!(last.get(0).as_string().as_deref(), Some("e"));
+    for (member, callback) in [("matches", "m"), ("engaged", "e")] {
+        assert_eq!(invoke(&kernel, ref_of(&second, member), query), json!({ "returned": true }));
+        let last = js_sys::Array::from(&calls.get(calls.length() - 1));
+        assert_eq!(last.get(0).as_string().as_deref(), Some(callback));
+        assert_eq!(parse(&last.get(1).as_string().unwrap()), parse(query));
+    }
+    let mut refs = Vec::new();
+    ref_ids(&second, &mut refs);
+    refs.into_iter().for_each(|id| kernel.release_ref(id));
+    assert!(released(&log).is_empty(), "registered callbacks outlive returned refs");
 }
 
 #[wasm_bindgen_test]

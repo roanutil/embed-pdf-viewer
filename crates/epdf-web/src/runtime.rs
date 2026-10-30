@@ -2,7 +2,8 @@
 //!
 //! `rt` only moves when a host drains it and advances its clock. Here the
 //! host is the page. [`start_clock`] moves the virtual clock to `Date.now()`
-//! once, so `rt::now()` reads as a real date. Every export then runs as an
+//! once, so `rt::now()` reads as a real date, and installs the runtime-owned
+//! UUID source using JavaScript time and Web Crypto. Every export then runs as an
 //! [`entry`], which ends with [`after_entry`]: that catches the virtual clock
 //! up to `Date.now()` (firing whatever timers came due on the way), drains
 //! the ready queue, and arms one real `setTimeout` for the earliest virtual
@@ -58,8 +59,8 @@ thread_local! {
     static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) };
     /// Whether [`start_clock`] has run, so entries follow `Date.now()`.
     static STARTED: Cell<bool> = const { Cell::new(false) };
-    // The source is thread-local, so its guard belongs to the runtime rather
-    // than any one kernel: destroying one viewer must not reset another's IDs.
+    /// The source is thread-local, so its guard belongs to the runtime rather
+    /// than any one kernel: destroying one viewer must not reset another's IDs.
     #[cfg(target_arch = "wasm32")]
     static UUID_SOURCE: RefCell<Option<epdf_kernel::identity::UuidSourceGuard>> = const { RefCell::new(None) };
     /// How many entries are on the stack. An export's body or a timer's
@@ -113,8 +114,9 @@ impl Drop for Entry {
 }
 
 /// Put this thread's runtime back to nothing: disarm the timeout, stop
-/// following wall time, and [`rt::reset`]. For tests running one case after
-/// another in one instance.
+/// following wall time, restore the preceding UUID source, and [`rt::reset`].
+/// For tests running one case after another in one instance. Any scoped UUID
+/// override installed after [`start_clock`] must be dropped before this reset.
 pub fn reset() {
     if let Some(armed) = ARMED.with(|armed| armed.borrow_mut().take()) {
         clear_timeout(&armed.handle);
@@ -131,7 +133,10 @@ pub fn reset() {
 /// wall time at every [`after_entry`] from here on. Call once, when the
 /// kernel is created, so what plugins timestamp with `rt::now()` is a date.
 /// It also installs `Date.now()` as `rt::monotonic_now()`, which measures
-/// work inside one entry, where the virtual clock stands still.
+/// work inside one entry, where the virtual clock stands still. On wasm32,
+/// the first call also retains a UUID source using JavaScript wall time and
+/// Web Crypto entropy; subsequent calls leave scoped overrides in place.
+/// The host must provide Web Crypto when a UUID is generated.
 ///
 /// Call it before anything schedules a timer. The jump is one
 /// `rt::advance` across decades, and an interval set before it would fire
