@@ -2,23 +2,24 @@
 
 ## Intent and approved boundary
 
-PDFAbner needs to obtain text, quads and rasters from the same PDFium engine as
-the browser viewer. Its current PdfPig text and Node rendering paths use
-different geometry authorities. This design exposes existing Rust capabilities
-through an in-process C ABI and a typed .NET 10 facade.
+This general C#/.NET binding gives consumers text, quads and rasters from the
+same PDFium engine used by the browser viewer. It exposes existing Rust
+capabilities through an in-process C ABI and a typed .NET 10 facade, with
+explicit geometry, indexing, ownership and platform contracts.
 
 The first surface includes opening bytes/passwords, document close, page
 count/size/rotation/boxes, text and UTF-16 charmap, character geometry, literal
 search, full/region RGBA rendering, existing page-space text-layout helpers and
 page/view transforms. It excludes kernel and selection/search controllers,
 annotation scenes/editing, browser Rust migration, OCR, semantic reading order,
-and new quote-prefix/suffix algorithms. PDFAbner owns application policy,
-PNG/compositing, match IDs, anchoring context and database persistence.
+and new quote-prefix/suffix algorithms. Consumers own application policy,
+PNG/compositing, match IDs, anchoring context and persistence.
 
 This is the implementation design for the approved scope. Product code starts
 after review of this document and its implementation plan. Publishing is a
 separate decision. The native package and managed facade belong to this repo;
-PDFAbner owns its adapter, consumer parity harness and dependency record.
+Consumers own their application adapters and dependency records. This repo
+owns the binding's parity harness and published compatibility contract.
 
 ## Existing source and approach
 
@@ -261,18 +262,19 @@ is returned. Parallel document processing uses a bounded pool of engines.
 
 ## Coordinates, fonts and mandatory parity
 
-Wire geometry is embedpdf-page: PDF points, origin at the top-left of CropBox
+Wire geometry is page space (`crates/epdf-engine/src/page_space/mod.rs`):
+PDF points, origin at the top-left of CropBox
 clipped to MediaBox, x right/y down, unrotated. /Rotate changes no stored
-number. Host's boundary shifts/flips once. The PDFAbner adapter alone maps
-zero-based PageIndex to one-based API page and supplies coordinateSpace,
-pageRotation, normalizeRotation, pageWidth and pageHeight as one unit.
-normalizeRotation provenance is an API-owner decision, not a binding default.
+number. Host's boundary shifts/flips once. The binding is zero-based;
+consumers convert page numbers if needed. Return unrotated page dimensions,
+rotation, visible-box metadata and explicit coordinate-frame identity together.
 UserUnit and actual snapped render/view scale must survive transform mapping.
+Application-specific provenance fields remain the consumer's responsibility.
 
 PDFium characters are not UTF-16 code units. The viewer's charStart/charCount
 are PDFium character indices; C# string indexing uses Utf16Offset. Test zero-
 text characters, surrogate pairs, normalization, ligatures and repeated text.
-No PdfPig index is silently reused. Literal search uses the existing Rust
+Do not reinterpret indices from a different text authority. Literal search uses the existing Rust
 matcher; regex's documented CR/newline divergences stay outside first scope.
 
 Pin the actual viewer package integrity, flags, engine/runtime manifests and
@@ -280,9 +282,10 @@ font bytes/order in differential results. Browser currently uses TS text and
 search; rustReads changes geometry only. Compare live browser TS output and
 native managed output, not merely native against historical vectors.
 
-PDFAbner's storage gate parses EACH actual serialized JSON number token as
-.NET decimal and rounds once to four places AwayFromZero. Assert identical
-values after that path, ideally through its contract harness. Do not assert
+The binding's parity contract compares geometry after rounding to 4 decimal
+places, AwayFromZero. Its comparator parses each actual serialized JSON number
+token as .NET decimal and rounds once. Assert identical values after that
+path using the binding's shared comparison harness. Do not assert
 raw token spelling equality, use a tolerance, pre-round doubles or convert
 to decimal inside the binding. Retain tokens for diagnostics. Test positive
 and negative .00005 boundaries and double serialization round trips.
@@ -293,12 +296,14 @@ vertical/sheared text, whitespace/empty cells, embedded and non-embedded
 fonts. Pin the browser deployment's configured fallback font files, licenses
 and registration order; initialize the same set before opening documents on
 every native owner thread. Do not rely on OS fallback or waive failing exact
-geometry. PDFAbner must supply that deployment font inventory; no universal
-browser font bundle is assumed. A controlled shared test font set can prove
-the harness before the deployment inventory arrives.
+geometry. Each parity manifest names the exact configured font inventory;
+no universal browser font bundle is assumed. Ship and validate a controlled
+shared test font set; consumers provide their own matching configuration
+when claiming compatibility for a different deployed font set.
 
-No new native geometry may be persisted in PDFAbner until the live corpus gate
-passes. Keep this gate on every engine, viewer, runtime or font bump. Managed
+Do not claim browser-compatible geometry until the live corpus gate passes.
+Consumers must validate that contract before relying on it for persisted
+markup. Keep this gate on every engine, viewer, runtime or font bump. Managed
 tests also replay committed wire/text/charmap/layout/search vectors to catch
 DTO drift. Rendering independently checks dimensions/stride/area/rotation,
 transparent straight alpha and a separately agreed pixel tolerance; exact
@@ -357,7 +362,7 @@ and withhold a full five-platform compatibility claim; do not work around the
 hold by using hosted CI or silently dropping a requested RID.
 
 Proposed support floors must be checked against the downloaded libraries and
-MCP's actual image: glibc Linux, macOS 13+, Windows 10 x64. Inspect actual
+the intended consuming environments: glibc Linux, macOS 13+, Windows 10 x64. Inspect actual
 symbol/deployment requirements before declaring a concrete Linux libc floor;
 use an older compatible builder if Trixie raises it beyond the agreed consumer
 floor. Alpine/musl is not silently covered by linux-x64/linux-arm64.
@@ -366,12 +371,12 @@ floor. Alpine/musl is not silently covered by linux-x64/linux-arm64.
 
 Before implementation approval: review the proposed ABI/job ownership and
 default budgets; coordinator assigns the slices in the companion plan.
-Before consumer parity/packaging acceptance: PDFAbner provides its actual
-container libc floor, viewer/font pins, normalizeRotation provenance, API
-decimal contract harness and rendering pixel tolerance. These do not prevent
-building the core adapter against controlled fixtures; they do block a
-production compatibility claim and persisted-geometry switchover.
+Before parity/packaging acceptance: record the supported container/libc floor,
+viewer/font pins and rendering pixel tolerance in the binding's manifests,
+and implement its shared decimal-rounding comparator. Consumers validate any
+additional deployment or provenance requirements themselves. Controlled
+fixtures allow native development before every target host is available;
+production compatibility claims still require the stated validation evidence.
 
-References: [consumer decision](https://github.com/MFB-Technologies-Inc/PDFAbner/pull/130),
-[interop guidance](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/best-practices),
+References: [interop guidance](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/best-practices),
 [native NuGet assets](https://learn.microsoft.com/en-us/nuget/create-packages/native-files-in-net-packages).

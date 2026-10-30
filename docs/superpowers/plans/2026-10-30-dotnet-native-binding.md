@@ -26,8 +26,9 @@ C ABI, NuGet, current TS viewer as differential reference.
   macOS/Windows tests run manually on those hosts; declare the exception.
 - Preserve existing OwnerThread/Host callers. Native pointer validity remains
   the C caller's obligation; checked handles do not validate arbitrary memory.
-- Double geometry stays unrounded until PDFAbner's actual serialized-token
-  decimal parse + 4dp AwayFromZero gate. No geometry persistence before parity.
+- Return unrounded double geometry. The binding's parity comparator parses
+  serialized number tokens as decimal and rounds to 4 places AwayFromZero.
+  Consumers validate parity before relying on geometry for persisted markup.
 - Five RIDs: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64. No merge,
   release tag, NuGet push or public artifact publication is implicit.
 - Standing hold: no `.github/**` changes, new CI or CI dependencies. Every
@@ -43,8 +44,8 @@ fallback fonts. Each has an owning verification below.
 
 ## Ownership, dependencies and order
 
-Coordinator radiant-linnet assigns implementers before execution. Proposed
-primary is mild-pangolin; lunar-echidna reviews the ABI/parity/package boundaries.
+The coordinator assigns implementers before execution. A primary implementer
+owns shared interfaces; an independent reviewer checks ABI/parity/packaging.
 These are proposed allocations, not claims that implementation has started.
 
 | Slice | Owner/files                                                             | Depends on                             | Reviewable deliverable                                      |
@@ -54,7 +55,7 @@ These are proposed allocations, not claims that implementation has started.
 | 2     | Native implementer: epdf-capi engine/operations; Host cancellation      | 1                                      | Bytes -> metadata/text/geometry/region RGBA, literal search |
 | 3     | Helper implementer: epdf-capi helpers only                              | 1 ABI freeze                           | Existing text-layout and page/view transforms               |
 | 4     | Managed implementer: platforms/dotnet                                   | 1 header, 2, 3                         | Typed .NET facade + wire-vector/interop tests               |
-| 5     | Parity implementer + PDFAbner consumer owner                            | 2, 3, 4                                | Live browser/native storage-boundary gate                   |
+| 5     | Binding parity implementer                                              | 2, 3, 4                                | Live browser/native rounding-parity gate                    |
 | 6     | Packaging implementer: build-support/capi build + manual tooling        | 2, 3, 4; release acceptance requires 5 | Five locally verified RID/NuGet outputs and run records     |
 | 7     | Primary + independent reviewer                                          | 1–6                                    | Docs, final review and consumer handoff PRs                 |
 
@@ -206,14 +207,15 @@ Reuse `tooling/viewer-e2e/playwright.config.ts`, its real viewer bridge/entry
 at `examples/viewer-react/e2e.html`, and its packed-artifact mode; extend the
 read-only bridge for corpus snapshots rather than build a substitute viewer.
 Load the exact manifest viewer package/flags and assert the actual backend;
-never relabel a fallback path. PDFAbner supplies its consumer serialization/
-decimal harness and deployment manifest.
+never relabel a fallback path. Add a .NET decimal parse/round comparator to
+the binding's parity runner and pin the tested viewer/font configuration.
 
 **Interfaces:** Corpus manifest contains PDF SHA256, viewer package integrity/
 flags, source/runtime pins, fonts SHA256/order and environment. Runners emit
 the same operation/request identifiers, raw JSON tokens, text/maps/segments,
-coordinate metadata and render descriptors. Comparator calls the consumer's
-decimal parse/round harness; it does not reimplement a binary-double tolerance.
+coordinate metadata and render descriptors. The binding's comparator parses
+actual number tokens as decimal and rounds once to 4 places AwayFromZero;
+it does not use a binary-double tolerance.
 
 - [ ] Add cases where native and viewer intentionally differ at .00005 and
       crop/rotation boundaries; verify the runner rejects them. Include surrogate/
@@ -226,10 +228,11 @@ decimal parse/round harness; it does not reimplement a binary-double tolerance.
       in-container and attach machine-readable
       per-case evidence. Exact text/maps/rounded geometry and metadata must match;
       apply a separately approved tolerance only to raster pixels.
-- [ ] PDFAbner consumer owner verifies one-based page conversion, complete
-      provenance and actual API serialization/decimal behavior. Until deployment
-      font inventory, libc floor and normalizeRotation are settled and the gate
-      passes, prohibit persisted-geometry switchover. Re-run this gate manually
+- [ ] Verify the binding is zero-based, the frame is PDF points from the
+      top-left of the unrotated visible crop box with y down, and the shared
+      serialized-token rounding contract passes. Consumers convert page numbers
+      and supply application provenance themselves. Record fonts/libc/tolerance
+      before claiming compatibility. Re-run this gate manually
       on each relevant pin bump and check in the environment, exact commands,
       artifact SHA256s and results using slice 1's validation-record schema.
 
@@ -263,7 +266,7 @@ packaging is complete; parity/facade tests never depend on package generation.
       Test manually on native OS hosts; do not widen process DLL search paths.
 - [ ] Build/test the five spec targets with libclang and exact Rust/SDK pins.
       Linux legs use project-container builds; macOS/Windows use their hosts
-      manually and record exceptions, image/source/compiler/OS floors. Validate the MCP libc requirement
+      manually and record exceptions, image/source/compiler/OS floors. Validate the supported libc requirement
       against actual ELF symbols before declaring Linux compatibility.
 - [ ] Pack runtimes/{rid}/native with both libraries and required font/notices;
       checksum every delivered file, verify source/runtime/RID metadata and unpack
@@ -295,7 +298,7 @@ slice records. Audit package changesets using embedpdf-changesets.
 - [ ] Independent reviewer checks the whole branch plus shared-interface
       changes. Resolve blocking findings with reproducing tests, then open the
       implementation PR(s) into research/multi-platform-rust-core-impl-plugins.
-      Provide PDFAbner the reviewed header/facade/artifact manifest and parity
+      Provide consumers the reviewed header/facade/artifact manifest and parity
       evidence. Human approval is required before merge or publication.
 - [ ] Confirm `git diff --name-only <base>...HEAD` contains no `.github/` paths.
       Review the checked-in manual run records and verify every claimed RID's
