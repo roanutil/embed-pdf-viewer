@@ -58,6 +58,10 @@ thread_local! {
     static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) };
     /// Whether [`start_clock`] has run, so entries follow `Date.now()`.
     static STARTED: Cell<bool> = const { Cell::new(false) };
+    // The source is thread-local, so its guard belongs to the runtime rather
+    // than any one kernel: destroying one viewer must not reset another's IDs.
+    #[cfg(target_arch = "wasm32")]
+    static UUID_SOURCE: RefCell<Option<epdf_kernel::identity::UuidSourceGuard>> = const { RefCell::new(None) };
     /// How many entries are on the stack. An export's body or a timer's
     /// callback can reach JavaScript, which can call an export while the
     /// outer Rust call is still running.
@@ -115,6 +119,8 @@ pub fn reset() {
     if let Some(armed) = ARMED.with(|armed| armed.borrow_mut().take()) {
         clear_timeout(&armed.handle);
     }
+    #[cfg(target_arch = "wasm32")]
+    UUID_SOURCE.with(|source| source.borrow_mut().take());
     STARTED.with(|started| started.set(false));
     DEPTH.with(|d| d.set(0));
     AT_EXIT.with(|all| all.borrow_mut().clear());
@@ -131,6 +137,16 @@ pub fn reset() {
 /// `rt::advance` across decades, and an interval set before it would fire
 /// once for every period in the gap.
 pub fn start_clock() {
+    #[cfg(target_arch = "wasm32")]
+    UUID_SOURCE.with(|source| {
+        let mut source = source.borrow_mut();
+        if source.is_none() {
+            *source = Some(epdf_kernel::identity::with_uuid_source(
+                Rc::new(|bytes| getrandom::getrandom(bytes).expect("browser UUID entropy")),
+                Rc::new(js_sys::Date::now),
+            ));
+        }
+    });
     STARTED.with(|started| started.set(true));
     rt::set_monotonic_clock(Some(Rc::new(js_sys::Date::now)));
     let entry = Entry::enter();
