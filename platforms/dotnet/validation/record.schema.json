@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Manual native binding validation record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "slice",
+    "rid",
+    "source",
+    "environment",
+    "inputs",
+    "commands",
+    "artifacts",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "slice": { "type": "integer", "minimum": 1, "maximum": 7 },
+    "rid": { "enum": ["linux-x64", "linux-arm64", "osx-arm64", "osx-x64", "win-x64"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty", "runtimeFork"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/commit" },
+        "dirty": { "type": "boolean" },
+        "diffSha256": { "$ref": "#/$defs/sha256" },
+        "runtimeFork": { "$ref": "#/$defs/commit" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "dirty": { "const": true } } },
+          "then": {
+            "properties": { "diffSha256": { "$ref": "#/$defs/sha256" } },
+            "required": ["diffSha256"]
+          }
+        }
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "os", "arch", "emulated", "tools"],
+      "properties": {
+        "kind": { "enum": ["container", "host"] },
+        "os": { "type": "string", "minLength": 1 },
+        "arch": { "enum": ["arm64", "x64"] },
+        "emulated": { "type": "boolean" },
+        "imageId": { "$ref": "#/$defs/imageId" },
+        "hostOs": { "type": "string" },
+        "tools": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "container" } } },
+          "then": {
+            "properties": { "imageId": { "$ref": "#/$defs/imageId" } },
+            "required": ["imageId"]
+          }
+        }
+      ]
+    },
+    "inputs": { "type": "array", "items": { "$ref": "#/$defs/file" } },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "cwd", "exitCode", "results"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "cwd": { "type": "string", "minLength": 1 },
+          "exitCode": { "type": "integer" },
+          "log": { "$ref": "#/$defs/file" },
+          "results": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "artifacts": { "type": "array", "items": { "$ref": "#/$defs/file" } },
+    "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "$defs": {
+    "imageId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

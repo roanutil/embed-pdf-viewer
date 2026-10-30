@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "slice": 1,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "a797df9f00cd12ce1b7eb811c74fa884074e4632",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS arm64; Docker Linux VM",
+    "tools": {
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+      "dotnet": "10.0.403",
+      "clang": "clang version 21.0.0 (https://github.com/swiftlang/llvm-project.git 11673e6660b2d0a5f9f99b1c7b773f4c2f6df1b0)",
+      "node": "v24.20.0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "39340441d3a8e391ed7267264da2c64970c137dad92248b8edea191696cec069",
+      "bytes": 58939
+    },
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "packages/engine/main/test/fixtures/Roboto-Regular.ttf",
+      "sha256": "797e35f7f5d6020a5c6ea13b42ecd668bcfb3bbc4baa0e74773527e5b6cb3174",
+      "bytes": 305608
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    }
+  ],
+  "commands": [
+    {
+      "command": "cargo test --offline -p epdf-capi && cargo test --offline -p epdf-engine --lib && cargo test --offline -p epdf-uniffi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "C ABI unit 15/15 and lifecycle 8/8; engine library 484/484; existing binding unit 5/5 and integration 8/8; all doctests pass.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/scoped-tests.log",
+        "sha256": "a53d33a46cdaa23d4757e472267eb3441fb5cca671068dbd657f132ef7725dc3",
+        "bytes": 50147
+      }
+    },
+    {
+      "command": "cargo clippy --offline -p epdf-capi --all-targets -- -D warnings && cargo fmt -p epdf-capi --check && rustfmt --check crates/epdf-engine/src/dispatch.rs",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Strict clippy and Rust formatting pass.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/lint-format.log",
+        "sha256": "8c233a54790c4800d3dd585436af679aa838da259bfdb129412e2d51cdb75cdc",
+        "bytes": 72
+      }
+    },
+    {
+      "command": "cargo build --offline -p epdf-capi && mkdir -p target/manual && clang -std=c11 -Wall -Wextra -Werror -pedantic -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,\"$PWD/target/debug\" -o target/manual/c-smoke && target/manual/c-smoke && clang++ -x c++ -std=c++17 -Wall -Wextra -Werror -pedantic -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,\"$PWD/target/debug\" -o target/manual/cpp-smoke && target/manual/cpp-smoke",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Shared library built; strict C11 and C++17 consumers link and execute.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/c-cpp-consumers.log",
+        "sha256": "dce8a857987fb409717990c2bea4c532607c30ce155eef7f6816f22926538bdf",
+        "bytes": 176
+      }
+    },
+    {
+      "command": "nm -D --defined-only target/debug/libepdf_capi.so | awk '$3 ~ /^epdf_/ {print $3}' | sort",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Public C export names retained in log; expected 11 entry points.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/exported-symbols.log",
+        "sha256": "e0bad9ef4047458f12a0dbb04d41dc86ca0a6a876f007e5afb601e767bc9d848",
+        "bytes": 194
+      }
+    },
+    {
+      "command": "cargo test --offline -p epdf-capi -p epdf-engine -p epdf-uniffi",
+      "cwd": ".",
+      "exitCode": 101,
+      "results": "Fails in existing document_session integration with SIGSEGV; not a green regression gate. Separately reproduced on untouched merged base; issue #16.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/broad-regression.log",
+        "sha256": "9069fe36609e838b9f21d3061a7b71f6bd6e04a4791716fbef643b981325bfab",
+        "bytes": 69621
+      }
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/workspaces/embed-pdf-viewer/target/baseline cargo test --offline --manifest-path /tmp/epdf-slice1-baseline/Cargo.toml -p epdf-engine --test document_session a_page_held_past_close_keeps_a_registry_layers_base_alive -- --exact --test-threads=1",
+      "cwd": ".",
+      "exitCode": 101,
+      "results": "Untouched git archive of 1454eb5415fc5eff0eba6902b5938176f25d34ba reproduces the exact held-page failure serially with SIGSEGV; issue #16.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/baseline-isolation.log",
+        "sha256": "ef81413732801a1d965f4f1d556f307711902f9a8f7906906e94c6af0685dda3",
+        "bytes": 604
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "target/debug/libepdf_capi.so",
+      "sha256": "cec5007974bae659aed2579b23a3c6f62629f51a256e7acd379d4a45953980e8",
+      "bytes": 119413704
+    },
+    {
+      "path": "target/manual/c-smoke",
+      "sha256": "8b67e39ab982ba8a8f25de9e6c2cdb06aa48a64f41255ec84a5188fd530a04d4",
+      "bytes": 70944
+    },
+    {
+      "path": "target/manual/cpp-smoke",
+      "sha256": "86a8a2a7e034415389a5eff4bcdb672f9d454a62f67eab4fec8409844c1ee987",
+      "bytes": 70944
+    }
+  ],
+  "limitations": [
+    "Lifecycle-only ABI; document/read/render/helper operations return NotImplemented. No managed facade, package, relocation or browser geometry compatibility is claimed.",
+    "Only Linux arm64 native container execution is validated here. Linux x64, macOS arm64/x64 and Windows x64 have no native library validation record in this slice.",
+    "Broad regression is failing with a pre-existing native lifetime SIGSEGV, also reproduced from an untouched git archive of merged base 1454eb5415fc5eff0eba6902b5938176f25d34ba: https://github.com/roanutil/embed-pdf-viewer/issues/16. No page handle is exposed; document generation checks alone do not prove internal held-page safety.",
+    "Runtime dependency is provided at /opt/pdfium by the project container mount. Relocated shipping-library loading and platform support floors remain for packaging validation."
+  ]
+}
