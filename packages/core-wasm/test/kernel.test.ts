@@ -389,7 +389,7 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(listed).toContain(search.goToHit(0));
   });
 
-  // TODO(#11): forward the annotation randomUuid host through the Rust adapter.
+  // TODO(#13): forward the annotation randomUuid host through the Rust adapter.
   test.fails("the hosts' randomUuid names a new annotation", async () => {
     const randomUuid = vi.fn(() => '5a1d2c3e-0000-4000-8000-00000000abcd');
     setHosts({ annotation: { randomUuid } });
