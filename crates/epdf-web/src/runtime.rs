@@ -3,8 +3,8 @@
 //! `rt` only moves when a host drains it and advances its clock. Here the
 //! host is the page. [`start_clock`] moves the virtual clock to `Date.now()`
 //! once, so `rt::now()` reads as a real date, and installs the runtime-owned
-//! UUID source using JavaScript time and Web Crypto. Every export then runs as an
-//! [`entry`], which ends with [`after_entry`]: that catches the virtual clock
+//! UUID source using JavaScript time and Web Crypto. Every export runs as
+//! an [`entry`], which ends with [`after_entry`]: that catches the virtual clock
 //! up to `Date.now()` (firing whatever timers came due on the way), drains
 //! the ready queue, and arms one real `setTimeout` for the earliest virtual
 //! timer left. When that fires it runs [`after_entry`] again. An entry
@@ -115,8 +115,9 @@ impl Drop for Entry {
 
 /// Put this thread's runtime back to nothing: disarm the timeout, stop
 /// following wall time, restore the preceding UUID source, and [`rt::reset`].
-/// For tests running one case after another in one instance. Any scoped UUID
-/// override installed after [`start_clock`] must be dropped before this reset.
+/// For tests running one case after another in one instance. Scoped UUID
+/// overrides must nest strictly inside or strictly outside one
+/// [`start_clock`]/`reset` pair; their guards must be dropped in reverse order.
 pub fn reset() {
     if let Some(armed) = ARMED.with(|armed| armed.borrow_mut().take()) {
         clear_timeout(&armed.handle);
