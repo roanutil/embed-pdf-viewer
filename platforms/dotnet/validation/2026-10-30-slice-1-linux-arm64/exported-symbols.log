@@ -1,0 +1,11 @@
+epdf_abi_version
+epdf_engine_close
+epdf_engine_create
+epdf_engine_release
+epdf_engine_submit
+epdf_helper_call
+epdf_job_cancel
+epdf_job_release
+epdf_job_wait
+epdf_result_release
+epdf_result_view
