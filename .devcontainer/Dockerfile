@@ -105,4 +105,29 @@ RUN printf '%s\n' \
     | sudo tee /etc/profile.d/embedpdf-toolchain.sh >/dev/null \
     && bash -lc 'command -v wasm-opt && command -v emcc && command -v claude'
 
+USER root
+ARG DOTNET_SDK_VERSION=10.0.403
+# SHA512 values from Microsoft's .NET 10 release metadata, matched to this SDK.
+RUN case "$TARGETARCH" in \
+      amd64) dotnet_arch=x64; dotnet_sha512=b7b3d8461cf98b07d2552ce9199702fa3ad010ac2671a5f8cd5136f7534e50f6855ba7bbb02b11494563f1d04156276a31cda1103b900e5eecd0d9473dc7b9c5 ;; \
+      arm64) dotnet_arch=arm64; dotnet_sha512=0966aa2b70f4677b8319be9df447a78a0dcd6164836425b55a68fd714f4023feb87b4cac21b9a996b79472ad54487cd0adcd2a9dfd570e2b2a1d26423a2baa9b ;; \
+      *) echo "Unsupported .NET architecture: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL --retry 3 \
+      "https://builds.dotnet.microsoft.com/dotnet/Sdk/${DOTNET_SDK_VERSION}/dotnet-sdk-${DOTNET_SDK_VERSION}-linux-${dotnet_arch}.tar.gz" \
+      -o /tmp/dotnet-sdk.tar.gz \
+    && echo "$dotnet_sha512  /tmp/dotnet-sdk.tar.gz" | sha512sum -c - \
+    && mkdir /opt/dotnet \
+    && tar -xzf /tmp/dotnet-sdk.tar.gz -C /opt/dotnet \
+    && rm /tmp/dotnet-sdk.tar.gz \
+    && ln -s /opt/dotnet/dotnet /usr/local/bin/dotnet
+
+ENV DOTNET_ROOT=/opt/dotnet \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1
+ENV PATH="/opt/dotnet:${PATH}"
+USER node
+RUN test "$(dotnet --version)" = "$DOTNET_SDK_VERSION" \
+    && bash -lc 'test "$(command -v dotnet)" = /usr/local/bin/dotnet'
+
 CMD ["sleep", "infinity"]

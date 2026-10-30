@@ -14,6 +14,7 @@ rebuild when switching operating systems; this setting covers optional binaries.
 The existing `packages/engine/runtime/Dockerfile` builds PDFium and
 `cloudpdf/server/Dockerfile` packages the server. This container supports development
 of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
+It also supports the native engine C ABI and managed .NET binding toolchain.
 
 ## Included tools
 
@@ -22,6 +23,7 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 | Node                                                      | 24.20.0                                              |
 | pnpm                                                      | `package.json` `packageManager`                      |
 | Rust, Cargo, rustfmt, Clippy, rust-src, cross-target std  | `rust-toolchain.toml`                                |
+| .NET SDK                                                  | 10.0.403; Microsoft archives verified with SHA512      |
 | Clang/libclang, LLD, CMake, Ninja, C/C++ compiler, Python | Debian Trixie packages                               |
 | Emscripten / Binaryen                                     | 3.1.72 / 133; `EM_BINARYEN_ROOT` selects Binaryen    |
 | wasm-bindgen-cli                                          | 0.2.127, matching `crates/epdf-web/Cargo.toml`       |
@@ -34,6 +36,25 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 Docker selects the host architecture: **linux/arm64** on Apple Silicon and ARM64
 Linux, or **linux/amd64** on x86-64 hosts. Emscripten detects that architecture;
 Binaryen and the native PDFium artifact are selected to match it.
+
+## .NET
+
+The image installs SDK 10.0.403 into `/opt/dotnet` for both supported Linux
+architectures. `DOTNET_ROOT`, `PATH` and `/usr/local/bin/dotnet` expose it to the
+`node` user in login and non-login shells. Debian dependencies and libclang for
+Rust bindgen are already installed by the image. The SDK supports Linux managed
+builds and native interop; macOS and Windows native builds still require their
+respective hosts or CI.
+
+To update the SDK, change `DOTNET_SDK_VERSION` and both architecture-specific
+SHA512 values in `Dockerfile`, using Microsoft's
+[.NET 10 release metadata](https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json).
+The build verifies the archive before extraction and checks the selected SDK
+version. Rebuild the image; do not install SDK updates into running containers.
+
+Check the installation with `dotnet --info` and `dotnet --list-sdks`. Run managed
+project builds with `dotnet build path/to/project.csproj`; no root `global.json`
+is imposed on consumers by this container configuration.
 
 ## Swift
 
