@@ -234,7 +234,250 @@
             }
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "linux-x64": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PACKED_UNVALIDATED",
+                      "VALIDATED",
+                      "container-emulated"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "linux-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "win-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "linux-arm64": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PACKED_UNVALIDATED",
+                      "VALIDATED"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "linux-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "win-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "osx-arm64": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PACKED_UNVALIDATED",
+                      "VALIDATED"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "linux-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "linux-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "win-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "osx-x64": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PACKED_UNVALIDATED",
+                      "VALIDATED"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "linux-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "linux-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "win-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "win-x64": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PACKED_UNVALIDATED",
+                      "VALIDATED"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "linux-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "linux-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-arm64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              },
+              "osx-x64": {
+                "properties": {
+                  "status": {
+                    "const": "UNVALIDATED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "files": {
       "type": "array",
@@ -260,7 +503,8 @@
             "minimum": 0
           }
         }
-      }
+      },
+      "minItems": 1
     },
     "limitations": {
       "type": "array",

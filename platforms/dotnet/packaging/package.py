@@ -315,6 +315,9 @@ def smoke(args):
                 raise ValueError(f"packaged {field} identity differs from manifest")
         if identity["rid"] != args.rid:
             raise ValueError("packaged RID identity differs from requested RID")
+        required = {RIDS[args.rid][2], Path(RIDS[args.rid][3]).name}
+        if not required.issubset({asset["path"] for asset in identity["files"]}):
+            raise ValueError("packaged native asset inventory must include wrapper and runtime dependency")
         for asset in identity["files"]:
             payload = bundle.read(prefix+asset["path"])
             if hashlib.sha256(payload).hexdigest() != asset["sha256"] or len(payload) != asset["bytes"]:

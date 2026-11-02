@@ -50,7 +50,10 @@ build-machine install names/rpaths. PDFium's supplied install names must already
 be relocatable; tooling refuses incompatible inputs rather than rewriting
 checksum-pinned binaries silently.
 
-Each single-RID local package explicitly lists all five RID statuses. Missing
+Each single-RID local package explicitly lists all five RID statuses. Only the
+packaged RID may differ from UNVALIDATED; the schema rejects success claims
+for additional RIDs and empty file evidence. The consumer requires both native
+libraries in its checksum inventory before building the relocated app. Missing
 native macOS x64/Windows hosts, absent artifacts and live viewer parity remain
 acceptance limitations. No script claims five-RID support, merges changes,
 pushes packages or writes .github/ files.
@@ -63,3 +66,11 @@ The two-option validation interface uses platforms/dotnet/artifacts/<rid> by
 default. Set EPDF_PACKAGE_DIR or pass --package and --manifest when pack.sh
 used a different --out directory. A direct dotnet pack refuses missing native
 assets; pack.sh supplies its checksum-verified staging directory explicitly.
+
+Windows source-tree facade tests set EPDF_NATIVE_DIR to the Cargo wrapper
+directory and PDF_RUNTIME_LIB_DIR to the directory containing embedpdf.dll
+(or put both libraries in EPDF_NATIVE_DIR). The test module initializer stages
+the dependency into the test output before production preload runs. Production
+never reads these test environment overrides and still rejects a missing
+packaged dependency. Staging tests run on every host; native Windows loading
+remains unvalidated until a Windows owner runs the suite.
