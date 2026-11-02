@@ -1,0 +1,18 @@
+   Compiling epdf-capi v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-capi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running tests/lifecycle.rs (target/debug/deps/lifecycle-702af3c9a32073ae)
+
+running 10 tests
+test unknown_handles_fail_without_waiting_or_accessing_state ... ok
+test invalid_limit_configuration_is_rejected_before_starting_an_engine ... ok
+test wrong_handle_kinds_are_rejected_and_views_are_zeroed ... ok
+test invalid_input_clears_outputs_and_returns_an_owned_error ... ok
+test excessive_lengths_are_refused_without_reading_the_pointer ... ok
+test close_is_repeatable_and_rejects_later_submissions ... ok
+test a_job_transfers_its_result_once_and_the_result_outlives_the_engine ... ok
+test startup_font_payloads_are_registered_before_creation_completes ... ok
+test a_startup_font_failing_after_earlier_registrations_fails_creation_with_its_error ... ok
+test aggregate_startup_font_bytes_over_the_retained_budget_are_refused_before_startup ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
