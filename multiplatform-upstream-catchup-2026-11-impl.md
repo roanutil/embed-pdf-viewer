@@ -46,6 +46,7 @@ impl's own hunks from `b456ee4fd` and nothing else. So does `pnpm-lock.yaml`.
   below says why.
 - `7bf5f760d` corrects two of those lint comments: `c_ulong` is 64-bit on LP64 targets and 32-bit
   on Windows, wasm32 and other 32-bit targets, not "64-bit on Unix".
+- `7e5b519bf` answers `fonts.clearFallbacks` and `fonts.clear` with no payload too.
 
 ## The tier at the FFI boundary
 
@@ -141,9 +142,11 @@ plugins answers `serde_json::Value::Null` since `7566552a2`. So the merge would 
 TypeScript's favor anyway, but impl was wrong against TypeScript until then. `18f7ce2b7` fixes it on
 impl, and `the_answer_carries_no_payload` in `crates/epdf-engine/tests/font_fallback_tier_wire.rs`
 checks that the envelope is `{ "result": null }`. Both sides now answer `Null`, and the conflict is
-only textual. `fonts.clearFallbacks` and `fonts.clear` diverge the same way on impl
-(`{ "fallbacks": [] }` and `{ "registered": 0 }`), and we left them. Impl hasn't touched those arms
-since the merge base, so plugins' `Null` answers merge in without a conflict.
+only textual. `fonts.clearFallbacks` and `fonts.clear` diverged the same way on impl, answering
+`{ "fallbacks": [] }` and `{ "registered": 0 }` where `handleFontsClearFallbacks` and
+`handleFontsClear` return an empty `wirePack` (`WorkerHost.ts:2417` and `:2445`). `7e5b519bf`
+makes both answer `Null`, with a test per kind in the same file. Nothing outside `packages/` and
+`api/` read the old keys. Those two arms merge without a conflict.
 
 One detail survives from before. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends
 `"italic": null` in both of its `fonts.register` calls because impl's host still decodes `italic`
@@ -219,6 +222,9 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `7bf5f760d` | 0 | 18 and 5 passed |
 | `cargo test -p pdfium --test document_fonts` | `7bf5f760d` | 0 | 11 passed |
 | `cargo test -p epdf-engine --lib js_number` | `7bf5f760d` | 0 | 4 passed |
+| `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `7e5b519bf` | 0 | 18 and 7 passed |
+| `cargo clippy -p pdfium -p epdf-engine --all-targets -- -D warnings` | `7e5b519bf` | 0 | No lint warnings |
+| `cargo test --workspace --no-fail-fast` | `7e5b519bf` | 101 | 568 passed, 99 failed (the same 99, by binary and count), 75 binaries |
 
 ### The 99 cargo failures
 
