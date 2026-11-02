@@ -35,6 +35,37 @@ impl's own hunks from `b456ee4fd` and nothing else. So does `pnpm-lock.yaml`.
   added. `StartupFont` gains `tier`, and `fonts.addFallback` reads an optional `tier`.
 - `cbb538fee` binds the rest of the font surface that upstream's TS reads through the runtime, in two
   new modules, `crates/pdfium/src/font_program.rs` and `crates/pdfium/src/document_fonts.rs`.
+- `798f7b229` makes a wire `tier` coerce the way the TS does, below.
+
+## The tier at the FFI boundary
+
+The TS never checks `tier`. `WorkerHost` passes `req.tier` to `FontRegistrar.addFallback`, which
+passes it to `EPDFFont_AddFallbackFont`. `createWasmFunctions`
+(`packages/engine/runtime/src/wasm/wasm-runtime.ts`) changes only `Ptr` bigints, and the slot's
+`cwrap` type is `number` (`pdf-functions.generated.ts:1383`). Emscripten's `cwrap` returns the raw
+export for an all-numeric signature when ASSERTIONS is off, and `ccall` converts only `string` and
+`array` arguments when it is on (`src/library_ccall.js:65` and `:134-145` in emscripten 3.1.72). So
+the JavaScript value reaches the wasm `i32` as it is, and the WebAssembly JS API applies
+`ToInt32(ToNumber(v))`. An absent tier never gets that far: the default parameter makes it
+`FALLBACK_TIERS.own`. `null` is not absent, and ToNumber makes it 0.
+
+Rust now does the same. `crates/epdf-engine/src/js_number.rs` implements `ToNumber` over every JSON
+value (strings by the `StringNumericLiteral` grammar, arrays through their `join`) and `ToInt32`.
+The host decodes `tier` with it and no longer refuses a value as `WireFormat`. The registry passes
+`ToInt32` of the tier to PDFium: 1.7 is tier 1, -0.5 is 0, `null`, `"own"` and `{}` are 0, `"1"`
+is 1, 2^32 + 1 is 1, and 2^31 wraps to -2^31. `crates/epdf-engine/tests/font_fallback_tier_wire.rs`
+checks each against the chain PDFium actually tries.
+
+The registrar also keeps the raw tier and reports `fallbackKeys` sorted by `left.tier -
+right.tier`, so the reported order uses the number itself, and 1 comes before 1.7 although PDFium
+tries both as tier 1. Rust's `fallback_order` does the same. One case can't match exactly, and we
+propose it as a Rust-only exception for the human to decide. When a tier's ToNumber is NaN (a word,
+an object), `Array.prototype.sort` counts the difference as equal. The comparator is then not an
+order, and the TS answer depends on the JavaScript engine's sort algorithm, so V8, JavaScriptCore
+and SpiderMonkey can disagree. Rust answers what a stable insertion sort makes of the same
+comparator, because `sort_by` may panic on a comparator that isn't total. This affects only the
+reported order. PDFium's chain matches exactly. Nothing on impl reports the order to a TS caller
+yet. `fonts.list` does once C4 ports it.
 
 ## The font port, split between impl and plugins
 
@@ -58,7 +89,8 @@ them. The cost is that the engine-level font port, the larger half of D6, all la
 For Task 4, two details. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends `"italic":
 null` because impl's host still decodes `italic` as a bool, so it needs `-1` once plugins' decoding
 wins the merge. And plugins' callers of `FontRegistry::add_fallback(key)` and
-`pdfium::add_fallback_font` need the tier: the first keeps compiling, the second takes `(id, 0)`.
+`pdfium::add_fallback_font` need the tier: the first keeps compiling, the second takes `(id, 0)`,
+and `StartupFont` and `add_fallback_in_tier` take the tier as an `f64`.
 
 ## Known gap: `EPDFAnnot_GetStructurePosition`
 
@@ -91,23 +123,72 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `cargo test -p pdfium --test document_fonts` | `cbb538fee` | 0 | 11 passed |
 | `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `1109eeea1` | 0 | 16 and 1 passed |
 | `cargo clippy -p pdfium -p pdfium-sys -p epdf-engine --all-targets` | `cbb538fee` | 0 | No lint warnings |
+| `cargo test --workspace --no-fail-fast` | `798f7b229` | 101 | 565 passed, 99 failed (the same 99), 75 binaries |
+| `cargo test -p epdf-engine --lib js_number` | `798f7b229` | 0 | 4 passed |
+| `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `798f7b229` | 0 | 18 and 4 passed |
+| `cargo test -p pdfium --test document_fonts` | `798f7b229` | 0 | 11 passed |
+| `cargo clippy -p pdfium -p pdfium-sys -p epdf-engine --all-targets` | `798f7b229` | 0 | No lint warnings |
 | `pnpm install --frozen-lockfile` | `cbb538fee` | 0 | Installed |
 | `pnpm exec turbo run build --filter=@embedpdf/engine... --cache-dir=target/turbo-cache` | `cbb538fee` | 1 | 5 of 6 tasks; `@embedpdf/engine#build` can't resolve `@embedpdf/engine-runtime-wasm32` |
 | `pnpm --filter @embedpdf/tooling-engine-conformance run operations:check` | `cbb538fee` | 1 | The five font kinds have no row; 94 kinds against the 89 documented |
 
-The 99 failures predate the catch-up. The same 99 tests fail on `52f10e027` for the same reasons,
-compared message by message. Most of them are committed vectors that later TS regenerations moved
-past the Rust readers. For example, `vectors/annotation/create.json` has no `weakRefsInvalidated`,
-`vectors/text/layout.json` has no `p1`, and `wire/requests.json` lists 89 kinds against the Rust's
-65. The rest are refusals of form writes "not ported to the runtime 1461b0c51 API", plus
-`scope_conformance`, `schema_parity` and `epdf-wasm`'s `borrowed_page`. `cargo fmt --check` still
-reports diffs in 11 files we didn't touch. They were unformatted before the merge.
+### The 99 cargo failures
 
-Two failures are new, and the merge causes both. `operations:check` reads upstream's
-`worker-protocol.ts`, which now has five kinds `operations.ts` has no row for:
+All 99 predate the catch-up. The same 99 tests fail on `52f10e027` against the old `1461b0c51`
+library, and we compared them message by message: the reasons match too. They fall into three
+groups. Counts are tests, and paths are under `crates/epdf-engine/tests/` unless they say
+otherwise.
+
+Committed vectors that a later TS regeneration moved past the Rust readers (75 tests). The vector
+carries a field, or a shape, the Rust type doesn't:
+
+| Binary | Tests | Reason |
+|---|---|---|
+| `text_layout.rs` | 13 | `vectors/text/layout.json`: missing field `p1` |
+| `annotation_create.rs` | 11 | `create.json`: missing field `weakRefsInvalidated` |
+| `annotation_appearance.rs` | 10 | `appearances.json`: missing field `left` |
+| `search_dialect.rs` | 8 | `fold.json`, `regex-dialect.json`, `literal.json`: missing field `length`; `parse` and `snippet.json`: missing field `text` |
+| `annotation_reader.rs` | 7 | `read.json`: missing field `pageState` |
+| `annotation_update.rs` | 6 | `update.json`: missing field `weakRefsInvalidated` |
+| `annotation_move.rs` | 5 | `move.json`: missing field `weakRefsInvalidated` |
+| `pages_mutate.rs` | 4 | `mutate.json`: a map where a `u32` was expected |
+| `annotation_write.rs` | 3 | `write.json`: missing field `mutations` |
+| `annotation_delete.rs` | 2 | `delete.json`: missing field `weakRefsInvalidated` |
+| `annotation_vocabulary.rs` | 2 | `vocabulary.json` has no `stampName` map; `freeTextIntent` decodes differently |
+| `form_effects.rs` | 1 | `vectors/forms/effects.json` doesn't exist |
+| `wire_contract.rs` | 1 | `wire/requests.json` lists 89 kinds, the Rust 65 |
+| `search_slice_protocol.rs` | 1 | `text` |
+| `geometry_corpus.rs` | 1 | `flags is a number` |
+
+Vectors that parse but whose values the Rust no longer matches (16 tests): `geometry_corpus.rs` (5
+of 7 pages diverge), `attachment_reader.rs` (`tree`), `document_save.rs` (`annotations`),
+`files_write.rs` (`piece-info-set-every-type`), `form_field.rs` (`create-text-bare`),
+`form_reader.rs` (`families`), `form_write.rs` (`repair-plain`, and "the import list shrank"),
+`metadata_corpus.rs` (`rich`), `metadata_write.rs` (two cases), `pages_corpus.rs` (`rich`:
+`namedPages` absent), `piece_info_reader.rs` (`both-holders`), `redaction_apply.rs`
+(`whole-page`), `security_state.rs` (`annotate-and-modify`), and
+`crates/epdf-wasm/tests/borrowed_page.rs` (5 pages diverge).
+
+Behavior the Rust refuses or decides differently (8 tests). Six are form writes in `form_write.rs`
+and `form_field.rs`: three answer `NotImplemented` ("not ported to the runtime 1461b0c51 API"), and
+three refuse differently (`radio-clear-refused`, `attach-off-state-refused`, "no payload is
+refused").
+`schema_parity.rs` has 9 of 22 `MetadataPatch` cases disagreeing with the zod schema, and
+`scope_conformance.rs` expands the PDF permission bits without `doc.text.search` and
+`doc.text.select`.
+
+`cargo fmt --check` still reports diffs in 11 files we didn't touch. They were unformatted before
+the merge.
+
+### `operations:check` is red on impl
+
+`operations:check` stays red on impl until C4 adds the five font-kind rows on plugins. The merge
+causes it: upstream's `worker-protocol.ts` now has 94 request kinds against the 89 `operations.ts`
+documents, and the five new ones have no row:
 `document.fonts.list`, `document.fonts.program`, `document.fonts.resolve`, `fonts.list` and
 `fonts.program`. A row names a port group, an ownership stage and a cancellation case, and the plan
 and port order have to change with it, so it belongs with the engine-level font port in Task 5.
+
 The engine build fails for want of the `wasm32` payload package, the same gap as below. It fails
 the same way on `52f10e027`, whose payload hash, `ac356131f67e5d3f`, isn't published either.
 
