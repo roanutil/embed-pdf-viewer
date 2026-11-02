@@ -60,8 +60,8 @@ the JavaScript value reaches the wasm `i32` as it is, and the WebAssembly JS API
 `ToInt32(ToNumber(v))`. An absent tier never gets that far: the default parameter makes it
 `FALLBACK_TIERS.own`. `null` is not absent, and ToNumber makes it 0.
 
-Rust now does what the WASM runtime does, and only that runtime: the Node native addon converts
-differently, as the exception below says. `crates/epdf-engine/src/js_number.rs` implements
+Rust now does what the WASM runtime does, and only that runtime. The Node native addon converts
+differently, as noted below. `crates/epdf-engine/src/js_number.rs` implements
 `ToNumber` over every JSON value (strings by the `StringNumericLiteral` grammar, arrays through
 their `join`) and `ToInt32`.
 The host decodes `tier` with it and no longer refuses a value as `WireFormat`. The registry passes
@@ -71,22 +71,24 @@ checks each against the chain PDFium actually tries.
 
 The registrar also keeps the raw tier and reports `fallbackKeys` sorted by `left.tier -
 right.tier`, so the reported order uses the number itself, and 1 comes before 1.7 although PDFium
-tries both as tier 1. Rust's `fallback_order` does the same. One case can't match exactly, and we
-propose it as a Rust-only exception for the human to decide. When a tier's ToNumber is NaN (a word,
+tries both as tier 1. Rust's `fallback_order` does the same. One case can't match exactly, and it is
+an accepted (2026-11-02) Rust-only exception. When a tier's ToNumber is NaN (a word,
 an object), `Array.prototype.sort` counts the difference as equal. The comparator is then not an
 order, and the TS answer depends on the JavaScript engine's sort algorithm, so V8, JavaScriptCore
 and SpiderMonkey can disagree. Rust answers what a stable insertion sort makes of the same
 comparator, because `sort_by` may panic on a comparator that isn't total. This affects only the
 reported order. PDFium's chain matches exactly. Nothing on impl reports the order to a TS caller
-yet. `fonts.list` does once C4 (plan Task 5) ports it.
+yet. `fonts.list` does once C4 (plan Task 5) ports it, and C4 has to carry the exception to plugins
+with it.
 
-The exception also has to name the native runtime, where TS and Rust can disagree on PDFium's chain
-too. The Node addon's generated wrapper reads an `int32` argument as `int32_t x;` followed by
+A separate observation, not part of the exception: TS's native runtime converts a non-number tier
+its own way. The Node addon's generated wrapper reads an `int32` argument as `int32_t x;` followed by
 `napi_get_value_int32(env, argv[i], &x)`, and ignores the status
 (`packages/engine/runtime/build/generate-napi-binding.mjs:65`). For a non-number tier (`null`, a
 string, an object) the call fails with `napi_number_expected` and leaves `x` unwritten, so PDFium
 gets an indeterminate int. A number converts the way `ToInt32` does, so for numbers the two runtimes
-and the Rust agree. The Rust mirrors the WASM runtime, and we didn't change any behavior for this.
+and the Rust agree. The Rust mirrors the WASM runtime, and we didn't change any behavior for the
+native one.
 
 ## The font port, split between impl and plugins
 
@@ -110,7 +112,7 @@ Task 5).
 
 For the plugins merge (plan Task 4), `git merge-tree --write-tree HEAD
 private-fork/research/multi-platform-rust-core-impl-plugins` at `061adf19f`, against plugins
-`3dec6b60b`, reports five conflicted paths and seven conflict hunks. The commit that records this
+`3dec6b60b`, reports five conflicted paths: six text hunks plus the submodule conflict. The commit that records this
 changes only this file, so the result holds at the branch tip. Two paths are the runtime pin:
 `packages/engine/runtime/engine-runtime-build.local.json` (one hunk, the `darwin-arm64` artifact's
 `url` and `sha256`) and the `runtime-src` submodule (`8b1e69abd` against `926c126b2`). The
@@ -133,7 +135,9 @@ Plugins' `fallback_order` field and its `fallback_order() -> &[String]` survive 
 `clear()` hunk. The resolution keeps plugins' identity code (`FontEmbeddingPermission`,
 `FontIdentityInfo`, `IDENTITIES` cleared in `clear()`), impl's tier module and tier decoding, and
 impl's `fallbacks` field, and drops plugins' `fallback_order` field. In `host.rs` it takes plugins'
-`body` and impl's tier decoding. In `font_registry.rs` it keeps both sides' tests. Nothing on plugins
+`body` and impl's tier decoding. In `font_registry.rs` it keeps both sides' tests. Keeping both
+sides in `fonts.rs` hunk 1 and `font_registry.rs` hunk 1 needs a closing brace added between them,
+since both sides share the one trailing brace after the marker. Nothing on plugins
 needs adapting to the `Vec<String>`: `git grep fallback_order()` on plugins finds it only in
 `font_registry.rs`, where the tests compare it to arrays and call `is_empty`, and both compile
 against a `Vec<String>`. Plugins' only caller of `pdfium::add_fallback_font` is
@@ -184,14 +188,16 @@ The first is the job envelope. Since `de296ac32`, plugins' `JobEnvelope::parse`
 (`:20`) sends none of them, so every test fails with `WireFormat: the 'fonts.register' request has
 no 'jobId'`. The fix is one line at the top of `call`, `host.fill_envelope(&mut request);`, with the
 `request` parameter made `mut`. Plugins' helper is `pub fn fill_envelope(&self, request: &mut
-serde_json::Value)` on `Host`, and it fills only the fields the request leaves out.
+serde_json::Value)` on `Host`, and it fills only the fields the request leaves out. The `mut` takes
+the `call` signature past the line width, so run `cargo fmt` on the file afterwards.
 
 The second is `italic`. The file sends `"italic": null` in all three of its `fonts.register` calls:
 the `chain` helper (`:41`), `the_answer_carries_no_payload` (`:146`) and `answer_after_a_fallback`
 (`:170`). Impl's host decodes `italic` as an optional bool. Plugins' decodes an `i32` and refuses
 the `null` with `'italic' is not the shape this operation takes: invalid type: null, expected i32`,
 so each becomes `-1`, the C API's "infer". The comment at `:37-38` that explains the `null` goes
-stale with it.
+stale with it. Its replacement reads: "`italic: -1` is the C API's infer value, as the TypeScript
+sends it."
 
 With only the envelope fix, all seven still fail, on `italic`. With both, `cargo test -p epdf-engine
 --test font_fallback_tier_wire --test font_registry` exits 0, with 7 and 19 passed. Impl's other
@@ -387,7 +393,9 @@ dotted word whose first segment isn't a core namespace now parses as a plugin pe
 `resolve.json`, five cases (`pdf-permissions`, `forms-submit-is-grant-only`,
 `narrowing-from-bits-not-scope`, `duplicate-scopes`, `order-does-not-matter`) gain
 `doc.render.thumbnail` in every expanded set, because `doc.render` now implies it. Nothing else in
-either file changes.
+either file changes. That count is impl's. On the merged tree with plugins, regenerating moves
+seven `resolve.json` cases: those five plus plugins' `grant-minted-never-from-bits` and
+`fields-with-pdf-permissions`. `parse.json` moves by the same single `shape-uppercase` line.
 
 `wire:check` is red because `EXPECTED_KINDS` in `src/generate-wire-vectors.ts` is still 89 and the
 `WorkerRequest` union has the five font kinds. Plan Task 5 already lists updating it.
@@ -427,7 +435,8 @@ TS closed set, `KNOWN_CAPABILITIES` in `packages/engine/core/src/auth/scope/pars
 module-private, and exporting it would be a TS change. The hand list lacks seven of its 28 entries:
 `doc.annotate.import`, `doc.forms.import`, `doc.forms.script`, `doc.outline.modify`,
 `doc.render.thumbnail`, `doc.sign` and `doc.sign.certify`. Only `doc.render.thumbnail` is new from
-the merge.
+the merge. That gap is impl's. On plugins, `tooling/engine-conformance/src/scope-cases.ts` already
+has six of the seven, and only `doc.render.thumbnail` is missing.
 
 ### The engine build
 
