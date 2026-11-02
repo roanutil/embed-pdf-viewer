@@ -113,8 +113,11 @@ private-fork/research/multi-platform-rust-core-impl-plugins` at `061adf19f`, aga
 `3dec6b60b`, reports five conflicted paths and seven conflict hunks. The commit that records this
 changes only this file, so the result holds at the branch tip. Two paths are the runtime pin:
 `packages/engine/runtime/engine-runtime-build.local.json` (one hunk, the `darwin-arm64` artifact's
-`url` and `sha256`) and the `runtime-src` submodule (`8b1e69abd` against `926c126b2`). The other
-three are Rust, all in the font code:
+`url` and `sha256`) and the `runtime-src` submodule (`8b1e69abd` against `926c126b2`). The
+resolution takes plugins' target entries in `local.json`, as plan Task 4 says, and keeps
+`runtime-src` at `8b1e69abd`, which leaves a `darwin-arm64-926c126b2` artifact beside a
+`8b1e69abd` gitlink for C5's payload and pin refresh to replace. The other three are Rust, all in
+the font code:
 
 | Path | Hunk | Impl | Plugins |
 |---|---|---|---|
@@ -161,18 +164,63 @@ impl's two comments doesn't remove the hunk. We tried it on a scratch commit and
 reported two `host.rs` hunks: impl's `Null` on the `clearFallbacks` line touches the lines where
 plugins inserts the arm, so the conflict comes from the fix itself, and we kept the comments.
 
-Two older divergences in the same arms come in with the merge, and we left them alone on impl. Both
-are on `52f10e027`, so they predate the catch-up. Impl answers `fonts.register` with
+The merge resolves two older divergences in the same arms, both in plugins' favor, so we left them
+alone on impl. Both are on `52f10e027`, so they predate the catch-up. Impl answers `fonts.register` with
 `{ fontKey, registered: <id> }` (`crates/epdf-engine/src/host.rs:269`), where
 `handleFontsRegister` answers `{ tag, fontKey, identity: this.fonts.describe(fontKey) }`
 (`WorkerHost.ts:2369-2373`); plugins answers the identity since `7566552a2`. Impl also has no
 `fonts.authorizeEditing` arm, though `WorkerHost` routes the kind (`WorkerHost.ts:787`) to
-`handleFontsAuthorizeEditing` (`:2376-2382`); plugins added the arm in `86e20c356`.
+`handleFontsAuthorizeEditing` (`:2376-2382`); plugins added the arm in `86e20c356`. The
+`fonts.register` arm merges cleanly to plugins' identity answer, and the `fonts.authorizeEditing`
+arm is kept in the second `host.rs` hunk.
 
-One detail survives from before. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends
-`"italic": null` in all three of its `fonts.register` calls, in the `chain` helper (`:40`),
-`the_answer_carries_no_payload` (`:145`) and `answer_after_a_fallback` (`:169`), because impl's
-host still decodes `italic` as a bool. All three need `-1` once plugins' decoding wins the merge.
+`crates/epdf-engine/tests/font_fallback_tier_wire.rs` needs two adaptations in the merge, and all
+seven of its tests fail without both. We checked this on a scratch merge of `b64099fb9` with
+plugins `3dec6b60b`, resolved as above.
+
+The first is the job envelope. Since `de296ac32`, plugins' `JobEnvelope::parse`
+(`crates/epdf-engine/src/host.rs`, about `:406-430` there) requires a `jobId` on every kind, an
+`effect` on every kind `RequestEffect::of` lists, and an `opId` on a write. The file's `call` helper
+(`:20`) sends none of them, so every test fails with `WireFormat: the 'fonts.register' request has
+no 'jobId'`. The fix is one line at the top of `call`, `host.fill_envelope(&mut request);`, with the
+`request` parameter made `mut`. Plugins' helper is `pub fn fill_envelope(&self, request: &mut
+serde_json::Value)` on `Host`, and it fills only the fields the request leaves out.
+
+The second is `italic`. The file sends `"italic": null` in all three of its `fonts.register` calls:
+the `chain` helper (`:41`), `the_answer_carries_no_payload` (`:146`) and `answer_after_a_fallback`
+(`:170`). Impl's host decodes `italic` as an optional bool. Plugins' decodes an `i32` and refuses
+the `null` with `'italic' is not the shape this operation takes: invalid type: null, expected i32`,
+so each becomes `-1`, the C API's "infer". The comment at `:37-38` that explains the `null` goes
+stale with it.
+
+With only the envelope fix, all seven still fail, on `italic`. With both, `cargo test -p epdf-engine
+--test font_fallback_tier_wire --test font_registry` exits 0, with 7 and 19 passed. Impl's other
+new tests don't go through the wire: `crates/pdfium/tests/document_fonts.rs` calls the `pdfium`
+layer, `font_registry.rs` drives `FontRegistry` directly, and `js_number`'s are unit tests. The full
+run below finds no other failure in them.
+
+### What else the merge breaks
+
+`cargo test --workspace --no-fail-fast` on that scratch merge, with both adaptations, exits 101:
+2847 passed and 3 failed across 290 test runs, and 22 more test binaries don't start. None of impl's
+99 fails there, because plugins carries the readers and vectors they need. Everything that fails is
+new from the merge:
+
+| Failure | Cause | Class |
+|---|---|---|
+| `error::tests::codes_are_byte_identical_to_the_typescript_enum` (`crates/epdf-engine/src/error.rs:293`) | Plugins' test reads upstream's `EngineErrorCode.ts`, which now has `GrantPassphraseRequired` for `SharePasswordRequired`, no `StaleBase`, and adds `LayerDeleted` and `VisitorIdentityRequired` | C4 Task 5 parity work |
+| `error::tests::codes_serialize_as_their_own_names` | The same drift | C4 Task 5 parity work |
+| `every_kind_states_the_effect_its_interface_does` (`crates/epdf-engine/tests/wire_contract.rs:380`) | `worker-protocol.ts` states an effect for 91 kinds against the test's 86: the five font kinds | C4 Task 5 parity work |
+| 22 test binaries in `epdf-ffi`, `epdf-web` and `epdf-manual-bridge` | `error while loading shared libraries: libembedpdf.so`. With `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib`, `cargo test -p epdf-ffi -p epdf-manual-bridge -p epdf-web --no-fail-fast` exits 0, with 72 passed | Environmental |
+
+Impl's own error-code test can't see the drift. `TYPESCRIPT_CODES` in `crates/epdf-engine/src/error.rs`
+(`:181`) is a hand list of 19, and the test passes on impl today. Upstream's `EngineErrorCode.ts` at
+`b64099fb9` has 30 codes, so impl's enum already diverges from TypeScript: it has
+`SharePasswordRequired`, `InvalidReference` and `WeakAnnotationSessionConflict`, which TypeScript
+doesn't, and lacks 14 that it has. Most of that is older than the catch-up (TypeScript had 29 on
+`52f10e027`), and the merge adds the rename, the removal and the two new codes. Plugins' enum has the 29 TypeScript
+had before, and its test reads `EngineErrorCode.ts` at run time, which is why it goes red. Bringing impl's enum to TypeScript's is C4
+(plan Task 5) work on plugins, not a one-line rename, so we didn't port it on impl.
 
 ## Known gap: `EPDFAnnot_GetStructurePosition`
 
@@ -249,6 +297,12 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `cargo test --workspace --no-fail-fast` | `7e5b519bf` | 101 | 568 passed, 99 failed (the same 99, by binary and count), 75 binaries |
 | `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `061adf19f` | 0 | 18 and 7 passed |
 | `cargo clippy -p epdf-engine --all-targets -- -D warnings` | `061adf19f` | 0 | No lint warnings; ts-rs prints its four `deserialize_with` parse notes |
+| `cargo test -p epdf-engine --test font_fallback_tier_wire --test font_registry` | Scratch merge of `b64099fb9` and plugins `3dec6b60b`, no adaptations | 101 | 0 of 7 passed: no `jobId` |
+| The same | The same merge, envelope fix only | 101 | 0 of 7 passed: `italic` is `null` |
+| The same | The same merge, both adaptations | 0 | 7 and 19 passed |
+| `cargo test --workspace --no-fail-fast` | The same merge, both adaptations | 101 | 2847 passed, 3 failed, 22 binaries don't load `libembedpdf.so` |
+| `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib cargo test -p epdf-ffi -p epdf-manual-bridge -p epdf-web --no-fail-fast` | The same merge | 0 | 72 passed |
+| `cargo test --workspace --no-fail-fast` | `b64099fb9` | 101 | 568 passed, 99 failed, 75 binaries |
 
 ### The 99 cargo failures
 
