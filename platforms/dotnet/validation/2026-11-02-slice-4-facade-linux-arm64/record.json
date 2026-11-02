@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "slice": 4,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "849d3246ad0d1b23abd69561d4361ebafd8869c0",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "tools": {
+      "dotnet": "10.0.403",
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+      "node": "v24.20.0",
+      "pnpm": "10.34.0",
+      "changesets-cli": "2.29.6 (isolated pnpm dlx)",
+      "ajv-cli": "5.0.0 (isolated pnpm dlx)"
+    }
+  },
+  "inputs": [
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "packages/engine/main/test/fixtures/Roboto-Regular.ttf",
+      "sha256": "797e35f7f5d6020a5c6ea13b42ecd668bcfb3bbc4baa0e74773527e5b6cb3174",
+      "bytes": 305608
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/colors.json",
+      "sha256": "dc45a62ac92027f6087ec564f69a7634c9391e59f7b7e748e8c06a4837177104",
+      "bytes": 352
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/embedded-orientations.json",
+      "sha256": "dee46ea248496f6622dbf004f8f925a1083477b0ccc64723b0318c1c0cd1d292",
+      "bytes": 18888
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/font-size-zero.json",
+      "sha256": "fad7a0be887c75347e216df9ed7a5ffa5fafb748dffa1ef2e5a5f0f0aebc94fe",
+      "bytes": 459
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/non-identity-text.json",
+      "sha256": "cb417c6f9355e83bc75177852fd0310633278026a06daccf0db55547c85ad917",
+      "bytes": 1332
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/report.json",
+      "sha256": "a96cd82a06cadfb47ca7df7dd05cca9a7ab3a2ab0f1a9f3fe5964e624dcff92e",
+      "bytes": 1652465
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/reverse-and-gapped-text.json",
+      "sha256": "639f56435eb746f017de75eca6c308b4d763deb61d0e80f3f5f6d1fbdebd7064",
+      "bytes": 1669
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/search/fold.json",
+      "sha256": "d8956fa957abdd889c089a95d128c4671dece78f14d0bffee8199ec56677c08c",
+      "bytes": 78694
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/search/literal.json",
+      "sha256": "8be1c42cee582d728dc4404e991a119dda807515bc1c5996d72b174d68869e71",
+      "bytes": 4340
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/search/regex-dialect.json",
+      "sha256": "f459931bcf902a156e38ff361626fd28002e1fa29a14ae66c61ebfc100be7cd5",
+      "bytes": 14038
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/search/slice-protocol.json",
+      "sha256": "7a9193d82fa8aa2e523e2c1919b25b7db28cd17b47ec0f4f9c859a4f7e32f97d",
+      "bytes": 9238
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/search/snippet.json",
+      "sha256": "530eb974fd7cc11d8420f81dd67afbabfd6cb8e78f6c7c2b2be43677354f4e82",
+      "bytes": 2597
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/charmap.json",
+      "sha256": "2a4f7cb6169ea29175b231d34d3377555cf13cfe5640f3b3d51e7d99cf9dc54d",
+      "bytes": 195920
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/layout.json",
+      "sha256": "e101e3cbda5789ff46e6745e0ae547ab993d07d8be14c698c17e65bcad53ae67",
+      "bytes": 354085
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/wire/requests.json",
+      "sha256": "948dddb408ef51c1513f3000b8578ead473a1d5fa2b565515ab95e7f213a3a61",
+      "bytes": 26826
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/embedded_orientations.pdf",
+      "sha256": "caaf21d3093e6b8e6bac0323945c9db602c2cfd89f57ac77e024edf45e005728",
+      "bytes": 307280
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/annotation_kinds.pdf",
+      "sha256": "2302036e2a962b6e0f65b5ea2a18cd31d71e1d89214b75c259838a83e04d860c",
+      "bytes": 6118
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "sha256": "9e47af595392111f5ec9cefb0cb0f7d4fc5f6c5a7d4193931b00693d9f3663bb",
+      "bytes": 914
+    }
+  ],
+  "commands": [
+    {
+      "command": "CARGO_TARGET_DIR=/repo/.claude/worktrees/dotnet-facade/target PDF_RUNTIME_LIB_DIR=/opt/pdfium LD_LIBRARY_PATH=/opt/pdfium cargo build -p epdf-capi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Native cdylib built successfully with the unchanged pinned PDFium runtime.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/cargo-build.log",
+        "sha256": "7bd77b4fa2d90c928105f1ecfabdb8b6edf10954adc5cdc9f49bc6cc291726af",
+        "bytes": 72
+      }
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/repo/.claude/worktrees/dotnet-facade/target PDF_RUNTIME_LIB_DIR=/opt/pdfium LD_LIBRARY_PATH=/opt/pdfium EPDF_NATIVE_DIR=/repo/.claude/worktrees/dotnet-facade/target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "31 passed, 0 failed, 0 skipped. Includes child-process default-layer rendering, unit-misuse compile diagnostics, vectors, native leases, cancellation, disposal and small-budget native capacity reuse.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/dotnet-test.log",
+        "sha256": "dd308085691c72b5f612f4fca4aeaddbb7704497e01ed267afadf5d151fdd8e4",
+        "bytes": 563
+      }
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/repo/.claude/worktrees/dotnet-facade/target PDF_RUNTIME_LIB_DIR=/opt/pdfium LD_LIBRARY_PATH=/opt/pdfium cargo test -p epdf-capi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "64 passed, 0 failed, 0 ignored across unit, cancellation, engine_reads, helpers and lifecycle suites; doc-tests 0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/capi-test.log",
+        "sha256": "2acde6a57c7a289e0bd85cd9eafa45e05f7326303b65c34e13ce51030ab29f7e",
+        "bytes": 6233
+      }
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/repo/.claude/worktrees/dotnet-facade/target PDF_RUNTIME_LIB_DIR=/opt/pdfium LD_LIBRARY_PATH=/opt/pdfium cargo test -p epdf-engine -- --test-threads=1",
+      "cwd": ".",
+      "exitCode": 101,
+      "results": "743 tests passed in completed targets, plus 8 document_session tests passed before a_page_held_past_close_keeps_a_registry_layers_base_alive terminated with SIGSEGV (known issue #16). Later targets did not run; this is not a green broad regression gate.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/engine-test.log",
+        "sha256": "66b1355b8ff34de396b316bc59c1ed230ef22cfec9e3fc733d1d18da6b0daa7a",
+        "bytes": 67334
+      }
+    },
+    {
+      "command": "NPM_TOKEN= pnpm dlx @changesets/cli@2.29.6 status --since=fork/research/multi-platform-rust-core-impl-plugins",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "No packages to be bumped at patch/minor/major. All changed product files belong to the new .NET facade, outside publishable JS packages; no Changesets file required.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/changesets.log",
+        "sha256": "50c8c2b1c98333236dd83d7600e92232ed40535d3a3db3b3ad6bc5144be27929",
+        "bytes": 429
+      }
+    },
+    {
+      "command": "git diff --check",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Clean tested implementation source; no whitespace errors. Git diff from assigned base contains only platforms/dotnet paths and no .github paths."
+    },
+    {
+      "command": "NPM_TOKEN= pnpm dlx ajv-cli@5.0.0 validate --spec=draft2020 -s platforms/dotnet/validation/record.schema.json -d platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/record.json",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Record validates against the committed Draft 2020-12 schema.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/schema-validation.log",
+        "sha256": "9936431d026d61d843b86d2cb7551a093b34a46e82a34f046e2d8c6100273fbe",
+        "bytes": 316
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "../target/debug/libepdf_capi.so",
+      "sha256": "128185e7b5315c08ecd8a7eff5878811f7485c91633a19cb00db2a8bd84c487d",
+      "bytes": 122994000
+    },
+    {
+      "path": "platforms/dotnet/EmbedPDF/bin/Debug/net10.0/EmbedPDF.Engine.dll",
+      "sha256": "03605b8fe4dc1a442c7eda30c7765191bc66ba81e7fe9fd0a76268d48343a021",
+      "bytes": 130560
+    },
+    {
+      "path": "platforms/dotnet/EmbedPDF.Tests/bin/Debug/net10.0/EmbedPDF.Tests.dll",
+      "sha256": "3d148b04b50a8ef39679a420ffabcfe431a2c62464d54e50eab54f8731143829",
+      "bytes": 92672
+    },
+    {
+      "path": "../../plugins-share/packages/engine/runtime/build/libpdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    }
+  ],
+  "limitations": [
+    "Only Linux arm64 in the required image was validated; no macOS, Windows or other RID support is established. Packaging/relocation and live browser parity remain out of scope.",
+    "The unchanged shared runtime has SHA256 3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0. Broad native regression still fails at the known held-layer-page SIGSEGV: https://github.com/roanutil/embed-pdf-viewer/issues/16. No runtime substitution or test skip was used.",
+    "Facade default annotation/widget rendering passes independently; that test does not recreate the held-layer-page regression.",
+    "Managed slot/byte counters return to zero. The frozen C ABI exposes no public registry counters; repeated operations under small native job/result/input limits verify native capacity reuse without claiming direct counter inspection.",
+    "Logs trim trailing blank lines and replace container worktree/target prefixes with <worktree>/<cargo-target>; hashes describe these checked-in normalized logs. Native binaries and generated managed binaries remain local, referenced by relative artifact paths and SHA256 only.",
+    "No browser parity or deployed font compatibility is claimed. One committed Roboto binary startup-font fixture is explicitly hashed; embedded fonts in PDF fixtures are pinned by the PDF hashes."
+  ]
+}

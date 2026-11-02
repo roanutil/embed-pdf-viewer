@@ -1,0 +1,10 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +101
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 101, reused 0, downloaded 100, added 0
+Progress: resolved 101, reused 0, downloaded 101, added 101, done
+🦋  info NO packages to be bumped at patch
+🦋  ---
+🦋  info NO packages to be bumped at minor
+🦋  ---
+🦋  info NO packages to be bumped at major

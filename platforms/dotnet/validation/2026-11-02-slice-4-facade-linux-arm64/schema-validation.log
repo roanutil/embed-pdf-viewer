@@ -1,0 +1,6 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+ WARN  2 deprecated subdependencies found: glob@7.2.3, inflight@1.0.6
+Packages: +26
+++++++++++++++++++++++++++
+Progress: resolved 26, reused 4, downloaded 22, added 26, done
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/record.json valid
