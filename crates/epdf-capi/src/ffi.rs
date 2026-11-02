@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::host::Host;
 
-use crate::abi::{Failure, Reply, Status, response_error};
+use crate::abi::{Failure, Reply, Status};
 use crate::buffers::{ByteBudget, OwnedResult, Reservation, unpack_payloads};
 use crate::config::Options;
 use crate::engine::Engine;
