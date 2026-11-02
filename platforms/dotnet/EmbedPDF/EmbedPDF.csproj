@@ -11,4 +11,7 @@
     <InternalsVisibleTo Include="EmbedPDF.Tests" />
     <None Include="$(EpdfNativeAssets)/**/*" Pack="true" PackagePath="runtimes/" Condition="'$(EpdfNativeAssets)' != ''" />
   </ItemGroup>
+  <Target Name="RequireNativeAssets" BeforeTargets="GenerateNuspec">
+    <Error Condition="'$(EpdfNativeAssets)' == ''" Text="Native assets are required. Use platforms/dotnet/pack.sh with checksum-verified RID inputs." />
+  </Target>
 </Project>

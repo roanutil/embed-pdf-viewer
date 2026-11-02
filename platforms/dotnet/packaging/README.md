@@ -58,3 +58,8 @@ pushes packages or writes .github/ files.
 python3 -m unittest discover -s platforms/dotnet/packaging -v exercises loader
 rejection and the checked-in schema vocabulary. The offline schema validator
 fails on unsupported schema keywords rather than silently ignoring them.
+
+The two-option validation interface uses platforms/dotnet/artifacts/<rid> by
+default. Set EPDF_PACKAGE_DIR or pass --package and --manifest when pack.sh
+used a different --out directory. A direct dotnet pack refuses missing native
+assets; pack.sh supplies its checksum-verified staging directory explicitly.

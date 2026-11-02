@@ -191,6 +191,7 @@ def pack(args):
     write(native / "epdf-fonts.json", {**fonts, "fonts":delivered_fonts})
     details = inspect(native, args.rid)
     write(stage / "native-inspection.json", details)
+    write(native / "epdf-native-inspection.json", details)
     # Notices/fonts live alongside the native assets in NuGet as well as the archive.
     for path in (stage / "notices").iterdir():
         shutil.copy2(path, native / path.name)
@@ -238,16 +239,8 @@ def validate_package(args):
     record_path = Path(args.record).resolve()
     pin_path = Path(args.runtime_manifest).resolve()
     pin = read(pin_path)
-    dirty = bool(run(["git","-c","core.preloadIndex=false","status","--porcelain"]).strip())
-    source = {"commit":run(["git","-c","core.preloadIndex=false","rev-parse","HEAD"]).strip(),"dirty":dirty,"runtimeFork":pin["sha"]}
-    if dirty:
-        # Include untracked source paths and bytes so a record identifies the actual tested input.
-        diff = subprocess.check_output(["git","-c","core.preloadIndex=false","diff","HEAD","--binary"],cwd=ROOT)
-        for path in sorted(subprocess.check_output(["git","-c","core.preloadIndex=false","ls-files","--others","--exclude-standard"],cwd=ROOT,text=True).splitlines()):
-            candidate = ROOT/path
-            if candidate.is_file() and candidate.resolve() != record_path:
-                diff += path.encode()+b"\0"+candidate.read_bytes()
-        source["diffSha256"] = hashlib.sha256(diff).hexdigest()
+    source = source_identity()
+    source["runtimeFork"] = pin["sha"]
     environment = {"kind":"container" if os.environ.get("EPDF_IMAGE_ID") else "host",
         "os":platform.platform(),"arch":host_rid().split("-")[-1],
         "emulated":os.environ.get("EPDF_EMULATED","false").lower()=="true",
@@ -327,7 +320,7 @@ def smoke(args):
         shutil.copy2(DOTNET/"packaging/Smoke.cs",directory/"Program.cs")
         shutil.copy2(ROOT/"crates/test-support/fixtures/measure-foreign-viewport.pdf",directory/"input.pdf")
         (directory/"Consumer.csproj").write_text(
-            '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup><ItemGroup><PackageReference Include="EmbedPDF.Engine" Version="'+manifest["version"]+'"/></ItemGroup></Project>')
+            '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><SelfContained>false</SelfContained><UseAppHost>false</UseAppHost><EnableRuntimePackDownload>false</EnableRuntimePackDownload><ImplicitUsings>enable</ImplicitUsings><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup><ItemGroup><PackageReference Include="EmbedPDF.Engine" Version="'+manifest["version"]+'"/></ItemGroup></Project>')
         env = os.environ.copy()
         for name in ["EPDF_NATIVE_DIR","PDF_RUNTIME_LIB_DIR","LD_LIBRARY_PATH","DYLD_LIBRARY_PATH","DYLD_FALLBACK_LIBRARY_PATH"]:
             env.pop(name,None)
@@ -378,11 +371,15 @@ def main():
             command.add_argument("--runtime-archive")
             command.add_argument("--version",default="0.0.0-local")
         else:
-            command.add_argument("--package",required=True)
-            command.add_argument("--manifest",required=True)
+            command.add_argument("--package")
+            command.add_argument("--manifest")
             if action == "validate":
                 command.add_argument("--record",required=True)
     args=parser.parse_args()
+    if args.action != "pack":
+        directory = Path(os.environ.get("EPDF_PACKAGE_DIR", DOTNET/"artifacts"/args.rid))
+        args.package = args.package or str(directory/"EmbedPDF.Engine.0.0.0-local.nupkg")
+        args.manifest = args.manifest or str(directory/f"package-manifest.{args.rid}.json")
     try:
         return {"pack":pack,"validate":validate_package,"smoke":smoke}[args.action](args) or 0
     except (ValueError,RuntimeError,OSError,KeyError,tarfile.TarError,zipfile.BadZipFile) as error:
