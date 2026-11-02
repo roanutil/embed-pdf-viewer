@@ -119,4 +119,84 @@ mod tests {
         assert_eq!(error.status, Status::InvalidArgument);
         assert!(!called);
     }
+
+    #[test]
+    fn a_registration_failing_partway_unwinds_earlier_fonts_and_joins_the_owner_thread() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        use std::sync::mpsc::{Sender, channel};
+        use std::thread::{ThreadId, current};
+
+        use crate::config::Limits;
+        use crate::engine::Engine;
+
+        struct Exit(Sender<ThreadId>);
+        impl Drop for Exit {
+            fn drop(&mut self) {
+                let _ = self.0.send(current().id());
+            }
+        }
+        thread_local! {
+            static EXIT: RefCell<Option<Exit>> = const { RefCell::new(None) };
+        }
+        struct Fonts {
+            keys: Vec<String>,
+            unwound: Sender<(ThreadId, Vec<String>)>,
+            _confined: Rc<()>,
+        }
+        impl Drop for Fonts {
+            fn drop(&mut self) {
+                let _ = self.unwound.send((current().id(), std::mem::take(&mut self.keys)));
+            }
+        }
+
+        let options: Options = serde_json::from_value(serde_json::json!({
+            "startupFonts": [
+                {"key":"a", "payloadIndex":0, "fallback":true},
+                {"key":"b", "payloadIndex":1},
+                {"key":"c", "payloadIndex":2}
+            ]
+        }))
+        .unwrap();
+        let refusal = "{\"error\":{\"code\":\"InvalidArg\",\"message\":\"unloadable: b\"}}";
+        let (exit_tx, exit_rx) = channel();
+        let (unwound_tx, unwound_rx) = channel();
+        let (calls_tx, calls_rx) = channel();
+        let started = Engine::start(Limits::default(), move || {
+            EXIT.with(|exit| *exit.borrow_mut() = Some(Exit(exit_tx)));
+            let mut fonts = Fonts { keys: Vec::new(), unwound: unwound_tx, _confined: Rc::new(()) };
+            let payloads = vec![vec![1], vec![2], vec![3]];
+            initialize_fonts(&options, payloads, |request, _| {
+                let request: serde_json::Value = serde_json::from_str(request).unwrap();
+                let kind = request["kind"].as_str().unwrap().to_owned();
+                let key = request["fontKey"].as_str().unwrap().to_owned();
+                calls_tx.send((current().id(), kind.clone(), key.clone())).unwrap();
+                if key == "b" {
+                    return HostResponse { json: refusal.into(), payloads: vec![] };
+                }
+                if kind == "fonts.register" {
+                    fonts.keys.push(key);
+                }
+                HostResponse { json: "{\"result\":null}".into(), payloads: vec![] }
+            })?;
+            Ok(fonts)
+        });
+        let Err(failure) = started else { panic!("a failed startup font must not start") };
+        assert_eq!(failure.status, Status::RuntimeUnavailable);
+        assert_eq!(failure.response.json, refusal);
+
+        let calls: Vec<_> = calls_rx.try_iter().collect();
+        let owner = calls[0].0;
+        assert_ne!(owner, current().id());
+        let seen: Vec<_> =
+            calls.iter().map(|(_, kind, key)| (kind.as_str(), key.as_str())).collect();
+        assert_eq!(
+            seen,
+            [("fonts.register", "a"), ("fonts.addFallback", "a"), ("fonts.register", "b")]
+        );
+        assert!(calls.iter().all(|(thread, _, _)| *thread == owner));
+        // Both signals were sent before `start` returned, so neither waits.
+        assert_eq!(unwound_rx.try_recv().unwrap(), (owner, vec!["a".to_owned()]));
+        assert_eq!(exit_rx.try_recv().unwrap(), owner);
+    }
 }

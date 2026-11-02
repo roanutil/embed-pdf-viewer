@@ -204,3 +204,82 @@ fn startup_font_payloads_are_registered_before_creation_completes() {
     assert_eq!(epdf_engine_close(engine, u32::MAX), 0);
     assert_eq!(epdf_engine_release(engine), 0);
 }
+
+const ROBOTO: &[u8] =
+    include_bytes!("../../../packages/engine/main/test/fixtures/Roboto-Regular.ttf");
+
+fn frame(payloads: &[&[u8]]) -> Vec<u8> {
+    let mut bytes = (payloads.len() as u32).to_le_bytes().to_vec();
+    for payload in payloads {
+        bytes.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(payload);
+    }
+    bytes
+}
+
+fn create_with(options: &[u8], payloads: &[u8]) -> (u32, u64, u64) {
+    let mut engine = u64::MAX;
+    let mut error = u64::MAX;
+    let status = unsafe {
+        epdf_engine_create(
+            options.as_ptr(),
+            options.len() as u64,
+            payloads.as_ptr(),
+            payloads.len() as u64,
+            &mut engine,
+            &mut error,
+        )
+    };
+    (status, engine, error)
+}
+
+fn error_message(error: u64) -> String {
+    let bytes = result_bytes(error);
+    let json_len = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
+    let json: serde_json::Value = serde_json::from_slice(&bytes[4..4 + json_len]).unwrap();
+    assert_eq!(epdf_result_release(error), 0);
+    json["error"]["message"].as_str().unwrap().to_owned()
+}
+
+#[test]
+fn a_startup_font_failing_after_earlier_registrations_fails_creation_with_its_error() {
+    let options = br#"{"startupFonts":[
+        {"key":"first","payloadIndex":0,"fallback":true},
+        {"key":"broken","payloadIndex":1},
+        {"key":"never","payloadIndex":2}
+    ]}"#;
+    let payloads = frame(&[ROBOTO, b"not-a-font", ROBOTO]);
+    let (status, engine, error) = create_with(options, &payloads);
+    assert_eq!(status, 8);
+    assert_eq!(engine, 0);
+    assert_ne!(error, 0);
+    let message = error_message(error);
+    assert!(message.contains("broken"), "{message}");
+}
+
+#[test]
+fn aggregate_startup_font_bytes_over_the_retained_budget_are_refused_before_startup() {
+    let payloads = frame(&[ROBOTO, ROBOTO]);
+    let total = payloads.len() as u64;
+    assert!((ROBOTO.len() as u64) < total - 1);
+    let options = |limit: u64| {
+        format!(
+            r#"{{"limits":{{"maxRetainedInputBytes":{limit}}},"startupFonts":[
+                {{"key":"a","payloadIndex":0}},{{"key":"b","payloadIndex":1}}
+            ]}}"#
+        )
+    };
+
+    let (status, engine, error) = create_with(options(total - 1).as_bytes(), &payloads);
+    assert_eq!(status, 6);
+    assert_eq!(engine, 0);
+    assert_ne!(error, 0);
+    assert_eq!(error_message(error), "startup fonts exceed the retained-input budget");
+
+    let (status, engine, error) = create_with(options(total).as_bytes(), &payloads);
+    assert_eq!(status, 0);
+    assert_ne!(engine, 0);
+    assert_eq!(error, 0);
+    assert_eq!(epdf_engine_close(engine, u32::MAX), 0);
+    assert_eq!(epdf_engine_release(engine), 0);
+}
