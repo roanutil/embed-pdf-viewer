@@ -3,7 +3,7 @@
 Generated from `src/operations.ts`. Do not edit by hand; run
 `pnpm --filter @embedpdf/tooling-engine-conformance run operations`.
 
-Every one of the 89 `WorkerRequest` kinds, the port group that owns it,
+Every one of the 94 `WorkerRequest` kinds, the port group that owns it,
 the ownership stage it moves under, the phase that moves it, and the
 cancellation case it has to document. Group assignments come from
 `multiplatform-port-order.md` Section 3; cancellation cases from
@@ -43,6 +43,11 @@ cancellation case it has to document. Group assignments come from
 | `fonts.clear` | A | 1 | queued-only | routed |  |
 | `fonts.authorizeEditing` | A | 1 | queued-only | routed |  |
 | `document.setFontSettings` | A | 1 | queued-only | routed | Per-document session state on the handle (EPDFDoc_SetFontEmbeddingPolicy, EPDFDoc_SetTypographicFeatures, WorkerHost.ts:2285-2290), never written to the file: a session effect. Filed with the fonts it configures. |
+| `fonts.list` | A | 1 | queued-only | routed | FontRegistrar.engineFontFacts and fallbackKeys (WorkerHost.ts:790-796); Rust FontRegistry::engine_font_facts and fallback_order. The NaN-tier fallback order is the accepted Rust-only exception (stable insertion sort). |
+| `fonts.program` | A | 1 | queued-only | routed | A served engine font's bytes by its program hash (handleFontsProgram); NotFound for a font not served. Rust answers {bytes: {payload: 0}}, the bytes payload 0. |
+| `document.fonts.list` | A | 1 | queued-only | routed | DocumentFontReader.facts (handleDocumentFontsList): the faces EPDFFontFaces_Load walks, the engine fonts and the fallbacks. Rust does not start trackFontChanges, so no write answers fontsChanged yet. |
+| `document.fonts.resolve` | A | 1 | queued-only | routed | DocumentFontReader.resolve over EPDFDoc_ResolveFonts (handleDocumentFontsResolve), the facts read first and answered beside the runs. |
+| `document.fonts.program` | A | 1 | queued-only | routed | DocumentFontReader.program (handleDocumentFontsProgram): an engine font's program first, else a document program by display hash. Rust answers bytes as {payload: 0} for part data, null otherwise. |
 
 ## G5
 
