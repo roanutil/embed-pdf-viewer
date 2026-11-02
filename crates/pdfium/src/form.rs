@@ -105,6 +105,21 @@ impl Document {
         }
         Ok(bytes)
     }
+
+    /// A field's own `/T` segment, read off its dictionary by object number
+    /// rather than out of a model (`EPDFForm_GetFieldPartialName`): for a
+    /// field no model holds, such as one [`Document::import_field_roots`]
+    /// names. `None` when the dictionary has no `/T`, or an empty one.
+    pub fn field_partial_name(
+        &self,
+        field_object_number: u32,
+    ) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: measure-then-fill with a null probe; the buffer holds the
+        // byte length passed with it.
+        read_utf16(|buf, len| unsafe {
+            pdfium_sys::EPDFForm_GetFieldPartialName(self.as_raw(), field_object_number, buf, len)
+        })
+    }
 }
 
 impl Drop for FormModel<'_> {

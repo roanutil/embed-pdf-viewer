@@ -379,7 +379,7 @@ pub fn insert_pages(
         ));
     }
     // An empty index list means every page, in order.
-    if !session.document()?.document().import_pages(&source, &[], at as i32) {
+    if !session.document()?.document().import_pages(&source, &[], at as i32, None) {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             format!("FPDF_ImportPagesByIndex rejected the insert at index {at}"),
