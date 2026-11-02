@@ -459,3 +459,227 @@ fn unknown_operations_and_bad_spans_keep_their_statuses() {
         2
     );
 }
+
+// ── page transform ──
+
+const PAGE_TRANSFORM: u32 = 6;
+
+/// Exact equality with numbers compared as doubles, so `1056` and `1056.0`
+/// are the same value and nothing is rounded.
+fn same_exact(actual: &Value, expected: &Value) -> bool {
+    match (actual, expected) {
+        (Value::Number(a), Value::Number(e)) => a.as_f64() == e.as_f64(),
+        (Value::Object(a), Value::Object(e)) => {
+            a.len() == e.len()
+                && e.iter().all(|(k, ev)| a.get(k).is_some_and(|av| same_exact(av, ev)))
+        }
+        (Value::Array(a), Value::Array(e)) => {
+            a.len() == e.len() && a.iter().zip(e).all(|(av, ev)| same_exact(av, ev))
+        }
+        _ => actual == expected,
+    }
+}
+
+fn mentions_non_finite(value: &Value) -> bool {
+    match value {
+        Value::Object(map) => map.contains_key("$number") || map.values().any(mentions_non_finite),
+        Value::Array(items) => items.iter().any(mentions_non_finite),
+        _ => false,
+    }
+}
+
+/// Whether the binding's contract admits this input: a quarter turn, and
+/// finite positive size, scale, dpr and (when given) base scale.
+fn admitted(input: &Value) -> bool {
+    let positive = |v: &Value| v.as_f64().is_some_and(|n| n.is_finite() && n > 0.0);
+    !mentions_non_finite(input)
+        && [0.0, 90.0, 180.0, 270.0].contains(&input["rotation"].as_f64().unwrap_or(-1.0))
+        && positive(&input["pageSize"]["width"])
+        && positive(&input["pageSize"]["height"])
+        && positive(&input["scale"])
+        && positive(&input["dpr"])
+        && (input.get("baseScale").is_none_or(Value::is_null) || positive(&input["baseScale"]))
+}
+
+const PROBE_KEYS: [&str; 6] = [
+    "toPixels",
+    "fromPixels",
+    "contentToView",
+    "viewToContent",
+    "contentToViewRect",
+    "viewToContentRect",
+];
+
+#[test]
+fn page_transforms_agree_with_the_geometry_vectors() {
+    let file = read_json("tooling/plugin-conformance/vectors/core/geometry-page.json");
+    let (mut compared, mut refused_cases) = (0, 0);
+    let mut turns = std::collections::BTreeSet::new();
+    let mut probed = 0;
+    let mut user_unit = 0;
+    for case in file["cases"].as_array().unwrap().iter().filter(|c| c["fn"] == "pageTransform") {
+        let name = case["name"].as_str().unwrap();
+        let input = &case["args"][0];
+        let probe = case["args"].get(1).cloned().unwrap_or(json!({}));
+        let points = probe.get("points").cloned().unwrap_or(json!([]));
+        let rects = probe.get("rects").cloned().unwrap_or(json!([]));
+        let args = json!({
+            "input": input,
+            "pagePoints": points,
+            "pageRects": rects,
+            "viewPoints": points,
+            "viewRects": rects,
+        });
+        // Outside the contract, singular, or a metric the vector records as
+        // non-finite: the binding refuses rather than serializing it.
+        let outcome = &case["outcome"];
+        if !admitted(input) || outcome.get("returned").is_none() || mentions_non_finite(outcome) {
+            refuse(PAGE_TRANSFORM, &args);
+            refused_cases += 1;
+            continue;
+        }
+        let returned = &outcome["returned"];
+        let actual = ok(PAGE_TRANSFORM, &args);
+        let mut metrics = returned.clone();
+        for key in PROBE_KEYS {
+            metrics.as_object_mut().unwrap().remove(key);
+        }
+        assert!(
+            same_exact(&actual["transform"], &metrics),
+            "{name}: {} against {metrics}",
+            actual["transform"]
+        );
+        for (key, vector) in [
+            ("pageToView", "contentToView"),
+            ("viewToPage", "viewToContent"),
+            ("pageRectsToView", "contentToViewRect"),
+            ("viewRectsToPage", "viewToContentRect"),
+        ] {
+            assert!(
+                same_exact(&actual[key], &returned[vector]),
+                "{name} {key}: {} against {}",
+                actual[key],
+                returned[vector],
+            );
+        }
+        turns.insert(input["rotation"].as_u64().unwrap());
+        probed += usize::from(!points.as_array().unwrap().is_empty());
+        user_unit += usize::from(name.contains("userunit"));
+        compared += 1;
+    }
+    assert!(compared >= 50, "only {compared} transforms compared");
+    assert!(refused_cases >= 10, "only {refused_cases} out-of-contract inputs refused");
+    assert_eq!(turns.len(), 4, "not every quarter turn was compared: {turns:?}");
+    assert!(probed >= 40, "only {probed} cases mapped points and rects");
+    assert!(user_unit >= 4, "only {user_unit} UserUnit-folded scales compared");
+}
+
+fn letter(extra: Value) -> Value {
+    let mut input = json!({ "pageSize": { "width": 612, "height": 792 }, "rotation": 90, "scale": 1.5, "dpr": 2 });
+    for (k, v) in extra.as_object().unwrap() {
+        input[k] = v.clone();
+    }
+    input
+}
+
+#[test]
+fn page_transform_lists_default_to_empty_and_keep_their_order() {
+    let result = ok(PAGE_TRANSFORM, &json!({ "input": letter(json!({})) }));
+    for key in ["pageToView", "viewToPage", "pageRectsToView", "viewRectsToPage"] {
+        assert_eq!(result[key], json!([]), "{key}");
+    }
+    let points = json!([{ "x": 0, "y": 0 }, { "x": 612, "y": 792 }]);
+    let result = ok(PAGE_TRANSFORM, &json!({ "input": letter(json!({})), "pagePoints": points }));
+    // A quarter turn puts the page's top-left at the view's top-right.
+    assert!(same_exact(
+        &result["pageToView"],
+        &json!([{ "x": 1188, "y": 0 }, { "x": 0, "y": 918 }])
+    ));
+    let back = ok(
+        PAGE_TRANSFORM,
+        &json!({ "input": letter(json!({})), "viewPoints": result["pageToView"] }),
+    );
+    assert!(same_exact(&back["viewToPage"], &points), "{}", back["viewToPage"]);
+    assert_eq!(
+        ok(PAGE_TRANSFORM, &json!({ "input": letter(json!({ "baseScale": null })) }))["transform"]
+            ["baseScale"],
+        1.5
+    );
+}
+
+#[test]
+fn page_transforms_outside_the_contract_are_refused() {
+    for extra in [
+        json!({ "rotation": 45 }),
+        json!({ "rotation": 360 }),
+        json!({ "rotation": -90 }),
+        json!({ "scale": 0 }),
+        json!({ "dpr": -1 }),
+        json!({ "baseScale": 0 }),
+        json!({ "pageSize": { "width": 0, "height": 10 } }),
+        json!({ "userUnit": 2 }),
+    ] {
+        refuse(PAGE_TRANSFORM, &json!({ "input": letter(extra) }));
+    }
+    let message = refuse(
+        PAGE_TRANSFORM,
+        &json!({ "input": { "pageSize": { "width": 1e300, "height": 1e300 }, "rotation": 0, "scale": 1e-300, "dpr": 1 } }),
+    );
+    assert!(message.contains("invert"), "{message}");
+    // A finite input whose device size overflows.
+    refuse(PAGE_TRANSFORM, &json!({ "input": letter(json!({ "scale": 1e300, "dpr": 1e300 })) }));
+    let raw =
+        r#"{"input":{"pageSize":{"width":612,"height":792},"rotation":0,"scale":1e999,"dpr":1}}"#;
+    refused(PAGE_TRANSFORM, raw.as_bytes());
+    refuse(
+        PAGE_TRANSFORM,
+        &json!({ "input": letter(json!({})), "pagePoints": [{ "x": f64::MAX, "y": 0 }] , "pageRects": [{ "x": 0, "y": 0, "width": f64::MAX, "height": 1 }] }),
+    );
+    refuse(PAGE_TRANSFORM, &json!({ "input": letter(json!({})), "points": [] }));
+}
+
+/// The raw response JSON of a helper call that must succeed.
+fn ok_raw(operation: u32, args: &str) -> String {
+    let mut result = u64::MAX;
+    let status =
+        unsafe { epdf_helper_call(operation, args.as_ptr(), args.len() as u64, &mut result) };
+    let mut ptr = std::ptr::null();
+    let mut len = 0;
+    assert_eq!(unsafe { epdf_result_view(result, &mut ptr, &mut len) }, OK);
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len as usize) }.to_vec();
+    assert_eq!(epdf_result_release(result), OK);
+    let json_len = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
+    let json = String::from_utf8(bytes[4..4 + json_len].to_vec()).unwrap();
+    assert_eq!(status, OK, "{json}");
+    json
+}
+
+#[test]
+fn argument_doubles_decode_exactly() {
+    // baseScale passes through page_transform untouched, so its output token
+    // shows whether the argument decoder read the shortest round-trip
+    // spelling of each double back to the same bits.
+    let mut state = 0x9e37_79b9_7f4a_7c15u64;
+    let mut wrong = Vec::new();
+    for _ in 0..20_000 {
+        state =
+            state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+        let mantissa = state >> 12;
+        let exponent = 1023 - 20 + (state >> 3) % 40;
+        let value = f64::from_bits((exponent << 52) | mantissa);
+        let args = format!(
+            r#"{{"input":{{"pageSize":{{"width":612,"height":792}},"rotation":0,"scale":1,"baseScale":{value:?},"dpr":1}}}}"#
+        );
+        let json = ok_raw(PAGE_TRANSFORM, &args);
+        let token = json.split("\"baseScale\":").nth(1).unwrap().split([',', '}']).next().unwrap();
+        if token.parse::<f64>().unwrap().to_bits() != value.to_bits() {
+            wrong.push(format!("{value:?} came back as {token}"));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "{} of 20000 doubles changed, e.g. {:?}",
+        wrong.len(),
+        &wrong[..wrong.len().min(3)]
+    );
+}

@@ -450,6 +450,7 @@ version = "0.0.0"
 dependencies = [
  "build-support",
  "epdf-engine",
+ "epdf-geometry",
  "serde",
  "serde_json",
  "test-support",

@@ -5,8 +5,8 @@
 //! caller's thread; they never reach a Host session or PDFium.
 
 mod text;
+mod transform;
 
-use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::host::HostResponse;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -26,13 +26,7 @@ pub(crate) fn call(operation: u32, args: &[u8]) -> Result<HostResponse, Failure>
         3 => text::slice_text(args),
         4 => text::text_offsets_to_chars(args),
         5 => text::character_boundary_to_text(args),
-        6 => Err(Failure {
-            status: Status::RuntimeUnavailable,
-            response: crate::abi::response_error(EngineError::with_message(
-                EngineErrorCode::NotImplemented,
-                "helper is unavailable in this build",
-            )),
-        }),
+        6 => transform::apply(args),
         _ => Err(Failure::new(Status::InvalidArgument, "unknown helper operation")),
     }
 }
