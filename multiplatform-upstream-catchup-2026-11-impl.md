@@ -83,7 +83,7 @@ and the Rust agree. The Rust mirrors the WASM runtime, and we didn't change any 
 
 ## The font port, split between impl and plugins
 
-Impl has the pdfium-layer bindings for the 47 font calls in upstream's TS: a registered font's
+Impl has the pdfium-layer bindings for the 45 font functions upstream's TS calls: a registered font's
 program facts and the last-resort font (`FontRegistrar.ts`), a document's faces, fingerprint,
 display programs and `EPDFDoc_ResolveFonts` (`DocumentFontReader.ts`), the missing-character list
 (`DocumentSession.ts`), and the two `/DA` calls that name a document's own program. Each binding
@@ -126,6 +126,26 @@ regenerated on upstream artifacts will carry a `structurePosition` the Rust can'
 for the fork to merge `28b8b808f` or whatever upstream pins next, which is D1's option 2 or 3. We
 haven't patched around it.
 
+## Known gap: eight non-font calls without a binding
+
+Upstream's TS calls 54 `fn.EPDF*` functions on `a40d63a19` that it didn't call on `b456ee4fd`: the
+45 font functions above, `EPDFAnnot_GetStructurePosition`, and eight more that this catch-up didn't
+port. The fork runtime exports all eight (they are in the `linux-arm64` headers the containers
+mount), but nothing under `crates/` names any of them, on impl or on plugins
+(`private-fork/research/multi-platform-rust-core-impl-plugins`). They are C4 (plan Task 5) work,
+with the TS feature each one serves:
+
+| Function | TS caller, under `packages/engine/services/src/features/` | Feature |
+|---|---|---|
+| `EPDFDoc_ImportPages` | `pages/PagesInserter.ts`, `pages/PagesExtractor.ts` | Page insert and export: copies pages with the form fields of their widgets |
+| `EPDFDoc_GetImportFieldRoots` | `pages/internal/keepFieldNamesApart.ts` | An insert renames the inserted file's top-level fields that clash (`name_2`) |
+| `EPDFForm_GetFieldPartialName` | `pages/internal/keepFieldNamesApart.ts` | The same rename |
+| `EPDFDoc_GetPageLabelSectionCount` | `pages/internal/pageLabels.ts` | Reading `/PageLabels` (`PagesReader.ts`, `changes/internal/pageChanges.ts`) |
+| `EPDFDoc_GetPageLabelSectionAt` | `pages/internal/pageLabels.ts` | The same read |
+| `EPDFDoc_SetPageLabelSections` | `pages/internal/pageLabels.ts` | Rewriting `/PageLabels` after a page change (`pageChanges.ts`) |
+| `EPDFCatalog_GetMetadata` | `metadata/internal/xmp/xmpPacket.ts` | Reading the catalog's XMP packet, for `syncXmp.ts` |
+| `EPDFCatalog_SetMetadata` | `metadata/internal/xmp/xmpPacket.ts` | Writing it back after a metadata change (`MetadataMutator.ts`) |
+
 ## Tests
 
 All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` library built from
@@ -149,6 +169,11 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `pnpm --filter @embedpdf/tooling-engine-conformance run operations:check` | `cbb538fee` | 1 | The five font kinds have no row; 94 kinds against the 89 documented |
 | `cargo test -p pdfium --test document_fonts` | `2e5a14a81` | 0 | 11 passed |
 | `cargo clippy -p pdfium --all-targets` | `2e5a14a81` | 0 | No lint warnings |
+| `pnpm run -s actions:check` in `tooling/engine-conformance` | `91d208467` | 0 | Current |
+| `pnpm run -s operations:check` in `tooling/engine-conformance` | `91d208467` | 1 | 94 request kinds against the 89 documented |
+| `cargo clippy -p pdfium --all-targets -- -D warnings` | `332394f16` | 0 | No lint warnings |
+| `cargo test -p pdfium --test document_fonts` | `332394f16` | 0 | 11 passed |
+| `EMBEDPDF_FORK_TARGET=linux-arm64 cargo clippy -p pdfium --target wasm32-unknown-emscripten -- -D warnings` | `332394f16` | 101 | Only `unnecessary_cast` at `crates/pdfium/src/file_access.rs:112`, which predates the catch-up; `document_fonts.rs` is clean |
 
 ### The 99 cargo failures
 
@@ -201,9 +226,11 @@ one each in `crates/epdf-node` and `crates/epdf-uniffi`. They were unformatted b
 
 ### Three conformance checks are red from the merge
 
-Ten of the 32 `:check` scripts in `tooling/engine-conformance` run without a `wasm32` payload. We
-ran each with `pnpm run <script>` in that directory, on `52f10e027` in a temporary worktree and on
-`090fe3f55`, the same tree as the merge for these scripts:
+Twelve of the 32 `:check` scripts in `tooling/engine-conformance` run without a `wasm32` payload,
+and the other 20 need it. We ran the ten below with `pnpm run <script>` in that directory, on
+`52f10e027` in a temporary worktree and on `090fe3f55`, the same tree as the merge for these
+scripts. `actions:check` and `operations:check` ran at `91d208467`, and on `52f10e027` in a
+temporary worktree after building `@embedpdf/engine-runtime` there:
 
 | Script | `52f10e027` exit | `090fe3f55` exit | Result at `090fe3f55` |
 |---|---|---|---|
@@ -217,9 +244,10 @@ ran each with `pnpm run <script>` in that directory, on `52f10e027` in a tempora
 | `annotation-write:check` | 0 | 0 | Current |
 | `layout:check` | 0 | 0 | Current |
 | `wire:check` | 0 | 1 | `expected 89 request kinds, the union has 94` |
+| `actions:check` | 0 | 0 at `91d208467` | Current |
+| `operations:check` | 0 | 1 at `91d208467` | `worker-protocol.ts has 94 request kinds; the plan documents 89` |
 
-`operations:check` is the third red one (the `cbb538fee` row in the table above). The other 21 boot
-the engine, and the engine doesn't build without the payload (`metadata:check` fails with `Cannot
+`operations:check` is the third red one. The other 20 boot the engine, and the engine doesn't build without the payload (`metadata:check` fails with `Cannot
 find module .../packages/engine/main/workers/inline-transport.node.js`).
 
 `scope:check` is red because upstream changed the scope grammar in five commits (`97871d404`,
@@ -265,13 +293,17 @@ compares only whether a case parses, no parse case is a plugin permission, and b
 `doc.render.thumbnail` (or `doc.sign`, `doc.outline.modify` and the other capabilities it was
 already missing). Only `resolution_agrees_with_typescript` moves: it already fails, and now
 `doc.render.thumbnail` joins the missing capabilities. So the port also needs parse cases for plugin
-permissions and the hand list brought up to `KNOWN_CAPABILITIES`, or the gate keeps passing over the
-drift.
+permissions, and `ALL_CAPABILITIES` updated by hand, or the gate keeps passing over the drift. The
+TS closed set, `KNOWN_CAPABILITIES` in `packages/engine/core/src/auth/scope/parser.ts:14`, is
+module-private, and exporting it would be a TS change. The hand list lacks seven of its 28 entries:
+`doc.annotate.import`, `doc.forms.import`, `doc.forms.script`, `doc.outline.modify`,
+`doc.render.thumbnail`, `doc.sign` and `doc.sign.certify`. Only `doc.render.thumbnail` is new from
+the merge.
 
 ### The engine build
 
 The engine build fails for want of the `wasm32` payload package. It fails the same way on
 `52f10e027`, whose payload hash, `ac356131f67e5d3f`, isn't published either. This tree's payload
 hash is `facdbea7f80d8cef`. Neither `embedpdf/runtime-payloads` nor `roanutil/embed-pdf-runtime`
-publishes one, and building it is Task 6. That gap is what keeps the other 21 `:check` scripts from
+publishes one, and building it is Task 6. That gap is what keeps the other 20 `:check` scripts from
 running.
