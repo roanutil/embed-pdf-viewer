@@ -153,7 +153,7 @@ pub struct DocumentSession {
     authority: SessionAuthority,
     /// Disposers that run when this session closes, in reverse order.
     ///
-    /// `pages.insert` needs this: `FPDF_ImportPagesByIndex` does not fully
+    /// `pages.insert` needs this: `EPDFDoc_ImportPages` does not fully
     /// detach imported objects from their source, so the source document and
     /// its bytes have to outlive every save of the destination.
     retained: Vec<Box<dyn FnOnce()>>,

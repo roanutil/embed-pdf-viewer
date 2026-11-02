@@ -338,15 +338,19 @@ pub fn insert_blank_pages(
 }
 
 /// `PagesInserter.insert`: every page of the PDF `bytes`, deep-copied in at
-/// `position` (`FPDF_ImportPagesByIndex`). The copy is not a full detach: an
-/// imported stream still reads through the source, so the source document
-/// is retained on the session, its one owner, until the session closes. An
-/// inserted page is born in this document, not in its file, so its inline
-/// annotations are born as objects here, named by their numbers.
+/// `position` with the form fields of their widgets (`EPDFDoc_ImportPages`),
+/// each at the number `object_numbers` gives it when it gives one. A
+/// top-level field whose name the document already uses is renamed in the
+/// source first ([`keep_field_names_apart`]). The copy is not a full detach:
+/// an imported stream still reads through the source, so the source
+/// document is retained on the session, its one owner, until the session
+/// closes. An inserted page is born in this document, not in its file, so
+/// its inline annotations are born as objects here, named by their numbers.
 pub fn insert_pages(
     session: &mut DocumentSession,
     bytes: &[u8],
     position: &PagePosition,
+    object_numbers: Option<&[serde_json::Number]>,
     cancel: &CancelToken,
 ) -> Result<PageInsertResult, EngineError> {
     cancel.check()?;
@@ -378,11 +382,14 @@ pub fn insert_pages(
             "pages.insert source PDF has no pages",
         ));
     }
-    // An empty index list means every page, in order.
-    if !session.document()?.document().import_pages(&source, &[], at as i32, None) {
+    keep_field_names_apart(session, &source)?;
+    let numbers = claim_numbers(session, "pages.insert", object_numbers, count)?;
+    // An empty index list means every page, in order. A refusal after pages
+    // were copied is taken back by the write's layer transaction.
+    if !session.document()?.document().import_pages(&source, &[], at as i32, numbers.as_deref()) {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
-            format!("FPDF_ImportPagesByIndex rejected the insert at index {at}"),
+            format!("EPDFDoc_ImportPages rejected the pages.insert at index {at}"),
         ));
     }
     session.retain_until_close(move || drop(source));
@@ -393,6 +400,96 @@ pub fn insert_pages(
         promote_inline_annotations(document, at + offset as u32, page.object_number())?;
     }
     Ok(result)
+}
+
+/// `importInto`'s numbers: one per copied page (`InvalidArg` naming
+/// `objectNumbers` otherwise), each claimed from what the session holds.
+fn claim_numbers(
+    session: &mut DocumentSession,
+    op: &str,
+    object_numbers: Option<&[serde_json::Number]>,
+    count: u32,
+) -> Result<Option<Vec<u32>>, EngineError> {
+    let Some(numbers) = object_numbers else {
+        return Ok(None);
+    };
+    if numbers.len() != count as usize {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("{op} needs one object number per page: {} for {count}", numbers.len()),
+        )
+        .with_details(serde_json::json!({ "field": "objectNumbers" })));
+    }
+    let numbers = numbers.iter().map(whole_object_number).collect::<Result<Vec<u32>, _>>()?;
+    for number in &numbers {
+        session.claim_object_number(*number)?;
+    }
+    Ok(Some(numbers))
+}
+
+/// `keepFieldNamesApart`: a top-level field of `source` whose name the
+/// document already uses takes the first free `name_2`, `name_3`, ...,
+/// renamed in `source` before its pages are copied (the import keeps
+/// names). Two fields of one name are one field with one value, so joining
+/// them would lose the inserted file's values. Its fields keep their place
+/// under it: `address.city` becomes `address_2.city`.
+pub fn keep_field_names_apart(
+    session: &DocumentSession,
+    source: &pdfium::Document,
+) -> Result<(), EngineError> {
+    let unreadable = |e: pdfium::PdfiumError| {
+        EngineError::with_message(EngineErrorCode::Unknown, format!("pages.insert: {e}"))
+    };
+    let roots = source.import_field_roots(&[]).map_err(unreadable)?;
+    if roots.is_empty() {
+        return Ok(());
+    }
+    let names = roots
+        .iter()
+        .map(|root| Ok(source.field_partial_name(*root).map_err(unreadable)?.unwrap_or_default()))
+        .collect::<Result<Vec<String>, EngineError>>()?;
+    let taken = top_level_names(session.document()?.document()).map_err(unreadable)?;
+    let mut used: std::collections::HashSet<String> =
+        taken.iter().cloned().chain(names.iter().cloned()).collect();
+    for (root, name) in roots.iter().zip(&names) {
+        if !taken.contains(name) {
+            continue;
+        }
+        let mut free = name.clone();
+        let mut n = 2u32;
+        while used.contains(&free) {
+            free = format!("{name}_{n}");
+            n += 1;
+        }
+        used.insert(free.clone());
+        if !source.set_field_name(*root, &free) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!(
+                    "pages.insert could not rename the inserted field \"{name}\" to \"{free}\""
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The names of the document's top-level fields: `address` for
+/// `address.city`.
+fn top_level_names(
+    document: &pdfium::Document,
+) -> Result<std::collections::HashSet<String>, pdfium::PdfiumError> {
+    let mut names = std::collections::HashSet::new();
+    let Some(model) = document.form_model() else {
+        return Ok(names);
+    };
+    for index in 0..model.field_count() {
+        let Some(field) = model.field(index) else { continue };
+        if let Some(name) = field.name()?.filter(|name| !name.is_empty()) {
+            names.insert(name.split('.').next().unwrap_or_default().to_owned());
+        }
+    }
+    Ok(names)
 }
 
 /// `PagesMutator.setName`: register `name` for the page, removing `replace`

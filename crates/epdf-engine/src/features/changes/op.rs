@@ -139,14 +139,17 @@ pub enum ChangeOp {
         object_numbers: Option<Vec<serde_json::Number>>,
     },
     /// Every page of the PDF `source`, copied in at `position` (the end
-    /// when left out). The source is a payload the request carries,
+    /// when left out), each at the number `objectNumbers` gives it, in
+    /// order, when it gives one. The source is a payload the request carries,
     /// `{ "payload": n }`, as every other byte resource on this wire: upstream's
     /// typed array, moved beside the JSON rather than spelled in it.
-    #[serde(rename = "pages.insert")]
+    #[serde(rename = "pages.insert", rename_all = "camelCase")]
     PagesInsert {
         source: ResourceBytes,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         position: Option<crate::features::pages_write::PagePosition>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_numbers: Option<Vec<serde_json::Number>>,
     },
     /// A bundle's annotations, created as one change (`AnnotationImportOp`).
     /// Only its verb, `annotations.import`, and a server's change make one:

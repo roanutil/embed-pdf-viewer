@@ -272,12 +272,14 @@ pub fn insert_pages(
     ctx: &mut ChangeContext<'_>,
     source: &[u8],
     position: Option<&PagePosition>,
+    object_numbers: Option<&[serde_json::Number]>,
 ) -> Result<Done, EngineError> {
     authorize(ctx)?;
     let result = mutator::insert_pages(
         ctx.session,
         source,
         position.unwrap_or(&ListPosition::End(End::End)),
+        object_numbers,
         ctx.cancel,
     )?;
     let (item, reverse) = inserted(ctx, result, true)?;

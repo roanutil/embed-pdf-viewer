@@ -6,7 +6,8 @@
 //! A read over the session, not a mutation. Pages are copied into a scratch
 //! document that is closed before this returns, so the source is untouched:
 //! no revision bump, no registry refresh, no layer artifact. A plain copy is
-//! `FPDF_ImportPagesByIndex`; a flattened one `EPDFDoc_ExportPagesFlattened`,
+//! `EPDFDoc_ImportPages`, which brings the form fields of the pages'
+//! widgets; a flattened one `EPDFDoc_ExportPagesFlattened`,
 //! which copies the pages as they draw. Either keeps the document's title.
 
 use serde::{Deserialize, Serialize};
