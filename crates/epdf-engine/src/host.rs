@@ -270,15 +270,17 @@ impl Host {
             }
             "fonts.addFallback" => {
                 let key = string_field(&body, "fontKey")?;
-                // Absent means the host's own tier, as `FontRegistrar.addFallback`
-                // defaults it; the TypeScript worker passes `req.tier` through
-                // unchecked.
-                let tier: Option<i32> = optional(&body, "tier")?;
+                // The TypeScript worker passes `req.tier` through unchecked.
+                // Absent takes `FontRegistrar.addFallback`'s default, the host's
+                // own tier; anything else is the JavaScript value it was, which
+                // the registry coerces as the WebAssembly call does. `null` is
+                // not absent there: a default parameter covers only undefined.
+                let tier = match body.get("tier") {
+                    None => crate::features::fonts::fallback_tier::OWN,
+                    given => crate::js_number::to_number(given),
+                };
                 let fonts = self.fonts()?;
-                fonts.add_fallback_in_tier(
-                    &key,
-                    tier.unwrap_or(crate::features::fonts::fallback_tier::OWN),
-                )?;
+                fonts.add_fallback_in_tier(&key, tier)?;
                 serde_json::json!({ "fallbacks": fonts.fallback_order() })
             }
             "fonts.clearFallbacks" => {

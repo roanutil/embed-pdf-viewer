@@ -41,12 +41,13 @@ use crate::error::{EngineError, EngineErrorCode};
 ///
 /// PDFium tries every font of a lower tier before any of a higher one, so a
 /// host's own fallbacks win over the built-in ones whatever order they were
-/// added in.
+/// added in. A tier is a JavaScript number here, as the TypeScript types it;
+/// see [`FontRegistry::add_fallback_in_tier`].
 pub mod fallback_tier {
     /// The host's or the application's own fonts. The default tier.
-    pub const OWN: i32 = 0;
+    pub const OWN: f64 = 0.0;
     /// The fonts the engine ships.
-    pub const BUILT_IN: i32 = 1;
+    pub const BUILT_IN: f64 = 1.0;
 }
 
 /// A font to register at startup, from a file.
@@ -63,7 +64,7 @@ pub struct StartupFont {
     /// Also append to the glyph-fallback chain.
     pub fallback: bool,
     /// The fallback tier, when `fallback` is set. See [`fallback_tier`].
-    pub tier: i32,
+    pub tier: f64,
 }
 
 /// One thread's fonts.
@@ -81,9 +82,9 @@ pub struct FontRegistry {
     /// registered successfully, at the moment something first tried to draw
     /// with it.
     retained: Vec<FileAccess>,
-    /// The keys in the fallback chain with their tiers, in the order added,
-    /// for reporting. The chain itself lives in PDFium.
-    fallbacks: Vec<(String, i32)>,
+    /// The keys in the fallback chain with their tiers as given, in the order
+    /// added, for reporting. The chain itself lives in PDFium.
+    fallbacks: Vec<(String, f64)>,
     /// Keeps PDFium initialized on this thread.
     ///
     /// Not optional and not the caller's job. Every `EPDFFont_*` call reads
@@ -194,9 +195,14 @@ impl FontRegistry {
     /// Add a registered font to the glyph-fallback chain in `tier`: it is
     /// tried after every font of a lower tier. Adding it again changes its
     /// tier only, keeping its place among the fonts added before it.
-    pub fn add_fallback_in_tier(&mut self, key: &str, tier: i32) -> Result<(), EngineError> {
+    ///
+    /// `tier` is the number `FontRegistrar.addFallback` takes, and it goes
+    /// where the TypeScript's does. PDFium gets `ToInt32(tier)`, which is what
+    /// the WebAssembly call does to it: 1.7 is tier 1, NaN is tier 0, 2^32 + 1
+    /// is tier 1. [`FontRegistry::fallback_order`] sorts by the number itself.
+    pub fn add_fallback_in_tier(&mut self, key: &str, tier: f64) -> Result<(), EngineError> {
         let id = self.id_for(key)?;
-        pdfium::add_fallback_font(id, tier).map_err(|_| {
+        pdfium::add_fallback_font(id, crate::js_number::to_int32(tier)).map_err(|_| {
             EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!("could not add {key} to the fallback chain"),
@@ -215,12 +221,26 @@ impl FontRegistry {
         self.fallbacks.clear();
     }
 
-    /// The fallback chain, in precedence order: by tier, and each tier in the
-    /// order added. `FontRegistrar.fallbackKeys`.
+    /// The fallback chain by tier, each tier in the order added.
+    /// `FontRegistrar.fallbackKeys`, which sorts with `left.tier - right.tier`
+    /// on the tiers as given, so 1 comes before 1.7 here although PDFium
+    /// tries both as tier 1.
+    ///
+    /// A difference that is NaN (a tier that was a word, or two infinities)
+    /// counts as equal, as `Array.prototype.sort` counts it. That comparator
+    /// is not an order, and the TypeScript's answer then depends on the
+    /// JavaScript engine's sort; this answers what a stable insertion sort
+    /// does with it, and never panics, which `sort_by` may on a comparator
+    /// that is not total.
     pub fn fallback_order(&self) -> Vec<String> {
-        let mut ordered: Vec<&(String, i32)> = self.fallbacks.iter().collect();
-        // Stable, so fonts of one tier keep the order they were added in.
-        ordered.sort_by_key(|(_, tier)| *tier);
+        let mut ordered: Vec<&(String, f64)> = self.fallbacks.iter().collect();
+        for end in 1..ordered.len() {
+            let mut at = end;
+            while at > 0 && ordered[at - 1].1 - ordered[at].1 > 0.0 {
+                ordered.swap(at - 1, at);
+                at -= 1;
+            }
+        }
         ordered.into_iter().map(|(key, _)| key.clone()).collect()
     }
 

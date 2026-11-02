@@ -1,11 +1,12 @@
 //! `fonts.addFallback`'s `tier` on the wire.
 //!
 //! The TypeScript worker passes `req.tier` to `FontRegistrar.addFallback`
-//! unchecked, and the registrar defaults an absent one to `FALLBACK_TIERS.own`.
-//! The order the tiers produce is covered in `font_registry.rs`; this covers
-//! the field.
+//! unchecked. The registrar defaults an absent one to `FALLBACK_TIERS.own`
+//! and hands any other value to `EPDFFont_AddFallbackFont`, whose WebAssembly
+//! `int` parameter takes `ToInt32(ToNumber(v))`. These tests read the chain
+//! PDFium actually tries, through `EPDFDoc_ResolveFonts` on the host's own
+//! thread, so they check the tier PDFium got rather than what was reported.
 
-use epdf_engine::error::EngineErrorCode;
 use epdf_engine::host::Host;
 
 fn roboto() -> Vec<u8> {
@@ -21,16 +22,20 @@ fn call(host: &mut Host, request: serde_json::Value, payloads: Vec<Vec<u8>>) -> 
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
-#[test]
-fn add_fallback_takes_a_tier_and_defaults_an_absent_one() {
-    // PDFium's font registry is per thread, so the host gets a thread of its own.
-    std::thread::spawn(|| {
+/// Register `keys` in order, add each as a fallback with the tier given (or
+/// none), and answer the keys in the order PDFium tries them.
+///
+/// Font ids are a per-thread counter, so on a fresh thread the n-th key
+/// registered has the n-th smallest id, which is how a resolved id maps
+/// back to a key.
+fn chain(fallbacks: Vec<(&'static str, Option<serde_json::Value>)>) -> Vec<&'static str> {
+    std::thread::spawn(move || {
         let mut host = Host::new();
-        for key in ["own", "built-in"] {
-            // `italic: null` infers. This host still decodes italic as an
-            // optional bool, where the TypeScript sends the C API's -1.
+        for (key, _) in &fallbacks {
             let json = call(
                 &mut host,
+                // `italic: null` infers. This host still decodes italic as an
+                // optional bool, where the TypeScript sends the C API's -1.
                 serde_json::json!({
                     "kind": "fonts.register", "fontKey": key, "familyName": "",
                     "weight": 0, "italic": null,
@@ -39,28 +44,91 @@ fn add_fallback_takes_a_tier_and_defaults_an_absent_one() {
             );
             assert!(json.get("error").is_none(), "register {key}: {json}");
         }
+        for (key, tier) in &fallbacks {
+            let mut request = serde_json::json!({ "kind": "fonts.addFallback", "fontKey": key });
+            if let Some(tier) = tier {
+                request["tier"] = tier.clone();
+            }
+            let json = call(&mut host, request, Vec::new());
+            assert!(json.get("error").is_none(), "{key} with {tier:?} was refused: {json}");
+        }
 
-        let json = call(
-            &mut host,
-            serde_json::json!({ "kind": "fonts.addFallback", "fontKey": "built-in", "tier": 1 }),
-            Vec::new(),
-        );
-        assert!(json.get("error").is_none(), "a tier was refused: {json}");
-
-        let json = call(
-            &mut host,
-            serde_json::json!({ "kind": "fonts.addFallback", "fontKey": "own" }),
-            Vec::new(),
-        );
-        assert!(json.get("error").is_none(), "an absent tier was refused: {json}");
-
-        let json = call(
-            &mut host,
-            serde_json::json!({ "kind": "fonts.addFallback", "fontKey": "own", "tier": "own" }),
-            Vec::new(),
-        );
-        assert_eq!(json["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat), "{json}");
+        let document = pdfium::Document::from_bytes(
+            pdfium::Library::acquire(),
+            &test_support::fixture("tooling/engine-conformance/fixtures/annotation_kinds.pdf"),
+            None,
+        )
+        .expect("open");
+        let run = pdfium::FontResolveRun {
+            text: "Hi".to_string(),
+            family: "Helvetica".to_string(),
+            weight: 400,
+            italic: false,
+            program: 0,
+        };
+        let resolution = document.resolve_fonts(None, &[run]).expect("read").expect("a snapshot");
+        let tried = &resolution.runs[0].fallbacks;
+        let mut by_id: Vec<_> = tried.clone();
+        by_id.sort();
+        tried
+            .iter()
+            .map(|id| fallbacks[by_id.iter().position(|x| x == id).expect("a known id")].0)
+            .collect()
     })
     .join()
-    .expect("the test thread panicked");
+    .expect("the test thread panicked")
+}
+
+#[test]
+fn a_fraction_truncates() {
+    // 1.7 and -0.5 are tiers 1 and 0, so the second comes first and the
+    // first ties with a plain 1 in the order added.
+    use serde_json::json;
+    assert_eq!(
+        chain(vec![
+            ("fraction", Some(json!(1.7))),
+            ("one", Some(json!(1))),
+            ("negative-half", Some(json!(-0.5))),
+        ]),
+        ["negative-half", "fraction", "one"],
+    );
+}
+
+#[test]
+fn absent_null_and_words_are_tier_zero() {
+    use serde_json::json;
+    assert_eq!(
+        chain(vec![
+            ("one", Some(json!(1))),
+            ("absent", None),
+            ("null", Some(json!(null))),
+            ("word", Some(json!("own"))),
+            ("object", Some(json!({ "tier": 1 }))),
+        ]),
+        ["absent", "null", "word", "object", "one"],
+    );
+}
+
+#[test]
+fn a_numeric_string_is_its_number() {
+    use serde_json::json;
+    assert_eq!(
+        chain(vec![("string-one", Some(json!("1"))), ("zero", Some(json!(0)))]),
+        ["zero", "string-one"],
+    );
+}
+
+#[test]
+fn large_tiers_wrap_modulo_two_to_the_thirty_second() {
+    // 2^32 + 1 is tier 1; 2^31 wraps to the most negative int and is tried
+    // before everything.
+    use serde_json::json;
+    assert_eq!(
+        chain(vec![
+            ("zero", Some(json!(0))),
+            ("wraps-to-one", Some(json!(4_294_967_297u64))),
+            ("wraps-negative", Some(json!(2_147_483_648u64))),
+        ]),
+        ["wraps-negative", "zero", "wraps-to-one"],
+    );
 }
