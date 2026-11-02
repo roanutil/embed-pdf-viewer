@@ -132,3 +132,29 @@ fn large_tiers_wrap_modulo_two_to_the_thirty_second() {
         ["wraps-negative", "zero", "wraps-to-one"],
     );
 }
+
+#[test]
+fn the_answer_carries_no_payload() {
+    // `WorkerHost.handleFontsAddFallback` returns
+    // `wirePack({ tag: 'fonts.addFallback' })`: no fallback list.
+    std::thread::spawn(|| {
+        let mut host = Host::new();
+        let registered = call(
+            &mut host,
+            serde_json::json!({
+                "kind": "fonts.register", "fontKey": "roboto", "familyName": "",
+                "weight": 0, "italic": null,
+            }),
+            vec![roboto()],
+        );
+        assert!(registered.get("error").is_none(), "register: {registered}");
+        let json = call(
+            &mut host,
+            serde_json::json!({ "kind": "fonts.addFallback", "fontKey": "roboto", "tier": 1 }),
+            Vec::new(),
+        );
+        assert_eq!(json, serde_json::json!({ "result": null }));
+    })
+    .join()
+    .expect("the test thread panicked");
+}

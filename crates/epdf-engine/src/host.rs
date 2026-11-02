@@ -279,9 +279,9 @@ impl Host {
                     None => crate::features::fonts::fallback_tier::OWN,
                     given => crate::js_number::to_number(given),
                 };
-                let fonts = self.fonts()?;
-                fonts.add_fallback_in_tier(&key, tier)?;
-                serde_json::json!({ "fallbacks": fonts.fallback_order() })
+                self.fonts()?.add_fallback_in_tier(&key, tier)?;
+                // `WorkerHost.handleFontsAddFallback` answers no payload.
+                serde_json::Value::Null
             }
             "fonts.clearFallbacks" => {
                 self.fonts()?.clear_fallbacks();
