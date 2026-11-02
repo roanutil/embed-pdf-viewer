@@ -11,7 +11,7 @@
 //! threads, but that is a scheduling detail rather than a promise, so each
 //! test spawns its own and joins it.
 
-use epdf_engine::features::fonts::{FontRegistry, StartupFont};
+use epdf_engine::features::fonts::{FontRegistry, StartupFont, fallback_tier};
 use pdfium::FontDescription;
 
 /// Run `body` on a thread of its own, so its registry is the only one there.
@@ -169,6 +169,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 path: roboto_path(),
                 description: FontDescription::inferred(),
                 fallback: true,
+                tier: fallback_tier::OWN,
             },
             StartupFont {
                 key: "display".to_string(),
@@ -177,6 +178,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 // Registered but not a fallback, which is the distinction the
                 // flag exists for.
                 fallback: false,
+                tier: fallback_tier::OWN,
             },
         ];
         registry.register_startup(&fonts).expect("startup");
@@ -242,5 +244,68 @@ fn a_registry_can_be_filled_before_any_document_is_open() {
         .expect("open");
         assert_eq!(document.page_count(), 14);
         assert!(registry.contains("roboto"), "opening a document disturbed the registry");
+    });
+}
+
+#[test]
+fn the_fallback_chain_reports_by_tier_then_by_the_order_added() {
+    // `FontRegistrar.fallbackKeys`: PDFium tries a lower tier first, so a
+    // built-in fallback added before the host's own still comes after them.
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        for key in ["built-in", "first", "second"] {
+            registry
+                .register(key, &FontDescription::inferred(), &roboto_bytes())
+                .expect("register");
+        }
+        registry.add_fallback_in_tier("built-in", fallback_tier::BUILT_IN).expect("built-in");
+        registry.add_fallback("first").expect("first");
+        registry.add_fallback_in_tier("second", fallback_tier::OWN).expect("second");
+
+        assert_eq!(registry.fallback_order(), ["first", "second", "built-in"]);
+    });
+}
+
+#[test]
+fn adding_a_fallback_again_changes_its_tier_only() {
+    // The C API's rule, which the registrar mirrors: no duplicate entry, and
+    // the font keeps its place among the fonts added before and after it.
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        for key in ["a", "b"] {
+            registry
+                .register(key, &FontDescription::inferred(), &roboto_bytes())
+                .expect("register");
+            registry.add_fallback(key).expect("fallback");
+        }
+
+        registry.add_fallback_in_tier("a", fallback_tier::BUILT_IN).expect("demote");
+        assert_eq!(registry.fallback_order(), ["b", "a"]);
+
+        registry.add_fallback("a").expect("promote");
+        assert_eq!(registry.fallback_order(), ["a", "b"]);
+    });
+}
+
+#[test]
+fn startup_fonts_join_the_chain_in_their_tier() {
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        let font = |key: &str, tier| StartupFont {
+            key: key.to_string(),
+            path: roboto_path(),
+            description: FontDescription::inferred(),
+            fallback: true,
+            tier,
+        };
+        registry
+            .register_startup(&[
+                font("cjk", fallback_tier::BUILT_IN),
+                font("body", fallback_tier::OWN),
+            ])
+            .expect("startup");
+
+        assert_eq!(registry.keys().collect::<Vec<_>>(), ["body", "cjk"]);
+        assert_eq!(registry.fallback_order(), ["body", "cjk"]);
     });
 }
