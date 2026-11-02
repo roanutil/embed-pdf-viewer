@@ -946,28 +946,57 @@
       }
     },
     {
-      "name": "engine-code-SharePasswordRequired",
+      "name": "engine-code-GrantPassphraseRequired",
       "fn": "toPluginError",
       "args": [
         {
           "name": "EngineError",
-          "message": "engine said SharePasswordRequired",
-          "code": "SharePasswordRequired"
+          "message": "engine said GrantPassphraseRequired",
+          "code": "GrantPassphraseRequired"
         }
       ],
       "outcome": {
         "returned": {
           "$error": {
             "name": "PluginError",
-            "message": "engine said SharePasswordRequired",
+            "message": "engine said GrantPassphraseRequired",
             "code": "permission-denied",
             "capability": "probe",
             "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
-                "message": "engine said SharePasswordRequired",
-                "code": "SharePasswordRequired"
+                "message": "engine said GrantPassphraseRequired",
+                "code": "GrantPassphraseRequired"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-VisitorIdentityRequired",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said VisitorIdentityRequired",
+          "code": "VisitorIdentityRequired"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said VisitorIdentityRequired",
+            "code": "permission-denied",
+            "capability": "probe",
+            "permission": null,
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said VisitorIdentityRequired",
+                "code": "VisitorIdentityRequired"
               }
             }
           }
@@ -1084,6 +1113,35 @@
                 "name": "EngineError",
                 "message": "engine said NotFound",
                 "code": "NotFound"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-LayerDeleted",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said LayerDeleted",
+          "code": "LayerDeleted"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said LayerDeleted",
+            "code": "not-found",
+            "capability": "probe",
+            "permission": null,
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said LayerDeleted",
+                "code": "LayerDeleted"
               }
             }
           }
@@ -1250,7 +1308,7 @@
           "$error": {
             "name": "PluginError",
             "message": "engine said StaleBase",
-            "code": "conflict",
+            "code": "operation-failed",
             "capability": "probe",
             "permission": null,
             "cause": {
