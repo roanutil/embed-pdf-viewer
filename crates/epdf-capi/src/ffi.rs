@@ -273,10 +273,9 @@ pub unsafe extern "C" fn epdf_job_wait(id: u64, timeout_ms: u32, reply: *mut Rep
         unsafe { reply.write(Reply::default()) };
         let outcome = (|| {
             let job = jobs().lock().unwrap_or_else(|p| p.into_inner()).get(id)?.clone();
-            let completion = job.wait(timeout_ms)?;
-            let result = completion.result.map(store_result).transpose()?.unwrap_or(0);
-            unsafe { reply.write(Reply { result, document: completion.document }) };
-            Ok(completion.status)
+            let (status, transferred) = collect_job(&job, timeout_ms, store_result)?;
+            unsafe { reply.write(transferred) };
+            Ok(status)
         })();
         outcome.unwrap_or_else(|status| status)
     })
@@ -414,4 +413,54 @@ pub extern "C" fn epdf_result_release(id: u64) -> u32 {
             Err(status) => status,
         }
     })
+}
+
+fn collect_job(
+    job: &Job,
+    timeout_ms: u32,
+    register: impl FnOnce(Arc<OwnedResult>) -> Result<u64, Status>,
+) -> Result<(Status, Reply), Status> {
+    let mut result = 0;
+    let completion = job.take_after(timeout_ms, |completion| {
+        result = completion
+            .result
+            .as_ref()
+            .map(|value| register(value.clone()))
+            .transpose()?
+            .unwrap_or(0);
+        Ok(())
+    })?;
+    Ok((completion.status, Reply { result, document: completion.document }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::jobs::Completion;
+
+    #[test]
+    fn a_refused_result_registration_preserves_the_entire_completion_for_retry() {
+        let job = Job::new();
+        let result = OwnedResult::from_response(
+            &epdf_engine::host::HostResponse { json: "{\"result\":null}".into(), payloads: vec![] },
+            1024,
+            None,
+        )
+        .unwrap();
+        let observed = result.clone();
+        job.complete(Completion { status: Status::Ok, result: Some(result), document: 17 });
+        assert!(matches!(
+            collect_job(&job, 0, |_| Err(Status::LimitExceeded)),
+            Err(Status::LimitExceeded)
+        ));
+        let (status, reply) = collect_job(&job, 0, |result| {
+            assert!(Arc::ptr_eq(&result, &observed));
+            Ok(23)
+        })
+        .expect("refused handoff must remain collectable");
+        assert_eq!(status, Status::Ok);
+        assert_eq!(reply.document, 17);
+        assert_eq!(reply.result, 23);
+        assert!(matches!(collect_job(&job, 0, |_| Ok(24)), Err(Status::AlreadyTaken)));
+    }
 }

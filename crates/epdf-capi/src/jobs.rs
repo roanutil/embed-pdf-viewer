@@ -64,13 +64,24 @@ impl Job {
         self.ready.notify_all();
     }
 
+    #[cfg(test)]
     pub(crate) fn wait(&self, timeout_ms: u32) -> Result<Completion, Status> {
+        self.take_after(timeout_ms, |_| Ok(()))
+    }
+
+    /// Collection commits only after the fallible public handoff succeeds.
+    pub(crate) fn take_after(
+        &self,
+        timeout_ms: u32,
+        prepare: impl FnOnce(&Completion) -> Result<(), Status>,
+    ) -> Result<Completion, Status> {
         let deadline = (timeout_ms != u32::MAX)
             .then(|| Instant::now() + Duration::from_millis(u64::from(timeout_ms)));
         let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
         loop {
             match &*state {
-                State::Ready(_) => {
+                State::Ready(completion) => {
+                    prepare(completion)?;
                     if let State::Ready(result) = std::mem::replace(&mut *state, State::Taken) {
                         return Ok(result);
                     }

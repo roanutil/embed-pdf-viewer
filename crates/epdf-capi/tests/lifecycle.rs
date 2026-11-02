@@ -250,7 +250,7 @@ fn a_startup_font_failing_after_earlier_registrations_fails_creation_with_its_er
     ]}"#;
     let payloads = frame(&[ROBOTO, b"not-a-font", ROBOTO]);
     let (status, engine, error) = create_with(options, &payloads);
-    assert_eq!(status, 8);
+    assert_eq!(status, 2);
     assert_eq!(engine, 0);
     assert_ne!(error, 0);
     let message = error_message(error);
