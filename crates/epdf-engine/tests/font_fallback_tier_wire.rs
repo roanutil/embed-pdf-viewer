@@ -158,3 +158,45 @@ fn the_answer_carries_no_payload() {
     .join()
     .expect("the test thread panicked");
 }
+
+/// Register Roboto as a fallback, send `kind`, and answer the envelope.
+fn answer_after_a_fallback(kind: &'static str) -> serde_json::Value {
+    std::thread::spawn(move || {
+        let mut host = Host::new();
+        let registered = call(
+            &mut host,
+            serde_json::json!({
+                "kind": "fonts.register", "fontKey": "roboto", "familyName": "",
+                "weight": 0, "italic": null,
+            }),
+            vec![roboto()],
+        );
+        assert!(registered.get("error").is_none(), "register: {registered}");
+        let added = call(
+            &mut host,
+            serde_json::json!({ "kind": "fonts.addFallback", "fontKey": "roboto" }),
+            Vec::new(),
+        );
+        assert!(added.get("error").is_none(), "addFallback: {added}");
+        call(&mut host, serde_json::json!({ "kind": kind }), Vec::new())
+    })
+    .join()
+    .expect("the test thread panicked")
+}
+
+#[test]
+fn clearing_the_fallbacks_answers_no_payload() {
+    // `WorkerHost.handleFontsClearFallbacks` returns
+    // `wirePack({ tag: 'fonts.clearFallbacks' })`: no fallback list.
+    assert_eq!(
+        answer_after_a_fallback("fonts.clearFallbacks"),
+        serde_json::json!({ "result": null })
+    );
+}
+
+#[test]
+fn clearing_the_fonts_answers_no_payload() {
+    // `WorkerHost.handleFontsClear` returns `wirePack({ tag: 'fonts.clear' })`:
+    // no count.
+    assert_eq!(answer_after_a_fallback("fonts.clear"), serde_json::json!({ "result": null }));
+}

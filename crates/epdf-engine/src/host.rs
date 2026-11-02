@@ -285,11 +285,13 @@ impl Host {
             }
             "fonts.clearFallbacks" => {
                 self.fonts()?.clear_fallbacks();
-                serde_json::json!({ "fallbacks": [] })
+                // `WorkerHost.handleFontsClearFallbacks` answers no payload.
+                serde_json::Value::Null
             }
             "fonts.clear" => {
                 self.fonts()?.clear();
-                serde_json::json!({ "registered": 0 })
+                // `WorkerHost.handleFontsClear` answers no payload.
+                serde_json::Value::Null
             }
             // Both take a path and no session: the point of a probe is to
             // decide whether opening is worth attempting at all.
