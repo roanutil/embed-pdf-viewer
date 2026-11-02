@@ -14,12 +14,19 @@ export type {
   OpenInputLayerSource,
   OpenInputById,
   OpenInputToken,
-  OpenInputShare,
+  OpenInputGrant,
   OpenInputLayerFile,
   OpenInputLayerFileSource,
   OpenOptions,
   TokenSource,
 } from './dto/OpenInput';
+export type {
+  GrantOpenRequest,
+  VisitorAnswers,
+  VisitorIdentityField,
+  VisitorIdentityRequest,
+} from './dto/GrantVisitor';
+export { grantOpenRequestOf, visitorIdentityRequestOf } from './dto/GrantVisitor';
 export type { DocumentMetadata, DocumentMetadataTrapped } from './dto/DocumentMetadata';
 export type {
   DocumentOutline,
@@ -33,8 +40,33 @@ export type { MetadataPatch } from './dto/MetadataPatch';
 export type { CustomMetadata } from './dto/CustomMetadata';
 export type { CustomMetadataPatch } from './dto/CustomMetadataPatch';
 export type { PageListSnapshot } from './dto/PageListSnapshot';
+export type { PageLabelSection, PageLabelStyle } from './dto/PageLabelSection';
 export type { NamedPageEntry, NamedPageTarget } from './dto/NamedPage';
 export type { PageLayout, PageBoxes, PageTabOrder } from './dto/PageLayout';
+export {
+  compareStructurePositions,
+  tabOrderOf,
+  type TabOrderItem,
+  type TabOrderPage,
+} from './pages/tabOrder';
+export {
+  pagesAfter,
+  pagesAfterRestore,
+  pagesRelabelled,
+  reorderBackOf,
+  restoredPagesOf,
+  rotateBackOf,
+  type PageList,
+  type PredictablePageOp,
+  type RestoredPage,
+} from './pages/predict';
+export {
+  labelAt,
+  sameSections,
+  sectionsAfterDelete,
+  sectionsAfterInsert,
+  sectionsAfterMove,
+} from './pages/labels';
 export type {
   PdfActionType,
   PdfActionNode,
@@ -135,7 +167,7 @@ export type {
   PageNetworkRenderFormat,
   PageRaster,
   PageLayerRights,
-  PagePrintRights,
+  PagePictureRights,
   PrintDpi,
   PageRenderBackground,
   PageRenderEncodedFormat,
@@ -153,6 +185,7 @@ export {
   checkImageQuality,
   checkRenderUsage,
   createPageImageHandle,
+  PAGE_THUMBNAIL_SIZE,
   printDpiOf,
   imageSourceOfBytes,
   resolvePageLayers,
@@ -192,6 +225,20 @@ export type {
   FontKey,
   FontSpec,
 } from './dto/FontSpec';
+export type {
+  CodePointRange,
+  Font,
+  FontFormat,
+  FontList,
+  FontProgram,
+  FontProgramInfo,
+  FontResolution,
+  FontResolveRequest,
+  FontResolveRun,
+  FontRestriction,
+  FontSource,
+  ResolvedFontRun,
+} from './dto/DocumentFonts';
 export type {
   RichTextAlign,
   RichTextBody,
@@ -256,7 +303,7 @@ export type {
   WidgetBorderStyle,
   WidgetCheckStyle,
   StandardFont,
-  FreeTextFont,
+  FontName,
   TextAlignment,
   VerticalAlignment,
   FreeTextIntent,
@@ -562,10 +609,11 @@ export {
   type AnnotationDefaults,
 } from './annotation/defaults';
 export {
-  faceForFreeTextFont,
+  faceForFontName,
   familyKey,
-  freeTextFontForFace,
+  fontNameForFace,
   isStandardFontName,
+  standardFamilyOf,
   STANDARD_FACES,
   type DescribeFont,
   type FaceRequest,
@@ -861,7 +909,7 @@ export type {
   AnnotationCreateOptions,
   AnnotationUpdateOptions,
   FlattenWriteOptions,
-  PageInsertBlankOptions,
+  PageInsertOptions,
   FormFieldCreateOptions,
   FormWidgetAddOptions,
 } from './mutation/WriteOptions';
@@ -902,15 +950,24 @@ export type {
   FieldAction,
   FieldFilter,
   Identity,
+  PluginPermission,
+  PluginPermissions,
   ParsedCapability,
   ParsedCollab,
+  ParsedPluginPermission,
   ParsedScope,
   ParsedVirtual,
   ParsedWildcard,
   PdfBits,
 } from './auth/scope';
 export { PDF_BITS, decodePdfBits } from './auth/scope';
-export { parseScope, validateScopeArray } from './auth/scope';
+export {
+  CORE_NAMESPACES,
+  isPluginId,
+  parseScope,
+  pluginOfPermission,
+  validateScopeArray,
+} from './auth/scope';
 export { InvalidScope, MissingIdentity, PermissionDenied } from './auth/scope';
 export type { AnnotationAuthority, ChangeAuthority, FieldWriteAction } from './auth/scope';
 export {
@@ -935,6 +992,7 @@ export {
   checkCapability,
   checkCollab,
   checkFieldAction,
+  checkPluginPermission,
   fieldRightsOf,
   type FieldGroupRight,
   type FieldRights,
@@ -942,6 +1000,8 @@ export {
   expandedCapabilities,
   expandRawScope,
   filterMatches,
+  pluginPermissionsOf,
+  scopeNotCovered,
 } from './auth/scope';
 export { caps, collab, materializePdfPermissions, pdfPermissions } from './auth/scope';
 

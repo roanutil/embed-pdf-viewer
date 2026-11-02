@@ -3,6 +3,7 @@ import {
   type AnnotationOwner,
   checkCapability,
   checkCollab,
+  checkPluginPermission,
   checkFieldAction,
   checkSetGroup,
   collabTargetOf,
@@ -22,9 +23,11 @@ import {
   fieldRightsOf,
   type Identity,
   type PageLayerRights,
-  type PagePrintRights,
+  type PagePictureRights,
   type PasswordPrompt,
   passwordPromptFromState,
+  pluginOfPermission,
+  type PluginPermission,
   protectedCapabilities,
   securityStateFromHead,
 } from '@embedpdf/engine-core/runtime';
@@ -46,7 +49,7 @@ export class CloudDocumentSecurityService implements DocumentSecurityService {
   /**
    * Parsed JWT identity + scope, decoded once at construction. Used by
    * the local-fallback path for `scope` and `identity` when
-   * /access hasn't run yet (public-share with no CDN, password not
+   * /access hasn't run yet (a grant with no CDN, password not
    * yet supplied, etc.).
    */
   private readonly tokenScope: ReadonlyArray<string>;
@@ -91,12 +94,14 @@ export class CloudDocumentSecurityService implements DocumentSecurityService {
   }
 
   /**
-   * What the caller may print, when the client can know it (as for
-   * {@link pageLayerRights}). Null leaves it to the server.
+   * Which kinds of page picture the caller may make, when the client can know
+   * it (as for {@link pageLayerRights}). Null leaves it to the server.
    */
-  pagePrintRights(): PagePrintRights | null {
+  pagePictureRights(): PagePictureRights | null {
     if (!this.access && !this.tokenHasDocScope) return null;
     return {
+      render: this.allows('doc.render'),
+      thumbnail: this.allows('doc.render.thumbnail'),
       print: this.allows('doc.print'),
       printHigh: this.allows('doc.print.high'),
     };
@@ -126,10 +131,23 @@ export class CloudDocumentSecurityService implements DocumentSecurityService {
    * document's signatures forbid first, then the scope (the server's copy
    * once `/access` answered, else the JWT's), wildcard included, against the
    * PDF bits. `scope` alone can't gate UI: it enumerates concrete grants and
-   * drops the `*` admin wildcard.
+   * drops the `*` admin wildcard. A plugin's permission is the server's
+   * answer once `/access` gave it (`effectiveScope` lists the installed
+   * plugins' permissions the session holds, `*` expanded); before, the token's
+   * scope names it, or `*`.
    */
-  allows(cap: DocCapability): boolean {
-    return checkCapability(cap, this.rawScope(), this.pdfBits(), this.protection);
+  allows(permission: DocCapability | PluginPermission): boolean {
+    if (pluginOfPermission(permission) !== null) {
+      return this.access
+        ? this.access.effectiveScope.includes(permission)
+        : checkPluginPermission(permission, this.tokenScope, new Set([permission]));
+    }
+    return checkCapability(
+      permission as DocCapability,
+      this.rawScope(),
+      this.pdfBits(),
+      this.protection,
+    );
   }
 
   /**

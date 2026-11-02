@@ -26,11 +26,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_LAYOUT } from '../../../chrome/src/config/chrome';
 import { defaultCommands, toolCommandsFor } from '../../../chrome/src/config/commands';
+import { FULLSCREEN_COMMAND } from '../../../chrome/src/config/fullscreen';
 import { panelCommandsFor } from '../../../chrome/src/config/panels';
 import {
   mergeCommand,
   resolveViewerCommands,
   toPluginCommand,
+  type CommandDef as ViewerCommandDef,
   type CommandScope,
 } from '../../../chrome/src/config/viewer-commands';
 import type { PluginTokens, Viewer } from '../../../chrome/src/handle';
@@ -47,12 +49,13 @@ const StageToken = createCapabilityToken<{ zoomIn(): void }>('stage');
 const stage = { zoomIn: vi.fn() };
 const PLUGINS: PluginTokens = { stage: StageToken as CapabilityToken<unknown> };
 
-/** A command context over one capability, for the document `doc`. */
-function pluginContext(args?: unknown): PluginCommandContext {
+/** A command context over one capability, for the document `doc`, with the app's state. */
+function pluginContext(args?: unknown, appState?: unknown): PluginCommandContext {
   const tryGet = <T>(token: CapabilityToken<T>): T | null =>
     token === (StageToken as CapabilityToken<unknown>) ? (stage as T) : null;
   return {
     documentId: 'doc',
+    appState,
     ...(args === undefined ? {} : { args }),
     tryGet,
     get: <T>(token: CapabilityToken<T>): T => {
@@ -90,6 +93,27 @@ describe('a command of yours', () => {
     command.run?.(pluginContext({ page: 2 }));
     expect(stage.zoomIn).toHaveBeenCalledTimes(1);
     expect(heard).toEqual([{ viewer: true, documentId: 'doc', args: { page: 2 }, token: stage }]);
+  });
+
+  it("gets your app's state, typed by the command, and runs what it gives", () => {
+    interface Review {
+      done: string[];
+      approve(): void;
+    }
+    const approve = vi.fn();
+    // A command typed for your state goes where any command does.
+    const typed: ViewerCommandDef<Review> = {
+      id: 'acme:approve',
+      enabled: ({ appState }) => appState.done.length === 4,
+      run: ({ appState }) => appState.approve(),
+    };
+    const anyCommand: ViewerCommandDef = typed;
+    const command = toPluginCommand(anyCommand, scope);
+    expect(command.enabled?.(pluginContext(undefined, { done: [], approve }))).toBe(false);
+    const review: Review = { done: ['a', 'b', 'c', 'd'], approve };
+    expect(command.enabled?.(pluginContext(undefined, review))).toBe(true);
+    command.run?.(pluginContext(undefined, review));
+    expect(approve).toHaveBeenCalledTimes(1);
   });
 
   it('throws for a plugin name the viewer has, naming the ones it has, and before the viewer is live', () => {
@@ -306,10 +330,46 @@ describe('the built-in commands', () => {
     ).toEqual([]);
   });
 
+  it('say which stage setting they change, so a lock on it greys them out', () => {
+    // A stage whose every setting is locked, by the setting's own name.
+    const lockedStage = { getLock: (setting: string) => ({ by: setting }) };
+    const context = {
+      documentId: 'doc',
+      tryGet: (token: CapabilityToken<unknown>) => (token.name === 'stage' ? lockedStage : null),
+      get: (token: CapabilityToken<unknown>) => (token.name === 'stage' ? lockedStage : null),
+    } as unknown as PluginCommandContext;
+    const holderOf = (id: string) =>
+      (defaultCommands.find((command) => command.id === id)?.locked?.(context) ?? null)?.by;
+    expect(
+      Object.fromEntries(
+        [
+          'view:single-page',
+          'view:two-pages',
+          'view:cover-page',
+          'view:scroll-vertical',
+          'view:scroll-horizontal',
+          'view:rotate-clockwise',
+          'view:rotate-counterclockwise',
+        ].map((id) => [id, holderOf(id)]),
+      ),
+    ).toEqual({
+      'view:single-page': 'spread',
+      'view:two-pages': 'spread',
+      'view:cover-page': 'spread',
+      'view:scroll-vertical': 'layout',
+      'view:scroll-horizontal': 'layout',
+      'view:rotate-clockwise': 'viewRotation',
+      'view:rotate-counterclockwise': 'viewRotation',
+    });
+    // The zoom can't be locked: its commands say nothing of locks.
+    expect(defaultCommands.find((command) => command.id === 'zoom:in')?.locked).toBeUndefined();
+  });
+
   it('are every one the page lists, with the panels and modes the default layout brings', () => {
     const ids = new Set([
       ...defaultCommands.map((command) => command.id),
       ...panelCommandsFor(DEFAULT_LAYOUT.panels, () => false).map((command) => command.id),
+      FULLSCREEN_COMMAND,
     ]);
     expect(documentedIds.length).toBeGreaterThan(80);
     expect(documentedIds.filter((id) => !ids.has(id))).toEqual([]);
@@ -362,8 +422,8 @@ describe('icons', () => {
   it('are every one the page lists, and every one a built-in command names', () => {
     const listed = COMMANDS_PAGE.split("### The viewer's icons")[1]!.split('\n### ')[0]!;
     const names = [...listed.matchAll(/`([a-zA-Z0-9]+)`/g)].map((match) => match[1]!);
-    expect(names.length).toBeGreaterThan(40);
     expect(names.filter((name) => !hasIcon(name))).toEqual([]);
+    expect([...names].sort()).toEqual(Object.keys(ICON_PATHS).sort());
     expect(
       defaultCommands.filter((command) => command.icon && !hasIcon(command.icon)).map((c) => c.id),
     ).toEqual([]);

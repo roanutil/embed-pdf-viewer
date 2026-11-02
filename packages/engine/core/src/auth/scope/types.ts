@@ -1,4 +1,23 @@
 /**
+ * The permissions plugins add, by declaration merging, so `allows()` and a
+ * command's `requires` type them like the core's and a typo stays an error:
+ *
+ *   declare module '@embedpdf/core' {
+ *     interface PluginPermissions {
+ *       'protected-display.view': true;
+ *     }
+ *   }
+ *
+ * The core carries them and never grants a core capability for one; the
+ * plugin checks its own.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface -- filled by declaration merging
+export interface PluginPermissions {}
+
+/** A plugin's permission, as the plugin declared it in {@link PluginPermissions}. */
+export type PluginPermission = keyof PluginPermissions & string;
+
+/**
  * Closed enum of capability scopes. Any scope string not in this set (and
  * not a wildcard, virtual, or collab scope) is rejected at parse time.
  *
@@ -10,6 +29,7 @@ export type DocCapability =
   // Session establishment (cloud-only — no PDF bit)
   | 'doc.open' // /head, /manifest, /access
   | 'doc.render' // /pages/*/render
+  | 'doc.render.thumbnail' // the thumbnail pictures only: /render/thumbnail/*; `doc.render` implies it
 
   // Text/content extraction (PDF bit 5)
   | 'doc.text.select' // /pages/*/geometry
@@ -125,7 +145,25 @@ export interface ParsedWildcard {
   kind: 'wildcard';
 }
 
-export type ParsedScope = ParsedCapability | ParsedCollab | ParsedVirtual | ParsedWildcard;
+/**
+ * A plugin's own permission: `<plugin id>.<action>`, such as `protected-display.view`. The core
+ * carries it through tokens and effective scopes but never interprets it: only its plugin
+ * enforces it, and it takes effect only where that plugin is installed.
+ */
+export interface ParsedPluginPermission {
+  kind: 'plugin';
+  /** The whole permission, as written. */
+  name: string;
+  /** Its first segment: the id of the plugin that owns it. */
+  plugin: string;
+}
+
+export type ParsedScope =
+  | ParsedCapability
+  | ParsedCollab
+  | ParsedVirtual
+  | ParsedWildcard
+  | ParsedPluginPermission;
 
 /**
  * Typed boolean view of the PDF user-access permission word.

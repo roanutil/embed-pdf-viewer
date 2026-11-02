@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  createCapabilityToken,
   createKernel,
+  definePlugin,
   toPageRef,
+  type ChangeQueue,
   type DocumentEvent,
   type CallFacts,
   type DocumentHandle,
@@ -62,6 +65,15 @@ function makeTask() {
 
 const image = (key = 'handle') =>
   ({ source: { kind: 'bytes', bytes: new Uint8Array(4) }, format: 'png', key }) as unknown;
+
+/** A plugin that hands the test the document's change queue. */
+const StagerToken = createCapabilityToken<ChangeQueue>('stager');
+const stagerPlugin = definePlugin({
+  id: 'stager',
+  scope: 'document',
+  token: StagerToken,
+  create: (ctx) => ({ api: ctx.changes }),
+});
 
 async function boot(
   options: {
@@ -151,23 +163,34 @@ async function boot(
       },
       lastServerId: () => null,
     },
-    pages: { list: () => Promise.resolve({ pageCount: pages.length, pages }) },
+    pages: { list: () => Promise.resolve({ pageCount: pages.length, labels: [], pages }) },
     security: {
       allows: (capability: string) => options.allows?.(capability) ?? options.allow ?? true,
     },
     render: { getPolicy: () => Promise.resolve(options.policy ?? { kind: 'continuous' }) },
+    // Changes the test stages wait for the test's answer.
+    apply: () => applied.at(-1)!.task,
     close: () => Promise.resolve(),
   };
+  const applied: Array<ReturnType<typeof makeTask>> = [];
   const handle = documentWith({});
   const engine = {
     open: () => Promise.resolve(handle),
     destroy: () => Promise.resolve(),
   } as unknown as Engine;
-  const kernel = createKernel({ engine, plugins: [renderPlugin(options.config)] });
+  const kernel = createKernel({ engine, plugins: [renderPlugin(options.config), stagerPlugin] });
   await kernel.start();
   await kernel.documents.open({ kind: 'bytes', id: 'd', bytes: new Uint8Array() });
+  const changes = kernel.capability(StagerToken, 'd');
   return {
     kernel,
+    /** Stage a change on the document's queue; `answer` is the engine's. */
+    stage: (change: Parameters<ChangeQueue['stage']>[0]) => {
+      const answer = makeTask();
+      applied.push(answer);
+      changes.stage(change);
+      return answer;
+    },
     render: kernel.capability(RenderToken, 'd'),
     imageCalls,
     tasks,
@@ -250,6 +273,25 @@ describe('the ledger — confirmed events and the invalidate verb', () => {
     await fixture.kernel.destroy();
   });
 
+  it('the engine’s fonts changing repaints the content of every page; a write’s font change, only its own facts', async () => {
+    const fixture = await boot();
+    const contentEpochs = () =>
+      [11, 22, 33].map((page) =>
+        fixture.render.getRenderEpoch(toPageRef(page), { includeAnnotations: false }),
+      );
+    // A font registered after the first pages were drawn: no write behind it.
+    fixture.emit(documentEvent({ type: 'fonts.changed', origin: { kind: 'local' } }));
+    expect(contentEpochs()).toEqual([1, 1, 1]);
+    fixture.emit(
+      documentEvent({
+        type: 'fonts.changed',
+        origin: { kind: 'local', tx: { id: 'op-1', index: 1, count: 2 } },
+      }),
+    );
+    expect(contentEpochs()).toEqual([1, 1, 1]);
+    await fixture.kernel.destroy();
+  });
+
   it('a redaction apply is a content fact for the applied pages', async () => {
     const fixture = await boot();
     fixture.emit(
@@ -309,6 +351,58 @@ describe('policy conformance — the host door', () => {
     expect(fixture.render.getSourceKey(toPageRef(11), { scale: 2.2 })).toBe('11|w2560|a1f1|e0');
     fixture.render.invalidate({ pages: [toPageRef(11)], scope: 'content' });
     expect(fixture.render.getSourceKey(toPageRef(11), { scale: 1.2 })).not.toBe(at12);
+    await fixture.kernel.destroy();
+  });
+
+  it('asks for a page a pending change makes once the engine has it, and never for one that went first', async () => {
+    const fixture = await boot();
+    const blank = (objectNumber: number) => ({
+      label: { key: 'pages.insertBlank' },
+      ops: [
+        {
+          type: 'pages.insertBlank' as const,
+          spec: { size: { width: 612, height: 792 } },
+          objectNumbers: [objectNumber],
+        },
+      ],
+    });
+    fixture.stage(blank(44));
+    const picture = fixture.render.renderSource(toPageRef(44), { scale: 1 });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(fixture.imageCalls).toHaveLength(0);
+
+    // The engine has the page once its event lands.
+    const shown = fixture.kernel.documents.listPages('d');
+    fixture.emit(
+      documentEvent({
+        type: 'pages.inserted',
+        layout: { pageCount: shown.length, labels: [], pages: shown, namedPages: [] },
+        origin: { kind: 'local' },
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(fixture.imageCalls.map((call) => call.pageObjectNumber)).toEqual([44]);
+    fixture.tasks[0]!.resolve(image());
+    await picture;
+
+    const refused = fixture.stage(blank(45));
+    const never = fixture.render.renderSource(toPageRef(45), { scale: 1 });
+    refused.reject(new Error('refused'));
+    await expect(never).rejects.toMatchObject({ code: 'not-found' });
+    expect(fixture.imageCalls).toHaveLength(1);
+    await fixture.kernel.destroy();
+  });
+
+  it('draws a pending copy as the page it copies, before the engine has it', async () => {
+    const fixture = await boot();
+    fixture.stage({
+      label: { key: 'pages.duplicate' },
+      ops: [{ type: 'pages.copy', pages: [toPageRef(11)], objectNumbers: [46] }],
+    });
+    const picture = fixture.render.renderSource(toPageRef(46), { scale: 1 });
+    expect(fixture.imageCalls.map((call) => call.pageObjectNumber)).toEqual([11]);
+    fixture.tasks[0]!.resolve(image());
+    await picture;
     await fixture.kernel.destroy();
   });
 
@@ -406,10 +500,10 @@ describe('the public door — exact sizes', () => {
     await fixture.kernel.destroy();
   });
 
-  it('renderThumbnail is a width render; renderPages reports in input order with per-page failures', async () => {
+  it('renderThumbnail asks for the thumbnail; renderPages reports in input order with per-page failures', async () => {
     const fixture = await boot();
-    void fixture.render.renderThumbnail(toPageRef(11), { maxWidth: 120 }).catch(() => {});
-    expect(fixture.imageCalls[0]!.options.viewport).toEqual({ kind: 'width', width: 120 });
+    void fixture.render.renderThumbnail(toPageRef(11)).catch(() => {});
+    expect(fixture.imageCalls[0]!.options.viewport).toEqual({ kind: 'thumbnail' });
 
     const batch = fixture.render.renderPages([toPageRef(22), toPageRef(99), toPageRef(33)], {
       width: 100,
@@ -431,6 +525,34 @@ describe('the public door — exact sizes', () => {
       [33, 'operation-failed'],
     ]);
     await fixture.kernel.destroy();
+  });
+
+  it('thumbnails need doc.render.thumbnail, not doc.render, by either door', async () => {
+    const fixture = await boot({ allows: (capability) => capability !== 'doc.render' });
+    expect(fixture.render.canRender()).toBe(false);
+    expect(fixture.render.canRenderThumbnail()).toBe(true);
+    void fixture.render.renderThumbnail(toPageRef(11)).catch(() => {});
+    void fixture.render.renderSource(toPageRef(22), { scale: 1, thumbnail: true }).catch(() => {});
+    expect(fixture.imageCalls.map((call) => call.options.viewport)).toEqual([
+      { kind: 'thumbnail' },
+      { kind: 'thumbnail' },
+    ]);
+    // One thumbnail per page, whatever the scale: the key has no width.
+    expect(fixture.render.getSourceKey(toPageRef(22), { scale: 1, thumbnail: true })).toBe(
+      fixture.render.getSourceKey(toPageRef(22), { scale: 3, thumbnail: true }),
+    );
+    await expect(fixture.render.renderPage(toPageRef(11))).rejects.toMatchObject({
+      code: 'permission-denied',
+    });
+    await fixture.kernel.destroy();
+
+    const screenOnly = await boot({
+      allows: (capability) => capability !== 'doc.render.thumbnail',
+    });
+    await expect(screenOnly.render.renderThumbnail(toPageRef(11))).rejects.toMatchObject({
+      code: 'permission-denied',
+    });
+    await screenOnly.kernel.destroy();
   });
 
   it('unknown pages are not-found; completed and failed renders are announced', async () => {
@@ -698,6 +820,47 @@ describe('what a picture draws', () => {
     );
     expect(keyOf({ includeFormFields: false })).toBe('11|w612|a1f0|e0');
     expect(keyOf({})).toBe('11|w612|a1f1|e1');
+    await fixture.kernel.destroy();
+  });
+});
+
+describe('painting the pictures another way', () => {
+  const painter = (views: string[] = ['main']) => ({
+    paints: (view: string) => views.includes(view),
+    paint: () => ({ update: () => {}, destroy: () => {} }),
+  });
+
+  it('holds one painter, wakes the views, and gives it back once', async () => {
+    const fixture = await boot();
+    const woken = vi.fn();
+    fixture.kernel.subscribe(woken);
+    expect(fixture.render.getPicturePainter()).toBeNull();
+    const held = painter();
+    const giveBack = fixture.render.handOverPictures(held);
+    expect(fixture.render.getPicturePainter()).toBe(held);
+    expect(woken).toHaveBeenCalled();
+
+    woken.mockClear();
+    giveBack();
+    expect(fixture.render.getPicturePainter()).toBeNull();
+    expect(woken).toHaveBeenCalled();
+    woken.mockClear();
+    giveBack(); // giving it back twice is harmless
+    expect(woken).not.toHaveBeenCalled();
+    await fixture.kernel.destroy();
+  });
+
+  it('refuses a second painter, and a stale give-back never drops the next one', async () => {
+    const fixture = await boot();
+    const giveBack = fixture.render.handOverPictures(painter());
+    expect(() => fixture.render.handOverPictures(painter(['thumbnails']))).toThrow(
+      expect.objectContaining({ code: 'conflict' }),
+    );
+    giveBack();
+    const next = painter();
+    fixture.render.handOverPictures(next);
+    giveBack();
+    expect(fixture.render.getPicturePainter()).toBe(next);
     await fixture.kernel.destroy();
   });
 });

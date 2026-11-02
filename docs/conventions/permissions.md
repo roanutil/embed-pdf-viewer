@@ -92,6 +92,46 @@ code.
 Authority is model-owned derived state (like `apVersion`), session-stable, and
 re-stamped when security state changes (owner unlock, `/access` refresh).
 
+## A plugin's own permissions
+
+A plugin whose verbs need a permission of its own (`protected-display.view`) declares it, so it's
+typed like the core's and a typo stays an error:
+
+```ts
+declare module '@embedpdf/core' {
+  interface PluginPermissions {
+    'protected-display.view': true;
+  }
+}
+```
+
+`PluginPermissions` is engine-core's, re-exported by `@embedpdf/core` straight from it (`export
+type { PluginPermissions } from`), which is what lets that augmentation merge. `ctx.allows()`,
+`doc.security.allows()` and a command's `requires` then take the word. The engines answer it from
+the scope: the cloud engine from the server's `effectiveScope` once `/access` answered (it knows
+the installed plugins and expands `*`), else, like the local engine, from whether the scope names
+it or holds `*`. The plugin's twins read `ctx.allows('<id>.<action>')`, and its server half
+enforces the same word.
+
+## Pictures: one permission each
+
+A permission names one thing the server gives out, and it is enough on its own to get it. Page
+pictures follow that: each kind has its own permission and needs no other.
+
+| Picture                            | Its permission                                   |
+| ---------------------------------- | ------------------------------------------------ |
+| On screen (any size, any area)     | `doc.render`                                     |
+| Thumbnail (whole page, fixed size) | `doc.render.thumbnail` (`doc.render` implies it) |
+| Print, 150 DPI                     | `doc.print`                                      |
+| Print, 300 DPI                     | `doc.print` + `doc.print.high`                   |
+
+What a picture draws besides the page needs the permission to read it, on every kind:
+annotations `doc.annotate.read`, form fields `doc.forms.read`. One permission implies another only
+where its output contains the other's. The families (`wire/renderFamilies.ts`) build each
+picture's `needs` from exactly these two parts, and every guard reads `needs`: the server's route
+requirements, CDN coverage, the module host. A new kind of picture adds its own permission there;
+it never borrows `doc.render`.
+
 ## Reactivity
 
 Twins are pure reads, cheap enough to derive per call; UIs subscribe through
@@ -108,7 +148,7 @@ so every twin's subscribers re-render.
 | comments         | `permissionsFor(ref)` (convenience bag of twins)                                                | the annotation twins                                                                                                                                                                                                                                                                                                                                                                                                                |
 | selection        | `canSelect()` · `canCopy()`                                                                     | `doc.text.select` / `doc.text.copy`                                                                                                                                                                                                                                                                                                                                                                                                 |
 | search           | `canSearch(mode?)`                                                                              | `doc.text.search`; `'full'` also `doc.text.copy` (a snippet reproduces text). No verb gate — pure request.                                                                                                                                                                                                                                                                                                                          |
-| render           | `canRender()`                                                                                   | `doc.render`; gate case: `renderPage` and tile fetches refuse locally (else a denied viewport 403s per tile, forever)                                                                                                                                                                                                                                                                                                               |
+| render           | `canRender()` · `canRenderThumbnail()`                                                          | `doc.render`; gate case: `renderPage` and tile fetches refuse locally (else a denied viewport 403s per tile, forever). `canRenderThumbnail()`: `doc.render.thumbnail` (which `doc.render` implies), for `renderThumbnail` and `<RenderLayer thumbnail>`                                                                                                                                                                             |
 | page-edit        | `canEdit()` (the collapse rule) · `canExtract()`                                                | `doc.pages.assemble` (rotate/move/delete/insert are one answer; PDF has one assemble bit); `doc.download` for extract and duplicate                                                                                                                                                                                                                                                                                                 |
 | metadata         | `canUpdate()`                                                                                   | `doc.metadata.modify` (the standard fields and your own)                                                                                                                                                                                                                                                                                                                                                                            |
 | outline          | `canEdit()`                                                                                     | `doc.outline.modify` (add, change, move and delete items; reading needs only `doc.open`)                                                                                                                                                                                                                                                                                                                                            |

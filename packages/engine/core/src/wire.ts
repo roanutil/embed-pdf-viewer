@@ -21,8 +21,8 @@ export {
   LayerAnalysisQuerySchema,
   VersionAnalysisQuerySchema,
   analyzeInputFromQuery,
-  DocumentVersionSchema,
-  DocumentVersionsSchema,
+  LayerVersionSchema,
+  LayerVersionsSchema,
   DigestAlgorithmSchema,
   ModificationLevelSchema,
   SignaturePreparedWireSchema,
@@ -48,6 +48,11 @@ export {
   OutlineDeleteResultSchema,
   OutlineRestoreResultSchema,
   OutlineWireComponents,
+  FontListSchema,
+  FontProgramInfoSchema,
+  FontResolveRequestSchema,
+  FontResolutionSchema,
+  FontWireComponents,
   AccessRequestSchema,
   AccessResponseSchema,
   EditSessionAccessSchema,
@@ -73,6 +78,7 @@ export {
   PageNetworkRenderFormatSchema,
   PageRenderQuerySchemas,
   PagePrintQuerySchemas,
+  PageThumbnailQuerySchemas,
   pagePictureQuerySchema,
   AnnotationAppearancesQuerySchema,
   WidgetAppearancesQuerySchema,
@@ -207,12 +213,13 @@ export {
   ResourceKeySchema,
   SourceResourceKeysSchema,
 } from './wire/resourceKeys';
-// The page pictures, screen and print: what each draws, needs, depends on and pins.
+// The page pictures, screen, thumbnail and print: what each draws, needs, depends on and pins.
 export {
   PAGE_PICTURES,
   PAGE_PRINT_FAMILIES,
   PAGE_PRINT_TIERS,
   PAGE_RENDER_FAMILIES,
+  PAGE_THUMBNAIL_FAMILIES,
   pagePictureOf,
   pagePrintTierOf,
   pageRenderFamilyOf,
@@ -287,6 +294,8 @@ export {
   encodeAttachmentsToken,
   encodeOutlineToken,
   decodeOutlineToken,
+  encodeFontsToken,
+  decodeFontsToken,
   encodeContentToken,
   encodeDocToken,
   encodeDownloadToken,
@@ -449,11 +458,16 @@ export type {
   SignatureAppearanceBody,
   LayerAnalysisQuery,
   VersionAnalysisQuery,
-  DocumentVersion,
-  DocumentVersions,
+  LayerVersion,
+  LayerVersions,
 } from './wire/schemas';
 export { encodeAnalysisToken, decodeAnalysisToken, type AnalysisToken } from './wire/tokens';
-export type { AnnotationsExportToken, FormExportToken, OutlineToken } from './wire/tokens';
+export type {
+  AnnotationsExportToken,
+  FontsToken,
+  FormExportToken,
+  OutlineToken,
+} from './wire/tokens';
 export { analysisQueryString, type AnalysisQueryInput } from './wire/paths';
 
 export * from './dto/Measure.schema';

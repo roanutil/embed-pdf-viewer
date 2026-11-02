@@ -7,35 +7,43 @@
  */
 import {
   anchorFromCamera,
+  clampZoom,
   gridLayout,
   groupPages,
   linearLayout,
+  paddingSidesOf,
+  resolveZoomLimits,
   ZoomMode,
   type AlignmentValue,
   type AlignValue,
   type Anchor,
   type CameraConstraint,
+  type PaddingSides,
   type PageFrame,
   type Point,
   type Rect as StageRect,
   type Scene,
   type SceneItem,
   type Size,
+  type ZoomLimits,
 } from '@embedpdf/core-stage';
 import { addRotations, applyRect, displaySize, rotateScaleMatrix } from '@embedpdf/core-geometry';
 import type { Rect } from '@embedpdf/core-geometry';
 import { memo, type PluginContext, type PageRef } from '@embedpdf/core';
 
 import type { StageSettings } from '../contract';
-import type { StageState } from '../model';
+import type { StageModel } from '../model';
 import { SETTINGS_EFFECT, SETTING_KEYS } from '../settings';
 
-export function createScene(ctx: PluginContext<StageState>) {
+export function createScene(ctx: PluginContext<StageModel>) {
   const state = () => ctx.state.get();
   const camera = () => state().camera;
   const viewport = () => state().viewport;
   const dpr = () => state().dpr;
-  const padding = () => state().padding;
+  /** The padding, side by side (screen px). */
+  const padding = (): PaddingSides => paddingSidesOf(state().padding);
+  /** The `minZoom`/`maxZoom` range every zoom this view chooses is clamped into. */
+  const zoomLimits = (): ZoomLimits => resolveZoomLimits(state().minZoom, state().maxZoom);
   const paged = () => state().flow === 'paged';
   const isFitAll = () => {
     const zoom = state().zoom;
@@ -73,12 +81,16 @@ export function createScene(ctx: PluginContext<StageState>) {
   // way a scene depends on the viewport or the zoom.
   const effectiveZoom = (): number => {
     const zoom = state().zoom;
-    return 'level' in zoom ? zoom.level : Math.max(state().camera.zoom, 0.0001);
+    return 'level' in zoom
+      ? clampZoom(zoom.level, zoomLimits())
+      : Math.max(state().camera.zoom, 0.0001);
   };
 
   // Wrapped grid: the line width (world units) the columns must fit.
-  const wrapLineWidth = (): number =>
-    Math.max(1, (viewport().width - 2 * padding()) / effectiveZoom());
+  const wrapLineWidth = (): number => {
+    const { left, right } = padding();
+    return Math.max(1, (viewport().width - left - right) / effectiveZoom());
+  };
 
   // pageFrame (screen px) → world units at the effective zoom.
   const worldPageFrame = (): PageFrame => {
@@ -263,8 +275,8 @@ export function createScene(ctx: PluginContext<StageState>) {
     const inset = padding();
     const tolerance = 0.5;
     return (
-      rect.width * zoom <= size.width - 2 * inset + tolerance &&
-      rect.height * zoom <= size.height - 2 * inset + tolerance
+      rect.width * zoom <= size.width - inset.left - inset.right + tolerance &&
+      rect.height * zoom <= size.height - inset.top - inset.bottom + tolerance
     );
   };
   // An alignment policy → a concrete viewport point: a fraction per axis
@@ -287,8 +299,8 @@ export function createScene(ctx: PluginContext<StageState>) {
       rtl && alignment.x === 'start' ? 'end' : rtl && alignment.x === 'end' ? 'start' : alignment.x;
     const inset = padding();
     return {
-      x: inset + (size.width - 2 * inset) * alignFraction(alignX),
-      y: inset + (size.height - 2 * inset) * alignFraction(alignment.y),
+      x: inset.left + (size.width - inset.left - inset.right) * alignFraction(alignX),
+      y: inset.top + (size.height - inset.top - inset.bottom) * alignFraction(alignment.y),
     };
   };
   const anchorPoint = (): Point => alignPoint(state().anchorAlign, viewport());
@@ -337,6 +349,7 @@ export function createScene(ctx: PluginContext<StageState>) {
     viewport,
     dpr,
     padding,
+    zoomLimits,
     paged,
     isFitAll,
     grouping,

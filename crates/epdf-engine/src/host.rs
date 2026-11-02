@@ -897,7 +897,17 @@ impl Host {
             // result (as `document.setFontSettings` does).
             "fonts.addFallback" => {
                 let key = string_field(body, "fontKey")?;
-                self.fonts()?.add_fallback(&key)?;
+                // The TypeScript worker passes `req.tier` through unchecked.
+                // Absent takes `FontRegistrar.addFallback`'s default, the host's
+                // own tier; anything else is the JavaScript value it was, which
+                // the registry coerces as the WebAssembly call does. `null` is
+                // not absent there: a default parameter covers only undefined.
+                let tier = match body.get("tier") {
+                    None => crate::features::fonts::fallback_tier::OWN,
+                    given => crate::js_number::to_number(given),
+                };
+                self.fonts()?.add_fallback_in_tier(&key, tier)?;
+                // `WorkerHost.handleFontsAddFallback` answers no payload.
                 serde_json::Value::Null
             }
             "fonts.clearFallbacks" => {

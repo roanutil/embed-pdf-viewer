@@ -7,6 +7,7 @@ import {
   EventHub,
   SessionEventPublisher,
   attachmentVerbs,
+  isPluginId,
   outlineVerbs,
   pageVerbs,
   subscribeToType,
@@ -16,9 +17,11 @@ import {
   type DocumentSignaturesService,
   type DocumentEvent,
   type DocumentEventStream,
+  type DocumentFontsService,
   type DocumentFormsService,
   type DocumentPagesService,
   type DocumentHandle,
+  type DocumentGrant,
   type DocumentOutlineService,
   type DocumentRedactionService,
   CONTINUOUS_RENDER_POLICY,
@@ -46,10 +49,12 @@ import {
   type LayerScopePlane,
 } from '@embedpdf/engine-core/wire';
 
+import { CLOUD_DOCUMENT, type CloudDocument } from './cloudDocument';
 import { CloudDocumentActionsService } from './CloudDocumentActionsService';
 import { CloudDocumentAnnotationsService } from './CloudDocumentAnnotationsService';
 import { CloudDocumentAttachmentsService } from './CloudDocumentAttachmentsService';
 import { changeSender, CloudDocumentChanges } from './CloudDocumentChanges';
+import { CloudDocumentFontsService } from './CloudDocumentFontsService';
 import { CloudDocumentFormsService } from './CloudDocumentFormsService';
 import { readCloudOutline } from './CloudDocumentOutlineService';
 import { CloudDocumentPagesService } from './CloudDocumentPagesService';
@@ -61,6 +66,7 @@ import { CloudMetadataService } from './CloudMetadataService';
 import { CloudObjectNumberPool } from './CloudObjectNumberPool';
 import { CloudPageHandle } from './CloudPageHandle';
 import { CloudWrites } from './CloudWrites';
+import type { GrantSessionSource } from '../grant';
 import { auditRowToEvents } from '../realtime/auditRowToEvents';
 import { SseClient } from '../realtime/SseClient';
 import { awaitSignal } from '../shared/awaitSignal';
@@ -97,6 +103,21 @@ export interface ManifestAccessor {
 
 export class CloudDocumentHandle implements DocumentHandle {
   readonly id: string;
+  /** The cloud side, read with `cloudDocument()`: the server modules' routes on this layer. */
+  readonly [CLOUD_DOCUMENT]: CloudDocument = {
+    module: (id) => {
+      if (!isPluginId(id)) {
+        throw new EngineError(
+          EngineErrorCode.InvalidArg,
+          `"${id}" can't be a module's id: lowercase words joined by '-', not a core name`,
+        );
+      }
+      const base = `/v1/docs/${encodeURIComponent(this.id)}/layers/${encodeURIComponent(this.layerName)}/${id}/`;
+      return {
+        fetch: (path, init) => this.http.fetchRoute(`${base}${path.replace(/^\/+/, '')}`, init),
+      };
+    },
+  };
   readonly metadata: CloudMetadataService;
   readonly annotations: DocumentAnnotationsService;
   readonly actions: DocumentActionsService;
@@ -104,6 +125,7 @@ export class CloudDocumentHandle implements DocumentHandle {
   readonly attachments: DocumentAttachmentsService;
   readonly signatures: DocumentSignaturesService;
   readonly forms: DocumentFormsService;
+  readonly fonts: DocumentFontsService;
   readonly search: CloudDocumentSearchService;
   readonly pages: DocumentPagesService;
   /** The page reads behind `pages`, the layout per page among them. */
@@ -157,6 +179,8 @@ export class CloudDocumentHandle implements DocumentHandle {
     initialToken: string | null = null,
     /** Called once, when the handle closes (the engine forgets it). */
     private readonly onClose: () => void = () => {},
+    /** A grant session's: the document's `grant`, and the gate its writes pass. */
+    private readonly grantSession: Pick<GrantSessionSource, 'grant' | 'writeGate'> | null = null,
   ) {
     this.id = id;
     this.pendingInitialHead = initialHead ?? null;
@@ -174,7 +198,11 @@ export class CloudDocumentHandle implements DocumentHandle {
     });
     this.pool = pool;
     this.objectNumbers = pool;
-    this.writes = new CloudWrites(pool, changeSender(http, id, layerName));
+    this.writes = new CloudWrites(
+      pool,
+      changeSender(http, id, layerName),
+      grantSession?.writeGate ?? null,
+    );
     const security = new CloudDocumentSecurityService(
       http,
       id,
@@ -247,12 +275,26 @@ export class CloudDocumentHandle implements DocumentHandle {
     hub.subscribe((event) => {
       if (event.type === 'document.versioned') pool.versioned(event.version.sha256);
     });
+    // An own write whose delta moved the font list's pin changed the fonts
+    // the list shows: its events end with `fonts.changed`, as locally.
+    const noticeFonts = (meta: MutationMeta) => {
+      if (meta.cacheDelta?.fontsVersion !== undefined) this.publisher.noteFontsChanged(meta.opId);
+    };
     this.manifestAccessor = {
       get: (signal) => this.getManifest(signal),
       refresh: (signal) => this.refreshManifest(signal),
-      apply: (meta, owns) => this.absorbMutation(meta, owns),
-      applyPageDelete: (meta, deletedPages) => this.absorbPageDelete(meta, deletedPages),
-      applyPageInsert: (meta) => this.absorbPageInsert(meta),
+      apply: (meta, owns) => {
+        noticeFonts(meta);
+        this.absorbMutation(meta, owns);
+      },
+      applyPageDelete: (meta, deletedPages) => {
+        noticeFonts(meta);
+        this.absorbPageDelete(meta, deletedPages);
+      },
+      applyPageInsert: (meta) => {
+        noticeFonts(meta);
+        this.absorbPageInsert(meta);
+      },
     };
     this.changes = new CloudDocumentChanges(
       () => this.closed,
@@ -293,6 +335,13 @@ export class CloudDocumentHandle implements DocumentHandle {
     this.outline = outlineVerbs(
       () => readCloudOutline(http, id, layerName, () => this.closed, this.manifestAccessor),
       (change, options) => this.apply(change, options),
+    );
+    this.fonts = new CloudDocumentFontsService(
+      http,
+      id,
+      layerName,
+      () => this.closed,
+      this.manifestAccessor,
     );
     this.attachments = attachmentVerbs(
       new CloudDocumentAttachmentsService(
@@ -363,7 +412,7 @@ export class CloudDocumentHandle implements DocumentHandle {
       this.writes,
       (signal) => this.pageReads.pageLayout(ref, signal),
       () => this.cloudSecurity.pageLayerRights(),
-      () => this.cloudSecurity.pagePrintRights(),
+      () => this.cloudSecurity.pagePictureRights(),
     );
   }
 
@@ -379,6 +428,10 @@ export class CloudDocumentHandle implements DocumentHandle {
   /** One change as one transaction, or the undo of one (see `DocumentHandle.apply`). */
   apply(change: Change, options?: WriteOptions): AbortablePromise<ChangeResult> {
     return this.changes.apply(change, options);
+  }
+
+  get grant(): DocumentGrant | undefined {
+    return this.grantSession?.grant;
   }
 
   /** Ignored: the server learns what's needed from what is asked of it. */
@@ -516,7 +569,7 @@ export class CloudDocumentHandle implements DocumentHandle {
         ? { annotationsVersion: delta.annotationsVersion }
         : {}),
       ...(delta?.formsVersion !== undefined ? { formsVersion: delta.formsVersion } : {}),
-      // The plane pins a page-structure, metadata, attachment or outline write bumps:
+      // The plane pins a page-structure, metadata, attachment, outline or font write bumps:
       // absorbed so the next read addresses the fresh leaf.
       ...(delta?.layoutVersion !== undefined ? { layoutVersion: delta.layoutVersion } : {}),
       ...(delta?.metadataVersion !== undefined ? { metadataVersion: delta.metadataVersion } : {}),
@@ -524,6 +577,7 @@ export class CloudDocumentHandle implements DocumentHandle {
         ? { attachmentsVersion: delta.attachmentsVersion }
         : {}),
       ...(delta?.outlineVersion !== undefined ? { outlineVersion: delta.outlineVersion } : {}),
+      ...(delta?.fontsVersion !== undefined ? { fontsVersion: delta.fontsVersion } : {}),
       // The signing fences: every ordinary commit writes an artifact
       // (`working`), and the layer's write serial when the delta names it.
       ...(delta?.layerVersion !== undefined ? { layerVersion: delta.layerVersion } : {}),

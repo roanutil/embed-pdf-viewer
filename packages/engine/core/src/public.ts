@@ -11,6 +11,7 @@ export { AbortablePromise } from './promise/AbortablePromise';
 export { AbortError, isAbortError } from './promise/AbortError';
 export { EngineError } from './errors/EngineError';
 export { EngineErrorCode } from './errors/EngineErrorCode';
+export { grantOpenRequestOf, visitorIdentityRequestOf } from './dto/GrantVisitor';
 
 // Local engine.
 export { isLocalEngine } from './engine/LocalEngine';
@@ -81,11 +82,15 @@ export {
 } from './geometry/pageSpace';
 export { pageDestinationOf, pdfDestinationOf } from './pageSpace/destinations';
 
+// Pages: the order Tab visits their annotations in.
+export { compareStructurePositions, tabOrderOf } from './pages/tabOrder';
+
 export type {
   // Engine and handles.
   Engine,
   EngineFactory,
   DocumentHandle,
+  DocumentGrant,
   PageHandle,
   LocalEngine,
   LocalDocumentHandle,
@@ -96,7 +101,11 @@ export type {
   OpenInputLayerFile,
   OpenInputById,
   OpenInputToken,
-  OpenInputShare,
+  OpenInputGrant,
+  GrantOpenRequest,
+  VisitorAnswers,
+  VisitorIdentityField,
+  VisitorIdentityRequest,
   OpenOptions,
   TokenSource,
   Identity,
@@ -116,7 +125,7 @@ export type {
   LocalPageAnnotationsService,
   PageTextService,
   PageRenderService,
-  LocalPageRenderService,
+  RawPageRenderService,
   DocumentSecurityService,
   DocumentSecurityState,
   DocumentUnlockInput,
@@ -136,7 +145,7 @@ export type {
   AnnotationCreateOptions,
   AnnotationUpdateOptions,
   FlattenWriteOptions,
-  PageInsertBlankOptions,
+  PageInsertOptions,
   FormFieldCreateOptions,
   FormWidgetAddOptions,
   ObjectNumberPool,
@@ -145,6 +154,9 @@ export type {
   // Data.
   PageRef,
   PageLayout,
+  PageTabOrder,
+  TabOrderItem,
+  TabOrderPage,
   PageListSnapshot,
   PageDestination,
   PdfDestination,
@@ -208,6 +220,22 @@ export type {
   AttachmentList,
   AttachmentRef,
   DocumentOutline,
+  CodePointRange,
+  Font,
+  FontFormat,
+  FontList,
+  FontName,
+  FontProgram,
+  FontProgramInfo,
+  FontResolution,
+  FontResolveRequest,
+  FontResolveRun,
+  FontRestriction,
+  FontSource,
+  ResolvedFontRun,
+  DocumentFontsService,
+  LocalDocumentFontsService,
+  FontEmbeddingPolicy,
   OutlineItem,
   OutlineItemDraft,
   OutlineItemPatch,

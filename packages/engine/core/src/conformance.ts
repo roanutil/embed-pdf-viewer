@@ -116,7 +116,13 @@ export {
 export { runPageExtractConformance } from './conformance/runPageExtractConformance';
 export { runAttachmentConformance } from './conformance/runAttachmentConformance';
 export { runPageInsertConformance } from './conformance/runPageInsertConformance';
+export { runPageFormFieldsConformance } from './conformance/runPageFormFieldsConformance';
+export type { PageFormFieldsConformanceOptions } from './conformance/runPageFormFieldsConformance';
 export { runPageInsertBlankConformance } from './conformance/runPageInsertBlankConformance';
+export {
+  runPageCopyConformance,
+  type PageCopyConformanceOptions,
+} from './conformance/runPageCopyConformance';
 export {
   OBJECT_NUMBER_FIXTURE_PDF,
   runObjectNumberConformance,
@@ -210,9 +216,20 @@ export {
   type FormPredictionConformanceOptions,
 } from './conformance/runFormPredictionConformance';
 export {
+  PAGE_PREDICTION_FIXTURE_PDF,
+  runPagePredictionConformance,
+  type PagePredictionConformanceOptions,
+} from './conformance/runPagePredictionConformance';
+export {
   FIELD_GROUP_TOKENS,
   FIELD_GROUPS_PDF,
   runFieldGroupsConformance,
   type FieldGroupToken,
   type FieldGroupsConformanceOptions,
 } from './conformance/runFieldGroupsConformance';
+export { runMixedScriptConformance } from './conformance/runMixedScriptConformance';
+export {
+  runDocumentFontsConformance,
+  type DocumentFontsConformanceOptions,
+} from './conformance/runDocumentFontsConformance';
+export { drawnTextOf, type DrawnRun, type DrawnText } from './conformance/drawnText';

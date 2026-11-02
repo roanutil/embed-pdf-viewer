@@ -25,10 +25,11 @@ import { loadImportPolicyFromEnv } from '../import/config/loadImportPolicyFromEn
 import { ConnectedUsageReporter } from '../licensing/ConnectedUsageReporter';
 import { LicenseRuntime } from '../licensing/LicenseRuntime';
 import { UsageMeters } from '../licensing/UsageMeters';
+import { loadModules } from '../modules/load';
 import { PostgresRealtimeBus } from '../realtime/PostgresRealtimeBus';
 import { readCgroupMemory } from '../runtime/cgroup-memory';
 import { resolveRecycleConfig } from '../runtime/EngineRecycler';
-import { loadFallbackFontsFromEnv } from '../runtime/loadFallbackFontsFromEnv';
+import { loadServerFontsFromEnv } from '../runtime/loadServerFontsFromEnv';
 import { loadKmsConfigFromEnv } from '../security/kms/config/loadKmsConfigFromEnv';
 import { createKmsKeyring } from '../security/kms/createKmsKeyring';
 import type { KmsKeyring } from '../security/kms/KmsKeyring';
@@ -113,7 +114,9 @@ import type { ObjectStore } from '../storage/ObjectStore';
  *   port                   (default: 3000)
  *   host                   (default: 0.0.0.0)
  *   CLOUDPDF_WORKER_POOL_SIZE  int|max  (default: min(2, cpus))
- *   CLOUDPDF_FALLBACK_FONTS  JSON [{key,path,familyName?,...}]  (default: none)
+ *   CLOUDPDF_FONTS           JSON [{key,path,familyName?,...,serve?}]  (default: none)
+ *   CLOUDPDF_MODULES        comma-separated server modules (packages or paths);
+ *                           each reads its settings from CLOUDPDF_<ID>_*
  *   CLOUDPDF_LICENSE_MODE     connected|air-gapped
  *   CLOUDPDF_LICENSE_KEY      required for connected mode; usage reporting
  *                             derives its credential from this key
@@ -368,7 +371,9 @@ function printHelp(): void {
       '    CLOUDPDF_CACHE_MAX_BYTES                 (default: 4 GiB)',
       '    CLOUDPDF_SIGNING_TMP                     (default: <tmpdir>/cloudpdf-signing)',
       '  Fonts',
-      '    CLOUDPDF_FALLBACK_FONTS  JSON [{key,path,familyName?,...}]  (default: none)',
+      '    CLOUDPDF_FONTS           JSON [{key,path,familyName?,...,serve?}]  (default: none)',
+      '  Modules',
+      '    CLOUDPDF_MODULES       comma-separated packages or paths; each module reads CLOUDPDF_<ID>_*',
       '  Optional adapters (see ADAPTERS.md)',
       '    CLOUDPDF_CDN_KIND      none|bunny|cloud-cdn|cloudfront|azure-fd|custom-hmac (default: none)',
       '    CLOUDPDF_KMS_KIND      static|aws-kms|gcp-kms|azure-kv  (opt-in; needed for encrypted-PDF sessions)',
@@ -996,7 +1001,11 @@ async function cmdServe(): Promise<void> {
       fail(2, (err as Error).message);
     }
     for (const w of recycleConfig!.warnings) console.warn(`[cloudpdf] ${w}`);
+    // Server modules: each named package's default export, mounted after
+    // the core's routes. One that won't load or lacks config stops the boot.
+    const modules = await loadModules(process.env['CLOUDPDF_MODULES']);
     bundle = await buildApp({
+      ...(modules.length > 0 ? { modules } : {}),
       // Engine recycling (opt-in; fail-fast validated above).
       ...(recycleConfig.enabled ? { recycle: recycleConfig.policy } : {}),
       // Engine shard dial (buildApp validates divisibility against the
@@ -1017,7 +1026,7 @@ async function cmdServe(): Promise<void> {
       ...(corsOrigins !== undefined ? { corsOrigins } : {}),
       ...(enableRevocation ? { enableRevocation: true } : {}),
       workerEntry: WORKER_ENTRY_URL,
-      fallbackFonts: loadFallbackFontsFromEnv(),
+      fonts: loadServerFontsFromEnv(),
       db: dbCtx.db,
       objectStore,
       cdnSigner,

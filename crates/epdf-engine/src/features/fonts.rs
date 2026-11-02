@@ -87,6 +87,20 @@ impl FontIdentityInfo {
     }
 }
 
+/// The glyph-fallback tiers, `FALLBACK_TIERS` in
+/// `engine/core/src/fonts/fontList.ts`.
+///
+/// PDFium tries every font of a lower tier before any of a higher one, so a
+/// host's own fallbacks win over the built-in ones whatever order they were
+/// added in. A tier is a JavaScript number here, as the TypeScript types it;
+/// see [`FontRegistry::add_fallback_in_tier`].
+pub mod fallback_tier {
+    /// The host's or the application's own fonts. The default tier.
+    pub const OWN: f64 = 0.0;
+    /// The fonts the engine ships.
+    pub const BUILT_IN: f64 = 1.0;
+}
+
 /// A font to register at startup, from a file.
 ///
 /// By path rather than by bytes, mirroring how a file-backed base document is
@@ -100,6 +114,8 @@ pub struct StartupFont {
     pub description: FontDescription,
     /// Also append to the glyph-fallback chain.
     pub fallback: bool,
+    /// The fallback tier, when `fallback` is set. See [`fallback_tier`].
+    pub tier: f64,
 }
 
 /// One thread's fonts.
@@ -117,9 +133,9 @@ pub struct FontRegistry {
     /// registered successfully, at the moment something first tried to draw
     /// with it.
     retained: Vec<FileAccess>,
-    /// The order fonts were added to the fallback chain, for reporting. The
-    /// chain itself lives in PDFium.
-    fallback_order: Vec<String>,
+    /// The keys in the fallback chain with their tiers as given, in the order
+    /// added, for reporting. The chain itself lives in PDFium.
+    fallbacks: Vec<(String, f64)>,
     /// Keeps PDFium initialized on this thread.
     ///
     /// Not optional and not the caller's job. Every `EPDFFont_*` call reads
@@ -216,7 +232,7 @@ impl FontRegistry {
         Ok(Self {
             ids: BTreeMap::new(),
             retained: Vec::new(),
-            fallback_order: Vec::new(),
+            fallbacks: Vec::new(),
             _library: Library::acquire(),
         })
     }
@@ -276,34 +292,68 @@ impl FontRegistry {
         for font in fonts {
             self.register_file(font.key.clone(), &font.description, &font.path)?;
             if font.fallback {
-                self.add_fallback(&font.key)?;
+                self.add_fallback_in_tier(&font.key, font.tier)?;
             }
         }
         Ok(())
     }
 
-    /// Append a registered font to the glyph-fallback chain.
+    /// Add a registered font to the glyph-fallback chain in the host's own
+    /// tier, [`fallback_tier::OWN`], which is the TypeScript default.
     pub fn add_fallback(&mut self, key: &str) -> Result<(), EngineError> {
+        self.add_fallback_in_tier(key, fallback_tier::OWN)
+    }
+
+    /// Add a registered font to the glyph-fallback chain in `tier`: it is
+    /// tried after every font of a lower tier. Adding it again changes its
+    /// tier only, keeping its place among the fonts added before it.
+    ///
+    /// `tier` is the number `FontRegistrar.addFallback` takes, and it goes
+    /// where the TypeScript's does. PDFium gets `ToInt32(tier)`, which is what
+    /// the WebAssembly call does to it: 1.7 is tier 1, NaN is tier 0, 2^32 + 1
+    /// is tier 1. [`FontRegistry::fallback_order`] sorts by the number itself.
+    pub fn add_fallback_in_tier(&mut self, key: &str, tier: f64) -> Result<(), EngineError> {
         let id = self.id_for(key)?;
-        pdfium::add_fallback_font(id).map_err(|_| {
+        pdfium::add_fallback_font(id, crate::js_number::to_int32(tier)).map_err(|_| {
             EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!("addFallback failed: {key}"),
             )
         })?;
-        self.fallback_order.push(key.to_string());
+        match self.fallbacks.iter_mut().find(|(existing, _)| existing == key) {
+            Some(existing) => existing.1 = tier,
+            None => self.fallbacks.push((key.to_string(), tier)),
+        }
         Ok(())
     }
 
     /// Empty the fallback chain, leaving every font registered.
     pub fn clear_fallbacks(&mut self) {
         pdfium::clear_fallback_fonts();
-        self.fallback_order.clear();
+        self.fallbacks.clear();
     }
 
-    /// The fallback chain, in precedence order.
-    pub fn fallback_order(&self) -> &[String] {
-        &self.fallback_order
+    /// The fallback chain by tier, each tier in the order added.
+    /// `FontRegistrar.fallbackKeys`, which sorts with `left.tier - right.tier`
+    /// on the tiers as given, so 1 comes before 1.7 here although PDFium
+    /// tries both as tier 1.
+    ///
+    /// A difference that is NaN (a tier that was a word, or two infinities)
+    /// counts as equal, as `Array.prototype.sort` counts it. That comparator
+    /// is not an order, and the TypeScript's answer then depends on the
+    /// JavaScript engine's sort; this answers what a stable insertion sort
+    /// does with it, and never panics, which `sort_by` may on a comparator
+    /// that is not total.
+    pub fn fallback_order(&self) -> Vec<String> {
+        let mut ordered: Vec<&(String, f64)> = self.fallbacks.iter().collect();
+        for end in 1..ordered.len() {
+            let mut at = end;
+            while at > 0 && ordered[at - 1].1 - ordered[at].1 > 0.0 {
+                ordered.swap(at - 1, at);
+                at -= 1;
+            }
+        }
+        ordered.into_iter().map(|(key, _)| key.clone()).collect()
     }
 
     /// Unregister everything and release the retained handles.
@@ -315,7 +365,7 @@ impl FontRegistry {
         pdfium::clear_registered_fonts();
         self.ids.clear();
         IDENTITIES.with(|all| all.borrow_mut().clear());
-        self.fallback_order.clear();
+        self.fallbacks.clear();
         self.retained.clear();
     }
 

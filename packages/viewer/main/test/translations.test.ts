@@ -1,11 +1,11 @@
 /**
  * The Translations page (`docs/content/viewer/customize/translations.mdx`) in a running viewer:
- * without a `locale`, or with `'auto'`, it follows the browser's languages; its thirteen
- * languages each load the first time they show, Hebrew right to left; your command's `labelKey`
- * and a panel's and a mode bar's `titleKey` read per language, English where a language has no
- * words; the style panel's words change through `strings`; a language of your own falls back to
- * English (after EmbedPDF's own words in it, where the i18n plugin has some), and reads right to
- * left when its code says so; `setLocale` resolves once the language shows; `addTranslations`
+ * without a `locale`, or with `'auto'`, it follows the browser's languages, Traditional Chinese
+ * included; its fifteen languages each load the first time they show, Hebrew right to left; your
+ * command's `labelKey` and a panel's and a mode bar's `titleKey` read per language, English where
+ * a language has no words; one string, or one layout title, renames a panel's button and its
+ * header; the style panel's words change through `strings`; a language of your
+ * own falls back to English, and reads right to left when its code says so; `setLocale` resolves once the language shows; `addTranslations`
  * changes words in place; and the toolbar moves more or fewer buttons into "More" as the words
  * get longer or shorter. Arabic, `fa` and a built-in button's label by its command id are
  * `languages.test.ts`'s.
@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { de } from '../../chrome/src/locales/de';
 import { fr } from '../../chrome/src/locales/fr';
 import { he } from '../../chrome/src/locales/he';
+import { zhTW } from '../../chrome/src/locales/zh-tw';
 import { dist, frames, launchChromium, serveViewer, type ViewerHost } from './helpers/viewer-host';
 
 const WIDTH = 1100;
@@ -95,6 +96,18 @@ const PAGES = {
   '/english.html': page(`{ locale: 'en' }`),
   // Wide enough for every mode tab beside your button and your panel's.
   '/own.html': page(OWN, 1500),
+  // The comments panel renamed by its button's string, search by a title, thumbnails by a titleKey.
+  '/panel-words.html': page(`{
+    locale: 'en',
+    strings: {
+      en: { 'panel:comments': 'Review notes', 'acme.pages': 'Pages' },
+      nl: { 'panel:comments': 'Reviewnotities', 'acme.pages': "Pagina's" },
+    },
+    layout: (layout) =>
+      layout
+        .panel('search', { title: 'Find' })
+        .panel('thumbnails', { titleKey: 'acme.pages' }),
+  }`),
   '/style.html': page(`{
     locale: 'en',
     strings: {
@@ -106,9 +119,9 @@ const PAGES = {
       },
     },
   }`),
-  '/swedish.html': page(`{
-    locale: 'sv',
-    strings: { sv: { 'document:download': 'Ladda ner', 'zoom:in': 'Zooma in' } },
+  '/danish.html': page(`{
+    locale: 'da',
+    strings: { da: { 'document:download': 'Hent', 'zoom:in': 'Zoom ind' } },
   }`),
   '/kurdish.html': page(
     `{ locale: 'ku-Arab', strings: { 'ku-Arab': { 'zoom:in': 'گەورەکردن' } } }`,
@@ -276,13 +289,13 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     );
 
   it("follows the browser's languages without a locale, or with 'auto', and again after one", async () => {
-    // A Canadian French browser gets French; a Traditional Chinese one English.
+    // A Canadian French browser gets French; a Hong Kong one Traditional Chinese, not Simplified.
     for (const path of ['/auto.html', '/auto-named.html']) {
       const french = await open(path, 'fr', 'fr-CA');
       expect(await buttonOf(french, stringOf(fr.translations, 'panels.search'))).not.toBeNull();
       await close(french);
-      const chinese = await open(path, 'en', 'zh-TW');
-      expect(await localeOf(chinese)).toBe('en');
+      const chinese = await open(path, 'zh-TW', 'zh-HK');
+      expect(await buttonOf(chinese, stringOf(zhTW.translations, 'panels.search'))).not.toBeNull();
       await close(chinese);
     }
 
@@ -294,7 +307,7 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     await close(tab);
   });
 
-  it('speaks thirteen languages, each loaded the first time it shows, Hebrew right to left', async () => {
+  it('speaks fifteen languages, each loaded the first time it shows, Hebrew right to left', async () => {
     const tab = await open('/english.html', 'en');
     const requested: string[] = [];
     tab.on('request', (request) => requested.push(new URL(request.url()).pathname));
@@ -306,7 +319,23 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
       );
     const before = await languages();
     expect(before.map((language) => language.code).sort()).toEqual(
-      ['en', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'pl', 'ja', 'zh-CN', 'ko', 'ar', 'he'].sort(),
+      [
+        'en',
+        'de',
+        'fr',
+        'es',
+        'it',
+        'nl',
+        'pt',
+        'pl',
+        'sv',
+        'ja',
+        'zh-CN',
+        'zh-TW',
+        'ko',
+        'ar',
+        'he',
+      ].sort(),
     );
     expect(before.filter((language) => language.loaded).map((language) => language.code)).toEqual([
       'en',
@@ -369,6 +398,50 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     await switchTo(tab, 'de');
     expect(await panelName(tab, 'notes')).toBe('Notes');
     expect(await modeTabs(tab)).toContain('Review');
+    await close(tab);
+  });
+
+  it("renames a panel's button and its header with one string, or one layout title", async () => {
+    const tab = await open('/panel-words.html', 'en');
+    /** The title in the open panel's header: its own, or the switcher's. */
+    const headerOf = (id: string) =>
+      tab.evaluate(
+        (panel) =>
+          window.element
+            .shadowRoot!.querySelector(
+              `[data-epdf-panel="${panel}"] [part="panel-header"] :is(h2, [data-epdf-panel-switcher] .truncate)`,
+            )
+            ?.textContent?.trim() ?? null,
+        id,
+      );
+    const main = '[data-bar="main"]';
+
+    // `panel:comments` in strings: the button and the header.
+    expect(await buttonOf(tab, 'Review notes', main)).not.toBeNull();
+    expect(await buttonOf(tab, 'Comments', main)).toBeNull();
+    await run(tab, 'panel:comments');
+    expect(await panelName(tab, 'comments')).toBe('Review notes');
+    expect(await headerOf('comments')).toBe('Review notes');
+
+    // A layout title: the same in both, in place of the built-in words.
+    expect(await buttonOf(tab, 'Find', main)).not.toBeNull();
+    await run(tab, 'panel:search');
+    expect(await panelName(tab, 'search')).toBe('Find');
+    expect(await headerOf('search')).toBe('Find');
+
+    // A titleKey of yours, in each language.
+    expect(await buttonOf(tab, 'Pages', main)).not.toBeNull();
+    await run(tab, 'panel:thumbnails');
+    expect(await panelName(tab, 'thumbnails')).toBe('Pages');
+
+    await switchTo(tab, 'nl');
+    expect(await panelName(tab, 'thumbnails')).toBe("Pagina's");
+    expect(await buttonOf(tab, "Pagina's", main)).not.toBeNull();
+    expect(await panelName(tab, 'search')).toBe('Find');
+    await run(tab, 'panel:comments');
+    expect(await panelName(tab, 'comments')).toBe('Reviewnotities');
+    expect(await headerOf('comments')).toBe('Reviewnotities');
+    expect(await buttonOf(tab, 'Reviewnotities', main)).not.toBeNull();
     await close(tab);
   });
 
@@ -450,21 +523,21 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
   });
 
   it('makes a language of its own from strings, with English for the words it leaves out', async () => {
-    const tab = await open('/swedish.html', 'sv');
-    const swedish = await tab.evaluate(() =>
+    const tab = await open('/danish.html', 'da');
+    const danish = await tab.evaluate(() =>
       (window.element.viewer.get('i18n').listLocales() as { code: string; name: string }[]).find(
-        (language) => language.code === 'sv',
+        (language) => language.code === 'da',
       ),
     );
-    expect(swedish).toMatchObject({ code: 'sv', name: 'svenska', direction: 'ltr', loaded: true });
+    expect(danish).toMatchObject({ code: 'da', name: 'dansk', direction: 'ltr', loaded: true });
     expect(await directionOf(tab)).toBe('ltr');
 
     // Its own words.
-    expect(await buttonOf(tab, 'Zooma in')).not.toBeNull();
+    expect(await buttonOf(tab, 'Zoom ind')).not.toBeNull();
     const download = await tab.evaluate(
       () => window.element.viewer.commands.resolveCommand('document:download')!.label,
     );
-    expect(download).toBe('Ladda ner');
+    expect(download).toBe('Hent');
 
     // English for the rest: the bars, the tools, the pager.
     expect(await buttonOf(tab, 'Menu')).not.toBeNull();
@@ -472,15 +545,6 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     expect(await buttonOf(tab, 'Pointer')).not.toBeNull();
     const text = await tab.evaluate(() => window.element.shadowRoot!.textContent ?? '');
     expect(text).toMatch(/Page 1 of \d+/);
-
-    // Except where EmbedPDF has words of its own in the language: the i18n plugin's Swedish
-    // for the standard zoom, page and copy commands comes before English.
-    const standard = await tab.evaluate(() =>
-      ['zoom:out', 'page:next', 'selection:copy'].map(
-        (id) => window.element.viewer.commands.resolveCommand(id)!.label,
-      ),
-    );
-    expect(standard).toEqual(['Zooma ut', 'Nästa sida', 'Kopiera']);
     await close(tab);
   });
 

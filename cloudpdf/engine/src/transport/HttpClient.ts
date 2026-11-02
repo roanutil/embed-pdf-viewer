@@ -4,6 +4,9 @@ import {
   EngineErrorCode,
   parseObjectNumberRanges,
   type ObjectNumberRange,
+  type PageRef,
+  type PageRenderOptions,
+  type PageRenderRaster,
   type SerializedEngineError,
   type TokenSource,
 } from '@embedpdf/engine-core/runtime';
@@ -60,7 +63,28 @@ export interface HttpClientOptions {
   /** Observability: fired once per transport-level retry (engine busy /
    *  restarting). Lets apps count sheds without wrapping every call. */
   onRetry?: (info: { path: string; code: string; attempt: number; waitMs: number }) => void;
+  /**
+   * Read through a CDN when the server offers one. Default `true`. `false`
+   * reads everything from the server itself, CDN credentials or not: for
+   * code running next to it (a server module, a backend in the same
+   * network), where the CDN only adds a hop.
+   */
+  cdn?: boolean;
+  /**
+   * Where raw page pixels come from, when this client runs inside the server
+   * it talks to (a server module's): `page(ref).render.raw()` draws through
+   * it. Absent everywhere else: over the network the cloud API serves
+   * images, not raw pixels.
+   */
+  renderRaw?: RawPageSource;
 }
+
+/** Draws one page to raw pixels, next to the engine. */
+export type RawPageSource = (
+  page: PageRef,
+  options: PageRenderOptions,
+  signal: AbortSignal,
+) => Promise<PageRenderRaster>;
 
 /**
  * Per-document binding for CDN URL rewriting. `CloudDocumentHandle`
@@ -102,6 +126,8 @@ export interface RequestOptions {
   readonly write?: WriteRequest;
   /** Sent as the editing session though not a write: `/access`, the bulk reservation. */
   readonly session?: boolean;
+  /** Sent to the server itself, never to a CDN in front of it, whatever the path. */
+  readonly origin?: boolean;
 }
 
 /** A raw-bytes response plus its headers. */
@@ -144,11 +170,21 @@ export class HttpClient {
   /**
    * The fetch implementation this client sends requests through (injected
    * or global). Exposed so sibling transports spawned per-open — the
-   * share-session exchange, most of all — ride the same fetch the engine
+   * grant-session exchange, most of all — ride the same fetch the engine
    * was configured with (test doubles, SSR `Origin`-attaching wrappers).
    */
   get fetchImpl(): typeof globalThis.fetch {
     return this.fetchFn;
+  }
+
+  /** Whether reads may go through a CDN the server offers (`cdn` option). */
+  get usesCdn(): boolean {
+    return this.options.cdn !== false;
+  }
+
+  /** Where this client's raw page pixels come from; absent outside the server. */
+  get renderRaw(): RawPageSource | undefined {
+    return this.options.renderRaw;
   }
 
   /**
@@ -216,6 +252,18 @@ export class HttpClient {
 
   absoluteUrl(path: string): string {
     return `${this.baseUrl}${path}`;
+  }
+
+  /**
+   * One of the server's routes as it is, for a caller that reads the response
+   * itself, such as a server module's routes: with the token (fresh for each
+   * request), the document's affinity header and the busy retries, always to
+   * the server and never to a CDN, and answering whatever the status.
+   */
+  async fetchRoute(path: string, init: RequestInit = {}): Promise<Response> {
+    const headers = new Headers(init.headers ?? {});
+    if (!headers.has('Accept')) headers.set('Accept', '*/*');
+    return this.request(path, { ...init, headers }, { origin: true });
   }
 
   async getBlob(path: string, signal: AbortSignal): Promise<Blob> {
@@ -497,7 +545,11 @@ export class HttpClient {
     init: RequestInit,
     options: RequestOptions = {},
   ): Promise<Response> {
-    const { url, extraHeader, routedToCdn } = this.resolveOutgoing(path, init.method ?? 'GET');
+    const { url, extraHeader, routedToCdn } = this.resolveOutgoing(
+      path,
+      init.method ?? 'GET',
+      options.origin === true,
+    );
     const headers = new Headers(init.headers ?? {});
     if (this.tokenFn) {
       const token = await this.tokenFn();
@@ -615,9 +667,10 @@ export class HttpClient {
 
   /**
    * Decide where this request actually goes. With no CDN binding (or
-   * binding's `cdn` is null) every request stays on origin, and so does
-   * every request that isn't a read (`GET`, `HEAD`): a write must reach the
-   * server itself, whatever read its path looks like. Otherwise
+   * binding's `cdn` is null), or with the CDN turned off (`cdn: false`),
+   * every request stays on origin, and so does every request that isn't a
+   * read (`GET`, `HEAD`): a write must reach the server itself, whatever
+   * read its path looks like. Otherwise
    * `applyCdnAccess` decides per-request based on the resource the
    * path resolves to (and whether the caller's scope granted CDN
    * access to it).
@@ -625,13 +678,14 @@ export class HttpClient {
   private resolveOutgoing(
     path: string,
     method: string,
+    origin = false,
   ): {
     url: string;
     extraHeader: { name: string; value: string } | null;
     routedToCdn: boolean;
   } {
     const read = method === 'GET' || method === 'HEAD';
-    if (!read || !this.cdnBinding || !this.cdnBinding.cdn) {
+    if (origin || !read || !this.usesCdn || !this.cdnBinding || !this.cdnBinding.cdn) {
       return { url: `${this.baseUrl}${path}`, extraHeader: null, routedToCdn: false };
     }
     const applied = applyCdnAccess({

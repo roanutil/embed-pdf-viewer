@@ -3,16 +3,17 @@
   (never on the server) and destroys it when it unmounts; the components inside
   read it through composables. `engine`, `plugins` and `initialDocuments` are
   read once; `identity`, `scope`, `accent` and `page` are the viewer's settings
-  and follow the props.
+  and follow the props, and each download calls the latest `fetch`.
 -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, shallowRef, toRaw, watch } from 'vue';
 import { createKernel, isLocalEngine, viewerSettingsOf } from '@embedpdf/core';
-import { browserClock, browserPrinter } from '@embedpdf/web';
+import { browserClock, browserPrinter, browserTextMeasurer } from '@embedpdf/web';
 import type {
   AnyPlugin,
   Engine,
   EngineFactory,
+  HostFetch,
   Identity,
   InitialDocument,
   Kernel,
@@ -37,8 +38,9 @@ const props = defineProps<{
   /**
    * Who the user is, for every document opened without an `identity` of its
    * own (which replaces this one). Documents opened after a change use the new
-   * value; open ones keep theirs. The local engine only: the cloud engine reads
-   * it from the document's token.
+   * value; open ones keep theirs. With the cloud engine the document's token
+   * decides, and a share link takes it as the visitor's answers to what the
+   * link asks.
    */
   identity?: Identity;
   /**
@@ -51,6 +53,12 @@ const props = defineProps<{
   accent?: string;
   /** How pages look: `background` before the picture arrives, and the `shadow` under each page. */
   page?: Partial<ViewerPageSettings>;
+  /**
+   * How a document at a URL downloads: your own `fetch`, to add headers or cookies. It gets the
+   * URL and an `init` with the document's cancel `signal`, to pass on. Each download calls the
+   * latest one.
+   */
+  fetch?: HostFetch;
 }>();
 
 const emit = defineEmits<{
@@ -149,6 +157,12 @@ onMounted(() => {
       settings: settingsOf(),
       clock: browserClock(),
       printer: browserPrinter(),
+      measurer: browserTextMeasurer(),
+      fetch: (url, init) => {
+        // A plain call: the browser's own `fetch` refuses any other `this`.
+        const download = props.fetch ?? globalThis.fetch;
+        return download(url, init);
+      },
     });
   } catch (error) {
     // A plan or dependency error shows in the `error` slot.
