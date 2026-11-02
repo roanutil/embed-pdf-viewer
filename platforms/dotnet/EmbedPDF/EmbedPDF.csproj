@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>EmbedPDF.Engine</AssemblyName><RootNamespace>EmbedPDF.Engine</RootNamespace></PropertyGroup><ItemGroup><InternalsVisibleTo Include="EmbedPDF.Tests" /></ItemGroup></Project>
