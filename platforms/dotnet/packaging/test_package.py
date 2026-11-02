@@ -38,6 +38,13 @@ class ManifestTests(unittest.TestCase):
                 validate({"status":"container-emulated","reason":"No native run"}, states[rid])
 
 class NativeInspectionTests(unittest.TestCase):
+    def test_rejects_wrong_or_incomplete_abi_exports(self):
+        from package import check_exports
+        with self.assertRaisesRegex(ValueError, "epdf_abi_version"):
+            check_exports("FPDF_InitLibrary")
+        with self.assertRaisesRegex(ValueError, "epdf_engine_create"):
+            check_exports("000000 T _epdf_abi_version", "_")
+
     def test_rejects_build_machine_rpath(self):
         from package import check_elf
         with self.assertRaisesRegex(ValueError, "relative"):

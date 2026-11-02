@@ -82,6 +82,14 @@ def check_elf(name, dynamic, dependencies):
     if "not found" in dependencies or "undefined symbol:" in dependencies:
         raise ValueError(f"{name}: missing dynamic dependency\n{dependencies}")
 
+def check_exports(exported, prefix=""):
+    required = ["epdf_abi_version","epdf_engine_create","epdf_engine_submit","epdf_job_wait",
+                "epdf_job_cancel","epdf_job_release","epdf_engine_close","epdf_engine_release",
+                "epdf_helper_call","epdf_result_view","epdf_result_release"]
+    for name in required:
+        if not re.search(r"\b"+prefix+name+r"(?:\s|$)", exported, re.M):
+            raise ValueError(f"missing required C ABI export: {name}")
+
 def inspect(native, rid):
     details = {}
     for path in sorted(native.iterdir()):
@@ -98,11 +106,7 @@ def inspect(native, rid):
             versions = set(re.findall(r"GLIBC_(\d+(?:\.\d+)+)", symbols))
             if path.name == "libepdf_capi.so":
                 exported = run(["nm", "-D", "--defined-only", str(path)])
-                required = ["epdf_abi_version","epdf_engine_create","epdf_engine_submit","epdf_job_wait",
-                            "epdf_job_cancel","epdf_job_release","epdf_engine_close","epdf_engine_release",
-                            "epdf_helper_call","epdf_result_view","epdf_result_release"]
-                if any(not re.search(r"\b"+name+r"$", exported, re.M) for name in required):
-                    raise ValueError("missing required C ABI exports")
+                check_exports(exported)
             details[path.name] = {"glibcRequired": max(versions, key=lambda v: tuple(map(int, v.split(".")))) if versions else None,
                                   "dependencies": dependencies, "dynamic": dynamic}
             architecture = run(["readelf", "-h", str(path)])
@@ -121,10 +125,14 @@ def inspect(native, rid):
             for rpath in re.findall(r"cmd LC_RPATH\s+cmdsize \d+\s+path (.*?) \(offset", load):
                 if rpath != "@loader_path":
                     raise ValueError(f"{path}: build-machine rpath {rpath}")
+            if path.name == "libepdf_capi.dylib":
+                check_exports(run(["nm", "-gU", str(path)]), "_")
             details[path.name] = {"dependencies": deps, "loadCommands": load}
         else:
             details[path.name] = {"dependencies": run(["dumpbin", "/DEPENDENTS", str(path)]),
                                   "headers": run(["dumpbin", "/HEADERS", str(path)])}
+            if path.name == "epdf_capi.dll":
+                check_exports(run(["dumpbin", "/EXPORTS", str(path)]))
             if "8664 machine (x64)" not in details[path.name]["headers"]:
                 raise ValueError(f"{path}: wrong RID architecture")
     return details
