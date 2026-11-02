@@ -215,6 +215,11 @@ impl Document {
             for program in 0..program_count {
                 programs.push(DocumentFontProgram {
                     // 0 is the fork's "no program"; a number past u32 names none.
+                    // c_ulong is 64-bit on Unix and 32-bit on Windows and
+                    // wasm32, where this try_from is a no-op and clippy
+                    // objects to it. It is load-bearing on Unix, so the lint
+                    // is silenced here.
+                    #[allow(clippy::useless_conversion)]
                     object_number: u32::try_from(unsafe {
                         pdfium_sys::EPDFFontFaces_GetProgramObjNum(h, face, program)
                     })
@@ -409,6 +414,9 @@ impl Document {
                     pdfium_sys::EPDFFontResolution_GetRegisteredFont(h, run)
                 }),
                 // 0 is the fork's "no program"; a number past u32 names none.
+                // c_ulong is 32-bit on Windows and wasm32, where this try_from
+                // is a no-op and clippy objects to it; see the faces read.
+                #[allow(clippy::useless_conversion)]
                 program_object_number: u32::try_from(unsafe {
                     pdfium_sys::EPDFFontResolution_GetProgramObjNum(h, run)
                 })
@@ -501,11 +509,16 @@ impl Annotation<'_> {
         font_size: f32,
         color: (u8, u8, u8),
     ) -> bool {
+        // c_ulong is 64-bit on Unix and 32-bit on Windows and wasm32, where
+        // this into() is a no-op and clippy objects to it. It is load-bearing
+        // on Unix, so the lint is silenced here.
+        #[allow(clippy::useless_conversion)]
+        let program_object_number: std::os::raw::c_ulong = program_object_number.into();
         // SAFETY: the handle is live.
         unsafe {
             pdfium_sys::EPDFAnnot_SetDefaultAppearanceDocumentFont(
                 self.as_raw(),
-                program_object_number.into(),
+                program_object_number,
                 font_size,
                 u32::from(color.0),
                 u32::from(color.1),
