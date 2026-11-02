@@ -2,7 +2,10 @@
 //!
 //! G4. Replaces `services/src/features/fonts/FontRegistrar.ts`. Operations:
 //! `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`,
-//! `fonts.clear`.
+//! `fonts.clear`, `fonts.authorizeEditing`, `fonts.list`, `fonts.program`.
+//! [`document`] ports `DocumentFontReader.ts` (the `document.fonts.*`
+//! kinds), and [`list`] the parts of engine-core's `fontList.ts` it reads
+//! with.
 //!
 //! One registry per worker, selected at initialization and before any startup
 //! font or document is loaded. Fonts are engine-level and not session-level:
@@ -38,6 +41,13 @@ use pdfium::{
 use serde::Serialize;
 
 use crate::error::{EngineError, EngineErrorCode};
+
+pub mod document;
+pub mod list;
+
+// `LAST_RESORT_HASH` and `LAST_RESORT_PROGRAM`, from
+// `packages/core/fonts/src/last-resort.generated.ts` (`build.rs`).
+include!(concat!(env!("OUT_DIR"), "/last_resort.rs"));
 
 /// `FontEmbeddingPermission`: the OS/2 `fsType` licence as the wire spells
 /// it. Restricted and bitmap-only fonts are refused at registration, so
@@ -116,6 +126,139 @@ pub struct StartupFont {
     pub fallback: bool,
     /// The fallback tier, when `fallback` is set. See [`fallback_tier`].
     pub tier: f64,
+    /// Whether its bytes may go to a browser (`StartupFontSpec.serve`, the
+    /// server's `serve`); false by default there.
+    pub serve: bool,
+}
+
+/// `FontFormat`: what a program is, as the wire spells it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FontFormat {
+    Truetype,
+    Opentype,
+    Cff,
+    Type1,
+    Type3,
+}
+
+impl FontFormat {
+    /// `FORMATS` in `DocumentFontReader.ts`: `EPDF_FONT_FORMAT_*`, `None`
+    /// for `EPDF_FONT_FORMAT_NONE` and any code it doesn't name.
+    pub fn of_program(format: Option<pdfium::FontProgramFormat>) -> Option<Self> {
+        use pdfium::FontProgramFormat as F;
+        Some(match format? {
+            F::TrueType => Self::Truetype,
+            F::OpenTypeCff => Self::Opentype,
+            F::Cff => Self::Cff,
+            F::Type1 => Self::Type1,
+            F::Type3 => Self::Type3,
+        })
+    }
+}
+
+/// `CodePointRange`: `start` and the `count` of code points that follow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct CodePointRange {
+    pub start: u32,
+    pub count: u32,
+}
+
+impl From<pdfium::CodePointRange> for CodePointRange {
+    fn from(range: pdfium::CodePointRange) -> Self {
+        Self { start: range.start, count: range.count }
+    }
+}
+
+/// `EngineFontFacts`: one of the engine's fonts as a font list takes it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EngineFontFacts {
+    pub key: String,
+    pub identity: FontIdentityInfo,
+    pub post_script_name: Option<String>,
+    pub format: FontFormat,
+    /// SHA-256 (hex) of the program the engine lays text out with.
+    pub sha256: String,
+    /// Whether its bytes may go to a browser.
+    pub served: bool,
+}
+
+/// A program's coverage and line metrics, as `programFor(..).info()` and
+/// `document.fonts.program` answer them: thousandths of the font size,
+/// descent negative.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ProgramInfo {
+    pub covers: Vec<CodePointRange>,
+    pub ascent: f64,
+    pub descent: f64,
+}
+
+/// `Math.round`: halves round up, toward positive infinity.
+pub(crate) fn js_round(value: f64) -> f64 {
+    let floor = value.floor();
+    if value - floor >= 0.5 { floor + 1.0 } else { floor }
+}
+
+/// `Math.round(ascent * 1000)` and `-Math.round(descent * 1000)` of the
+/// fork's em metrics, `0` and `-0` folded to `0` as JSON writes them.
+pub(crate) fn thousandths(metrics: Option<pdfium::FontLineMetrics>) -> (f64, f64) {
+    let (ascent, descent) =
+        metrics.map_or((0.0, 0.0), |m| (f64::from(m.ascent), f64::from(m.descent)));
+    (js_round(ascent * 1000.0) + 0.0, -js_round(descent * 1000.0) + 0.0)
+}
+
+/// Lowercase hex, as `hex` in `DocumentFontReader.ts` writes a hash.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut out, byte| {
+        let _ = write!(out, "{byte:02x}");
+        out
+    })
+}
+
+/// What `FontRegistrar.readProgram` read for a key, and whether its bytes
+/// may go to a browser.
+#[derive(Debug, Clone, PartialEq)]
+struct RegisteredProgram {
+    sha256: String,
+    format: FontFormat,
+    post_script_name: Option<String>,
+    served: bool,
+}
+
+impl RegisteredProgram {
+    /// `readProgram`: the hash, `''` when the fork has none; `opentype` for
+    /// `EPDF_FONT_FORMAT_OPENTYPE` and `truetype` for anything else; the
+    /// PostScript name, `null` when empty.
+    fn read(id: FontId, served: bool) -> Self {
+        Self {
+            sha256: pdfium::font_program_hash(id).map(|hash| hex(&hash)).unwrap_or_default(),
+            format: match pdfium::font_program_format(id) {
+                Some(pdfium::FontProgramFormat::OpenTypeCff) => FontFormat::Opentype,
+                _ => FontFormat::Truetype,
+            },
+            post_script_name: pdfium::font_postscript_name(id)
+                .ok()
+                .flatten()
+                .filter(|name| !name.is_empty()),
+            served,
+        }
+    }
+}
+
+/// `FontRegistrar.registerLastResort`: the font a character no other font
+/// has is drawn in, as a box. It has no key, so no list names it.
+fn register_last_resort() -> Result<(), EngineError> {
+    let registered =
+        pdfium::register_memory_font(&FontDescription::inferred(), LAST_RESORT_PROGRAM);
+    match registered {
+        Ok(id) if pdfium::set_last_resort_font(Some(id)) => Ok(()),
+        _ => Err(EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            "the last-resort font did not register",
+        )),
+    }
 }
 
 /// One thread's fonts.
@@ -136,6 +279,9 @@ pub struct FontRegistry {
     /// The keys in the fallback chain with their tiers as given, in the order
     /// added, for reporting. The chain itself lives in PDFium.
     fallbacks: Vec<(String, f64)>,
+    /// Each key's program, in the order first registered (a `Map`'s order,
+    /// which `programFor` searches in).
+    programs: Vec<(String, RegisteredProgram)>,
     /// Keeps PDFium initialized on this thread.
     ///
     /// Not optional and not the caller's job. Every `EPDFFont_*` call reads
@@ -213,10 +359,12 @@ pub fn key_for_face(family: &str, weight: u32, italic: bool) -> Option<String> {
 }
 
 impl FontRegistry {
-    /// The one registry for this thread.
+    /// The one registry for this thread, with the last resort registered,
+    /// as `FontRegistrar`'s constructor registers it.
     ///
     /// Reports `InvalidArg` when this thread already has one. See
-    /// [`REGISTRY_ON_THREAD`].
+    /// [`REGISTRY_ON_THREAD`]. `RuntimeUnavailable` when the last resort
+    /// doesn't register.
     pub fn new() -> Result<Self, EngineError> {
         REGISTRY_ON_THREAD.with(|taken| {
             if taken.get() {
@@ -229,12 +377,26 @@ impl FontRegistry {
             taken.set(true);
             Ok(())
         })?;
-        Ok(Self {
+        // Built before the last resort registers: PDFium must be up on this
+        // thread first, and a refusal drops it, which frees the thread.
+        let registry = Self {
             ids: BTreeMap::new(),
             retained: Vec::new(),
             fallbacks: Vec::new(),
+            programs: Vec::new(),
             _library: Library::acquire(),
-        })
+        };
+        register_last_resort()?;
+        Ok(registry)
+    }
+
+    /// Record what `readProgram` reads for a key, keeping its first place.
+    fn remember_program(&mut self, key: &str, id: FontId, served: bool) {
+        let program = RegisteredProgram::read(id, served);
+        match self.programs.iter_mut().find(|(k, _)| k == key) {
+            Some(entry) => entry.1 = program,
+            None => self.programs.push((key.to_owned(), program)),
+        }
     }
 
     /// Register a font from bytes.
@@ -258,16 +420,31 @@ impl FontRegistry {
         let id = pdfium::register_memory_font(description, bytes)
             .map_err(|e| registration_failed(&key, None, e))?;
         remember_identity(&key, id, description);
+        // An application's own font: its bytes may go to a browser.
+        self.remember_program(&key, id, true);
         self.ids.insert(key, id);
         Ok(id)
     }
 
-    /// Register a font PDFium reads from a file on demand.
+    /// Register a font PDFium reads from a file on demand, its bytes kept
+    /// from browsers (`registerFromNodeFile`'s default).
     pub fn register_file(
         &mut self,
         key: impl Into<String>,
         description: &FontDescription,
         path: &std::path::Path,
+    ) -> Result<FontId, EngineError> {
+        self.register_file_served(key, description, path, false)
+    }
+
+    /// [`FontRegistry::register_file`], saying whether its bytes may go to a
+    /// browser (`registerFromNodeFile`'s `served`).
+    pub fn register_file_served(
+        &mut self,
+        key: impl Into<String>,
+        description: &FontDescription,
+        path: &std::path::Path,
+        served: bool,
     ) -> Result<FontId, EngineError> {
         let key = key.into();
         let access =
@@ -278,6 +455,7 @@ impl FontRegistry {
         // would leak a file descriptor per attempt.
         self.retained.push(access);
         remember_identity(&key, id, description);
+        self.remember_program(&key, id, served);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -290,7 +468,7 @@ impl FontRegistry {
     /// workers different answers for the same missing glyph.
     pub fn register_startup(&mut self, fonts: &[StartupFont]) -> Result<(), EngineError> {
         for font in fonts {
-            self.register_file(font.key.clone(), &font.description, &font.path)?;
+            self.register_file_served(font.key.clone(), &font.description, &font.path, font.serve)?;
             if font.fallback {
                 self.add_fallback_in_tier(&font.key, font.tier)?;
             }
@@ -356,17 +534,96 @@ impl FontRegistry {
         ordered.into_iter().map(|(key, _)| key.clone()).collect()
     }
 
-    /// Unregister everything and release the retained handles.
+    /// Unregister everything and release the retained handles. The last
+    /// resort stays: it is registered again, as `FontRegistrar.clear` does,
+    /// and in its order, so a last resort that doesn't register refuses the
+    /// clear with `RuntimeUnavailable` before the keys are forgotten.
     ///
     /// The order matters: PDFium stops reading through the handles only once
     /// the fonts are gone, so releasing them first would leave the registry
     /// reading closed files.
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self) -> Result<(), EngineError> {
         pdfium::clear_registered_fonts();
+        register_last_resort()?;
+        self.forget_all();
+        Ok(())
+    }
+
+    /// Forget every key, program and fallback, and release the handles.
+    fn forget_all(&mut self) {
         self.ids.clear();
         IDENTITIES.with(|all| all.borrow_mut().clear());
         self.fallbacks.clear();
+        self.programs.clear();
         self.retained.clear();
+    }
+
+    /// `FontRegistrar.engineFontFacts`: the registered fonts, in
+    /// registration order, as a font list takes them.
+    pub fn engine_font_facts(&self) -> Vec<EngineFontFacts> {
+        let keys: Vec<String> =
+            IDENTITIES.with(|all| all.borrow().iter().map(|(key, _)| key.clone()).collect());
+        keys.into_iter()
+            .filter_map(|key| {
+                let program = self.programs.iter().find(|(k, _)| *k == key)?.1.clone();
+                let identity = self.identity_info(&key).ok()?;
+                Some(EngineFontFacts {
+                    key,
+                    identity,
+                    post_script_name: program.post_script_name,
+                    format: program.format,
+                    sha256: program.sha256,
+                    served: program.served,
+                })
+            })
+            .collect()
+    }
+
+    /// `FontRegistrar.keyForId`: the key of this thread's native id.
+    pub fn key_for_id(&self, id: FontId) -> Option<String> {
+        self.ids.iter().find(|(_, candidate)| **candidate == id).map(|(key, _)| key.clone())
+    }
+
+    /// `FontRegistrar.programFor`: the first key (in registration order)
+    /// whose program has this hash. `None` for a hash no key has.
+    fn key_for_program(&self, sha256: &str) -> Option<&str> {
+        self.programs.iter().find(|(_, p)| p.sha256 == sha256).map(|(key, _)| key.as_str())
+    }
+
+    /// `programFor(sha256).info()`: a registered program's coverage and
+    /// metrics. `None` for a hash no registered font has.
+    pub fn program_info(&self, sha256: &str) -> Result<Option<ProgramInfo>, EngineError> {
+        let Some(key) = self.key_for_program(sha256) else { return Ok(None) };
+        let id = self.id_for(key)?;
+        let covers = pdfium::font_coverage(id).map_err(engine_error)?;
+        let (ascent, descent) = thousandths(pdfium::font_metrics(id));
+        Ok(Some(ProgramInfo {
+            covers: covers.into_iter().map(Into::into).collect(),
+            ascent,
+            descent,
+        }))
+    }
+
+    /// `programFor(sha256).bytes()`: a registered program's bytes, empty
+    /// when the fork reports none. `None` for a hash no registered font has.
+    pub fn program_bytes(&self, sha256: &str) -> Result<Option<Vec<u8>>, EngineError> {
+        let Some(key) = self.key_for_program(sha256) else { return Ok(None) };
+        let id = self.id_for(key)?;
+        Ok(Some(pdfium::font_program_data(id).map_err(engine_error)?.unwrap_or_default()))
+    }
+
+    /// `WorkerHost.handleFontsProgram`: a served engine font's bytes, by
+    /// its program's hash. `NotFound` for a font not served.
+    pub fn served_program(&self, sha256: &str) -> Result<Vec<u8>, EngineError> {
+        let served =
+            self.programs.iter().any(|(_, program)| program.sha256 == sha256 && program.served);
+        let bytes = if served { self.program_bytes(sha256)? } else { None };
+        bytes.ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no served font has the program {sha256}"),
+            )
+        })
     }
 
     /// Resolve a stable key to this thread's id.
@@ -462,9 +719,17 @@ impl Drop for FontRegistry {
     /// This is safe to do on drop only because a thread has one registry;
     /// [`FontRegistry::new`] is what makes that true.
     fn drop(&mut self) {
-        self.clear();
+        // Not `clear`: the thread keeps no last resort past its registry.
+        pdfium::set_last_resort_font(None);
+        pdfium::clear_registered_fonts();
+        self.forget_all();
         REGISTRY_ON_THREAD.with(|taken| taken.set(false));
     }
+}
+
+/// A fork read that failed for want of memory.
+fn engine_error(error: PdfiumError) -> EngineError {
+    EngineError::with_message(EngineErrorCode::Unknown, error.to_string())
 }
 
 /// `FontRegistrar`'s refusal, worded as it words it when the runtime
