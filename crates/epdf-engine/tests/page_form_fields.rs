@@ -214,3 +214,22 @@ fn an_insert_at_chosen_numbers_puts_each_page_at_its_number() {
     assert_eq!(refused["code"], "InvalidArg", "{refused}");
     assert_eq!(refused["details"]["field"], "objectNumbers", "{refused}");
 }
+
+#[test]
+fn an_inserts_undo_deletes_the_fields_its_pages_brought_and_its_redo_brings_them_back() {
+    let mut host = open(test_support::fixture(TARGET));
+    insert(&mut host, "insert", test_support::fixture(FORM));
+    assert_eq!(fields_of(&mut host), form_fields());
+    let undo = |host: &mut Host, of: &str, id: &str| {
+        send(
+            host,
+            json!({ "kind": "document.apply", "opId": id, "change": { "undoOf": of } }),
+            Vec::new(),
+        )
+        .unwrap_or_else(|e| panic!("undo of {of}: {e}"))
+    };
+    undo(&mut host, "insert", "undo");
+    assert_eq!(fields_of(&mut host), BTreeMap::new());
+    undo(&mut host, "undo", "redo");
+    assert_eq!(fields_of(&mut host), form_fields());
+}

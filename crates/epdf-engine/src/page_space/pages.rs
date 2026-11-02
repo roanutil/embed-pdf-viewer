@@ -84,6 +84,7 @@ pub fn page_list_of(
     Ok(PageListSnapshot {
         page_count: snapshot.page_count,
         pages,
+        labels: snapshot.labels,
         named_pages: snapshot.named_pages,
     })
 }
@@ -174,6 +175,7 @@ mod tests {
         let list = page_list_of(PageListSnapshot {
             page_count: 2,
             pages: vec![first, second],
+            labels: Vec::new(),
             named_pages: Vec::new(),
         })
         .unwrap();
@@ -207,6 +209,7 @@ mod tests {
         let refused = page_list_of(PageListSnapshot {
             page_count: 1,
             pages: vec![only],
+            labels: Vec::new(),
             named_pages: Vec::new(),
         })
         .unwrap_err();

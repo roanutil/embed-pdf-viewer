@@ -18,6 +18,7 @@ pub mod measure;
 pub mod metadata;
 pub mod metadata_write;
 pub mod outline;
+pub mod page_labels;
 pub mod pages;
 pub mod pages_write;
 pub mod redaction;
