@@ -258,7 +258,7 @@ def validate_package(args):
         environment["hostOs"] = os.environ.get("EPDF_HOST_OS","unspecified")
     record = {"schemaVersion":1,"slice":6,"rid":args.rid,"source":source,
         "environment":environment,"inputs":[file_record(pin_path),file_record(Path(args.font_manifest)),
-            file_record(ROOT/"crates/test-support/fixtures/measure-foreign-viewport.pdf")],
+            file_record(ROOT/"tooling/engine-conformance/fixtures/non_identity_text.pdf")],
         "commands":[],"artifacts":[],"limitations":["Live viewer parity is a separate required acceptance gate."]}
     command = [sys.executable, str(Path(__file__).resolve()), "smoke", "--rid", args.rid,
                "--package", str(Path(args.package).resolve()), "--manifest", str(Path(args.manifest).resolve())]
@@ -326,7 +326,7 @@ def smoke(args):
         shutil.copy2(package,packages/package.name)
         (directory/"global.json").write_text((DOTNET/"global.json").read_text())
         shutil.copy2(DOTNET/"packaging/Smoke.cs",directory/"Program.cs")
-        shutil.copy2(ROOT/"crates/test-support/fixtures/measure-foreign-viewport.pdf",directory/"input.pdf")
+        shutil.copy2(ROOT/"tooling/engine-conformance/fixtures/non_identity_text.pdf",directory/"input.pdf")
         (directory/"Consumer.csproj").write_text(
             '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><SelfContained>false</SelfContained><UseAppHost>false</UseAppHost><EnableRuntimePackDownload>false</EnableRuntimePackDownload><ImplicitUsings>enable</ImplicitUsings><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup><ItemGroup><PackageReference Include="EmbedPDF.Engine" Version="'+manifest["version"]+'"/></ItemGroup></Project>')
         env = os.environ.copy()

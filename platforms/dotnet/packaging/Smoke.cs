@@ -19,11 +19,13 @@ using (var inventory = JsonDocument.Parse(await File.ReadAllTextAsync(fontManife
     }
 }
 await using var engine = await PdfEngine.CreateAsync(new() { StartupFonts = fonts.ToImmutable() });
-if (AbiVersion() != 1) throw new InvalidOperationException("Native ABI identity mismatch");
+if (AbiVersion() >> 16 != 1) throw new InvalidOperationException("Native ABI identity mismatch");
 await using var document = await engine.OpenAsync(await File.ReadAllBytesAsync(args[0]));
 var pages = await document.GetPagesAsync();
 if (pages.Length == 0) throw new InvalidOperationException("PDF has no pages");
 var text = await document.GetTextAsync(new(0));
+if (text.CharCount == 0 || text.Text.Length == 0)
+    throw new InvalidOperationException("Text-bearing corpus returned empty text");
 var geometry = await document.GetGeometryAsync(new(0));
 if (TextGeometry.SliceText(text, new(new(0), text.CharCount)) != text.Text)
     throw new InvalidOperationException("Helper text differs from page text");
