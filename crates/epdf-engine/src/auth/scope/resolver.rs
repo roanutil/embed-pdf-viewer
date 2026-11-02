@@ -116,7 +116,7 @@ pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capab
             ParsedScope::Virtual => out.extend(materialize_pdf_permissions(pdf_bits)),
             ParsedScope::Collab { .. } => has_annotation_collab = true,
             ParsedScope::FieldCollab { .. } => has_field_collab = true,
-            ParsedScope::Wildcard => {}
+            ParsedScope::Wildcard | ParsedScope::Plugin { .. } => {}
         }
     }
 
@@ -130,6 +130,12 @@ pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capab
     // It is kept because the TypeScript has it, and a transcription that
     // silently drops a line is harder to audit against its original than one
     // that carries a line it does not need.
+    //
+    // `doc.render` implies `doc.render.thumbnail`: pictures of any size
+    // contain the thumbnails.
+    if out.contains(&DocCapability::DocRender) {
+        out.insert(DocCapability::DocRenderThumbnail);
+    }
     if out.contains(&DocCapability::DocAnnotateModify) {
         out.insert(DocCapability::DocAnnotateRead);
     }
@@ -150,6 +156,41 @@ pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capab
     }
 
     out
+}
+
+/// The plugin permissions a scope holds (`pluginPermissionsOf`), where
+/// `installed` are the ones the installed plugins declare: those it names,
+/// and every installed one under `*`. A named permission whose plugin is not
+/// installed is carried but takes no effect, so it is left out. Where no
+/// plugins run, pass an empty set: the answer is empty.
+///
+/// Takes parsed scopes, as the other checks here do, where TypeScript takes
+/// the raw array.
+pub fn plugin_permissions_of(
+    parsed: &[ParsedScope],
+    installed: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    for scope in parsed {
+        match scope {
+            ParsedScope::Wildcard => out.extend(installed.iter().cloned()),
+            ParsedScope::Plugin { name, .. } if installed.contains(name) => {
+                out.insert(name.clone());
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// True iff the scope holds this installed plugin permission, named or
+/// under `*` (`checkPluginPermission`).
+pub fn check_plugin_permission(
+    permission: &str,
+    parsed: &[ParsedScope],
+    installed: &BTreeSet<String>,
+) -> bool {
+    plugin_permissions_of(parsed, installed).contains(permission)
 }
 
 /// Parse and expand in one step.

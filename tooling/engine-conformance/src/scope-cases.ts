@@ -71,12 +71,26 @@ export interface ResolveCase {
   readonly fields?: readonly FieldProbe[];
   /** `checkSetGroup` for the `fields` entity; `setGroup` is `annotations`. */
   readonly fieldSetGroup?: readonly SetGroupProbe[];
+  /**
+   * The plugin permissions the server's installed plugins declare. The case
+   * records `pluginPermissionsOf(scope, installed)`, which no bits change.
+   */
+  readonly installedPlugins?: readonly string[];
+}
+
+/** `scopeNotCovered(wanted, held)`: what handing out `wanted` gives beyond `held`. */
+export interface CoverageCase {
+  readonly name: string;
+  readonly covers: string;
+  readonly wanted: readonly string[];
+  readonly held: readonly string[];
 }
 
 /** Every capability the closed set contains, in declaration order. */
 export const ALL_CAPABILITIES = [
   'doc.open',
   'doc.render',
+  'doc.render.thumbnail',
   'doc.text.select',
   'doc.text.copy',
   'doc.text.search',
@@ -157,6 +171,41 @@ export const PARSE_CASES: readonly ParseCase[] = [
   { name: 'shape-underscore', covers: 'Underscores are, which is why the hyphen case exists next to it.', scope: 'doc.open_now' },
   { name: 'shape-trailing-space', covers: 'No trimming: a stray space is a different string.', scope: 'doc.open ' },
   { name: 'shape-empty', covers: 'The empty string is not a scope.', scope: '' },
+
+  // Plugin permissions (97871d404, bd82ec1af): a dotted word whose first
+  // segment is not a core namespace is `<plugin id>.<action>`, checked for
+  // shape only. Whether the plugin is installed is the server's question.
+  { name: 'plugin-permission', covers: 'A plugin id with a dash, then one action.', scope: 'protected-display.view' },
+  { name: 'plugin-permission-plain-id', covers: 'A plugin id of one word.', scope: 'snapshot.create' },
+  { name: 'plugin-permission-short-id', covers: 'Another dashed id.', scope: 'ai-chat.ask' },
+  { name: 'plugin-permission-dotted-action', covers: 'An action of more than one dotted segment.', scope: 'acme-hub.login.start' },
+  { name: 'plugin-permission-dashed-action', covers: 'Dashes are in the action alphabet too.', scope: 'protected-display.view-all' },
+  { name: 'plugin-permission-digit', covers: 'Digits after the first letter of a word.', scope: 'stamp2.use-v2' },
+  { name: 'plugin-permission-uppercase-id', covers: 'The plugin id is lowercase.', scope: 'Protected-display.view' },
+  { name: 'plugin-permission-underscore', covers: 'Underscores are not in the plugin alphabet, unlike a capability.', scope: 'protected_display.view' },
+  { name: 'plugin-permission-underscore-action', covers: 'Nor in its actions.', scope: 'protected-display.view_all' },
+  { name: 'plugin-permission-empty-action', covers: 'A trailing dot leaves no action.', scope: 'protected-display.' },
+  { name: 'plugin-permission-double-dash', covers: 'An empty word between dashes.', scope: 'protected--display.view' },
+  { name: 'plugin-permission-trailing-dash', covers: 'A word does not end in a dash.', scope: 'protected-.view' },
+  { name: 'plugin-permission-digit-leading-action', covers: 'An action starts with a letter.', scope: 'snapshot.1create' },
+  { name: 'plugin-permission-space', covers: 'No trimming for plugin words either.', scope: 'snapshot.create ' },
+  { name: 'plugin-id-alone', covers: 'An undotted word is no plugin permission, so the capability shape refuses it.', scope: 'protected-display' },
+  { name: 'core-namespace-doc-unknown', covers: 'The core namespaces stay the core\'s: an unknown doc word is still unknown.', scope: 'doc.future.thing' },
+  { name: 'core-namespace-tenant-scope', covers: 'A tenant scope is a core word, not a document permission.', scope: 'docs.read' },
+  { name: 'core-namespace-tenant-dashed', covers: 'And a dashed one fails the capability shape, not the plugin shape.', scope: 'tokens.issue-doc' },
+  { name: 'core-namespace-grants', covers: 'grants is a core namespace.', scope: 'grants.manage' },
+  { name: 'core-namespace-pdf', covers: 'pdf is too, beyond pdf.permissions.', scope: 'pdf.print' },
+  { name: 'core-namespace-annotations', covers: 'A collab entity is a core namespace in dotted form.', scope: 'annotations.read' },
+  { name: 'core-namespace-fields', covers: 'So is fields.', scope: 'fields.fill' },
+  { name: 'core-namespace-shares', covers: 'shares is a core namespace.', scope: 'shares.create' },
+  { name: 'core-namespace-tenants', covers: 'tenants is a core namespace.', scope: 'tenants.read' },
+  { name: 'core-namespace-layer-event', covers: 'Event namespaces are core namespaces (bd82ec1af).', scope: 'layer.changed' },
+  { name: 'core-namespace-visitor-event', covers: 'visitor is one.', scope: 'visitor.identified' },
+  { name: 'core-namespace-document-event', covers: 'document is one.', scope: 'document.ready' },
+  { name: 'core-namespace-submission-event', covers: 'submission is one.', scope: 'submission.created' },
+  { name: 'core-namespace-signature-event', covers: 'signature is one.', scope: 'signature.completed' },
+  { name: 'plugin-near-core-namespace', covers: 'Only the exact first segment is reserved: docs-hub is a plugin id.', scope: 'docs-hub.read' },
+  { name: 'plugin-colon-is-collab', covers: 'A colon makes it a collab scope before the plugin check.', scope: 'protected-display:view:all' },
 
   // Collab grammar.
   { name: 'collab-create-all', covers: 'The plain shape.', scope: 'annotations:create:all' },
@@ -294,6 +343,39 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     setGroup: SET_GROUP_PROBES,
     fields: FIELD_PROBES,
     fieldSetGroup: FIELD_SET_GROUP_PROBES,
+  },
+  {
+    name: 'render-implies-thumbnail',
+    covers: 'Pictures of any size contain the thumbnails (8638dc749).',
+    scope: ['doc.render'],
+    bits: ['none'],
+  },
+  {
+    name: 'thumbnail-does-not-imply-render',
+    covers: 'The thumbnail right alone is only the thumbnails.',
+    scope: ['doc.open', 'doc.render.thumbnail'],
+    bits: ['none'],
+  },
+  {
+    name: 'plugin-permission-grants-no-capability',
+    covers: 'The core carries a plugin permission and grants nothing for it; it holds only where its plugin is installed.',
+    scope: ['doc.open', 'protected-display.view', 'snapshot.create'],
+    bits: ['none', 'all-surfaced'],
+    installedPlugins: ['protected-display.view', 'protected-display.export', 'ai-chat.ask'],
+  },
+  {
+    name: 'plugin-permissions-under-wildcard',
+    covers: 'The wildcard holds every installed plugin permission.',
+    scope: ['*'],
+    bits: ['none'],
+    installedPlugins: ['protected-display.view', 'ai-chat.ask'],
+  },
+  {
+    name: 'plugin-permissions-none-installed',
+    covers: 'Where no plugins run, a named plugin permission takes no effect.',
+    scope: ['protected-display.view', '*'],
+    bits: ['none'],
+    installedPlugins: [],
   },
   {
     name: 'annotate-modify-implies-read',
@@ -541,4 +623,194 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     collab: COLLAB_PROBES,
     fields: FIELD_PROBES,
   },
+] as const;
+
+/** What a read-only key holds inside documents (coverage.test.ts). */
+const READ_ONLY = [
+  'doc.open',
+  'doc.render',
+  'doc.text.select',
+  'doc.text.search',
+  'doc.text.copy',
+  'doc.annotate.read',
+  'doc.forms.read',
+] as const;
+
+/** Every capability, as a key with full access inside documents lists them. */
+const EVERY_HELD = ALL_CAPABILITIES.filter((c) => c !== 'doc.render.thumbnail');
+
+/**
+ * `scopeNotCovered` (3fa96a354), the rule for minting only what you hold. The
+ * cases follow `packages/engine/core/test/auth/scope/coverage.test.ts`.
+ */
+export const COVERAGE_CASES: readonly CoverageCase[] = [
+  { name: 'wildcard-covers-wildcard', covers: '`*` covers everything, `*` included.', wanted: ['*'], held: ['*'] },
+  {
+    name: 'wildcard-covers-everything',
+    covers: '`*` covers every capability and collab scope.',
+    wanted: [...EVERY_HELD, 'annotations:*:all'],
+    held: ['*'],
+  },
+  { name: 'only-wildcard-covers-wildcard', covers: 'Every capability does not cover `*`.', wanted: ['*'], held: EVERY_HELD },
+  { name: 'read-gives-read', covers: 'A read-only holder gives reading.', wanted: ['doc.open', 'doc.render'], held: READ_ONLY },
+  {
+    name: 'read-names-what-it-lacks',
+    covers: 'And names what it lacks, sorted.',
+    wanted: ['doc.open', 'doc.redact', 'doc.print'],
+    held: READ_ONLY,
+  },
+  { name: 'render-covers-thumbnail', covers: 'A capability covers the ones it implies.', wanted: ['doc.render.thumbnail'], held: ['doc.render'] },
+  { name: 'thumbnail-does-not-cover-render', covers: 'Not the other way round.', wanted: ['doc.render'], held: ['doc.render.thumbnail'] },
+  {
+    name: 'forms-modify-covers-fill-and-read',
+    covers: 'The two-step forms implication.',
+    wanted: ['doc.forms.fill', 'doc.forms.read'],
+    held: ['doc.forms.modify'],
+  },
+  {
+    name: 'modify-covers-annotation-filters',
+    covers: 'doc.annotate.modify covers every annotation filter.',
+    wanted: ['doc.open', 'annotations:*:self'],
+    held: ['doc.open', 'doc.annotate.modify'],
+  },
+  {
+    name: 'modify-covers-group-update',
+    covers: 'Including a group filter.',
+    wanted: ['annotations:update:group=legal'],
+    held: ['doc.open', 'doc.annotate.modify'],
+  },
+  {
+    name: 'modify-does-not-cover-set-group',
+    covers: 'But not set-group, which no capability allows.',
+    wanted: ['annotations:set-group:group=legal'],
+    held: ['doc.open', 'doc.annotate.modify'],
+  },
+  {
+    name: 'filter-covers-same-filter',
+    covers: 'A filter covers the same filter.',
+    wanted: ['annotations:update:group=legal'],
+    held: ['doc.annotate.read', 'annotations:update:group=legal'],
+  },
+  {
+    name: 'filter-does-not-cover-other-group',
+    covers: 'Not another group.',
+    wanted: ['annotations:update:group=sales'],
+    held: ['doc.annotate.read', 'annotations:update:group=legal'],
+  },
+  {
+    name: 'filter-does-not-cover-all',
+    covers: 'Nor :all.',
+    wanted: ['annotations:update:all'],
+    held: ['doc.annotate.read', 'annotations:update:group=legal'],
+  },
+  {
+    name: 'all-covers-created-by',
+    covers: '`:all` covers every filter.',
+    wanted: ['annotations:delete:createdBy=u-7'],
+    held: ['annotations:*:all'],
+  },
+  {
+    name: 'created-by-covers-same-user',
+    covers: 'createdBy= covers the same value.',
+    wanted: ['annotations:delete:createdBy=u-7'],
+    held: ['annotations:delete:createdBy=u-7'],
+  },
+  {
+    name: 'holder-narrowing-counts',
+    covers: 'modify plus update:self updates only its own.',
+    wanted: ['doc.annotate.modify'],
+    held: ['doc.annotate.modify', 'annotations:update:self'],
+  },
+  {
+    name: 'self-is-not-the-others-self',
+    covers: "`:self` is the holder's own records.",
+    wanted: ['annotations:update:self'],
+    held: ['annotations:*:self'],
+  },
+  {
+    name: 'self-covers-create-self',
+    covers: 'Except on create, checked against the creator.',
+    wanted: ['annotations:create:self'],
+    held: ['annotations:*:self'],
+  },
+  {
+    name: 'set-group-all-covers-group',
+    covers: 'set-group:all covers a set-group for one group.',
+    wanted: ['annotations:set-group:group=legal'],
+    held: ['annotations:set-group:all'],
+  },
+  {
+    name: 'fill-covers-field-group',
+    covers: 'Form fields follow the same rules.',
+    wanted: ['fields:fill:group=buyer'],
+    held: ['doc.forms.fill'],
+  },
+  {
+    name: 'field-group-does-not-cover-fill',
+    covers: 'A field group does not give every field.',
+    wanted: ['doc.forms.fill'],
+    held: ['doc.forms.read', 'fields:fill:group=buyer'],
+  },
+  {
+    name: 'fill-does-not-cover-sign-scope',
+    covers: 'doc.forms.fill alone gives no fields:sign scope.',
+    wanted: ['fields:sign:all'],
+    held: ['doc.forms.fill'],
+  },
+  {
+    name: 'field-set-group',
+    covers: 'fields:set-group covers only its groups.',
+    wanted: ['fields:set-group:group=buyer', 'fields:set-group:group=seller'],
+    held: ['fields:set-group:group=buyer'],
+  },
+  { name: 'pdf-permissions-covers-itself', covers: 'pdf.permissions covers itself.', wanted: ['pdf.permissions'], held: ['pdf.permissions'] },
+  {
+    name: 'every-capability-covers-pdf-permissions',
+    covers: 'Every capability covers pdf.permissions on any file.',
+    wanted: ['pdf.permissions'],
+    held: EVERY_HELD,
+  },
+  {
+    name: 'read-does-not-cover-pdf-permissions',
+    covers: 'Reading only does not: some files allow more.',
+    wanted: ['pdf.permissions'],
+    held: READ_ONLY,
+  },
+  {
+    name: 'pdf-permissions-does-not-cover-print',
+    covers: 'pdf.permissions covers no capability a file may forbid.',
+    wanted: ['doc.print'],
+    held: ['pdf.permissions'],
+  },
+  {
+    name: 'pdf-permissions-covers-reading',
+    covers: 'It does cover what every file allows.',
+    wanted: ['doc.open', 'doc.render', 'doc.render.thumbnail'],
+    held: ['pdf.permissions'],
+  },
+  {
+    name: 'collab-beside-pdf-permissions',
+    covers: 'A collab scope next to it reaches past what the file allows the holder.',
+    wanted: ['pdf.permissions', 'annotations:update:all'],
+    held: ['pdf.permissions'],
+  },
+  {
+    name: 'plugin-covers-itself',
+    covers: 'A plugin permission is covered by itself.',
+    wanted: ['protected-display.view'],
+    held: ['protected-display.view'],
+  },
+  {
+    name: 'plugin-not-covered-by-capabilities',
+    covers: 'And by nothing the core grants.',
+    wanted: ['protected-display.view', 'doc.open'],
+    held: READ_ONLY,
+  },
+  {
+    name: 'plugin-covered-by-wildcard',
+    covers: 'The wildcard covers it.',
+    wanted: ['protected-display.view'],
+    held: ['*'],
+  },
+  { name: 'empty-wanted', covers: 'Wanting nothing is always covered.', wanted: [], held: [] },
 ] as const;

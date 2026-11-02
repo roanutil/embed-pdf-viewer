@@ -18,6 +18,8 @@ use std::fmt;
 pub enum DocCapability {
     DocOpen,
     DocRender,
+    /// The thumbnail pictures only; `doc.render` implies it.
+    DocRenderThumbnail,
     DocTextSelect,
     DocTextCopy,
     DocTextSearch,
@@ -47,9 +49,10 @@ pub enum DocCapability {
 
 impl DocCapability {
     /// Every capability, in the order `types.ts` declares them.
-    pub const ALL: [DocCapability; 27] = [
+    pub const ALL: [DocCapability; 28] = [
         Self::DocOpen,
         Self::DocRender,
+        Self::DocRenderThumbnail,
         Self::DocTextSelect,
         Self::DocTextCopy,
         Self::DocTextSearch,
@@ -81,6 +84,7 @@ impl DocCapability {
         match self {
             Self::DocOpen => "doc.open",
             Self::DocRender => "doc.render",
+            Self::DocRenderThumbnail => "doc.render.thumbnail",
             Self::DocTextSelect => "doc.text.select",
             Self::DocTextCopy => "doc.text.copy",
             Self::DocTextSearch => "doc.text.search",
@@ -322,6 +326,16 @@ pub enum ParsedScope {
     /// The one virtual scope, `pdf.permissions`.
     Virtual,
     Wildcard,
+    /// A plugin's own permission (`ParsedPluginPermission`),
+    /// `<plugin id>.<action>` such as `protected-display.view`. The core
+    /// carries it and never grants a capability for it: only its plugin
+    /// enforces it, and only where that plugin is installed.
+    Plugin {
+        /// The whole permission, as written.
+        name: String,
+        /// Its first segment, the id of the plugin that owns it.
+        plugin: String,
+    },
 }
 
 /// Typed view of the PDF user-access permission word.

@@ -11,23 +11,32 @@
 //! `tooling/engine-conformance/vectors/scope/` and checked by
 //! `tests/scope_conformance.rs`. Change one side and the other fails.
 //!
+//! `coverage.ts` has its counterpart in [`coverage::scope_not_covered`], the
+//! rule for minting only what the minter holds.
+//!
 //! Of `builders.ts`, only `materializePdfPermissions` has a counterpart
 //! ([`resolver::materialize_pdf_permissions`]): it is the one reading of the
 //! PDF bits, which the resolver and the permission advisory share. The rest
 //! mints scope arrays for SDK callers, which is a cloud concern; the engine
 //! only ever consumes them.
 
+pub mod coverage;
 pub mod parser;
 pub mod pdf_bits;
 pub mod resolver;
 pub mod types;
 
-pub use parser::{InvalidScope, parse_scope, validate_scope_array};
+pub use coverage::scope_not_covered;
+pub use parser::{
+    CORE_NAMESPACES, InvalidScope, is_plugin_id, parse_scope, plugin_of_permission,
+    validate_scope_array,
+};
 pub use pdf_bits::decode_pdf_bits;
 pub use resolver::{
     Capabilities, check_any_capability, check_any_field_action, check_capability, check_collab,
-    check_field_action, check_set_group, expand_raw_scope, expanded_capabilities, field_rights_of,
-    filter_matches, materialize_pdf_permissions, parse_all,
+    check_field_action, check_plugin_permission, check_set_group, expand_raw_scope,
+    expanded_capabilities, field_rights_of, filter_matches, materialize_pdf_permissions, parse_all,
+    plugin_permissions_of,
 };
 pub use types::{
     CollabAction, CollabActionPattern, CollabEntity, CollabFilter, CollabTarget, DocCapability,
