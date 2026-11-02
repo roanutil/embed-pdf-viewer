@@ -1,0 +1,43 @@
+$ cargo tree --offline -p epdf-capi -e normal --prefix none | sort -u
+aho-corasick v1.1.5
+aho-corasick v1.1.5 (*)
+cfg-if v1.0.4
+epdf-capi v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-capi)
+epdf-engine v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-engine)
+epdf-geometry v0.0.0 (/workspaces/embed-pdf-viewer/crates/plugins/geometry)
+equivalent v1.0.2
+getrandom v0.3.4
+hashbrown v0.17.1
+indexmap v2.14.2
+itoa v1.0.18
+libc v0.2.189
+memchr v2.8.3
+pdfium v0.0.0 (/workspaces/embed-pdf-viewer/crates/pdfium)
+pdfium-sys v0.0.0 (/workspaces/embed-pdf-viewer/crates/pdfium-sys)
+proc-macro2 v1.0.107
+proc-macro2 v1.0.107 (*)
+quote v1.0.47
+quote v1.0.47 (*)
+regex v1.13.1
+regex-automata v0.4.18
+regex-syntax v0.8.11
+regress v0.12.0
+serde v1.0.229
+serde v1.0.229 (*)
+serde_core v1.0.229
+serde_derive v1.0.229 (proc-macro)
+serde_json v1.0.151
+serde_json v1.0.151 (*)
+syn v2.0.119
+syn v3.0.5
+syn v3.0.5 (*)
+termcolor v1.4.1
+thiserror v2.0.20
+thiserror-impl v2.0.20 (proc-macro)
+tinyvec v1.13.3
+ts-rs v12.0.1
+ts-rs-macros v12.0.1 (proc-macro)
+unicode-ident v1.0.24
+unicode-normalization v0.1.24
+zmij v1.0.23
+exit=0

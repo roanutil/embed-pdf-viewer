@@ -1,0 +1,55 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests/charmap.rs (target/debug/deps/charmap-df9b738770710d5d)
+
+running 29 tests
+test a_tail_projection_beyond_u32_is_a_violation_without_wrapping ... ok
+test upstream::a_plateau_of_several_zero_width_characters_resolves_to_its_far_edge ... ok
+test upstream::a_start_is_right_biased_past_leading_zero_width_characters ... ok
+test upstream::a_step_other_than_zero_or_two_is_malformed ... ok
+test upstream::a_supplementary_character_advances_by_two ... ok
+test upstream::a_supplementary_character_arrives_whole ... ok
+test upstream::a_tail_that_misses_the_text_length_is_malformed ... ok
+test upstream::an_empty_input_normalizes_to_a_single_boundary_and_never_inverts ... ok
+test upstream::an_end_is_left_biased_before_trailing_zero_width_characters ... ok
+test upstream::an_empty_range_slices_to_nothing ... ok
+test upstream::an_interior_zero_width_character_belongs_to_neither_neighbour ... ok
+test upstream::an_offset_inside_a_surrogate_pair_covers_the_whole_character ... ok
+test upstream::anchors_must_strictly_increase_and_stay_on_the_page ... ok
+test upstream::dropped_characters_advance_the_boundary_but_not_the_offset ... ok
+test upstream::dropped_characters_contribute_nothing_to_a_slice ... ok
+test upstream::every_fixture_is_a_valid_map ... ok
+test upstream::identity_requires_matching_lengths ... ok
+test upstream::start_and_end_bias_disagree_exactly_on_plateaus ... ok
+test upstream::the_final_boundary_always_lands_on_the_text_length ... ok
+test upstream::the_full_range_is_always_the_whole_text ... ok
+test upstream::the_identity_map_is_the_identity_clamped ... ok
+test every_case_in_the_corpus_is_a_valid_map ... ok
+test every_character_range_slices_to_the_same_text ... ok
+test boundary_text_offsets_agree_with_typescript ... ok
+test slicing_the_whole_page_returns_the_whole_text ... ok
+test malformed_maps_are_rejected_the_same_way ... ok
+test both_bias_rules_agree_with_typescript ... ok
+test utf16_lengths_agree_with_javascript ... ok
+test every_text_range_maps_to_the_same_character_range ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/text_layout.rs (target/debug/deps/text_layout-7b314ab8268ee645)
+
+running 13 tests
+test the_run_and_glyph_counts_are_consistent ... ok
+test a_degenerate_glyph_has_no_quad_and_a_real_one_does ... ok
+test a_word_can_cross_a_line_boundary_between_abutting_runs ... ok
+test an_empty_range_produces_no_segments ... ok
+test the_corpus_covers_more_than_one_orientation_frame ... ok
+test a_hit_far_outside_the_page_finds_nothing ... ok
+test a_hit_at_a_glyphs_own_centre_finds_a_glyph ... ok
+test every_segment_rect_bounds_its_own_quad ... ok
+test word_and_line_ranges_contain_their_glyph_and_stay_on_the_page ... ok
+test segments_agree_with_typescript ... ok
+test the_layout_shape_agrees_with_typescript ... ok
+test hit_tests_agree_with_typescript ... ok
+test glyph_quads_and_ranges_agree_with_typescript ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+

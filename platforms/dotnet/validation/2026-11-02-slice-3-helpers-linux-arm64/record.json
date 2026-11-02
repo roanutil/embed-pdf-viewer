@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "slice": 3,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "e6a468de6a94b3c21a43dd32565cf0ff62565cf6",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS arm64; Docker Linux VM",
+    "tools": {
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+      "dotnet": "10.0.403",
+      "clang": "clang version 21.0.0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "cd6b91cea6b7b0cbda98dd4b1ff80e2e3a465278695919392ee125d9dca1dac0",
+      "bytes": 58974
+    },
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/layout.json",
+      "sha256": "e101e3cbda5789ff46e6745e0ae547ab993d07d8be14c698c17e65bcad53ae67",
+      "bytes": 354085
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/charmap.json",
+      "sha256": "2a4f7cb6169ea29175b231d34d3377555cf13cfe5640f3b3d51e7d99cf9dc54d",
+      "bytes": 195920
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/colors.json",
+      "sha256": "dc45a62ac92027f6087ec564f69a7634c9391e59f7b7e748e8c06a4837177104",
+      "bytes": 352
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/embedded-orientations.json",
+      "sha256": "dee46ea248496f6622dbf004f8f925a1083477b0ccc64723b0318c1c0cd1d292",
+      "bytes": 18888
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/font-size-zero.json",
+      "sha256": "fad7a0be887c75347e216df9ed7a5ffa5fafb748dffa1ef2e5a5f0f0aebc94fe",
+      "bytes": 459
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/non-identity-text.json",
+      "sha256": "cb417c6f9355e83bc75177852fd0310633278026a06daccf0db55547c85ad917",
+      "bytes": 1332
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/report.json",
+      "sha256": "a96cd82a06cadfb47ca7df7dd05cca9a7ab3a2ab0f1a9f3fe5964e624dcff92e",
+      "bytes": 1652465
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/reverse-and-gapped-text.json",
+      "sha256": "639f56435eb746f017de75eca6c308b4d763deb61d0e80f3f5f6d1fbdebd7064",
+      "bytes": 1669
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-page.json",
+      "sha256": "e200225ea326cc1a336fd78cd9230d1d943ed0aaeb894a09dda53fb33ef40be4",
+      "bytes": 339009
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    }
+  ],
+  "commands": [
+    {
+      "command": "cargo test --offline -p epdf-capi --test helpers",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "C ABI helper tests 19/19: TextSegments and CharacterQuad replay text/layout.json over the pages.geometry snapshots (all segment and glyph probes, including right-to-left, merged multi-line, rotated, sheared, mirrored and zero-geometry characters); SliceText, TextOffsetsToChars and CharacterBoundaryToText replay text/charmap.json (dropped and supplementary characters, inverted ranges) and its violation cases; PageTransform replays every pageTransform case in geometry-page.json (all quarter turns, UserUnit-folded scales, refused out-of-contract, singular and non-finite cases); exact double decoding over 20000 values; rejection of non-tiling runs, out-of-range indices, overflowing numbers and malformed envelopes.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/helpers-tests.log",
+        "sha256": "e0cecafe6bfb077011eef545d73a166771785058a390fda99d7993a09274649e",
+        "bytes": 1494
+      }
+    },
+    {
+      "command": "cargo test --offline -p epdf-capi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "C ABI unit 16/16, helpers 19/19, lifecycle 10/10; doctests 0/0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/capi-tests.log",
+        "sha256": "bd8d5949f831065ff42b40aa9a3df33341eaade192324bbe2126b9e5066a7344",
+        "bytes": 4332
+      }
+    },
+    {
+      "command": "cargo test --offline -p epdf-geometry",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "epdf-geometry unit 6/6, behavior 9/9, conformance 5/5 (the committed geometry vectors, with the default harness feature); doctests 0/0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/geometry-vectors.log",
+        "sha256": "de38210e6cd8f3599fa74ca304ee5ff0f0523197135d8ca69e5335c3541cea6b",
+        "bytes": 2357
+      }
+    },
+    {
+      "command": "cargo test --offline -p epdf-engine --test text_layout --test charmap",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Engine charmap 28/28 and text_layout 13/13 against the same committed vectors.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/engine-text-vectors.log",
+        "sha256": "f1df7224a9d6bc6c8d84095905433c2a56fc0522036b53e76ed1a190eee97f7a",
+        "bytes": 4818
+      }
+    },
+    {
+      "command": "cargo clippy --offline -p epdf-capi --all-targets -- -D warnings && cargo fmt -p epdf-capi --check",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Strict clippy and Rust formatting pass.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/lint-format.log",
+        "sha256": "09b2b105b600618492c8a748047c2bd088260f5e0bf6f3e983607ee3c1ecfa3d",
+        "bytes": 180
+      }
+    },
+    {
+      "command": "cargo tree --offline -p epdf-capi -e normal --prefix none | sort -u",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Normal dependencies include epdf-geometry without its harness feature; no epdf-kernel, plugin-conformance, selection or annotation crate is linked.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/dependency-tree.log",
+        "sha256": "089d02a346b275c430261d830cb10284e9c0bd9b0cf1ab040ebb6107ee27058f",
+        "bytes": 1106
+      }
+    },
+    {
+      "command": "cargo build --offline -p epdf-capi && mkdir -p target/manual && clang -std=c11 -Wall -Wextra -Werror -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,$PWD/target/debug -o target/manual/c-smoke && target/manual/c-smoke",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "The unchanged header and C smoke consumer compile with -Werror and run against the cdylib, including the unknown-helper-opcode refusal.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/c-smoke.log",
+        "sha256": "d83576ab323967dfef0bc1670c4f2619de69c6d03b1740ed9bf6175b6ea1e539",
+        "bytes": 430
+      }
+    }
+  ],
+  "artifacts": [],
+  "limitations": [
+    "Test-only run for the pure helpers; no library, package or export artifacts are delivered.",
+    "Before implementation the same helper tests failed as intended (12 of 15 text tests on NotImplemented, then the 3 transform tests and the 20000-double decoding test); those red runs are described in the pull request, not retained as logs.",
+    "The broad engine regression run was not repeated; it is known to fail with the held-layer-page SIGSEGV against the shared linux-arm64 PDFium build tracked in https://github.com/roanutil/embed-pdf-viewer/issues/16. The helpers do not call PDFium.",
+    "Only Linux arm64 native container execution is validated here. Linux x64, macOS arm64/x64 and Windows x64 have no native helper validation record in this slice."
+  ]
+}

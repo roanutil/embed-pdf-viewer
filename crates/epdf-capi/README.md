@@ -2,9 +2,10 @@
 
 This crate provides owned engine, job and result handles over an owner-thread
 runtime. The public header is [`include/epdf.h`](include/epdf.h). It is an
-unreleased, lifecycle-only binding: document operations and pure helper opcodes
-are reserved and return an explicit `NotImplemented` engine error. It does not
-yet provide a usable PDF reading/rendering API or a managed package.
+unreleased binding: document operations are reserved and return an explicit
+`NotImplemented` engine error, while the pure helper opcodes below are
+answered. It does not yet provide a usable PDF reading/rendering API or a
+managed package.
 
 ## Ownership and control
 
@@ -56,12 +57,53 @@ registered on the owner thread before creation returns. A failed registration
 tears down that state on the same thread. Font memory stays charged until
 owner-thread disposal.
 
+## Pure helpers
+
+`epdf_helper_call` runs on the caller's thread. It never touches a Host
+session, the owner thread or PDFium. Arguments are one UTF-8 JSON object of at
+most 8 MiB with no unknown fields. A success is `{"result": ...}` with status
+`EPDF_OK`; a refusal is an `InvalidArg` error envelope with
+`EPDF_INVALID_ARGUMENT`. Frames carry no binary payloads and count against the
+256 MiB helper result cap and the shared 1 GiB ceiling.
+
+| Opcode                                | Arguments                                                   | Result                                                                  |
+| ------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `EPDF_TEXT_SEGMENTS` (1)              | `{geometry, range: {start, count}}`                         | segments `[{quad, rect, advance}]`                                      |
+| `EPDF_CHARACTER_QUAD` (2)             | `{geometry, index}`                                         | quad or `null`                                                          |
+| `EPDF_SLICE_TEXT` (3)                 | `{text, range: {start, end}}` in characters                 | string                                                                  |
+| `EPDF_TEXT_OFFSETS_TO_CHARS` (4)      | `{text, range: {start, end}}` in UTF-16 units               | `{start, end}` in characters                                            |
+| `EPDF_CHARACTER_BOUNDARY_TO_TEXT` (5) | `{text, boundary}`                                          | UTF-16 offset                                                           |
+| `EPDF_PAGE_TRANSFORM` (6)             | `{input, pagePoints?, pageRects?, viewPoints?, viewRects?}` | `{transform, pageToView, pageRectsToView, viewToPage, viewRectsToPage}` |
+
+`geometry` is a page-space `pages.geometry` snapshot and `text` a `pages.text`
+snapshot (`text`, `charCount`, `charMap`). The layout is the engine's
+`page_space::text::create_text_layout` and the charmap is
+`features::text::charmap`, so answers match the shared
+`tooling/engine-conformance/vectors/text` vectors.
+
+We refuse input those algorithms would otherwise clamp: runs that don't tile
+characters `0..n` in order, empty runs, non-finite geometry, a charmap that
+fails `char_map_violation`, and indices or ranges past the page. An inverted
+range isn't malformed. It keeps the empty answer the vectors pin.
+
+`input` is `epdf_geometry::PageTransformInput`: `pageSize`, `rotation` (0, 90,
+180 or 270), `scale`, optional `baseScale` and `dpr`, all finite and positive.
+Fold `/UserUnit` into `scale` and `baseScale` as the viewer does. The metrics
+include the snapped device size. The inverse determinant must be finite and
+nonzero even when no points or rectangles are requested. Singular transforms
+and non-finite metrics or mapped values are refused.
+
+Arguments decode with exact decimal-to-double conversion, so a shortest
+round-trip spelling reaches the algorithm bit for bit. That feature also
+applies to the engine's own JSON parsing in any build that links this crate.
+
 ## Build and manual validation
 
 Use the rebuilt project dev container and pinned runtime artifacts:
 
 ```sh
 cargo test -p epdf-capi
+cargo test -p epdf-capi --test helpers
 cargo test -p epdf-engine --lib dispatch::tests
 cargo build -p epdf-capi
 mkdir -p target/manual

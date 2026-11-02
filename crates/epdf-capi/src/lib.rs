@@ -6,6 +6,7 @@ mod config;
 mod engine;
 mod ffi;
 mod handles;
+mod helpers;
 mod jobs;
 mod startup;
 
