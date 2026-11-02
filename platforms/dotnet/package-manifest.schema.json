@@ -140,7 +140,8 @@
               "enum": [
                 "PACKED_UNVALIDATED",
                 "VALIDATED",
-                "UNVALIDATED"
+                "UNVALIDATED",
+                "container-emulated"
               ]
             },
             "reason": {

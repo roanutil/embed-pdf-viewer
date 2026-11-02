@@ -270,13 +270,24 @@ def validate_package(args):
             environment["tools"][tool] = "unavailable"
     record["commands"].append({"command":subprocess.list2cmdline(command),"cwd":str(ROOT),"exitCode":result.returncode,
                               "results":result.stdout[-16000:] or "No output"})
+    if result.returncode == 0:
+        manifest_path = Path(args.manifest).resolve()
+        manifest = read(manifest_path)
+        if environment["emulated"]:
+            manifest["rids"][args.rid] = {"status":"container-emulated",
+                "reason":"Built and tested under emulation on arm64; no native x64 run. Live parity remains required."}
+        else:
+            manifest["rids"][args.rid] = {"status":"VALIDATED",
+                "reason":"Relocated package consumer passed on matching native architecture. Live parity remains required."}
+        validate(manifest, read(DOTNET / "package-manifest.schema.json"))
+        write(manifest_path, manifest)
     for path in [args.package,args.manifest]:
         if Path(path).is_file():
             record["artifacts"].append(file_record(Path(path)))
     if result.returncode:
         record["limitations"].append("Relocated validation failed; no compatibility or RID success claim.")
     if environment["emulated"]:
-        record["limitations"].append("Emulated architecture run does not substitute for native-host evidence.")
+        record["limitations"].append("Status: container-emulated. Built and tested under emulation on arm64; no native x64 run. Emulation does not substitute for native-host evidence.")
     validate(record, read(DOTNET / "validation/record.schema.json"))
     write(record_path,record)
     return result.returncode

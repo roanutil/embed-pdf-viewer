@@ -16,7 +16,7 @@ prerelease version is 0.0.0-local.
    /tmp/epdf-local/EmbedPDF.Engine.0.0.0-local.nupkg --manifest
    /tmp/epdf-local/package-manifest.linux-arm64.json.
 4. Inspect the record and native-inspection.json before making any platform
-   claim. A successful package build never upgrades a RID to VALIDATED.
+   claim. Packing leaves the RID PACKED_UNVALIDATED; successful manual validation records native VALIDATED or container-emulated explicitly.
 
 Linux commands run inside the approved project container. Set EPDF_IMAGE_ID
 to its full immutable SHA256 image identifier, EPDF_HOST_OS to the real host
@@ -24,7 +24,9 @@ OS and EPDF_EMULATED=true when the container architecture is emulated.
 macOS validation runs on the matching native host. Windows uses
 validate.ps1 -Rid win-x64 -Record ... -Package ... -Manifest ... with Python 3,
 .NET SDK 10.0.403, Rust 1.98.0 and the Visual Studio dumpbin tool available.
-Emulation, cross-compilation and absent hosts are explicitly unvalidated.
+linux-x64: built and tested under emulation on arm64; no native x64 run.
+The manifest uses container-emulated for a passing emulated consumer run.
+Absent native macOS x64 and Windows x64 hosts remain UNVALIDATED.
 
 The runtime archive must match the existing runtime manifest SHA256 and embedded
 source/target identity. --runtime-manifest selects an explicitly reviewed local
@@ -32,7 +34,7 @@ pin; --runtime-archive supplies an existing archive. EPDF_RUNTIME_CACHE
 selects an existing archive cache. There is no fetch fallback.
 
 --font-manifest is an ordered JSON fonts list. Each item names a relative
-path, sha256, relative notice and noticeSha256. Original font bytes and
+path, sha256, relative notice and noticeSha256, plus key, familyName, weight, fallback and optional italic registration fields. Original font bytes and
 notices ship in the archive and native NuGet assets. The default inventory is
 explicitly empty and cannot establish fallback-font or viewer geometry parity.
 The consumer smoke covers ABI, open, pages, text, geometry, region rendering,

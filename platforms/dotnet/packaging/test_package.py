@@ -27,6 +27,16 @@ class SchemaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(True, {"type":"integer"})
 
+class ManifestTests(unittest.TestCase):
+    def test_emulated_status_is_distinct_and_only_linux_x64(self):
+        root = Path(__file__).resolve().parents[1]
+        schema = json.loads((root/"package-manifest.schema.json").read_text())
+        states = schema["properties"]["rids"]["properties"]
+        validate({"status":"container-emulated","reason":"No native x64 run"}, states["linux-x64"])
+        for rid in ["linux-arm64","osx-arm64","osx-x64","win-x64"]:
+            with self.assertRaises(ValueError):
+                validate({"status":"container-emulated","reason":"No native run"}, states[rid])
+
 class NativeInspectionTests(unittest.TestCase):
     def test_rejects_build_machine_rpath(self):
         from package import check_elf
