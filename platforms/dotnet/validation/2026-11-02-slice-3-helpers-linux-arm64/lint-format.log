@@ -1,0 +1,3 @@
+$ cargo clippy --offline -p epdf-capi --all-targets -- -D warnings && cargo fmt -p epdf-capi --check
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s
+exit=0

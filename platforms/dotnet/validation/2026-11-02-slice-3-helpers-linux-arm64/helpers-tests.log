@@ -1,0 +1,28 @@
+$ cargo test --offline -p epdf-capi --test helpers
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s
+     Running tests/helpers.rs (target/debug/deps/helpers-42fc5112ce662495)
+
+running 19 tests
+test malformed_argument_envelopes_are_refused ... ok
+test out_of_range_text_indices_are_refused_and_inverted_ranges_are_empty ... ok
+test page_transform_lists_default_to_empty_and_keep_their_order ... ok
+test snapshots_with_out_of_range_numbers_are_refused ... ok
+test page_transforms_outside_the_contract_are_refused ... ok
+test snapshots_whose_runs_do_not_tile_the_characters_are_refused ... ok
+test out_of_range_characters_are_refused ... ok
+test rotated_sheared_and_mirrored_runs_reach_the_layout ... ok
+test an_empty_range_has_no_segments_and_the_page_end_is_in_range ... ok
+test malformed_character_maps_are_refused_as_the_vectors_say ... ok
+test unknown_operations_and_bad_spans_keep_their_statuses ... ok
+test character_boundaries_map_to_the_vector_text_offsets ... ok
+test the_charmap_corpus_has_dropped_and_supplementary_characters ... ok
+test slices_agree_with_the_charmap_vectors ... ok
+test page_transforms_agree_with_the_geometry_vectors ... ok
+test text_offsets_map_to_the_vector_character_ranges ... ok
+test argument_doubles_decode_exactly ... ok
+test character_quads_agree_with_the_layout_vectors ... ok
+test segments_agree_with_the_layout_vectors ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.88s
+
+exit=0

@@ -1,0 +1,5 @@
+$ cargo build --offline -p epdf-capi && mkdir -p target/manual && clang -std=c11 -Wall -Wextra -Werror -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,$PWD/target/debug -o target/manual/c-smoke && target/manual/c-smoke && echo c-smoke-ok
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+C ABI layout, calls and owned-result lifetime: PASS
+c-smoke-ok
+exit=0
