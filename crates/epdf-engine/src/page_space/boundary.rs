@@ -1046,7 +1046,7 @@ mod tests {
             assert_eq!(WireKind::of(spelling), Some(*kind));
             assert_eq!(kind.as_str(), *spelling);
         }
-        assert_eq!(WireKind::ALL.len(), 89);
+        assert_eq!(WireKind::ALL.len(), 94);
         assert_eq!(WireKind::of("pages.move"), None, "a removed kind is not on the wire");
     }
 
