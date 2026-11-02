@@ -3,8 +3,9 @@
  * pinned to its pages. A row shows the file's kind, its name (without the characters that can
  * disguise one), its size and description, and a page's file says its page. Clicking an
  * attachment saves it; clicking a page's file goes to it. A row's menu saves, goes to the page
- * and deletes. A session that may add files adds one with the header's button, or drops files
- * on the panel; a drop there never opens them as documents.
+ * and deletes. A session that may add files adds one with the button in the panel's bar
+ * (`attachments` in the layout, beside the count), or drops files on the panel; a drop there
+ * never opens them as documents.
  */
 import {
   displayNameOf,
@@ -21,6 +22,7 @@ import { useLayoutEnv } from '../config-context';
 import { Icon, type IconName } from './icons';
 import { useCloseOnPick } from './panel-frame';
 import { CommandButton } from './toolbar';
+import { useTooltip } from './tooltip';
 import type { AttachmentAddArgs } from '../config/attachments';
 
 /** A file's size in the viewer's language: bytes, then kB and MB with one decimal. */
@@ -164,16 +166,6 @@ export function AttachmentsPanel() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" {...dropProps}>
-      {add.visible && (
-        <div className="border-border-subtle flex items-center gap-1 border-b p-2">
-          <span className="text-fg-muted min-w-0 flex-1 truncate text-xs">
-            {t(files.length === 1 ? 'attachments.count' : 'attachments.countPlural', {
-              params: { count: String(files.length) },
-            })}
-          </span>
-          <CommandButton cmd={add} variant="icon" run={() => void add.run()} />
-        </div>
-      )}
       {body}
       {dropping && (
         <div className="border-accent bg-accent/10 text-fg pointer-events-none absolute inset-1 flex items-center justify-center rounded-md border-2 border-dashed text-sm">
@@ -204,6 +196,12 @@ function FileRow({ file, page, selected, pending, locale, onPick, onMenu }: File
   const { touch } = useLayoutEnv();
   const menuButton = useRef<HTMLSpanElement>(null);
   const name = displayNameOf(file);
+  // A name cut short shows whole in the row's tooltip.
+  const nameText = useRef<HTMLSpanElement>(null);
+  const tooltip = useTooltip(
+    { label: name, labelShown: true },
+    { clipped: () => nameText.current },
+  );
   const details = [
     pending ? t('attachments.adding') : file.size === null ? null : sizeText(file.size, locale),
     page === null ? null : t('attachments.onPage', { params: { page } }),
@@ -222,14 +220,14 @@ function FileRow({ file, page, selected, pending, locale, onPick, onMenu }: File
       } ${pending ? 'opacity-60' : ''}`}
     >
       <button
+        {...tooltip.trigger}
         type="button"
         onClick={onPick}
-        title={name}
         className="flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-1.5 text-start"
       >
         <Icon name={iconOf(file)} size={16} className="text-fg-muted shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className="text-fg block truncate text-sm">
+          <span ref={nameText} className="text-fg block truncate text-sm">
             <bdi>{name}</bdi>
           </span>
           {details.length > 0 && (
@@ -237,6 +235,7 @@ function FileRow({ file, page, selected, pending, locale, onPick, onMenu }: File
           )}
         </span>
       </button>
+      {tooltip.element}
       <span
         ref={menuButton}
         onClick={(event) => event.stopPropagation()}

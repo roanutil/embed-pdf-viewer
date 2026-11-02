@@ -11,6 +11,7 @@ export * from './shared';
 export { AbortablePromise } from './promise/AbortablePromise';
 export type { AbortableExecutor } from './promise/AbortablePromise';
 export { AbortError, isAbortError } from './promise/AbortError';
+export { devWarn, isDev, resetDevWarnings } from './dev';
 
 export type { Engine, EngineFactory } from './engine/Engine';
 export { isLocalEngine } from './engine/LocalEngine';
@@ -21,8 +22,12 @@ export { isLocalPage } from './engine/LocalPageHandle';
 export type { LocalPageHandle } from './engine/LocalPageHandle';
 export { LOCAL_ENGINE_BRAND } from './engine/localEngineBrand';
 export type { FontService } from './engine/FontService';
-export type { DocumentFontSettings, FontEmbeddingPolicy } from './engine/DocumentFontSettings';
-export type { DocumentHandle } from './engine/DocumentHandle';
+export type {
+  DocumentFontsService,
+  FontEmbeddingPolicy,
+  LocalDocumentFontsService,
+} from './engine/DocumentFontsService';
+export type { DocumentHandle, DocumentGrant } from './engine/DocumentHandle';
 export type {
   DocumentEvent,
   DocumentEventInit,
@@ -106,7 +111,7 @@ export type {
   PieceInfoSnapshot,
 } from './dto/PieceInfo';
 export type { PageTextService } from './engine/PageTextService';
-export type { LocalPageRenderService, PageRenderService } from './engine/PageRenderService';
+export type { PageRenderService, RawPageRenderService } from './engine/PageRenderService';
 
 export { wirePack, EMPTY_TRANSFER } from './wire/WirePack';
 export type { WirePack } from './wire/WirePack';
@@ -205,7 +210,12 @@ export type {
   FontsClearFallbacksWorkerRequest,
   FontsClearWorkerRequest,
   FontsAuthorizeEditingWorkerRequest,
+  FontsListWorkerRequest,
+  FontsProgramWorkerRequest,
   DocumentSetFontSettingsWorkerRequest,
+  DocumentFontsListWorkerRequest,
+  DocumentFontsResolveWorkerRequest,
+  DocumentFontsProgramWorkerRequest,
   CloseWorkerRequest,
   LayerCloseWorkerRequest,
   AbortWorkerRequest,
@@ -220,4 +230,28 @@ export type {
   AttachmentFileWorkerPayload,
   LayerArtifactWorkerPayload,
   LayerArtifactFileWorkerPayload,
+  WritePayloadFacts,
 } from './wire/worker-protocol';
+export {
+  canChooseProgram,
+  documentFontNameOf,
+  documentFontsOf,
+  documentProgramForName,
+  downloadableProgram,
+  FALLBACK_TIERS,
+  fontListOf,
+  fontResolutionOf,
+  listedProgram,
+  restrictionsOfProgram,
+  standardFontOfBaseFont,
+  TEXT_WRITING_CAPABILITIES,
+  type BuiltInPrograms,
+  type DocumentFace,
+  type DocumentFaceFacts,
+  type DocumentFontFacts,
+  type EngineFontFacts,
+  type FallbackTier,
+  type FontListFacts,
+  type FontProgramFacts,
+  type ResolvedRunFacts,
+} from './fonts/fontList';

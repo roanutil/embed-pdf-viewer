@@ -7,7 +7,7 @@ import { useStage, useStageState } from '@embedpdf/vue/stage';
 import { usePageEdit } from '@embedpdf/vue/page-edit';
 
 /** Another PDF's bytes, to insert pages from. */
-const otherPdf = async () => (await fetch('https://snippet.embedpdf.com/ebook.pdf')).arrayBuffer();
+const otherPdf = async () => (await fetch('/pdfs/welcome.pdf')).arrayBuffer();
 
 const pageEdit = usePageEdit();
 const stage = useStage();
@@ -66,12 +66,7 @@ async function insertFromOtherPdf(after: PageRef) {
     <button type="button" class="button" :disabled="!canEdit" @click="insertBlankAfter(page.ref)">
       + Blank page after
     </button>
-    <button
-      type="button"
-      class="button"
-      :disabled="!canEdit || !pageEdit.canExtract()"
-      @click="duplicate(page.ref)"
-    >
+    <button type="button" class="button" :disabled="!canEdit" @click="duplicate(page.ref)">
       Duplicate page
     </button>
     <button type="button" class="button" :disabled="!canEdit" @click="insertFromOtherPdf(page.ref)">

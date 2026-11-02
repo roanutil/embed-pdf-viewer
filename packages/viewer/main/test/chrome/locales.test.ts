@@ -1,10 +1,14 @@
 /**
  * The viewer's languages: every pack has exactly the English pack's keys, with the same `{name}`
  * slots in each string; the English pack names the style panel's properties and options as the
- * annotation kinds do; Arabic and Hebrew read right to left; Traditional Chinese isn't given
- * Simplified; and the app's `strings` change a language, or add one that reads the way its code
- * says.
+ * annotation kinds do; Arabic and Hebrew read right to left; readers of Traditional Chinese get
+ * the Traditional pack, never Simplified; and the app's `strings` change a language, or add one
+ * that reads the way its code says. The keys the Translations page names are the English pack's.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { KINDS, propertiesOf } from '@embedpdf/core-annotation';
@@ -32,8 +36,24 @@ function stringsOf(dictionary: TranslationDictionary, prefix = ''): Map<string, 
 const slotsOf = (text: string): string[] =>
   [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!).sort();
 
-/** The thirteen languages the Translations page lists. */
-const LANGUAGES = ['en', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'pl', 'ja', 'zh-CN', 'ko', 'ar', 'he'];
+/** The fifteen languages the Translations page lists. */
+const LANGUAGES = [
+  'en',
+  'de',
+  'fr',
+  'es',
+  'it',
+  'nl',
+  'pt',
+  'pl',
+  'sv',
+  'ja',
+  'zh-CN',
+  'zh-TW',
+  'ko',
+  'ar',
+  'he',
+];
 const RIGHT_TO_LEFT = ['ar', 'he'];
 
 const packs = async (): Promise<Locale[]> => [
@@ -42,7 +62,7 @@ const packs = async (): Promise<Locale[]> => [
 ];
 
 describe('the language packs', () => {
-  it('are the thirteen languages, English loaded from the start and each other one when shown', async () => {
+  it('are the fifteen languages, English loaded from the start and each other one when shown', async () => {
     expect(['en', ...Object.keys(LOCALE_LOADERS)].sort()).toEqual([...LANGUAGES].sort());
     const loaded = await packs();
     expect(loaded.map((pack) => pack.code).sort()).toEqual([...LANGUAGES].sort());
@@ -82,6 +102,24 @@ describe('the language packs', () => {
         direction: RIGHT_TO_LEFT.includes(pack.code) ? 'rtl' : 'ltr',
       });
     }
+  });
+});
+
+describe('the keys the Translations page names', () => {
+  it('are in the English pack', () => {
+    const page = readFileSync(
+      resolve(
+        dirname(fileURLToPath(import.meta.url)),
+        '../../../../../docs/content/viewer/customize/translations.mdx',
+      ),
+      'utf8',
+    );
+    const english = stringsOf(en.translations);
+    const named = [...page.matchAll(/`((?:pageNumber|comments|annotation|form)\.[\w.]+)`/g)].map(
+      (match) => match[1]!,
+    );
+    expect(named).toEqual(expect.arrayContaining(['pageNumber.page', 'comments.empty']));
+    expect(named.filter((key) => !english.has(key))).toEqual([]);
   });
 });
 
@@ -142,15 +180,16 @@ describe('localesOf', () => {
 
   it('makes a language of its own from strings for any other code, reading as its code says', () => {
     const { locales, codes } = localesOf({
-      sv: { 'zoom:in': 'Zooma in', 'acme.send': 'Skicka' },
+      da: { 'zoom:in': 'Zoom ind', 'acme.send': 'Send' },
       fa: { 'zoom:in': 'بزرگ‌نمایی' },
     });
-    const swedish = locales.find((locale) => locale.code === 'sv')!;
-    expect(swedish.direction).toBe('ltr');
-    expect(swedish.translations).toEqual({ 'zoom:in': 'Zooma in', acme: { send: 'Skicka' } });
-    expect(swedish.name.toLowerCase()).toBe('svenska');
+    const danish = locales.find((locale) => locale.code === 'da')!;
+    expect(danish.direction).toBe('ltr');
+    expect(danish.translations).toEqual({ 'zoom:in': 'Zoom ind', acme: { send: 'Send' } });
+    expect(danish.name.toLowerCase()).toBe('dansk');
     expect(locales.find((locale) => locale.code === 'fa')!.direction).toBe('rtl');
-    expect(codes.slice(-2)).toEqual(['sv', 'fa']);
+    expect(codes.slice(-2)).toEqual(['da', 'fa']);
+    expect(localeCodeOf('da-GL', codes)).toBe('da');
     expect(localeCodeOf('sv-FI', codes)).toBe('sv');
     expect(localeCodeOf('ar-EG', codes)).toBe('ar');
     expect(localeCodeOf('zh-Hans', codes)).toBe('zh-CN');
@@ -158,13 +197,15 @@ describe('localesOf', () => {
     expect(localeCodeOf('tlh', codes)).toBe('en');
   });
 
-  it('shows English to readers of Traditional Chinese, until there is a pack in it', () => {
+  it('shows Traditional Chinese to its readers, and Simplified only to readers of Simplified', () => {
     const { codes } = localesOf();
-    expect(localeCodeOf('zh-TW', codes)).toBe('en');
-    expect(localeCodeOf('zh-HK', codes)).toBe('en');
-    expect(localeCodeOf('zh-Hant', codes)).toBe('en');
+    expect(localeCodeOf('zh-TW', codes)).toBe('zh-TW');
+    expect(localeCodeOf('zh-HK', codes)).toBe('zh-TW');
+    expect(localeCodeOf('zh-MO', codes)).toBe('zh-TW');
+    expect(localeCodeOf('zh-Hant', codes)).toBe('zh-TW');
     expect(localeCodeOf('zh', codes)).toBe('zh-CN');
     expect(localeCodeOf('zh-SG', codes)).toBe('zh-CN');
+    expect(localeCodeOf('zh-Hans-HK', codes)).toBe('zh-CN');
   });
 
   it('changes English in place', () => {

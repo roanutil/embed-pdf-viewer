@@ -45,6 +45,7 @@ import type { DocumentService, OpenContext } from '../services/DocumentService';
 import type { LayerService } from '../services/LayerService';
 import type { SharpImageEncoder } from '../render/SharpImageEncoder';
 import {
+  assertServerFonts,
   abortSignalOf,
   parseOrInvalidArg,
   parseTokenOrInvalidArg,
@@ -143,8 +144,8 @@ export async function registerPageRoutes(app: FastifyInstance, deps: PageRouteDe
   });
 
   // The page pictures, one per path (`PAGE_PICTURES`): the four families on
-  // screen and each printed at each print tier. Each needs its own rights
-  // and depends on its own planes, at the document's path and a layer's.
+  // screen, as thumbnails, and printed at each print tier. Each needs its own
+  // rights and depends on its own planes, at the document's path and a layer's.
   for (const spec of PAGE_PICTURES) {
     const route = `/v1/docs/:docId/${spec.path}/:pageKey/data`;
     const render = async (
@@ -545,17 +546,21 @@ async function renderPageImage(input: {
       `render ${pin} ${requested} no longer current (current=${page.cache[pin]}) for page ${input.pageObjectNumber}`,
     );
   }
+  // ...and the server's fonts it was drawn with: fallback fonts draw page
+  // text, so another server's fonts are another picture.
+  await assertServerFonts(input.documentService, parsedQuery.serverFonts, input.reply);
 
   // ── The derived-artifact plane ───────────────────────────────────────
   // Lattice renders are durable: URL space == artifact space at canonical
   // points. Off-lattice tokens are rejected when enforcement is on (the
   // storage-DoS guard); until the SDK ships its `snap` helper they fall
   // through to the legacy compute-only path below. A print picture has one
-  // size per page and tier, off the lattice: it is never classified, so
-  // never stored or refused here, and its versioned URL is still cached.
+  // size per page and tier, and a thumbnail one per page, both off the
+  // lattice: they are never classified, so never stored or refused here, and
+  // their versioned URLs are still cached.
   const derived = input.derivedRenders;
   const classification =
-    input.picture.print === null
+    input.picture.print === null && !input.picture.thumbnail
       ? derived?.classify({
           imageOptions,
           format,
@@ -727,7 +732,7 @@ async function renderPageImage(input: {
 
 async function readPageText(input: {
   documentService: DocumentService;
-  reply: { header(name: 'Cache-Control', value: string): unknown };
+  reply: FastifyReply;
   signal: AbortSignal;
   scope: ReadScope;
   pageObjectNumber: number;
@@ -789,7 +794,7 @@ async function readPageText(input: {
 
 async function readPageGeometry(input: {
   documentService: DocumentService;
-  reply: { header(name: 'Cache-Control', value: string): unknown };
+  reply: FastifyReply;
   signal: AbortSignal;
   scope: ReadScope;
   pageObjectNumber: number;

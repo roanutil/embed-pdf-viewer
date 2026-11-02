@@ -1,6 +1,6 @@
 {
   "name": "@embedpdf/react",
-  "version": "3.0.0-next.15",
+  "version": "3.0.0-next.19",
   "private": false,
   "description": "React adapter for EmbedPDF v3: one generic reactive binding + structural components (Viewer, Stage, PageView) + headless layers & hooks. The whole framework surface.",
   "type": "module",
@@ -15,6 +15,7 @@
     "./annotation": "./src/annotation.tsx",
     "./attachment": "./src/attachment.ts",
     "./commands": "./src/commands.ts",
+    "./fonts": "./src/fonts.ts",
     "./form": "./src/form.tsx",
     "./history": "./src/history.ts",
     "./i18n": "./src/i18n.ts",
@@ -66,6 +67,10 @@
       "./commands": {
         "import": "./dist/commands.js",
         "require": "./dist/commands.cjs"
+      },
+      "./fonts": {
+        "import": "./dist/fonts.js",
+        "require": "./dist/fonts.cjs"
       },
       "./form": {
         "import": "./dist/form.js",
@@ -192,7 +197,8 @@
     "@embedpdf/core-ui": "workspace:*",
     "@embedpdf/web": "workspace:*",
     "@embedpdf/plugin-actions": "workspace:*",
-    "@embedpdf/plugin-measurement": "workspace:*"
+    "@embedpdf/plugin-measurement": "workspace:*",
+    "@embedpdf/plugin-fonts": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18",

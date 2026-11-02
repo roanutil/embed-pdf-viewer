@@ -30,7 +30,7 @@ import { STAMP_DEFAULTS, type StampConfig } from '../src/contract';
 import { stampPlugin } from '../src/stamp.plugin';
 import { stampState } from '../src/state';
 import { createStampController } from '../src/controller';
-import { initialStampState } from '../src/model';
+import { initialStampModel } from '../src/model';
 
 /** Minimal PDF bytes: enough for the magic-byte sniff. */
 const pdfBytes = () => new TextEncoder().encode('%PDF-1.7\n%fake fixture\n');
@@ -69,8 +69,12 @@ function makeStamp(
   if (options.actions) capabilities.push([ActionsToken, options.actions]);
   const ctx = createTestContext({
     id: 'stamp',
-    state: initialStampState(),
-    settings: { defaults: STAMP_DEFAULTS, registered: options.config, whole: ['assetEngine'] },
+    state: initialStampModel(),
+    settings: {
+      defaults: STAMP_DEFAULTS,
+      registered: options.config,
+      whole: ['assetEngine', 'fonts'],
+    },
     engine,
     documentId: options.target?.id,
     doc: options.target?.handle ?? null,
@@ -126,7 +130,7 @@ function makeAssetEngine(
       target: { kind: 'template' as const, objectNumber },
     })),
   ];
-  const layout = () => ({ pageCount: pages.length, pages, namedPages: namedPages() });
+  const layout = () => ({ pageCount: pages.length, labels: [], pages, namedPages: namedPages() });
   const setName = vi.fn(async (input: { name: string; page: PageRef; replace?: string }) => {
     if (input.replace !== undefined) names.delete(input.replace);
     names.delete(input.name);
@@ -1132,11 +1136,40 @@ function withFakeRenders(engine: Engine): LocalEngine {
         },
       });
     },
+    // The engine's own fonts: a typed mark's font is registered there.
+    fonts: (engine as LocalEngine).fonts,
     destroy: () => engine.destroy(),
   } as unknown as LocalEngine;
 }
 
 describe('stamp plugin: authoring marks (real engine)', () => {
+  it('writes a typed mark in one of its fonts: registered on the asset engine once, and embedded', async () => {
+    const engine = await createLocalEngine({ runtime: { prefer: 'wasm' } });
+    const caveat = resolve(here, '../../../default-signature-fonts/fonts/Caveat-Regular.ttf');
+    const load = vi.fn(async () => new Uint8Array(await readFile(caveat)));
+    const { stamp } = makeStamp(withFakeRenders(engine), {
+      config: { fonts: [{ key: 'caveat', load }] },
+    });
+    try {
+      const libraryId = (await stamp.createLibrary('Bob Singor', { kind: 'signatures' })).library
+        .id;
+      for (const name of ['one', 'two']) {
+        await stamp.createAsset({
+          libraryId,
+          name,
+          kind: 'signature',
+          mark: { kind: 'text', text: 'Bob', fontFamily: 'caveat', fontSize: 36 },
+        });
+      }
+      expect(load).toHaveBeenCalledTimes(1);
+      expect((await engine.fonts.list()).map((font) => font.key)).toContain('caveat');
+      const saved = new TextDecoder('latin1').decode(await stamp.exportLibrary(libraryId));
+      expect(saved).toMatch(/\/BaseFont\s*\/[A-Z]{6}\+Caveat/);
+    } finally {
+      await engine.destroy();
+    }
+  });
+
   it('renders a drawn mark and a typed mark into vector pages the size of the mark', async () => {
     const engine = await createLocalEngine({ runtime: { prefer: 'wasm' } });
     const { stamp } = makeStamp(withFakeRenders(engine));

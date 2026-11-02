@@ -12,6 +12,7 @@
  * replace, and `undefined` leaves a setting as it is.
  */
 import { createEventHook, type EventHook } from './event-hook';
+import { hasOwn, isPlainObject, sameValue } from './same-value';
 
 /** A change to one setting: plain objects go deeper, arrays and functions are given whole. */
 type DeepPartialValue<V> = V extends readonly unknown[] | ((...args: never[]) => unknown)
@@ -68,6 +69,18 @@ export interface SettingsApi<T> {
   resetSettings(): void;
   /** Fires once for each call that changed a setting. */
   readonly onSettingsChanged: EventHook<SettingsChangedEvent<T>>;
+}
+
+/**
+ * Who holds a locked setting, and why. A plugin that owns settings and lets others hold them (the
+ * Stage's `lockSettings()`) answers `getLock(key)` with this, and a command that changes the
+ * setting shows disabled with the sentence under `reasonKey` while it holds.
+ */
+export interface SettingLock {
+  /** Who holds it: a plugin's id, or `'app'`. */
+  readonly by: string;
+  /** The translation key of the sentence its controls show; without one, `commands.locked.default`. */
+  readonly reasonKey?: string;
 }
 
 /** The settings type of a capability that has the settings calls, else `never`. */
@@ -189,31 +202,4 @@ function changedKeys<T extends object>(previous: T, next: T): (keyof T)[] {
   const after = next as Record<string, unknown>;
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   return [...keys].filter((key) => !sameValue(before[key], after[key])) as (keyof T)[];
-}
-
-const isPlainObject = (value: unknown): value is Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-};
-
-const hasOwn = (object: object, key: string): boolean =>
-  Object.prototype.hasOwnProperty.call(object, key);
-
-/** Equal by value: the same primitive or object, or arrays and plain objects with equal entries. */
-function sameValue(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return (
-      left.length === right.length && left.every((item, index) => sameValue(item, right[index]))
-    );
-  }
-  if (isPlainObject(left) && isPlainObject(right)) {
-    const keys = Object.keys(left);
-    return (
-      keys.length === Object.keys(right).length &&
-      keys.every((key) => hasOwn(right, key) && sameValue(left[key], right[key]))
-    );
-  }
-  return false;
 }

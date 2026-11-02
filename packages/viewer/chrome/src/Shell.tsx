@@ -45,12 +45,13 @@ import { OUTLINE_PROPERTIES_DIALOG } from './config/outline';
 import { useLayoutEnv, useResolvedLayout } from './config-context';
 import { LayoutRoot } from './layout-root';
 import { EdgeBars, FloatingBars } from './places';
-import { AnnotationFontsProvider } from './ui/annotation-fonts';
+import { AppFonts } from './ui/app-fonts';
 import { AnnotationStrip } from './ui/annotation-strip';
 import { DocumentError, PasswordPrompt } from './ui/document-boot';
 import { DropToOpen } from './ui/drop-to-open';
 import { GoToPageDialog } from './ui/go-to-page';
 import { FeaturePrefetch, lazyComponent } from './ui/lazy';
+import { PageLoading } from './ui/page-loading';
 import { SidePanel } from './ui/panels';
 import { PlacedComponentsHost, type PlacedComponents } from './ui/placed-components';
 import { useRefusalNotice } from './ui/refusal-notice';
@@ -94,6 +95,16 @@ const PrintDialog = lazyComponent(() => import('./ui/print-dialog').then((ui) =>
   shownWhile: usePrintDialogOpen,
 });
 const useOutlinePropertiesOpen = () => useSurface(OUTLINE_PROPERTIES_DIALOG).isOpen;
+// A grant's passphrase or questions: only documents from grants ask, so these load
+// when they first show, never in the background.
+const GrantPrompt = lazyComponent(() => import('./ui/grant-prompt').then((ui) => ui.GrantPrompt), {
+  prefetch: false,
+});
+const useIdentityAsked = () => useDocument((document) => document.identityRequest !== undefined);
+const VisitorIdentityDialog = lazyComponent(
+  () => import('./ui/grant-prompt').then((ui) => ui.VisitorIdentityDialog),
+  { shownWhile: useIdentityAsked, prefetch: false },
+);
 const OutlinePropertiesDialog = lazyComponent(
   () => import('./ui/outline-properties').then((ui) => ui.OutlinePropertiesDialog),
   { shownWhile: useOutlinePropertiesOpen },
@@ -127,13 +138,16 @@ function OpeningDocuments() {
 /**
  * The document area's lifecycle switch. With no document open it shows the
  * `empty` region, or nothing. A `locked` tab shows its password prompt, an
- * `error` tab its error pane — per tab (keyed by document), so several can
- * coexist and tab switching stays free. Everything else is the ready-gated
- * Stage; the gate's fallback covers `loading`.
+ * `error` tab its error pane, or the grant's passphrase or questions it
+ * waits for — per tab (keyed by document), so several can coexist and tab
+ * switching stays free. Everything else is the ready-gated Stage; the gate's
+ * fallback covers `loading`. A ready document whose grant asks again shows its
+ * passphrase or questions over the Stage.
  */
 function DocumentArea({ children }: { children: ReactNode }) {
   const docId = useDocumentId();
   const status = useDocument((document) => document.status);
+  const grantAsks = useDocument((document) => document.grantRequest !== undefined);
   if (docId === null) {
     return (
       <div className="min-w-0 flex-1 overflow-auto">
@@ -142,8 +156,21 @@ function DocumentArea({ children }: { children: ReactNode }) {
     );
   }
   if (status === 'locked') return <PasswordPrompt key={docId} />;
-  if (status === 'error') return <DocumentError key={docId} />;
-  return <DocumentGate fallback={<OpeningDocuments />}>{children}</DocumentGate>;
+  if (status === 'error') {
+    return grantAsks ? <GrantPrompt key={docId} /> : <DocumentError key={docId} />;
+  }
+  return (
+    <DocumentGate fallback={<OpeningDocuments />}>
+      {children}
+      {/* a passphrase or questions the grant got after the document opened: over the document,
+      which goes on once they're given */}
+      {grantAsks && (
+        <div className="absolute inset-0 z-40">
+          <GrantPrompt key={docId} />
+        </div>
+      )}
+    </DocumentGate>
+  );
 }
 
 /**
@@ -185,7 +212,9 @@ export function Shell({ components }: { components?: PlacedComponents }) {
   // with zero config, and sit outside the gate: they render before any
   // document. The root measures the viewer for the layout (layout-root.tsx).
   return (
-    <AnnotationFontsProvider>
+    <>
+      {/* the app's fonts, registered once on a local engine */}
+      <AppFonts />
       <LayoutRoot rootRef={root} className="bg-app text-fg flex h-full flex-col outline-none">
         {/* the viewer's own components in the page (<epdf-button>, <epdf-menu>), each drawn
           in its own shadow root */}
@@ -250,6 +279,9 @@ export function Shell({ components }: { components?: PlacedComponents }) {
                       the base budget supplies — the thumbnail rail's demand
                       never does, so it mounts the same layer for free. */}
                       <RenderLayer />
+                      {/* a spinner while the page's picture is slow to come, a sentence
+                      when it can't */}
+                      <PageLoading />
                       <SelectionLayer />
                       <SearchLayer />
                       {/* Clickable links (nav plane): anchors under the default
@@ -285,6 +317,7 @@ export function Shell({ components }: { components?: PlacedComponents }) {
               <FeaturePrefetch />
               <SignDialog />
               <SignatureMakerModal />
+              <VisitorIdentityDialog />
             </DocumentArea>
           </DropToOpen>
           <EdgeBars edge="end" />
@@ -295,6 +328,6 @@ export function Shell({ components }: { components?: PlacedComponents }) {
         {/* The footer socket: below everything, empty until a child fills it. */}
         <slot name="footer" />
       </LayoutRoot>
-    </AnnotationFontsProvider>
+    </>
   );
 }

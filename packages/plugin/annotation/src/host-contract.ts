@@ -51,7 +51,7 @@ import { AnnotationToken as PublicAnnotationToken } from './token';
 import type { ResolvedTool } from './tools/definitions';
 
 export * from './contract';
-export type { AnnotationState } from './model';
+export type { AnnotationModel } from './model';
 export {
   ANNOTATION_DRAW_PRIORITY,
   ANNOTATION_EDIT_PRIORITY,
@@ -198,7 +198,17 @@ export interface AnnotationHostCapability extends AnnotationCapability {
    */
   getAnnotationAnchor(ref: AnnotationRef, view?: ViewEnv): AnnotationAnchor | null;
   listPageItems(page: PageRef, view?: ViewEnv): RenderItem[];
+  /**
+   * The text boxes the layer draws as elements: the ones typed in or redrawn
+   * live. A saved, idle one shows its engine picture instead.
+   */
   listTextItems(page: PageRef, view?: ViewEnv): TextItem[];
+  /**
+   * One free text's text box in every state, saved and idle included: for a
+   * renderer that draws the box itself (`useRichTextEditor`), which no
+   * engine picture is drawn under. `null` for one that isn't a free text here.
+   */
+  getTextItem(ref: AnnotationRef, view?: ViewEnv): TextItem | null;
   listChromeNodes(
     page: PageRef,
     scale?: number,
@@ -243,7 +253,17 @@ export interface AnnotationHostCapability extends AnnotationCapability {
   draftContents(ref: AnnotationRef, text: string): void;
   draftRichText(ref: AnnotationRef, doc: { paragraphs: RichTextParagraph[] }): void;
   setTextSelection(ref: AnnotationRef, range: { start: number; end: number } | null): void;
-  getCssFontFamily(family: string): string;
+  /**
+   * The CSS family list a face is drawn with in a text box (`id`; `null` for
+   * none yet): the font programs the engine draws it in, with the fonts
+   * plugin installed.
+   */
+  getCssFontFamily(
+    face: { family: string; weight: number; italic: boolean },
+    id: string | null,
+  ): string;
+  /** The family a CSS family a text box was drawn with stands for, for text the browser drew itself. */
+  getFamilyOfCss(cssFamily: string): string | undefined;
 
   // ── pointer routing ──
   getHitKind(

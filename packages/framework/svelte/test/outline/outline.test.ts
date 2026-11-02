@@ -5,6 +5,7 @@ import {
   OutlineToken,
   outlinePlugin,
   outlineState,
+  type OutlineState,
   useOutline,
   useOutlineState,
   type OutlineItem,
@@ -40,7 +41,7 @@ const outlineEngine = {
     Promise.resolve({
       id: input.id ?? 'doc',
       events: { subscribe: () => () => {}, lastServerId: () => null },
-      pages: { list: () => Promise.resolve({ pageCount: 1, pages: [testPage] }) },
+      pages: { list: () => Promise.resolve({ pageCount: 1, labels: [], pages: [testPage] }) },
       security: { allows: () => true, allowsAnnotation: () => true },
       outline: { get: () => Promise.resolve({ items: ITEMS, incomplete: false }) },
       close: () => Promise.resolve(),
@@ -69,7 +70,7 @@ describe('useOutlineState', () => {
     await kernel.documents.open(bytesInput('doc'));
     await vi.waitFor(() => expect(kernel.capability(OutlineToken).getStatus()).toBe('ready'));
     flushSync();
-    const seen = latest(state.seen) as ReturnType<typeof outlineState.read>;
+    const seen = latest(state.seen) as OutlineState;
     expect(seen.rows.map((row) => [row.item.title, row.depth])).toEqual([
       ['Chapter', 0],
       ['Section', 1],

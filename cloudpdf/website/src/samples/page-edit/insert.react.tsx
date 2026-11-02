@@ -11,10 +11,10 @@ import './insert.css';
 const engine = cloudEngine();
 const plugins = [stagePlugin(), renderPlugin(), pageEditPlugin()];
 
-const ebook: OpenInput = { kind: 'share', shareToken: 'shr_WGj1goAtlNN_fQ5OswPrbJQM' };
+const welcome: OpenInput = { kind: 'grant', grant: 'shr_gvpJcG1ULUMon19C0D1wODSY' };
 
 /** Another PDF's bytes, to insert pages from. */
-const otherPdf = async () => (await fetch('https://snippet.embedpdf.com/ebook.pdf')).arrayBuffer();
+const otherPdf = async () => (await fetch('/pdfs/welcome.pdf')).arrayBuffer();
 
 // Inserts next to the page you're on, then goes to the first new page.
 function InsertToolbar() {
@@ -58,7 +58,7 @@ function InsertToolbar() {
       <button
         type="button"
         className="button"
-        disabled={!canEdit || !pageEdit.canExtract()}
+        disabled={!canEdit}
         onClick={() => pageEdit.duplicate([page.ref]).then(show)}
       >
         Duplicate page
@@ -90,7 +90,7 @@ function InsertToolbar() {
 
 export default function App() {
   return (
-    <Viewer engine={engine} plugins={plugins} initialDocuments={[{ source: ebook }]}>
+    <Viewer engine={engine} plugins={plugins} initialDocuments={[{ source: welcome }]}>
       <DocumentGate fallback={<p className="loading">Loading…</p>}>
         <InsertToolbar />
         <Stage className="stage">{() => <RenderLayer />}</Stage>

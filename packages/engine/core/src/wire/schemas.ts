@@ -32,6 +32,7 @@ import { AppearanceResourceKeysSchema, ImageResourceKeysSchema } from './resourc
 import {
   PAGE_PRINT_FAMILIES,
   PAGE_RENDER_FAMILIES,
+  PAGE_THUMBNAIL_FAMILIES,
   type PagePrintTier,
   type PageRenderFamily,
   type PageRenderFamilySpec,
@@ -39,6 +40,16 @@ import {
 } from './renderFamilies';
 import type { CachePins } from '../dto/CachePins';
 import type { DocumentManifest, ManifestPage } from '../dto/DocumentManifest';
+import type {
+  Font,
+  FontList,
+  FontProgram,
+  FontProgramInfo,
+  FontResolution,
+  FontResolveRequest,
+  FontResolveRun,
+  ResolvedFontRun,
+} from '../dto/DocumentFonts';
 import type { LayerScopes } from '../dto/LayerScopes';
 import type { CustomMetadata } from '../dto/CustomMetadata';
 import type { CustomMetadataPatch } from '../dto/CustomMetadataPatch';
@@ -60,6 +71,7 @@ import type {
 } from '../signature/types';
 import type { PageGeometryRun, PageGeometrySnapshot } from '../dto/PageGeometrySnapshot';
 import { charMapViolation } from '../text/charmap';
+import type { PageLabelSection } from '../dto/PageLabelSection';
 import type { PageBoxes, PageLayout } from '../dto/PageLayout';
 import type { PageListSnapshot } from '../dto/PageListSnapshot';
 import type { NamedPageEntry } from '../dto/NamedPage';
@@ -584,6 +596,8 @@ export const DocumentManifestSchema = z.object({
   annotationsVersion: z.number().int().positive().default(1),
   formsVersion: z.number().int().positive().default(1),
   outlineVersion: z.number().int().positive().default(1),
+  fontsVersion: z.number().int().positive().default(1),
+  serverFonts: z.string(),
   auditHead: z.number().int().nonnegative(),
   baseSha: z.string(),
   // Signing fences (absent on pre-signature servers: unwritten, unknown length).
@@ -792,6 +806,9 @@ const RenderQualitySchema = z.coerce.number().min(0).max(1);
 
 const AppearanceModeSchema = z.enum(['normal', 'rollover', 'down']);
 
+/** `DocumentManifest.serverFonts` in a picture's token: the fingerprint, in hex. */
+const ServerFontsSchema = z.string().regex(/^[0-9a-f]{1,64}$/);
+
 /**
  * A token's `modes`: the modes it asks for, in the engine's mode order,
  * joined by `-` (`normal-down`). Anything else is refused, so one set of
@@ -830,27 +847,35 @@ const AppearanceModesSchema = z.string().transform((value, ctx) => {
  * A print picture (`PAGE_PRINT_FAMILIES`) takes only its pins and its image
  * format: its path says what it draws and at which DPI, and its size comes
  * from that and the paper, so a page has one print picture per family and
- * tier.
+ * tier. A thumbnail (`PAGE_THUMBNAIL_FAMILIES`) is always the whole page at
+ * the thumbnail size, so it takes no `viewport` or `target`, only `rotation`
+ * and `background` beside its pins and format.
  *
  * The transform stamps what the picture draws (and, for a print picture,
- * `usage` and its `dpi` viewport) onto the parsed options, so the worker
- * options downstream need no family.
+ * `usage` and its `dpi` viewport; for a thumbnail, its `thumbnail` viewport)
+ * onto the parsed options, so the worker options downstream need no family.
  */
 function buildPageRenderQuerySchema(picture: PageRenderFamilySpec): z.ZodType<PageRenderQuery> {
-  const { family, draws, pins, print } = picture;
+  const { family, draws, pins, print, thumbnail } = picture;
   const pinFields: Record<string, z.ZodTypeAny> = {};
   for (const pin of pins) pinFields[pin] = z.coerce.number().int().positive().optional();
+  const turnFields: Record<string, z.ZodTypeAny> = {
+    rotation: RenderRotationSchema.optional(),
+    background: RenderBackgroundSchema.optional(),
+  };
   const screenFields: Record<string, z.ZodTypeAny> = print
     ? {}
-    : {
-        viewport: RenderViewportSchema.optional(),
-        target: RenderTargetSchema.optional(),
-        rotation: RenderRotationSchema.optional(),
-        background: RenderBackgroundSchema.optional(),
-      };
+    : thumbnail
+      ? turnFields
+      : {
+          viewport: RenderViewportSchema.optional(),
+          target: RenderTargetSchema.optional(),
+          ...turnFields,
+        };
   return z
     .object({
       ...pinFields,
+      serverFonts: ServerFontsSchema.optional(),
       format: PageNetworkRenderFormatSchema.optional(),
       quality: RenderQualitySchema.optional(),
       ...screenFields,
@@ -876,6 +901,13 @@ function buildPageRenderQuerySchema(picture: PageRenderFamilySpec): z.ZodType<Pa
           message: 'versioned render requires format',
         });
       }
+      if (v.serverFonts === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['serverFonts'],
+          message: 'versioned render requires serverFonts',
+        });
+      }
       for (const pin of pins) {
         if (pinned[pin] !== undefined) continue;
         ctx.addIssue({
@@ -899,8 +931,12 @@ function buildPageRenderQuerySchema(picture: PageRenderFamilySpec): z.ZodType<Pa
         ...(print
           ? { usage: 'print' as const, viewport: { kind: 'dpi' as const, dpi: print.dpi } }
           : {}),
+        ...(thumbnail ? { viewport: { kind: 'thumbnail' as const } } : {}),
       };
-      const query: PageRenderQuery = { options };
+      const query: PageRenderQuery = {
+        options,
+        ...(v.serverFonts !== undefined ? { serverFonts: v.serverFonts } : {}),
+      };
       for (const pin of pins) {
         if (pinned[pin] !== undefined) query[pin] = pinned[pin];
       }
@@ -916,6 +952,16 @@ export const PageRenderQuerySchemas: Readonly<
   annotations: buildPageRenderQuerySchema(PAGE_RENDER_FAMILIES.annotations),
   fields: buildPageRenderQuerySchema(PAGE_RENDER_FAMILIES.fields),
   all: buildPageRenderQuerySchema(PAGE_RENDER_FAMILIES.all),
+};
+
+/** Query/token schemas of the thumbnails, by family. */
+export const PageThumbnailQuerySchemas: Readonly<
+  Record<PageRenderFamily, z.ZodType<PageRenderQuery>>
+> = {
+  pages: buildPageRenderQuerySchema(PAGE_THUMBNAIL_FAMILIES.pages),
+  annotations: buildPageRenderQuerySchema(PAGE_THUMBNAIL_FAMILIES.annotations),
+  fields: buildPageRenderQuerySchema(PAGE_THUMBNAIL_FAMILIES.fields),
+  all: buildPageRenderQuerySchema(PAGE_THUMBNAIL_FAMILIES.all),
 };
 
 /** Query/token schemas of the print pictures, by tier and family. */
@@ -936,10 +982,11 @@ export const PagePrintQuerySchemas: Readonly<
   },
 };
 
-/** The query/token schema of `picture`, screen or print. */
+/** The query/token schema of `picture`: screen, thumbnail or print. */
 export function pagePictureQuerySchema(picture: PageRenderFamilySpec): z.ZodType<PageRenderQuery> {
-  return picture.print
-    ? PagePrintQuerySchemas[picture.print.tier][picture.family]
+  if (picture.print) return PagePrintQuerySchemas[picture.print.tier][picture.family];
+  return picture.thumbnail
+    ? PageThumbnailQuerySchemas[picture.family]
     : PageRenderQuerySchemas[picture.family];
 }
 
@@ -956,6 +1003,7 @@ function buildAppearancesQuerySchema<Pin extends 'annotationVersion' | 'widgetVe
   return z
     .object({
       [pin]: z.coerce.number().int().positive().optional(),
+      serverFonts: ServerFontsSchema.optional(),
       format: PageNetworkRenderFormatSchema.optional(),
       modes: AppearanceModesSchema.optional(),
       rotation: RenderRotationSchema.optional(),
@@ -973,6 +1021,13 @@ function buildAppearancesQuerySchema<Pin extends 'annotationVersion' | 'widgetVe
           message: 'versioned appearance render requires format',
         });
       }
+      if (v[pin] !== undefined && v.serverFonts === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['serverFonts'],
+          message: 'versioned appearance render requires serverFonts',
+        });
+      }
     })
     .transform((v) => {
       const options: AnnotationAppearanceImageOptions = {
@@ -982,7 +1037,11 @@ function buildAppearancesQuerySchema<Pin extends 'annotationVersion' | 'widgetVe
         ...(v.format !== undefined ? { format: v.format } : {}),
         ...(v.modes !== undefined ? { modes: v.modes } : {}),
       };
-      return { options, ...(v[pin] !== undefined ? { [pin]: v[pin] } : {}) };
+      return {
+        options,
+        ...(v[pin] !== undefined ? { [pin]: v[pin] } : {}),
+        ...(v.serverFonts !== undefined ? { serverFonts: v.serverFonts } : {}),
+      };
     });
 }
 
@@ -1027,6 +1086,7 @@ export const CacheDeltaSchema: z.ZodType<CacheDelta> = z.object({
   metadataVersion: z.number().int().positive().optional(),
   attachmentsVersion: z.number().int().positive().optional(),
   outlineVersion: z.number().int().positive().optional(),
+  fontsVersion: z.number().int().positive().optional(),
   layerVersion: z.number().int().nonnegative().optional(),
   working: z.boolean().optional(),
   pages: z.array(
@@ -1042,6 +1102,7 @@ export const MutationMetaSchema: z.ZodType<MutationMeta> = z.object({
   cacheDelta: CacheDeltaSchema.nullable(),
   opId: z.string(),
   undoable: z.boolean(),
+  missingCharacters: z.array(z.string()).optional(),
 });
 
 /**
@@ -1084,6 +1145,7 @@ export const DocumentWireComponents = {
   MutationMeta: MutationMetaSchema,
   DocumentMetadata: DocumentMetadataSchema,
   MetadataPatch: MetadataPatchSchema,
+  Identity: IdentitySchema,
 } as const satisfies Record<string, z.ZodTypeAny>;
 
 /** Per-page side-effect envelope every annotation mutation returns. Mirrors `AnnotationListMutationMeta`. */
@@ -1092,6 +1154,7 @@ export const AnnotationListMutationMetaSchema: z.ZodType<AnnotationListMutationM
   cacheDelta: CacheDeltaSchema.nullable(),
   opId: z.string(),
   undoable: z.boolean(),
+  missingCharacters: z.array(z.string()).optional(),
   changed: z.array(AnnotationRefSchema),
 });
 
@@ -1175,6 +1238,7 @@ export const FormMutationMetaSchema: z.ZodType<FormMutationMeta> = z.object({
   cacheDelta: CacheDeltaSchema.nullable(),
   opId: z.string(),
   undoable: z.boolean(),
+  missingCharacters: z.array(z.string()).optional(),
   changedFields: z.array(FormFieldRefSchema),
   changedWidgets: z.array(FormWidgetSchema),
   redrawnWidgets: z.array(FormWidgetSchema),
@@ -1566,9 +1630,18 @@ export const NamedPageEntrySchema: z.ZodType<NamedPageEntry> = z.object({
   ]),
 });
 
+/** See `PageLabelSection`: pages numbered together. */
+export const PageLabelSectionSchema: z.ZodType<PageLabelSection> = z.object({
+  firstPage: z.number().int().nonnegative(),
+  style: z.enum(['decimal', 'upperRoman', 'lowerRoman', 'upperLetters', 'lowerLetters']).nullable(),
+  firstNumber: z.number().int(),
+  prefix: z.string(),
+});
+
 export const PageListSnapshotSchema: z.ZodType<PageListSnapshot> = z.object({
   pageCount: z.number().int().nonnegative(),
   pages: z.array(PageLayoutSchema),
+  labels: z.array(PageLabelSectionSchema),
   namedPages: z.array(NamedPageEntrySchema),
 });
 
@@ -1671,6 +1744,7 @@ export const AttachmentMutationMetaSchema: z.ZodType<AttachmentMutationMeta> = z
   cacheDelta: CacheDeltaSchema.nullable(),
   opId: z.string(),
   undoable: z.boolean(),
+  missingCharacters: z.array(z.string()).optional(),
   changed: z.array(AttachmentRefSchema),
 });
 
@@ -1723,6 +1797,7 @@ export const OutlineMutationMetaSchema: z.ZodType<OutlineMutationMeta> = z.objec
   cacheDelta: CacheDeltaSchema.nullable(),
   opId: z.string(),
   undoable: z.boolean(),
+  missingCharacters: z.array(z.string()).optional(),
   changed: z.array(OutlineItemRefSchema),
 });
 
@@ -1772,6 +1847,121 @@ export const OutlineWireComponents = {
   OutlinePosition: OutlinePositionSchema,
   OutlineOrder: OutlineOrderSchema,
   OutlineMutationMeta: OutlineMutationMetaSchema,
+} as const satisfies Record<string, z.ZodTypeAny>;
+
+// ---------------------------------------------------------------------------
+// Fonts: a document's font list, a program's facts, and a resolve.
+
+const fontProgramShape = {
+  displayHash: z.string().nullable(),
+  sourceHash: z.string().nullable(),
+  embedded: z.enum(['whole', 'subset', 'none']),
+  format: z.enum(['truetype', 'opentype', 'cff', 'type1', 'type3']).nullable(),
+  embeddingPermission: z.enum(['installable', 'editable', 'preview-and-print']).nullable(),
+  canDownload: z.boolean(),
+};
+
+/** A font file: by the hash of the file a browser loads, and of the one the PDF holds. */
+const FontProgramSchema: z.ZodType<FontProgram> = z.object(fontProgramShape);
+
+/** A font that can be named in a document. */
+const FontSchema: z.ZodType<Font> = z.object({
+  name: z.string(),
+  source: z.enum(['standard', 'engine', 'document']),
+  familyName: z.string(),
+  weight: z.number().int(),
+  italic: z.boolean(),
+  postScriptName: z.string().nullable(),
+  canChoose: z.boolean(),
+  restrictions: z.array(
+    z.enum([
+      'subset',
+      'not-embedded',
+      'preview-and-print',
+      'unsupported-format',
+      'no-unicode-map',
+      'not-served',
+    ]),
+  ),
+  programs: z.array(FontProgramSchema),
+});
+
+/** `GET …/fonts@{fontsVersion,serverFonts}`: `doc.fonts.list()`. */
+export const FontListSchema: z.ZodType<FontList> = z.object({
+  fonts: z.array(FontSchema),
+  fallbacks: z.array(z.string()),
+  lastResort: FontProgramSchema,
+});
+
+/** `GET …/font-programs/{displayHash}`: `doc.fonts.getProgram()`. */
+export const FontProgramInfoSchema: z.ZodType<FontProgramInfo> = z.object({
+  ...fontProgramShape,
+  covers: z.array(
+    z.object({ start: z.number().int().nonnegative(), count: z.number().int().positive() }),
+  ),
+  ascent: z.number(),
+  descent: z.number(),
+});
+
+/**
+ * A run of text and the font it asks for: by name (`fontFamily`), as a box
+ * does, or by face (`family`, `weight`, `italic`), as rich text does. One
+ * object with exactly one of the two, so the projection has no untagged union.
+ */
+const FontResolveRunSchema = z
+  .object({
+    text: z.string().max(65_536),
+    fontFamily: z.string().optional(),
+    family: z.string().optional(),
+    weight: z.number().optional(),
+    italic: z.boolean().optional(),
+  })
+  .strict()
+  .refine(
+    (run) =>
+      run.fontFamily !== undefined
+        ? run.family === undefined && run.weight === undefined && run.italic === undefined
+        : run.family !== undefined && run.weight !== undefined && run.italic !== undefined,
+    { message: 'a run names its font by fontFamily, or by family, weight and italic' },
+  ) as unknown as z.ZodType<FontResolveRun>;
+
+/** The body of `POST …/fonts/resolve`. */
+export const FontResolveRequestSchema: z.ZodType<FontResolveRequest> = z
+  .object({
+    annotation: AnnotationRefSchema.optional(),
+    runs: z.array(FontResolveRunSchema).max(1_000),
+  })
+  .strict();
+
+/** A run as `resolve` answers it: the font a write draws it in, and the fallbacks behind it. */
+const ResolvedFontRunSchema: z.ZodType<ResolvedFontRun> = z.object({
+  font: z.string(),
+  weight: z.number(),
+  italic: z.boolean(),
+  substituted: z.boolean(),
+  program: z.string().nullable(),
+  fallbacks: z.array(z.string()),
+});
+
+/** `POST …/fonts/resolve`: `doc.fonts.resolve()`. */
+export const FontResolutionSchema: z.ZodType<FontResolution> = z.object({
+  runs: z.array(ResolvedFontRunSchema),
+  missingCharacters: z.array(z.string()),
+});
+
+/**
+ * Stable public component names for the fonts wire model, so an OpenAPI
+ * projection names each once, like `OutlineWireComponents`.
+ */
+export const FontWireComponents = {
+  FontProgram: FontProgramSchema,
+  Font: FontSchema,
+  FontList: FontListSchema,
+  FontProgramInfo: FontProgramInfoSchema,
+  FontResolveRun: FontResolveRunSchema,
+  FontResolveRequest: FontResolveRequestSchema,
+  ResolvedFontRun: ResolvedFontRunSchema,
+  FontResolution: FontResolutionSchema,
 } as const satisfies Record<string, z.ZodTypeAny>;
 
 // ---------------------------------------------------------------------------
@@ -2062,8 +2252,8 @@ export function analyzeInputFromQuery(
   };
 }
 
-/** One row of the document's version catalog. */
-export const DocumentVersionSchema = z.object({
+/** One of a layer's versions: the upload, or one its signatures made. */
+export const LayerVersionSchema = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
   byteLength: z.number().int().nonnegative(),
   number: z.number().int().positive(),
@@ -2072,15 +2262,15 @@ export const DocumentVersionSchema = z.object({
   signingId: z.string().nullable(),
   createdAt: z.number().int(),
 });
-export type DocumentVersion = z.infer<typeof DocumentVersionSchema>;
+export type LayerVersion = z.infer<typeof LayerVersionSchema>;
 
-export const DocumentVersionsSchema = z.object({
-  /** `documents.base_sha`: the version every layer is over, or behind. */
-  head: z.string().regex(/^[0-9a-f]{64}$/),
-  /** Oldest first. */
-  versions: z.array(DocumentVersionSchema),
+export const LayerVersionsSchema = z.object({
+  /** The layer's base: the upload, or the version its last signature made. */
+  baseSha: z.string().regex(/^[0-9a-f]{64}$/),
+  /** Oldest first: the upload, then the versions the layer's signatures made. */
+  versions: z.array(LayerVersionSchema),
 });
-export type DocumentVersions = z.infer<typeof DocumentVersionsSchema>;
+export type LayerVersions = z.infer<typeof LayerVersionsSchema>;
 
 export { DigestAlgorithmSchema, ModificationLevelSchema };
 

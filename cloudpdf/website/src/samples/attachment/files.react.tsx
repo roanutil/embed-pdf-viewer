@@ -16,7 +16,7 @@ import './files.css';
 const engine = cloudEngine();
 const plugins = [stagePlugin(), renderPlugin(), attachmentPlugin()];
 
-const ebook: OpenInput = { kind: 'share', shareToken: 'shr_WGj1goAtlNN_fQ5OswPrbJQM' };
+const welcome: OpenInput = { kind: 'grant', grant: 'shr_gvpJcG1ULUMon19C0D1wODSY' };
 
 /** A file's size, as people read it. */
 const sizeOf = (bytes: number | null) =>
@@ -85,7 +85,7 @@ function Files() {
 
 export default function App() {
   return (
-    <Viewer engine={engine} plugins={plugins} initialDocuments={[{ source: ebook }]}>
+    <Viewer engine={engine} plugins={plugins} initialDocuments={[{ source: welcome }]}>
       <DocumentGate fallback={<p className="loading">Loading…</p>}>
         <div className="layout">
           <Files />

@@ -33,6 +33,7 @@ import type {
   ViewEnv,
 } from '@embedpdf/core-annotation';
 import type { Point } from '@embedpdf/core-geometry';
+import type { MountableFontProgram } from '@embedpdf/plugin-fonts/contract';
 import type {
   Annotation,
   AnnotationBundle,
@@ -58,7 +59,7 @@ import type { TextFormat } from './rich-text';
 import type { AnnotationToolInput, ResolvedGhost } from './tools/definitions';
 
 export { AnnotationToken } from './token';
-export { annotationState } from './state';
+export { annotationState, type AnnotationState } from './state';
 export { AnnotationTransfer } from '@embedpdf/engine-core/public';
 export type { Face, TextFormat, TextSelection } from './rich-text';
 export type {
@@ -372,6 +373,14 @@ export interface TextItem {
   /** The rich paragraphs the editor renders and edits (run deltas over the
    *  body, which `css` carries). `contents` is their plain projection. */
   richText: { paragraphs: RichTextParagraph[] };
+  /** The face of its text without one of its own: the body's. */
+  face: { family: string; weight: number; italic: boolean };
+  /**
+   * The font programs its text is drawn in (`css.fontFamily` and the runs'
+   * families name them): mount them where the box is drawn
+   * (`createFontMounts` in `@embedpdf/web`). Empty without the fonts plugin.
+   */
+  programs: readonly MountableFontProgram[];
   editing: boolean;
   /** Applied rotation (deg, CW). `box` is the unrotated text box; the framework
    *  rotates the editable element about its centre by this. 0/undefined = none. */
@@ -764,9 +773,12 @@ export interface CommentsApi {
   canSetStatus(ref: AnnotationRef): boolean;
   /** Whether the user may check this thread off (`annotations:create`). */
   canSetMarked(ref: AnnotationRef): boolean;
-  /** Whether the user may delete this comment (`annotations:delete`, and not `locked`). */
+  /**
+   * Whether the user may delete this comment with its replies (`annotations:delete`): the
+   * comment unlocked, and every reply too.
+   */
   canDelete(ref: AnnotationRef): boolean;
-  /** Whether the user may delete every comment in this thread. */
+  /** Whether the user may delete this thread: `canDelete()` of its first comment. */
   canDeleteThread(ref: AnnotationRef): boolean;
   /** A thread changed through this viewer: a reply, a text, a review state, a check mark or a delete. */
   readonly onThreadChanged: EventHook<CommentThreadChangedEvent>;
@@ -919,7 +931,10 @@ export interface AnnotationCapability extends SettingsApi<AnnotationSettings> {
   canCreate(): boolean;
   /** Whether the user may change this annotation: its permission and its own `locked` flag. */
   canUpdate(ref: AnnotationRef): boolean;
-  /** Whether the user may delete this annotation: its permission and its own `locked` flag. */
+  /**
+   * Whether the user may delete this annotation, and with it its replies, review states and
+   * popups: the permission for each of them and their `locked` flags.
+   */
   canDelete(ref: AnnotationRef): boolean;
   /**
    * Whether the `editable` setting lets people change this annotation by

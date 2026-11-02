@@ -6,6 +6,7 @@ import { toPageRef } from '../src/runtime';
 import {
   attachmentPlugin,
   attachmentState,
+  type AttachmentState,
   AttachmentToken,
   useAttachment,
   useAttachmentState,
@@ -51,7 +52,7 @@ const engine = {
     Promise.resolve({
       id: 'doc',
       events: { subscribe: () => () => {}, lastServerId: () => null },
-      pages: { list: () => Promise.resolve({ pageCount: 1, pages: [page] }) },
+      pages: { list: () => Promise.resolve({ pageCount: 1, labels: [], pages: [page] }) },
       security: { allows: () => true, allowsAnnotation: () => true },
       attachments: { list: () => Promise.resolve({ attachments: files }) },
       close: () => Promise.resolve(),
@@ -86,7 +87,7 @@ describe('useAttachmentState', () => {
     await kernel.documents.open({ kind: 'bytes', id: 'doc', bytes: new Uint8Array() });
     await vi.waitFor(() => expect(kernel.capability(AttachmentToken).getStatus()).toBe('ready'));
     await settle();
-    const state = latest(states) as ReturnType<typeof attachmentState.read>;
+    const state = latest(states) as AttachmentState;
     expect(state.files.map((file) => file.name)).toEqual(['notes.txt', 'scan.pdf']);
     expect(state).toMatchObject({ status: 'ready', canAdd: true, canDownload: true });
   });
