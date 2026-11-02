@@ -269,7 +269,7 @@ pub fn char_map_violation(
         prev_text = anchor.text;
     }
 
-    let tail = prev_text + (char_count - prev_char);
-    (tail != text_len_utf16)
+    let tail = u64::from(prev_text) + u64::from(char_count - prev_char);
+    (tail != u64::from(text_len_utf16))
         .then(|| format!("map projects charCount to {tail}, but text length is {text_len_utf16}"))
 }

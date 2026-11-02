@@ -1,0 +1,56 @@
+$ cargo test --offline -p epdf-geometry
+   Compiling serde_core v1.0.229
+   Compiling serde v1.0.229
+   Compiling plugin-conformance v0.0.0 (/workspaces/embed-pdf-viewer/crates/plugin-conformance)
+   Compiling base64 v0.22.1
+   Compiling epdf-geometry v0.0.0 (/workspaces/embed-pdf-viewer/crates/plugins/geometry)
+   Compiling indexmap v2.14.2
+   Compiling serde_json v1.0.151
+   Compiling epdf-kernel v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-kernel)
+   Compiling epdf-engine v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.30s
+     Running unittests src/lib.rs (target/debug/deps/epdf_geometry-ee4e602bec557eef)
+
+running 6 tests
+test js::tests::min_max_propagate_nan ... ok
+test js::tests::sign_keeps_signed_zeros_and_nan ... ok
+test js::tests::number_to_string_matches_javascript ... ok
+test js::tests::round_is_math_round ... ok
+test js::tests::to_fixed_takes_up_to_20_digits ... ok
+test js::tests::to_fixed_matches_javascript ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/behavior.rs (target/debug/deps/behavior-5ad0552eb2e694fc)
+
+running 9 tests
+test a_singular_page_transform_refuses ... ok
+test contained_rect_fits_and_centres ... ok
+test crop_round_trips_are_exact ... ok
+test quads_keep_their_corner_names_through_transforms ... ok
+test quarter_turns_swap_the_footprint_and_keep_the_page_corner ... ok
+test same_page_placement_ignores_nothing_it_names ... ok
+test pdf_to_view_and_back_preserves_pdf_coordinates ... ok
+test singular_matrices_refuse_to_invert ... ok
+test rotation_round_trips_preserve_page_coordinates ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/conformance.rs (target/debug/deps/conformance-2db833ceb0f7b55f)
+
+running 5 tests
+test affine_matches_the_typescript ... ok
+test basics_match_the_typescript ... ok
+test text_quad_matches_the_typescript ... ok
+test the_table_names_only_what_the_vectors_call ... ok
+test page_matches_the_typescript ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+   Doc-tests epdf_geometry
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+exit=0

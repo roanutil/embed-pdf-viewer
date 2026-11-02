@@ -480,3 +480,16 @@ mod upstream {
         assert!(violation(3, 3, &[(1, 0)]).contains("text length"));
     }
 }
+
+#[test]
+fn a_tail_projection_beyond_u32_is_a_violation_without_wrapping() {
+    use epdf_engine::features::text::charmap::{CharMapAnchor, char_map_violation};
+    let map = [CharMapAnchor::new(1, 2)];
+    for text_length in [0, u32::MAX] {
+        let message = char_map_violation(u32::MAX, text_length, &map).expect("tail exceeds u32");
+        assert_eq!(
+            message,
+            format!("map projects charCount to 4294967296, but text length is {text_length}")
+        );
+    }
+}

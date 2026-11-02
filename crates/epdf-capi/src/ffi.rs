@@ -9,6 +9,7 @@ use crate::buffers::{ByteBudget, OwnedResult, Reservation, unpack_payloads};
 use crate::config::Options;
 use crate::engine::Engine;
 use crate::handles::{Kind, Registry};
+use crate::helpers;
 use crate::jobs::{DocumentTransfer, Job};
 use crate::operations;
 use crate::startup::initialize_fonts;
@@ -468,21 +469,21 @@ pub unsafe extern "C" fn epdf_helper_call(
             return Status::InvalidArgument;
         }
         unsafe { result.write(0) };
-        let status = unsafe { span(args, args_len, 8 * 1024 * 1024) }.map(|_| ());
-        let failure = match status {
-            Err(status) => Failure::new(status, "invalid helper input span"),
-            Ok(()) if !(1..=6).contains(&operation) => {
-                Failure::new(Status::InvalidArgument, "unknown helper operation")
+        let outcome = unsafe { span(args, args_len, helpers::MAX_ARGS_BYTES) }
+            .map_err(|s| Failure::new(s, "invalid helper input span"))
+            .and_then(|args| helpers::call(operation, args))
+            .and_then(|response| {
+                OwnedResult::from_response(&response, helpers::MAX_RESULT_BYTES, None)
+                    .and_then(store_result)
+                    .map_err(|s| Failure::new(s, "helper result exceeds the result budget"))
+            });
+        match outcome {
+            Ok(id) => {
+                unsafe { result.write(id) };
+                Status::Ok
             }
-            Ok(()) => Failure {
-                status: Status::RuntimeUnavailable,
-                response: response_error(EngineError::with_message(
-                    EngineErrorCode::NotImplemented,
-                    "helper is unavailable in this build",
-                )),
-            },
-        };
-        unsafe { report(failure, result) }
+            Err(failure) => unsafe { report(failure, result) },
+        }
     })
 }
 
