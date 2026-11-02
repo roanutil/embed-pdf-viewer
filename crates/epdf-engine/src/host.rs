@@ -208,6 +208,9 @@ impl RequestEffect {
             "document.apply" => Write,
             "document.applyChanges" => Write,
             "document.checkPasswordPermissions" => Open,
+            "document.fonts.list" => Read,
+            "document.fonts.program" => Read,
+            "document.fonts.resolve" => Read,
             "document.probeSecurityFile" => Read,
             "document.renderPageFile" => Read,
             "document.renderPageFileEncoded" => Read,
@@ -220,6 +223,8 @@ impl RequestEffect {
             "fonts.authorizeEditing" => RuntimeWrite,
             "fonts.clear" => RuntimeWrite,
             "fonts.clearFallbacks" => RuntimeWrite,
+            "fonts.list" => Read,
+            "fonts.program" => Read,
             "fonts.register" => RuntimeWrite,
             "forms.addWidget" => Write,
             "forms.createField" => Write,
@@ -921,8 +926,27 @@ impl Host {
                 serde_json::json!({ "identity": identity })
             }
             "fonts.clear" => {
-                self.fonts()?.clear();
+                self.fonts()?.clear()?;
                 serde_json::Value::Null
+            }
+            // `{ tag: 'fonts.list', engineFonts, fallbacks }`: the engine's
+            // fonts as a font list takes them, and the fallback order.
+            "fonts.list" => {
+                let fonts = self.fonts()?;
+                serde_json::json!({
+                    "engineFonts": value(&fonts.engine_font_facts())?,
+                    "fallbacks": fonts.fallback_order(),
+                })
+            }
+            // `WorkerHost.handleFontsProgram`: `{ tag, bytes }`, the bytes
+            // payload 0. `NotFound` for a font not served.
+            "fonts.program" => {
+                let sha256 = string_field(body, "sha256")?;
+                let bytes = self.fonts()?.served_program(&sha256)?;
+                return Ok(payload_response(
+                    serde_json::json!({ "bytes": { "payload": 0 } }),
+                    bytes,
+                ));
             }
             // Both take a path and no session: the point of a probe is to
             // decide whether opening is worth attempting at all.
@@ -1289,6 +1313,66 @@ impl Host {
                 let d = self.document(&key)?;
                 f::fonts::apply_document_font_settings(d, policy.as_deref(), features)?;
                 Ok(ok(serde_json::Value::Null))
+            }
+            // `WorkerHost.handleDocumentFontsList`: `{ tag, facts }`.
+            "document.fonts.list" => {
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let document = self.sessions.session(&key)?.document()?.document();
+                let facts = f::fonts::document::facts(document, fonts)?;
+                Ok(ok(serde_json::json!({ "facts": value(&facts)? })))
+            }
+            // `WorkerHost.handleDocumentFontsResolve`: `{ tag, runs,
+            // missingCharacters, facts }`, the facts read before the runs.
+            "document.fonts.resolve" => {
+                let annotation: Option<crate::identity::AnnotationRef> =
+                    optional(body, "annotation")?;
+                let runs = body
+                    .get("runs")
+                    .and_then(serde_json::Value::as_array)
+                    .ok_or_else(|| {
+                        EngineError::with_message(
+                            EngineErrorCode::WireFormat,
+                            "the 'document.fonts.resolve' request has no 'runs' array",
+                        )
+                    })?
+                    .iter()
+                    .map(f::fonts::document::FontResolveRun::from_wire)
+                    .collect::<Result<Vec<_>, _>>()?;
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let owned = self.sessions.session(&key)?.document()?;
+                let facts = f::fonts::document::facts(owned.document(), fonts)?;
+                let resolution =
+                    f::fonts::document::resolve(owned, fonts, annotation.as_ref(), &runs, &facts)?;
+                Ok(ok(serde_json::json!({
+                    "runs": value(&resolution.runs)?,
+                    "missingCharacters": resolution.missing_characters,
+                    "facts": value(&facts)?,
+                })))
+            }
+            // `WorkerHost.handleDocumentFontsProgram`: `{ tag, covers,
+            // ascent, descent, bytes }`, the bytes payload 0 for
+            // `part: 'data'` and `null` otherwise.
+            "document.fonts.program" => {
+                let display_hash = string_field(body, "displayHash")?;
+                let part = string_field(body, "part")?;
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let document = self.sessions.session(&key)?.document()?.document();
+                let (info, bytes) =
+                    f::fonts::document::program(document, fonts, &display_hash, part == "data")?;
+                let mut answer = value(&info)?;
+                match bytes {
+                    Some(bytes) => {
+                        answer["bytes"] = serde_json::json!({ "payload": 0 });
+                        Ok(payload_response(answer, bytes))
+                    }
+                    None => {
+                        answer["bytes"] = serde_json::Value::Null;
+                        Ok(ok(answer))
+                    }
+                }
             }
 
             // ── Per-page reads ────────────────────────────────────────

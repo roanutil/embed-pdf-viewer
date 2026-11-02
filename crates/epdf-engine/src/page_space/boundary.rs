@@ -90,6 +90,9 @@ wire_kinds! {
     Close => "close",
     DocumentApply => "document.apply",
     DocumentApplyChanges => "document.applyChanges",
+    DocumentFontsList => "document.fonts.list",
+    DocumentFontsProgram => "document.fonts.program",
+    DocumentFontsResolve => "document.fonts.resolve",
     DocumentCheckPasswordPermissions => "document.checkPasswordPermissions",
     DocumentProbeSecurityFile => "document.probeSecurityFile",
     DocumentRenderPageFile => "document.renderPageFile",
@@ -103,6 +106,8 @@ wire_kinds! {
     FontsAuthorizeEditing => "fonts.authorizeEditing",
     FontsClear => "fonts.clear",
     FontsClearFallbacks => "fonts.clearFallbacks",
+    FontsList => "fonts.list",
+    FontsProgram => "fonts.program",
     FontsRegister => "fonts.register",
     FormsAddWidget => "forms.addWidget",
     FormsCreateField => "forms.createField",
@@ -275,6 +280,9 @@ pub fn request_in_file_space(
         | K::AttachmentsList
         | K::AttachmentsReadFile
         | K::Close
+        | K::DocumentFontsList
+        | K::DocumentFontsProgram
+        | K::DocumentFontsResolve
         | K::DocumentCheckPasswordPermissions
         | K::DocumentProbeSecurityFile
         | K::DocumentSaveBuffer
@@ -286,6 +294,8 @@ pub fn request_in_file_space(
         | K::FontsAuthorizeEditing
         | K::FontsClear
         | K::FontsClearFallbacks
+        | K::FontsList
+        | K::FontsProgram
         | K::FontsRegister
         | K::FormsDeleteField
         | K::FormsDeleteWidget
@@ -514,6 +524,9 @@ pub fn result_in_page_space(
         | K::AttachmentsList
         | K::AttachmentsReadFile
         | K::Close
+        | K::DocumentFontsList
+        | K::DocumentFontsProgram
+        | K::DocumentFontsResolve
         | K::DocumentCheckPasswordPermissions
         | K::DocumentProbeSecurityFile
         | K::DocumentRenderPageFile
@@ -527,6 +540,8 @@ pub fn result_in_page_space(
         | K::FontsAuthorizeEditing
         | K::FontsClear
         | K::FontsClearFallbacks
+        | K::FontsList
+        | K::FontsProgram
         | K::FontsRegister
         | K::FormsDeleteField
         | K::FormsExport
