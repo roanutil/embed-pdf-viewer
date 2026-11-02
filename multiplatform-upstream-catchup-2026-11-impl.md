@@ -2,7 +2,8 @@
 
 This is the record of bringing `research/multi-platform-rust-core-impl` up to upstream `main`. It is
 Task 3 of `multiplatform-upstream-catchup-2026-11.md` (committed on `research/catchup-2026-11-plan`
-at `867c1c036`), plus the part of D6 that belongs on impl. Plugins is Task 4 and follows from here.
+at `867c1c036`), plus the part of D6 that belongs on impl. Plugins is C4 (plan Task 4) and follows
+from here.
 
 ## What was merged
 
@@ -35,7 +36,10 @@ impl's own hunks from `b456ee4fd` and nothing else. So does `pnpm-lock.yaml`.
   added. `StartupFont` gains `tier`, and `fonts.addFallback` reads an optional `tier`.
 - `cbb538fee` binds the rest of the font surface that upstream's TS reads through the runtime, in two
   new modules, `crates/pdfium/src/font_program.rs` and `crates/pdfium/src/document_fonts.rs`.
-- `798f7b229` makes a wire `tier` coerce the way the TS does, below.
+- `798f7b229` makes a wire `tier` coerce the way the TS on the WASM runtime does, below.
+- `2e5a14a81` narrows the two `GetProgramObjNum` results with `u32::try_from`, a number past `u32`
+  reading as the fork's 0 (no program), and reserves the fallback-id buffer with
+  `try_reserve_exact` like the others in `document_fonts.rs`.
 
 ## The tier at the FFI boundary
 
@@ -49,8 +53,10 @@ the JavaScript value reaches the wasm `i32` as it is, and the WebAssembly JS API
 `ToInt32(ToNumber(v))`. An absent tier never gets that far: the default parameter makes it
 `FALLBACK_TIERS.own`. `null` is not absent, and ToNumber makes it 0.
 
-Rust now does the same. `crates/epdf-engine/src/js_number.rs` implements `ToNumber` over every JSON
-value (strings by the `StringNumericLiteral` grammar, arrays through their `join`) and `ToInt32`.
+Rust now does what the WASM runtime does, and only that runtime: the Node native addon converts
+differently, as the exception below says. `crates/epdf-engine/src/js_number.rs` implements
+`ToNumber` over every JSON value (strings by the `StringNumericLiteral` grammar, arrays through
+their `join`) and `ToInt32`.
 The host decodes `tier` with it and no longer refuses a value as `WireFormat`. The registry passes
 `ToInt32` of the tier to PDFium: 1.7 is tier 1, -0.5 is 0, `null`, `"own"` and `{}` are 0, `"1"`
 is 1, 2^32 + 1 is 1, and 2^31 wraps to -2^31. `crates/epdf-engine/tests/font_fallback_tier_wire.rs`
@@ -65,7 +71,15 @@ order, and the TS answer depends on the JavaScript engine's sort algorithm, so V
 and SpiderMonkey can disagree. Rust answers what a stable insertion sort makes of the same
 comparator, because `sort_by` may panic on a comparator that isn't total. This affects only the
 reported order. PDFium's chain matches exactly. Nothing on impl reports the order to a TS caller
-yet. `fonts.list` does once C4 ports it.
+yet. `fonts.list` does once C4 (plan Task 5) ports it.
+
+The exception also has to name the native runtime, where TS and Rust can disagree on PDFium's chain
+too. The Node addon's generated wrapper reads an `int32` argument as `int32_t x;` followed by
+`napi_get_value_int32(env, argv[i], &x)`, and ignores the status
+(`packages/engine/runtime/build/generate-napi-binding.mjs:65`). For a non-number tier (`null`, a
+string, an object) the call fails with `napi_number_expected` and leaves `x` unwritten, so PDFium
+gets an indeterminate int. A number converts the way `ToInt32` does, so for numbers the two runtimes
+and the Rust agree. The Rust mirrors the WASM runtime, and we didn't change any behavior for this.
 
 ## The font port, split between impl and plugins
 
@@ -84,13 +98,15 @@ request kinds (`document.fonts.list`, `document.fonts.resolve`, `document.fonts.
 plugins already rewrote this code and impl doesn't have it. `7566552a2` changed the `fonts.*` wire
 answers and the `italic` decoding, and plugins' `crates/pdfium/src/fonts.rs` has `font_identity`,
 `font_licence` and `authorize_font_editing`. An impl port would duplicate those and conflict with
-them. The cost is that the engine-level font port, the larger half of D6, all lands in Task 4.
+them. The cost is that the engine-level font port, the larger half of D6, all lands in C4 (plan
+Task 5).
 
-For Task 4, two details. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends `"italic":
-null` because impl's host still decodes `italic` as a bool, so it needs `-1` once plugins' decoding
-wins the merge. And plugins' callers of `FontRegistry::add_fallback(key)` and
-`pdfium::add_fallback_font` need the tier: the first keeps compiling, the second takes `(id, 0)`,
-and `StartupFont` and `add_fallback_in_tier` take the tier as an `f64`.
+For the plugins merge, C4 (plan Task 4), two details.
+`crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends `"italic": null` because impl's host
+still decodes `italic` as a bool, so it needs `-1` once plugins' decoding wins the merge. And
+plugins' callers of `FontRegistry::add_fallback(key)` and `pdfium::add_fallback_font` need the
+tier: the first keeps compiling, the second takes `(id, 0)`, and `StartupFont` and
+`add_fallback_in_tier` take the tier as an `f64`.
 
 ## Known gap: `EPDFAnnot_GetStructurePosition`
 
@@ -131,6 +147,8 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `pnpm install --frozen-lockfile` | `cbb538fee` | 0 | Installed |
 | `pnpm exec turbo run build --filter=@embedpdf/engine... --cache-dir=target/turbo-cache` | `cbb538fee` | 1 | 5 of 6 tasks; `@embedpdf/engine#build` can't resolve `@embedpdf/engine-runtime-wasm32` |
 | `pnpm --filter @embedpdf/tooling-engine-conformance run operations:check` | `cbb538fee` | 1 | The five font kinds have no row; 94 kinds against the 89 documented |
+| `cargo test -p pdfium --test document_fonts` | `2e5a14a81` | 0 | 11 passed |
+| `cargo clippy -p pdfium --all-targets` | `2e5a14a81` | 0 | No lint warnings |
 
 ### The 99 cargo failures
 
@@ -177,21 +195,83 @@ refused").
 `scope_conformance.rs` expands the PDF permission bits without `doc.text.search` and
 `doc.text.select`.
 
-`cargo fmt --check` still reports diffs in 11 files we didn't touch. They were unformatted before
-the merge.
+`cargo fmt --check` still reports diffs in 15 files we didn't touch, and lists the same 15 on
+`52f10e027`: nine in `crates/epdf-engine`, two each in `crates/epdf-wasm` and `crates/pdfium`, and
+one each in `crates/epdf-node` and `crates/epdf-uniffi`. They were unformatted before the merge.
 
-### `operations:check` is red on impl
+### Three conformance checks are red from the merge
 
-`operations:check` stays red on impl until C4 adds the five font-kind rows on plugins. The merge
-causes it: upstream's `worker-protocol.ts` now has 94 request kinds against the 89 `operations.ts`
-documents, and the five new ones have no row:
-`document.fonts.list`, `document.fonts.program`, `document.fonts.resolve`, `fonts.list` and
-`fonts.program`. A row names a port group, an ownership stage and a cancellation case, and the plan
-and port order have to change with it, so it belongs with the engine-level font port in Task 5.
+Ten of the 32 `:check` scripts in `tooling/engine-conformance` run without a `wasm32` payload. We
+ran each with `pnpm run <script>` in that directory, on `52f10e027` in a temporary worktree and on
+`090fe3f55`, the same tree as the merge for these scripts:
 
-The engine build fails for want of the `wasm32` payload package, the same gap as below. It fails
-the same way on `52f10e027`, whose payload hash, `ac356131f67e5d3f`, isn't published either.
+| Script | `52f10e027` exit | `090fe3f55` exit | Result at `090fe3f55` |
+|---|---|---|---|
+| `schema:check` | 0 | 0 | Current |
+| `search:check` | 0 | 0 | Current |
+| `scope:check` | 0 | 1 | `DIFFERS scope/parse.json`, `DIFFERS scope/resolve.json` |
+| `security:check` | 0 | 0 | Current |
+| `render:check` | 0 | 0 | Current |
+| `charmap:check` | 0 | 0 | Current |
+| `annotation:check` | 0 | 0 | Current |
+| `annotation-write:check` | 0 | 0 | Current |
+| `layout:check` | 0 | 0 | Current |
+| `wire:check` | 0 | 1 | `expected 89 request kinds, the union has 94` |
 
-The TS `:check` scripts in `tooling/engine-conformance` didn't run. They need a `wasm32` payload for
-this tree's payload hash, `facdbea7f80d8cef`. Neither `embedpdf/runtime-payloads` nor
-`roanutil/embed-pdf-runtime` publishes one, and building it is Task 6.
+`operations:check` is the third red one (the `cbb538fee` row in the table above). The other 21 boot
+the engine, and the engine doesn't build without the payload (`metadata:check` fails with `Cannot
+find module .../packages/engine/main/workers/inline-transport.node.js`).
+
+`scope:check` is red because upstream changed the scope grammar in five commits (`97871d404`,
+`bd82ec1af`, `8638dc749`, `ddd26250d`, `3fa96a354`). Regenerating moves six vector lines. In
+`parse.json`, `shape-uppercase` (`"Doc.Open"`) still fails, but the issue is now `invalid plugin
+permission shape (expected <plugin id>.<action>)` instead of `invalid capability name shape`: a
+dotted word whose first segment isn't a core namespace now parses as a plugin permission. In
+`resolve.json`, five cases (`pdf-permissions`, `forms-submit-is-grant-only`,
+`narrowing-from-bits-not-scope`, `duplicate-scopes`, `order-does-not-matter`) gain
+`doc.render.thumbnail` in every expanded set, because `doc.render` now implies it. Nothing else in
+either file changes.
+
+`wire:check` is red because `EXPECTED_KINDS` in `src/generate-wire-vectors.ts` is still 89 and the
+`WorkerRequest` union has the five font kinds. Plan Task 5 already lists updating it.
+
+`operations:check` stays red on impl until C4 (plan Task 5) adds the five font-kind rows on plugins.
+The merge causes it: upstream's `worker-protocol.ts` now has 94 request kinds against the 89
+`operations.ts` documents, and the five new ones have no row: `document.fonts.list`,
+`document.fonts.program`, `document.fonts.resolve`, `fonts.list` and `fonts.program`. A row names a
+port group, an ownership stage and a cancellation case, and the plan and port order have to change
+with it, so it belongs with the engine-level font port.
+
+### The Rust scope parser is behind the TS
+
+C4 (plan Task 5) has to port the new scope grammar to `crates/epdf-engine/src/auth/scope/`. We
+didn't, because it is TS-parity work and the vectors for it don't exist yet. Upstream's
+`packages/engine/core/src/auth/scope/` now has:
+
+- A `plugin` kind of `ParsedScope`: a dotted word outside `CORE_NAMESPACES` parses as
+  `<plugin id>.<action>` against `PLUGIN_PERMISSION_SHAPE`, or fails with the new issue text.
+  `pluginOfPermission`, `isPluginId`, `pluginPermissionsOf` and `checkPluginPermission` go with it.
+- `doc.render.thumbnail` in the closed set, and the implication `doc.render` implies it.
+- `scopeNotCovered` in the new `coverage.ts`, the rule for minting only what you hold.
+
+The Rust has none of these. `parse_capability` refuses `protected-display.view` as `unknown
+capability`, and `DocCapability` has no `doc.render.thumbnail`.
+
+`scope_conformance.rs` doesn't catch this, and regenerating won't make it. We ran it against
+regenerated vectors. `the_grammar_accepts_and_refuses_what_typescript_does` stays green: it
+compares only whether a case parses, no parse case is a plugin permission, and both sides refuse
+`"Doc.Open"`. `the_closed_capability_set_is_the_same_set` stays green because the vector's list is
+`ALL_CAPABILITIES` in `tooling/engine-conformance/src/scope-cases.ts`, a hand list without
+`doc.render.thumbnail` (or `doc.sign`, `doc.outline.modify` and the other capabilities it was
+already missing). Only `resolution_agrees_with_typescript` moves: it already fails, and now
+`doc.render.thumbnail` joins the missing capabilities. So the port also needs parse cases for plugin
+permissions and the hand list brought up to `KNOWN_CAPABILITIES`, or the gate keeps passing over the
+drift.
+
+### The engine build
+
+The engine build fails for want of the `wasm32` payload package. It fails the same way on
+`52f10e027`, whose payload hash, `ac356131f67e5d3f`, isn't published either. This tree's payload
+hash is `facdbea7f80d8cef`. Neither `embedpdf/runtime-payloads` nor `roanutil/embed-pdf-runtime`
+publishes one, and building it is Task 6. That gap is what keeps the other 21 `:check` scripts from
+running.

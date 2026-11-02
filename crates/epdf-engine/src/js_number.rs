@@ -1,5 +1,5 @@
 //! JavaScript's number coercions, for the wire values the TypeScript worker
-//! passes to the runtime unchecked.
+//! passes to the WASM runtime unchecked.
 //!
 //! A worker request field the TypeScript never validates reaches a WebAssembly
 //! `i32` parameter as whatever JavaScript value it was. `createWasmFunctions`
@@ -7,7 +7,10 @@
 //! untouched, Emscripten's `cwrap` returns the raw export for an all-numeric
 //! signature, and the WebAssembly JS API converts the argument with
 //! `ToInt32(ToNumber(v))`. These are those two operations, over the values
-//! JSON can carry.
+//! JSON can carry. The Rust mirrors the WASM runtime only: the Node native
+//! addon reads an `int32_t` with `napi_get_value_int32` and ignores its status
+//! (`engine/runtime/build/generate-napi-binding.mjs:65`), so a non-number
+//! reaches it as an indeterminate value.
 
 use serde_json::Value;
 
