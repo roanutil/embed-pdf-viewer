@@ -215,10 +215,10 @@ impl Document {
             for program in 0..program_count {
                 programs.push(DocumentFontProgram {
                     // 0 is the fork's "no program"; a number past u32 names none.
-                    // c_ulong is 64-bit on Unix and 32-bit on Windows and
-                    // wasm32, where this try_from is a no-op and clippy
-                    // objects to it. It is load-bearing on Unix, so the lint
-                    // is silenced here.
+                    // c_ulong is 64-bit on LP64 targets, 32-bit on Windows,
+                    // wasm32 and other 32-bit targets, where this try_from is
+                    // a no-op and clippy objects to it. It is load-bearing on
+                    // LP64, so the lint is silenced here.
                     #[allow(clippy::useless_conversion)]
                     object_number: u32::try_from(unsafe {
                         pdfium_sys::EPDFFontFaces_GetProgramObjNum(h, face, program)
@@ -509,9 +509,10 @@ impl Annotation<'_> {
         font_size: f32,
         color: (u8, u8, u8),
     ) -> bool {
-        // c_ulong is 64-bit on Unix and 32-bit on Windows and wasm32, where
-        // this into() is a no-op and clippy objects to it. It is load-bearing
-        // on Unix, so the lint is silenced here.
+        // c_ulong is 64-bit on LP64 targets, 32-bit on Windows, wasm32 and
+        // other 32-bit targets, where this into() is a no-op and clippy
+        // objects to it. It is load-bearing on LP64, so the lint is silenced
+        // here.
         #[allow(clippy::useless_conversion)]
         let program_object_number: std::os::raw::c_ulong = program_object_number.into();
         // SAFETY: the handle is live.
