@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests/document_session.rs (target/baseline/debug/deps/document_session-b636b1c7bdda0a04)
+
+running 1 test
+test a_page_held_past_close_keeps_a_registry_layers_base_alive ... error: test failed, to rerun pass `-p epdf-engine --test document_session`
+
+Caused by:
+  process didn't exit successfully: `/workspaces/embed-pdf-viewer/target/baseline/debug/deps/document_session-b636b1c7bdda0a04 a_page_held_past_close_keeps_a_registry_layers_base_alive --exact --test-threads=1` (signal: 11, SIGSEGV: invalid memory reference)

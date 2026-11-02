@@ -1,0 +1,46 @@
+   Compiling epdf-capi v0.0.0 (/workspaces/embed-pdf-viewer/crates/epdf-capi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.08s
+     Running unittests src/lib.rs (target/debug/deps/epdf_capi-02e13ed05037e816)
+
+running 16 tests
+test buffers::tests::response_framing_matches_the_wire_and_rejects_over_budget_before_copying ... ok
+test buffers::tests::reservations_refuse_excess_and_restore_capacity_on_drop ... ok
+test buffers::tests::payload_frames_reject_truncation_excess_count_and_trailing_bytes ... ok
+test handles::tests::stale_wrong_kind_and_wrong_parent_handles_cannot_resolve_new_values ... ok
+test handles::tests::generation_exhaustion_retires_the_slot_instead_of_reusing_an_old_identity ... ok
+test engine::tests::input_bytes_are_bounded_and_released_when_a_reservation_is_dropped ... ok
+test jobs::tests::a_wait_timeout_does_not_cancel_and_collection_happens_once ... ok
+test startup::tests::ordered_binary_fonts_and_fallbacks_use_the_existing_wire_descriptions ... ok
+test startup::tests::invalid_payload_mapping_is_refused_before_any_font_registration ... ok
+test engine::tests::dropping_an_engine_detaches_and_disposes_state_only_on_its_owner_thread ... ok
+test engine::tests::retained_results_fail_fast_at_the_budget_and_release_capacity_on_drop ... ok
+test engine::tests::saturated_admission_does_not_block_cancel_or_close ... ok
+test engine::tests::a_panicking_job_completes_waiters_and_prevents_queued_state_access ... ok
+test engine::tests::a_panic_is_still_reported_when_the_error_result_budget_is_exhausted ... ok
+test jobs::tests::cancellation_is_cooperative_and_abandonment_wakes_waiters ... ok
+test startup::tests::a_registration_failing_partway_unwinds_earlier_fonts_and_joins_the_owner_thread ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/lifecycle.rs (target/debug/deps/lifecycle-702af3c9a32073ae)
+
+running 10 tests
+test excessive_lengths_are_refused_without_reading_the_pointer ... ok
+test invalid_input_clears_outputs_and_returns_an_owned_error ... ok
+test close_is_repeatable_and_rejects_later_submissions ... ok
+test unknown_handles_fail_without_waiting_or_accessing_state ... ok
+test invalid_limit_configuration_is_rejected_before_starting_an_engine ... ok
+test a_job_transfers_its_result_once_and_the_result_outlives_the_engine ... ok
+test wrong_handle_kinds_are_rejected_and_views_are_zeroed ... ok
+test startup_font_payloads_are_registered_before_creation_completes ... ok
+test a_startup_font_failing_after_earlier_registrations_fails_creation_with_its_error ... ok
+test aggregate_startup_font_bytes_over_the_retained_budget_are_refused_before_startup ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests epdf_capi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
