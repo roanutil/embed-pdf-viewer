@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "slice": 6,
+  "rid": "osx-x64",
+  "source": {
+    "commit": "3b704415a1324b5852c49ad516ea5b43b5ec7f56",
+    "dirty": true,
+    "diffSha256": "6e446e85995b8261f8e8f4c27ec6a0ca9c4fefd264f13ae4f7c9337b89001250",
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.41",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS arm64",
+    "tools": {
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  "inputs": [
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "platforms/dotnet/packaging/fonts.json",
+      "sha256": "e8e50da21f8c48abe31b66206d183bd2a73596b3d068808f9c8b4e42be2dd806",
+      "bytes": 148
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/non_identity_text.pdf",
+      "sha256": "631eca89df7662dfb0f743c61d32d6a7fc294038f8634a01266a2c1b170c3c98",
+      "bytes": 307305
+    }
+  ],
+  "commands": [
+    {
+      "command": "/usr/bin/python3 -c \"import platform; print(platform.system(), platform.machine())\"",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 0,
+      "results": "Observing environment: Linux aarch64. UNVALIDATED: No established native macOS x64 host. No target build/package/native validation was attempted."
+    }
+  ],
+  "artifacts": [],
+  "limitations": [
+    "UNVALIDATED: No established native macOS x64 host.",
+    "Preliminary packaging smoke only. R7 Important findings remain open: Windows packaged preload conflicts with test-only source resolver, and package-manifest guards permit unsupported success claims. No source changes were made after review freeze.",
+    "Live J6 viewer/native parity has not passed. Known stale runtime 1461/#16 corpus limitations are not cleared by this focused smoke.",
+    "osx-x64 and win-x64 are UNVALIDATED because no native hosts are available. No emulation or cross compilation substitutes for those hosts.",
+    "Default fallback-font inventory is empty; no deployed-font or browser geometry compatibility claim.",
+    "Release libraries were compiled before the source-review freeze; their hashes are retained, but final exact-head build/package/relocation evidence must be refreshed after the coordinated review fixes."
+  ]
+}
