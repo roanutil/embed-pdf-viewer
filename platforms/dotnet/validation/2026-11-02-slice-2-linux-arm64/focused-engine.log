@@ -1,0 +1,34 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running tests/geometry_corpus.rs (target/debug/deps/geometry_corpus-4e4dd9f54a38ec0b)
+
+running 2 tests
+test the_corpus_exercises_both_run_variants_and_empty_glyphs ... ok
+test every_corpus_page_matches_the_typescript_reader ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+
+     Running tests/search_dialect.rs (target/debug/deps/search_dialect-1fbcc677820a821b)
+
+running 9 tests
+test catastrophic_backtracking_shapes_stay_linear ... ok
+test snippets_agree_with_typescript ... ok
+test a_snippet_locates_its_match_inside_itself ... ok
+test literal_search_agrees_with_typescript ... ok
+test the_dialect_corpus_covers_what_the_entry_gate_asks_for ... ok
+test the_fold_agrees_with_typescript ... ok
+test the_fold_vectors_keep_the_properties_the_anchor_stage_rests_on ... ok
+test folded_ranges_translate_back_the_same_way ... ok
+test the_rust_engine_reproduces_the_javascript_dialect ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/text_corpus.rs (target/debug/deps/text_corpus-50d0283a6cef5d06)
+
+running 4 tests
+test a_cancelled_text_read_reports_aborted ... ok
+test every_extracted_snapshot_satisfies_the_map_invariants ... ok
+test page_text_agrees_with_the_typescript_engine ... ok
+test slicing_an_extracted_page_by_its_whole_range_returns_its_text ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+

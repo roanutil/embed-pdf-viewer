@@ -1,0 +1,448 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src/lib.rs (target/debug/deps/epdf_engine-90136e658665af55)
+
+running 9 tests
+test dispatch::tests::close_drains_submitted_jobs_before_their_results_are_collected ... ok
+test dispatch::tests::detached_shutdown_returns_while_work_drains_and_drops_state_on_its_owner ... ok
+test dispatch::tests::a_closed_engine_refuses_work_rather_than_blocking ... ok
+test dispatch::tests::a_panicking_job_does_not_take_the_engine_with_it ... ok
+test dispatch::tests::setup_runs_before_any_job ... ok
+test dispatch::tests::submitting_returns_before_the_job_finishes ... ok
+test dispatch::tests::jobs_run_on_one_thread_that_is_not_the_caller ... ok
+test dispatch::tests::state_is_created_used_and_dropped_on_the_owner_thread ... ok
+test dispatch::tests::close_drains_work_that_was_already_accepted ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 475 filtered out; finished in 0.00s
+
+     Running tests/action_reader.rs (target/debug/deps/action_reader-d9ec339925ef5ce6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/annotation_appearance.rs (target/debug/deps/annotation_appearance-9b650c32ac499794)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.00s
+
+     Running tests/annotation_create.rs (target/debug/deps/annotation_create-988d8ac9e8c96a68)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.00s
+
+     Running tests/annotation_delete.rs (target/debug/deps/annotation_delete-17876500034f3328)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/annotation_flatten.rs (target/debug/deps/annotation_flatten-1be62f3dfe96f8d4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/annotation_move.rs (target/debug/deps/annotation_move-dc47b1336c194579)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/annotation_reader.rs (target/debug/deps/annotation_reader-82cadd28aabbb0fe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.00s
+
+     Running tests/annotation_transfer.rs (target/debug/deps/annotation_transfer-ddc47f3e5b3a40a3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+     Running tests/annotation_update.rs (target/debug/deps/annotation_update-a170ae8d6e660ae9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 33 filtered out; finished in 0.00s
+
+     Running tests/annotation_vocabulary.rs (target/debug/deps/annotation_vocabulary-2018d119b992962f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/annotation_write.rs (target/debug/deps/annotation_write-0ff576ead88f0de2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/attachment_reader.rs (target/debug/deps/attachment_reader-bc5b8454ee8c7f55)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/cancel_traces.rs (target/debug/deps/cancel_traces-ff7ae09e573bdedc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/charmap.rs (target/debug/deps/charmap-df9b738770710d5d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+     Running tests/document_apply.rs (target/debug/deps/document_apply-7c9e385df80bf953)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.00s
+
+     Running tests/document_events.rs (target/debug/deps/document_events-54aa53e11e4a3f19)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.00s
+
+     Running tests/document_save.rs (target/debug/deps/document_save-176dec61c3ad0abb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/document_session.rs (target/debug/deps/document_session-b636b1c7bdda0a04)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 0.00s
+
+     Running tests/files_write.rs (target/debug/deps/files_write-dce935cbc364fcb0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/flatten_corpus.rs (target/debug/deps/flatten_corpus-3e70c1e1443af0c8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/font_registry.rs (target/debug/deps/font_registry-7b141956364b2950)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests/font_settings.rs (target/debug/deps/font_settings-4715afd1e37ead3e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/form_apply.rs (target/debug/deps/form_apply-948b354f49128dd4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/form_field.rs (target/debug/deps/form_field-44cb46965f783784)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/form_reader.rs (target/debug/deps/form_reader-a902a3725be2a395)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s
+
+     Running tests/form_transfer.rs (target/debug/deps/form_transfer-249e7a258a40f7da)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.00s
+
+     Running tests/form_widgets.rs (target/debug/deps/form_widgets-a9430563bbf1969c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+     Running tests/form_write.rs (target/debug/deps/form_write-9e2a0900ff788896)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/geometry.rs (target/debug/deps/geometry-9403824bdabc8e38)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/geometry_corpus.rs (target/debug/deps/geometry_corpus-4e4dd9f54a38ec0b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/host_sessions.rs (target/debug/deps/host_sessions-a71049e2ff475479)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+     Running tests/measure.rs (target/debug/deps/measure-9a015441803a73a6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests/metadata_corpus.rs (target/debug/deps/metadata_corpus-232723d9607f0d44)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests/metadata_write.rs (target/debug/deps/metadata_write-babcd2751baae5c2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/mutation_finalization.rs (target/debug/deps/mutation_finalization-f462180abae0b2bd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests/named_pages.rs (target/debug/deps/named_pages-b4090cdb706fcc0d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/outline.rs (target/debug/deps/outline-6886ec062a2429fe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 0.00s
+
+     Running tests/page_extract.rs (target/debug/deps/page_extract-6b126feb203a4ef5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/page_extract_corpus.rs (target/debug/deps/page_extract_corpus-363bb33ed45f008c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/page_residency.rs (target/debug/deps/page_residency-4c82f88254248b1b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+     Running tests/page_structure.rs (target/debug/deps/page_structure-ca9540778a082ef9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+     Running tests/pages_corpus.rs (target/debug/deps/pages_corpus-ebe44440d2ef9f02)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/pages_mutate.rs (target/debug/deps/pages_mutate-51c4e7a865606c50)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/piece_info_reader.rs (target/debug/deps/piece_info_reader-dff6798be80cb185)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests/print_render.rs (target/debug/deps/print_render-6731e3747fe71e1d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/redaction_apply.rs (target/debug/deps/redaction_apply-f93df3d7ddfd38a5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests/render_geometry.rs (target/debug/deps/render_geometry-38c501009921e66d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/render_pixels.rs (target/debug/deps/render_pixels-e0074ba3037dab29)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
+     Running tests/replay_helper.rs (target/debug/deps/replay_helper-d432989a9a7dd518)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/rotation_normalization.rs (target/debug/deps/rotation_normalization-05df59b3b2339c10)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/schema_parity.rs (target/debug/deps/schema_parity-447270fc9853af3c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/scope_conformance.rs (target/debug/deps/scope_conformance-599878d18829dfbc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/search_dialect.rs (target/debug/deps/search_dialect-1fbcc677820a821b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/search_ignore_whitespace.rs (target/debug/deps/search_ignore_whitespace-39ea154a182521df)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.00s
+
+     Running tests/search_reader.rs (target/debug/deps/search_reader-dafede67cdbc454a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+     Running tests/search_slice_protocol.rs (target/debug/deps/search_slice_protocol-e3864aeeb7a54aeb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/security_reader.rs (target/debug/deps/security_reader-85cc5969b070f8e2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests/security_scope.rs (target/debug/deps/security_scope-6deff614fbbb8d19)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+
+     Running tests/security_state.rs (target/debug/deps/security_state-022505c48d5c30ad)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/server_surfaces.rs (target/debug/deps/server_surfaces-b69365029dc35f86)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests/session_registry.rs (target/debug/deps/session_registry-59864558a01677dc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+
+     Running tests/signature_analyze.rs (target/debug/deps/signature_analyze-bc994003aa28e6be)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests/signature_finalize.rs (target/debug/deps/signature_finalize-20f6e5ccebf16b36)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/signature_protection.rs (target/debug/deps/signature_protection-2239991a95fe0480)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/signature_read.rs (target/debug/deps/signature_read-01f8dafbffc493bc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/signature_sign.rs (target/debug/deps/signature_sign-6ed036e260656258)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.00s
+
+     Running tests/stage_b_lease_spike.rs (target/debug/deps/stage_b_lease_spike-bdee654408e54656)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running tests/submit_flags.rs (target/debug/deps/submit_flags-457f720667a01825)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests/text_corpus.rs (target/debug/deps/text_corpus-50d0283a6cef5d06)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+     Running tests/text_layout.rs (target/debug/deps/text_layout-7b314ab8268ee645)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/wire_contract.rs (target/debug/deps/wire_contract-040b60f8d14591e8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.00s
+
+     Running tests/write_transactions.rs (target/debug/deps/write_transactions-6684651ffc6dc1b7)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+

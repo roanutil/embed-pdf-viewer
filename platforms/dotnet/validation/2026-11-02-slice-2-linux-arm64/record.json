@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "slice": 2,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "ee3b16210db957ff4575750ea9bfb8ebc7f71c47",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS arm64; Docker Linux VM",
+    "tools": {
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+      "dotnet": "10.0.403",
+      "clang": "clang version 21.0.0 (https://github.com/swiftlang/llvm-project.git 11673e6660b2d0a5f9f99b1c7b773f4c2f6df1b0)"
+    }
+  },
+  "inputs": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "39340441d3a8e391ed7267264da2c64970c137dad92248b8edea191696cec069",
+      "bytes": 58939
+    },
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "packages/engine/main/test/fixtures/Roboto-Regular.ttf",
+      "sha256": "797e35f7f5d6020a5c6ea13b42ecd668bcfb3bbc4baa0e74773527e5b6cb3174",
+      "bytes": 305608
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/annotation_kinds.pdf",
+      "sha256": "2302036e2a962b6e0f65b5ea2a18cd31d71e1d89214b75c259838a83e04d860c",
+      "bytes": 6118
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "sha256": "9e47af595392111f5ec9cefb0cb0f7d4fc5f6c5a7d4193931b00693d9f3663bb",
+      "bytes": 914
+    },
+    {
+      "path": "crates/epdf-capi/tests/common/mod.rs",
+      "sha256": "4b56a50944dc3ce70d94f80330b864ac212773a31e6b2fa59096a22927f5808a",
+      "bytes": 6292
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    }
+  ],
+  "commands": [
+    {
+      "command": "cargo test -p epdf-capi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Suite summaries (passed/failed/ignored): 23/0/0, 2/0/0, 8/0/0, 10/0/0, 0/0/0",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/native-tests.log",
+        "sha256": "5e4a222dc03dd109eff6db5dd9310482cdf35cc43341ebca305977e367fbceba",
+        "bytes": 4676
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine --test text_corpus --test geometry_corpus --test search_dialect",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Suite summaries (passed/failed/ignored): 2/0/0, 9/0/0, 4/0/0",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/focused-engine.log",
+        "sha256": "e7f09198b2bdc3a47f88aea22129c457ae60dfad3489d5cc18020f80dd021742",
+        "bytes": 1555
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine dispatch::tests",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Suite summaries (passed/failed/ignored): 9/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0, 0/0/0",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/dispatch.log",
+        "sha256": "b475d730e9651249398e563858741a1c92b1caff39ca57d70f295bda35ec6b75",
+        "bytes": 15639
+      }
+    },
+    {
+      "command": "cargo clippy -p epdf-capi --all-targets -- -D warnings",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Command completed with exit code 0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/clippy.log",
+        "sha256": "8c233a54790c4800d3dd585436af679aa838da259bfdb129412e2d51cdb75cdc",
+        "bytes": 72
+      }
+    },
+    {
+      "command": "cargo fmt -p epdf-capi --check && rustfmt --edition 2024 --check crates/epdf-engine/src/host.rs && git diff --check",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Command completed with exit code 0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/format.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    {
+      "command": "cargo build -p epdf-capi && mkdir -p target/manual && clang -std=c11 -Wall -Wextra -Werror -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,/workspaces/embed-pdf-viewer/target/debug -o target/manual/c-smoke && target/manual/c-smoke",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Command completed with exit code 0. C ABI layout, calls and owned-result lifetime: PASS.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/c-consumer.log",
+        "sha256": "f846b60279d84b66a7d4cc9dd9556cf52d9df377744663b11d5d63ba182fae34",
+        "bytes": 124
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine -- --test-threads=1",
+      "cwd": ".",
+      "exitCode": 101,
+      "results": "Suite summaries (passed/failed/ignored): 484/0/0, 13/0/0, 20/0/0, 22/0/0, 13/0/0, 9/0/0, 11/0/0, 15/0/0, 24/0/0, 33/0/0, 8/0/0, 2/0/0, 5/0/0, 7/0/0, 28/0/0, 22/0/0, 17/0/0, 9/0/0 Native layer-page render test a_page_held_past_close_keeps_a_registry_layers_base_alive terminates with SIGSEGV (signal 11) against the recorded stale runtime artifact.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/broad-engine.log",
+        "sha256": "90e5153de65e2ae6d2f52f29484d39b07512e7d7513ed67662ab9ad55c08e5f7",
+        "bytes": 67129
+      }
+    },
+    {
+      "command": "pnpm changeset status --since=fork/research/multi-platform-rust-core-impl-plugins",
+      "cwd": ".",
+      "exitCode": 1,
+      "results": "Command completed with exit code 1. The changeset executable is unavailable because JavaScript dependencies are not installed; no JavaScript package paths change.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/changesets.log",
+        "sha256": "e625aa44f84a9d5730cdaa582916472596fd96d47ffa3b0f68b843be5f8c227f",
+        "bytes": 520
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "target/debug/libepdf_capi.so",
+      "sha256": "e3212585d959d3a997cd1ead870ad10a55102cbcbf01f0cf3709e360f2324820",
+      "bytes": 120357168
+    },
+    {
+      "path": "target/manual/c-smoke",
+      "sha256": "8b67e39ab982ba8a8f25de9e6c2cdb06aa48a64f41255ec84a5188fd530a04d4",
+      "bytes": 70944
+    }
+  ],
+  "limitations": [
+    "The broad engine suite is not green: the recorded linux-arm64 runtime at 1461b0c51 predates the layer-page image-cache lifetime fix. The serial run stops at a_page_held_past_close_keeps_a_registry_layers_base_alive with SIGSEGV. No test is skipped or weakened. Repeat the broad and native suites against the corrected runtime artifact before claiming layer-render validation.",
+    "Only native Linux arm64 container execution is validated. Other native platforms, relocation/packaging and the managed facade are unvalidated in this record.",
+    "No live browser parity comparison is included; this record establishes native adapter invariants and existing engine corpus results only.",
+    "Literal search preserves the existing page-granularity slice budget: a single page can exceed the requested match count. Cursors remain bounded by pages and framing budgets.",
+    "Changeset status could not run because JavaScript dependencies are absent. Diff audit covers private native crates and manual validation only; no publishable JavaScript package is directly changed.",
+    "Independent review is pending; the local branch is not pushed and no pull request is opened in this record."
+  ]
+}
