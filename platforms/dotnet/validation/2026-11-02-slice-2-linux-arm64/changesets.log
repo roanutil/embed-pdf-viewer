@@ -1,0 +1,9 @@
+ WARN  Issue while reading "/workspaces/embed-pdf-viewer/.npmrc". Failed to replace env in config: ${NPM_TOKEN}
+ WARN  Issue while reading "/workspaces/embed-pdf-viewer/.npmrc". Failed to replace env in config: ${NPM_TOKEN}
+
+> embedpdf@0.0.0 changeset /workspaces/embed-pdf-viewer
+> changeset status --since=fork/research/multi-platform-rust-core-impl-plugins
+
+sh: 1: changeset: not found
+ ELIFECYCLE  Command failed.
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?

@@ -67,7 +67,12 @@ fn check(response: HostResponse) -> Result<(), Failure> {
     let parsed: serde_json::Value = serde_json::from_str(&response.json)
         .map_err(|_| Failure::new(Status::RuntimeUnavailable, "invalid startup font response"))?;
     if parsed.get("error").is_some() {
-        return Err(Failure { status: Status::RuntimeUnavailable, response });
+        let status = match parsed["error"]["code"].as_str() {
+            Some("InvalidArg" | "WireFormat") => Status::InvalidArgument,
+            Some("PayloadTooLarge") => Status::LimitExceeded,
+            _ => Status::RuntimeUnavailable,
+        };
+        return Err(Failure { status, response });
     }
     Ok(())
 }
@@ -182,7 +187,7 @@ mod tests {
             Ok(fonts)
         });
         let Err(failure) = started else { panic!("a failed startup font must not start") };
-        assert_eq!(failure.status, Status::RuntimeUnavailable);
+        assert_eq!(failure.status, Status::InvalidArgument);
         assert_eq!(failure.response.json, refusal);
 
         let calls: Vec<_> = calls_rx.try_iter().collect();

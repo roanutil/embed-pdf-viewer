@@ -8,6 +8,7 @@ mod ffi;
 mod handles;
 mod helpers;
 mod jobs;
+mod operations;
 mod startup;
 
 pub use abi::Reply;

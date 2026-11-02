@@ -6,10 +6,34 @@ use epdf_engine::cancel::CancelToken;
 use crate::abi::Status;
 use crate::buffers::OwnedResult;
 
+pub(crate) struct DocumentTransfer {
+    pub id: u64,
+    release: Option<Box<dyn FnOnce() + Send>>,
+}
+
+impl DocumentTransfer {
+    pub fn new(id: u64, release: impl FnOnce() + Send + 'static) -> Self {
+        Self { id, release: Some(Box::new(release)) }
+    }
+    pub fn transfer(mut self) -> u64 {
+        self.release.take();
+        self.id
+    }
+}
+
+impl Drop for DocumentTransfer {
+    fn drop(&mut self) {
+        if let Some(release) = self.release.take() {
+            release();
+        }
+    }
+}
+
 pub(crate) struct Completion {
     pub status: Status,
     pub result: Option<Arc<OwnedResult>>,
     pub document: u64,
+    pub owned_document: Option<DocumentTransfer>,
 }
 
 enum State {
@@ -64,13 +88,24 @@ impl Job {
         self.ready.notify_all();
     }
 
+    #[cfg(test)]
     pub(crate) fn wait(&self, timeout_ms: u32) -> Result<Completion, Status> {
+        self.take_after(timeout_ms, |_| Ok(()))
+    }
+
+    /// Collection commits only after the fallible public handoff succeeds.
+    pub(crate) fn take_after(
+        &self,
+        timeout_ms: u32,
+        prepare: impl FnOnce(&Completion) -> Result<(), Status>,
+    ) -> Result<Completion, Status> {
         let deadline = (timeout_ms != u32::MAX)
             .then(|| Instant::now() + Duration::from_millis(u64::from(timeout_ms)));
         let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
         loop {
             match &*state {
-                State::Ready(_) => {
+                State::Ready(completion) => {
+                    prepare(completion)?;
                     if let State::Ready(result) = std::mem::replace(&mut *state, State::Taken) {
                         return Ok(result);
                     }
@@ -104,7 +139,12 @@ mod tests {
         let job = Job::new();
         assert!(matches!(job.wait(0), Err(Status::Timeout)));
         assert!(!job.token().is_cancelled());
-        job.complete(Completion { status: Status::Ok, result: None, document: 17 });
+        job.complete(Completion {
+            status: Status::Ok,
+            result: None,
+            document: 17,
+            owned_document: None,
+        });
         assert_eq!(job.wait(u32::MAX).unwrap().document, 17);
         assert!(matches!(job.wait(0), Err(Status::AlreadyTaken)));
     }

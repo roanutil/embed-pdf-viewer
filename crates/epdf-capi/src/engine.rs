@@ -9,9 +9,9 @@ use epdf_engine::error::EngineError;
 use epdf_engine::host::HostResponse;
 
 use crate::abi::{Failure, Status, response_error};
-use crate::buffers::{ByteBudget, OwnedResult, Reservation};
+use crate::buffers::{ByteBudget, OwnedResult, Reservation, ReservedOutput};
 use crate::config::Limits;
-use crate::jobs::{Completion, Job};
+use crate::jobs::{Completion, DocumentTransfer, Job};
 
 const OPEN: u8 = 1;
 const CLOSING: u8 = 2;
@@ -129,16 +129,39 @@ impl<S: 'static> Engine<S> {
         Ok(Admission { control: self.control.clone(), _slot: slot, _input: input })
     }
 
+    #[cfg(test)]
     pub(crate) fn submit(
         self: &Arc<Self>,
         admission: Admission,
         action: impl FnOnce(&mut S, &CancelToken) -> Result<HostResponse, EngineError> + Send + 'static,
+    ) -> Result<Arc<Job>, Status> {
+        self.submit_operation(
+            admission,
+            false,
+            || Ok(()),
+            move |state, token, _| action(state, token).map(|response| (response, None)),
+        )
+    }
+
+    pub(crate) fn submit_operation(
+        self: &Arc<Self>,
+        admission: Admission,
+        reserve_output: bool,
+        prepare: impl FnOnce() -> Result<(), Status>,
+        action: impl FnOnce(
+            &mut S,
+            &CancelToken,
+            u64,
+        ) -> Result<(HostResponse, Option<DocumentTransfer>), EngineError>
+        + Send
+        + 'static,
     ) -> Result<Arc<Job>, Status> {
         if !Arc::ptr_eq(&admission.control, &self.control) {
             return Err(Status::InvalidHandle);
         }
         let owner = self.owner.lock().unwrap_or_else(|p| p.into_inner());
         self.admission_status()?;
+        prepare()?;
         let job = Job::new();
         let held = job.clone();
         let weak = Arc::downgrade(self);
@@ -148,9 +171,27 @@ impl<S: 'static> Engine<S> {
         owner
             .submit(move |state| {
                 let outcome = catch_unwind(AssertUnwindSafe(|| {
-                    let (status, response) = if control.phase.load(Ordering::Acquire) == POISONED {
+                    let mut reserved = None;
+                    let reservation_status =
+                        if reserve_output && control.phase.load(Ordering::Acquire) != POISONED {
+                            match ReservedOutput::reserve(limit, &output) {
+                                Ok(value) => {
+                                    reserved = Some(value);
+                                    Ok(())
+                                }
+                                Err(status) => Err(status),
+                            }
+                        } else {
+                            Ok(())
+                        };
+                    let capacity = reserved.as_ref().map_or(limit, |value| value.capacity);
+                    let (status, response, owned_document) = if let Err(status) = reservation_status
+                    {
+                        let error = Failure::new(status, "result capacity is exhausted");
+                        (error.status, error.response, None)
+                    } else if control.phase.load(Ordering::Acquire) == POISONED {
                         let error = Failure::new(Status::Panicked, "engine is poisoned");
-                        (error.status, error.response)
+                        (error.status, error.response, None)
                     } else {
                         let token = held.token();
                         let response = (|| {
@@ -162,19 +203,30 @@ impl<S: 'static> Engine<S> {
                                         "owner state is unavailable",
                                     )
                                 })?;
-                            action(state, &token)
+                            action(state, &token, capacity)
                         })();
-                        (Status::Ok, response.unwrap_or_else(response_error))
+                        let (response, document) =
+                            response.unwrap_or_else(|error| (response_error(error), None));
+                        (Status::Ok, response, document)
                     };
-                    let completion =
-                        match OwnedResult::from_response(&response, limit, Some(&output)) {
-                            Ok(result) => Completion { status, result: Some(result), document: 0 },
-                            Err(failure) => Completion {
-                                status: if status == Status::Ok { failure } else { status },
-                                result: None,
-                                document: 0,
-                            },
-                        };
+                    let framed = match reserved {
+                        Some(reserved) => reserved.finish(&response),
+                        None => OwnedResult::from_response(&response, limit, Some(&output)),
+                    };
+                    let completion = match framed {
+                        Ok(result) => Completion {
+                            status,
+                            result: Some(result),
+                            document: owned_document.as_ref().map_or(0, |document| document.id),
+                            owned_document,
+                        },
+                        Err(failure) => Completion {
+                            status: if status == Status::Ok { failure } else { status },
+                            result: None,
+                            document: 0,
+                            owned_document: None,
+                        },
+                    };
                     drop(admission);
                     held.complete(completion);
                 }));
@@ -189,11 +241,39 @@ impl<S: 'static> Engine<S> {
                     }))
                     .ok()
                     .and_then(Result::ok);
-                    held.complete(Completion { status: Status::Panicked, result, document: 0 });
+                    held.complete(Completion {
+                        status: Status::Panicked,
+                        result,
+                        document: 0,
+                        owned_document: None,
+                    });
                 }
             })
             .map_err(|_| Status::RuntimeUnavailable)?;
         Ok(job)
+    }
+
+    /// Cleanup bypasses work admission and runs only while confined state exists.
+    pub(crate) fn cleanup(self: &Arc<Self>, action: impl FnOnce(&mut S) + Send + 'static) {
+        let owner = self.owner.lock().unwrap_or_else(|p| p.into_inner());
+        let control = self.control.clone();
+        let weak = Arc::downgrade(self);
+        let _ = owner.submit(move |state| {
+            if control.phase.load(Ordering::Acquire) == POISONED {
+                return;
+            }
+            let outcome = catch_unwind(AssertUnwindSafe(|| {
+                if let Some(state) = state.as_mut().and_then(|state| state.state.as_mut()) {
+                    action(state);
+                }
+            }));
+            if outcome.is_err() {
+                control.phase.store(POISONED, Ordering::Release);
+                if let Some(engine) = weak.upgrade() {
+                    engine.request_shutdown();
+                }
+            }
+        });
     }
 
     pub(crate) fn request_shutdown(&self) {
@@ -393,5 +473,52 @@ mod tests {
         assert_eq!(json(&job)["result"], 23);
         assert_eq!(drop_rx.recv_timeout(Duration::from_secs(2)).unwrap(), owner);
         assert_ne!(owner, std::thread::current().id());
+    }
+    #[test]
+    fn cleanup_never_accesses_state_after_a_job_poisons_it() {
+        let engine = Engine::start(Limits::default(), || Ok(())).unwrap();
+        let (started, ready) = sync_channel(1);
+        let (release, blocked) = sync_channel(1);
+        let job = engine
+            .submit(engine.reserve(0).unwrap(), move |_, _| {
+                started.send(()).unwrap();
+                blocked.recv().unwrap();
+                panic!("owner state panicked");
+            })
+            .unwrap();
+        ready.recv_timeout(Duration::from_secs(2)).unwrap();
+        let visits = Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let observed = visits.clone();
+        engine.cleanup(move |_| {
+            observed.fetch_add(1, Ordering::SeqCst);
+        });
+        release.send(()).unwrap();
+        assert_eq!(job.wait(u32::MAX).unwrap().status, Status::Panicked);
+        assert_eq!(engine.close(u32::MAX), Status::Ok);
+        assert_eq!(visits.load(Ordering::SeqCst), 0);
+    }
+    #[test]
+    fn an_exhausted_result_budget_refuses_render_before_the_action_allocates() {
+        let limits = Limits { max_retained_result_bytes: 20, ..Limits::default() };
+        let engine = Engine::start(limits, || Ok(())).unwrap();
+        let first = engine.submit(engine.reserve(0).unwrap(), |_, _| Ok(response(7))).unwrap();
+        let retained = first.wait(u32::MAX).unwrap();
+        let visits = Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let observed = visits.clone();
+        let render = engine
+            .submit_operation(
+                engine.reserve(0).unwrap(),
+                true,
+                || Ok(()),
+                move |_, _, _| {
+                    observed.fetch_add(1, Ordering::SeqCst);
+                    Ok((response(8), None))
+                },
+            )
+            .unwrap();
+        assert_eq!(render.wait(u32::MAX).unwrap().status, Status::LimitExceeded);
+        assert_eq!(visits.load(Ordering::SeqCst), 0);
+        drop(retained);
+        assert_eq!(engine.close(u32::MAX), Status::Ok);
     }
 }

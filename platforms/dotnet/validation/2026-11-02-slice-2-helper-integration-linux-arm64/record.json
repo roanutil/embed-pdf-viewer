@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "slice": 2,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "8986d1353d3825893c4e10a82c7719c3d646bfd8",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS arm64; Docker Linux VM",
+    "tools": {
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+      "dotnet": "10.0.403",
+      "clang": "clang version 21.0.0 (https://github.com/swiftlang/llvm-project.git 11673e6660b2d0a5f9f99b1c7b773f4c2f6df1b0)"
+    }
+  },
+  "inputs": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "cd6b91cea6b7b0cbda98dd4b1ff80e2e3a465278695919392ee125d9dca1dac0",
+      "bytes": 58974
+    },
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "packages/engine/main/test/fixtures/Roboto-Regular.ttf",
+      "sha256": "797e35f7f5d6020a5c6ea13b42ecd668bcfb3bbc4baa0e74773527e5b6cb3174",
+      "bytes": 305608
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/annotation_kinds.pdf",
+      "sha256": "2302036e2a962b6e0f65b5ea2a18cd31d71e1d89214b75c259838a83e04d860c",
+      "bytes": 6118
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "sha256": "9e47af595392111f5ec9cefb0cb0f7d4fc5f6c5a7d4193931b00693d9f3663bb",
+      "bytes": 914
+    },
+    {
+      "path": "crates/epdf-capi/tests/common/mod.rs",
+      "sha256": "4b56a50944dc3ce70d94f80330b864ac212773a31e6b2fa59096a22927f5808a",
+      "bytes": 6292
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/layout.json",
+      "sha256": "e101e3cbda5789ff46e6745e0ae547ab993d07d8be14c698c17e65bcad53ae67",
+      "bytes": 354085
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/charmap.json",
+      "sha256": "2a4f7cb6169ea29175b231d34d3377555cf13cfe5640f3b3d51e7d99cf9dc54d",
+      "bytes": 195920
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/colors.json",
+      "sha256": "dc45a62ac92027f6087ec564f69a7634c9391e59f7b7e748e8c06a4837177104",
+      "bytes": 352
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/embedded-orientations.json",
+      "sha256": "dee46ea248496f6622dbf004f8f925a1083477b0ccc64723b0318c1c0cd1d292",
+      "bytes": 18888
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/font-size-zero.json",
+      "sha256": "fad7a0be887c75347e216df9ed7a5ffa5fafb748dffa1ef2e5a5f0f0aebc94fe",
+      "bytes": 459
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/non-identity-text.json",
+      "sha256": "cb417c6f9355e83bc75177852fd0310633278026a06daccf0db55547c85ad917",
+      "bytes": 1332
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/report.json",
+      "sha256": "a96cd82a06cadfb47ca7df7dd05cca9a7ab3a2ab0f1a9f3fe5964e624dcff92e",
+      "bytes": 1652465
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/pages.geometry/reverse-and-gapped-text.json",
+      "sha256": "639f56435eb746f017de75eca6c308b4d763deb61d0e80f3f5f6d1fbdebd7064",
+      "bytes": 1669
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-page.json",
+      "sha256": "e200225ea326cc1a336fd78cd9230d1d943ed0aaeb894a09dda53fb33ef40be4",
+      "bytes": 339009
+    }
+  ],
+  "commands": [
+    {
+      "command": "cargo test -p epdf-capi",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "unit: 23 passed, 0 failed, 0 ignored; cancellation: 2 passed, 0 failed, 0 ignored; engine_reads: 8 passed, 0 failed, 0 ignored; helpers: 21 passed, 0 failed, 0 ignored; lifecycle: 10 passed, 0 failed, 0 ignored; doctests: 0 passed, 0 failed, 0 ignored",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/native-tests.log",
+        "sha256": "47708d970ef6ad0a9f62197e2b3706bb216d8a2fcabdd0ee0dcb9add98eea368",
+        "bytes": 6272
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine --test charmap --test text_layout --test text_corpus --test geometry_corpus --test search_dialect",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "charmap: 29 passed, 0 failed, 0 ignored; geometry_corpus: 2 passed, 0 failed, 0 ignored; search_dialect: 9 passed, 0 failed, 0 ignored; text_corpus: 4 passed, 0 failed, 0 ignored; text_layout: 13 passed, 0 failed, 0 ignored",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/engine-vectors.log",
+        "sha256": "bc95e408cffc97c47d7d3a1dec8943c6631c6510ebb2fc3788dc4e83c9c49849",
+        "bytes": 4599
+      }
+    },
+    {
+      "command": "cargo test -p epdf-geometry",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "unit: 6 passed, 0 failed, 0 ignored; behavior: 9 passed, 0 failed, 0 ignored; conformance: 5 passed, 0 failed, 0 ignored; doctests: 0 passed, 0 failed, 0 ignored",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/geometry.log",
+        "sha256": "00c4691ffca6c910fbe09b74065130ee963bd03f345920e4456d48495d7f27cb",
+        "bytes": 1808
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine dispatch::tests",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "unit: 9 passed, 0 failed, 0 ignored",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/dispatch.log",
+        "sha256": "952f660417294eb3f99b22a59dfe8ac81bd42a8db7e9226453cb931024ea94ad",
+        "bytes": 15639
+      }
+    },
+    {
+      "command": "cargo clippy -p epdf-capi --all-targets -- -D warnings && cargo fmt -p epdf-capi --check && rustfmt --edition 2024 --check crates/epdf-engine/src/host.rs && git diff --check",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Command exit code 0.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/lint-format.log",
+        "sha256": "8c233a54790c4800d3dd585436af679aa838da259bfdb129412e2d51cdb75cdc",
+        "bytes": 72
+      }
+    },
+    {
+      "command": "cargo build -p epdf-capi && mkdir -p target/manual && clang -std=c11 -Wall -Wextra -Werror -Icrates/epdf-capi/include crates/epdf-capi/tests/c_smoke.c -Ltarget/debug -lepdf_capi -Wl,-rpath,/workspaces/embed-pdf-viewer/target/debug -o target/manual/c-smoke && target/manual/c-smoke",
+      "cwd": ".",
+      "exitCode": 0,
+      "results": "Command exit code 0. C ABI layout, calls and owned-result lifetime: PASS.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/c-consumer.log",
+        "sha256": "3f63f56b5c897c6ba1d8588956587690eb68b933eb1e814935b5af42af59fe7f",
+        "bytes": 124
+      }
+    },
+    {
+      "command": "cargo test -p epdf-engine -- --test-threads=1",
+      "cwd": ".",
+      "exitCode": 101,
+      "results": "unit: 484 passed, 0 failed, 0 ignored; action_reader: 13 passed, 0 failed, 0 ignored; annotation_appearance: 20 passed, 0 failed, 0 ignored; annotation_create: 22 passed, 0 failed, 0 ignored; annotation_delete: 13 passed, 0 failed, 0 ignored; annotation_flatten: 9 passed, 0 failed, 0 ignored; annotation_move: 11 passed, 0 failed, 0 ignored; annotation_reader: 15 passed, 0 failed, 0 ignored; annotation_transfer: 24 passed, 0 failed, 0 ignored; annotation_update: 33 passed, 0 failed, 0 ignored; annotation_vocabulary: 8 passed, 0 failed, 0 ignored; annotation_write: 2 passed, 0 failed, 0 ignored; attachment_reader: 5 passed, 0 failed, 0 ignored; cancel_traces: 7 passed, 0 failed, 0 ignored; charmap: 29 passed, 0 failed, 0 ignored; document_apply: 22 passed, 0 failed, 0 ignored; document_events: 17 passed, 0 failed, 0 ignored; document_save: 9 passed, 0 failed, 0 ignored The unchanged shared runtime causes SIGSEGV in a_page_held_past_close_keeps_a_registry_layers_base_alive; later integration targets do not execute after the crash.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/broad-engine.log",
+        "sha256": "d6e2160e28b3d7cb877d306b32e74704e263968bdd6ba53afa56c28b282071ef",
+        "bytes": 67202
+      }
+    },
+    {
+      "command": "git diff --check 34dd87a6a197119edf382e01996ad755e4420ac7...HEAD",
+      "cwd": ".",
+      "exitCode": 2,
+      "results": "Command exit code 2. The three original captured raw-log EOF blank-line findings are preserved. This command ran at the recorded source commit before this integration record was added.",
+      "log": {
+        "path": "platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/branch-whitespace.log",
+        "sha256": "52a98571d31598e0d0ac584e6db639a408c8094806ec9fe2bdfc79cbdb957221",
+        "bytes": 308
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "target/debug/libepdf_capi.so",
+      "sha256": "41505ffe6b40f46b2a7aeff093ea2bba5007460f7ee032c903098ba88032ec6e",
+      "bytes": 122993944
+    },
+    {
+      "path": "target/manual/c-smoke",
+      "sha256": "8b67e39ab982ba8a8f25de9e6c2cdb06aa48a64f41255ec84a5188fd530a04d4",
+      "bytes": 70944
+    }
+  ],
+  "limitations": [
+    "This source merges the reviewed native helper implementation and its character-map/inverse-transform bounds fixes. Conflict resolution preserves read-adapter ownership/routing, pure helper dispatch, exact decimal decoding, and the geometry dependency with default features disabled. A quick independent review of this integrated head remains pending.",
+    "The recorded shared linux-arm64 runtime remains 1461b0c5105137954b77dea0a6e2c15668518651 with SHA256 3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0. The broad serial engine suite still stops with SIGSEGV at the known held-layer-page render test. No tests are skipped or weakened. Rerun broad and native suites after the caught-up base includes the corrected font-registration ABI and a compatible rebuilt runtime.",
+    "Only native Linux arm64 is validated; other platforms, managed facade, packaging/relocation and live browser parity remain unvalidated.",
+    "Raw logs preserve exact captured command output, including trailing empty lines. Branch-range whitespace checks report artifacts-only EOF blank lines; preserving raw log fidelity retains this nonblocking formatting minor.",
+    "No publishable JavaScript package is directly changed. The earlier record captures the unavailable changeset executable in this container; dependencies were not installed for this native-only integration.",
+    "Neither the local integration branch nor its commits are published by this record."
+  ]
+}

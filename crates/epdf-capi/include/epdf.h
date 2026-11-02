@@ -15,6 +15,7 @@
 extern "C" {
 #endif
 
+/* Version packs major in bits 31..16 and minor in bits 15..0. */
 #define EPDF_ABI_VERSION UINT32_C(0x00010000)
 #define EPDF_WAIT_FOREVER UINT32_MAX
 
@@ -80,8 +81,8 @@ EPDF_API EpdfStatus EPDF_CALL epdf_engine_create(
 /* Reserves bounded capacity and copies input before returning a job handle.
  * Args are UTF-8 JSON without routing/authority fields. Document is zero only
  * for OPEN_BYTES. Accepted jobs drain on close; explicit cancellation is
- * cooperative. Engine/helper operation implementations may return the engine
- * error code NotImplemented in a lifecycle-only build.
+ * cooperative. Operations use the existing Host JSON argument vocabulary;
+ * literal search returns one bounded slice with an opaque continuation cursor.
  */
 EPDF_API EpdfStatus EPDF_CALL epdf_engine_submit(
     EpdfHandle engine, EpdfHandle document, uint32_t operation,
@@ -102,6 +103,8 @@ EPDF_API EpdfStatus EPDF_CALL epdf_job_release(EpdfHandle job);
 
 /* Close immediately seals admission, then waits for accepted jobs and confined
  * state disposal. Timeout leaves it closing; repeated close is safe. Release
+ * Poisoned engines reject submission with PANICKED; close still disposes
+ * their state and returns OK when disposal completes. Release
  * invalidates the ID and requests the same drain without joining, even while
  * other calls hold internal leases. Close on a released ID is INVALID_HANDLE.
  */
@@ -118,7 +121,8 @@ EPDF_API EpdfStatus EPDF_CALL epdf_helper_call(
  * can release the handle. Do not free the returned pointer with a C allocator.
  * Response frame: u32 JSON length, JSON, u32 payload count, then u32 length and
  * bytes per payload, all lengths little-endian. Input payload frames start at
- * the count. Lengths/size sums are checked against explicit budgets and u32.
+ * the count. Both request and response frames allow at most 64 payloads.
+ * Lengths/size sums are checked against explicit budgets and u32.
  */
 EPDF_API EpdfStatus EPDF_CALL epdf_result_view(
     EpdfHandle result, const uint8_t **bytes, uint64_t *len);
