@@ -214,9 +214,11 @@ impl Document {
             let mut programs = Vec::with_capacity(program_count as usize);
             for program in 0..program_count {
                 programs.push(DocumentFontProgram {
-                    object_number: unsafe {
+                    // 0 is the fork's "no program"; a number past u32 names none.
+                    object_number: u32::try_from(unsafe {
                         pdfium_sys::EPDFFontFaces_GetProgramObjNum(h, face, program)
-                    } as u32,
+                    })
+                    .unwrap_or(0),
                     format: FontProgramFormat::from_code(unsafe {
                         pdfium_sys::EPDFFontFaces_GetProgramFormat(h, face, program)
                     }),
@@ -384,8 +386,11 @@ impl Document {
             let fallback_count = unsafe {
                 pdfium_sys::EPDFFontResolution_GetFallbacks(h, run, std::ptr::null_mut(), 0)
             };
-            let mut fallback_ids =
-                vec![0u32; usize::try_from(fallback_count).map_err(|_| PdfiumError::OutOfMemory)?];
+            let fallback_len =
+                usize::try_from(fallback_count).map_err(|_| PdfiumError::OutOfMemory)?;
+            let mut fallback_ids: Vec<u32> = Vec::new();
+            fallback_ids.try_reserve_exact(fallback_len).map_err(|_| PdfiumError::OutOfMemory)?;
+            fallback_ids.resize(fallback_len, 0);
             if fallback_count > 0 {
                 unsafe {
                     pdfium_sys::EPDFFontResolution_GetFallbacks(
@@ -403,9 +408,11 @@ impl Document {
                 registered_font: FontId::from_raw(unsafe {
                     pdfium_sys::EPDFFontResolution_GetRegisteredFont(h, run)
                 }),
-                program_object_number: unsafe {
+                // 0 is the fork's "no program"; a number past u32 names none.
+                program_object_number: u32::try_from(unsafe {
                     pdfium_sys::EPDFFontResolution_GetProgramObjNum(h, run)
-                } as u32,
+                })
+                .unwrap_or(0),
                 display_sha256: hash_of(|out| unsafe {
                     pdfium_sys::EPDFFontResolution_GetProgramDisplayHash(h, run, out)
                 }),
