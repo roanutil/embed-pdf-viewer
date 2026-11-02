@@ -1,1 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>EmbedPDF.Engine</AssemblyName><RootNamespace>EmbedPDF.Engine</RootNamespace></PropertyGroup><ItemGroup><InternalsVisibleTo Include="EmbedPDF.Tests" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>EmbedPDF.Engine</AssemblyName>
+    <RootNamespace>EmbedPDF.Engine</RootNamespace>
+    <PackageId>EmbedPDF.Engine</PackageId>
+    <Version>0.0.0-local</Version>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Description>Native PDF engine binding. Platform validation and live viewer parity are required before production use.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="EmbedPDF.Tests" />
+    <None Include="$(EpdfNativeAssets)/**/*" Pack="true" PackagePath="runtimes/" Condition="'$(EpdfNativeAssets)' != ''" />
+  </ItemGroup>
+</Project>
