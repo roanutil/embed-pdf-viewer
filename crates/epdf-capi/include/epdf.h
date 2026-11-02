@@ -81,8 +81,8 @@ EPDF_API EpdfStatus EPDF_CALL epdf_engine_create(
 /* Reserves bounded capacity and copies input before returning a job handle.
  * Args are UTF-8 JSON without routing/authority fields. Document is zero only
  * for OPEN_BYTES. Accepted jobs drain on close; explicit cancellation is
- * cooperative. Engine/helper operation implementations may return the engine
- * error code NotImplemented in a lifecycle-only build.
+ * cooperative. Operations use the existing Host JSON argument vocabulary;
+ * literal search returns one bounded slice with an opaque continuation cursor.
  */
 EPDF_API EpdfStatus EPDF_CALL epdf_engine_submit(
     EpdfHandle engine, EpdfHandle document, uint32_t operation,

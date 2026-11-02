@@ -653,7 +653,17 @@ impl Host {
     /// host that got no response at all could not tell a refused operation
     /// from a crashed engine.
     pub fn call(&mut self, request: &str, payloads: Payloads) -> HostResponse {
-        Self::respond(self.route(request, payloads))
+        self.call_with_cancel(request, payloads, &CancelToken::never())
+    }
+
+    /// Handles a request using the caller's cooperative cancellation flag.
+    pub fn call_with_cancel(
+        &mut self,
+        request: &str,
+        payloads: Payloads,
+        cancel: &CancelToken,
+    ) -> HostResponse {
+        Self::respond(self.route(request, payloads, cancel))
     }
 
     fn respond(routed: Result<HostResponse, EngineError>) -> HostResponse {
@@ -676,7 +686,12 @@ impl Host {
         }
     }
 
-    fn route(&mut self, request: &str, payloads: Payloads) -> Result<HostResponse, EngineError> {
+    fn route(
+        &mut self,
+        request: &str,
+        payloads: Payloads,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
         let header: RequestHeader = serde_json::from_str(request).map_err(|e| {
             EngineError::with_message(
                 EngineErrorCode::WireFormat,
@@ -685,7 +700,6 @@ impl Host {
         })?;
         let body: serde_json::Value = serde_json::from_str(request)
             .map_err(|e| EngineError::with_message(EngineErrorCode::WireFormat, format!("{e}")))?;
-        let cancel = CancelToken::never();
         // The residency's idle timer would have fired between calls.
         self.sessions.residency().borrow_mut().tick();
         // `WorkerHost.run`: a write that changes content closes the pages it
@@ -693,7 +707,7 @@ impl Host {
         // meets a page parsed before it (`pageEffectOf`).
         let effect = PageEffect::of(&header.kind);
         self.close_pages_changed_by(&header, effect);
-        let routed = self.route_job(&header, body, payloads, &cancel);
+        let routed = self.route_job(&header, body, payloads, cancel);
         self.close_pages_changed_by(&header, effect);
         routed
     }

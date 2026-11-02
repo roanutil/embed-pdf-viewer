@@ -7,6 +7,7 @@ mod engine;
 mod ffi;
 mod handles;
 mod jobs;
+mod operations;
 mod startup;
 
 pub use abi::Reply;

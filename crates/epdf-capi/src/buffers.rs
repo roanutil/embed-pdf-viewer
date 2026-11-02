@@ -21,6 +21,10 @@ impl ByteBudget {
         Arc::new(Self { used: AtomicU64::new(0), limit })
     }
 
+    fn available(&self) -> u64 {
+        self.limit.saturating_sub(self.used.load(Ordering::Acquire))
+    }
+
     pub(crate) fn reserve(self: &Arc<Self>, bytes: u64) -> Result<Reservation, Status> {
         self.used
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |used| {
@@ -28,6 +32,45 @@ impl ByteBudget {
             })
             .map_err(|_| Status::LimitExceeded)?;
         Ok(Reservation { budget: Arc::clone(self), bytes })
+    }
+}
+
+impl Reservation {
+    fn shrink(&mut self, bytes: u64) {
+        debug_assert!(bytes <= self.bytes);
+        self.budget.used.fetch_sub(self.bytes - bytes, Ordering::AcqRel);
+        self.bytes = bytes;
+    }
+}
+
+fn global_results() -> &'static Arc<ByteBudget> {
+    static GLOBAL: OnceLock<Arc<ByteBudget>> = OnceLock::new();
+    GLOBAL.get_or_init(|| ByteBudget::new(1024 * 1024 * 1024))
+}
+
+/// Output headroom is reserved before raster allocation, then shrunk to framing size.
+pub(crate) struct ReservedOutput {
+    pub capacity: u64,
+    global: Reservation,
+    engine: Reservation,
+}
+
+impl ReservedOutput {
+    pub fn reserve(limit: u64, engine: &Arc<ByteBudget>) -> Result<Self, Status> {
+        let global = global_results();
+        let capacity = limit.min(global.available()).min(engine.available());
+        if capacity == 0 {
+            return Err(Status::LimitExceeded);
+        }
+        Ok(Self { capacity, global: global.reserve(capacity)?, engine: engine.reserve(capacity)? })
+    }
+
+    pub fn finish(mut self, response: &HostResponse) -> Result<Arc<OwnedResult>, Status> {
+        let size = packed_len(response, self.capacity as usize)?;
+        let bytes = try_pack(response, size)?;
+        self.global.shrink(size as u64);
+        self.engine.shrink(size as u64);
+        Ok(Arc::new(OwnedResult { bytes, _engine: Some(self.engine), _global: self.global }))
     }
 }
 
@@ -85,10 +128,9 @@ impl OwnedResult {
         limit: u64,
         engine: Option<&Arc<ByteBudget>>,
     ) -> Result<Arc<Self>, Status> {
-        static GLOBAL: OnceLock<Arc<ByteBudget>> = OnceLock::new();
         let size =
             packed_len(response, usize::try_from(limit).map_err(|_| Status::LimitExceeded)?)?;
-        let global = GLOBAL.get_or_init(|| ByteBudget::new(1024 * 1024 * 1024));
+        let global = global_results();
         let global = global.reserve(size as u64)?;
         let engine = engine.map(|b| b.reserve(size as u64)).transpose()?;
         let bytes = try_pack(response, size)?;

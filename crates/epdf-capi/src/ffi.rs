@@ -9,13 +9,17 @@ use crate::buffers::{ByteBudget, OwnedResult, Reservation, unpack_payloads};
 use crate::config::Options;
 use crate::engine::Engine;
 use crate::handles::{Kind, Registry};
-use crate::jobs::Job;
+use crate::jobs::{DocumentTransfer, Job};
+use crate::operations;
 use crate::startup::initialize_fonts;
+use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 struct RuntimeState {
-    _host: Host,
+    host: Host,
     _fonts: Reservation,
-    _input_budget: Arc<ByteBudget>,
+    input_budget: Arc<ByteBudget>,
+    documents: BTreeMap<u64, (String, Reservation)>,
 }
 
 type NativeEngine = Engine<RuntimeState>;
@@ -38,6 +42,35 @@ fn results() -> &'static Mutex<Registry<Arc<OwnedResult>>> {
 fn documents() -> &'static Mutex<Registry<String>> {
     static STORE: OnceLock<Mutex<Registry<String>>> = OnceLock::new();
     STORE.get_or_init(|| Mutex::new(Registry::new(Kind::Document)))
+}
+
+fn next_identity() -> u64 {
+    static NEXT: AtomicU64 = AtomicU64::new(1);
+    NEXT.fetch_add(1, Ordering::Relaxed)
+}
+
+impl RuntimeState {
+    fn close(&mut self, id: u64) {
+        if let Some((name, _retained)) = self.documents.remove(&id) {
+            operations::close(&mut self.host, &name);
+        }
+        let _ = documents().lock().unwrap_or_else(|p| p.into_inner()).remove(id);
+    }
+}
+
+impl Drop for RuntimeState {
+    fn drop(&mut self) {
+        for id in self.documents.keys() {
+            let _ = documents().lock().unwrap_or_else(|p| p.into_inner()).remove(*id);
+        }
+    }
+}
+
+fn discard_document(id: u64, engine: &std::sync::Weak<NativeEngine>) {
+    let _ = documents().lock().unwrap_or_else(|p| p.into_inner()).remove(id);
+    if let Some(engine) = engine.upgrade() {
+        engine.cleanup(move |state| state.close(id));
+    }
 }
 
 fn protect(call: impl FnOnce() -> Status) -> u32 {
@@ -142,7 +175,12 @@ pub unsafe extern "C" fn epdf_engine_create(
                 initialize_fonts(&options, payloads, |request, payloads| {
                     host.call(request, payloads)
                 })?;
-                Ok(RuntimeState { _host: host, _fonts: retained, _input_budget: budget })
+                Ok(RuntimeState {
+                    host,
+                    _fonts: retained,
+                    input_budget: budget,
+                    documents: BTreeMap::new(),
+                })
             })?;
             engines()
                 .lock()
@@ -212,32 +250,113 @@ pub unsafe extern "C" fn epdf_engine_submit(
             } else {
                 serde_json::from_slice(bytes).map_err(|_| Status::InvalidArgument)?
             };
-            let fields = args.as_object().ok_or(Status::InvalidArgument)?;
-            for key in [
-                "kind",
-                "docId",
-                "layerName",
-                "authority",
-                "effect",
-                "scope",
-                "identity",
-                "jobId",
-                "opId",
-                "objectNumberFloor",
-            ] {
-                if fields.contains_key(key) {
-                    return Err(Status::InvalidArgument);
-                }
-            }
             let bytes = unsafe { span(payloads, payloads_len, engine.limits.max_payload_bytes) }?;
             let payloads = unpack_payloads(bytes, engine.limits.max_payload_bytes as usize)?;
-            let job = engine.submit(admission, move |_, _| {
-                let _inputs = (args, payloads);
-                Ok(response_error(EngineError::with_message(
-                    EngineErrorCode::NotImplemented,
-                    "engine operation is unavailable in this build",
-                )))
-            })?;
+            operations::validate(operation, &args, payloads.len())?;
+            let document_name = if operation == 1 {
+                format!("native-document-{}", next_identity())
+            } else {
+                documents()
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .get_for_parent(document, engine_id)?
+                    .clone()
+            };
+            let limits = engine.limits.clone();
+            let weak = Arc::downgrade(&engine);
+            let close_accepted = Arc::new(AtomicBool::new(false));
+            let close_flag = close_accepted.clone();
+            let close_guard = (operation == 2).then(|| {
+                let weak = weak.clone();
+                DocumentTransfer::new(document, move || {
+                    if close_accepted.load(Ordering::Acquire) {
+                        discard_document(document, &weak);
+                    }
+                })
+            });
+            let job = engine.submit_operation(
+                admission,
+                operation == 6,
+                move || {
+                    if operation != 1 {
+                        let mut registry = documents().lock().unwrap_or_else(|p| p.into_inner());
+                        registry.get_for_parent(document, engine_id)?;
+                        if operation == 2 {
+                            registry.remove(document)?;
+                            close_flag.store(true, Ordering::Release);
+                        }
+                    }
+                    Ok(())
+                },
+                move |state, token, capacity| {
+                    let mut limits = limits;
+                    limits.max_result_bytes = limits.max_result_bytes.min(capacity);
+                    let request = operations::request(
+                        operation,
+                        args,
+                        &document_name,
+                        next_identity(),
+                        &limits,
+                    )?;
+                    let retained = if operation == 1 {
+                        let size = payloads
+                            .iter()
+                            .try_fold(0u64, |size, payload| size.checked_add(payload.len() as u64))
+                            .ok_or_else(|| {
+                                EngineError::with_message(
+                                    EngineErrorCode::PayloadTooLarge,
+                                    "input byte sum overflow",
+                                )
+                            })?;
+                        Some(state.input_budget.reserve(size).map_err(|_| {
+                            EngineError::with_message(
+                                EngineErrorCode::PayloadTooLarge,
+                                "retained PDF input budget exceeded",
+                            )
+                        })?)
+                    } else {
+                        None
+                    };
+                    let response =
+                        operations::call(&mut state.host, operation, request, payloads, token)?;
+                    if operation == 2 {
+                        state.close(document);
+                        if let Some(guard) = close_guard {
+                            guard.transfer();
+                        }
+                    }
+                    let successful = serde_json::from_str::<serde_json::Value>(&response.json)
+                        .map_err(|_| {
+                            EngineError::with_message(
+                                EngineErrorCode::WireFormat,
+                                "invalid Host response",
+                            )
+                        })?
+                        .get("error")
+                        .is_none();
+                    let transfer = if operation == 1 && successful {
+                        let inserted = documents()
+                            .lock()
+                            .unwrap_or_else(|p| p.into_inner())
+                            .insert(engine_id, document_name.clone());
+                        let id = match inserted {
+                            Ok(id) => id,
+                            Err(_) => {
+                                operations::close(&mut state.host, &document_name);
+                                return Err(EngineError::with_message(
+                                    EngineErrorCode::PayloadTooLarge,
+                                    "document registry is full",
+                                ));
+                            }
+                        };
+                        state.documents.insert(id, (document_name, retained.unwrap()));
+                        Some(DocumentTransfer::new(id, move || discard_document(id, &weak)))
+                    } else {
+                        None
+                    };
+                    Ok((response, transfer))
+                },
+            )?;
             let inserted =
                 jobs().lock().unwrap_or_else(|p| p.into_inner()).insert(engine_id, job.clone());
             match inserted {
@@ -421,7 +540,7 @@ fn collect_job(
     register: impl FnOnce(Arc<OwnedResult>) -> Result<u64, Status>,
 ) -> Result<(Status, Reply), Status> {
     let mut result = 0;
-    let completion = job.take_after(timeout_ms, |completion| {
+    let mut completion = job.take_after(timeout_ms, |completion| {
         result = completion
             .result
             .as_ref()
@@ -430,6 +549,9 @@ fn collect_job(
             .unwrap_or(0);
         Ok(())
     })?;
+    if let Some(document) = completion.owned_document.take() {
+        document.transfer();
+    }
     Ok((completion.status, Reply { result, document: completion.document }))
 }
 
@@ -448,7 +570,12 @@ mod tests {
         )
         .unwrap();
         let observed = result.clone();
-        job.complete(Completion { status: Status::Ok, result: Some(result), document: 17 });
+        job.complete(Completion {
+            status: Status::Ok,
+            result: Some(result),
+            document: 17,
+            owned_document: None,
+        });
         assert!(matches!(
             collect_job(&job, 0, |_| Err(Status::LimitExceeded)),
             Err(Status::LimitExceeded)
@@ -462,5 +589,141 @@ mod tests {
         assert_eq!(reply.document, 17);
         assert_eq!(reply.result, 23);
         assert!(matches!(collect_job(&job, 0, |_| Ok(24)), Err(Status::AlreadyTaken)));
+    }
+    fn native_test_engine(options: &str) -> u64 {
+        let (mut engine, mut error) = (0, 0);
+        assert_eq!(
+            unsafe {
+                epdf_engine_create(
+                    options.as_ptr(),
+                    options.len() as u64,
+                    std::ptr::null(),
+                    0,
+                    &mut engine,
+                    &mut error,
+                )
+            },
+            0
+        );
+        assert_eq!(error, 0);
+        engine
+    }
+
+    fn submit_test_open(engine: u64) -> u64 {
+        let pdf =
+            include_bytes!("../../../tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+        let mut payload = 1u32.to_le_bytes().to_vec();
+        payload.extend_from_slice(&(pdf.len() as u32).to_le_bytes());
+        payload.extend_from_slice(pdf);
+        let (mut job, mut error) = (0, 0);
+        assert_eq!(
+            unsafe {
+                epdf_engine_submit(
+                    engine,
+                    0,
+                    1,
+                    std::ptr::null(),
+                    0,
+                    payload.as_ptr(),
+                    payload.len() as u64,
+                    &mut job,
+                    &mut error,
+                )
+            },
+            0
+        );
+        assert_eq!(error, 0);
+        job
+    }
+
+    fn owner_document_count(id: u64) -> usize {
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        engine(id).unwrap().cleanup(move |state| {
+            assert_eq!(state.documents.len(), state.host.sessions().len());
+            sender.send((state.documents.len(), std::thread::current().id())).unwrap();
+        });
+        let (count, owner) = receiver.recv_timeout(std::time::Duration::from_secs(2)).unwrap();
+        assert_ne!(owner, std::thread::current().id());
+        count
+    }
+
+    #[test]
+    fn abandoned_ready_opens_are_closed_on_the_owner_and_release_input_capacity() {
+        let pdf =
+            include_bytes!("../../../tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+        let id = native_test_engine(&format!(
+            r#"{{"limits":{{"maxRetainedInputBytes":{}}}}}"#,
+            pdf.len()
+        ));
+        for _ in 0..3 {
+            let job = submit_test_open(id);
+            assert_eq!(owner_document_count(id), 1);
+            assert_eq!(epdf_job_release(job), 0);
+            assert_eq!(owner_document_count(id), 0);
+        }
+        assert_eq!(epdf_engine_close(id, u32::MAX), 0);
+        assert_eq!(epdf_engine_release(id), 0);
+    }
+
+    #[test]
+    fn failed_result_framing_closes_an_open_before_its_bytes_can_be_retained() {
+        let id = native_test_engine(r#"{"limits":{"maxResultBytes":1}}"#);
+        let job = submit_test_open(id);
+        let mut reply = Reply::default();
+        assert_eq!(
+            unsafe { epdf_job_wait(job, u32::MAX, &mut reply) },
+            Status::LimitExceeded as u32
+        );
+        assert_eq!(reply.document, 0);
+        assert_eq!(reply.result, 0);
+        owner_document_count(id);
+        assert_eq!(owner_document_count(id), 0);
+        assert_eq!(epdf_job_release(job), 0);
+        assert_eq!(epdf_engine_close(id, u32::MAX), 0);
+        assert_eq!(epdf_engine_release(id), 0);
+    }
+
+    #[test]
+    fn cancelling_an_admitted_close_still_releases_its_document() {
+        let id = native_test_engine("{}");
+        let open = submit_test_open(id);
+        let mut reply = Reply::default();
+        assert_eq!(unsafe { epdf_job_wait(open, u32::MAX, &mut reply) }, 0);
+        assert_ne!(reply.document, 0);
+        epdf_result_release(reply.result);
+        epdf_job_release(open);
+        let (started, ready) = std::sync::mpsc::sync_channel(1);
+        let (release, blocked) = std::sync::mpsc::sync_channel(1);
+        engine(id).unwrap().cleanup(move |_| {
+            started.send(()).unwrap();
+            blocked.recv().unwrap();
+        });
+        ready.recv_timeout(std::time::Duration::from_secs(2)).unwrap();
+        let (mut close, mut error) = (0, 0);
+        assert_eq!(
+            unsafe {
+                epdf_engine_submit(
+                    id,
+                    reply.document,
+                    2,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    &mut close,
+                    &mut error,
+                )
+            },
+            0
+        );
+        assert_eq!(epdf_job_cancel(close), 0);
+        release.send(()).unwrap();
+        assert_eq!(unsafe { epdf_job_wait(close, u32::MAX, &mut reply) }, 0);
+        epdf_result_release(reply.result);
+        epdf_job_release(close);
+        owner_document_count(id);
+        assert_eq!(owner_document_count(id), 0);
+        epdf_engine_close(id, u32::MAX);
+        epdf_engine_release(id);
     }
 }
