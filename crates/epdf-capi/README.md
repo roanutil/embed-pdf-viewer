@@ -89,8 +89,9 @@ range isn't malformed. It keeps the empty answer the vectors pin.
 `input` is `epdf_geometry::PageTransformInput`: `pageSize`, `rotation` (0, 90,
 180 or 270), `scale`, optional `baseScale` and `dpr`, all finite and positive.
 Fold `/UserUnit` into `scale` and `baseScale` as the viewer does. The metrics
-include the snapped device size. Singular transforms and non-finite metrics or
-mapped values are refused, because JSON would print them as `null`.
+include the snapped device size. The inverse determinant must be finite and
+nonzero even when no points or rectangles are requested. Singular transforms
+and non-finite metrics or mapped values are refused.
 
 Arguments decode with exact decimal-to-double conversion, so a shortest
 round-trip spelling reaches the algorithm bit for bit. That feature also

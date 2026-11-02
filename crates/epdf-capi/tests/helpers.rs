@@ -683,3 +683,30 @@ fn argument_doubles_decode_exactly() {
         &wrong[..wrong.len().min(3)]
     );
 }
+
+#[test]
+fn character_maps_with_overflowing_tail_projections_are_refused() {
+    let text = json!({ "text": "", "charCount": u32::MAX, "charMap": [{ "char": 1, "text": 2 }] });
+    for (operation, args) in [
+        (SLICE_TEXT, json!({ "text": text, "range": { "start": 0, "end": 0 } })),
+        (TEXT_OFFSETS_TO_CHARS, json!({ "text": text, "range": { "start": 0, "end": 0 } })),
+        (CHARACTER_BOUNDARY_TO_TEXT, json!({ "text": text, "boundary": 0 })),
+    ] {
+        let message = refuse(operation, &args);
+        assert!(message.contains("4294967296"), "{message}");
+    }
+}
+
+#[test]
+fn page_transforms_with_unrepresentable_inverse_determinants_are_refused() {
+    for rotation in [0, 90, 180, 270] {
+        let input = json!({ "pageSize": { "width": 1, "height": 1 }, "rotation": rotation, "scale": 1e200, "dpr": 1 });
+        for args in [
+            json!({ "input": input }),
+            json!({ "input": input, "pagePoints": [{ "x": 1, "y": 1 }], "viewPoints": [{ "x": 1e200, "y": 1e200 }] }),
+        ] {
+            let message = refuse(PAGE_TRANSFORM, &args);
+            assert!(message.contains("invert"), "{message}");
+        }
+    }
+}

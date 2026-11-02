@@ -117,6 +117,12 @@ pub(super) fn apply(args: &[u8]) -> Result<HostResponse, Failure> {
     if !finite_transform(&transform) {
         return Err(invalid("the transform's metrics are not finite"));
     }
+    // Every quarter-turn matrix has determinant +/- view_scale squared.
+    // A finite scale can still overflow that determinant and yield a zero inverse.
+    let determinant = transform.view_scale * transform.view_scale;
+    if !determinant.is_finite() || determinant == 0.0 {
+        return Err(invalid("the transform cannot be inverted with a finite nonzero determinant"));
+    }
     let answer_value = TransformAnswer {
         page_to_view: args.page_points.iter().map(|p| transform.page_to_view(*p)).collect(),
         page_rects_to_view: args
