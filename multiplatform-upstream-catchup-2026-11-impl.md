@@ -109,16 +109,20 @@ them. The cost is that the engine-level font port, the larger half of D6, all la
 Task 5).
 
 For the plugins merge (plan Task 4), `git merge-tree --write-tree HEAD
-private-fork/research/multi-platform-rust-core-impl-plugins` at `7bf5f760d`, against plugins
-`3dec6b60b`, reports five conflicts. Two are the runtime pin:
-`packages/engine/runtime/engine-runtime-build.local.json` and the `runtime-src` submodule. The
-other three are Rust, all in the font code:
+private-fork/research/multi-platform-rust-core-impl-plugins` at `061adf19f`, against plugins
+`3dec6b60b`, reports five conflicted paths and seven conflict hunks. The commit that records this
+changes only this file, so the result holds at the branch tip. Two paths are the runtime pin:
+`packages/engine/runtime/engine-runtime-build.local.json` (one hunk, the `darwin-arm64` artifact's
+`url` and `sha256`) and the `runtime-src` submodule (`8b1e69abd` against `926c126b2`). The other
+three are Rust, all in the font code:
 
-| Path | Impl | Plugins |
-|---|---|---|
-| `crates/epdf-engine/src/features/fonts.rs` | The `fallback_tier` module, and `self.fallbacks.clear()` in `clear()` | `FontEmbeddingPermission` and `FontIdentityInfo` at the same spot, and `IDENTITIES` cleared with a `fallback_order: Vec<String>` field in `clear()` |
-| `crates/epdf-engine/src/host.rs` | The `fonts.addFallback` arm decodes `tier` through `js_number` and calls `add_fallback_in_tier` | The arm reads `string_field(body, ..)` from a borrowed body and calls `add_fallback` |
-| `crates/epdf-engine/tests/font_registry.rs` | Four tier tests and the NaN test appended at the end | `a_registered_face_maps_back_to_its_key_and_clear_forgets_it` appended at the end |
+| Path | Hunk | Impl | Plugins |
+|---|---|---|---|
+| `crates/epdf-engine/src/features/fonts.rs` | 1 of 2 | The `fallback_tier` module | `FontEmbeddingPermission` and `FontIdentityInfo` at the same spot |
+| `crates/epdf-engine/src/features/fonts.rs` | 2 of 2 | `self.fallbacks.clear()` in `clear()` | `IDENTITIES` cleared with a `fallback_order: Vec<String>` field in `clear()` |
+| `crates/epdf-engine/src/host.rs` | 1 of 2 | The `fonts.addFallback` arm decodes `tier` through `js_number` and calls `add_fallback_in_tier` | The arm reads `string_field(body, ..)` from a borrowed body and calls `add_fallback` |
+| `crates/epdf-engine/src/host.rs` | 2 of 2 | `fonts.clearFallbacks` and `fonts.clear` answer `Null`, each with a comment naming its `WorkerHost` handler | The same `Null` answers, with the `fonts.authorizeEditing` arm between them |
+| `crates/epdf-engine/tests/font_registry.rs` | 1 of 1 | Four tier tests and the NaN test appended at the end | `a_registered_face_maps_back_to_its_key_and_clear_forgets_it` appended at the end |
 
 The rest of `fonts.rs` merges on its own, and it takes impl's side: the `fallbacks: Vec<(String,
 f64)>` field, `add_fallback_in_tier` and the insertion-sort `fallback_order() -> Vec<String>`.
@@ -146,11 +150,29 @@ only textual. `fonts.clearFallbacks` and `fonts.clear` diverged the same way on 
 `{ "fallbacks": [] }` and `{ "registered": 0 }` where `handleFontsClearFallbacks` and
 `handleFontsClear` return an empty `wirePack` (`WorkerHost.ts:2417` and `:2445`). `7e5b519bf`
 makes both answer `Null`, with a test per kind in the same file. Nothing outside `packages/` and
-`api/` read the old keys. Those two arms merge without a conflict.
+`api/` read the old keys.
+
+Those two arms are the second `host.rs` hunk. Both sides answer `Null`, so it's textual, and the
+resolution is plugins' side: keep the `fonts.authorizeEditing` arm and its neighbours' `Null`
+answers. Dropping the arm would turn the kind into an unknown-kind error, because plugins'
+`RequestEffect::of` still lists it as `RuntimeWrite` and `PageEffect::of` as `Runtime`, while
+`route_wire` would pass it on to `route_session`, whose last arm answers `unknown_kind`. Deleting
+impl's two comments doesn't remove the hunk. We tried it on a scratch commit and merge-tree still
+reported two `host.rs` hunks: impl's `Null` on the `clearFallbacks` line touches the lines where
+plugins inserts the arm, so the conflict comes from the fix itself, and we kept the comments.
+
+Two older divergences in the same arms come in with the merge, and we left them alone on impl. Both
+are on `52f10e027`, so they predate the catch-up. Impl answers `fonts.register` with
+`{ fontKey, registered: <id> }` (`crates/epdf-engine/src/host.rs:269`), where
+`handleFontsRegister` answers `{ tag, fontKey, identity: this.fonts.describe(fontKey) }`
+(`WorkerHost.ts:2369-2373`); plugins answers the identity since `7566552a2`. Impl also has no
+`fonts.authorizeEditing` arm, though `WorkerHost` routes the kind (`WorkerHost.ts:787`) to
+`handleFontsAuthorizeEditing` (`:2376-2382`); plugins added the arm in `86e20c356`.
 
 One detail survives from before. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends
-`"italic": null` in both of its `fonts.register` calls because impl's host still decodes `italic`
-as a bool, so they need `-1` once plugins' decoding wins the merge.
+`"italic": null` in all three of its `fonts.register` calls, in the `chain` helper (`:40`),
+`the_answer_carries_no_payload` (`:145`) and `answer_after_a_fallback` (`:169`), because impl's
+host still decodes `italic` as a bool. All three need `-1` once plugins' decoding wins the merge.
 
 ## Known gap: `EPDFAnnot_GetStructurePosition`
 
@@ -225,6 +247,8 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `7e5b519bf` | 0 | 18 and 7 passed |
 | `cargo clippy -p pdfium -p epdf-engine --all-targets -- -D warnings` | `7e5b519bf` | 0 | No lint warnings |
 | `cargo test --workspace --no-fail-fast` | `7e5b519bf` | 101 | 568 passed, 99 failed (the same 99, by binary and count), 75 binaries |
+| `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `061adf19f` | 0 | 18 and 7 passed |
+| `cargo clippy -p epdf-engine --all-targets -- -D warnings` | `061adf19f` | 0 | No lint warnings; ts-rs prints its four `deserialize_with` parse notes |
 
 ### The 99 cargo failures
 
