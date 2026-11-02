@@ -452,6 +452,7 @@ dependencies = [
  "epdf-engine",
  "serde",
  "serde_json",
+ "test-support",
 ]
 
 [[package]]
