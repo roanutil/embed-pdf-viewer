@@ -2,8 +2,8 @@
 
 This is the record of bringing `research/multi-platform-rust-core-impl` up to upstream `main`. It is
 Task 3 of `multiplatform-upstream-catchup-2026-11.md` (committed on `research/catchup-2026-11-plan`
-at `867c1c036`), plus the part of D6 that belongs on impl. Plugins is C4 (plan Task 4) and follows
-from here.
+at `867c1c036`), plus the part of D6 that belongs on impl. Plugins is C4 and follows from here. C4
+runs two plan tasks: Task 4 is the plugins merge, and Task 5 is the port work.
 
 ## What was merged
 
@@ -40,6 +40,12 @@ impl's own hunks from `b456ee4fd` and nothing else. So does `pnpm-lock.yaml`.
 - `2e5a14a81` narrows the two `GetProgramObjNum` results with `u32::try_from`, a number past `u32`
   reading as the fork's 0 (no program), and reserves the fallback-id buffer with
   `try_reserve_exact` like the others in `document_fonts.rs`.
+- `332394f16` allows clippy's `useless_conversion` at the three `c_ulong` conversions in
+  `document_fonts.rs`, which are identities where `c_ulong` is 32-bit.
+- `18f7ce2b7` answers `fonts.addFallback` with no payload, as `WorkerHost` does. The plugins merge
+  below says why.
+- `7bf5f760d` corrects two of those lint comments: `c_ulong` is 64-bit on LP64 targets and 32-bit
+  on Windows, wasm32 and other 32-bit targets, not "64-bit on Unix".
 
 ## The tier at the FFI boundary
 
@@ -101,12 +107,47 @@ answers and the `italic` decoding, and plugins' `crates/pdfium/src/fonts.rs` has
 them. The cost is that the engine-level font port, the larger half of D6, all lands in C4 (plan
 Task 5).
 
-For the plugins merge, C4 (plan Task 4), two details.
-`crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends `"italic": null` because impl's host
-still decodes `italic` as a bool, so it needs `-1` once plugins' decoding wins the merge. And
-plugins' callers of `FontRegistry::add_fallback(key)` and `pdfium::add_fallback_font` need the
-tier: the first keeps compiling, the second takes `(id, 0)`, and `StartupFont` and
-`add_fallback_in_tier` take the tier as an `f64`.
+For the plugins merge (plan Task 4), `git merge-tree --write-tree HEAD
+private-fork/research/multi-platform-rust-core-impl-plugins` at `7bf5f760d`, against plugins
+`3dec6b60b`, reports five conflicts. Two are the runtime pin:
+`packages/engine/runtime/engine-runtime-build.local.json` and the `runtime-src` submodule. The
+other three are Rust, all in the font code:
+
+| Path | Impl | Plugins |
+|---|---|---|
+| `crates/epdf-engine/src/features/fonts.rs` | The `fallback_tier` module, and `self.fallbacks.clear()` in `clear()` | `FontEmbeddingPermission` and `FontIdentityInfo` at the same spot, and `IDENTITIES` cleared with a `fallback_order: Vec<String>` field in `clear()` |
+| `crates/epdf-engine/src/host.rs` | The `fonts.addFallback` arm decodes `tier` through `js_number` and calls `add_fallback_in_tier` | The arm reads `string_field(body, ..)` from a borrowed body and calls `add_fallback` |
+| `crates/epdf-engine/tests/font_registry.rs` | Four tier tests and the NaN test appended at the end | `a_registered_face_maps_back_to_its_key_and_clear_forgets_it` appended at the end |
+
+The rest of `fonts.rs` merges on its own, and it takes impl's side: the `fallbacks: Vec<(String,
+f64)>` field, `add_fallback_in_tier` and the insertion-sort `fallback_order() -> Vec<String>`.
+Plugins' `fallback_order` field and its `fallback_order() -> &[String]` survive only in the
+`clear()` hunk. The resolution keeps plugins' identity code (`FontEmbeddingPermission`,
+`FontIdentityInfo`, `IDENTITIES` cleared in `clear()`), impl's tier module and tier decoding, and
+impl's `fallbacks` field, and drops plugins' `fallback_order` field. In `host.rs` it takes plugins'
+`body` and impl's tier decoding. In `font_registry.rs` it keeps both sides' tests. Nothing on plugins
+needs adapting to the `Vec<String>`: `git grep fallback_order()` on plugins finds it only in
+`font_registry.rs`, where the tests compare it to arrays and call `is_empty`, and both compile
+against a `Vec<String>`. Plugins' only caller of `pdfium::add_fallback_font` is
+`FontRegistry::add_fallback`, inside the conflicted `fonts.rs`, so it takes impl's tiered form with
+the rest. The cost is that plugins' simpler order (insertion only) goes, and its registry tests
+now run against the tier sort, which agrees with insertion order when every tier is the default.
+
+The `host.rs` conflict used to be semantic as well. Impl answered `fonts.addFallback` with
+`{ "fallbacks": [...] }`, a divergence from TypeScript that predates the catch-up (it is on
+`52f10e027`). `WorkerHost.handleFontsAddFallback` returns `wirePack({ tag: 'fonts.addFallback' })`
+(`packages/engine/services/src/worker-host/WorkerHost.ts:2410`), which carries no result, and
+plugins answers `serde_json::Value::Null` since `7566552a2`. So the merge would have resolved it in
+TypeScript's favor anyway, but impl was wrong against TypeScript until then. `18f7ce2b7` fixes it on
+impl, and `the_answer_carries_no_payload` in `crates/epdf-engine/tests/font_fallback_tier_wire.rs`
+checks that the envelope is `{ "result": null }`. Both sides now answer `Null`, and the conflict is
+only textual. `fonts.clearFallbacks` and `fonts.clear` diverge the same way on impl
+(`{ "fallbacks": [] }` and `{ "registered": 0 }`), and we left them. Impl hasn't touched those arms
+since the merge base, so plugins' `Null` answers merge in without a conflict.
+
+One detail survives from before. `crates/epdf-engine/tests/font_fallback_tier_wire.rs` sends
+`"italic": null` in both of its `fonts.register` calls because impl's host still decodes `italic`
+as a bool, so they need `-1` once plugins' decoding wins the merge.
 
 ## Known gap: `EPDFAnnot_GetStructurePosition`
 
@@ -174,6 +215,10 @@ All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` l
 | `cargo clippy -p pdfium --all-targets -- -D warnings` | `332394f16` | 0 | No lint warnings |
 | `cargo test -p pdfium --test document_fonts` | `332394f16` | 0 | 11 passed |
 | `EMBEDPDF_FORK_TARGET=linux-arm64 cargo clippy -p pdfium --target wasm32-unknown-emscripten -- -D warnings` | `332394f16` | 101 | Only `unnecessary_cast` at `crates/pdfium/src/file_access.rs:112`, which predates the catch-up; `document_fonts.rs` is clean |
+| `cargo clippy -p pdfium -p epdf-engine --all-targets -- -D warnings` | `7bf5f760d` | 0 | No lint warnings |
+| `cargo test -p epdf-engine --test font_registry --test font_fallback_tier_wire` | `7bf5f760d` | 0 | 18 and 5 passed |
+| `cargo test -p pdfium --test document_fonts` | `7bf5f760d` | 0 | 11 passed |
+| `cargo test -p epdf-engine --lib js_number` | `7bf5f760d` | 0 | 4 passed |
 
 ### The 99 cargo failures
 
@@ -227,8 +272,8 @@ one each in `crates/epdf-node` and `crates/epdf-uniffi`. They were unformatted b
 ### Three conformance checks are red from the merge
 
 Twelve of the 32 `:check` scripts in `tooling/engine-conformance` run without a `wasm32` payload,
-and the other 20 need it. We ran the ten below with `pnpm run <script>` in that directory, on
-`52f10e027` in a temporary worktree and on `090fe3f55`, the same tree as the merge for these
+and the other 20 need it. We ran the twelve below with `pnpm run <script>` in that directory. Ten
+ran on `52f10e027` in a temporary worktree and on `090fe3f55`, the same tree as the merge for these
 scripts. `actions:check` and `operations:check` ran at `91d208467`, and on `52f10e027` in a
 temporary worktree after building `@embedpdf/engine-runtime` there:
 
