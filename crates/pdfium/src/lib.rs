@@ -19,9 +19,11 @@ mod annot_write;
 mod base;
 mod bitmap;
 mod document;
+mod document_fonts;
 mod error;
 mod extract;
 mod file_access;
+mod font_program;
 mod fonts;
 mod form;
 mod form_write;
@@ -50,8 +52,17 @@ pub use annot::{
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};
+pub use document_fonts::{
+    DocumentFontFace, DocumentFontProgram, FontEmbedding, FontResolution, FontResolveRun,
+    FontSource, ResolvedFontRun,
+};
 pub use error::PdfiumError;
 pub use file_access::FileAccess;
+pub use font_program::{
+    CodePointRange, FontLineMetrics, FontProgramFormat, font_coverage, font_metrics,
+    font_postscript_name, font_program_data, font_program_format, font_program_hash,
+    set_last_resort_font,
+};
 pub use fonts::{
     FontDescription, FontId, add_fallback_font, clear_fallback_fonts, clear_registered_fonts,
     register_font_file, register_memory_font,

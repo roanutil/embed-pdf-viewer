@@ -23,7 +23,7 @@ pub struct FontId(u32);
 
 impl FontId {
     /// PDFium reports failure as zero rather than as an error.
-    fn from_raw(raw: u32) -> Option<Self> {
+    pub(crate) fn from_raw(raw: u32) -> Option<Self> {
         (raw != 0).then_some(Self(raw))
     }
 
