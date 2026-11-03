@@ -106,10 +106,10 @@
   ],
   "limitations": [
     "Live viewer parity is a separate required acceptance gate.",
-    "Preliminary packaging smoke only. R7 Important findings remain open: Windows packaged preload conflicts with test-only source resolver, and package-manifest guards permit unsupported success claims. No source changes were made after review freeze.",
-    "Live J6 viewer/native parity has not passed. Known stale runtime 1461/#16 corpus limitations are not cleared by this focused smoke.",
+    "At this recorded source, Windows dependency staging and single-RID package-status guards were unresolved. This preliminary packaging smoke does not establish release acceptance.",
+    "Live viewer/native parity has not passed. Known stale runtime 1461/#16 corpus limitations are not cleared by this focused smoke.",
     "osx-x64 and win-x64 are UNVALIDATED because no native hosts are available. No emulation or cross compilation substitutes for those hosts.",
     "Default fallback-font inventory is empty; no deployed-font or browser geometry compatibility claim.",
-    "Release libraries were compiled before the source-review freeze; their hashes are retained, but final exact-head build/package/relocation evidence must be refreshed after the coordinated review fixes."
+    "The release-library hashes identify the native inputs used in this historical run. Later source changes require refreshed package and relocation evidence."
   ]
 }

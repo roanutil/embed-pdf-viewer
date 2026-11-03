@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "slice": 6,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "6c6f4bd954725b779e71bce9eb6b5df22a02d178",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.41",
+    "arch": "arm64",
+    "emulated": false,
+    "tools": {
+      "dotnet": "10.0.403",
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "libc": "ldd (Debian GLIBC 2.41-12+deb13u3) 2.41",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS-arm64"
+  },
+  "inputs": [
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "platforms/dotnet/packaging/fonts.json",
+      "sha256": "e8e50da21f8c48abe31b66206d183bd2a73596b3d068808f9c8b4e42be2dd806",
+      "bytes": 148
+    },
+    {
+      "path": "tooling/engine-conformance/fixtures/non_identity_text.pdf",
+      "sha256": "631eca89df7662dfb0f743c61d32d6a7fc294038f8634a01266a2c1b170c3c98",
+      "bytes": 307305
+    },
+    {
+      "path": "../../plugins-share/packages/engine/runtime/build/cache/libembedpdf-runtime-linux-arm64.tar.gz",
+      "sha256": "63eaf7a485f975f969ffa08dc6822c0ae65c22506da1ee2bb934eb7d81eb2191",
+      "bytes": 4901203
+    }
+  ],
+  "commands": [
+    {
+      "command": "python3 platforms/dotnet/packaging/package.py pack --rid linux-arm64 --out ../artifacts/r7-linux-arm64 --native-lib ../target/aarch64-unknown-linux-gnu/release/libepdf_capi.so --runtime-archive /repo/.claude/worktrees/plugins-share/packages/engine/runtime/build/cache/libembedpdf-runtime-linux-arm64.tar.gz",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 0,
+      "log": {
+        "path": "../r7-pack-linux-arm64.log",
+        "sha256": "5fccec7230f98f349ae447dc36b12187b633e96c1c95034691769fb5b57478e9",
+        "bytes": 47942
+      },
+      "results": "Packed fresh managed assembly, native assets and local nupkg; no publication or runtime download. CARGO_BUILD_JOBS=2. Linux packing/consumers used the host heavy_build.py lock; macOS managed-only packing/consumer ran sequentially with existing native libraries."
+    },
+    {
+      "command": "/usr/bin/python3 /repo/.claude/worktrees/dotnet-native-packaging/source/platforms/dotnet/packaging/package.py smoke --rid linux-arm64 --package /repo/.claude/worktrees/dotnet-native-packaging/artifacts/r7-linux-arm64/EmbedPDF.Engine.0.0.0-local.nupkg --manifest /repo/.claude/worktrees/dotnet-native-packaging/artifacts/r7-linux-arm64/package-manifest.linux-arm64.json",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 0,
+      "results": "YMTAB)             0x2a0\n 0x000000000000000a (STRSZ)              14926 (bytes)\n 0x000000000000000b (SYMENT)             24 (bytes)\n 0x0000000000000003 (PLTGOT)             0x75e938\n 0x0000000000000002 (PLTRELSZ)           14568 (bytes)\n 0x0000000000000014 (PLTREL)             RELA\n 0x0000000000000017 (JMPREL)             0x75900\n 0x0000000000000007 (RELA)               0x7c50\n 0x0000000000000008 (RELASZ)             449712 (bytes)\n 0x0000000000000009 (RELAENT)            24 (bytes)\n 0x000000000000001e (FLAGS)              BIND_NOW\n 0x000000006ffffffb (FLAGS_1)            Flags: NOW\n 0x000000006ffffffe (VERNEED)            0x7b50\n 0x000000006fffffff (VERNEEDNUM)         3\n 0x000000006ffffff0 (VERSYM)             0x767e\n 0x000000006ffffff9 (RELACOUNT)          18726\n 0x0000000000000000 (NULL)               0x0\n\tlinux-vdso.so.1 (0x0000ffff838aa000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff82f30000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff82e80000)\n\tlibembedpdf.so => /tmp/epdf-relocated-uedx9h3z/inspect/libembedpdf.so (0x0000ffff825b0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff82570000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff83860000)\n\tlibpthread.so.0 => /lib/aarch64-linux-gnu/libpthread.so.0 (0x0000ffff82540000)\n\nVersion symbols section '.gnu.version' contains 614 entries:\n Addr: 0x000000000000767e  Offset: 0x0000767e  Link: 3 (.dynsym)\n  000:   0 (*local*)       0 (*local*)       0 (*local*)       1 (*global*)   \n  004:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  008:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  00c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  010:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  014:   1 (*global*)      1 (*global*)      2 (GLIBC_2.34)    1 (*global*)   \n  018:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  01c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  020:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  024:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  028:   1 (*global*)      3 (GCC_3.0)       1 (*global*)      1 (*global*)   \n  02c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  030:   1 (*global*)      1 (*global*)      1 (*global*)      3 (GCC_3.0)    \n  034:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  038:   1 (*global*)      2 (GLIBC_2.34)    1 (*global*)      1 (*global*)   \n  03c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  040:   4 (GLIBC_2.17)    3 (GCC_3.0)       1 (*global*)      1 (*global*)   \n  044:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  048:   1 (*global*)      2 (GLIBC_2.34)    1 (*global*)      1 (*global*)   \n  04c:   2 (GLIBC_2.34)    1 (*global*)      1 (*global*)      1 (*global*)   \n  050:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  054:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  058:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  05c:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  060:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  064:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  068:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  06c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  070:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  074:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  078:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  07c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  080:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  084:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  088:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  08c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  090:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  094:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  098:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  09c:   1 (*global*)      5 (GLIBC_2.32)    1 (*global*)      1 (*global*)   \n  0a0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0a4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0a8:   1 (*global*)      1 (*global*)      3 (GCC_3.0)       1 (*global*)   \n  0ac:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  0b0:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  0b4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0b8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0bc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0c0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0c4:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      6 (GLIBC_2.35) \n  0c8:   1 (*global*)      7 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  0cc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0d0:   1 (*global*)      1 (*global*)      1 (*global*)      3 (GCC_3.0)    \n  0d4:   1 (*global*)      1 (*global*)      1 (*global*)      2 (GLIBC_2.34) \n  0d8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0dc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0e0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0e4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0e8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0ec:   8 (GLIBC_2.33)    9 (GLIBC_2.18)    1 (*global*)      1 (*global*)   \n  0f0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0f4:   4 (GLIBC_2.17)    1 (*global*)      3 (GCC_3.0)       1 (*global*)   \n  0f8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  0fc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  100:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  104:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  108:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  10c:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  110:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  114:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  118:   1 (*global*)      1 (*global*)      2 (GLIBC_2.34)    1 (*global*)   \n  11c:   1 (*global*)      4 (GLIBC_2.17)    3 (GCC_3.0)       1 (*global*)   \n  120:   1 (*global*)      1 (*global*)      a (GLIBC_2.25)    b (GCC_3.3)    \n  124:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  128:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  12c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  130:   4 (GLIBC_2.17)    1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  134:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  138:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  13c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  140:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  144:   8 (GLIBC_2.33)    1 (*global*)      1 (*global*)      1 (*global*)   \n  148:   1 (*global*)      1 (*global*)      2 (GLIBC_2.34)    1 (*global*)   \n  14c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  150:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  154:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  158:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  15c:   1 (*global*)      1 (*global*)      1 (*global*)      2 (GLIBC_2.34) \n  160:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  164:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  168:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  16c:   1 (*global*)      1 (*global*)      1 (*global*)      2 (GLIBC_2.34) \n  170:   c (GLIBC_2.30)    1 (*global*)      1 (*global*)      1 (*global*)   \n  174:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  178:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  17c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  180:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  184:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  188:   1 (*global*)      1 (*global*)      d (GCC_4.2.0)     4 (GLIBC_2.17) \n  18c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  190:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  194:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  198:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  19c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1a0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1a4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1a8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1ac:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1b0:   1 (*global*)      2 (GLIBC_2.34)    1 (*global*)      1 (*global*)   \n  1b4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1b8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1bc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1c0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1c4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1c8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1cc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1d0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1d4:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  1d8:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  1dc:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  1e0:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1e4:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1e8:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  1ec:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1f0:   1 (*global*)      3 (GCC_3.0)       1 (*global*)      1 (*global*)   \n  1f4:   4 (GLIBC_2.17)    1 (*global*)      7 (GLIBC_2.17)    4 (GLIBC_2.17) \n  1f8:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  1fc:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  200:   1 (*global*)      1 (*global*)      7 (GLIBC_2.17)    1 (*global*)   \n  204:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  208:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  20c:   4 (GLIBC_2.17)    2 (GLIBC_2.34)    1 (*global*)      1 (*global*)   \n  210:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  214:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  218:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  21c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  220:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  224:   4 (GLIBC_2.17)    4 (GLIBC_2.17)    1 (*global*)      1 (*global*)   \n  228:   1 (*global*)      1 (*global*)      1 (*global*)      e (GLIBC_2.28) \n  22c:   1 (*global*)      4 (GLIBC_2.17)    1 (*global*)      3 (GCC_3.0)    \n  230:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  234:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  238:   1 (*global*)      1 (*global*)      1 (*global*)      4 (GLIBC_2.17) \n  23c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  240:   1 (*global*)      1 (*global*)      4 (GLIBC_2.17)    1 (*global*)   \n  244:   3 (GCC_3.0)       1 (*global*)      1 (*global*)      1 (*global*)   \n  248:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  24c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  250:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  254:   4 (GLIBC_2.17)    1 (*global*)      1 (*global*)      1 (*global*)   \n  258:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  25c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  260:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   \n  264:   1 (*global*)      1 (*global*)   \n\nVersion needs section '.gnu.version_r' contains 3 entries:\n Addr: 0x0000000000007b50  Offset: 0x00007b50  Link: 4 (.dynstr)\n  000000: Version: 1  File: libm.so.6  Cnt: 2\n  0x0010:   Name: GLIBC_2.17  Flags: none  Version: 7\n  0x0020:   Name: GLIBC_2.35  Flags: none  Version: 6\n  0x0030: Version: 1  File: libgcc_s.so.1  Cnt: 3\n  0x0040:   Name: GCC_4.2.0  Flags: none  Version: 13\n  0x0050:   Name: GCC_3.3  Flags: none  Version: 11\n  0x0060:   Name: GCC_3.0  Flags: none  Version: 3\n  0x0070: Version: 1  File: libc.so.6  Cnt: 8\n  0x0080:   Name: GLIBC_2.28  Flags: none  Version: 14\n  0x0090:   Name: GLIBC_2.30  Flags: none  Version: 12\n  0x00a0:   Name: GLIBC_2.25  Flags: none  Version: 10\n  0x00b0:   Name: GLIBC_2.18  Flags: none  Version: 9\n  0x00c0:   Name: GLIBC_2.33  Flags: none  Version: 8\n  0x00d0:   Name: GLIBC_2.32  Flags: none  Version: 5\n  0x00e0:   Name: GLIBC_2.17  Flags: none  Version: 4\n  0x00f0:   Name: GLIBC_2.34  Flags: none  Version: 2\n00000000000e3b7c T epdf_abi_version\n00000000000e3b84 T epdf_engine_close\n00000000000e3e90 T epdf_engine_create\n00000000000e5158 T epdf_engine_release\n00000000000e5480 T epdf_engine_submit\n00000000000e6008 T epdf_helper_call\n00000000000e6360 T epdf_job_cancel\n00000000000e6610 T epdf_job_release\n00000000000e6938 T epdf_job_wait\n00000000000e6fbc T epdf_result_release\n00000000000e72b0 T epdf_result_view\nELF Header:\n  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Shared object file)\n  Machine:                           AArch64\n  Version:                           0x1\n  Entry point address:               0x0\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          9884096 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         8\n  Size of section headers:           64 (bytes)\n  Number of section headers:         30\n  Section header string table index: 29\nPASS: ABI=1 pages=1 chars=5 region=32x32\nPASS: relocated open/text/region/helper, ABI, missing-wrapper, missing-dependency and wrong-ABI checks\n\nReused native wrapper SHA256: 641b950a058ecf6ec764a26db08748ed6f31d6bcf28268eeba37272c0fbf75a1. No Rust source changes or native rebuild in this run.",
+      "log": {
+        "path": "../r7-validate-linux-arm64.log",
+        "sha256": "63d8b14d8cdcf960caf64ee65fd436c6bdd22119b4104a4e43b13fa51eb98136",
+        "bytes": 47555
+      }
+    },
+    {
+      "command": "python3 -m unittest discover -s platforms/dotnet/packaging -v",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 0,
+      "log": {
+        "path": "../r7-packaging-tests.log",
+        "sha256": "8ed4812b57be5193b4e86cbd75bae0fa4b5f806c1557a763066676cd86343050",
+        "bytes": 1461
+      },
+      "results": "10 tests passed, 0 failures, 0 skips, including CLI forged-RID/empty inventory/mismatched-RID regressions"
+    },
+    {
+      "command": "dotnet test EmbedPDF.sln --no-build --no-restore",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source/platforms/dotnet",
+      "exitCode": 0,
+      "log": {
+        "path": "../r7-dotnet-tests.log",
+        "sha256": "52c6c53ffb3267efedfd7b4d9737d6621e757e40512bdd1cbe9f14d073b5b842",
+        "bytes": 338
+      },
+      "results": "32 tests passed, 0 failures, 0 skips; includes Windows dependency staging/missing-input unit coverage"
+    },
+    {
+      "command": "smoke against genuine package with forged other-RID VALIDATED statuses and files=[] manifests",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 0,
+      "log": {
+        "path": "../guarded-actual-package-guards.log",
+        "sha256": "d998fd6061b9658406c7290b7334397caa2c2fbf9d506e2feeb736156185d73e",
+        "bytes": 937
+      },
+      "results": "Both expected rejection cases returned exit 1 with schema validation errors before consumer build."
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "../artifacts/r7-linux-arm64/EmbedPDF.Engine.0.0.0-local.nupkg",
+      "sha256": "39d4bf95e40e38b8a8a6201f3b5b73753534887b50ee9160e884fb20d378eb4d",
+      "bytes": 8652614
+    },
+    {
+      "path": "../artifacts/r7-linux-arm64/package-manifest.linux-arm64.json",
+      "sha256": "e71a7761ca36b225c430af660cc52db7220a8afc9e2879eb29af01e2f0deb460",
+      "bytes": 4324
+    },
+    {
+      "path": "../artifacts/r7-linux-arm64/EmbedPDF.Engine.0.0.0-local.linux-arm64.tar.gz",
+      "sha256": "b05f0e745e8371553f57d72638529b0cbb0b43ac1511a685f0c9e0f831eb6f1e",
+      "bytes": 8271376
+    }
+  ],
+  "limitations": [
+    "Live viewer parity is a separate required acceptance gate.",
+    "The package consumer passed at the recorded clean source pin; subsequent record-only changes do not change managed or native implementation inputs.",
+    "Native cdylibs are reused, not rebuilt in this run. Their hashes match historical artifacts and crates/epdf-capi is unchanged from source 3b704415a1324b5852c49ad516ea5b43b5ec7f56. Fresh managed packing and relocated consumers ran at the recorded source pin.",
+    "Native Windows loading and macOS x64 remain UNVALIDATED because matching native hosts are unavailable. The Windows staging helper has cross-platform unit coverage and static integration review only.",
+    "Live viewer/native parity remains unverified; runtime 1461b0c5105137954b77dea0a6e2c15668518651 corpus limitations remain. This packaging smoke does not establish release acceptance or consumer geometry compatibility.",
+    "The default fallback-font inventory is empty. No deployed-font compatibility, older-glibc, or musl support claim is made."
+  ]
+}
