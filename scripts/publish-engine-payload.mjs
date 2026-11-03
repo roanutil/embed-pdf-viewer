@@ -260,7 +260,7 @@ function forkDelta(fork, runtimeSrc) {
   // Counting fork..pin only means something when the fork commit is an ancestor.
   const ancestor =
     spawnSync('git', ['-C', src, 'merge-base', '--is-ancestor', fork.sha, runtimeSrc]).status === 0;
-  if (!ancestor) return { ancestor, commits: 0, paths: [], argsMatch: false };
+  if (!ancestor) return { ancestor, commits: 0, paths: [], emsdkPin: null, argsMatch: false };
   const commits = Number(git(['rev-list', '--count', `${fork.sha}..${runtimeSrc}`]));
   const paths = git(['diff', '--name-only', fork.sha, runtimeSrc]).split('\n').filter(Boolean);
   const lines = (text) =>
@@ -274,7 +274,10 @@ function forkDelta(fork, runtimeSrc) {
   ]);
   const built = readFileSync(path.join(fork.staging, 'args.gn'), 'utf8');
   const argsMatch = lines(pinned).join('\n') === lines(built).join('\n');
-  return { ancestor, commits, paths, argsMatch };
+  // Nothing for a pin from before emsdk-version.sh, which then can't match.
+  const pinScript = path.join(src, 'scripts/embedpdf-runtime/emsdk-version.sh');
+  const emsdkPin = existsSync(pinScript) ? run('bash', [pinScript, FORK_TARGET]) : null;
+  return { ancestor, commits, paths, emsdkPin, argsMatch };
 }
 
 // What the fork stamp's files really are, for assertStampMatches: the library's

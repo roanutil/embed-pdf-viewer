@@ -23,6 +23,7 @@ const archived = {
 };
 const delta = {
   ancestor: true,
+  emsdkPin: '4.0.0',
   commits: 4,
   paths: ['scripts/embedpdf-runtime/target-args.sh', 'docs/embedpdf/fork-ledger.md'],
   argsMatch: true,
@@ -176,7 +177,10 @@ test('only docs, the fork tests and the named build scripts may change', () => {
       'scripts/embedpdf-runtime/target-args.sh',
     ]),
   );
-  assert.throws(at(['scripts/embedpdf-runtime/build-target.sh']), /changes the build/);
+  // build-target.sh only checks the emsdk against the pin and records it, so it
+  // may change while the pin's emsdk is the archive's.
+  assert.doesNotThrow(at(['scripts/embedpdf-runtime/build-target.sh']));
+  assert.throws(at(['scripts/embedpdf-runtime/sync-deps.sh']), /changes the build/);
   assert.throws(at(['scripts/sync-upstream.sh']), /changes the build/);
 });
 
@@ -200,5 +204,18 @@ test('a stamp whose files do not match it is refused', () => {
   // A stamp built here has no archive to check.
   assert.doesNotThrow(() =>
     assertStampMatches({ sha: PINNED, libSha256: 'lib' }, { libSha256: 'lib' }),
+  );
+});
+
+test('the pin must build with the emsdk the archive was built with', () => {
+  assert.throws(
+    () =>
+      forkLines({
+        fork: archived,
+        runtimeSrc: PINNED,
+        target: 'wasm32-eh',
+        delta: { ...delta, emsdkPin: '3.1.72' },
+      }),
+    /emsdk/,
   );
 });

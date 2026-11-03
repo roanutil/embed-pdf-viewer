@@ -526,8 +526,9 @@ The PDFium in the payload was built from fork `6dfc03697`, not from `8b1e69abd`.
 `wasm32-eh` archive of the `6dfc03697` release build, `libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz`
 (sha256 `ac1d48a0ccb97b3c1b579be29755e73e0d490c47327758b97f74859d1d38ee4b`, emsdk 4.0.0). It was
 used as the human decided: no cold `8b1e69abd` build. `runtime-src` pins `8b1e69abd`, which adds four
-commits on top of `6dfc03697`, and they touch only `scripts/` and `docs/`: the emsdk pin, the
-package metadata, a comment in `target-args.sh`, and the gn-arg goldens. The source and the gn args
+commits on top of `6dfc03697`, and they touch only `scripts/` and `docs/`: the emsdk pin
+(`emsdk-version.sh`, and a check of it in `build-target.sh`), the package metadata, a comment in
+`target-args.sh`, and the gn-arg goldens and their tests. The source and the gn args
 are identical. Its `libembedpdf.a` hashes to
 `6be65dba348ac6d9732d395a15f63743ee9100d884d796f05c005e7cf90efcdd`.
 
@@ -663,7 +664,7 @@ path (`archivePath`) and sha256, and the emsdk version. The script header has th
 publish hashes the library and the archive again, reads the fork commit from the archive's own
 `BUILD-METADATA.json`, and refuses on any mismatch. It also refuses if the archive's commit isn't an
 ancestor of the pin, if anything between them changes more than `docs/`, the fork's tests and the
-three scripts in `BUILD_NEUTRAL_SCRIPTS`, or if a committed binding the runtime lacks isn't in
+four scripts in `BUILD_NEUTRAL_SCRIPTS`, if the pin's emsdk for the target isn't the archive's, or if a committed binding the runtime lacks isn't in
 `KNOWN_UNBOUND` (`scripts/lib/payload-notes.mjs`, today only `EPDFAnnot_GetStructurePosition`).
 Both lists need reading on every runtime merge.
 

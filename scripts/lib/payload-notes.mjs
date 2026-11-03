@@ -63,8 +63,10 @@ export function abiCheckFunctions(committed, declared) {
 
 /**
  * The fork's scripts that may change between the archive's commit and the pin
- * without changing the library: they pin the emsdk, package an archive, and
- * print the gn args, which the delta's `argsMatch` compares separately.
+ * without changing the library: they pin the emsdk (`emsdk-version.sh`, and
+ * `build-target.sh`, which checks the active emsdk against that pin and records
+ * it), package an archive, and print the gn args. The delta's `emsdkPin` and
+ * `argsMatch` compare the two that could matter against the archive.
  *
  * The cost of keeping it: a fork commit that changes any other script, however
  * harmless, refuses the publish until it is named here, and a named script
@@ -72,6 +74,7 @@ export function abiCheckFunctions(committed, declared) {
  * needs reading on every runtime merge, beside `KNOWN_UNBOUND`.
  */
 export const BUILD_NEUTRAL_SCRIPTS = Object.freeze([
+  'scripts/embedpdf-runtime/build-target.sh',
   'scripts/embedpdf-runtime/emsdk-version.sh',
   'scripts/embedpdf-runtime/package-target.sh',
   'scripts/embedpdf-runtime/target-args.sh',
@@ -124,7 +127,8 @@ export function assertStampMatches(fork, facts) {
  * archive rather than built here, `source` ({ archive, archiveSha256, emsdk }).
  * `runtimeSrc` is the commit the viewer pins. When the two differ, `delta`
  * says how: whether `fork.sha` is an ancestor of the pin (`ancestor`), the
- * commits between them, the paths they change, and whether the
+ * commits between them, the paths they change, the emsdk the pin builds the
+ * target with (`emsdkPin`, from `emsdk-version.sh`), and whether the
  * archive's `args.gn` is what `target-args.sh` prints at `runtimeSrc`. Only a
  * delta that changes nothing but docs, the fork's tests and the
  * `BUILD_NEUTRAL_SCRIPTS`, with the same gn args, is
@@ -149,6 +153,11 @@ export function forkLines({ fork, runtimeSrc, target, delta }) {
   const inside = delta.paths.filter((file) => !outsideTheBuild(file));
   if (inside.length > 0) {
     throw new Error(`${runtimeSrc} changes the build beyond ${fork.sha}: ${inside.join(', ')}`);
+  }
+  if (delta.emsdkPin !== fork.source.emsdk) {
+    throw new Error(
+      `${runtimeSrc} builds ${target} with emsdk ${delta.emsdkPin}, the archive was built with ${fork.source.emsdk}`,
+    );
   }
   if (!delta.argsMatch) {
     throw new Error(`the archive's args.gn isn't what target-args.sh prints at ${runtimeSrc}`);
