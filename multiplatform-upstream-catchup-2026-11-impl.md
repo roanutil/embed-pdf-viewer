@@ -266,6 +266,26 @@ with the TS feature each one serves:
 | `EPDFCatalog_GetMetadata` | `metadata/internal/xmp/xmpPacket.ts` | Reading the catalog's XMP packet, for `syncXmp.ts` |
 | `EPDFCatalog_SetMetadata` | `metadata/internal/xmp/xmpPacket.ts` | Writing it back after a metadata change (`MetadataMutator.ts`) |
 
+### C4: the eight calls ported
+
+C4 (`c4/runtime-calls`) binds all eight in `crates/pdfium` and uses them where upstream's TS does:
+`pages.insert` and `pages.extract` copy with `EPDFDoc_ImportPages` and keep clashing field names
+apart, `pages.insert` takes `objectNumbers`, the new `pages.copy` op runs, page lists carry
+`labels` and every page op moves the sections, and `metadata.update` and `metadata.updateCustom`
+keep the XMP packet in step. `pages.copy` is a change op inside `document.apply`, not a new
+request kind, so the 94-kind count doesn't move.
+
+One test shim is temporary: `test_support::without_unrecorded_labels`, used by
+`crates/epdf-engine/tests/pages_corpus.rs` and `pages_mutate.rs`. It drops an empty `labels` list
+from the Rust answer when the recorded layout predates the field. Remove it when C5 regenerates
+the pages/metadata vectors with the new wasm payload.
+
+Two divergences are proposed, not decided. An XML character reference to a surrogate code
+(`&#xD800;`) decodes to U+FFFD, where the TS makes a lone surrogate a Rust string can't hold; it
+only matters inside a packet no tool writes. A label section that
+`EPDFDoc_GetPageLabelSectionAt` refuses is skipped, where the TS would push one with stale
+values; no index below the count is refused.
+
 ## Tests
 
 All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` library built from

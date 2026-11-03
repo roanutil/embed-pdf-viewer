@@ -51,6 +51,9 @@ pub const FEATURES: &str = "tooling/viewer-e2e/fixtures/features.pdf";
 pub const MEASURE_FOREIGN_VIEWPORT: &str =
     "crates/test-support/fixtures/measure-foreign-viewport.pdf";
 
+/// TEMPORARY: remove when C5 regenerates the pages/metadata vectors with the
+/// new wasm payload.
+///
 /// `actual` without its `labels: []` when `expected`, a page list the
 /// TypeScript engine recorded before upstream's page lists carried label
 /// sections (`PageListSnapshot.labels`), has no `labels` key. A list that has
