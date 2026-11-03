@@ -103,11 +103,21 @@ const libDir = path.join(runtime, 'npm', TARGET, 'lib');
 // (gitignored). One fixed name, so a killed run's is found and put back.
 const libBackup = path.join(runtime, 'npm', TARGET, '.lib-backup');
 
-// The payload in libBackup back in libDir. Synchronous, for the signal handlers.
+// libBackup holds what libDir held before a swap: the old payload, or, when there
+// was none, nothing but this sentinel, so that a restore removes the new one.
+const ABSENT = '.absent';
+// Written into libBackup just before `gh release create`: a backup that has it
+// may belong to a release that went out, which the next run asks the fork about.
+const PUBLISHING = '.publishing';
+
+// What libDir held before the swap, back in libDir: the old payload, or no
+// payload at all. Synchronous, for the signal handlers.
 function restorePayload() {
   if (!existsSync(libBackup)) return;
   rmSync(libDir, { recursive: true, force: true });
-  renameSync(libBackup, libDir);
+  rmSync(path.join(libBackup, PUBLISHING), { force: true });
+  if (existsSync(path.join(libBackup, ABSENT))) rmSync(libBackup, { recursive: true, force: true });
+  else renameSync(libBackup, libDir);
 }
 const apple = path.join(repo, 'platforms/apple');
 const manifest = path.join(apple, 'EmbedPDF/Package.swift');
@@ -133,6 +143,8 @@ const sh = (cmd, cwd = repo, env = {}) => {
 };
 // sh, but the event loop runs while the command does, so a SIGINT or SIGTERM
 // handler can act (restore the payload) instead of waiting for it to end.
+// Each runs in a process group of its own (detached), so a signal handler can stop
+// it with everything it started, a grandchild that writes into libDir included.
 let running = null;
 const shAsync = (cmd, cwd = repo, env = {}) => {
   console.log(`  $ ${cmd}`);
@@ -141,6 +153,7 @@ const shAsync = (cmd, cwd = repo, env = {}) => {
       cwd,
       stdio: 'inherit',
       env: { ...process.env, ...env },
+      detached: true,
     });
     running.on('error', reject);
     running.on('exit', (code, signal) => {
@@ -172,6 +185,14 @@ const releaseState = (tag, asset) => {
 const dirty = run('git', ['status', '--porcelain', '--untracked-files=no']);
 if (dirty) {
   console.error(`Commit or discard these first; the release records HEAD:\n${dirty}`);
+  // The header generator rewrites the committed bindings until the link puts
+  // them back, so a run killed in between leaves them changed.
+  if (dirty.includes('pdf-functions.generated.ts')) {
+    console.error(
+      'pdf-functions.generated.ts is what the header generator wrote in a run that was stopped; ' +
+        'restore it with git checkout -- packages/engine/runtime/src/core/pdf-functions.generated.ts',
+    );
+  }
   process.exit(1);
 }
 
@@ -222,13 +243,26 @@ if (only !== 'apple') await publishWasm();
 if (only !== 'wasm') publishApple();
 
 async function publishWasm() {
-  // A run killed while its new payload was in place leaves the old one here.
+  // A run killed while its new payload was in place leaves what was there before
+  // in libBackup. One killed after its release went out leaves the new payload as
+  // published: keep it. Any other is an interrupted swap: put the old state back.
   if (existsSync(libBackup)) {
-    restorePayload();
-    console.error(
-      `A previous publish was stopped while its payload was swapped in; ${path.relative(repo, libDir)} ` +
-        `is restored from ${path.relative(repo, libBackup)}. Run the publish again.`,
-    );
+    const marker = path.join(libBackup, PUBLISHING);
+    const tag = existsSync(marker) ? readFileSync(marker, 'utf8').trim() : null;
+    if (tag && releaseState(tag, ASSET) === 'published') {
+      rmSync(libBackup, { recursive: true, force: true });
+      writeFileSync(path.join(libDir, '.payload-source'), tag.replace(/^runtime-payloads-/, ''));
+      console.error(
+        `A previous publish of ${tag} was stopped after its release went out; ` +
+          `${path.relative(repo, libDir)} is kept as that payload. Run the publish again.`,
+      );
+    } else {
+      restorePayload();
+      console.error(
+        `A previous publish was stopped while its payload was swapped in; ${path.relative(repo, libDir)} ` +
+          `is put back as it was. Run the publish again.`,
+      );
+    }
     process.exit(1);
   }
   const hash = run('bash', [path.join(runtime, 'scripts/runtime-payload-hash.sh')]);
@@ -263,21 +297,49 @@ async function publishWasm() {
   // While the new payload is in place unverified, a SIGINT or SIGTERM puts the old
   // one back before exiting; a kill that can't be caught leaves the backup, which
   // the next run restores before anything else.
-  const onSignal = (signal) => {
-    running?.kill(signal);
+  // The temp dirs this half made, removed on the signal path too.
+  const temps = new Set([staged]);
+  let stopping = false;
+  const onSignal = async (signal) => {
+    if (stopping) return;
+    stopping = true;
+    // Stop the step and everything it started, and wait for it, so nothing writes
+    // into libDir after the restore. SIGKILL whatever is still there after 5 s.
+    const child = running;
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise((resolve) => child.once('exit', resolve));
+      const group = (sig) => {
+        try {
+          process.kill(-child.pid, sig);
+        } catch {}
+      };
+      group(signal);
+      const timer = setTimeout(() => group('SIGKILL'), 5000);
+      await exited;
+      clearTimeout(timer);
+    }
     restorePayload();
-    console.error(`${signal}: ${path.relative(repo, libDir)} restored; nothing published.`);
+    for (const dir of temps) rmSync(dir, { recursive: true, force: true });
+    console.error(
+      `${signal}: ${path.relative(repo, libDir)} put back as it was; nothing published.`,
+    );
     process.exit(signal === 'SIGINT' ? 130 : 143);
   };
   try {
     rmSync(libBackup, { recursive: true, force: true });
     if (existsSync(libDir)) renameSync(libDir, libBackup);
+    else {
+      mkdirSync(libBackup, { recursive: true });
+      writeFileSync(path.join(libBackup, ABSENT), '');
+    }
     process.on('SIGINT', onSignal);
     process.on('SIGTERM', onSignal);
     try {
       cpSync(staged, libDir, { recursive: true });
       await publishLinked();
     } catch (error) {
+      // A step stopped by onSignal: the handler restores, cleans up and exits.
+      if (stopping) await new Promise(() => {});
       restorePayload();
       throw error;
     } finally {
@@ -295,6 +357,7 @@ async function publishWasm() {
     await shAsync('node packages/engine/runtime/scripts/verify-rust-core.mjs');
 
     const out = mkdtempSync(path.join(tmpdir(), 'engine-payload-'));
+    temps.add(out);
     const archive = path.join(out, ASSET);
     await shAsync(
       `tar -czf ${JSON.stringify(archive)} --exclude .payload-source -C ${JSON.stringify(libDir)} .`,
@@ -337,9 +400,12 @@ async function publishWasm() {
       console.log(`\n--dry-run: would run gh ${args.map((a) => JSON.stringify(a)).join(' ')}`);
       console.log(`payload left at ${out}`);
     } else {
+      // From here a kill may come after the release went out; the next run asks.
+      writeFileSync(path.join(libBackup, PUBLISHING), `${tag}\n`);
       execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
       rmSync(out, { recursive: true, force: true });
     }
+    if (dryRun) temps.delete(out);
     // A published payload matches its release, so fetch-payload.sh keeps it. A dry
     // run's matches no release, so its marker names none and fetch-payload.sh
     // fetches the published one over it.
