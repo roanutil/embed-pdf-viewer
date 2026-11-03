@@ -602,6 +602,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -2426,6 +2427,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -6308,6 +6310,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -8132,6 +8135,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -9956,6 +9960,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -21426,6 +21431,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -48828,6 +48834,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,
@@ -75261,6 +75268,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 0,

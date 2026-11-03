@@ -7714,6 +7714,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
