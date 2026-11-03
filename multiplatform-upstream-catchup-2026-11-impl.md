@@ -743,8 +743,9 @@ parent tree doesn't list. The Rust reads the same.
 `d4086d937` adds a tagged text field to the same fixture, its widget in a `/Form` element that is
 the structure root's third kid, and a `tagged-widget` case in `forms/snapshot.json` whose widget
 row records `[2,0]`. That case holds `page_space/forms.rs`, where the widget is copied into page
-space, to carrying the field. Its Rust replay, and the run with `structure_position: None` there that
-should fail it, wait on the heavy-build hold (see the checks below).
+space, to carrying the field. The Rust replay passes. With `structure_position: None` at `page_space/forms.rs:71`,
+`cargo test -p epdf-engine --test form_reader` fails on `tagged-widget` (15 passed, 1 failed), and
+it passes again with the line restored.
 
 `f63a2263f` does the plugin side. `core/annotation-update.json`, `plugins/annotation-crud.json`
 and `plugins/annotation-reconciliation.json` gain `structurePosition: null` and nothing else.
@@ -756,7 +757,7 @@ changed, and the Rust export now matches both.
 `core/annotation-anchor`, `-flags`, `-groups`, `-hit`, `-props`, `-snap` and `-view`, and
 `plugins/actions-dispatcher`, `-hover`, `-lifecycle` and `-triggers`, `annotation-grouping`,
 `-hydration`, `-markup` and `-repository`, `redaction`, `redaction-functions` and `stamp-assets`. Each
-differs from the recorded file only by `structurePosition: null`. Their Rust replays wait on the same hold.
+differs from the recorded file only by `structurePosition: null`. Their Rust replays all pass, with no Rust change.
 
 Two findings came out of the plugin side. First, `tooling/plugin-conformance/src/generate.ts`
 doesn't load on this branch, because two suite modules import files upstream removed:
@@ -801,10 +802,11 @@ on the payload above.
 | `EPDF_NATIVE_DIR=<abs>/target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj` | 0 | 32 passed |
 | The 34 `tooling/engine-conformance` `:check` scripts | 0 | 34 pass |
 
-The table is at `f63a2263f`. For the review round's commits (`5cdf215da`, `d4086d937`,
-`70068a005`), only the node checks have run so far: at `70068a005` the 34 engine `:check` scripts
-pass, and `node --test scripts/lib/fork-ancestry.test.mjs scripts/lib/payload-notes.test.mjs`
-passes 9 of 9. The cargo runs wait on the heavy-build hold.
+The table is at `f63a2263f`. After the review round's commits (`5cdf215da`, `d4086d937`,
+`70068a005`), at `6e1c98ead`: `cargo test --workspace --no-fail-fast -- --test-threads=4` exits 0
+with 3,132 passed, 0 failed, 1 ignored over 331 runs; the 34 engine `:check` scripts pass; and
+`node --test scripts/lib/fork-ancestry.test.mjs scripts/lib/payload-notes.test.mjs` passes 9 of 9.
+Those commits change no Rust, so clippy, rustfmt and `dotnet test` stand as above.
 
 `dotnet test` needs an absolute `EPDF_NATIVE_DIR` and a `cargo build -p epdf-capi` first:
 `cargo test --workspace` doesn't build `libepdf_capi.so`, and with a relative directory all but six
