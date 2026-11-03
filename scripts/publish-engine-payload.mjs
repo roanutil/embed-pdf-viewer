@@ -66,13 +66,16 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -109,15 +112,52 @@ const ABSENT = '.absent';
 // Written into libBackup just before `gh release create`: a backup that has it
 // may belong to a release that went out, which the next run asks the fork about.
 const PUBLISHING = '.publishing';
+// Beside it, the sha256 of each file in libDir as it went into the release, so a
+// later run keeps libDir as published only while it is still that payload.
+const PUBLISHED_DIGESTS = '.publishing-digests.json';
+// The process group of the step running while the payload is swapped in. A run
+// that finds it still alive refuses: that build may still write into libDir.
+const PGID = '.pgid';
+const MARKERS = [PUBLISHING, PUBLISHED_DIGESTS, PGID];
 
 // What libDir held before the swap, back in libDir: the old payload, or no
 // payload at all. Synchronous, for the signal handlers.
 function restorePayload() {
   if (!existsSync(libBackup)) return;
   rmSync(libDir, { recursive: true, force: true });
-  rmSync(path.join(libBackup, PUBLISHING), { force: true });
+  for (const marker of MARKERS) rmSync(path.join(libBackup, marker), { force: true });
   if (existsSync(path.join(libBackup, ABSENT))) rmSync(libBackup, { recursive: true, force: true });
   else renameSync(libBackup, libDir);
+}
+
+// Every file in `dir` readable by all and writable by its owner (0644), whatever
+// the link and the copies left (a container build through a bind mount can leave
+// 0200), so the archive ships files anyone can read.
+function normalizeModes(dir) {
+  for (const name of readdirSync(dir)) {
+    const file = path.join(dir, name);
+    if (statSync(file).isFile()) chmodSync(file, 0o644);
+  }
+}
+
+// The sha256 of each file directly in `dir`, by name, without the markers.
+function fileDigests(dir) {
+  return Object.fromEntries(
+    readdirSync(dir)
+      .filter((name) => name !== '.payload-source')
+      .sort()
+      .map((name) => [name, sha256(path.join(dir, name))]),
+  );
+}
+
+// Whether any process of group `pgid` is still alive.
+function groupAlive(pgid) {
+  try {
+    process.kill(-pgid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== 'ESRCH';
+  }
 }
 const apple = path.join(repo, 'platforms/apple');
 const manifest = path.join(apple, 'EmbedPDF/Package.swift');
@@ -145,8 +185,11 @@ const sh = (cmd, cwd = repo, env = {}) => {
 // handler can act (restore the payload) instead of waiting for it to end.
 // Each runs in a process group of its own (detached), so a signal handler can stop
 // it with everything it started, a grandchild that writes into libDir included.
+// Once a signal handler starts stopping the run, no step starts.
 let running = null;
+let stopping = false;
 const shAsync = (cmd, cwd = repo, env = {}) => {
+  if (stopping) return Promise.reject(new Error(`not started, the run is stopping: ${cmd}`));
   console.log(`  $ ${cmd}`);
   return new Promise((resolve, reject) => {
     running = spawn('bash', ['-euo', 'pipefail', '-c', cmd], {
@@ -155,6 +198,8 @@ const shAsync = (cmd, cwd = repo, env = {}) => {
       env: { ...process.env, ...env },
       detached: true,
     });
+    // Recorded in the backup while the payload is swapped in (see PGID).
+    if (existsSync(libBackup)) writeFileSync(path.join(libBackup, PGID), `${running.pid}\n`);
     running.on('error', reject);
     running.on('exit', (code, signal) => {
       running = null;
@@ -165,20 +210,20 @@ const shAsync = (cmd, cwd = repo, env = {}) => {
 };
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 // What the fork has under `tag`, by releaseVerdict: only a release that isn't a
-// draft and has `asset` and its .sha256 is published. A gh that fails (no such
-// release, no login) reads as missing.
+// draft and has `asset` and its .sha256 is published. gh's "release not found"
+// is missing; any other gh failure (login, network) throws, since the answer
+// is unknown and nothing may act on a guess.
 const releaseState = (tag, asset) => {
-  let release = null;
-  try {
-    release = JSON.parse(
-      run('gh', ['release', 'view', tag, '--repo', RELEASE_REPO, '--json', 'assets,isDraft'], {
-        stdio: 'pipe',
-      }),
-    );
-  } catch {
-    release = null;
-  }
-  return releaseVerdict(release, asset);
+  const view = spawnSync(
+    'gh',
+    ['release', 'view', tag, '--repo', RELEASE_REPO, '--json', 'assets,isDraft'],
+    { cwd: repo, encoding: 'utf8' },
+  );
+  if (view.status === 0) return releaseVerdict(JSON.parse(view.stdout), asset);
+  if (/release not found/i.test(view.stderr ?? '')) return releaseVerdict(null, asset);
+  throw new Error(
+    `gh couldn't say whether ${tag} exists on ${RELEASE_REPO}: ${(view.stderr || view.error?.message || `exit ${view.status}`).trim()}`,
+  );
 };
 
 // The release names a commit, so that commit has to be what was built.
@@ -247,9 +292,42 @@ async function publishWasm() {
   // in libBackup. One killed after its release went out leaves the new payload as
   // published: keep it. Any other is an interrupted swap: put the old state back.
   if (existsSync(libBackup)) {
+    // Its build may still be running (a SIGKILL'd node, a dropped terminal before
+    // the SIGHUP handler): leave everything until it ends.
+    const pgidFile = path.join(libBackup, PGID);
+    const pgid = existsSync(pgidFile) ? Number(readFileSync(pgidFile, 'utf8')) : 0;
+    if (pgid > 0 && groupAlive(pgid)) {
+      console.error(
+        `a previous publish's build is still running: pgid ${pgid}. Stop it (kill -TERM -${pgid}) ` +
+          `and run the publish again; ${path.relative(repo, libBackup)} is left as it is.`,
+      );
+      process.exit(1);
+    }
     const marker = path.join(libBackup, PUBLISHING);
     const tag = existsSync(marker) ? readFileSync(marker, 'utf8').trim() : null;
-    if (tag && releaseState(tag, ASSET) === 'published') {
+    let state = null;
+    if (tag) {
+      try {
+        state = releaseState(tag, ASSET);
+      } catch (error) {
+        // Unknown: keep the backup and its marker for a run that can ask.
+        console.error(`${error.message}\n${path.relative(repo, libBackup)} is left as it is.`);
+        process.exit(1);
+      }
+    }
+    if (tag && state === 'published') {
+      // Keep libDir as that payload only if it is still what went into the release.
+      const digestsFile = path.join(libBackup, PUBLISHED_DIGESTS);
+      const recorded = existsSync(digestsFile) ? readFileSync(digestsFile, 'utf8') : null;
+      const now = existsSync(libDir) ? JSON.stringify(fileDigests(libDir)) : null;
+      if (!recorded || recorded !== now) {
+        console.error(
+          `${tag} is published, but ${path.relative(repo, libDir)} isn't the payload that went into ` +
+            `it. Fetch the published payload (fetch-payload.sh) or restore by hand; ` +
+            `${path.relative(repo, libBackup)} is left as it is.`,
+        );
+        process.exit(1);
+      }
       rmSync(libBackup, { recursive: true, force: true });
       writeFileSync(path.join(libDir, '.payload-source'), tag.replace(/^runtime-payloads-/, ''));
       console.error(
@@ -267,7 +345,15 @@ async function publishWasm() {
   }
   const hash = run('bash', [path.join(runtime, 'scripts/runtime-payload-hash.sh')]);
   const tag = `runtime-payloads-${hash}`;
-  const state = dryRun ? null : releaseState(tag, ASSET);
+  let state = null;
+  if (!dryRun) {
+    try {
+      state = releaseState(tag, ASSET);
+    } catch (error) {
+      console.error(error.message);
+      process.exit(1);
+    }
+  }
   if (state === 'published') {
     console.log(`${tag} is already published on ${RELEASE_REPO}; nothing to do.`);
     return;
@@ -299,31 +385,38 @@ async function publishWasm() {
   // the next run restores before anything else.
   // The temp dirs this half made, removed on the signal path too.
   const temps = new Set([staged]);
-  let stopping = false;
   const onSignal = async (signal) => {
     if (stopping) return;
     stopping = true;
-    // Stop the step and everything it started, and wait for it, so nothing writes
-    // into libDir after the restore. SIGKILL whatever is still there after 5 s.
+    // Stop the step and everything it started, and wait until no process of its
+    // group is left, so nothing writes into libDir after the restore. Whatever
+    // still runs after 5 s gets SIGKILL, the leader gone or not.
     const child = running;
-    if (child && child.exitCode === null && child.signalCode === null) {
-      const exited = new Promise((resolve) => child.once('exit', resolve));
+    if (child) {
+      const pgid = child.pid;
       const group = (sig) => {
         try {
-          process.kill(-child.pid, sig);
+          process.kill(-pgid, sig);
         } catch {}
       };
       group(signal);
-      const timer = setTimeout(() => group('SIGKILL'), 5000);
-      await exited;
-      clearTimeout(timer);
+      const deadline = Date.now() + 5000;
+      let killed = false;
+      while (groupAlive(pgid)) {
+        if (!killed && Date.now() >= deadline) {
+          group('SIGKILL');
+          killed = true;
+        }
+        if (killed && Date.now() >= deadline + 2000) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     }
     restorePayload();
     for (const dir of temps) rmSync(dir, { recursive: true, force: true });
     console.error(
       `${signal}: ${path.relative(repo, libDir)} put back as it was; nothing published.`,
     );
-    process.exit(signal === 'SIGINT' ? 130 : 143);
+    process.exit({ SIGHUP: 129, SIGINT: 130 }[signal] ?? 143);
   };
   try {
     rmSync(libBackup, { recursive: true, force: true });
@@ -332,10 +425,12 @@ async function publishWasm() {
       mkdirSync(libBackup, { recursive: true });
       writeFileSync(path.join(libBackup, ABSENT), '');
     }
+    process.on('SIGHUP', onSignal);
     process.on('SIGINT', onSignal);
     process.on('SIGTERM', onSignal);
     try {
       cpSync(staged, libDir, { recursive: true });
+      normalizeModes(libDir);
       await publishLinked();
     } catch (error) {
       // A step stopped by onSignal: the handler restores, cleans up and exits.
@@ -343,6 +438,7 @@ async function publishWasm() {
       restorePayload();
       throw error;
     } finally {
+      process.off('SIGHUP', onSignal);
       process.off('SIGINT', onSignal);
       process.off('SIGTERM', onSignal);
     }
@@ -359,6 +455,8 @@ async function publishWasm() {
     const out = mkdtempSync(path.join(tmpdir(), 'engine-payload-'));
     temps.add(out);
     const archive = path.join(out, ASSET);
+    // The package build writes into libDir too; its files get the same modes.
+    normalizeModes(libDir);
     await shAsync(
       `tar -czf ${JSON.stringify(archive)} --exclude .payload-source -C ${JSON.stringify(libDir)} .`,
     );
@@ -401,6 +499,7 @@ async function publishWasm() {
       console.log(`payload left at ${out}`);
     } else {
       // From here a kill may come after the release went out; the next run asks.
+      writeFileSync(path.join(libBackup, PUBLISHED_DIGESTS), JSON.stringify(fileDigests(libDir)));
       writeFileSync(path.join(libBackup, PUBLISHING), `${tag}\n`);
       execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
       rmSync(out, { recursive: true, force: true });
