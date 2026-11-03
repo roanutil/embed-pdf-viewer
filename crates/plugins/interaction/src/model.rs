@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::contract::{Cursor, Tool, ToolId, ToolTouch};
+use crate::contract::{Cursor, Tool, ToolId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,14 +73,12 @@ pub fn set_cursor(state: &Rc<InteractionState>, cursor: &str) -> Rc<InteractionS
     Rc::new(InteractionState { cursor: cursor.to_string(), ..(**state).clone() })
 }
 
-/// `builtinTools()`: the three built-in tools. Features add tools with
+/// `builtinTools()`: the two built-in tools. Features add tools with
 /// `register_tool`. `enables` is the composition seam: `pointer` turns on
 /// text selection, annotation editing and marquee selection, `pan`
-/// scrolling and annotation editing, with no text select, and `zoom` a box
-/// to zoom to and a click to zoom a step (both contributed by the stage).
-/// Pointer and pan carry `form-fill` and `link-nav`: filling forms and
-/// following links is the resting state of a viewer. Under zoom a click
-/// zooms instead.
+/// scrolling and annotation editing, with no text select. Both carry
+/// `form-fill` and `link-nav`: filling forms and following links is the
+/// resting state of a viewer.
 pub fn builtin_tools() -> Vec<Rc<Tool>> {
     vec![
         Rc::new(Tool::new(
@@ -91,12 +89,6 @@ pub fn builtin_tools() -> Vec<Rc<Tool>> {
         Rc::new(
             Tool::new("pan", "grab", ["scroll", "annotation-edit", "form-fill", "link-nav"])
                 .with_gap_cursor("grab"),
-        ),
-        // A box can start anywhere, the space between pages included.
-        Rc::new(
-            Tool::new("zoom", "zoom-in", ["zoom-box"])
-                .with_gap_cursor("zoom-in")
-                .with_touch(ToolTouch::Draw),
         ),
     ]
 }

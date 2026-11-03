@@ -56,7 +56,7 @@ extension BaseSuite {
     @Test func activatingAToolIsObserved() async throws {
       let (_, _, interaction, _) = try await opened()
       let ids = try await interaction.tools().map(\.id)
-      expectNoDifference(ids, ["pointer", "pan", "zoom"])
+      expectNoDifference(ids, ["pointer", "pan"])
       let events = interaction.events
       try await interaction.activateTool("pan")
       for await event in events {

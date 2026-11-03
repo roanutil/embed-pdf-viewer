@@ -161,12 +161,11 @@ pub fn tool_json(tool: &Tool) -> Value {
     let mut out = Map::new();
     out.insert("id".into(), json!(tool.id));
     out.insert("cursor".into(), json!(tool.cursor));
-    // `gapCursor` before `touch`, as the built-in zoom tool spells them.
-    if let Some(gap) = &tool.gap_cursor {
-        out.insert("gapCursor".into(), json!(gap));
-    }
     if let Some(touch) = tool.touch {
         out.insert("touch".into(), serde_json::to_value(touch).unwrap());
+    }
+    if let Some(gap) = &tool.gap_cursor {
+        out.insert("gapCursor".into(), json!(gap));
     }
     out.insert("enables".into(), json!({ "$set": tool.enables }));
     for (name, present) in [

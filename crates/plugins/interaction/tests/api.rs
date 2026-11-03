@@ -260,7 +260,7 @@ fn replacing_a_registration_moves_it_last_and_retires_the_old_remover() {
         )
         .unwrap();
     let ids: Vec<String> = hub.list_tools().iter().map(|t| t.id.clone()).collect();
-    assert_eq!(ids, ["pan", "zoom", "ink", "pointer"]);
+    assert_eq!(ids, ["pan", "ink", "pointer"]);
     assert!(!Rc::ptr_eq(&listed, &hub.list_tools()));
 
     let replacement = hub
