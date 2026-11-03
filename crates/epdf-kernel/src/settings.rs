@@ -160,8 +160,10 @@ pub fn merge_settings(base: &Value, change: Option<&Value>, whole: &[String]) ->
     if crate::is_undefined(change) {
         return base.clone();
     }
+    // `mergeValue`: arrays and other values replace, but an equal one keeps
+    // the value already there.
     let Some(object) = change.as_object() else {
-        return change.clone();
+        return if crate::js::same_value(base, change) { base.clone() } else { change.clone() };
     };
     let mut result = base.as_object().cloned().unwrap_or_default();
     for (key, value) in object {
@@ -169,7 +171,11 @@ pub fn merge_settings(base: &Value, change: Option<&Value>, whole: &[String]) ->
             continue;
         }
         let next = if whole.contains(key) {
-            value.clone()
+            // `mergeSettings` keeps a `whole` value equal to the one there.
+            match result.get(key) {
+                Some(current) if crate::js::same_value(current, value) => continue,
+                _ => value.clone(),
+            }
         } else {
             merge_settings(result.get(key).unwrap_or(&crate::undefined()), Some(value), &[])
         };
@@ -212,5 +218,26 @@ mod tests {
         assert!(changed.borrow().is_empty());
         settings.update_settings(&json!({ "page": 4.0 }));
         assert_eq!(*changed.borrow(), vec![vec!["page".to_string()]]);
+    }
+
+    /// `mergeValue` keeps the base value when the change is `sameValue` to it,
+    /// so a value written again in floats reads as it was, `whole` ones too.
+    #[test]
+    fn a_change_equal_to_the_value_there_keeps_that_value() {
+        let base = json!({ "zoom": { "level": 1, "steps": [1, 2] }, "page": 3, "tools": [1] });
+        let whole = vec!["tools".to_string()];
+        let merged = merge_settings(
+            &base,
+            Some(
+                &json!({ "zoom": { "level": 1.0, "steps": [1.0, 2.0] }, "page": 3.0, "tools": [1.0] }),
+            ),
+            &whole,
+        );
+        assert_eq!(merged.to_string(), base.to_string());
+        assert_eq!(merge_settings(&json!(1), Some(&json!(1.0)), &[]).to_string(), "1");
+        // A different value still replaces.
+        let merged = merge_settings(&base, Some(&json!({ "page": 4.0, "tools": [2] })), &whole);
+        assert_eq!(merged["page"], json!(4.0));
+        assert_eq!(merged["tools"], json!([2]));
     }
 }

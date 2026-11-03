@@ -316,7 +316,10 @@ fn shows_a_page_change_at_once_and_an_answer_that_matches_it_changes_nothing() {
     assert_eq!(indexes, vec![json!(0), json!(1), json!(2)]);
     assert_eq!(h.revision(), revision + 1);
     // An index names the page the user sees.
-    assert_eq!(h.pages()[0]["ref"], r(3));
+    assert_eq!(h.ctx.page_of(0).unwrap()["ref"], r(3));
+    assert_eq!(h.ctx.page_of(PageRef::new(3)).unwrap()["index"], json!(0));
+    let missing = h.ctx.page_of(3).unwrap_err();
+    assert_eq!(missing.message, "there is no page 3 in this document");
 
     let shown = h.pages();
     let pages = shown.as_array().unwrap().clone();

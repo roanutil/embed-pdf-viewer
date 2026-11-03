@@ -44,6 +44,40 @@ impl PageRef {
     }
 }
 
+/// A page argument as `ctx.pageOf` takes it, `PageRef | number`: a ref, or
+/// a zero-based index into the document's page list (display order).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PageArg {
+    Ref(PageRef),
+    Index(f64),
+}
+
+impl From<PageRef> for PageArg {
+    fn from(page: PageRef) -> Self {
+        PageArg::Ref(page)
+    }
+}
+impl From<f64> for PageArg {
+    fn from(index: f64) -> Self {
+        PageArg::Index(index)
+    }
+}
+impl From<i32> for PageArg {
+    fn from(index: i32) -> Self {
+        PageArg::Index(index.into())
+    }
+}
+impl From<u32> for PageArg {
+    fn from(index: u32) -> Self {
+        PageArg::Index(index.into())
+    }
+}
+impl From<usize> for PageArg {
+    fn from(index: usize) -> Self {
+        PageArg::Index(index as f64)
+    }
+}
+
 impl Serialize for PageRef {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_json().serialize(serializer)

@@ -19,7 +19,7 @@ use crate::action::Action;
 use crate::engine::{DocumentHandle, Engine};
 use crate::error::{Error, code, plugin_error};
 use crate::event_hook::EventHookSource;
-use crate::geometry::{PageRef, PageSpace, PdfEdges};
+use crate::geometry::{PageArg, PageRef, PageSpace, PdfEdges};
 use crate::guarded::{GuardedLifetime, guard_handle};
 use crate::lanes::LatestLane;
 use crate::rt::{self, Promise};
@@ -959,9 +959,42 @@ impl ControllerContext {
         core.documents.get(&session.id()).cloned().or_else(|| session.staged_meta())
     }
 
-    fn page_of(&self, page: PageRef) -> Option<Value> {
+    fn page_by_ref(&self, page: PageRef) -> Option<Value> {
         let meta = self.meta()?;
         meta.pages.as_array()?.iter().find(|p| page.names(p)).cloned()
+    }
+
+    /// `findPage(pages, page)`: the page a ref names, or the one at a
+    /// zero-based index (`pages[page] ?? null`).
+    fn find_page(&self, page: PageArg) -> Option<Value> {
+        match page {
+            PageArg::Ref(page) => self.page_by_ref(page),
+            PageArg::Index(index) => {
+                let meta = self.meta()?;
+                let pages = meta.pages.as_array()?;
+                (index.fract() == 0.0 && index >= 0.0 && index < pages.len() as f64)
+                    .then(|| pages[index as usize].clone())
+            }
+        }
+    }
+
+    /// `ctx.pageOf(page)`: the page a `PageRef` or a zero-based index names,
+    /// or `not-found` when neither names a page of this document.
+    pub fn page_of(&self, page: impl Into<PageArg>) -> Result<Value, Error> {
+        let page = page.into();
+        if let Some(found) = self.find_page(page) {
+            return Ok(found);
+        }
+        match page {
+            PageArg::Ref(page) => Err(self.not_in_document(page)),
+            PageArg::Index(index) => Err(plugin_error(
+                code::NOT_FOUND,
+                &self.0.capability,
+                format!("there is no page {} in this document", crate::js::number_to_string(index)),
+                None,
+                None,
+            )),
+        }
     }
 
     fn not_in_document(&self, page: PageRef) -> Error {
@@ -977,7 +1010,7 @@ impl ControllerContext {
     /// `ctx.geometry.tryForPage(ref)`: the page's space, or `None` for a
     /// page this document does not have.
     pub fn try_for_page(&self, page: PageRef) -> Option<PageSpace> {
-        let layout = self.page_of(page)?;
+        let layout = self.page_by_ref(page)?;
         let crop: PdfEdges =
             serde_json::from_value(layout.get("boxes")?.get("crop")?.clone()).ok()?;
         Some(PageSpace::new(crop))
@@ -990,7 +1023,7 @@ impl ControllerContext {
 
     /// `ctx.assertPageRef(ref)`.
     pub fn assert_page_ref(&self, page: PageRef) -> Result<(), Error> {
-        match self.page_of(page) {
+        match self.page_by_ref(page) {
             Some(_) => Ok(()),
             None => Err(self.not_in_document(page)),
         }
@@ -998,7 +1031,7 @@ impl ControllerContext {
 
     /// `ctx.getPage(ref)`: the registry entry, or `None`.
     pub fn get_page(&self, page: PageRef) -> Option<Value> {
-        self.page_of(page)
+        self.page_by_ref(page)
     }
 
     /// `ctx.cleanup(fn)` on the instance scope.

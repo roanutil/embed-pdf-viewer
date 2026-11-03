@@ -47,6 +47,15 @@ fn type_error(what: &str, member: &str) -> Error {
     Error::named("TypeError", format!("Cannot read properties of {what} (reading '{member}')"))
 }
 
+/// The TypeError `const { size } = op.spec` throws for an `undefined` or
+/// `null` spec.
+fn destructure_error(what: &str) -> Error {
+    Error::named(
+        "TypeError",
+        format!("Cannot destructure property 'size' of 'op.spec' as it is {what}."),
+    )
+}
+
 /// `value` as the array a member read gets, or the TypeError reading
 /// `member` off it.
 fn array<'a>(value: &'a Value, member: &str) -> Result<&'a Vec<Value>, Error> {
@@ -382,8 +391,14 @@ fn pages_after_delete(list: &Rc<PageList>, refs: &Value) -> Result<Rc<PageList>,
 }
 
 fn pages_after_insert_blank(list: &Rc<PageList>, op: &Value) -> Result<Rc<PageList>, Error> {
-    let spec = op.get("spec").filter(|v| v.is_object() && !crate::is_undefined(v));
-    let Some(spec) = spec else { return Err(type_error("undefined", "size")) };
+    // `const { size } = op.spec`: destructuring throws only for `undefined` and
+    // `null`. Any other spec has no members, so `size` reads `undefined`.
+    let spec = match op.get("spec") {
+        None => return Err(destructure_error("undefined")),
+        Some(v) if crate::is_undefined(v) => return Err(destructure_error("undefined")),
+        Some(Value::Null) => return Err(destructure_error("null")),
+        Some(spec) => spec,
+    };
     // `op.spec.count ?? 1`: a null count is one page too.
     let count_value = member(spec, "count").filter(|v| !v.is_null()).cloned().unwrap_or(json!(1));
     let count = count_value.as_f64();
@@ -454,11 +469,12 @@ fn inserted(
     count: f64,
     mut make: impl FnMut(Value) -> Result<Value, Error>,
 ) -> Result<Rc<PageList>, Error> {
-    let pages = array(&list.pages, "map")?;
+    // `!numbers || numbers.length !== count` answers before the pages are read.
     let Some(Value::Array(numbers)) = numbers else { return Ok(list.clone()) };
     if numbers.len() as f64 != count {
         return Ok(list.clone());
     }
+    let pages = array(&list.pages, "map")?;
     let taken: Vec<&Value> = pages
         .iter()
         .map(|p| p.get("ref").and_then(|r| r.get("objectNumber")).unwrap_or(&Value::Null))
@@ -473,7 +489,8 @@ fn inserted(
     let page_refs: Vec<Value> =
         pages.iter().map(|p| p.get("ref").cloned().unwrap_or_else(crate::undefined)).collect();
     let end = json!("end");
-    let position = position.filter(|p| !crate::is_undefined(p)).unwrap_or(&end);
+    // `position ?? 'end'`: a null position is the end too.
+    let position = position.filter(|p| !crate::is_undefined(p) && !p.is_null()).unwrap_or(&end);
     let Ok(at) = position_index(&page_refs, position) else { return Ok(list.clone()) };
     let mut order = Vec::with_capacity(pages.len() + numbers.len());
     order.extend_from_slice(&pages[..at]);
@@ -1030,6 +1047,60 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.message.contains("null"), "{}", error.message);
+    }
+
+    #[test]
+    fn a_blank_insert_spec_that_is_not_an_object_throws_as_the_typescript_does() {
+        let before = list(vec![page(1, 0)], json!([]));
+        let insert = |spec: Option<Value>| {
+            let mut op = json!({ "type": "pages.insertBlank", "objectNumbers": [8] });
+            if let Some(spec) = spec {
+                op["spec"] = spec;
+            }
+            pages_after(&before, &op).unwrap_err()
+        };
+        // `const { size } = op.spec` throws for these two.
+        for (spec, what) in [(None, "undefined"), (Some(Value::Null), "null")] {
+            let error = insert(spec);
+            assert_eq!(error.name, "TypeError");
+            assert_eq!(
+                error.message,
+                format!("Cannot destructure property 'size' of 'op.spec' as it is {what}.")
+            );
+        }
+        // Any other spec destructures to no size, and `size.width` throws.
+        for spec in [json!(5), json!("a4"), json!(true), json!([])] {
+            let error = insert(Some(spec.clone()));
+            assert_eq!(error.name, "TypeError", "{spec}");
+            assert_eq!(error.message, "Cannot read properties of undefined (reading 'width')");
+        }
+    }
+
+    #[test]
+    fn a_blank_insert_without_its_numbers_answers_before_it_reads_the_pages() {
+        // An engine answer without its pages: no numbers, or the wrong count of
+        // them, leaves the list before `pages` is read.
+        let unread = PageList::new(Rc::new(crate::undefined()), Rc::new(json!([])));
+        let spec = json!({ "size": { "width": 10, "height": 20 } });
+        for numbers in [None, Some(json!([])), Some(json!([7, 8]))] {
+            let mut op = json!({ "type": "pages.insertBlank", "spec": spec });
+            if let Some(numbers) = numbers {
+                op["objectNumbers"] = numbers;
+            }
+            assert!(Rc::ptr_eq(&pages_after(&unread, &op).unwrap(), &unread), "{op}");
+        }
+        // The right count reads them.
+        let named = json!({ "type": "pages.insertBlank", "spec": spec, "objectNumbers": [8] });
+        assert_eq!(pages_after(&unread, &named).unwrap_err().name, "TypeError");
+    }
+
+    #[test]
+    fn a_null_insert_position_is_the_end() {
+        let before = list(vec![page(1, 0), page(2, 1)], json!([]));
+        let op = json!({ "type": "pages.insertBlank",
+            "spec": { "size": { "width": 10, "height": 20 } },
+            "objectNumbers": [8], "position": null });
+        assert_eq!(numbers(&pages_after(&before, &op).unwrap()), vec![1, 2, 8]);
     }
 
     #[test]
