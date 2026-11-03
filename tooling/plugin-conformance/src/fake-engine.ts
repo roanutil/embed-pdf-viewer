@@ -113,6 +113,12 @@ export interface FakeDocumentSpec {
   readonly responses?: readonly ResponseSpec[];
 }
 
+/** A page list answered without `labels`, as every case before page label sections writes it, has none. */
+const withLabels = (value: unknown): unknown =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) && !('labels' in value)
+    ? { ...value, labels: [] }
+    : value;
+
 export interface FakeEngineSpec {
   readonly documents?: Readonly<Record<string, FakeDocumentSpec>>;
   readonly canOpenFiles?: boolean;
@@ -658,6 +664,7 @@ export function createFakeEngine(
                       namedPages: decode(namedPages),
                     })
                   : undefined,
+                member === 'list' ? withLabels : undefined,
               );
           },
         },

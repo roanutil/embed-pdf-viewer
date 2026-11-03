@@ -92,7 +92,7 @@ impl DocumentHandle for Doc {
                     return answer;
                 }
                 Promise::resolved(
-                    json!({"pageCount":1,"pages":[{"ref":{"kind":"objectNumber","objectNumber":3},"boxes":{"crop":{"left":0,"right":100,"top":100,"bottom":0}}}]}),
+                    json!({"pageCount":1,"pages":[{"ref":{"kind":"objectNumber","objectNumber":3},"boxes":{"crop":{"left":0,"right":100,"top":100,"bottom":0}}}],"labels":[]}),
                 )
             }
             "close" => {
@@ -864,7 +864,7 @@ fn a_page_mirror_subscribes_to_the_handle_at_creation_between_the_kernel_and_con
     let page = json!({"ref":{"kind":"objectNumber","objectNumber":3}});
     document.events.emit(&json!({
         "type": "pages.rotated",
-        "layout": {"pageCount": 1, "pages": [page]},
+        "layout": {"pageCount": 1, "pages": [page], "labels": []},
         "origin": {"kind": "remote"}
     }));
     rt::run_until_stalled();
@@ -923,7 +923,7 @@ fn a_workspace_view_is_kept_per_document_and_dropped_on_rekey_and_close() {
     let after = kernel.capability(&token, Some("renamed")).unwrap();
     assert_eq!(*after, "view:renamed", "the rekey dropped the view built for the ticket id");
     assert_eq!(built.get(), 2);
-    land.resolve(Default::default());
+    land.resolve(json!({ "pageCount": 0, "pages": [], "labels": [] }));
     let _ = run(opening);
     let kept = kernel.try_capability(&held, Some("renamed")).unwrap().unwrap();
     let view = Rc::downgrade(&after);

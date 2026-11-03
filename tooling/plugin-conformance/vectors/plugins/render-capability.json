@@ -31832,19 +31832,12 @@
           "settled": [
             {
               "promise": 1,
-              "rejected": {
-                "$error": {
-                  "name": "PluginError",
-                  "message": "Cannot read properties of undefined (reading 'length')",
-                  "code": "operation-failed",
-                  "capability": "documents",
-                  "permission": null,
-                  "cause": {
-                    "$error": {
-                      "name": "TypeError",
-                      "message": "Cannot read properties of undefined (reading 'length')"
-                    }
-                  }
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
                 }
               }
             }
@@ -31859,14 +31852,14 @@
               }
             },
             {
-              "event": "openFailed",
+              "event": "opened",
               "value": {
                 "documentId": "a",
-                "error": {
-                  "code": "operation-failed",
-                  "message": "Cannot read properties of undefined (reading 'length')",
-                  "capability": "documents",
-                  "permission": null
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
                 }
               }
             }
@@ -31895,11 +31888,6 @@
               "doc": "a",
               "path": "render.getPolicy",
               "args": []
-            },
-            {
-              "doc": "a",
-              "path": "close",
-              "args": []
             }
           ],
           "callbacks": [],
@@ -31907,7 +31895,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -31924,60 +31912,117 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "Capability \"render\" unavailable: document \"a\" is error."
-              }
-            }
+            "returned": "44|w100|a1f1|e0"
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "no page 44",
+                  "code": "not-found",
+                  "capability": "render",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no page 44",
+                      "code": "NotFound"
+                    }
+                  }
+                }
+              }
+            }
+          ],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 100
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "Capability \"render\" unavailable: document \"a\" is error."
-              }
-            }
+            "promise": 2
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "no page 44",
+                  "code": "not-found",
+                  "capability": "render",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no page 44",
+                      "code": "NotFound"
+                    }
+                  }
+                }
+              }
+            }
+          ],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 100
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "Capability \"render\" unavailable: document \"a\" is error."
-              }
-            }
+            "promise": 3
           }
         }
       ]

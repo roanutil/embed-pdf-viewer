@@ -524,6 +524,17 @@ fn password_prompt(state: &Value) -> Value {
     json!({"state":"none"})
 }
 
+/// A page list answered without `labels`, as every case before page label
+/// sections writes it, has none.
+fn with_labels(mut value: Value) -> Value {
+    if let Value::Object(fields) = &mut value
+        && !fields.contains_key("labels")
+    {
+        fields.insert("labels".into(), json!([]));
+    }
+    value
+}
+
 struct FakeHandle {
     security_state: Rc<RefCell<(Value, Value)>>,
     pages: Rc<RefCell<Vec<Value>>>,
@@ -680,11 +691,16 @@ impl DocumentHandle for FakeHandle {
                 hydrate_text_layout(&value)?;
                 Ok(value)
             }))
+        } else if path == "pages.list" {
+            Some(Rc::new(|value| Ok(with_labels(value))))
         } else {
             None
         };
         #[cfg(target_arch = "wasm32")]
-        let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> = None;
+        let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> =
+            (path == "pages.list").then(|| -> Rc<dyn Fn(Value) -> Result<Value, Error>> {
+                Rc::new(|value| Ok(with_labels(value)))
+            });
         self.engine.call(
             Some(&self.id),
             self.table,

@@ -90,6 +90,7 @@ impl DocumentHandle for Doc {
             "pages.list" => Promise::resolved(json!({
                 "pageCount": 2,
                 "pages": [page(3, 612.0, 792.0), page(7, 300.0, 400.0)],
+                "labels": [],
             })),
             "close" => Promise::resolved(Value::Null),
             "page.render.image" => {

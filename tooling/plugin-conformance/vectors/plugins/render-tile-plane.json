@@ -74121,19 +74121,12 @@
           "settled": [
             {
               "promise": 1,
-              "rejected": {
-                "$error": {
-                  "name": "PluginError",
-                  "message": "Cannot read properties of undefined (reading 'length')",
-                  "code": "operation-failed",
-                  "capability": "documents",
-                  "permission": null,
-                  "cause": {
-                    "$error": {
-                      "name": "TypeError",
-                      "message": "Cannot read properties of undefined (reading 'length')"
-                    }
-                  }
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
                 }
               }
             }
@@ -74148,14 +74141,14 @@
               }
             },
             {
-              "event": "openFailed",
+              "event": "opened",
               "value": {
                 "documentId": "a",
-                "error": {
-                  "code": "operation-failed",
-                  "message": "Cannot read properties of undefined (reading 'length')",
-                  "capability": "documents",
-                  "permission": null
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
                 }
               }
             }
@@ -74184,11 +74177,6 @@
               "doc": "a",
               "path": "render.getPolicy",
               "args": []
-            },
-            {
-              "doc": "a",
-              "path": "close",
-              "args": []
             }
           ],
           "callbacks": [],
@@ -74196,14 +74184,20 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {}
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
           }
         },
         {
@@ -74216,19 +74210,164 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "Capability \"render\" unavailable: document \"a\" is error."
+            "returned": {
+              "setDemand": {
+                "$ref": 0
+              },
+              "getPlan": {
+                "$ref": 1
+              },
+              "markPainted": {
+                "$ref": 2
+              },
+              "markUnpainted": {
+                "$ref": 3
+              },
+              "release": {
+                "$ref": 4
+              },
+              "dispose": {
+                "$ref": 5
               }
             }
           },
           "state": {
-            "plugins": {}
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 64.125,
+                      "height": 64.125
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 63.875,
+                      "y": 0,
+                      "width": 64.25,
+                      "height": 64.125
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 63.875,
+                      "width": 64.125,
+                      "height": 64.25
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 44,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 63.875,
+                      "y": 63.875,
+                      "width": 64.25,
+                      "height": 64.25
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
           }
         },
         {
@@ -74241,19 +74380,30 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 0"
-              }
+            "returned": {
+              "engaged": true,
+              "paint": [],
+              "fetching": [
+                "t:44|w4896|0,0|a1f1|e0|g512.1",
+                "t:44|w4896|0,1|a1f1|e0|g512.1",
+                "t:44|w4896|1,0|a1f1|e0|g512.1",
+                "t:44|w4896|1,1|a1f1|e0|g512.1"
+              ],
+              "stamp": "w4896|0,0,128,128|e0|v0"
             }
           },
           "state": {
-            "plugins": {}
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
           }
         },
         {
@@ -74266,19 +74416,22 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 1"
-              }
+            "returned": {
+              "$undefined": true
             }
           },
           "state": {
-            "plugins": {}
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
           }
         },
         {
@@ -74291,19 +74444,150 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 0"
-              }
+            "returned": {
+              "engaged": true,
+              "paint": [],
+              "fetching": [],
+              "stamp": "w4896|0,0,128,128|e0|v4"
             }
           },
           "state": {
-            "plugins": {}
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 64.125,
+                      "height": 64.125
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 63.875,
+                      "y": 0,
+                      "width": 64.25,
+                      "height": 64.125
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 63.875,
+                      "width": 64.125,
+                      "height": 64.25
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "target": {
+                    "kind": "rect",
+                    "rect": {
+                      "x": 63.875,
+                      "y": 63.875,
+                      "width": 64.25,
+                      "height": 64.25
+                    }
+                  },
+                  "viewport": {
+                    "kind": "scale",
+                    "scale": 8
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
+              }
+            }
           }
         },
         {
@@ -74316,69 +74600,30 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 0
+              "subscribers": 3
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 1"
-              }
+            "returned": {
+              "engaged": true,
+              "paint": [],
+              "fetching": [
+                "t:11|w4896|0,0|a1f1|e0|g512.1",
+                "t:11|w4896|0,1|a1f1|e0|g512.1",
+                "t:11|w4896|1,0|a1f1|e0|g512.1",
+                "t:11|w4896|1,1|a1f1|e0|g512.1"
+              ],
+              "stamp": "w4896|0,0,128,128|e0|v0"
             }
           },
           "state": {
-            "plugins": {}
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 0
-            }
-          },
-          "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 0"
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {},
+                "annotationEpochs": {},
+                "fieldEpochs": {}
               }
             }
-          },
-          "state": {
-            "plugins": {}
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 0
-            }
-          },
-          "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] no ref 1"
-              }
-            }
-          },
-          "state": {
-            "plugins": {}
           }
         }
       ]
