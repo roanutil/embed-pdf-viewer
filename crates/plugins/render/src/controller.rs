@@ -90,8 +90,6 @@ pub(crate) fn annotation_key(reference: &Value) -> String {
     }
 }
 
-/// What a raster request sends the engine besides its target.
-#[derive(Clone)]
 /// What `thumbnailOf` reads of either door's options.
 struct ThumbnailRequest {
     layers: PageLayerOptions,
@@ -111,6 +109,8 @@ fn is_pending(cx: &Controller<RenderState, Value>, page: PageRef) -> bool {
     meta.is_some_and(|meta| meta.pending_pages.has(&json!(page.page_object_number)))
 }
 
+/// What a raster request sends the engine besides its target.
+#[derive(Clone)]
 struct RasterRequest {
     viewport: PageRenderViewport,
     layers: PageRenderLayers,

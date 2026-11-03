@@ -288,6 +288,38 @@ only matters inside a packet no tool writes. A label section that
 `EPDFDoc_GetPageLabelSectionAt` refuses is skipped, where the TS would push one with stale
 values; no index below the count is refused. That one is E4.
 
+### C4: upstream `c7f6a7958` ported
+
+C4 phase C items 1 to 3 (the kernel's page view in `8eb3ac189`, page edits staged with their undo
+and `pages.copy` in `46c23b702`, render drawing pending pages in `f0749104b`) needed upstream
+`c7f6a7958`, "Show page edits before the engine answers", ported first. It makes the page list a
+view: the engine's pages with this session's pending page changes replayed on top.
+
+The port maps it file for file. `pages/predict.ts` and `pages/labels.ts` are
+`crates/epdf-kernel/src/page_predict.rs`. `page-view.ts` and `same-value.ts` are
+`crates/epdf-kernel/src/page_view.rs`, and the pending-page wait in `page-mirror.ts` is
+`crates/epdf-kernel/src/page_mirror.rs`. Its two suites run as Rust tests:
+`runPagePredictionConformance.ts` is `crates/epdf-engine/tests/page_prediction_conformance.rs`,
+which runs the kernel's predictions against the Rust engine on the same fixture, and
+`packages/core/main/test/page-view.test.ts` is `crates/epdf-kernel/tests/page_view.rs`. The
+engine takes `epdf-kernel` as a dev-dependency for the first. The kernel doesn't depend on the
+engine, so that adds no cycle.
+
+Three divergences were proposed in review, P1 to P3, and decided on 2026-11-02. P1 and P3 are
+accepted as Rust-only exceptions and recorded in `multiplatform-upstream-catchup.md` beside E3
+and E4. P1: a page-view refresh that fails on the change-notify path is reported through the
+kernel's `report`, where the TypeScript throws into `stage`. P3: the waits for a pending page in
+the page mirror and in render approximate the TypeScript's turn counts. P2 was rejected. A blank
+insert whose count isn't a whole number used to reserve `ceil(count - held)` numbers; now the
+count goes to `objectNumbers.reserve` as given, and the pool refuses it with `InvalidArg`, as
+`LocalObjectNumberPool.reserve` does. The verb is refused and nothing is staged.
+`DocumentHandle::reserve_object_number_count` carries a count as JavaScript passes it.
+
+The settings store had I1's problem too. `changedKeys` in `settings.ts` compares with the shared
+`sameValue`, and `Settings::commit` compared with `Value` equality, so a setting written again as
+`1.0` where it was `1` announced a change. It now uses the same `same_value`
+(`crates/epdf-kernel/src/js.rs`) as the page view.
+
 ## Tests
 
 All of these ran in the `embedpdf-c3-impl` container against the `linux-arm64` library built from
