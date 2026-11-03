@@ -56,7 +56,15 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -173,7 +181,9 @@ function publishWasm() {
   }
 
   console.log(`building payload ${hash} at ${head.slice(0, 9)}`);
-  rmSync(libDir, { recursive: true, force: true });
+  // Every check that can refuse runs before the tree changes: the stamp, the
+  // archive, the delta to the pin. The payload in npm/wasm32/lib is replaced
+  // only once a new one has linked and passed the postlink check.
   const fork = buildFork(repo);
   assertStampMatches(fork, stampFacts(fork));
   const runtimeSrc = runtimeSrcCommit();
@@ -337,11 +347,25 @@ function linkAgainstCommittedBindings(fork) {
     );
   }
 
-  sh(
-    `${env} && node build/generate-runtime-methods.mjs build/generated && bash build/compile.esm.sh`,
-    runtime,
-    { EMBEDPDF_RUST_STATICLIB: staticlib, PDF_RUNTIME_TARGET: FORK_TARGET },
-  );
+  // Linked and checked in a directory of its own, then swapped in whole, so a
+  // failed link or check leaves the payload that was there.
+  const staged = mkdtempSync(path.join(tmpdir(), 'engine-payload-lib-'));
+  try {
+    sh(
+      `${env} && node build/generate-runtime-methods.mjs build/generated && bash build/compile.esm.sh`,
+      runtime,
+      {
+        EMBEDPDF_RUST_STATICLIB: staticlib,
+        PDF_RUNTIME_TARGET: FORK_TARGET,
+        PDF_RUNTIME_WASM_OUT_DIR: staged,
+      },
+    );
+    rmSync(libDir, { recursive: true, force: true });
+    mkdirSync(path.dirname(libDir), { recursive: true });
+    cpSync(staged, libDir, { recursive: true });
+  } finally {
+    rmSync(staged, { recursive: true, force: true });
+  }
   return unbound;
 }
 
