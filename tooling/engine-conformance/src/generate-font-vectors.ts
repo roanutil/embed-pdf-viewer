@@ -135,7 +135,7 @@ const CASES: readonly FontCase[] = [
   {
     name: 'document-fonts',
     covers:
-      "With no engine font yet: document.fonts.list on a document with one embedded program, document.fonts.program's info and data read from that document program by its display hash, an unknown hash, and a run naming the document's program. Then, with Roboto registered: the list beside the engine font, and document.fonts.program answered from the engine font, which wins over a document program with the same hash.",
+      "With no engine font yet: document.fonts.list on a document with one embedded program, document.fonts.program's info and data read from that document program by its display hash, an unknown hash, and a run naming the document's program. Then, with Roboto registered: the list beside the engine font, document.fonts.program answered from the engine font, which wins over a document program with the same hash, and a run naming the document's program still drawn in it, not in the engine font of the same name.",
     steps: sequence(
       fixed(open(EMBEDDED)),
       fixed({ request: { kind: 'document.fonts.list', docId: DOC_ID } }),
@@ -178,6 +178,13 @@ const CASES: readonly FontCase[] = [
           docId: DOC_ID,
           displayHash: at(answers, 7).facts.engineFonts[0].sha256,
           part: 'info',
+        },
+      }),
+      fixed({
+        request: {
+          kind: 'document.fonts.resolve',
+          docId: DOC_ID,
+          runs: [{ text: 'Hi', fontFamily: 'Roboto-Regular' }],
         },
       }),
     ),
