@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ALL_BOUND_SINCE,
   abiCheckFunctions,
+  assertAllBound,
   committedSignatures,
   forkLines,
   payloadNotes,
@@ -60,6 +62,18 @@ test('abiCheckFunctions checks what the runtime declares and names the rest', ()
     ['A'],
   );
   assert.deepEqual(unbound, ['B']);
+});
+
+test('a runtime from the structure-position merge on must export every binding', () => {
+  assert.equal(ALL_BOUND_SINCE, '28b8b808f52d544b17a973199410cda0cc43530f');
+  const unbound = ['EPDFAnnot_GetStructurePosition'];
+  assert.throws(
+    () => assertAllBound(unbound, { containsAllBoundSince: true }),
+    /must export every committed binding.*EPDFAnnot_GetStructurePosition/,
+  );
+  assert.doesNotThrow(() => assertAllBound([], { containsAllBoundSince: true }));
+  // An older runtime may still lack one; the notes name it.
+  assert.doesNotThrow(() => assertAllBound(unbound, { containsAllBoundSince: false }));
 });
 
 test('a library built at the pinned commit names it', () => {

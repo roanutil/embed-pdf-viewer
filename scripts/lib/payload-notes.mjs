@@ -39,6 +39,26 @@ export function abiCheckFunctions(committed, declared) {
   };
 }
 
+/**
+ * The upstream runtime commit that adds `EPDFAnnot_GetStructurePosition`, the
+ * last committed binding a fork runtime lacked. A runtime that contains it
+ * exports every committed binding.
+ */
+export const ALL_BOUND_SINCE = '28b8b808f52d544b17a973199410cda0cc43530f';
+
+/**
+ * Refuses a runtime that contains {@link ALL_BOUND_SINCE} and still leaves a
+ * committed binding `unbound`: from there on, a binding the runtime lacks is a
+ * regression, not a known gap for the notes to name.
+ */
+export function assertAllBound(unbound, { containsAllBoundSince }) {
+  if (containsAllBoundSince && unbound.length > 0) {
+    throw new Error(
+      `a runtime that contains ${ALL_BOUND_SINCE.slice(0, 9)} must export every committed binding; it doesn't export ${unbound.join(', ')}`,
+    );
+  }
+}
+
 /** Whether a path changed between two fork commits leaves the built library alone. */
 const outsideTheBuild = (file) => file.startsWith('scripts/') || file.startsWith('docs/');
 
