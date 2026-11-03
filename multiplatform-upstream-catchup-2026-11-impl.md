@@ -648,8 +648,9 @@ The notes come from `scripts/lib/payload-notes.mjs`, which has tests in `payload
 A fork stamp can carry `source` (the archive, its sha256 and the emsdk version) for a library taken
 from a release archive. When the stamp's commit isn't `runtime-src`, the script counts the commits
 between them, lists the paths they change, and compares the archive's `args.gn` with what
-`target-args.sh` prints at the pin. It refuses before linking if anything outside `scripts/` and
-`docs/` changed or the gn args differ. The would-be notes now name the `6dfc03697` archive and say
+`target-args.sh` prints at the pin. It refused before linking if anything outside `scripts/` and
+`docs/` changed or the gn args differed. The review rounds below narrowed that rule to `docs/`, the
+fork's tests, named scripts and pinned blobs, and added the other checks. The would-be notes now name the `6dfc03697` archive and say
 that `8b1e69abd` adds 4 commits that change only `scripts/` and `docs/`, with identical source and
 gn args. `--target` stays `6dfc03697`. `embedpdf.wasm` is byte for byte the one built earlier
 (`044e72b0…15d8`).
@@ -697,6 +698,19 @@ Accepted 2026-11-03, beside E3, E4, P1 and P3 as a kept Rust-only divergence: Ru
 changes in place. In Rust, state that changes in place lives in a command's own closures, and
 `every_reader_wakes_once_a_command_ran` in `crates/plugins/commands/tests/behavior.rs` tests that
 case that way. The FFI side is left to another job.
+
+### Round 4 review fixes
+
+The stamp check now reads the archive's `target` from its `BUILD-METADATA.json` and refuses unless it
+is `wasm32-eh`, since the plain `wasm32` archive of the same commit has the same gn args. It also
+refuses unless `source.archive` is the file `source.archivePath` names. A stamp pointed at the real
+plain-`wasm32` `6dfc03697` archive is refused. The payload moved aside during a publish now has
+one fixed, gitignored name, `npm/wasm32/.lib-backup`. A run finds and restores a backup left by a
+killed run, then refuses. The steps after the swap run asynchronously, so a `SIGINT` or `SIGTERM`
+restores the old payload before exiting. A dry run marks its payload `dry-run-<hash>`, not `<hash>`,
+so `fetch-payload.sh` fetches the published one over it. A release that is a draft, or lacks the
+payload or its `.sha256`, counts as incomplete: the wasm half refuses instead of reporting nothing to
+do, as the Apple half does.
 
 ### Checks at `1544594da`
 
