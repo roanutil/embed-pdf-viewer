@@ -687,7 +687,8 @@ through `set_camera` at zoom `1e-170`, which now clamps to 0.05. It gets there t
 `view_units_per_point: 1e-170` instead. Two small Rust-only differences come with the typed lock:
 a lock names its settings in setting order where the TypeScript keeps the caller's key order (only
 the order of `locks`' keys could differ), and a release can't throw, so a failed reframe on release
-is dropped. Neither is in a vector. Both are proposed as exceptions.
+is dropped. Neither is in a vector. Both were accepted on 2026-11-03 as kept Rust-only
+divergences, along with the wider scope above.
 
 ### Vectors
 
@@ -719,7 +720,8 @@ core.
 |---|---|---|
 | `cargo test --workspace --no-fail-fast -- --test-threads=4`, `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib` | 0 | 3,150 passed, 0 failed, 1 ignored, 333 runs |
 | `rustfmt --check --edition 2024` on the 24 Rust files changed since `509d2df20` | 0 | Formatted |
+| `cargo clippy --workspace --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-stage --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
 
-The clippy runs (`cargo clippy --workspace --all-targets -- -D warnings`, and the stage's
-`--features uniffi` run) wait for a heavy-build window. `OPERATIONS.md` has no rows for these
-members, so `operations:check` doesn't apply.
+`tooling/engine-conformance/OPERATIONS.md` has no rows for these members, so `operations:check`
+doesn't apply.
