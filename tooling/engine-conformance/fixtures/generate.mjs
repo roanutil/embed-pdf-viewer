@@ -1462,6 +1462,70 @@ function richMetadata() {
 }
 
 /**
+ * A tagged page whose annotations sit in its structure tree out of /Annots
+ * order, for `structurePosition` (`EPDFAnnot_GetStructurePosition`).
+ *
+ * The tree's root has a heading (marked content 0) and then a section. The
+ * section's kids are an /Annot element, which holds marked content 1 before
+ * the text note's /OBJR, and then a /Form element holding the square's. So
+ * the note, listed second, comes first in the tags. A third annotation has no
+ * /StructParent, and a fourth names a key the parent tree doesn't list:
+ * neither is tagged.
+ */
+function structureTree() {
+  const objects = [
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 9 0 R /MarkInfo << /Marked true >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [5 0 R 6 0 R 7 0 R 8 0 R] /StructParents 0 /Tabs /S >>',
+      'latin1',
+    ),
+    stream(
+      '',
+      Buffer.from(
+        '/H1 << /MCID 0 >> BDC\n72 720 200 20 re\nf\nEMC\n/P << /MCID 1 >> BDC\n72 680 200 10 re\nf\nEMC\n',
+        'latin1',
+      ),
+    ),
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Square /Rect [72 500 172 600] /F 4 /StructParent 1 >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [300 500 320 520] /F 4 /StructParent 2 >>',
+      'latin1',
+    ),
+    Buffer.from('<< /Type /Annot /Subtype /Square /Rect [72 300 172 400] /F 4 >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Circle /Rect [300 300 400 400] /F 4 /StructParent 3 >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /StructTreeRoot /K [10 0 R 11 0 R] /ParentTree 14 0 R /ParentTreeNextKey 4 >>',
+      'latin1',
+    ),
+    Buffer.from('<< /Type /StructElem /S /H1 /P 9 0 R /Pg 3 0 R /K 0 >>', 'latin1'),
+    Buffer.from('<< /Type /StructElem /S /Sect /P 9 0 R /K [13 0 R 12 0 R] >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /StructElem /S /Form /P 11 0 R /Pg 3 0 R /K << /Type /OBJR /Obj 5 0 R >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /StructElem /S /Annot /P 11 0 R /Pg 3 0 R /K [1 << /Type /OBJR /Obj 6 0 R >>] >>',
+      'latin1',
+    ),
+    Buffer.from('<< /Nums [0 [10 0 R 13 0 R] 1 12 0 R 2 13 0 R] >>', 'latin1'),
+  ];
+  return buildPdf(objects);
+}
+
+/**
  * The permission words the encrypted fixtures declare.
  *
  * Bits 1 and 2 are reserved as zero, so a word is built by clearing the bits
@@ -1486,6 +1550,7 @@ const outputs = [
   ['piece_info.pdf', pieceInfo()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
+  ['structure_tree.pdf', structureTree()],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
   [
