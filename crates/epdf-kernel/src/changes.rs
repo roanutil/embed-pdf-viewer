@@ -102,7 +102,7 @@ struct Inner {
     apply: Apply,
     notify: Rc<dyn Fn()>,
     take: RefCell<Rc<dyn Fn() -> Result<Option<u32>, Error>>>,
-    reserve: RefCell<Rc<dyn Fn(u32) -> Promise<()>>>,
+    reserve: RefCell<Rc<dyn Fn(f64) -> Promise<()>>>,
     staged: EventHookSource<PendingChange>,
     settled: EventHookSource<SettledChange>,
 }
@@ -130,7 +130,7 @@ impl DocumentChanges {
     pub fn set_object_numbers(
         &self,
         take: Rc<dyn Fn() -> Result<Option<u32>, Error>>,
-        reserve: Rc<dyn Fn(u32) -> Promise<()>>,
+        reserve: Rc<dyn Fn(f64) -> Promise<()>>,
     ) {
         *self.0.take.borrow_mut() = take;
         *self.0.reserve.borrow_mut() = reserve;
@@ -406,6 +406,11 @@ impl ChangeQueue {
     }
     /// `reserveObjectNumbers(count)`: as `takeObjectNumber`, no open check.
     pub fn reserve_object_numbers(&self, count: u32) -> Promise<()> {
+        self.reserve_object_number_count(f64::from(count))
+    }
+    /// `reserveObjectNumbers(count)` for a count as JavaScript passes it:
+    /// one that isn't a whole number is the handle's to refuse.
+    pub fn reserve_object_number_count(&self, count: f64) -> Promise<()> {
         let call = (self.changes.0.reserve.borrow())(count);
         let capability = self.capability.clone();
         Promise::spawn(async move { call.await.map_err(|e| to_plugin_error(&capability, &e)) })

@@ -542,7 +542,7 @@ impl Inner {
                     .take_object_number()
             }),
             Rc::new(move |count| match reserve.upgrade().and_then(|s| s.handle()) {
-                Some(h) => h.reserve_object_numbers(count),
+                Some(h) => h.reserve_object_number_count(count),
                 None => Promise::rejected(Error::new("document not ready")),
             }),
         );

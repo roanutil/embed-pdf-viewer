@@ -615,3 +615,26 @@ fn an_insert_answer_item_is_read_with_the_in_operator() {
     assert_eq!(error.name, "TypeError");
     assert_eq!(error.message, "Cannot use 'in' operator to search for 'insertedPages' in 5");
 }
+
+/// `withNumbers` (`controller.ts:214`) asks the pool for
+/// `count - numbers.length` as given, and the pool refuses a count that
+/// isn't a whole number (`!Number.isInteger(count)`): a fractional blank
+/// insert is refused at the reserve, and stages nothing.
+#[test]
+fn a_fractional_blank_insert_count_is_refused_at_the_reserve() {
+    for (held, wanted) in [(json!([]), "1.5"), (json!([50]), "0.5")] {
+        let mut spec = doc(Vec::new(), json!("*"));
+        spec["objectNumbers"] = held;
+        let f = Fixture::new(spec);
+        let options = InsertBlankOptions { count: Some(1.5), ..Default::default() };
+        let error = settled(f.page_edit.insert_blank(options)).unwrap_err();
+        assert_eq!(code(&error), Some("invalid-input"), "{error:?}");
+        assert!(
+            error.message.contains(&format!("cannot reserve {wanted} object numbers")),
+            "{}",
+            error.message
+        );
+        assert_eq!(f.engine_paths(), ["objectNumbers.reserve"]);
+        assert!(f.labels().is_empty(), "nothing staged");
+    }
+}

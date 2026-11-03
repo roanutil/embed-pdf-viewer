@@ -463,8 +463,12 @@ impl PageEditCapability {
     ) -> Result<Vec<u32>, Error> {
         while (numbers.len() as f64) < count {
             let changes = self.0.cx.changes()?;
-            let wanted = (count - numbers.len() as f64).ceil() as u32;
-            cancellable(CAPABILITY, signal.clone(), changes.reserve_object_numbers(wanted)).await?;
+            // `reserveObjectNumbers(count - numbers.length)` as given: the
+            // pool refuses a count that isn't a whole number, so a
+            // fractional count stages nothing.
+            let wanted = count - numbers.len() as f64;
+            let reserve = changes.reserve_object_number_count(wanted);
+            cancellable(CAPABILITY, signal.clone(), reserve).await?;
             let more = self.take_numbers(count - numbers.len() as f64)?;
             numbers.extend(more);
         }

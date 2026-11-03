@@ -585,15 +585,26 @@ impl DocumentHandle for FakeHandle {
         Ok(if numbers.is_empty() { None } else { Some(numbers.remove(0)) })
     }
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
-        // Logged first, then refused, as the TypeScript validates.
-        let validation =
-            (count == 0).then(|| Error::engine("InvalidArg", "cannot reserve 0 object numbers"));
+        self.reserve_object_number_count(f64::from(count))
+    }
+    fn reserve_object_number_count(&self, count: f64) -> EngineCall<()> {
+        // Logged first, then refused, as the TypeScript validates
+        // (`!Number.isInteger(count) || count < 1`).
+        let validation = (count.fract() != 0.0 || count < 1.0).then(|| {
+            Error::engine(
+                "InvalidArg",
+                format!(
+                    "cannot reserve {} object numbers",
+                    epdf_kernel::js::number_to_string(count)
+                ),
+            )
+        });
         let numbers = self.numbers.clone();
         let sequence = self.next_number.clone();
         let map = Rc::new(move |value| {
             let mut numbers = numbers.borrow_mut();
             let mut next = sequence.get();
-            while numbers.len() < count as usize {
+            while (numbers.len() as f64) < count {
                 numbers.push(next);
                 next += 1;
             }
@@ -606,7 +617,7 @@ impl DocumentHandle for FakeHandle {
                 self.table,
                 "objectNumbers.reserve",
                 None,
-                vec![json!(count)],
+                vec![epdf_kernel::js::json_number(count)],
                 Some(Box::new(|| Ok(undefined()))),
                 Some(map),
                 None,

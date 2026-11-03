@@ -275,6 +275,10 @@ impl DocumentHandle for TestHandle {
         self.inner.reserve_object_numbers(count)
     }
 
+    fn reserve_object_number_count(&self, count: f64) -> EngineCall<()> {
+        self.inner.reserve_object_number_count(count)
+    }
+
     fn on_lost_object_numbers(
         &self,
         listener: Rc<dyn Fn(&epdf_kernel::engine::ObjectNumbersLost)>,
