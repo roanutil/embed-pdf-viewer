@@ -25,16 +25,10 @@ export function committedSignatures(text) {
 }
 
 /**
- * Committed bindings the fork runtime is known not to export yet, each one
- * accepted by name. `EPDFAnnot_GetStructurePosition` waits on the fork merging
- * upstream runtime `28b8b808f`; empty this list when that lands, and the
- * publish refuses any binding the runtime then lacks.
- *
- * The cost of keeping it: this list and the committed bindings move apart on
- * every runtime merge, and a new gap has to be added here by hand before a
- * payload can publish, which is the point, but it is one more file to touch.
+ * Committed bindings accepted without a runtime declaration. An empty list
+ * requires every committed binding to be declared before a payload can publish.
  */
-export const KNOWN_UNBOUND = Object.freeze(['EPDFAnnot_GetStructurePosition']);
+export const KNOWN_UNBOUND = Object.freeze([]);
 
 /** Refuses committed bindings the runtime doesn't declare, beyond `known`. */
 export function assertKnownUnbound(unbound, known = KNOWN_UNBOUND) {

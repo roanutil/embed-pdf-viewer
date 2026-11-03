@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   ALL_BOUND_SINCE,
-  KNOWN_UNBOUND,
   abiCheckFunctions,
   assertAllBound,
   assertKnownUnbound,
@@ -209,12 +208,13 @@ test('only docs, the fork tests and the named build scripts may change', () => {
   assert.throws(at(['scripts/sync-upstream.sh']), /changes the build/);
 });
 
-test('only the known gaps may be bound but not exported', () => {
-  assert.deepEqual([...KNOWN_UNBOUND], ['EPDFAnnot_GetStructurePosition']);
-  assert.doesNotThrow(() => assertKnownUnbound(['EPDFAnnot_GetStructurePosition']));
-  assert.doesNotThrow(() => assertKnownUnbound([]));
+test('the caught-up runtime rejects a missing committed binding by default', () => {
+  assert.throws(
+    () => assertKnownUnbound(['EPDFAnnot_GetStructurePosition']),
+    /EPDFAnnot_GetStructurePosition/,
+  );
   assert.throws(() => assertKnownUnbound(['EPDFDoc_Other']), /EPDFDoc_Other/);
-  assert.throws(() => assertKnownUnbound(['EPDFAnnot_GetStructurePosition'], []), /known gaps/);
+  assert.doesNotThrow(() => assertKnownUnbound([]));
 });
 
 test('a stamp whose files do not match it is refused', () => {
