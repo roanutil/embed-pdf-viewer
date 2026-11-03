@@ -48,3 +48,13 @@ fn missing_structure_positions_keep_page_order_and_missing_pages_disappear() {
     assert!(compare_structure_positions(&[0, 1, 0], &[0, 0, 9, 9]).is_gt());
     assert!(compare_structure_positions(&[3, 1], &[3, 1]).is_eq());
 }
+
+#[test]
+fn ordering_preserves_shared_annotation_identity() {
+    let rows: Vec<_> = rows().into_iter().map(std::rc::Rc::new).collect();
+    let sorted = tab_order_of(&rows, &[json!({"ref":{"objectNumber":1},"tabOrder":"rows"})]);
+    assert!(std::rc::Rc::ptr_eq(&sorted[0], &rows[2]));
+    assert!(std::rc::Rc::ptr_eq(&sorted[1], &rows[1]));
+    assert!(std::rc::Rc::ptr_eq(&sorted[2], &rows[3]));
+    assert!(std::rc::Rc::ptr_eq(&sorted[3], &rows[0]));
+}

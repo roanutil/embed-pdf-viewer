@@ -61,6 +61,8 @@ pub struct Core {
     pub(crate) widget_items: RefCell<HashMap<String, crate::read::widgets::WidgetItems>>,
     /// Mounted focus targets, pending focus, and the last widget visited.
     pub(crate) cursor: crate::services::cursor::Cursor,
+    /// Keyboard order derived from the field view, pages, fill rights and settings.
+    pub(crate) focus_order_cache: RefCell<Option<crate::write::focus::FocusOrderCache>>,
     /// The widget hover pump, made on first use.
     pub(crate) widget_pump: RefCell<Option<epdf_plugin_actions::HoverPump>>,
 }
@@ -221,6 +223,7 @@ pub fn create_form_controller(
         widget_items: RefCell::new(HashMap::new()),
         widget_pump: RefCell::new(None),
         cursor: Default::default(),
+        focus_order_cache: RefCell::new(None),
     });
     core.watch_formatted_texts()?;
     core.wire_fills()?;

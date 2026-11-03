@@ -145,9 +145,13 @@ fn a_users_focus_cancels_an_offscreen_request_and_settings_gate_input() {
     let late = attach(&form, 12, &heard);
     assert_eq!(*heard.borrow(), vec![(11, false)]);
     form.update_settings(&json!({"fillable":false}));
+    assert!(!form.focus_next(None));
     assert!(!form.focus(&field(1, "")["ref"], None));
     form.update_settings(&json!({"fillable":["checkbox"]}));
     assert!(!form.focus(&field(1, "")["ref"], None));
+    form.update_settings(&json!({"fillable":true}));
+    assert!(form.focus_next(None));
+    assert_eq!(heard.borrow().last(), Some(&(12, true)));
     first.call();
     late.call();
     k.close().unwrap();
