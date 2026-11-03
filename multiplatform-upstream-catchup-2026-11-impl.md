@@ -660,8 +660,11 @@ edits touch lines the fork's own entries don't. `DEPS` is unchanged, so the depe
 one `8b1e69abd` uses.
 
 `6529e8824` pins `runtime-src` to `3c55b7a1c`. The committed bindings needed no edit. Upstream
-already binds the function (`ef8ae52d7`), as `(Ptr, Ptr, number) => number` with `i32` throughout,
-which is right: its `buflen` and result are `unsigned long`, 32 bits on `wasm32`.
+already binds the function (`ef8ae52d7`), as `(Ptr, Ptr, number) => number` with `i32` throughout.
+Its `buflen` and result are `unsigned long`. The `wasm` slot's `i32` matches the target, where
+`unsigned long` is 32 bits. The `native` slot's `i32` is the header generator's convention, not a
+property of any target: `classifyType` in `build/generate-functions.mjs:129-133` reads every
+`long` that isn't `long long` as `i32`, and on a 64-bit native target `unsigned long` is 64 bits.
 
 ### The libraries
 
@@ -683,8 +686,8 @@ exports are the same plus `EPDFAnnot_GetStructurePosition`.
 The payload went through `publish-engine-payload.mjs --dry-run --only wasm`, with `PERF_WORK_DIR`
 set to a private directory in the container's volume and a `wasm32-eh.json` stamp naming the library
 above. It exits 0. The postlink check holds the engine to the committed bindings: "all 1054 bound
-functions match their bindings". The list of functions bound in the TypeScript but not exported is
-empty, so the release notes would carry no such line, and they name `3c55b7a1c` as both the build
+functions match their bindings". The list of functions bound in the TypeScript but not declared by
+the runtime's headers is empty, so the release notes would carry no such line, and they name `3c55b7a1c` as both the build
 and `runtime-src`. The payload hash is `8b90259d5d279d4a`, so the release would be
 `runtime-payloads-8b90259d5d279d4a`. The packed archive's sha256 is
 `7863e62e5e71f20dc28558b24b97a55a429cdd2a0499e05dd4e18bd87dee311d`, and `embedpdf.wasm`'s is
@@ -696,13 +699,21 @@ the notes name the viewer commit, so a real publish runs again at the tip.
 
 `97c6f7086` makes that list a failure from here on. `assertAllBound` in
 `scripts/lib/payload-notes.mjs` throws when the fork commit the library was built from contains
-`28b8b808f` and a committed binding isn't exported; an older runtime still passes, and the notes name
-what it lacks. The test went in first and failed ("does not provide an export named
+`28b8b808f` and the runtime's headers don't declare a committed binding; an older runtime still
+passes, and the notes name what it lacks. The list is the header generator's, so it says what the
+headers declare, not what the link exports; `5cdf215da` words the notes line and the error that
+way. The test went in first and failed ("does not provide an export named
 'ALL_BOUND_SINCE'"), then passed, 7 of 7 in `payload-notes.test.mjs`. On real headers, the
 `6dfc03697` ones paired with a runtime at the merge fail the gate on
 `EPDFAnnot_GetStructurePosition`, and the `3c55b7a1c` ones pass it. The cost is one more `git
 merge-base` call per publish, and a hard stop if a later upstream binding lands in the TS before
 the fork merges its runtime.
+
+`5cdf215da` also moves the ancestry check to `forkContains` in `scripts/lib/fork-ancestry.mjs`, which
+takes the `runtime-src` path. When `git merge-base` can't answer because `runtime-src` doesn't have
+`28b8b808f`, it says to fetch the commit into `runtime-src`, instead of failing bare. Its test,
+`fork-ancestry.test.mjs`, runs against a throwaway repository and failed first on the missing
+module; 9 of 9 pass across the two test files.
 
 ### The Rust
 
@@ -729,21 +740,39 @@ behind marked content in its element. The oracle reads `[1,0,1]` for the note an
 square, and `null` for an annotation with no `/StructParent` and for one whose `/StructParent` the
 parent tree doesn't list. The Rust reads the same.
 
+`d4086d937` adds a tagged text field to the same fixture, its widget in a `/Form` element that is
+the structure root's third kid, and a `tagged-widget` case in `forms/snapshot.json` whose widget
+row records `[2,0]`. That case holds `page_space/forms.rs`, where the widget is copied into page
+space, to carrying the field. Its Rust replay, and the run with `structure_position: None` there that
+should fail it, wait on the heavy-build hold (see the checks below).
+
 `f63a2263f` does the plugin side. `core/annotation-update.json`, `plugins/annotation-crud.json`
 and `plugins/annotation-reconciliation.json` gain `structurePosition: null` and nothing else.
 `annotation_transfer.rs` takes the two export hashes upstream records in
 `runAnnotationExportConformance.ts:133-134` (`c63bf33e…` and `4c7591de…`), which `ef8ae52d7`
 changed, and the Rust export now matches both.
 
+`70068a005` does the same for eighteen more suites that replay annotation records:
+`core/annotation-anchor`, `-flags`, `-groups`, `-hit`, `-props`, `-snap` and `-view`, and
+`plugins/actions-dispatcher`, `-hover`, `-lifecycle` and `-triggers`, `annotation-grouping`,
+`-hydration`, `-markup` and `-repository`, `redaction`, `redaction-functions` and `stamp-assets`. Each
+differs from the recorded file only by `structurePosition: null`. Their Rust replays wait on the same hold.
+
 Two findings came out of the plugin side. First, `tooling/plugin-conformance/src/generate.ts`
-doesn't load on this branch: `suites/annotation-pure.ts:34` imports
-`packages/core/annotation/src/font-css`, which upstream `595fa2bd5` removed, and that commit is in
-C5's base. The three suites above were written by `emit()` over their own suite modules, from a
-scratch driver. Second, regenerating `core/annotation-measurement-model.json` also moves six scene
-labels' `fontFamily` to a font program's family (`"epdf-93fe419ed14bac24", Helvetica, Arial,
-sans-serif`, also `595fa2bd5`), which the Rust scene doesn't resolve. That file takes only the
-oracle's `structurePosition` lines, and the six labels keep their recorded values. The cost: until
-the font-program port lands, that vector is partly older than the oracle, and the commit says so.
+doesn't load on this branch, because two suite modules import files upstream removed:
+`suites/annotation-pure.ts:34` imports `packages/core/annotation/src/font-css` (gone in
+`595fa2bd5`), and `suites/form-painter.ts:40` imports `packages/core/form/src/layout/breaks` (gone
+in `e40c9c236`). Both commits are in C5's base. Every suite above was written by `emit()` over its
+own suite modules, from a scratch driver.
+
+Second, two vectors are only partly regenerated. Rendering `core/annotation-measurement-model.json`
+and `core/annotation-measurement.json` also moves scene labels' `fontFamily` to a font program's
+family (`"epdf-93fe419ed14bac24", Helvetica, Arial, sans-serif`) and adds a `program` object (hash,
+family, weight, style and loader), both from `595fa2bd5`, and the Rust scene resolves neither. Both
+files take only the oracle's `structurePosition` lines. Their labels, six in
+`annotation-measurement-model.json` and 25 in `annotation-measurement.json`, keep their old
+`fontFamily` and have no `program`. The cost: until the font-program port lands, those two vectors
+are partly older than the oracle, and the commits (`f63a2263f`, `70068a005`) say so.
 
 ### Apple
 
@@ -771,6 +800,11 @@ on the payload above.
 | `node --test scripts/lib/payload-notes.test.mjs` | 0 | 7 passed |
 | `EPDF_NATIVE_DIR=<abs>/target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj` | 0 | 32 passed |
 | The 34 `tooling/engine-conformance` `:check` scripts | 0 | 34 pass |
+
+The table is at `f63a2263f`. For the review round's commits (`5cdf215da`, `d4086d937`,
+`70068a005`), only the node checks have run so far: at `70068a005` the 34 engine `:check` scripts
+pass, and `node --test scripts/lib/fork-ancestry.test.mjs scripts/lib/payload-notes.test.mjs`
+passes 9 of 9. The cargo runs wait on the heavy-build hold.
 
 `dotnet test` needs an absolute `EPDF_NATIVE_DIR` and a `cargo build -p epdf-capi` first:
 `cargo test --workspace` doesn't build `libepdf_capi.so`, and with a relative directory all but six
