@@ -21,6 +21,13 @@
 // would create, without creating it or touching Package.swift. --only runs one
 // half.
 //
+// The wasm half checks the linked engine against the committed bindings
+// (src/core/pdf-functions.generated.ts), not the ones the header generator
+// writes on the way. A fork stamp whose library came from a fork release
+// archive (its `source`) may be at another commit than runtime-src, as long as
+// the commits between them change only scripts/ and docs/ and the gn args are
+// the same; the notes then say so.
+//
 // The Apple half rewrites engineRelease and engineChecksum in Package.swift
 // after it publishes, and leaves that edit for you to commit: the release names
 // the commit it was built from, which can't also contain its checksum.
@@ -35,12 +42,19 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildFork, linkRustCore } from '../perf-compare/scripts/build-arm.mjs';
+import { buildFork } from '../perf-compare/scripts/build-arm.mjs';
+import { workDir } from '../perf-compare/scripts/materialize.mjs';
 import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
+import {
+  abiCheckFunctions,
+  committedSignatures,
+  forkLines,
+  payloadNotes,
+} from './lib/payload-notes.mjs';
 
 const RELEASE_REPO = 'roanutil/embed-pdf-runtime';
 const TARGET = 'wasm32';
@@ -61,9 +75,13 @@ if (only !== null && only !== 'wasm' && only !== 'apple') {
 
 const run = (cmd, args, opts = {}) =>
   execFileSync(cmd, args, { cwd: repo, encoding: 'utf8', ...opts }).trim();
-const sh = (cmd, cwd = repo) => {
+const sh = (cmd, cwd = repo, env = {}) => {
   console.log(`  $ ${cmd}`);
-  execFileSync('bash', ['-euo', 'pipefail', '-c', cmd], { cwd, stdio: 'inherit' });
+  execFileSync('bash', ['-euo', 'pipefail', '-c', cmd], {
+    cwd,
+    stdio: 'inherit',
+    env: { ...process.env, ...env },
+  });
 };
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 const releaseExists = (tag) => {
@@ -139,7 +157,11 @@ function publishWasm() {
   console.log(`building payload ${hash} at ${head.slice(0, 9)}`);
   rmSync(libDir, { recursive: true, force: true });
   const fork = buildFork(repo);
-  linkRustCore(repo, fork);
+  const runtimeSrc = runtimeSrcCommit();
+  // Before anything links: a library that doesn't match the pin stops here.
+  const delta = fork.sha === runtimeSrc ? undefined : forkDelta(fork, runtimeSrc);
+  forkLines({ fork, runtimeSrc, target: FORK_TARGET, delta });
+  const unbound = linkAgainstCommittedBindings(fork);
 
   // verify-rust-core.mjs imports @embedpdf/engine-runtime, which resolves to dist/.
   sh('pnpm --filter @embedpdf/engine-runtime build');
@@ -153,16 +175,19 @@ function publishWasm() {
   const digest = sha256(archive);
   writeFileSync(`${archive}.sha256`, `${digest}  ${ASSET}\n`);
 
-  const notes = [
-    `wasm32 engine payload with the Rust core linked in, for fetch-payload.sh.`,
-    '',
-    `- Payload hash: \`${hash}\``,
-    `- Viewer commit: \`${head}\``,
-    `- Fork commit (runtime-src): \`${fork.sha}\`, built for wasm32-eh`,
-    `- libembedpdf.a sha256: \`${fork.libSha256}\``,
-    `- ${rustc}`,
-    `- ${ASSET} sha256: \`${digest}\``,
-  ].join('\n');
+  const notes = payloadNotes({
+    hash,
+    head,
+    fork,
+    runtimeSrc,
+    target: FORK_TARGET,
+    delta,
+    rustc,
+    asset: ASSET,
+    digest,
+    unbound,
+  });
+  if (dryRun) console.log(`\n--dry-run: the release notes would read:\n${notes}\n`);
 
   const args = [
     'release',
@@ -191,6 +216,94 @@ function publishWasm() {
   // The local payload now matches the release, so fetch-payload.sh keeps it.
   writeFileSync(path.join(libDir, '.payload-source'), hash);
   console.log(`${dryRun ? 'built' : 'published'} ${tag}`);
+}
+
+// build-arm.mjs's constants for the Rust-core link, read as runtime-payload-hash.sh reads
+// them. Read, not imported, because build-arm.mjs is an input of the Apple engine's hash.
+function buildArmConstant(name) {
+  const text = readFileSync(path.join(repo, 'perf-compare/scripts/build-arm.mjs'), 'utf8');
+  const value = text.match(new RegExp(`^const ${name} = '([^']+)';$`, 'm'))?.[1];
+  if (!value) throw new Error(`no ${name} in perf-compare/scripts/build-arm.mjs`);
+  return value;
+}
+const FORK_TARGET = buildArmConstant('FORK_TARGET');
+
+function runtimeSrcCommit() {
+  return run('git', ['ls-tree', 'HEAD', 'packages/engine/runtime/runtime-src']).split(/\s+/)[2];
+}
+
+// How the pinned runtime-src differs from the fork commit the library was built from: the
+// commits between them, the paths they change, and whether the library's args.gn is what
+// target-args.sh prints at the pin. payloadNotes refuses any delta that could change the
+// library.
+function forkDelta(fork, runtimeSrc) {
+  const src = path.join(runtime, 'runtime-src');
+  const git = (args) => run('git', ['-C', src, ...args]);
+  const commits = Number(git(['rev-list', '--count', `${fork.sha}..${runtimeSrc}`]));
+  const paths = git(['diff', '--name-only', fork.sha, runtimeSrc]).split('\n').filter(Boolean);
+  const lines = (text) =>
+    text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+  const pinned = run('bash', [
+    path.join(src, 'scripts/embedpdf-runtime/target-args.sh'),
+    FORK_TARGET,
+  ]);
+  const built = readFileSync(path.join(fork.staging, 'args.gn'), 'utf8');
+  const argsMatch = lines(pinned).join('\n') === lines(built).join('\n');
+  return { commits, paths, argsMatch };
+}
+
+// The viewer half of `build:target wasm32`, as build-arm.mjs's linkRustCore runs it, with
+// one difference: the postlink check (build/verify-wasm-abi.mjs, run at the end of
+// compile.esm.sh) reads the committed bindings. The header generator still runs, for the
+// export list, but its regenerated pdf-functions.generated.ts is put back as committed,
+// and functions.json is rewritten from the committed signatures. Returns the committed
+// bindings this runtime doesn't declare, which the check can't hold it to and the notes
+// name.
+function linkAgainstCommittedBindings(fork) {
+  const pdfium = path.join(runtime, 'build/libpdfium', FORK_TARGET);
+  rmSync(pdfium, { recursive: true, force: true });
+  mkdirSync(path.dirname(pdfium), { recursive: true });
+  sh(`cp -R ${JSON.stringify(fork.staging)} ${JSON.stringify(pdfium)}`);
+
+  const version = buildArmConstant('EH_EMSDK_VERSION');
+  const emsdk = path.join(workDir(), 'emsdk');
+  if (!existsSync(emsdk)) {
+    sh(
+      `git clone --depth 1 https://github.com/emscripten-core/emsdk.git ${JSON.stringify(emsdk)}`,
+      workDir(),
+    );
+  }
+  sh(`./emsdk install ${version} && ./emsdk activate ${version}`, emsdk);
+  const env = `source ${JSON.stringify(path.join(emsdk, 'emsdk_env.sh'))}`;
+  const staticlib = path.join(repo, 'target/wasm32-unknown-emscripten/release/libepdf_wasm.a');
+  sh(`${env} && cargo build -p epdf-wasm --target wasm32-unknown-emscripten --release`);
+
+  const bindings = path.join(runtime, 'src/core/pdf-functions.generated.ts');
+  const committed = readFileSync(bindings, 'utf8');
+  try {
+    sh(`${env} && node build/generate-functions.mjs ${FORK_TARGET}`, runtime);
+  } finally {
+    writeFileSync(bindings, committed);
+  }
+  const functionsJson = path.join(runtime, 'build/generated/functions.json');
+  const declared = JSON.parse(readFileSync(functionsJson, 'utf8')).functions.map((fn) => fn.name);
+  const { functions, unbound } = abiCheckFunctions(committedSignatures(committed), declared);
+  writeFileSync(functionsJson, JSON.stringify({ target: FORK_TARGET, functions }, null, 2) + '\n');
+  if (unbound.length > 0) {
+    console.warn(
+      `  bound in the TypeScript but not declared by this runtime: ${unbound.join(', ')}`,
+    );
+  }
+
+  sh(
+    `${env} && node build/generate-runtime-methods.mjs build/generated && bash build/compile.esm.sh`,
+    runtime,
+    { EMBEDPDF_RUST_STATICLIB: staticlib, PDF_RUNTIME_TARGET: FORK_TARGET },
+  );
+  return unbound;
 }
 
 function publishApple() {
