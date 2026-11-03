@@ -135,16 +135,15 @@ const CASES: readonly FontCase[] = [
   {
     name: 'document-fonts',
     covers:
-      "document.fonts.list on a document with one embedded program, beside an engine font; document.fonts.program's info and data by the display hash, an engine font's program by its hash, and an unknown hash; a run naming the document's program.",
+      "With no engine font yet: document.fonts.list on a document with one embedded program, document.fonts.program's info and data read from that document program by its display hash, an unknown hash, and a run naming the document's program. Then, with Roboto registered: the list beside the engine font, and document.fonts.program answered from the engine font, which wins over a document program with the same hash.",
     steps: sequence(
       fixed(open(EMBEDDED)),
-      fixed(register('roboto')),
       fixed({ request: { kind: 'document.fonts.list', docId: DOC_ID } }),
       (answers) => ({
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: at(answers, 2).facts.faces[0].programs[0].displaySha256,
+          displayHash: at(answers, 1).facts.faces[0].programs[0].displaySha256,
           part: 'info',
         },
       }),
@@ -152,16 +151,8 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: at(answers, 2).facts.faces[0].programs[0].displaySha256,
+          displayHash: at(answers, 1).facts.faces[0].programs[0].displaySha256,
           part: 'data',
-        },
-      }),
-      (answers) => ({
-        request: {
-          kind: 'document.fonts.program',
-          docId: DOC_ID,
-          displayHash: at(answers, 2).facts.engineFonts[0].sha256,
-          part: 'info',
         },
       }),
       fixed({
@@ -177,6 +168,16 @@ const CASES: readonly FontCase[] = [
           kind: 'document.fonts.resolve',
           docId: DOC_ID,
           runs: [{ text: 'Hi', fontFamily: 'Roboto-Regular' }],
+        },
+      }),
+      fixed(register('roboto')),
+      fixed({ request: { kind: 'document.fonts.list', docId: DOC_ID } }),
+      (answers) => ({
+        request: {
+          kind: 'document.fonts.program',
+          docId: DOC_ID,
+          displayHash: at(answers, 7).facts.engineFonts[0].sha256,
+          part: 'info',
         },
       }),
     ),
