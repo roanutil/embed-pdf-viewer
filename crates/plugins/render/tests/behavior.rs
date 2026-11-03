@@ -450,7 +450,7 @@ fn a_part_the_session_may_not_read_is_left_out_or_refused() {
         rig.render.get_layer_rights(),
         PageLayerRights { annotations: false, form_fields: true }
     );
-    let key = |layers| rig.render.get_source_key(PAGE, 0.5, layers).unwrap();
+    let key = |layers| rig.render.get_source_key(PAGE, 0.5, layers, false).unwrap();
     assert_eq!(key(PageLayerOptions::default()), "11|w306|a0f1|e0");
     // A read counts an option the session may not read as left out.
     let annotations =

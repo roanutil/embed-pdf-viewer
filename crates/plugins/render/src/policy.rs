@@ -89,6 +89,9 @@ pub enum PageRenderViewport {
     },
     /// Exact output width in device pixels.
     Width { width: f64 },
+    /// The page's thumbnail: the whole page at the engine's thumbnail size
+    /// (`PAGE_THUMBNAIL_SIZE`, 512 pixels on its long side).
+    Thumbnail,
 }
 
 /// The options `snapFullPageViewport` reads.
@@ -113,12 +116,17 @@ pub fn snap_full_page_viewport(
     opts: Option<SnapOptions>,
 ) -> Result<PageRenderViewport, Error> {
     let EngineRenderPolicy::Lattice(lattice) = policy else { return Ok(viewport) };
+    // A thumbnail has its own size, off the lattice.
+    if viewport == PageRenderViewport::Thumbnail {
+        return Ok(viewport);
+    }
     if lattice.full_page.widths.is_empty() {
         return Err(Error::engine("InvalidArg", "render policy has an empty width ladder"));
     }
     let widths = ascending(&lattice.full_page.widths);
     let requested = match viewport {
         PageRenderViewport::Width { width } => width,
+        PageRenderViewport::Thumbnail => return Ok(viewport),
         PageRenderViewport::Scale { scale } => {
             let page_width = opts.and_then(|o| o.page_width);
             match page_width {

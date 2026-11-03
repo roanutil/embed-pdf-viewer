@@ -135,7 +135,10 @@ function doc(opts: { policy?: unknown; allows?: readonly string[] | '*'; respons
   responses.push(...(opts.responses ?? []), ...imageCalls());
   return {
     services: opts.policy !== undefined ? ['render'] : [],
-    security: { allows: opts.allows ?? ['doc.render', 'doc.annotate.read', 'doc.forms.read'] },
+    // `doc.render` implies `doc.render.thumbnail`; the fake engine checks each by name.
+    security: {
+      allows: opts.allows ?? ['doc.render', 'doc.render.thumbnail', 'doc.annotate.read', 'doc.forms.read'],
+    },
     pages: opts.pages ?? PAGES,
     responses,
   };
@@ -239,6 +242,25 @@ const DEEPER = { desiredDeviceWidth: 9792, visibleRect: visible(0, 0, 64, 64) };
 const demand = (w: number, rect = visible(0, 0, 128, 128)) => ({ desiredDeviceWidth: w, visibleRect: rect });
 
 // ── the capability ────────────────────────────────────────────────────────────
+
+/** The engine's pages once page 11 is copied in as 77 after it, then once a blank 88 ends them. */
+const COPIED = [PAGES[0]!, { ...PAGES[0]!, index: 1, ref: pr(77) }, { ...PAGES[1]!, index: 2 }, { ...PAGES[2]!, index: 3 }];
+const BLANKED = [...COPIED, { ...layout(88, 4, 300, 300) }];
+const MUTATION_META = { affectedPages: [], cacheDelta: null, opId: 'render-write', undoable: true };
+const pagesLayout = (pages: readonly unknown[]) => ({ pageCount: pages.length, pages, labels: [], namedPages: [] });
+/** The confirmed fact of an insert. */
+const inserted = (pages: readonly unknown[], numbers: number[]) => ({
+  type: 'pages.inserted',
+  insertedPages: numbers.map(pr),
+  layout: pagesLayout(pages),
+  meta: MUTATION_META,
+  origin: { ...LOCAL, ts: 0, serverId: null },
+});
+/** The answer to an insert. */
+const insertedResult = (type: string, pages: readonly unknown[], numbers: number[]) => ({
+  items: [{ type, insertedPages: numbers.map(pr), layout: pagesLayout(pages), meta: MUTATION_META }],
+  meta: MUTATION_META,
+});
 
 const capabilityCases: ScenarioCase[] = [
   {
@@ -463,7 +485,7 @@ const capabilityCases: ScenarioCase[] = [
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
     ...UNSNAPSHOTTED,
-    steps: [start, open(), v3('renderThumbnail', pr(11), { maxWidth: 40, signal: signal('s1') }), abortSignal('s1'), settle('r0')],
+    steps: [start, open(), v3('renderThumbnail', pr(11), { signal: signal('s1') }), abortSignal('s1'), settle('r0')],
   },
   {
     name: 'signal-after-resolution-is-a-no-op',
@@ -800,18 +822,45 @@ const capabilityCases: ScenarioCase[] = [
   },
   {
     name: 'render-thumbnail',
-    covers: 'renderThumbnail is renderPage at maxWidth device pixels, annotations baked unless it says otherwise.',
+    covers:
+      "renderThumbnail draws the whole page at the engine's thumbnail size (viewport kind thumbnail): one picture per page and layers, whatever the screen asks, so renderSource's thumbnail and getSourceKey's share its key; a format or quality it is given overrides the strategy's, and a page not in the document is not-found.",
     plugins: render(),
     engine: { documents: { a: doc() } },
     ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
-      v3('renderThumbnail', pr(11), { maxWidth: 120 }),
-      v3('renderThumbnail', pr(22), { maxWidth: 120.6, includeAnnotations: false }),
+      v3('canRenderThumbnail'),
+      v3('renderThumbnail', pr(11)),
+      v3('renderThumbnail', 1, { includeAnnotations: false }),
       settle('r0'),
       settle('r1'),
-      v3('renderThumbnail', pr(11), { maxWidth: 120 }),
+      v3('renderThumbnail', pr(11)),
+      cap('renderPage', 11, { scale: 0.5, thumbnail: true }),
+      cap('renderSourceKey', 11, { scale: 0.5, thumbnail: true }),
+      cap('renderSourceKey', 11, { scale: 0.5 }),
+      v3('renderThumbnail', pr(11), { format: 'webp', quality: 0.4 }),
+      settle('r2'),
+      v3('renderThumbnail', pr(99)),
+    ],
+  },
+  {
+    name: 'thumbnails-need-only-their-own-right',
+    covers:
+      'A session with doc.render.thumbnail and not doc.render has thumbnails, by either door, and no other page picture: canRender is false, canRenderThumbnail true, and renderPage and renderSource without thumbnail refuse permission-denied.',
+    plugins: render(),
+    engine: { documents: { a: doc({ allows: ['doc.render.thumbnail'] }) } },
+    ...UNSNAPSHOTTED,
+    steps: [
+      start,
+      open(),
+      v3('canRender'),
+      v3('canRenderThumbnail'),
+      v3('renderThumbnail', pr(11)),
+      cap('renderPage', 11, { scale: 0.5, thumbnail: true }),
+      cap('renderPage', 11, { scale: 0.5 }),
+      v3('renderPage', pr(11)),
+      settle('r0'),
     ],
   },
   {
@@ -851,7 +900,7 @@ const capabilityCases: ScenarioCase[] = [
   {
     name: 'render-page-permission-denied',
     covers:
-      'Without doc.render every public render door refuses locally with permission-denied naming its own operation (renderThumbnail is renderPage), before touching the page registry or the engine.',
+      'Without doc.render every public render door refuses locally with permission-denied naming its own operation, renderThumbnail naming doc.render.thumbnail; renderPage refuses before touching the page registry, renderThumbnail reads the page first, and neither reaches the engine.',
     plugins: render(),
     engine: { documents: { a: doc({ allows: [] }) } },
     ...UNSNAPSHOTTED,
@@ -860,7 +909,8 @@ const capabilityCases: ScenarioCase[] = [
       open(),
       v3('renderPage', pr(11)),
       v3('renderPage', pr(99)),
-      v3('renderThumbnail', pr(11), { maxWidth: 40 }),
+      v3('renderThumbnail', pr(11)),
+      v3('renderThumbnail', pr(99)),
       v3('renderPages', [pr(11), pr(22)]),
     ],
   },
@@ -902,6 +952,40 @@ const capabilityCases: ScenarioCase[] = [
       cap('invalidate', { pons: [11] }),
       cap('renderPage', 22, { scale: 0.5 }),
       settle('r3'),
+    ],
+  },
+  {
+    name: 'a-pending-page-draws-once-the-engine-has-it',
+    covers:
+      "A page a change on its way makes is in the page list before the engine has it: a pending copy draws as the page it copies, and a pending blank page's picture waits until the engine has the page, then draws it.",
+    plugins: [...render(), { factory: 'page-edit' }],
+    engine: {
+      documents: {
+        a: {
+          ...doc({
+            allows: ['doc.render', 'doc.annotate.read', 'doc.forms.read', 'doc.pages.assemble'],
+            responses: [
+              { path: 'apply', times: 1, defer: 'copy', events: [inserted(COPIED, [77])] },
+              { path: 'apply', times: 1, defer: 'blank', events: [inserted(BLANKED, [88])] },
+            ],
+          }),
+          objectNumbers: [77, 88],
+        },
+      },
+    },
+    ...UNSNAPSHOTTED,
+    steps: [
+      start,
+      open(),
+      { op: 'call', target: { token: 'page-edit', doc: 'a' }, method: 'duplicate', args: [[pr(11)]] },
+      cap('renderPage', 77, { scale: 0.5 }),
+      settle('r0'),
+      { op: 'call', target: { token: 'page-edit', doc: 'a' }, method: 'insertBlank', args: [{ position: 'end' }] },
+      cap('renderPage', 88, { scale: 0.5 }),
+      { op: 'settle', label: 'copy', value: insertedResult('pages.copy', COPIED, [77]) },
+      { op: 'settle', label: 'blank', value: insertedResult('pages.insertBlank', BLANKED, [88]) },
+      settle('r1'),
+      cap('renderPage', 77, { scale: 0.5 }),
     ],
   },
 ];

@@ -52,6 +52,13 @@ public struct RenderCapability: Sendable {
     try await bridged { try await handle.canRender() }
   }
 
+  /// Whether the pages' thumbnails would be served to this session
+  /// (`doc.render.thumbnail`, which `doc.render` includes). A session that
+  /// may not render pages may still have them.
+  public func canRenderThumbnail() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canRenderThumbnail() }
+  }
+
   /// Render one page at exactly the size asked for: `width` device pixels,
   /// or `scale` device pixels a point (1 when neither is given). Throws
   /// `invalid-input` for a size that is not a positive number, `not-found`
@@ -70,13 +77,15 @@ public struct RenderCapability: Sendable {
     }
   }
 
-  /// A small raster `maxWidth` device pixels wide.
+  /// The page's thumbnail: the whole page, 512 pixels on its long side,
+  /// sharing the raster cache. Needs only `doc.render.thumbnail`; throws
+  /// `permission-denied` without it, otherwise like `renderPage`.
   public func renderThumbnail(
-    _ page: PageRef, maxWidth: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil
+    _ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil
   ) async throws(PDFError) -> RenderedPage {
     let image = try await bridgedCancellable { token in
       try await handle.renderThumbnail(
-        page: page, maxWidth: maxWidth, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields, cancel: token)
+        page: page, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields, cancel: token)
     }
     return try RenderedPage(image)
   }
@@ -122,18 +131,32 @@ public struct RenderCapability: Sendable {
   }
 
   /// Render at the scale a view shows the page (a `StagePageTransform`'s
-  /// `renderScale`), conformed through the policy's render points.
-  public func renderSource(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil)
-    async throws(PDFError) -> RenderedPage
-  {
+  /// `renderScale`), conformed through the policy's render points. With
+  /// `thumbnail`, the page's thumbnail instead (`scale` is ignored), which
+  /// needs only `doc.render.thumbnail`.
+  public func renderSource(
+    _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
+    thumbnail: Bool? = nil
+  ) async throws(PDFError) -> RenderedPage {
     let image = try await bridgedCancellable { token in
-      try await handle.renderSource(page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields, cancel: token)
+      try await handle.renderSource(
+        page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields,
+        thumbnail: thumbnail, cancel: token)
     }
     return try RenderedPage(image)
   }
 
-  public func sourceKey(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError) -> String {
-    try await bridged { try await handle.sourceKey(page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields) }
+  /// The identity of the raster `renderSource` would produce, the
+  /// thumbnail's with `thumbnail`.
+  public func sourceKey(
+    _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
+    thumbnail: Bool? = nil
+  ) async throws(PDFError) -> String {
+    try await bridged {
+      try await handle.sourceKey(
+        page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields,
+        thumbnail: thumbnail)
+    }
   }
 
   public func conformViewport(_ page: PageRef, scale: Double) async throws(PDFError) -> RenderViewport {

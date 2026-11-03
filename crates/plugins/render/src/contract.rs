@@ -197,12 +197,14 @@ pub struct RenderPageOptions {
     pub signal: Option<AbortSignal>,
 }
 
-/// `RenderThumbnailOptions`.
+/// `RenderThumbnailOptions`: the page's thumbnail is the whole page at the
+/// engine's thumbnail size, so it takes no size.
 #[derive(Clone, Default)]
 pub struct RenderThumbnailOptions {
-    /// The thumbnail's width in device pixels.
-    pub max_width: f64,
     pub layers: PageLayerOptions,
+    /// Per-call encode overrides; default to the plugin's strategy.
+    pub format: Option<RenderFormat>,
+    pub quality: Option<f64>,
     pub signal: Option<AbortSignal>,
 }
 

@@ -33,6 +33,8 @@ build-support = { path = "../../build-support" }
 [dev-dependencies]
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 plugin-conformance = { path = "../../plugin-conformance" }
+# The pending-page case stages its copy and blank insert through page-edit.
+epdf-plugin-page-edit = { path = "../page-edit" }
 
 [[test]]
 name = "conformance"

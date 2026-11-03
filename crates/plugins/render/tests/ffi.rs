@@ -104,9 +104,6 @@ fn a_bad_scale_is_refused() {
         let width = RenderPageOptions { width: Some(bad), ..Default::default() };
         let error = block_on(rig.render.render_page(SMALL, width, token())).unwrap_err();
         assert_eq!(code(&error), Some("invalid-input"), "{bad}: {error:?}");
-        let error =
-            block_on(rig.render.render_thumbnail(SMALL, bad, None, None, token())).unwrap_err();
-        assert_eq!(code(&error), Some("invalid-input"), "{bad}: {error:?}");
     }
     assert!(rig.requests().is_empty());
 }
@@ -120,12 +117,32 @@ fn a_page_the_document_lacks_is_not_found() {
 }
 
 #[test]
-fn a_thumbnail_renders_at_its_width() {
+fn a_thumbnail_is_the_whole_page_at_the_engines_thumbnail_size() {
     let rig = Rig::pixels();
-    let image =
-        block_on(rig.render.render_thumbnail(LARGE, 2.0, Some(false), None, token())).unwrap();
-    assert_eq!((image.width, image.height, image.scale), (2, 1, 0.5));
-    assert_eq!(rig.requests()[0].1["includeAnnotations"], json!(false));
+    assert!(block_on(rig.render.can_render_thumbnail()).unwrap());
+    let image = block_on(rig.render.render_thumbnail(LARGE, Some(false), None, token())).unwrap();
+    // 512 pixels on the long side of a 4pt by 2pt page.
+    assert_eq!((image.width, image.height, image.scale), (512, 256, 128.0));
+    assert_eq!(
+        rig.requests()[0].1,
+        json!({ "viewport": { "kind": "thumbnail" }, "includeAnnotations": false,
+            "includeFormFields": false })
+    );
+    // The viewer door's thumbnail is the same picture: one key per page and
+    // layers, whatever the scale.
+    let key = block_on(rig.render.source_key(LARGE, 2.0, Some(false), Some(false), Some(true)));
+    assert_eq!(key.unwrap(), "4|thumbnail|a0f0|e0");
+    let again = block_on(rig.render.render_source(
+        LARGE,
+        9.0,
+        Some(false),
+        Some(false),
+        Some(true),
+        token(),
+    ))
+    .unwrap();
+    assert_eq!(again, image);
+    assert_eq!(rig.requests().len(), 1);
 }
 
 #[test]
@@ -335,7 +352,7 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
     let errors = [
         block_on(render.can_render()).map(|_| ()).unwrap_err(),
         block_on(render.render_page(SMALL, scale(1.0), token())).map(|_| ()).unwrap_err(),
-        block_on(render.render_thumbnail(SMALL, 2.0, None, None, token())).map(|_| ()).unwrap_err(),
+        block_on(render.render_thumbnail(SMALL, None, None, token())).map(|_| ()).unwrap_err(),
         block_on(render.render_pages(vec![SMALL], scale(1.0), None, token()))
             .map(|_| ())
             .unwrap_err(),
@@ -385,12 +402,12 @@ fn the_default_policy_is_continuous_and_a_viewport_conforms_to_a_width() {
 #[test]
 fn a_source_key_names_the_raster_render_source_produces() {
     let rig = Rig::pixels();
-    let a = block_on(rig.render.source_key(LARGE, 2.0, None, None)).unwrap();
-    let b = block_on(rig.render.source_key(LARGE, 2.0, Some(true), None)).unwrap();
-    let c = block_on(rig.render.source_key(LARGE, 3.0, None, None)).unwrap();
+    let a = block_on(rig.render.source_key(LARGE, 2.0, None, None, None)).unwrap();
+    let b = block_on(rig.render.source_key(LARGE, 2.0, Some(true), None, None)).unwrap();
+    let c = block_on(rig.render.source_key(LARGE, 3.0, None, None, None)).unwrap();
     assert_eq!(a, b);
     assert_ne!(a, c);
-    let image = block_on(rig.render.render_source(LARGE, 2.0, None, None, token())).unwrap();
+    let image = block_on(rig.render.render_source(LARGE, 2.0, None, None, None, token())).unwrap();
     assert_eq!((image.width, image.height), (8, 4));
 }
 
@@ -398,7 +415,7 @@ fn a_source_key_names_the_raster_render_source_produces() {
 fn a_page_not_in_the_document_is_not_found() {
     let rig = Rig::pixels();
     let missing = PageRef { page_object_number: 99 };
-    let error = block_on(rig.render.source_key(missing, 1.0, None, None)).unwrap_err();
+    let error = block_on(rig.render.source_key(missing, 1.0, None, None, None)).unwrap_err();
     assert_eq!(code(&error), Some("not-found"), "{error:?}");
 }
 

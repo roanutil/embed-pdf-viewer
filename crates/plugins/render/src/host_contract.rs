@@ -33,8 +33,13 @@ pub struct PaintSettings {
 /// `RenderSourceOptions` with the operation's `signal`.
 #[derive(Clone, Default)]
 pub struct RenderSourceOptions {
-    /// Device px per PDF point (the page transform's `renderScale`).
+    /// Device px per PDF point (the page transform's `renderScale`). A
+    /// thumbnail ignores it.
     pub scale: f64,
+    /// The page's thumbnail instead: the whole page at the engine's
+    /// thumbnail size, which needs only `doc.render.thumbnail` (a thumbnail
+    /// rail's layer).
+    pub thumbnail: bool,
     /// The view the picture is for (the page context's `view`).
     pub view: Option<String>,
     pub layers: PageLayerOptions,

@@ -88,10 +88,12 @@ fn pixel_spec(table: Table, requests: Arc<Mutex<Vec<(u32, Value)>>>) -> TestSpec
     TestSpec::new(engine_spec(json!([]))).respond_page("page.render.image", move |pon, args| {
         let options = args.first().cloned().unwrap_or(Value::Null);
         requests.lock().unwrap().push((pon, options.clone()));
-        let (page_width, page_height) = if pon == 3 { (2.0, 1.0) } else { (4.0, 2.0) };
+        let (page_width, page_height): (f64, f64) = if pon == 3 { (2.0, 1.0) } else { (4.0, 2.0) };
         let viewport = &options["viewport"];
         let width = match viewport["kind"].as_str() {
             Some("width") => viewport["width"].as_f64().unwrap_or(0.0),
+            // `PAGE_THUMBNAIL_SIZE`: 512 pixels on the page's long side.
+            Some("thumbnail") => 512.0 * page_width / page_width.max(page_height),
             _ => viewport["scale"].as_f64().unwrap_or(1.0) * page_width,
         };
         if !(width.is_finite() && width > 0.0) {

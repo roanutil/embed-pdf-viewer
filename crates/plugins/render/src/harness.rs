@@ -80,6 +80,7 @@ const MEMBERS: &[&str] = &[
     "resetSettings",
     "onSettingsChanged",
     "canRender",
+    "canRenderThumbnail",
     "renderPage",
     "renderThumbnail",
     "renderPages",
@@ -171,6 +172,17 @@ fn signal_of(options: Option<&Value>) -> Option<AbortSignal> {
         .map(controller_named)
 }
 
+/// JavaScript truthiness of an option value.
+fn truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(b) => *b,
+        Value::Number(n) => n.as_f64().is_some_and(|n| n != 0.0),
+        Value::String(s) => !s.is_empty(),
+        _ => true,
+    }
+}
+
 fn page_options(
     options: Option<&Value>,
     signal: Option<AbortSignal>,
@@ -252,6 +264,7 @@ impl Render {
                 hook(h, present(args, 0), move |f| cap.on_settings_changed(f))
             }
             "canRender" => Outcome::Returned(json!(cap.can_render())),
+            "canRenderThumbnail" => Outcome::Returned(json!(cap.can_render_thumbnail())),
             "renderPage" => {
                 let options = present(args, 1);
                 let options = page_options(options, signal_of(options))?;
@@ -259,10 +272,12 @@ impl Render {
             }
             "renderThumbnail" => {
                 let options = present(args, 1);
+                let page = page_options(options, signal_of(options))?;
                 let options = RenderThumbnailOptions {
-                    max_width: number(options, "maxWidth").unwrap_or(f64::NAN),
-                    layers: layers(options),
-                    signal: signal_of(options),
+                    layers: page.layers,
+                    format: page.format,
+                    quality: page.quality,
+                    signal: page.signal,
                 };
                 Outcome::promise(cap.render_thumbnail(page_target_arg(args, 0)?, options))
             }
@@ -305,6 +320,7 @@ impl Render {
                 let options = present(args, 1);
                 let options = RenderSourceOptions {
                     scale: number(options, "scale").unwrap_or(f64::NAN),
+                    thumbnail: member(options, "thumbnail").is_some_and(truthy),
                     view: member(options, "view").and_then(Value::as_str).map(str::to_string),
                     layers: layers(options),
                     signal: signal_of(options),
@@ -315,8 +331,13 @@ impl Render {
                 let options = present(args, 1);
                 let scale = number(options, "scale").unwrap_or(f64::NAN);
                 Outcome::from_result(
-                    cap.get_source_key(page_ref_arg(args, 0)?, scale, layers(options))
-                        .map(Value::String),
+                    cap.get_source_key(
+                        page_ref_arg(args, 0)?,
+                        scale,
+                        layers(options),
+                        member(options, "thumbnail").is_some_and(truthy),
+                    )
+                    .map(Value::String),
                 )
             }
             "conformViewport" => {
