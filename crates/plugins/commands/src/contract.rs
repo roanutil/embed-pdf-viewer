@@ -125,6 +125,10 @@ pub enum Panel {
     Target { id: String, exclusive: Option<String>, focus: Option<bool> },
 }
 
+/// A command's lock on the setting it changes, evaluated for its target context.
+pub type LockDerivation =
+    Rc<dyn Fn(&CommandCtx) -> Result<Option<epdf_kernel::settings::SettingLock>, Error>>;
+
 /// `CommandDef`: one command, as you define it. The registry owns the
 /// closures, so a closure that holds the [`CommandsCapability`] (or the
 /// remover its registration returned) keeps the registry alive for good;
@@ -156,9 +160,7 @@ pub struct CommandDef {
     /// The key of the sentence that says why `allowed` refused it.
     pub not_allowed_key: Option<String>,
     /// The lock on the setting this command changes. A failed check counts as unlocked.
-    pub locked: Option<
-        Rc<dyn Fn(&CommandCtx) -> Result<Option<epdf_kernel::settings::SettingLock>, Error>>,
-    >,
+    pub locked: Option<LockDerivation>,
     /// Opens and closes a menu of yours.
     pub menu: Option<String>,
     /// Opens and closes a panel.

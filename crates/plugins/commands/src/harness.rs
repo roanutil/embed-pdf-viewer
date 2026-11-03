@@ -396,13 +396,7 @@ pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<Rc<CommandDef>, 
                 Answer::Returns(value) => epdf_kernel::engine::decode(value).map(Some),
                 Answer::Throws(error) => Err(error),
                 Answer::Promise(_) => Ok(None),
-            })
-                as Rc<
-                    dyn Fn(
-                        &CommandCtx,
-                    )
-                        -> Result<Option<epdf_kernel::settings::SettingLock>, Error>,
-                >
+            }) as crate::contract::LockDerivation
         }),
         menu: opt_string(object, "menu"),
         panel: match object.get("panel") {

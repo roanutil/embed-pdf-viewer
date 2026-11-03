@@ -53,6 +53,7 @@ fn focus_is_synchronous_and_tracks_the_cursor_without_actions() {
     let (_k, form) = rig();
     let heard = Rc::default();
     let _off = attach(&form, 12, &heard);
+    let _readonly = attach(&form, 13, &heard);
     assert!(form.focus(&field(2, "")["ref"], Some(&json!({"select":true}))));
     assert_eq!(*heard.borrow(), vec![(12, true)]);
     assert_eq!(form.get_focused_field().unwrap()["name"], "field2");
@@ -65,6 +66,7 @@ fn tab_uses_page_rows_skips_readonly_and_leaves_at_the_end() {
     let heard = Rc::default();
     let _a = attach(&form, 11, &heard);
     let _b = attach(&form, 12, &heard);
+    let _readonly = attach(&form, 13, &heard);
     assert!(form.focus_next(None));
     assert!(form.focus_next(None));
     assert!(!form.focus_next(None));

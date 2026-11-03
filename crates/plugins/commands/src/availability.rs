@@ -175,31 +175,6 @@ pub fn refusal_of(
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn categories_match_on_whole_dotted_parts() {
-        let off = vec!["annotations".to_string()];
-        assert!(is_category_off("annotations", &off));
-        assert!(is_category_off("annotations.highlight", &off));
-        assert!(is_category_off("annotations.highlight.ink", &off));
-        assert!(!is_category_off("annotationsExtra", &off));
-        assert!(!is_category_off("annotation", &off));
-        assert!(!is_category_off("other.annotations", &off));
-    }
-
-    #[test]
-    fn a_permission_key_replaces_dots_and_colons() {
-        assert_eq!(permission_key_of("doc.text.copy"), "commands.notAllowed.doc-text-copy");
-        assert_eq!(
-            permission_key_of("annotations:create"),
-            "commands.notAllowed.annotations-create"
-        );
-    }
-}
-
 /// A failed lock callback counts as unlocked, like the TypeScript check that throws.
 pub fn lock_of(
     def: &CommandDef,
@@ -234,5 +209,30 @@ pub fn locked_message(
                 fallback_key: None,
             }),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn categories_match_on_whole_dotted_parts() {
+        let off = vec!["annotations".to_string()];
+        assert!(is_category_off("annotations", &off));
+        assert!(is_category_off("annotations.highlight", &off));
+        assert!(is_category_off("annotations.highlight.ink", &off));
+        assert!(!is_category_off("annotationsExtra", &off));
+        assert!(!is_category_off("annotation", &off));
+        assert!(!is_category_off("other.annotations", &off));
+    }
+
+    #[test]
+    fn a_permission_key_replaces_dots_and_colons() {
+        assert_eq!(permission_key_of("doc.text.copy"), "commands.notAllowed.doc-text-copy");
+        assert_eq!(
+            permission_key_of("annotations:create"),
+            "commands.notAllowed.annotations-create"
+        );
     }
 }
