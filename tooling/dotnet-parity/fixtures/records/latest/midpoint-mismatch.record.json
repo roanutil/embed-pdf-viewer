@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "slice": 5,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "44169b853d3d7006185dcf4ab3780f147fdd2ae9",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "tools": {
+      "node": "v24.20.0",
+      "dotnet": "10.0.403",
+      "libc": "glibc 2.41",
+      "playwright": "1.63.0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "tooling/dotnet-parity/fixtures/records/latest/manifest.input.json",
+      "sha256": "14a34648594181ab47538af4dde05b7b917c4891d4974a4b3bb27fc1f7f6b1fe",
+      "bytes": 111048
+    }
+  ],
+  "commands": [
+    {
+      "command": "/opt/dotnet/dotnet run --project platforms/dotnet/EmbedPDF.Parity/EmbedPDF.Parity.csproj -- self-test",
+      "cwd": "/repo/.claude/worktrees/dotnet-parity",
+      "exitCode": 0,
+      "log": {
+        "path": "tooling/dotnet-parity/fixtures/records/latest/decimal-self-test.log",
+        "sha256": "25c8a4e0b5da117c3e94a82249c2f5be95bf9f9702a289958a88d2cf6ba24177",
+        "bytes": 1048
+      },
+      "results": "{\"id\":\"midpoint-mismatch\",\"status\":\"passed\",\"expectedEqual\":false}"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "platforms/dotnet/EmbedPDF.Parity/bin/Debug/net10.0/EmbedPDF.Parity.dll",
+      "sha256": "94ba2adc58783fa6aedbda6690fe6dd414fff383f44814bc0d690b397bb643ab",
+      "bytes": 39424
+    },
+    {
+      "path": "platforms/dotnet/EmbedPDF.Parity/bin/Debug/net10.0/EmbedPDF.Engine.dll",
+      "sha256": "bd81c10975def811aa80d285810d9616257f9d15f24b49f77f50c87cbf5ed6cb",
+      "bytes": 130560
+    },
+    {
+      "path": "platforms/dotnet/EmbedPDF.Parity/bin/Debug/net10.0/EmbedPDF.Parity.runtimeconfig.json",
+      "sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+      "bytes": 259
+    }
+  ],
+  "limitations": []
+}

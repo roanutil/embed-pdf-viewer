@@ -1,0 +1,145 @@
+{
+  "diagnosticOnly": false,
+  "comparison": "exact",
+  "tolerance": null,
+  "viewer": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/crop-rotations-transparent-repeated-quotes-empty-cells.viewer.json",
+    "sha256": "791a97f2ff34cf9923d62e71cfe7ced4b5feef785e1c1e38f8febb07bf503f01",
+    "bytes": 120551
+  },
+  "native": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/crop-rotations-transparent-repeated-quotes-empty-cells.native.json",
+    "sha256": "88088917b73c87c1deaf72e6bf5d62d990c5c3453ab021682e3824dc04264975",
+    "bytes": 120639
+  },
+  "probes": [
+    {
+      "id": "p0-render-r0",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p0-render-r90",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p0-render-r180",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p0-render-r270",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p1-render-r0",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p1-render-r90",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p1-render-r180",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p1-render-r270",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p2-render-r0",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p2-render-r90",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p2-render-r180",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p2-render-r270",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p3-render-r0",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p3-render-r90",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p3-render-r180",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    },
+    {
+      "id": "p3-render-r270",
+      "bytes": 2000,
+      "nativeBytes": 2000,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    }
+  ]
+}

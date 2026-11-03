@@ -1,0 +1,25 @@
+{
+  "diagnosticOnly": false,
+  "comparison": "exact",
+  "tolerance": null,
+  "viewer": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/embedded_orientations.viewer.json",
+    "sha256": "633345ef22fc51d82cc01f9e2fe2ab5e5e2a65ee0d2520d6ac64eb521e75e07f",
+    "bytes": 676295
+  },
+  "native": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/embedded_orientations.native.json",
+    "sha256": "a68a6b7086c5b949863ce00d912321ce9ac477e26f19f2ecd127aac6d91a73ec",
+    "bytes": 676360
+  },
+  "probes": [
+    {
+      "id": "transparent-render",
+      "bytes": 484704,
+      "nativeBytes": 484704,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    }
+  ]
+}

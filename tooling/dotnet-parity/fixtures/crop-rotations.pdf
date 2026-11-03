@@ -1,0 +1,77 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 220] /CropBox [30 40 360 260] /Rotate 0 /UserUnit 1.25 /Resources << /Font << /F1 11 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 189 >>
+stream
+BT /F1 12 Tf 1 0 0 1 40 190 Tm ("quote" "quote" A  B) Tj ET
+BT /F1 12 Tf 0 1 -1 0 80 70 Tm (vertical) Tj ET
+BT /F1 12 Tf 1 0 0.25 1 100 100 Tm (sheared) Tj ET
+q 1 0 0 rg 30 40 20 20 re f Q
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 220] /CropBox [30 40 360 260] /Rotate 90 /UserUnit 1.25 /Resources << /Font << /F1 11 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 189 >>
+stream
+BT /F1 12 Tf 1 0 0 1 40 190 Tm ("quote" "quote" A  B) Tj ET
+BT /F1 12 Tf 0 1 -1 0 80 70 Tm (vertical) Tj ET
+BT /F1 12 Tf 1 0 0.25 1 100 100 Tm (sheared) Tj ET
+q 1 0 0 rg 30 40 20 20 re f Q
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 220] /CropBox [30 40 360 260] /Rotate 180 /UserUnit 1.25 /Resources << /Font << /F1 11 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 189 >>
+stream
+BT /F1 12 Tf 1 0 0 1 40 190 Tm ("quote" "quote" A  B) Tj ET
+BT /F1 12 Tf 0 1 -1 0 80 70 Tm (vertical) Tj ET
+BT /F1 12 Tf 1 0 0.25 1 100 100 Tm (sheared) Tj ET
+q 1 0 0 rg 30 40 20 20 re f Q
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 220] /CropBox [30 40 360 260] /Rotate 270 /UserUnit 1.25 /Resources << /Font << /F1 11 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 189 >>
+stream
+BT /F1 12 Tf 1 0 0 1 40 190 Tm ("quote" "quote" A  B) Tj ET
+BT /F1 12 Tf 0 1 -1 0 80 70 Tm (vertical) Tj ET
+BT /F1 12 Tf 1 0 0.25 1 100 100 Tm (sheared) Tj ET
+q 1 0 0 rg 30 40 20 20 re f Q
+endstream
+endobj
+11 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000133 00000 n 
+0000000312 00000 n 
+0000000551 00000 n 
+0000000731 00000 n 
+0000000970 00000 n 
+0000001151 00000 n 
+0000001390 00000 n 
+0000001572 00000 n 
+0000001812 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+1883
+%%EOF

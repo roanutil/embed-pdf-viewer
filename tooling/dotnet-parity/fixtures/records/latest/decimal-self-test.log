@@ -1,0 +1,16 @@
+{"id":"decimal-precision-loss","status":"passed"}
+{"id":"positive-midpoint","status":"passed","expectedEqual":true}
+{"id":"negative-midpoint","status":"passed","expectedEqual":true}
+{"id":"midpoint-mismatch","status":"passed","expectedEqual":false}
+{"id":"negative-midpoint-mismatch","status":"passed","expectedEqual":false}
+{"id":"round-once","status":"passed","expectedEqual":true}
+{"id":"decimal-not-double","status":"passed","expectedEqual":true}
+{"id":"exponent","status":"passed","expectedEqual":true}
+{"id":"crop-rotation-boundary","status":"passed","expectedEqual":false}
+{"id":"rotation-mismatch","status":"passed","expectedEqual":false}
+{"id":"surrogate-dropped-combining","status":"passed","expectedEqual":true}
+{"id":"text-mismatch","status":"passed","expectedEqual":false}
+{"id":"empty-array-not-null","status":"passed","expectedEqual":false}
+{"id":"dropped-map-mismatch","status":"passed","expectedEqual":false}
+{"id":"object-order","status":"passed","expectedEqual":true}
+{"id":"array-order","status":"passed","expectedEqual":false}

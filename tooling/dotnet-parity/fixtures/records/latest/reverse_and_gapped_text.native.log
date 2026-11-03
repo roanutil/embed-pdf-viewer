@@ -1,0 +1,8 @@
+native parity: create engine with pinned ordered fonts
+native parity: open corpus PDF
+{"id":"pages","operation":"pages","status":"running"}
+{"id":"text","operation":"text","status":"running"}
+{"id":"geometry","operation":"geometry","status":"running"}
+{"id":"empty-segments","operation":"segments","status":"running"}
+{"id":"first-segment","operation":"segments","status":"running"}
+{"id":"transparent-render","operation":"render","status":"running"}
