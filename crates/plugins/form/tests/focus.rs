@@ -152,3 +152,45 @@ fn a_users_focus_cancels_an_offscreen_request_and_settings_gate_input() {
     late.call();
     k.close().unwrap();
 }
+
+#[test]
+fn radios_are_one_stop_at_the_checked_button_and_arrows_wrap_and_pick() {
+    rt::reset();
+    let plan = json!({"ref":{"kind":"objectNumber","objectNumber":5},"name":"plan","family":"radio","readOnly":false,"value":"yearly","valueEntry":{"kind":"scalar","value":"yearly"},"widgets":[{"objectNumber":15,"page":{"objectNumber":1},"checked":false,"exportValue":"monthly"},{"objectNumber":16,"page":{"objectNumber":1},"checked":true,"exportValue":"yearly"}]});
+    let snapshot = json!({"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[plan],"widgets":[{"ref":widget(15),"page":{"objectNumber":1},"subtype":"widget","rect":{"x":10,"y":100,"width":20,"height":20}},{"ref":widget(16),"page":{"objectNumber":1},"subtype":"widget","rect":{"x":10,"y":200,"width":20,"height":20}}]});
+    let applied = Rc::new(RefCell::new(Vec::new()));
+    let log = applied.clone();
+    let spec=TestSpec::new(json!({"documents":{"a":{"pages":[{"ref":{"kind":"objectNumber","objectNumber":1},"index":0,"size":{"width":600,"height":800},"rotation":0,"userUnit":1,"tabOrder":"rows"}],"security":{"allows":"*"}}}}))
+        .respond("forms.list",move |_|Ok(Reply::value(snapshot.clone())))
+        .respond("apply",move |args|{log.borrow_mut().push(args[0]["ops"].clone());Ok(Reply::value(json!({"items":[],"meta":{"undoable":true}})))});
+    let k = TestKernel::open(
+        vec![
+            interaction_plugin(Default::default()),
+            form_plugin(Some(json!({"validation":"none"}))),
+        ],
+        spec,
+    )
+    .unwrap();
+    let form = k.capability(&FORM).unwrap();
+    settle(&form.refresh(None)).unwrap();
+    let heard = Rc::default();
+    let first = attach(&form, 15, &heard);
+    let second = attach(&form, 16, &heard);
+    assert!(form.focus_next(None));
+    assert_eq!(*heard.borrow(), vec![(16, true)]);
+    assert!(!form.focus_next(None));
+    assert!(form.focus(
+        &json!({"kind":"objectNumber","objectNumber":5}),
+        Some(&json!({"widget":widget(15)}))
+    ));
+    assert_eq!(heard.borrow().last(), Some(&(15, false)));
+    assert!(form.move_in_group(&widget(16), false));
+    rt::run_until_stalled();
+    assert_eq!(heard.borrow().last(), Some(&(15, false)));
+    assert!(applied.borrow().iter().any(|ops| {
+        ops.as_array().is_some_and(|ops| ops.iter().any(|op| op["value"]["value"] == "monthly"))
+    }));
+    first.call();
+    second.call();
+    k.close().unwrap();
+}

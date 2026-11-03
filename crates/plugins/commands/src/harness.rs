@@ -154,6 +154,7 @@ fn printed_from_def(def: &CommandDef) -> Value {
     put("requires", def.requires.as_ref().map(|v| json!(v)));
     put("allowed", def.allowed.as_ref().map(|_| function()));
     put("notAllowedKey", def.not_allowed_key.as_ref().map(|v| json!(v)));
+    put("locked", def.locked.as_ref().map(|_| function()));
     put("menu", def.menu.as_ref().map(|v| json!(v)));
     put(
         "panel",
@@ -388,6 +389,21 @@ pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<Rc<CommandDef>, 
         requires: object.get("requires").map(|c| strings(Some(c))),
         allowed: func("allowed").map(|(spec, h)| derivation(spec, h)),
         not_allowed_key: opt_string(object, "notAllowedKey"),
+        locked: func("locked").map(|(spec, h)| {
+            let callback = scripted(spec, h);
+            Rc::new(move |context: &CommandCtx| match callback(context) {
+                Answer::Returns(value) if value.is_null() || is_undefined(&value) => Ok(None),
+                Answer::Returns(value) => epdf_kernel::engine::decode(value).map(Some),
+                Answer::Throws(error) => Err(error),
+                Answer::Promise(_) => Ok(None),
+            })
+                as Rc<
+                    dyn Fn(
+                        &CommandCtx,
+                    )
+                        -> Result<Option<epdf_kernel::settings::SettingLock>, Error>,
+                >
+        }),
         menu: opt_string(object, "menu"),
         panel: match object.get("panel") {
             Some(Value::String(id)) => Some(Panel::Id(id.clone())),

@@ -220,7 +220,7 @@ pub fn list_pages(
             size: pdf_rect_size(boxes.crop),
             rotation: rotation_at(document, index),
             user_unit: document.page_user_unit_by_index(index),
-            tab_order: tab_order_of(document, index)?,
+            tab_order: read_tab_order(document, index)?,
             boxes,
             pdf_crop_box: boxes.crop,
             actions: actions_of(document, number.get(), &mut budget)?,
@@ -264,7 +264,7 @@ pub fn rotation_at(document: &Document, index: u32) -> PdfRotation {
 }
 
 /// The page's `/Tabs`; `None` when it sets none, or one PDF doesn't define.
-fn tab_order_of(document: &Document, index: u32) -> Result<Option<PageTabOrder>, EngineError> {
+fn read_tab_order(document: &Document, index: u32) -> Result<Option<PageTabOrder>, EngineError> {
     let name = document.page_tab_order_by_index(index).map_err(|e| {
         EngineError::with_message(
             EngineErrorCode::RuntimeUnavailable,
@@ -337,3 +337,6 @@ pub fn visible_box_reader(
         Ok(visible)
     }
 }
+
+mod tab_order;
+pub use tab_order::{compare_structure_positions, tab_order_of};

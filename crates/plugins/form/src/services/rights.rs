@@ -10,6 +10,21 @@ use epdf_kernel::Error;
 use serde_json::Value;
 
 impl crate::controller::Core {
+    /// Whether settings and the sessions fill/sign permission allow input by hand.
+    pub(crate) fn may_fill_by_hand(&self, field: &Value) -> bool {
+        let settings = self.settings_now();
+        let family = &field["family"];
+        let fillable = match settings.get("fillable") {
+            Some(Value::Bool(all)) => *all,
+            Some(Value::Array(families)) => families.contains(family),
+            _ => false,
+        };
+        fillable && if family == "signature" { self.may_sign(field) } else { self.may_fill(field) }
+    }
+    pub(crate) fn takes_input(&self, field: &Value) -> bool {
+        field.get("readOnly").and_then(Value::as_bool) != Some(true) && self.may_fill_by_hand(field)
+    }
+
     /// `rights.mayFill(field)`.
     pub fn may_fill(&self, field: &Value) -> bool {
         self.cx.allows_field("fill", field)

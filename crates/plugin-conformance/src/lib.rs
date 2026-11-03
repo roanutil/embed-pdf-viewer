@@ -22,7 +22,7 @@ pub mod test_kernel;
 
 use std::path::PathBuf;
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 pub use harness::{Answer, Callback, Harness, HarnessPlugin, LiveFn, Outcome, ReleaseFn};
 pub use scenario::Registry;
@@ -60,56 +60,9 @@ pub fn load(file: &str) -> Value {
     suite
 }
 
-/// Temporary, until every plugin suite is regenerated: a vector recorded
-/// before the kernel's page view (`DocumentMeta.pageLabels` and
-/// `pendingPages`, upstream `c7f6a7958` and `b32e74e4a`) has neither member
-/// in its document metas. Where the recorded meta lacks one and the Rust
-/// meta has it empty (`[]`, `{"$map": []}`), the Rust member is dropped
-/// before comparing; a non-empty one still differs. Five suites that record
-/// a document meta are still from before it, because regenerating them
-/// brings in upstream changes their crates don't port yet: `signature`,
-/// `stamp-api` and `stamp-placement` wait on the form's `focused` (upstream
-/// `2998c9004`); `interaction-functions` and `interaction` wait on the
-/// built-in zoom tool (upstream `a1ee5683f`), which shows in the tool lists
-/// `annotation-tools` and `form-design` record, and `form-design` also waits
-/// on the form's `focused`. The form's focus also holds back `form-fill`,
-/// `form-core`, `form-scripting`, `form-actions` and `form-core-lifecycle`,
-/// which record no document meta, so this never applies to them. Remove this
-/// once they are regenerated.
-fn without_unrecorded_page_view(want: &Value, got: &mut Value) {
-    match (want, got) {
-        (Value::Object(want), Value::Object(got)) => {
-            if got.contains_key("instanceId") && got.contains_key("revision") {
-                if !want.contains_key("pageLabels") && got.get("pageLabels") == Some(&json!([])) {
-                    got.shift_remove("pageLabels");
-                }
-                if !want.contains_key("pendingPages")
-                    && got.get("pendingPages") == Some(&json!({ "$map": [] }))
-                {
-                    got.shift_remove("pendingPages");
-                }
-            }
-            for (key, value) in got.iter_mut() {
-                if let Some(want) = want.get(key) {
-                    without_unrecorded_page_view(want, value);
-                }
-            }
-        }
-        (Value::Array(want), Value::Array(got)) => {
-            for (want, got) in want.iter().zip(got.iter_mut()) {
-                without_unrecorded_page_view(want, got);
-            }
-        }
-        _ => {}
-    }
-}
-
 /// Compare one case's trace, returning the first difference.
 pub fn compare_trace(expected: &[Value], actual: &[Value]) -> Option<String> {
     for (index, (want, got)) in expected.iter().zip(actual.iter()).enumerate() {
-        let mut got = got.clone();
-        without_unrecorded_page_view(want, &mut got);
-        let got = &got;
         if let Some(diff) = canonical::diff_entry(want, got) {
             return Some(format!("step {index}: {diff}"));
         }

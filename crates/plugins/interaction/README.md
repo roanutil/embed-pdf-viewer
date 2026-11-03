@@ -110,3 +110,9 @@ The three survivors are all in `src/controller.rs:197`, the `Greater` arm of the
 comparator in `eligible`: `>` becoming `==`, `<` or `>=`. `sort_by` is a stable sort that only asks
 whether the comparator returned `Less`. `Greater` and `Equal` both leave a pair in registration
 order, so every one of the three orders handlers the same way.
+
+## Built-in zoom tool
+
+The built-in tools are pointer, pan and zoom. Zoom enables `zoom-box`, uses `zoom-in` over pages
+and page gaps, and declares drawing touch behavior. The Stage contributes the click and marquee
+handler; zoom does not enable form filling or link navigation.

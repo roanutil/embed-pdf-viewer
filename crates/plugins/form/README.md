@@ -51,6 +51,27 @@ that order, as `signature.json` and `stamp-*.json` dump `form::a/mirror/fields`
 as JavaScript objects order them, integer-like keys first, so they print and iterate as the
 TypeScript's do.
 
+## Moving the cursor
+
+`focus(ref, options)` reveals a fillable widget through the optional Stage and calls its mounted
+focus target synchronously. `attach_focus_target` lends that target while the control is mounted;
+its remover clears only that registration. Without a mounted target, a Stage can reveal the
+widget and reserve focus for up to 2,000 ms. Expiry or a user focusing another widget cancels that
+reservation. Without either a target or a Stage, `focus` returns `false`.
+
+`focus_next` follows the document pages and each pages PDF tab order, skips hidden, read-only and
+unfillable fields, and treats a radio group as one stop on each page. Its options choose backward
+movement, empty fields, wrapping and a starting field. A radio stop prefers its checked button;
+`move_in_group` wraps among the groups buttons and writes the value before activation.
+
+Controls report focus and blur with `notify_widget_event`. The focused field and `on_focus_changed`
+follow those reports, including when no actions plugin is installed. A blur and focus in one turn
+produce one field-to-field change; leaving the form reports null after the turn.
+
+The native handle exposes these operations and a `FormFocusTarget` callback. The callback runs on
+the kernel thread: arrange the native control update without waiting for the main actor there.
+Callback delivery is distinct from platform keyboard activation.
+
 ## What differs from the TypeScript
 
 H4 stays. The transaction's time budget runs on `rt::monotonic_now`, where the TypeScript reads

@@ -59,6 +59,8 @@ pub struct Core {
     pub(crate) reads: crate::read::fields::ReadMemos,
     /// `listWidgets`' memo, by page: the items it made, and from what.
     pub(crate) widget_items: RefCell<HashMap<String, crate::read::widgets::WidgetItems>>,
+    /// Mounted focus targets, pending focus, and the last widget visited.
+    pub(crate) cursor: crate::services::cursor::Cursor,
     /// The widget hover pump, made on first use.
     pub(crate) widget_pump: RefCell<Option<epdf_plugin_actions::HoverPump>>,
 }
@@ -218,10 +220,12 @@ pub fn create_form_controller(
         reads: Default::default(),
         widget_items: RefCell::new(HashMap::new()),
         widget_pump: RefCell::new(None),
+        cursor: Default::default(),
     });
     core.watch_formatted_texts()?;
     core.wire_fills()?;
     core.wire_typing()?;
+    core.wire_cursor()?;
     let capability = FormCapability(core.clone());
     let weak = Rc::downgrade(&core);
     let connect: ConnectFn = Rc::new(move || match weak.upgrade() {

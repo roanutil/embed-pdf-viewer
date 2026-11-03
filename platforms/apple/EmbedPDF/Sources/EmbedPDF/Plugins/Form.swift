@@ -34,6 +34,10 @@ public typealias FormFieldPatchKey = EmbedPDFBindings.FormFieldPatchKey
 public typealias FormImportResult = EmbedPDFBindings.FormImportResult
 public typealias FormActivationResult = EmbedPDFBindings.FormActivationResult
 public typealias FormEvent = EmbedPDFBindings.FormEvent
+public typealias FormFocusOptions = EmbedPDFBindings.FormFocusOptions
+public typealias FormFocusNextOptions = EmbedPDFBindings.FormFocusNextOptions
+public typealias FormFocusTarget = EmbedPDFBindings.FormFocusTarget
+public typealias FormWidgetEvent = EmbedPDFBindings.FormWidgetEvent
 
 /// A document's AcroForm. Get one with `PDFViewer.form(for:)`; the viewer
 /// needs `ViewerConfig(interaction: true, form: FormConfig())`. It keeps the
@@ -42,6 +46,32 @@ public typealias FormEvent = EmbedPDFBindings.FormEvent
 public struct FormCapability: Sendable {
   let handle: FormHandle
   let viewer: PDFViewer
+
+  /// Reveal a fillable field and ask its mounted control for the cursor.
+  public func focus(_ field: FormFieldRef, options: FormFocusOptions? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.focus(field: field, options: options) }
+  }
+
+  public func focusNext(_ options: FormFocusNextOptions? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.focusNext(options: options) }
+  }
+
+  public func focusedField() async throws(PDFError) -> FormField? {
+    try await bridged { try await handle.focusedField() }
+  }
+
+  public func moveInGroup(_ widget: AnnotationRef, backward: Bool = false) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.moveInGroup(widget: widget, backward: backward) }
+  }
+
+  /// The target runs on the kernel thread. Arrange the control update without waiting there.
+  public func attachFocusTarget(_ widget: AnnotationRef, target: any FormFocusTarget) async throws(PDFError) -> Registration {
+    Registration(handle: try await bridged { try await handle.attachFocusTarget(widget: widget, target: target) })
+  }
+
+  public func notifyWidgetEvent(_ field: FormFieldRef, widget: AnnotationRef, event: FormWidgetEvent) async throws(PDFError) {
+    try await bridged { try await handle.notifyWidgetEvent(field: field, widget: widget, event: event) }
+  }
 
   public func snapshot() async throws(PDFError) -> FormSnapshot? {
     try await bridged { try await handle.snapshot() }

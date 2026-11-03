@@ -647,6 +647,7 @@ dependencies = [
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
  "epdf-plugin-render",
+ "epdf-plugin-stage",
  "futures",
  "indexmap",
  "plugin-conformance",

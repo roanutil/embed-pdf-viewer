@@ -444,3 +444,18 @@ fn a_reordered_part_is_the_engine_part() {
         }
     }
 }
+
+#[test]
+fn keyboard_order_agrees_with_the_engine_rule() {
+    let annotations = vec![
+        serde_json::json!({"subtype":"widget","page":{"objectNumber":1},"rect":{"x":50,"y":100,"width":100,"height":20},"structurePosition":[0,1]}),
+        serde_json::json!({"subtype":"widget","page":{"objectNumber":1},"rect":{"x":10,"y":102,"width":100,"height":20},"structurePosition":[0,0]}),
+    ];
+    for order in ["rows", "columns", "structure", "widgets", "annotations"] {
+        let pages = [serde_json::json!({"ref":{"objectNumber":1},"tabOrder":order})];
+        assert_eq!(
+            epdf_plugin_form::engine::tab_order_of(&annotations, &pages),
+            epdf_engine::features::pages::tab_order_of(&annotations, &pages)
+        );
+    }
+}

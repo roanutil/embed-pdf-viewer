@@ -163,10 +163,15 @@ pub fn refusal_of(
             message: turned_off_message(&label_of(def, context), context),
         });
     }
-    let key = not_allowed_key_of(def, context)?;
-    Some(CommandRefusal {
-        reason: RefusalReason::NotAllowed,
-        message: not_allowed_message(&key, &label_of(def, context), context),
+    if let Some(key) = not_allowed_key_of(def, context) {
+        return Some(CommandRefusal {
+            reason: RefusalReason::NotAllowed,
+            message: not_allowed_message(&key, &label_of(def, context), context),
+        });
+    }
+    lock_of(def, context).map(|lock| CommandRefusal {
+        reason: RefusalReason::Locked,
+        message: locked_message(&lock, &label_of(def, context), context),
     })
 }
 
@@ -192,5 +197,42 @@ mod tests {
             permission_key_of("annotations:create"),
             "commands.notAllowed.annotations-create"
         );
+    }
+}
+
+/// A failed lock callback counts as unlocked, like the TypeScript check that throws.
+pub fn lock_of(
+    def: &CommandDef,
+    context: &CommandCtx,
+) -> Option<epdf_kernel::settings::SettingLock> {
+    def.locked.as_ref().and_then(|locked| locked(context).ok().flatten())
+}
+
+/// A lock-specific sentence, falling back through the general translated sentence.
+pub fn locked_message(
+    lock: &epdf_kernel::settings::SettingLock,
+    label: &str,
+    context: &CommandCtx,
+) -> String {
+    let fallback = format!("{label} can't be changed in this document");
+    let Some(i18n) = context.try_get(&I18N) else { return fallback };
+    let general = i18n.t(
+        "commands.locked.default",
+        Some(&TranslateOptions {
+            params: Some(label_params(label)),
+            fallback: Some(fallback),
+            fallback_key: None,
+        }),
+    );
+    match &lock.reason_key {
+        None => general,
+        Some(key) => i18n.t(
+            key,
+            Some(&TranslateOptions {
+                params: Some(label_params(label)),
+                fallback: Some(general),
+                fallback_key: None,
+            }),
+        ),
     }
 }

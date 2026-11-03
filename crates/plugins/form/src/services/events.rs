@@ -13,6 +13,7 @@ pub struct Events {
     pub field_deleted: EventHookSource<Value>,
     pub validation_rejected: EventHookSource<Value>,
     pub resynced: EventHookSource<Value>,
+    pub focus_changed: EventHookSource<Value>,
 }
 
 impl Events {
@@ -25,6 +26,7 @@ impl Events {
             field_deleted: cx.event_source(),
             validation_rejected: cx.event_source(),
             resynced: cx.event_source(),
+            focus_changed: cx.event_source(),
         }
     }
 }
@@ -46,6 +48,8 @@ macro_rules! hooks {
 }
 
 hooks! {
+    /// The field and widget the cursor moved to, or null after leaving.
+    on_focus_changed => focus_changed;
     /// `onValueChanged`: a field's value changed, whoever changed it.
     on_value_changed => value_changed;
     /// `onFieldCreated`: a field was added.

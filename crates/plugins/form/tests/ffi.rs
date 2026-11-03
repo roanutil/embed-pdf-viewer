@@ -252,6 +252,8 @@ impl epdf_plugin_form::ffi::FormFocusTarget for FocusTarget {
 #[test]
 fn a_native_focus_target_receives_selection_and_unregisters() {
     let (_thread, form) = handle();
+    let events = Arc::new(Events::default());
+    let _subscription = form.subscribe(events.clone());
     let target = Arc::new(FocusTarget(Mutex::new(Vec::new())));
     let widget = epdf_ffi::AnnotationRef::ObjectNumber {
         page: PageRef { page_object_number: 1 },
@@ -274,6 +276,7 @@ fn a_native_focus_target_receives_selection_and_unregisters() {
     ))
     .unwrap();
     assert_eq!(block_on(form.focused_field()).unwrap().unwrap().name, "name");
+    assert!(events.0.lock().unwrap().iter().any(|event|matches!(event,FormEvent::FocusChanged {field:Some(field),widget:Some(_)} if field.name=="name")));
     registration.unregister();
     assert!(!block_on(form.focus(reference, None)).unwrap());
 }

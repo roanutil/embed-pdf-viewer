@@ -241,3 +241,12 @@ mod tests {
         assert_eq!(merged["tools"], json!([2]));
     }
 }
+
+/// Who holds a document setting and the sentence its controls show.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingLock {
+    pub by: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason_key: Option<String>,
+}

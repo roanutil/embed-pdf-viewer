@@ -100,6 +100,12 @@ const MEMBERS: &[&str] = &[
     "notifyWidgetEvent",
     "resolveSubmitDataset",
     "commitScriptFormEffects",
+    "focus",
+    "focusNext",
+    "getFocusedField",
+    "onFocusChanged",
+    "moveInGroup",
+    "attachFocusTarget",
     "canRead",
     "canFill",
     "canDesign",
@@ -178,6 +184,28 @@ fn call_form(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     Ok(match method {
+        "focus" => Outcome::Returned(json!(cap.focus(&value(args, 0), arg(args, 1)))),
+        "focusNext" => Outcome::Returned(json!(cap.focus_next(arg(args, 0)))),
+        "getFocusedField" => Outcome::Returned(or_null(cap.get_focused_field().map(owned))),
+        "moveInGroup" => Outcome::Returned(json!(cap.move_in_group(
+            &value(args, 0),
+            arg(args, 1).and_then(Value::as_bool).unwrap_or(false)
+        ))),
+        "onFocusChanged" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |listener| cap.on_focus_changed(listener))
+        }
+        "attachFocusTarget" => {
+            let target = value(args, 1);
+            let callback = h.callback(target.get("focus").unwrap_or(&Value::Null));
+            let off = cap.attach_focus_target(
+                &value(args, 0),
+                Rc::new(move |select| {
+                    callback.call(vec![json!({"select":select})]);
+                }),
+            );
+            unsubscribe_ref(h, off)
+        }
         "getSettings" => Outcome::Returned((*cap.get_settings()).clone()),
         "updateSettings" => {
             cap.update_settings(&value(args, 0));

@@ -1034,12 +1034,23 @@ pub fn widget_at(
     best.map(|(hit, _)| hit)
 }
 
-/// `initialFormState()`: the session state is empty.
+/// `initialFormState()`: no widget has the cursor yet.
 pub fn initial_form_state() -> Value {
-    json!({})
+    json!({ "focused": null })
 }
 
 /// A fold or load error as the mirror reports it.
 pub fn decode_error(what: &str) -> Error {
     Error::new(format!("[form] {what}"))
+}
+
+/// Replace the focused widget without waking subscribers for an unchanged cursor.
+pub fn set_focused_widget(state: Rc<Value>, focused: Option<Value>) -> Rc<Value> {
+    let focused = focused.unwrap_or(Value::Null);
+    if state.get("focused") == Some(&focused) {
+        return state;
+    }
+    let mut next = (*state).clone();
+    next["focused"] = focused;
+    Rc::new(next)
 }

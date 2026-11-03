@@ -15,3 +15,5 @@ pub mod pictures;
 pub mod rights;
 pub mod scripting;
 pub mod siblings;
+
+pub mod cursor;

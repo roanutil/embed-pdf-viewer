@@ -32,7 +32,8 @@ use epdf_ui_core::shortcuts::{KeyStroke, ShortcutOptions, match_shortcut};
 use serde_json::Value;
 
 use crate::availability::{
-    is_turned_off, label_of, not_allowed_key_of, not_allowed_message, refusal_of,
+    is_turned_off, label_of, lock_of, locked_message, not_allowed_key_of, not_allowed_message,
+    refusal_of,
 };
 use crate::contract::{
     AccentDerivation, CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent,
@@ -454,7 +455,8 @@ impl CommandsCapability {
         let turned_off = is_turned_off(def, &self.current_settings());
         let not_allowed = if turned_off { None } else { not_allowed_key_of(def, &context) };
         let shown_when_not_allowed = self.current_settings().not_allowed == NotAllowedMode::Disable;
-        let ruled_out = turned_off || not_allowed.is_some();
+        let lock = if turned_off || not_allowed.is_some() { None } else { lock_of(def, &context) };
+        let ruled_out = turned_off || not_allowed.is_some() || lock.is_some();
         // A command that opens something is active while it's open, unless
         // it says otherwise.
         let active = match &def.active {
@@ -481,7 +483,7 @@ impl CommandsCapability {
             && derive(def.visible.as_ref(), &context, true);
         let disabled_reason = match &not_allowed {
             Some(key) if shown_when_not_allowed => Some(not_allowed_message(key, &label, &context)),
-            _ => None,
+            _ => lock.as_ref().map(|lock| locked_message(lock, &label, &context)),
         };
         let (accent_primary, accent_secondary) = match accent {
             Some(accent) => (accent.primary, accent.secondary),

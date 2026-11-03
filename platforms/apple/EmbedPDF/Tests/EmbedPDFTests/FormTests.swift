@@ -23,6 +23,32 @@ extension BaseSuite {
         })
     }
 
+    final class CursorTarget: FormFocusTarget, Sendable {
+      let selections = LockIsolated<[Bool]>([])
+      func focus(select: Bool) { selections.withValue { $0.append(select) } }
+    }
+
+    @Test func aMountedControlReceivesFocusAndUnregisters() async throws {
+      let (_, _, form) = try await opened()
+      let field = try await writableText(form)
+      let widget = try #require(field.widgets.first { $0.annotationRef != nil }?.annotationRef)
+      let target = CursorTarget()
+      let registration = try await form.attachFocusTarget(widget, target: target)
+      let events = form.events
+      #expect(try await form.focus(field.fieldRef, options: FormFocusOptions(select: true)))
+      expectNoDifference(target.selections.value, [true])
+      try await form.notifyWidgetEvent(field.fieldRef, widget: widget, event: .focus)
+      expectNoDifference(try await form.focusedField()?.fieldRef, field.fieldRef)
+      for await event in events {
+        guard case let .focusChanged(changed, current) = event else { continue }
+        expectNoDifference(changed?.fieldRef, field.fieldRef)
+        expectNoDifference(current, widget)
+        break
+      }
+      registration.unregister()
+      #expect(try await !form.focus(field.fieldRef))
+    }
+
     @Test func fieldsListWithTypedDetail() async throws {
       let (_, _, form) = try await opened()
       let status = try await form.status()

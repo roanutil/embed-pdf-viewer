@@ -143,6 +143,13 @@ impl crate::controller::Core {
         annotation: &Value,
         event: PdfAnnotationEventKind,
     ) -> Result<(), Error> {
+        if event == PdfAnnotationEventKind::Focus || event == PdfAnnotationEventKind::Blur {
+            self.note_widget_focus(
+                if event == PdfAnnotationEventKind::Focus { "focus" } else { "blur" },
+                field,
+                annotation,
+            );
+        }
         let Some(actions) = self.actions() else { return Ok(()) };
         let page = page_of_ref(annotation)?;
         let source = widget_source(field, annotation, page);

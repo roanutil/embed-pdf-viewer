@@ -155,6 +155,10 @@ pub struct CommandDef {
     pub allowed: Option<Derivation>,
     /// The key of the sentence that says why `allowed` refused it.
     pub not_allowed_key: Option<String>,
+    /// The lock on the setting this command changes. A failed check counts as unlocked.
+    pub locked: Option<
+        Rc<dyn Fn(&CommandCtx) -> Result<Option<epdf_kernel::settings::SettingLock>, Error>>,
+    >,
     /// Opens and closes a menu of yours.
     pub menu: Option<String>,
     /// Opens and closes a panel.
@@ -195,6 +199,7 @@ impl CommandDef {
             && self.requires == other.requires
             && same(&self.allowed, &other.allowed)
             && self.not_allowed_key == other.not_allowed_key
+            && same(&self.locked, &other.locked)
             && self.menu == other.menu
             && self.panel == other.panel
             && self.modal == other.modal
@@ -342,6 +347,7 @@ pub fn unregistered_command(id: &str) -> ResolvedCommand {
 pub enum RefusalReason {
     TurnedOff,
     NotAllowed,
+    Locked,
 }
 
 /// `CommandRefusal`.

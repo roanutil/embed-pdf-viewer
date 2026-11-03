@@ -94,6 +94,13 @@ impl Core {
         self.cx.cleanup_fn(move || off());
         let me = self.weak();
         let reader: FormReader = Rc::new(move || me.upgrade().and_then(|core| core.get_snapshot()));
+        let focus_core = self.weak();
+        let off = actions.register_form_focus(Rc::new(move |name| {
+            focus_core
+                .upgrade()
+                .is_some_and(|core| core.focus(&crate::engine::to_field_ref(name), None))
+        }));
+        self.cx.cleanup_fn(move || off());
         let off = actions.register_form_reader(reader);
         self.cx.cleanup_fn(move || off());
         let me = self.weak();

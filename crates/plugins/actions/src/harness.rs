@@ -382,6 +382,7 @@ const MEMBERS: &[&str] = &[
     "registerAnnotCommitSink",
     "registerFormCommitSink",
     "registerFormReader",
+    "registerFormFocus",
     "setSubmitHandler",
     "registerSubmitResolver",
     "isScriptingEnabled",
@@ -525,6 +526,18 @@ fn call_actions(
             )
         }
         "registerFormReader" => disposer_ref(h, cap.register_form_reader(form_reader(callback(0)))),
+        "registerFormFocus" => {
+            let callback = callback(0);
+            disposer_ref(
+                h,
+                cap.register_form_focus(Rc::new(move |name| {
+                    match callback.call(vec![json!(name)]) {
+                        Answer::Returns(value) => value.as_bool().unwrap_or(false),
+                        _ => false,
+                    }
+                })),
+            )
+        }
         "surfaceScriptResult" => match cap.surface_script_result(&decoded(args, 0)?) {
             Ok(()) => Outcome::undefined(),
             Err(error) => Outcome::Threw(error),

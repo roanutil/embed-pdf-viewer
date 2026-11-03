@@ -1364,3 +1364,6 @@ mod tests {
         assert!(reordered_list(&order, &[json!("x")], &json!("end"), &key).is_err());
     }
 }
+
+mod tab_order;
+pub use tab_order::{compare_structure_positions, tab_order_of};

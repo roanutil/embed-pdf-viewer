@@ -63,6 +63,13 @@ impl CommandRunner for Runner {
         }
     }
 
+    fn locked(
+        &self,
+        _context: CommandContext,
+    ) -> Result<Option<epdf_plugin_commands::ffi::CommandSettingLock>, HostError> {
+        Ok(None)
+    }
+
     fn icon_accent(&self, _context: CommandContext) -> Result<Option<IconAccent>, HostError> {
         Ok(Some(IconAccent { primary: Some("#f00".into()), secondary: None }))
     }

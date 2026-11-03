@@ -48,6 +48,15 @@ pub enum CommandHook {
     Active,
     Visible,
     IconAccent,
+    Locked,
+}
+
+/// Who holds the setting a native command changes and its translated sentence key.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct CommandSettingLock {
+    pub by: String,
+    #[uniffi(default = None)]
+    pub reason_key: Option<String>,
 }
 
 /// A shell surface the command toggles, optionally exclusive within a tag;
@@ -90,6 +99,8 @@ pub trait CommandRunner: Send + Sync {
     /// `hook` is `Enabled`, `Active` or `Visible`.
     fn derive(&self, context: CommandContext, hook: CommandHook) -> Result<bool, HostError>;
     fn icon_accent(&self, context: CommandContext) -> Result<Option<IconAccent>, HostError>;
+    /// A failed check counts as unlocked, like a TypeScript callback that throws.
+    fn locked(&self, context: CommandContext) -> Result<Option<CommandSettingLock>, HostError>;
 }
 
 /// The answer to one `CommandRunner::run`. The first call wins; dropping it
@@ -203,6 +214,20 @@ impl CommandDefinition {
                 runner.icon_accent(context(&id, ctx)).map_err(Error::from)
             }));
         }
+        if hooks.contains(&CommandHook::Locked) {
+            let (runner, id) = (runner.clone(), id.clone());
+            def.locked = Some(Rc::new(move |ctx| {
+                runner
+                    .locked(context(&id, ctx))
+                    .map(|lock| {
+                        lock.map(|lock| epdf_kernel::settings::SettingLock {
+                            by: lock.by,
+                            reason_key: lock.reason_key,
+                        })
+                    })
+                    .map_err(Error::from)
+            }));
+        }
         if hooks.contains(&CommandHook::Run) {
             let (runner, id) = (runner.clone(), id.clone());
             def.run = Some(Rc::new(move |ctx: &CommandCtx| {
@@ -307,6 +332,7 @@ impl From<CommandKeyStroke> for KeyStroke {
 pub enum CommandRefusalReason {
     TurnedOff,
     NotAllowed,
+    Locked,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
@@ -321,6 +347,7 @@ impl From<CommandRefusal> for CommandRefusalInfo {
             reason: match refusal.reason {
                 RefusalReason::TurnedOff => CommandRefusalReason::TurnedOff,
                 RefusalReason::NotAllowed => CommandRefusalReason::NotAllowed,
+                RefusalReason::Locked => CommandRefusalReason::Locked,
             },
             message: refusal.message,
         }

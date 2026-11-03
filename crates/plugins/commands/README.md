@@ -95,3 +95,14 @@ the scoped view are not exposed yet.
 The coverage figure and the mutation results this README recorded before Task 13.29 measured the
 old reducer port. Neither was rerun for this port. Task 14's changed lines (`4a0b9c126..172f5369d`) were
 run in-diff on 2026-10-27: 17 of 17 viable mutants caught (1 unviable).
+
+## Settings held by a lock
+
+A commands `locked` callback returns the `SettingLock` on the setting it changes, or no lock.
+The lock disables the command while preserving its active value and visibility, including when
+`notAllowed` hides permission refusals. Its sentence uses `reason_key`, falling back through
+`commands.locked.default` to the commands label. A callback error counts as unlocked.
+
+Refusal precedence is turned off, then not allowed, then locked. These checks also prevent
+execution. The shared lock record lives in `epdf_kernel::settings`; the Stage re-exports it so its
+existing Rust API keeps the same path.

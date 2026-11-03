@@ -317,6 +317,10 @@ pub struct ScriptInput {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum ScriptUiEffect {
+    /// Ask the form plugin to put the cursor in the named field.
+    FocusField {
+        field: String,
+    },
     Alert {
         message: String,
         icon: f64,
@@ -348,6 +352,7 @@ impl ScriptUiEffect {
         match self {
             ScriptUiEffect::Alert { .. } => "alert",
             ScriptUiEffect::Print => "print",
+            ScriptUiEffect::FocusField { .. } => "focusField",
             ScriptUiEffect::GotoPage { .. } => "gotoPage",
             ScriptUiEffect::SubmitForm { .. } => "submitForm",
         }

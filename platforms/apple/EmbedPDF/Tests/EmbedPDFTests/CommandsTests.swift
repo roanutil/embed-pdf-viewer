@@ -11,6 +11,28 @@ extension BaseSuite {
       return (viewer, try await viewer.commands())
     }
 
+    @Test func aSettingLockDisablesAndReportsItsRefusalUntilReleased() async throws {
+      let (_, commands) = try await started()
+      let held = LockIsolated(true)
+      let ran = LockIsolated(0)
+      let handler = CommandHandler(
+        run: { _ in ran.withValue { $0 += 1 } },
+        active: { _ in true },
+        locked: { _ in held.value ? CommandSettingLock(by: "kiosk", reasonKey: nil) : nil }
+      )
+      _ = try await commands.register(CommandDefinition(
+        id: "view:single", labelKey: "Single page", shortcuts: ["Ctrl+L"], handler: handler))
+      let locked = try #require(try await commands.resolve("view:single"))
+      #expect(locked.visible && locked.active && !locked.enabled)
+      let match = try await commands.matchStroke(CommandKeyStroke(key: "l", ctrl: true), isMac: false)
+      expectNoDifference(match?.refusal?.reason, .locked)
+      expectNoDifference(try await commands.execute("view:single"), .rejected(reason: .disabled))
+      expectNoDifference(ran.value, 0)
+      held.withValue { $0 = false }
+      expectNoDifference(try await commands.execute("view:single"), .executed)
+      expectNoDifference(ran.value, 1)
+    }
+
     @Test func aSwiftCommandRunsAsync() async throws {
       let (_, commands) = try await started()
       let ran = LockIsolated<[String]>([])
