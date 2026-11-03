@@ -24,8 +24,8 @@
 use crate::auth::scope::{
     Capabilities, CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight,
     FieldRights, FieldWriteAction, IdentityClaims, InvalidScope, ParsedScope, PdfBits,
-    check_any_field_action, check_capability, check_collab, check_field_action, check_set_group,
-    expanded_capabilities, field_rights_of, parse_all,
+    check_any_field_action, check_capability, check_collab, check_field_action,
+    check_plugin_permission, check_set_group, expanded_capabilities, field_rights_of, parse_all,
 };
 use crate::error::EngineError;
 use crate::features::signature::protection::protected_capabilities;
@@ -151,6 +151,15 @@ impl SessionAuthority {
             },
             "protection": self.protection,
         })
+    }
+
+    /// Whether the scope holds a plugin's permission: names it, or holds
+    /// `*` (`checkPluginPermission(permission, rawScope, new Set([permission]))`,
+    /// as `LocalDocumentSecurityService.allows` asks it). The core grants no
+    /// capability for one; the plugin checks its own.
+    pub fn allows_plugin_permission(&self, permission: &str) -> bool {
+        let installed = std::collections::BTreeSet::from([permission.to_string()]);
+        check_plugin_permission(permission, &self.scope, &installed)
     }
 
     pub fn allows(&self, capability: DocCapability) -> bool {
