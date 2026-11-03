@@ -100,6 +100,12 @@ impl PageMirrorCell {
         Value::Object(cells)
     }
 }
+/// A page read on its way: at once, or once the engine has a pending page.
+enum Read {
+    Now(Promise<Value>),
+    Wait(Promise<Option<Value>>),
+}
+
 fn key(page: &Value) -> String {
     format!("obj:{}", page["objectNumber"])
 }
@@ -226,6 +232,55 @@ impl PageMirror {
             self.0.version.set(self.0.version.get() + 1);
         }
     }
+    /// `whenHeld(page)`: resolves once the engine has a pending page
+    /// (`true`), or once the user no longer sees it or the mirror closed
+    /// (`false`).
+    fn when_held(&self, page: &Value) -> Promise<bool> {
+        let (promise, resolver) = Promise::pending();
+        let resolver = Rc::new(RefCell::new(Some(resolver)));
+        let off: Rc<RefCell<Option<Rc<dyn Fn()>>>> = Rc::default();
+        let done = {
+            let (resolver, off) = (resolver.clone(), off.clone());
+            Rc::new(move |held: bool| {
+                if let Some(stop) = off.borrow_mut().take() {
+                    stop();
+                }
+                if let Some(resolver) = resolver.borrow_mut().take() {
+                    resolver.settle(Ok(held));
+                }
+            })
+        };
+        let pages = self.0.env.pages.clone();
+        let (watched, finish) = (page.clone(), done.clone());
+        let stop = self.0.env.pages.clone().on_change(Rc::new(move || {
+            if pages.pending(&watched).is_none() {
+                finish(pages.has(&watched));
+            }
+        }));
+        *off.borrow_mut() = Some(stop);
+        let closed = done.clone();
+        self.0.env.lifetime.on_abort(Rc::new(move |_| closed(false)));
+        promise
+    }
+
+    /// `read(page)`: read the page; one a pending change makes once the
+    /// engine has it. `Wait` answers `None` for `GONE`: the page went first.
+    fn read(&self, page: &Value) -> Read {
+        let load = self.0.spec.load.clone();
+        let (doc, lifetime) = (self.0.env.doc.clone(), self.0.env.lifetime.clone());
+        if self.0.env.pages.pending(page).is_none() {
+            return Read::Now(load(doc, page.clone(), lifetime));
+        }
+        let held = self.when_held(page);
+        let page = page.clone();
+        Read::Wait(Promise::spawn(async move {
+            if !held.reaction().await? {
+                return Ok(None);
+            }
+            load(doc, page, lifetime).reaction().await.map(Some)
+        }))
+    }
+
     fn load(&self, page: Value) -> Promise<()> {
         let k = key(&page);
         let epoch = self.bump(&k);
@@ -240,20 +295,27 @@ impl PageMirror {
                 }),
             );
         }
-        let call =
-            (self.0.spec.load)(self.0.env.doc.clone(), page.clone(), self.0.env.lifetime.clone());
+        let call = self.read(&page);
         let (promise, resolver) = Promise::pending();
         self.0.running.borrow_mut().insert(k.clone(), promise.clone());
         let this = self.clone();
         let own = promise.clone();
         rt::spawn(async move {
-            let result = call.reaction().await;
+            let result = match call {
+                Read::Now(call) => call.reaction().await.map(Some),
+                Read::Wait(call) => call.reaction().await,
+            };
             let current = this.live() && this.0.epochs.borrow().get(&k) == Some(&epoch);
             let result = if !current {
                 Ok(())
             } else {
                 match result {
-                    Ok(value) => {
+                    // The page went before the engine had it: nothing to read.
+                    Ok(None) => {
+                        this.write(k.clone(), None);
+                        Ok(())
+                    }
+                    Ok(Some(value)) => {
                         let previous = this.get(&page);
                         let next = Rc::new(value);
                         this.write(

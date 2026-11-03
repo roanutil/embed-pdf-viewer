@@ -196,6 +196,9 @@ struct Session {
     changes_seen: Cell<u64>,
     burst: RefCell<Option<(String, crate::store::StoreHold)>>,
     changes: crate::changes::DocumentChanges,
+    /// The document's pages as the user sees them: the engine's, with the
+    /// pending page changes on top.
+    page_view: crate::page_view::PageView,
     mirror_starts: RefCell<Vec<(String, Rc<dyn Fn()>)>>,
     constructing: RefCell<Vec<*const PluginDef>>,
     id: RefCell<String>,
@@ -246,6 +249,9 @@ impl SessionView for Session {
 
     fn changes(&self) -> crate::changes::DocumentChanges {
         self.changes.clone()
+    }
+    fn page_view(&self) -> crate::page_view::PageView {
+        self.page_view.clone()
     }
     fn add_mirror(&self, id: &str, start: Rc<dyn Fn()>) {
         self.mirror_starts.borrow_mut().push((id.into(), start));
@@ -405,12 +411,24 @@ fn is_abort_like(error: &Error) -> bool {
     error.is_abort()
 }
 
-fn layout_from_event(event: &Value) -> Option<&Value> {
-    match event.get("type").and_then(Value::as_str)? {
-        "pages.reordered" | "pages.rotated" | "pages.deleted" | "pages.inserted"
-        | "pages.restored" => event.get("layout"),
-        _ => None,
+/// `pageMetaOf(meta, view)`: `meta` with the pages a page view shows; its
+/// revision moves when the pages do. The same `meta` when nothing moved.
+fn page_meta_of(meta: &Rc<DocumentMeta>, view: &crate::page_view::View) -> Rc<DocumentMeta> {
+    if Rc::ptr_eq(&meta.pages, &view.pages)
+        && Rc::ptr_eq(&meta.page_labels, &view.labels)
+        && Rc::ptr_eq(&meta.pending_pages, &view.pending)
+    {
+        return meta.clone();
     }
+    let moved = !Rc::ptr_eq(&meta.pages, &view.pages);
+    Rc::new(DocumentMeta {
+        page_count: view.pages.as_array().map_or(0, |pages| pages.len() as u32),
+        pages: view.pages.clone(),
+        page_labels: view.labels.clone(),
+        pending_pages: view.pending.clone(),
+        revision: if moved { meta.revision + 1 } else { meta.revision },
+        ..(**meta).clone()
+    })
 }
 
 fn id_of_input(input: &Value) -> Option<String> {
@@ -458,6 +476,9 @@ impl Inner {
         let session = Rc::new_cyclic(|weak: &Weak<Session>| {
             let w = weak.clone();
             let store = Rc::downgrade(&self.store);
+            // What the queue stages shows in the page list before anything
+            // else hears of it.
+            let (kernel, shown) = (self.this.clone(), weak.clone());
             let changes = crate::changes::DocumentChanges::new(
                 Rc::new(move |change, options| match w.upgrade().and_then(|s| s.handle()) {
                     Some(handle) => handle.call("apply", None, vec![change, options]),
@@ -470,13 +491,18 @@ impl Inner {
                     )),
                 }),
                 Rc::new(move || {
+                    if let (Some(kernel), Some(session)) = (kernel.upgrade(), shown.upgrade()) {
+                        kernel.refresh_pages(&session);
+                    }
                     if let Some(store) = store.upgrade() {
                         store.notify();
                     }
                 }),
                 self.report.clone(),
             );
+            let page_view = crate::page_view::PageView::new(changes.clone(), self.report.clone());
             Session {
+                page_view,
                 change_count: Cell::new(0),
                 settle_flushes: Rc::default(),
                 download_wraps: Rc::default(),
@@ -840,7 +866,11 @@ impl Inner {
         if let Some((_, _, hold)) = recorded {
             *session.held.borrow_mut() = hold;
         }
-        let meta = session.staged_meta().expect("staged meta");
+        self.refresh_view(session);
+        let meta = page_meta_of(
+            &session.staged_meta().expect("staged meta"),
+            &session.page_view.current(),
+        );
         let id = session.id();
         self.set_core(
             |core| {
@@ -853,6 +883,49 @@ impl Inner {
         self.events.opened.emit(&serde_json::json!({
             "documentId": id,
             "info": serde_json::to_value(DocInfo::from_meta(&meta)).unwrap_or(Value::Null),
+        }));
+    }
+
+    /// `session.pageView.refresh()` where nothing reads the new view: a
+    /// failure is reported.
+    fn refresh_view(&self, session: &Session) -> Option<crate::page_view::View> {
+        match session.page_view.refresh() {
+            Ok(view) => view,
+            Err(error) => {
+                (self.report)(&error);
+                None
+            }
+        }
+    }
+
+    /// `refreshPages(session)`: show the document's pages as its page view
+    /// has them now, after each of the engine's events, and each time a
+    /// change is staged or answered. `pagesChanged` tells when the pages
+    /// moved, not when only which of them the engine has did.
+    fn refresh_pages(&self, session: &Session) {
+        let Some(view) = self.refresh_view(session) else { return };
+        let id = session.id();
+        // Not published yet (commitReady publishes the view), or closed.
+        let Some(existing) = self.store.core().documents.get(&id).cloned() else { return };
+        let updated = page_meta_of(&existing, &view);
+        if Rc::ptr_eq(&updated, &existing) {
+            return;
+        }
+        let moved = !Rc::ptr_eq(&updated.pages, &existing.pages);
+        let (revision, pages) = (updated.revision, updated.pages.clone());
+        self.set_core(
+            |core| {
+                core.documents.insert(id.clone(), updated);
+            },
+            &core_action(CORE_DOCUMENT_PAGES_UPDATED),
+        );
+        if !moved {
+            return;
+        }
+        self.events.pages_changed.emit(&serde_json::json!({
+            "documentId": id,
+            "revision": revision,
+            "pages": pages,
         }));
     }
 
@@ -1521,14 +1594,19 @@ impl Inner {
         }
         Self::checkpoint(&session)?;
         let page_count = snapshot.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32;
+        session.page_view.set_engine_pages(&snapshot);
+        // `session.pageView.refresh()` throws out of bringUp, as there.
+        session.page_view.refresh()?;
+        let view = session.page_view.current();
         *session.staged_meta.borrow_mut() = Some(Rc::new(DocumentMeta {
             id: session.id(),
             instance_id: session.instance_id.clone(),
             name: session.name.borrow().clone(),
             page_count,
             has_unsaved_changes: false,
-            // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
-            pages: Rc::new(snapshot.get("pages").cloned().unwrap_or_else(crate::undefined)),
+            pages: view.pages,
+            page_labels: view.labels,
+            pending_pages: crate::page_view::no_pending_pages(),
             revision: 0,
             render_policy,
         }));
@@ -1578,32 +1656,16 @@ impl Inner {
                     this.set_unsaved_changes(&session, true);
                 }
             }
-            let Some(layout) = layout_from_event(event) else {
-                return;
-            };
-            let id = session.id();
-            let core = this.store.core();
-            let Some(existing) = core.documents.get(&id).cloned() else {
-                return;
-            };
-            let updated = DocumentMeta {
-                page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
-                pages: Rc::new(layout.get("pages").cloned().unwrap_or_else(crate::undefined)),
-                revision: existing.revision + 1,
-                ..(*existing).clone()
-            };
-            let (revision, pages) = (updated.revision, updated.pages.clone());
-            this.set_core(
-                |core| {
-                    core.documents.insert(id.clone(), Rc::new(updated));
-                },
-                &core_action(CORE_DOCUMENT_PAGES_UPDATED),
-            );
-            this.events.pages_changed.emit(&serde_json::json!({
-                "documentId": id,
-                "revision": revision,
-                "pages": pages,
-            }));
+            // Page mutation events (rotate, move, delete, insert, restore)
+            // carry the engine's pages, the same list pages.list() returns,
+            // so they replace the engine's pages whole; the page view
+            // replays the pending changes on top. Own and remote
+            // (collaborator) mutations arrive alike.
+            if let Some(layout) = crate::page_view::layout_from_event(event) {
+                session.page_view.set_engine_pages(layout);
+            }
+            session.page_view.fold(event);
+            this.refresh_pages(&session);
         }));
         session.scope.defer_fn(move || unsubscribe.call());
 

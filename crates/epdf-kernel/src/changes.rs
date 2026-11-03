@@ -399,14 +399,13 @@ impl ChangeQueue {
         }
         result
     }
+    /// `takeObjectNumber()`: the handle's pool, open or not; the change
+    /// that names the number is what a closed queue refuses.
     pub fn take_object_number(&self) -> Result<Option<u32>, Error> {
-        self.assert_open()?;
         (self.changes.0.take.borrow())().map_err(|e| to_plugin_error(&self.capability, &e))
     }
+    /// `reserveObjectNumbers(count)`: as `takeObjectNumber`, no open check.
     pub fn reserve_object_numbers(&self, count: u32) -> Promise<()> {
-        if let Err(e) = self.assert_open() {
-            return Promise::rejected(e);
-        }
         let call = (self.changes.0.reserve.borrow())(count);
         let capability = self.capability.clone();
         Promise::spawn(async move { call.await.map_err(|e| to_plugin_error(&capability, &e)) })
