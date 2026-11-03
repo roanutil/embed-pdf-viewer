@@ -82,7 +82,8 @@ extension BaseSuite {
 
     @Test func aThumbnailAndABatchRender() async throws {
       let (viewer, document, page, render) = try await opened()
-      expectNoDifference(try await render.canRenderThumbnail(), true)
+      let canRenderThumbnail = try await render.canRenderThumbnail()
+      expectNoDifference(canRenderThumbnail, true)
       let thumbnail = try await render.renderThumbnail(page)
       // The whole page, 512 pixels on its long side.
       expectNoDifference(max(thumbnail.width, thumbnail.height), 512)
