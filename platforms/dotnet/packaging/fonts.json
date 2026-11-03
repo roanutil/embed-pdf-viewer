@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "fonts": [],
+  "limitations": [
+    "No configured fallback fonts. Packaging smoke is not browser geometry parity."
+  ]
+}
