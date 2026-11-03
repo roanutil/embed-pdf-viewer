@@ -676,6 +676,7 @@ pub fn change_op_in_file_space(
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
         | ChangeOp::PagesInsert { .. }
+        | ChangeOp::PagesCopy { .. }
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
@@ -781,6 +782,9 @@ pub fn change_item_in_page_space(
         }
         ChangeItem::PagesInsert { inserted_pages, layout, meta } => {
             Ok(ChangeItem::PagesInsert { inserted_pages, layout: page_layout_value(layout)?, meta })
+        }
+        ChangeItem::PagesCopy { inserted_pages, layout, meta } => {
+            Ok(ChangeItem::PagesCopy { inserted_pages, layout: page_layout_value(layout)?, meta })
         }
         ChangeItem::PagesRestore { pages, layout, meta } => {
             Ok(ChangeItem::PagesRestore { pages, layout: page_layout_value(layout)?, meta })

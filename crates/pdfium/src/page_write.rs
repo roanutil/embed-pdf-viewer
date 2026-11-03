@@ -244,6 +244,19 @@ impl Document {
         }
     }
 
+    /// A new document with no pages (`FPDF_CreateNewDocument`), closed on
+    /// drop: the scratch a copy of this document's own pages goes out to.
+    pub fn new_scratch(&self) -> Result<Document, PdfiumError> {
+        // SAFETY: no arguments; a null return is the documented failure.
+        let handle = unsafe { pdfium_sys::FPDF_CreateNewDocument() };
+        if handle.is_null() {
+            return Err(PdfiumError::Load);
+        }
+        // SAFETY: a non-null handle of a document of its own, closed once,
+        // by the wrapper this returns.
+        Ok(unsafe { Document::from_raw_layer(handle, self.library()) })
+    }
+
     /// The top-level form fields [`Document::import_pages`] would bring
     /// with the pages at `indices` of this document (empty: every page), by
     /// the object numbers of their dictionaries, in the order the import

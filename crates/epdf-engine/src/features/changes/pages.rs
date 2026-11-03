@@ -300,7 +300,7 @@ pub fn insert_blank_pages(
         object_numbers,
         ctx.cancel,
     )?;
-    let (item, reverse) = inserted(ctx, result, &found, None)?;
+    let (item, reverse) = inserted(ctx, InsertKind::Blank, result, &found, None)?;
     Ok(Done { item, reverse })
 }
 
@@ -322,7 +322,31 @@ pub fn insert_pages(
         object_numbers,
         ctx.cancel,
     )?;
-    let (item, reverse) = inserted(ctx, result, &found, Some(&fields_before[..]))?;
+    let (item, reverse) =
+        inserted(ctx, InsertKind::Insert, result, &found, Some(&fields_before[..]))?;
+    Ok(Done { item, reverse })
+}
+
+/// `pages.copy`; its reverse deletes the copies while nobody changed them,
+/// with the form fields they brought (`copyPages`).
+pub fn copy_pages(
+    ctx: &mut ChangeContext<'_>,
+    pages: &[PageRef],
+    position: Option<&PagePosition>,
+    object_numbers: Option<&[serde_json::Number]>,
+) -> Result<Done, EngineError> {
+    authorize(ctx)?;
+    let found = labels_of(ctx)?;
+    let fields_before = super::forms::field_numbers_of(ctx)?;
+    let result = mutator::copy_pages(
+        ctx.session,
+        pages,
+        position.unwrap_or(&ListPosition::End(End::End)),
+        object_numbers,
+        ctx.cancel,
+    )?;
+    let (item, reverse) =
+        inserted(ctx, InsertKind::Copy, result, &found, Some(&fields_before[..]))?;
     Ok(Done { item, reverse })
 }
 
@@ -332,11 +356,11 @@ pub fn insert_pages(
 /// may bring form fields, which its reverse deletes with them.
 fn inserted(
     ctx: &mut ChangeContext<'_>,
+    kind: InsertKind,
     result: PageInsertResult,
     found: &[PageLabelSection],
     fields_before: Option<&[u32]>,
 ) -> Result<(ChangeItem, Vec<ReverseStep>), EngineError> {
-    let copied = fields_before.is_some();
     let fields: Vec<u32> = match fields_before {
         Some(before) => super::forms::field_numbers_of(ctx)?
             .into_iter()
@@ -351,16 +375,20 @@ fn inserted(
     let labels = relabel(ctx, found, &sections_after_insert(found, at, pages.len() as u32))?;
     let layout = layout_after(ctx, labels.as_ref(), &result.layout)?;
     let reverse = vec![remove_step_of(ctx, &pages, labels, fields)?];
-    let item = if copied {
-        ChangeItem::PagesInsert { inserted_pages: result.inserted_pages, layout, meta: result.meta }
-    } else {
-        ChangeItem::PagesInsertBlank {
-            inserted_pages: result.inserted_pages,
-            layout,
-            meta: result.meta,
-        }
+    let (inserted_pages, meta) = (result.inserted_pages, result.meta);
+    let item = match kind {
+        InsertKind::Blank => ChangeItem::PagesInsertBlank { inserted_pages, layout, meta },
+        InsertKind::Insert => ChangeItem::PagesInsert { inserted_pages, layout, meta },
+        InsertKind::Copy => ChangeItem::PagesCopy { inserted_pages, layout, meta },
     };
     Ok((item, reverse))
+}
+
+/// Which insert an item answers.
+enum InsertKind {
+    Blank,
+    Insert,
+    Copy,
 }
 
 /// Deletes `pages`, in display order, each captured first so its restore

@@ -402,6 +402,66 @@ pub fn insert_pages(
     Ok(result)
 }
 
+/// `PagesInserter.copy`: the document's pages `pages`, in that order (a
+/// page named twice is copied twice), copied to `position`. The pages go
+/// out into a scratch document with the form fields of their widgets, those
+/// fields' names are kept apart from the document's there, as an insert's
+/// are ([`keep_field_names_apart`]), and the copies come back in, each at
+/// the number `object_numbers` gives it when it gives one. The scratch
+/// document stays open until the session closes: the copies may still read
+/// streams through it, as an insert's do through its source.
+pub fn copy_pages(
+    session: &mut DocumentSession,
+    pages: &[PageRef],
+    position: &PagePosition,
+    object_numbers: Option<&[serde_json::Number]>,
+    cancel: &CancelToken,
+) -> Result<PageInsertResult, EngineError> {
+    cancel.check()?;
+    if pages.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "pages.copy requires at least one page",
+        ));
+    }
+    // NotFound for a page the document doesn't have.
+    let indices = resolve_page_refs(session, pages)?
+        .into_iter()
+        .map(|page| Ok(session.record_by_object_number(page)?.page_index as i32))
+        .collect::<Result<Vec<i32>, EngineError>>()?;
+    let total = session.document()?.document().page_count();
+    let at = page_index_at(session, position, total)?;
+    let scratch = session.document()?.document().new_scratch().map_err(|_| {
+        EngineError::with_message(EngineErrorCode::Unknown, "FPDF_CreateNewDocument failed")
+    })?;
+    if !scratch.import_pages(session.document()?.document(), &indices, 0, None) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!(
+                "EPDFDoc_ImportPages rejected copying pages [{}] out",
+                indices.iter().map(i32::to_string).collect::<Vec<_>>().join(",")
+            ),
+        ));
+    }
+    keep_field_names_apart(session, &scratch)?;
+    let count = indices.len() as u32;
+    let numbers = claim_numbers(session, "pages.copy", object_numbers, count)?;
+    if !session.document()?.document().import_pages(&scratch, &[], at as i32, numbers.as_deref()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("EPDFDoc_ImportPages rejected the pages.copy at index {at}"),
+        ));
+    }
+    session.retain_until_close(move || drop(scratch));
+    session.refresh_page_registry()?;
+    let result = read_inserted(session, at, count, cancel)?;
+    let document = session.document()?.document();
+    for (offset, page) in result.inserted_pages.iter().enumerate() {
+        promote_inline_annotations(document, at + offset as u32, page.object_number())?;
+    }
+    Ok(result)
+}
+
 /// `importInto`'s numbers: one per copied page (`InvalidArg` naming
 /// `objectNumbers` otherwise), each claimed from what the session holds.
 fn claim_numbers(

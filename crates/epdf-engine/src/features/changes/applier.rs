@@ -438,6 +438,9 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
             position.as_ref(),
             object_numbers.as_deref(),
         ),
+        ChangeOp::PagesCopy { pages, position, object_numbers } => {
+            super::pages::copy_pages(ctx, pages, position.as_ref(), object_numbers.as_deref())
+        }
         ChangeOp::FormsSetValue { field, value, expect } => {
             super::forms::set_value(ctx, field, value, expect.as_ref(), at)
         }

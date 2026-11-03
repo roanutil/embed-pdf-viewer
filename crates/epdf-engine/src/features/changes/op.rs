@@ -151,6 +151,19 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         object_numbers: Option<Vec<serde_json::Number>>,
     },
+    /// A copy of each of `pages`, in the order given, at `position` (the end
+    /// when left out), each at the number `objectNumbers` gives it, in
+    /// order, when it gives one. The copies bring the pages' annotations,
+    /// and their form fields as fields of their own (a name the document
+    /// uses gets a free one, as an insert's do).
+    #[serde(rename = "pages.copy", rename_all = "camelCase")]
+    PagesCopy {
+        pages: Vec<PageRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<crate::features::pages_write::PagePosition>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_numbers: Option<Vec<serde_json::Number>>,
+    },
     /// A bundle's annotations, created as one change (`AnnotationImportOp`).
     /// Only its verb, `annotations.import`, and a server's change make one:
     /// `document.apply` takes no import ([`assert_no_import`]). The bundle
@@ -573,6 +586,7 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::PagesReorder { .. }
             | ChangeOp::PagesDelete { .. }
             | ChangeOp::PagesInsertBlank { .. }
+            | ChangeOp::PagesCopy { .. }
             | ChangeOp::FormsSetValue { .. }
             | ChangeOp::FormsSetDisplay { .. }
             | ChangeOp::FormsSetAppearanceText { .. }
@@ -635,6 +649,7 @@ impl ChangeOp {
             Self::PagesDelete { .. } => "pages.delete",
             Self::PagesInsertBlank { .. } => "pages.insertBlank",
             Self::PagesInsert { .. } => "pages.insert",
+            Self::PagesCopy { .. } => "pages.copy",
             Self::AnnotationsImport { .. } => "annotations.import",
             Self::FormsImport { .. } => "forms.import",
             Self::FormsImportValues { .. } => "forms.importValues",
@@ -758,6 +773,7 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
         | ChangeOp::PagesInsert { .. }
+        | ChangeOp::PagesCopy { .. }
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
@@ -955,6 +971,7 @@ mod tests {
             "pages.delete",
             "pages.insertBlank",
             "pages.insert",
+            "pages.copy",
             "forms.setValue",
             "forms.setDisplay",
             "forms.setAppearanceText",
