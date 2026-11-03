@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   acquireRunLock,
   checkedGroupAlive,
@@ -354,3 +355,34 @@ test('read-only surveys stay outside the caller writer group', () => {
   assert(inspections.length > 0);
   assert(inspections.every((row) => row.pgid !== mine.pgid));
 });
+
+test('same-owner lock release succeeds on the publish filesystem', () => {
+  const cache = fileURLToPath(new URL('../../packages/engine/runtime/.cache/', import.meta.url));
+  mkdirSync(cache, { recursive: true });
+  const dir = mkdtempSync(path.join(cache, 'publish-lock-'));
+  try {
+    for (let index = 0; index < 10; index++) {
+      const parent = path.join(dir, String(index));
+      mkdirSync(parent);
+      const lock = path.join(parent, 'lock');
+      const release = acquireRunLock(lock);
+      release();
+      assert.equal(existsSync(lock), false);
+      assert.equal(existsSync(lock + '.gate'), false);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('release preserves a replacement token even with the same PID and birth', () =>
+  temporary((dir) => {
+    const lock = path.join(dir, 'lock');
+    const release = acquireRunLock(lock);
+    const owner = JSON.parse(readFileSync(lock, 'utf8'));
+    owner.token = 'replacement-owner';
+    const replacement = JSON.stringify(owner);
+    writeFileSync(lock, replacement);
+    release();
+    assert.equal(readFileSync(lock, 'utf8'), replacement);
+  }));

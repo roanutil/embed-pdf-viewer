@@ -88,7 +88,6 @@ export function checkedGroupAlive(rows, record) {
   return false;
 }
 
-const sameFile = (left, right) => left.dev === right.dev && left.ino === right.ino;
 const readOwner = (file) => {
   try {
     const stat = lstatSync(file);
@@ -111,12 +110,13 @@ const readOwner = (file) => {
 function withAcquisitionGate(lock, text, action) {
   const candidate = `${lock}.owner-${randomUUID()}`;
   const gate = `${lock}.gate`;
-  let gateStat;
+  let created = false;
+  let published = false;
   writeFileSync(candidate, text, { flag: 'wx', mode: 0o600 });
   try {
     try {
       mkdirSync(gate);
-      gateStat = lstatSync(gate);
+      created = true;
     } catch (error) {
       if (error.code === 'EEXIST')
         throw new Error(
@@ -125,22 +125,20 @@ function withAcquisitionGate(lock, text, action) {
       throw error;
     }
     linkSync(candidate, path.join(gate, 'owner'));
+    published = true;
     return action(candidate);
   } finally {
-    if (gateStat) {
-      if (!sameFile(gateStat, lstatSync(gate)))
-        throw new Error('publish acquisition gate changed; left as it is');
+    if (published) {
+      // The exclusive gate serializes every conforming mutation. Its immutable
+      // random owner token is stable even when a shared filesystem remaps inodes.
       const owner = path.join(gate, 'owner');
-      try {
-        if (readFileSync(owner, 'utf8') !== text)
-          throw new Error('publish acquisition owner changed; left as it is');
-        unlinkSync(owner);
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
-      }
+      if (readFileSync(owner, 'utf8') !== text)
+        throw new Error('publish acquisition owner changed; left as it is');
+      unlinkSync(owner);
       rmdirSync(gate);
     }
-    unlinkSync(candidate);
+    // An initialization that could not publish ownership stays for inspection.
+    if (!created || published) unlinkSync(candidate);
   }
 }
 
@@ -150,7 +148,6 @@ export function acquireRunLock(lock, { survey = surveyProcesses } = {}) {
   const mine = identityOf(survey(), pid);
   if (!mine) throw new Error('process survey cannot prove the publisher identity');
   const text = JSON.stringify({ pid, start: mine.start, clock: 'UTC', token: randomUUID() });
-  let ownedStat;
   withAcquisitionGate(lock, text, (candidate) => {
     try {
       linkSync(candidate, lock);
@@ -165,12 +162,11 @@ export function acquireRunLock(lock, { survey = surveyProcesses } = {}) {
       if (!identityOf(rows, prior.owner.pid) && !isProcessGone(prior.owner.pid))
         throw new Error('process survey omitted a lock owner the kernel still sees');
       const current = readOwner(lock);
-      if (!sameFile(prior.stat, current.stat) || prior.text !== current.text)
+      if (prior.text !== current.text)
         throw new Error('publish lock changed during stale inspection; left as it is');
       unlinkSync(lock);
       linkSync(candidate, lock);
     }
-    ownedStat = lstatSync(lock);
   });
   return () =>
     withAcquisitionGate(lock, text, () => {
@@ -181,7 +177,7 @@ export function acquireRunLock(lock, { survey = surveyProcesses } = {}) {
         if (error.code === 'ENOENT') return;
         throw error;
       }
-      if (sameFile(ownedStat, current.stat) && current.text === text) unlinkSync(lock);
+      if (current.text === text) unlinkSync(lock);
     });
 }
 
