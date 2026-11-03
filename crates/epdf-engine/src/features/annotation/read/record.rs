@@ -60,6 +60,10 @@ pub struct AnnotationRecordBase<C: Coordinates = PdfCoordinates> {
     pub has_appearance: bool,
     /// `/AS`, or `None` when it names no state.
     pub appearance_state: Option<String>,
+    /// Where it sits in the document's structure tree, the index of each
+    /// step from the root down (`EPDFAnnot_GetStructurePosition`), or `None`
+    /// when the tags don't reach it.
+    pub structure_position: Option<Vec<u32>>,
     pub nm: Option<String>,
     #[serde(flatten)]
     pub flags: AnnotationFlags,
@@ -286,6 +290,7 @@ pub fn read_annotation_record_base(
         page,
         has_appearance: annotation.has_appearance_stream(AppearanceMode::Normal),
         appearance_state: dictionary_read("AS", annotation.appearance_state())?,
+        structure_position: annotation.structure_position(),
         nm: dictionary_read("NM", annotation.string_value("NM"))?,
         flags: AnnotationFlags::from_bits(annotation.flags()),
         rect: PdfRect {

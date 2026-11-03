@@ -68,6 +68,7 @@ pub fn page_widget_of(
             page: base.page,
             has_appearance: base.has_appearance,
             appearance_state: base.appearance_state,
+            structure_position: base.structure_position,
             nm: base.nm,
             flags: base.flags,
             rect: page_rect_of(base.rect, visible),
