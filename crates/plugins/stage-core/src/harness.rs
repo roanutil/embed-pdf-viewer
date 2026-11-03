@@ -156,7 +156,10 @@ pub fn functions() -> FunctionTable {
         ("toScreen", |a| ok(to_screen(arg(a, 0)?, arg(a, 1)?))),
         ("toWorld", |a| ok(to_world(arg(a, 0)?, arg(a, 1)?))),
         ("cameraWorldRect", |a| ok(camera_world_rect(arg(a, 0)?, arg(a, 1)?))),
-        ("zoomAround", |a| ok(zoom_around(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("zoomAround", |a| {
+            let limits = arg::<Option<ZoomLimits>>(a, 3)?.unwrap_or(ALL_ZOOMS);
+            ok(zoom_around_within(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, limits))
+        }),
         ("panByScreen", |a| ok(pan_by_screen(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
         ("centerOnWorld", |a| {
             ok(ZoomXy::from(center_on_world(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?)))
@@ -188,7 +191,10 @@ pub fn functions() -> FunctionTable {
         ("revealCamera", |a| {
             ok(ZoomXy::from(reveal_camera(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?)))
         }),
-        ("resolveZoom", |a| ok(resolve_zoom(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?))),
+        ("resolveZoom", |a| {
+            let limits = arg::<Option<ZoomLimits>>(a, 4)?.unwrap_or(ALL_ZOOMS);
+            ok(resolve_zoom_within(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?, limits))
+        }),
         ("groupPages", |a| {
             ok(group_pages(arg(a, 0)?, arg::<Option<SpreadMode>>(a, 1)?.unwrap_or_default()))
         }),
