@@ -52,9 +52,25 @@ test('forkContains says to fetch a commit runtime-src does not have', () => {
   try {
     assert.throws(
       () => forkContains(dir, fork, ALL_BOUND_SINCE),
-      new RegExp(`fetch ${ALL_BOUND_SINCE.slice(0, 9)}\\S* into runtime-src`),
+      new RegExp(`fetch ${ALL_BOUND_SINCE} \\(and ${fork} if missing\\) into runtime-src`),
     );
   } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('forkContains says to fetch when git itself cannot run', () => {
+  const { dir, fork } = repo();
+  const path0 = process.env.PATH;
+  try {
+    // No git on PATH: spawnSync fails before git runs, with no stderr.
+    process.env.PATH = '';
+    assert.throws(
+      () => forkContains(dir, fork, ALL_BOUND_SINCE),
+      new RegExp(`ENOENT.*fetch ${ALL_BOUND_SINCE} \\(and ${fork} if missing\\) into runtime-src`),
+    );
+  } finally {
+    process.env.PATH = path0;
     rmSync(dir, { recursive: true, force: true });
   }
 });

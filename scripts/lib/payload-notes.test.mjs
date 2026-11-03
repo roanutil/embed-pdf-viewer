@@ -64,7 +64,7 @@ test('abiCheckFunctions checks what the runtime declares and names the rest', ()
   assert.deepEqual(unbound, ['B']);
 });
 
-test('a runtime from the structure-position merge on must export every binding', () => {
+test('a runtime from the structure-position merge on must declare every committed binding in its headers', () => {
   assert.equal(ALL_BOUND_SINCE, '28b8b808f52d544b17a973199410cda0cc43530f');
   const unbound = ['EPDFAnnot_GetStructurePosition'];
   assert.throws(
