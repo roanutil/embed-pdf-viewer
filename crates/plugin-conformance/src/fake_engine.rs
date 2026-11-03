@@ -327,13 +327,31 @@ impl FakeEngine {
         let id = spec.get("id").and_then(Value::as_str).unwrap_or(key).to_string();
         let listeners: Rc<RefCell<Vec<(u64, Publish)>>> = Rc::default();
         let pages = Rc::new(RefCell::new(spec["pages"].as_array().cloned().unwrap_or_default()));
+        let labels =
+            Rc::new(RefCell::new(spec.get("labels").cloned().unwrap_or_else(|| json!([]))));
         let named_pages =
             Rc::new(RefCell::new(spec.get("namedPages").cloned().unwrap_or_else(|| json!([]))));
         let cursor = Rc::new(Cell::new(None::<i64>));
-        let (p, n, c, l) = (pages.clone(), named_pages.clone(), cursor.clone(), listeners.clone());
-        let publish: Publish = Rc::new(move |event| {
+        let (p, b, n, c, l) =
+            (pages.clone(), labels.clone(), named_pages.clone(), cursor.clone(), listeners.clone());
+        let publish: Publish = Rc::new(move |given| {
+            // A layout written without `labels` (every case before page label
+            // sections) is one with none, as `PageListSnapshot` now requires.
+            let normalized;
+            let mut event = given;
+            if let Some(layout) = event.get("layout").and_then(Value::as_object)
+                && !layout.contains_key("labels")
+            {
+                let mut layout = layout.clone();
+                layout.insert("labels".into(), json!([]));
+                let mut whole = event.clone();
+                whole["layout"] = Value::Object(layout);
+                normalized = whole;
+                event = &normalized;
+            }
             if let Some(layout) = event.get("layout") {
                 *p.borrow_mut() = layout["pages"].as_array().cloned().unwrap_or_default();
+                *b.borrow_mut() = layout.get("labels").cloned().unwrap_or_else(|| json!([]));
                 *n.borrow_mut() = layout.get("namedPages").cloned().unwrap_or_else(|| json!([]));
             }
             if let Some(server) = event["origin"]["serverId"].as_i64() {
@@ -358,6 +376,7 @@ impl FakeEngine {
         Ok(Rc::new(FakeHandle {
             engine: self.clone(),
             pages,
+            labels,
             named_pages,
             cursor,
             publish,
@@ -508,6 +527,7 @@ fn password_prompt(state: &Value) -> Value {
 struct FakeHandle {
     security_state: Rc<RefCell<(Value, Value)>>,
     pages: Rc<RefCell<Vec<Value>>>,
+    labels: Rc<RefCell<Value>>,
     named_pages: Rc<RefCell<Value>>,
     cursor: Rc<Cell<Option<i64>>>,
     publish: Publish,
@@ -639,11 +659,15 @@ impl DocumentHandle for FakeHandle {
         let fallback: Option<Box<dyn FnOnce() -> Result<Value, Error>>> = match (path, pon) {
             ("pages.list", None) => {
                 let pages = self.pages();
+                let labels = self.labels.borrow().clone();
                 let named_pages = self.named_pages.borrow().clone();
                 Some(Box::new(move || {
-                    Ok(
-                        json!({ "pageCount": pages.len(), "pages": pages, "namedPages": named_pages }),
-                    )
+                    Ok(json!({
+                        "pageCount": pages.len(),
+                        "pages": pages,
+                        "labels": labels,
+                        "namedPages": named_pages,
+                    }))
                 }))
             }
             ("close", None) => Some(Box::new(|| Ok(undefined()))),

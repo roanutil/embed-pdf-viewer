@@ -904,7 +904,7 @@ const cases: ScenarioCase[] = [
 ];
 
 const functions = {
-  initialMeasurementState: model.initialMeasurementState,
+  initialMeasurementState: model.initialMeasurementModel,
   beginScaleChange: model.beginScaleChange,
   endScaleChange: model.endScaleChange,
   setCalibration: model.setCalibration,
@@ -919,7 +919,7 @@ const functions = {
   withAreaUnit,
   withPrecision,
 };
-const loaded = { ...model.initialMeasurementState(), pending: 1 };
+const loaded = { ...model.initialMeasurementModel(), pending: 1 };
 function fc<K extends keyof typeof functions>(
   name: string,
   fn: K,

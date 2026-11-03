@@ -8,7 +8,7 @@
  */
 import { shellPlugin, ShellToken } from '../../../../packages/plugin/shell/src/index';
 import * as model from '../../../../packages/plugin/shell/src/model';
-import type { ShellState } from '../../../../packages/plugin/shell/src/model';
+import type { ShellModel as ShellState } from '../../../../packages/plugin/shell/src/model';
 
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
@@ -17,7 +17,7 @@ import type { FunctionCase, Suite } from '../vectors';
 registerPlugin('shell', { factory: () => shellPlugin(), tokens: [ShellToken] });
 
 // Current shipping transitions receive positional arguments, not a retired action envelope.
-const initial = model.initialShellState;
+const initial = model.initialShellModel;
 const s = (over: Partial<ShellState> = {}): ShellState => ({
   surfaces: {},
   openMenus: [],

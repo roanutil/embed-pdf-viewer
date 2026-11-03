@@ -4,8 +4,8 @@
  * `crates/plugins/stamp/tests/conformance.rs`.
  */
 import * as model from '../../../../packages/plugin/stamp/src/model';
-import { initialStampState } from '../../../../packages/plugin/stamp/src/model';
-import type { StampState } from '../../../../packages/plugin/stamp/src/model';
+import { initialStampModel as initialStampState } from '../../../../packages/plugin/stamp/src/model';
+import type { StampModel as StampState } from '../../../../packages/plugin/stamp/src/model';
 import type { StampAsset, StampLibrary } from '../../../../packages/plugin/stamp/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';

@@ -83,7 +83,7 @@ function transition(label: string, fn: string, ...args: unknown[]): FunctionCase
 }
 const retire = (before: string, reason: string) => migration.push({ before, after: null, reason });
 const fromDTO = upstreamFromDTO;
-const initialAnnotationState = annotationModel.initialAnnotationState;
+const initialAnnotationState = annotationModel.initialAnnotationModel;
 const DEFAULT_CHROME = ANNOTATION_DEFAULTS.chrome;
 
 const cases: FunctionCase[] = [];

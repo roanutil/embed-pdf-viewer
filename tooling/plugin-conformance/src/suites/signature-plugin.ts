@@ -51,10 +51,10 @@ import type {
 import { createSignatureController } from '../../../../packages/plugin/signature/src/controller';
 import * as model from '../../../../packages/plugin/signature/src/model';
 import {
-  initialSignatureState,
+  initialSignatureModel as initialSignatureState,
   sameFieldRef,
 } from '../../../../packages/plugin/signature/src/model';
-import type { SignatureState } from '../../../../packages/plugin/signature/src/model';
+import type { SignatureModel as SignatureState } from '../../../../packages/plugin/signature/src/model';
 import { blankPagePdf } from '../../../../packages/plugin/signature/src/blank-page';
 import { markRoleOf } from '../../../../packages/plugin/signature/src/contract';
 import { FormToken } from '../../../../packages/plugin/form/src/contract';

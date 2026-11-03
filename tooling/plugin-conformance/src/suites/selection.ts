@@ -39,11 +39,11 @@ import type {
 import { SelectionToken } from '../../../../packages/plugin/selection/src/host-contract';
 import {
   clearSelection,
-  initialSelectionState,
+  initialSelectionModel as initialSelectionState,
   setHighlightHidden,
   setSelecting,
   setSelection,
-  type SelectionState,
+  type SelectionModel as SelectionState,
 } from '../../../../packages/plugin/selection/src/model';
 
 import { createCapabilityToken, type AnyPlugin, type OperationOptions } from '@embedpdf/core';

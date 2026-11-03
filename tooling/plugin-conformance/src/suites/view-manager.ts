@@ -11,7 +11,7 @@ import {
   ViewManagerToken,
 } from '../../../../packages/plugin/view-manager/src/index';
 import * as model from '../../../../packages/plugin/view-manager/src/model';
-import type { ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
+import type { ViewManagerModel as ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
 
 import type { PageLayout } from '@embedpdf/engine-core';
 import type { FakeDocumentSpec } from '../fake-engine';
@@ -522,7 +522,7 @@ export const suites: Suite[] = [
     file: 'plugins/view-manager/reducer.json',
     describes:
       'packages/plugin/view-manager: named model transitions, generated pane ids and ordered document partition.',
-    functions: { ...model },
+    functions: { ...model, initialViewManagerState: model.initialViewManagerModel },
     cases: reducerCases,
   },
   {

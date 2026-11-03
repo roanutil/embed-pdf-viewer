@@ -30,13 +30,13 @@ import {
   type TranslationSources,
 } from '../../../../packages/plugin/i18n/src/translate';
 import * as model from '../../../../packages/plugin/i18n/src/model';
-import { initialI18nState, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
+import { initialI18nModel as initialI18nState, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
 import type {
   I18nConfig,
   Locale,
   I18nCapability,
 } from '../../../../packages/plugin/i18n/src/contract';
-import type { I18nState } from '../../../../packages/plugin/i18n/src/model';
+import type { I18nModel as I18nState } from '../../../../packages/plugin/i18n/src/model';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
 import {
