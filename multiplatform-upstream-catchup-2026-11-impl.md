@@ -726,6 +726,19 @@ inside the header generator leaves the committed bindings changed, and the clean
 startup refuses it and says how to restore them. Each of these has a scripted check that failed on
 `31b8ddbee` and passes on `9ea74337a`.
 
+### Round 6 review fixes
+
+`2e5bbedfb` closes the round 6 findings. `SIGHUP` restores the payload like `SIGINT` and `SIGTERM`,
+and exits 129. Each step running while the payload is swapped in records its process group in the
+backup (`.pgid`). A run that finds that group still alive refuses with the pgid and touches nothing.
+The signal handler waits until no process of the group is left, not just its leader, and sends
+`SIGKILL` to the group at 5 s either way. Once it starts, no new step can start. `gh` saying
+"release not found" is now told apart from any other `gh` failure: an unknown answer exits non-zero
+and leaves the backup and its marker. A run kept after a published release must still match the
+file digests recorded beside the `.publishing` marker, or it refuses. Every file in the payload is
+`0644` before the pack, so a container build no longer ships mode-`0200` files. Each of these
+has a scripted check that failed on `1b45692fe` and passes on `2e5bbedfb`.
+
 ### Checks at `1544594da`
 
 | Command | Exit | Result |
