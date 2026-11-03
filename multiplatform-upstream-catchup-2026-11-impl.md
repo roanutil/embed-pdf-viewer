@@ -280,11 +280,13 @@ One test shim is temporary: `test_support::without_unrecorded_labels`, used by
 from the Rust answer when the recorded layout predates the field. Remove it when C5 regenerates
 the pages/metadata vectors with the new wasm payload.
 
-Two divergences are proposed, not decided. An XML character reference to a surrogate code
+Two divergences were proposed here and accepted on 2026-11-02 as Rust-only exceptions, E3 and E4
+(recorded in `multiplatform-upstream-catchup.md`, next to the other kept divergences). E3: an XML
+character reference to a surrogate code
 (`&#xD800;`) decodes to U+FFFD, where the TS makes a lone surrogate a Rust string can't hold; it
 only matters inside a packet no tool writes. A label section that
 `EPDFDoc_GetPageLabelSectionAt` refuses is skipped, where the TS would push one with stale
-values; no index below the count is refused.
+values; no index below the count is refused. That one is E4.
 
 ## Tests
 
