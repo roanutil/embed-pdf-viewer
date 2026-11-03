@@ -55,6 +55,8 @@ export function surveyProcesses() {
     ],
     {
       encoding: 'utf8',
+      // Inspection is read-only and cannot keep the inspected writer group alive.
+      detached: true,
       maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' },
     },

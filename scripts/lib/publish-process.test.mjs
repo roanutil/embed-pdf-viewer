@@ -344,3 +344,13 @@ test('birth surveys remain stable across publisher time zones', () => {
     else process.env.TZ = original;
   }
 });
+
+test('read-only surveys stay outside the caller writer group', () => {
+  const rows = surveyProcesses();
+  const mine = rows.find((row) => row.pid === process.pid);
+  const inspections = rows.filter((row) =>
+    row.args.startsWith('ps -A -ww -o pid=,pgid=,lstart=,args='),
+  );
+  assert(inspections.length > 0);
+  assert(inspections.every((row) => row.pgid !== mine.pgid));
+});
