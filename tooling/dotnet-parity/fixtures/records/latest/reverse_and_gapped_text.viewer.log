@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium-typescript] › tooling/viewer-e2e/tests/dotnet-parity.spec.ts:8:3 › managed parity snapshots from the packed real viewer (691ms)
+
+  1 passed (1.7s)

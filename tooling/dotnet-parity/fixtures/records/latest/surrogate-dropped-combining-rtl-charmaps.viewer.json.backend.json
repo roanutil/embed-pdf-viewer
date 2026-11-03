@@ -1,0 +1,60 @@
+{
+  "actualBackend": "typescript",
+  "evidence": {
+    "init": [
+      {
+        "rustRouting": {
+          "rustReads": false,
+          "rustSession": false
+        },
+        "wasmUrl": "http://127.0.0.1:5241/assets/embedpdf-I-GpQAGD.wasm",
+        "wasmSha256": "b0899e0936ba39ccd07de1efe79b65ac8fda371c5c4fdbd7fb6afc305ef708cc"
+      }
+    ],
+    "replies": [
+      "fonts.register",
+      "fonts.addFallback",
+      "open",
+      "pages.list",
+      "annotations.list",
+      "measure.viewports",
+      "pages.render",
+      "pages.render",
+      "pages.render",
+      "measure.viewports",
+      "pages.geometry",
+      "annotations.renderAppearances",
+      "pages.geometry",
+      "annotations.renderAppearances",
+      "measure.viewports",
+      "pages.geometry",
+      "annotations.renderAppearances",
+      "forms.list",
+      "signatures.list",
+      "outline.read",
+      "attachments.list",
+      "actions.read",
+      "pages.render",
+      "annotations.list",
+      "measure.viewports",
+      "annotations.list",
+      "pages.geometry",
+      "annotations.list",
+      "annotations.renderAppearances",
+      "annotations.list",
+      "pages.list",
+      "pages.text",
+      "pages.geometry",
+      "pages.geometry",
+      "pages.geometry",
+      "pages.render"
+    ]
+  },
+  "project": "chromium-typescript",
+  "browser": "153.0.8010.12",
+  "flags": {
+    "rustReads": false,
+    "rustSession": false
+  },
+  "delivery": "packed-production"
+}

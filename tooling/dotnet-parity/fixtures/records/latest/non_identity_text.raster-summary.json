@@ -1,0 +1,25 @@
+{
+  "diagnosticOnly": false,
+  "comparison": "exact",
+  "tolerance": null,
+  "viewer": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/non_identity_text.viewer.json",
+    "sha256": "0a7e0f79b363efdc1fba9d1bfb612ffa8dd6c5a5133be49bd9a23e67b470f767",
+    "bytes": 648940
+  },
+  "native": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/non_identity_text.native.json",
+    "sha256": "7eaf5e02bac1201b155614c253dca3347b1221ee50bba7bb7b81c5bc06d32494",
+    "bytes": 648948
+  },
+  "probes": [
+    {
+      "id": "transparent-render",
+      "bytes": 484704,
+      "nativeBytes": 484704,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    }
+  ]
+}
