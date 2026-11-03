@@ -656,17 +656,41 @@ gn args. `--target` stays `6dfc03697`. `embedpdf.wasm` is byte for byte the one 
 
 ### Round 1 review fixes
 
-The fork stamp a payload publish reads is no longer trusted. A stamp for a library taken from a
-fork release archive goes at `<PERF_WORK_DIR>/fork/<runtime-src commit>/wasm32-eh.json`, beside the
-archive unpacked into its `staging` directory. Its `sha` is the archive's fork commit and its
-`libSha256` the hash of `staging/lib/libembedpdf.a`. Its `source` names the archive, the archive's
-path (`archivePath`) and sha256, and the emsdk version. The script header has the exact shape. The
-publish hashes the library and the archive again, reads the fork commit from the archive's own
-`BUILD-METADATA.json`, and refuses on any mismatch; an archive without `emsdkVersion` leaves `source.emsdk` taken on trust. It also refuses if the archive's commit isn't an
-ancestor of the pin, if anything between them changes more than `docs/`, the fork's tests and the
-three scripts in `BUILD_NEUTRAL_SCRIPTS` and `build-target.sh` as the one blob in `PINNED_SCRIPT_BLOBS`, if the pin's emsdk for the target (read at the pin) isn't the archive's, or if a committed binding the runtime lacks isn't in
-`KNOWN_UNBOUND` (`scripts/lib/payload-notes.mjs`, today only `EPDFAnnot_GetStructurePosition`).
+The fork stamp a payload publish reads is no longer trusted (`a1205b61f`). A stamp for a library
+taken from a fork release archive goes at `<PERF_WORK_DIR>/fork/<runtime-src commit>/wasm32-eh.json`,
+beside the archive unpacked into its `staging` directory. Its `sha` is the archive's fork commit and
+its `libSha256` the hash of `staging/lib/libembedpdf.a`. Its `source` names the archive, the
+archive's path (`archivePath`) and sha256, and the emsdk version. The script header has the exact
+shape. The publish hashes the library and the archive again, reads the fork commit from the
+archive's own `BUILD-METADATA.json`, and refuses on any mismatch. It also refuses if the archive's
+commit isn't an ancestor of the pin, if anything between them changes more than `docs/`, the fork's
+tests and the scripts in `BUILD_NEUTRAL_SCRIPTS`, or if a committed binding the runtime lacks isn't
+in `KNOWN_UNBOUND` (`scripts/lib/payload-notes.mjs`, today only `EPDFAnnot_GetStructurePosition`).
 Both lists need reading on every runtime merge.
+
+### Round 2 review fixes
+
+`85a3d0336` makes a refused publish leave the tree alone. Every check that can refuse runs
+before anything is removed, and the payload links into a temporary directory. A scripted check
+(a dry run with a zeroed `libSha256`) left `npm/wasm32/lib` empty before the change and leaves it
+byte-identical after. Round 3 went further: the old payload is renamed aside before the swap and
+put back if the package build, `verify-rust-core.mjs`, the pack or the release throws.
+
+`47df81d67` adds a second `document.fonts.resolve` step after Roboto is registered. It records
+`source: "document-program"`: a document program wins over an engine font of the same name. A Rust
+mutation that reads the program as the engine font passed the old vectors and fails the new ones.
+
+`aca5651dd` changes four things. `build-target.sh` moves out of `BUILD_NEUTRAL_SCRIPTS` into
+`PINNED_SCRIPT_BLOBS`, accepted only as a recorded change. Since round 3 that change is a pair of
+blobs, `e5380cab4` at `6dfc03697` and `88272b4ee` at `8b1e69abd`. When the archive's
+`BUILD-METADATA.json` records `emsdkVersion`, it must equal the stamp's `source.emsdk`.
+`target-args.sh` and `emsdk-version.sh` are read at the pin with `git show`, not from the working
+tree. And the script header lists the rules as they are. The new `node --test` cases failed before
+each change.
+
+Since round 3, the staging `libembedpdf.a` and `args.gn` must also be the archive's own, read
+straight out of it. So `source.emsdk` really is the one stamp field taken on trust, and only for an
+archive without `emsdkVersion`, as the `6dfc03697` one is.
 
 Accepted 2026-11-03, beside E3, E4, P1 and P3 as a kept Rust-only divergence: Rust's commands
 `app_state` is JSON only. The TypeScript `appState` can hold functions and getters that the app
