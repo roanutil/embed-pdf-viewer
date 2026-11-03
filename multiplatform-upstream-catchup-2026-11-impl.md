@@ -663,7 +663,7 @@ one `8b1e69abd` uses.
 already binds the function (`ef8ae52d7`), as `(Ptr, Ptr, number) => number` with `i32` throughout.
 Its `buflen` and result are `unsigned long`. The `wasm` slot's `i32` matches the target, where
 `unsigned long` is 32 bits. The `native` slot's `i32` is the header generator's convention, not a
-property of any target: `classifyType` in `build/generate-functions.mjs:129-133` reads every
+property of any target: `classifyType` in `packages/engine/runtime/build/generate-functions.mjs:128-134` reads every
 `long` that isn't `long long` as `i32`, and on a 64-bit native target `unsigned long` is 64 bits.
 
 ### The libraries
@@ -759,6 +759,20 @@ changed, and the Rust export now matches both.
 `-hydration`, `-markup` and `-repository`, `redaction`, `redaction-functions` and `stamp-assets`. Each
 differs from the recorded file only by `structurePosition: null`. Their Rust replays all pass, with no Rust change.
 
+Those eighteen aren't all of it. Sixteen more plugin suites get `structurePosition: null` from the
+oracle, and their recorded files lack it, but each is also behind the oracle for an older reason, so
+none is regenerated here. Eight wait on the form's focus, `focused` (upstream `2998c9004`):
+`form-fill`, `form-core`, `form-scripting`, `form-actions` and `form-core-lifecycle`, and
+`signature`, `stamp-api` and `stamp-placement`, which also lack the page view's `pageLabels` and
+`pendingPages`. `actions-script` waits on the actions plugin's half of the same port
+(`registerFormFocus`). `form-design` records `focused` and the built-in zoom tool, and
+`annotation-tools` records the zoom tool (`a1ee5683f`). `link` and `attachment` record the stage's
+`zoomDrag` settings (also `a1ee5683f`). `annotation-hover` moves from `exec.named` to
+`lender.records`, `annotation-api` records a font `TypeError` the oracle no longer throws, and in
+`annotation-comments` a thread delete the recording refused ("delete not permitted") now succeeds.
+Each gets `structurePosition` when it is regenerated for its own blocker. `link` and `attachment`
+are also regenerated on the C5b branch, so the merge of the two branches settles those.
+
 Two findings came out of the plugin side. First, `tooling/plugin-conformance/src/generate.ts`
 doesn't load on this branch, because two suite modules import files upstream removed:
 `suites/annotation-pure.ts:34` imports `packages/core/annotation/src/font-css` (gone in
@@ -773,7 +787,7 @@ family, weight, style and loader), both from `595fa2bd5`, and the Rust scene res
 files take only the oracle's `structurePosition` lines. Their labels, six in
 `annotation-measurement-model.json` and 25 in `annotation-measurement.json`, keep their old
 `fontFamily` and have no `program`. The cost: until the font-program port lands, those two vectors
-are partly older than the oracle, and the commits (`f63a2263f`, `70068a005`) say so.
+are partly older than the oracle. `70068a005` says so; `f63a2263f` names `fontFamily` only.
 
 ### Apple
 
