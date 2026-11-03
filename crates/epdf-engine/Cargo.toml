@@ -43,3 +43,7 @@ epdf-signature-core = { path = "../plugins/signature-core" }
 # is a cycle (`epdf-geometry`'s harness needs `plugin-conformance`, which
 # needs this crate). Its tests hold the two copies together.
 epdf-geometry = { path = "../plugins/geometry", default-features = false }
+# The page prediction conformance (`tests/page_prediction_conformance.rs`)
+# runs the kernel's page predictions against this engine. The kernel has no
+# dependency on the engine, so this is no cycle.
+epdf-kernel = { path = "../epdf-kernel" }
