@@ -386,3 +386,43 @@ test('release preserves a replacement token even with the same PID and birth', (
     release();
     assert.equal(readFileSync(lock, 'utf8'), replacement);
   }));
+
+test('post-release survey omissions preserve an uncertain writer', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'publish-omitted-writer-'));
+  const file = path.join(dir, 'payload');
+  const backup = path.join(dir, 'backup');
+  writeFileSync(file, 'new');
+  writeFileSync(backup, 'old');
+  let group;
+  try {
+    const step = startOwnedStep(
+      'bash',
+      ['-euo', 'pipefail', '-c', `(sleep 0.4; printf late > '${file}') & exit 0`],
+      {
+        onGroup: (value) => {
+          group = value;
+        },
+        survey: () => {
+          const rows = surveyProcesses();
+          if (!group) return rows;
+          // Retain the real leader but omit its real writer, including after release.
+          return rows.filter((row) => row.pgid !== group.pgid || row.pid === group.pgid);
+        },
+      },
+    );
+    await assert.rejects(step.completion, (error) => error.preservePayload === true);
+    assert.equal(readFileSync(backup, 'utf8'), 'old');
+  } finally {
+    if (group) {
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline && checkedGroupAlive(surveyProcesses(), group))
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.equal(
+        checkedGroupAlive(surveyProcesses(), group),
+        false,
+        `preserve live fixture ${dir}`,
+      );
+    }
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

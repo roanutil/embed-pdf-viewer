@@ -306,7 +306,7 @@ export function startOwnedStep(
         const writers = members.filter((row) => row.pid !== helper.pid);
         if (writers.length === 0) {
           await releaseIdle();
-          if (recordedGroupAlive(survey(), group))
+          if (checkedGroupAlive(survey(), group))
             throw new Error('step group remains after releasing its leader');
           return terminated;
         }
