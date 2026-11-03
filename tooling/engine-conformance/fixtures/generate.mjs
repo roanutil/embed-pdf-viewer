@@ -1470,12 +1470,14 @@ function richMetadata() {
  * the text note's /OBJR, and then a /Form element holding the square's. So
  * the note, listed second, comes first in the tags. A third annotation has no
  * /StructParent, and a fourth names a key the parent tree doesn't list:
- * neither is tagged.
+ * neither is tagged. Last, a text field's widget, in a /Form element that is
+ * the root's third kid, so a form read has a tagged widget too.
  */
 function structureTree() {
   const objects = [
     Buffer.from(
-      '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 9 0 R /MarkInfo << /Marked true >> >>',
+      '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 9 0 R /MarkInfo << /Marked true >> ' +
+        '/AcroForm << /Fields [15 0 R] /DA (/Helv 0 Tf 0 g) >> >>',
       'latin1',
     ),
     Buffer.from(
@@ -1483,7 +1485,7 @@ function structureTree() {
       'latin1',
     ),
     Buffer.from(
-      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [5 0 R 6 0 R 7 0 R 8 0 R] /StructParents 0 /Tabs /S >>',
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [5 0 R 6 0 R 7 0 R 8 0 R 15 0 R] /StructParents 0 /Tabs /S >>',
       'latin1',
     ),
     stream(
@@ -1507,7 +1509,7 @@ function structureTree() {
       'latin1',
     ),
     Buffer.from(
-      '<< /Type /StructTreeRoot /K [10 0 R 11 0 R] /ParentTree 14 0 R /ParentTreeNextKey 4 >>',
+      '<< /Type /StructTreeRoot /K [10 0 R 11 0 R 16 0 R] /ParentTree 14 0 R /ParentTreeNextKey 5 >>',
       'latin1',
     ),
     Buffer.from('<< /Type /StructElem /S /H1 /P 9 0 R /Pg 3 0 R /K 0 >>', 'latin1'),
@@ -1520,7 +1522,16 @@ function structureTree() {
       '<< /Type /StructElem /S /Annot /P 11 0 R /Pg 3 0 R /K [1 << /Type /OBJR /Obj 6 0 R >>] >>',
       'latin1',
     ),
-    Buffer.from('<< /Nums [0 [10 0 R 13 0 R] 1 12 0 R 2 13 0 R] >>', 'latin1'),
+    Buffer.from('<< /Nums [0 [10 0 R 13 0 R] 1 12 0 R 2 13 0 R 4 16 0 R] >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Widget /FT /Tx /T (tagged.name) /V (Ada) /Rect [72 150 300 180] ' +
+        '/F 4 /P 3 0 R /StructParent 4 /DA (0 0 0 rg /Helv 10 Tf) >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /StructElem /S /Form /P 9 0 R /Pg 3 0 R /K << /Type /OBJR /Obj 15 0 R >> >>',
+      'latin1',
+    ),
   ];
   return buildPdf(objects);
 }

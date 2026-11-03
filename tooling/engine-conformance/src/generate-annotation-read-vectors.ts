@@ -70,7 +70,7 @@ const CASES: readonly ReadCase[] = [
     name: 'structure',
     fixture: 'tooling/engine-conformance/fixtures/structure_tree.pdf',
     covers:
-      'structurePosition on a tagged page: two annotations whose places in the tags run against their /Annots order, one behind marked content in its element, beside one with no /StructParent and one whose /StructParent the parent tree does not list.',
+      "structurePosition on a tagged page: two annotations whose places in the tags run against their /Annots order, one behind marked content in its element, beside one with no /StructParent, one whose /StructParent the parent tree does not list, and a tagged text field's widget.",
   },
   {
     name: 'report',
