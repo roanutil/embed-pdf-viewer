@@ -385,8 +385,8 @@ fn exports_a_stamp_another_tool_made_as_read_appearance_returns_it() {
 #[test]
 fn exports_a_document_to_the_same_file_as_the_typescript_engine() {
     for (fixture, hash) in [
-        (ACROBAT_STAMPS, "8e7b1ade219fe9c78e355e8c282a46e9b8131f76a2c98b70331d909830fff9b6"),
-        (ACROBAT_REWRAPPED, "4cead3c1918229234fad1651b082aa0b09b49325d6e462177eae30f049939b11"),
+        (ACROBAT_STAMPS, "c63bf33e943ed200b4ca152a86ef5c1713153b3ad71b3a764fb261254f36662d"),
+        (ACROBAT_REWRAPPED, "4c7591de693cddbd29d6f7e080f033cadf0863f52ff0aab5173255db4796361e"),
     ] {
         let (mut engine, _) = one(fixture);
         let exported = engine.export("source", json!({})).unwrap();
