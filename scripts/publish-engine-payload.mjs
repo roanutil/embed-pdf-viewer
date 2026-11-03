@@ -65,6 +65,8 @@ const runtime = path.join(repo, 'packages/engine/runtime');
 const libDir = path.join(runtime, 'npm', TARGET, 'lib');
 const apple = path.join(repo, 'platforms/apple');
 const manifest = path.join(apple, 'EmbedPDF/Package.swift');
+// The fork target the wasm32 payload links, as build-arm.mjs builds it.
+const FORK_TARGET = buildArmConstant('FORK_TARGET');
 const dryRun = process.argv.includes('--dry-run');
 const onlyAt = process.argv.indexOf('--only');
 const only = onlyAt === -1 ? null : process.argv[onlyAt + 1];
@@ -226,7 +228,6 @@ function buildArmConstant(name) {
   if (!value) throw new Error(`no ${name} in perf-compare/scripts/build-arm.mjs`);
   return value;
 }
-const FORK_TARGET = buildArmConstant('FORK_TARGET');
 
 function runtimeSrcCommit() {
   return run('git', ['ls-tree', 'HEAD', 'packages/engine/runtime/runtime-src']).split(/\s+/)[2];
