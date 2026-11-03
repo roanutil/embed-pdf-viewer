@@ -5,9 +5,9 @@
 //! `handleDocumentFontsResolve`, `handleDocumentFontsProgram`), from
 //! `FontRegistrar` and `DocumentFontReader`.
 //!
-//! No vector pins these kinds yet: the TypeScript oracle needs a payload this
-//! tree doesn't publish. The facts asserted here are the fork's own, read
-//! from Roboto and `embedded_orientations.pdf`, as `crates/pdfium/tests/
+//! `fonts_wire_corpus.rs` pins the same kinds against the TypeScript oracle
+//! (`vectors/fonts/wire.json`). The facts asserted here are the fork's own,
+//! read from Roboto and `embedded_orientations.pdf`, as `crates/pdfium/tests/
 //! document_fonts.rs` reads them below this layer.
 //!
 //! PDFium's font registry is per thread, so every test runs on a thread of
