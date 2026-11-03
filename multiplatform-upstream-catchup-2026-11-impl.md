@@ -662,9 +662,9 @@ archive unpacked into its `staging` directory. Its `sha` is the archive's fork c
 `libSha256` the hash of `staging/lib/libembedpdf.a`. Its `source` names the archive, the archive's
 path (`archivePath`) and sha256, and the emsdk version. The script header has the exact shape. The
 publish hashes the library and the archive again, reads the fork commit from the archive's own
-`BUILD-METADATA.json`, and refuses on any mismatch. It also refuses if the archive's commit isn't an
+`BUILD-METADATA.json`, and refuses on any mismatch; an archive without `emsdkVersion` leaves `source.emsdk` taken on trust. It also refuses if the archive's commit isn't an
 ancestor of the pin, if anything between them changes more than `docs/`, the fork's tests and the
-four scripts in `BUILD_NEUTRAL_SCRIPTS`, if the pin's emsdk for the target isn't the archive's, or if a committed binding the runtime lacks isn't in
+three scripts in `BUILD_NEUTRAL_SCRIPTS` and `build-target.sh` as the one blob in `PINNED_SCRIPT_BLOBS`, if the pin's emsdk for the target (read at the pin) isn't the archive's, or if a committed binding the runtime lacks isn't in
 `KNOWN_UNBOUND` (`scripts/lib/payload-notes.mjs`, today only `EPDFAnnot_GetStructurePosition`).
 Both lists need reading on every runtime merge.
 
