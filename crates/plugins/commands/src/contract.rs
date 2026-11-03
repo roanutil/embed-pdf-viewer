@@ -397,7 +397,10 @@ pub struct CommandsSettings {
     /// Your app's state, which every command's functions get as
     /// `app_state`. A new value replaces the old one whole (`whole:
     /// ['appState']`), and every command is asked again. The `undefined`
-    /// marker when the app gives none.
+    /// marker when the app gives none. JSON only, an accepted Rust-only
+    /// divergence: the TypeScript `appState` can hold functions and getters
+    /// the app changes in place, and here state that changes in place lives in
+    /// the command's own closures.
     pub app_state: Rc<Value>,
 }
 
