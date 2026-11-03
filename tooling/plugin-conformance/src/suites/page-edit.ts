@@ -8,6 +8,7 @@ import {
   page,
   three,
   layout,
+  labelled,
   meta,
   remote,
   rotated,
@@ -29,6 +30,7 @@ import {
   scenario,
 } from './page-edit-current-fixtures';
 import { installCaseEntropy, restoreCaseEntropy } from '../case-entropy';
+import type { PageLabelSection } from '@embedpdf/engine-core/runtime';
 registerPlugin('page-edit', {
   factory: () => {
     installCaseEntropy();
@@ -43,6 +45,25 @@ const arg = (n: number): number =>
   Number.isFinite(n) ? n : ({ $number: String(n) } as unknown as number);
 
 const r90 = rotated([pr(10)], 90, p10(90));
+/** Two label sections: decimal from the first page, lower roman from the third. */
+const SECTIONS: PageLabelSection[] = [
+  { firstPage: 0, style: 'decimal', firstNumber: 1, prefix: '' },
+  { firstPage: 2, style: 'lowerRoman', firstNumber: 1, prefix: '' },
+];
+/** Once page 10 is copied in as 77 after it: the roman section moves along. */
+const COPIED: PageLabelSection[] = [SECTIONS[0]!, { ...SECTIONS[1]!, firstPage: 3 }];
+const copiedAnswer = inserted(
+  'pages.copy',
+  [77],
+  labelled([three[0], { ...three[0], ref: pr(77) }, three[1], three[2]], COPIED),
+  COPIED,
+);
+/** Once page 20 goes: the roman section starts on its next page, now the third. */
+const deletedAnswer = deleted(
+  [pr(20)],
+  labelled([three[0], { ...three[0], ref: pr(77) }, three[2]], SECTIONS),
+  SECTIONS,
+);
 const r180 = rotated([pr(10)], 180, p10(180));
 const d20 = deleted([pr(20)], [three[0], { ...three[2], index: 1 }]);
 const add99 = inserted('pages.insertBlank', [99], [...three, page(99, 3, 0, 500, 600)]);
@@ -414,19 +435,18 @@ const cases: ScenarioCase[] = [
   ),
   scenario(
     'duplicate',
-    'Duplicate waits for staged work then extracts and inserts after last ref; explicit end, unknown/empty refusals and direct extraction survive.',
+    'Duplicate is one pages.copy named from the pool, after the last ref or at an explicit end; unknown/empty refusals and direct extraction survive.',
     [
-      { path: 'pages.extract', value: { $bytes: 'CgsM' } },
       answer(
         inserted(
-          'pages.insert',
+          'pages.copy',
           [77, 78],
           [three[0], three[1], page(77, 2), page(78, 3, 90, 300, 400), { ...three[2], index: 4 }],
         ),
       ),
       answer(
         inserted(
-          'pages.insert',
+          'pages.copy',
           [79],
           [
             three[0],
@@ -438,6 +458,7 @@ const cases: ScenarioCase[] = [
           ],
         ),
       ),
+      { path: 'pages.extract', value: { $bytes: 'CgsM' } },
     ],
     [
       edit('duplicate', [[pr(10), pr(20)]]),
@@ -447,7 +468,36 @@ const cases: ScenarioCase[] = [
       edit('extract', [[pr(10)]]),
       readPages,
     ],
+    { objectNumbers: [77, 78, 79] },
   ),
+  {
+    ...scenario(
+      'pending-pages-show-their-look',
+      'A copy, an undone delete and a blank insert show before the engine answers, each with its pending look; label sections move with the pages, and an undo puts back the sections the edit found.',
+      [
+        { path: 'apply', times: 1, defer: 'copy', events: [fact(copiedAnswer)] },
+        { path: 'apply', times: 1, defer: 'delete', events: [fact(deletedAnswer)] },
+        { path: 'apply', times: 1, defer: 'undo' },
+        { path: 'apply', times: 1, defer: 'blank' },
+      ],
+      [
+        edit('duplicate', [[pr(10)]]),
+        readPages,
+        settle('copy', result(copiedAnswer)),
+        readPages,
+        edit('delete', [[pr(20)]]),
+        readPages,
+        settle('delete', result(deletedAnswer)),
+        readPages,
+        { op: 'call', target: { token: 'history', doc: 'a' }, method: 'undo', args: [] },
+        readPages,
+        edit('insertBlank', [{ position: 'end' }]),
+        readPages,
+      ],
+      { pages: labelled(three, SECTIONS), labels: SECTIONS, objectNumbers: [77, 88] },
+    ),
+    plugins: [{ factory: 'page-edit' }, { factory: 'history' }],
+  },
   {
     name: 'state-and-scope',
     covers:
