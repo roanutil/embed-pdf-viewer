@@ -5,10 +5,14 @@ import {
   abiCheckFunctions,
   assertKnownUnbound,
   assertStampMatches,
+  releaseVerdict,
   committedSignatures,
   forkLines,
   payloadNotes,
 } from './payload-notes.mjs';
+
+/** The stamp check for the wasm32-eh target the payload links. */
+const check = (fork, facts) => assertStampMatches(fork, facts, 'wasm32-eh');
 
 const PINNED = '8b1e69abdef4cb7c5d6c669c96a162533b2350ef';
 const ARCHIVED = '6dfc036978f78baf71663f2554f998f28c490a6f';
@@ -200,25 +204,30 @@ test('only the known gaps may be bound but not exported', () => {
 });
 
 test('a stamp whose files do not match it is refused', () => {
-  const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
+  const stamp = {
+    ...archived,
+    source: {
+      ...archived.source,
+      archivePath: '/builds/libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz',
+    },
+  };
   const good = {
     libSha256: 'lib',
     archiveSha256: 'tar',
     archiveSha: ARCHIVED,
     archiveLibSha256: 'lib',
+    archiveTarget: 'wasm32-eh',
     archiveArgs: 'a=1\n',
     stagingArgs: 'a=1\n',
   };
-  assert.doesNotThrow(() => assertStampMatches(stamp, good));
-  assert.throws(() => assertStampMatches(stamp, { ...good, libSha256: 'x' }), /libembedpdf.a/);
-  assert.throws(() => assertStampMatches(stamp, { ...good, archiveSha256: 'x' }), /archive hashes/);
-  assert.throws(() => assertStampMatches(stamp, { ...good, archiveSha256: null }), /no archive/);
-  assert.throws(() => assertStampMatches(stamp, { ...good, archiveSha: PINNED }), /BUILD-METADATA/);
-  assert.throws(() => assertStampMatches(archived, good), /archivePath/);
+  assert.doesNotThrow(() => check(stamp, good));
+  assert.throws(() => check(stamp, { ...good, libSha256: 'x' }), /libembedpdf.a/);
+  assert.throws(() => check(stamp, { ...good, archiveSha256: 'x' }), /archive hashes/);
+  assert.throws(() => check(stamp, { ...good, archiveSha256: null }), /no archive/);
+  assert.throws(() => check(stamp, { ...good, archiveSha: PINNED }), /BUILD-METADATA/);
+  assert.throws(() => check(archived, good), /archivePath/);
   // A stamp built here has no archive to check.
-  assert.doesNotThrow(() =>
-    assertStampMatches({ sha: PINNED, libSha256: 'lib' }, { libSha256: 'lib' }),
-  );
+  assert.doesNotThrow(() => check({ sha: PINNED, libSha256: 'lib' }, { libSha256: 'lib' }));
 });
 
 test('the pin must build with the emsdk the archive was built with', () => {
@@ -260,35 +269,96 @@ test('build-target.sh passes only as the pair of blobs it was read at', () => {
 });
 
 test('an archive that records its emsdk must record the stamp one', () => {
-  const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
+  const stamp = {
+    ...archived,
+    source: {
+      ...archived.source,
+      archivePath: '/builds/libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz',
+    },
+  };
   const facts = {
     libSha256: 'lib',
     archiveSha256: 'tar',
     archiveSha: ARCHIVED,
     archiveLibSha256: 'lib',
+    archiveTarget: 'wasm32-eh',
     archiveArgs: 'a=1\n',
     stagingArgs: 'a=1\n',
   };
-  assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: null }));
-  assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '4.0.0' }));
-  assert.throws(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '3.1.72' }), /emsdk/);
+  assert.doesNotThrow(() => check(stamp, { ...facts, archiveEmsdk: null }));
+  assert.doesNotThrow(() => check(stamp, { ...facts, archiveEmsdk: '4.0.0' }));
+  assert.throws(() => check(stamp, { ...facts, archiveEmsdk: '3.1.72' }), /emsdk/);
 });
 
 test('the staging library and args.gn must be the archive ones', () => {
-  const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
+  const stamp = {
+    ...archived,
+    source: {
+      ...archived.source,
+      archivePath: '/builds/libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz',
+    },
+  };
   const facts = {
     libSha256: 'lib',
     archiveSha256: 'tar',
     archiveSha: ARCHIVED,
     archiveEmsdk: null,
     archiveLibSha256: 'lib',
+    archiveTarget: 'wasm32-eh',
     archiveArgs: 'a=1\n',
     stagingArgs: 'a=1\n',
   };
-  assert.doesNotThrow(() => assertStampMatches(stamp, facts));
+  assert.doesNotThrow(() => check(stamp, facts));
   assert.throws(
-    () => assertStampMatches(stamp, { ...facts, archiveLibSha256: 'other' }),
+    () => check(stamp, { ...facts, archiveLibSha256: 'other' }),
     /archive's libembedpdf.a/,
   );
-  assert.throws(() => assertStampMatches(stamp, { ...facts, stagingArgs: 'a=2\n' }), /args.gn/);
+  assert.throws(() => check(stamp, { ...facts, stagingArgs: 'a=2\n' }), /args.gn/);
+});
+
+test('an archive must be the one the stamp names, for the target the payload links', () => {
+  const stamp = {
+    ...archived,
+    source: {
+      ...archived.source,
+      archivePath: '/builds/libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz',
+    },
+  };
+  const facts = {
+    libSha256: 'lib',
+    archiveSha256: 'tar',
+    archiveSha: ARCHIVED,
+    archiveEmsdk: null,
+    archiveLibSha256: 'lib',
+    archiveTarget: 'wasm32-eh',
+    archiveArgs: 'a=1\n',
+    stagingArgs: 'a=1\n',
+  };
+  assert.doesNotThrow(() => check(stamp, facts));
+  // The plain wasm32 archive has the same gn args, so only its metadata tells it apart.
+  assert.throws(() => check(stamp, { ...facts, archiveTarget: 'wasm32' }), /target wasm32/);
+  assert.throws(
+    () =>
+      check(
+        {
+          ...stamp,
+          source: {
+            ...stamp.source,
+            archivePath: '/builds/libembedpdf-runtime-wasm32-6dfc03697.tar.gz',
+          },
+        },
+        facts,
+      ),
+    /archivePath/,
+  );
+});
+
+test('a draft or asset-less release counts as incomplete, not published', () => {
+  const asset = 'engine-runtime-payload-wasm32.tar.gz';
+  const assets = [{ name: asset }, { name: `${asset}.sha256` }];
+  assert.equal(releaseVerdict(null, asset), 'missing');
+  assert.equal(releaseVerdict({ isDraft: false, assets }, asset), 'published');
+  assert.equal(releaseVerdict({ isDraft: true, assets }, asset), 'incomplete');
+  assert.equal(releaseVerdict({ isDraft: false, assets: [] }, asset), 'incomplete');
+  assert.equal(releaseVerdict({ isDraft: false, assets: [{ name: asset }] }, asset), 'incomplete');
 });

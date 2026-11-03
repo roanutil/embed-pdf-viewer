@@ -63,7 +63,7 @@
 // and an iOS simulator; EMBEDPDF_TEST_DESTINATION overrides the default one
 // when two simulators share its name.
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
@@ -89,6 +89,7 @@ import {
   PINNED_SCRIPT_BLOBS,
   forkLines,
   payloadNotes,
+  releaseVerdict,
 } from './lib/payload-notes.mjs';
 
 const RELEASE_REPO = 'roanutil/embed-pdf-runtime';
@@ -98,6 +99,16 @@ const ASSET = `engine-runtime-payload-${TARGET}.tar.gz`;
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const runtime = path.join(repo, 'packages/engine/runtime');
 const libDir = path.join(runtime, 'npm', TARGET, 'lib');
+// Where the payload that was in libDir waits while a new one is checked
+// (gitignored). One fixed name, so a killed run's is found and put back.
+const libBackup = path.join(runtime, 'npm', TARGET, '.lib-backup');
+
+// The payload in libBackup back in libDir. Synchronous, for the signal handlers.
+function restorePayload() {
+  if (!existsSync(libBackup)) return;
+  rmSync(libDir, { recursive: true, force: true });
+  renameSync(libBackup, libDir);
+}
 const apple = path.join(repo, 'platforms/apple');
 const manifest = path.join(apple, 'EmbedPDF/Package.swift');
 // The fork target the wasm32 payload links, as build-arm.mjs builds it.
@@ -120,14 +131,41 @@ const sh = (cmd, cwd = repo, env = {}) => {
     env: { ...process.env, ...env },
   });
 };
+// sh, but the event loop runs while the command does, so a SIGINT or SIGTERM
+// handler can act (restore the payload) instead of waiting for it to end.
+let running = null;
+const shAsync = (cmd, cwd = repo, env = {}) => {
+  console.log(`  $ ${cmd}`);
+  return new Promise((resolve, reject) => {
+    running = spawn('bash', ['-euo', 'pipefail', '-c', cmd], {
+      cwd,
+      stdio: 'inherit',
+      env: { ...process.env, ...env },
+    });
+    running.on('error', reject);
+    running.on('exit', (code, signal) => {
+      running = null;
+      if (code === 0) resolve();
+      else reject(new Error(`Command failed (${signal ?? `exit ${code}`}): ${cmd}`));
+    });
+  });
+};
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
-const releaseExists = (tag) => {
+// What the fork has under `tag`, by releaseVerdict: only a release that isn't a
+// draft and has `asset` and its .sha256 is published. A gh that fails (no such
+// release, no login) reads as missing.
+const releaseState = (tag, asset) => {
+  let release = null;
   try {
-    run('gh', ['release', 'view', tag, '--repo', RELEASE_REPO], { stdio: 'pipe' });
-    return true;
+    release = JSON.parse(
+      run('gh', ['release', 'view', tag, '--repo', RELEASE_REPO, '--json', 'assets,isDraft'], {
+        stdio: 'pipe',
+      }),
+    );
   } catch {
-    return false;
+    release = null;
   }
+  return releaseVerdict(release, asset);
 };
 
 // The release names a commit, so that commit has to be what was built.
@@ -180,15 +218,32 @@ if (only !== 'wasm') {
 
 const head = run('git', ['rev-parse', 'HEAD']);
 const rustc = run('rustc', ['--version']);
-if (only !== 'apple') publishWasm();
+if (only !== 'apple') await publishWasm();
 if (only !== 'wasm') publishApple();
 
-function publishWasm() {
+async function publishWasm() {
+  // A run killed while its new payload was in place leaves the old one here.
+  if (existsSync(libBackup)) {
+    restorePayload();
+    console.error(
+      `A previous publish was stopped while its payload was swapped in; ${path.relative(repo, libDir)} ` +
+        `is restored from ${path.relative(repo, libBackup)}. Run the publish again.`,
+    );
+    process.exit(1);
+  }
   const hash = run('bash', [path.join(runtime, 'scripts/runtime-payload-hash.sh')]);
   const tag = `runtime-payloads-${hash}`;
-  if (releaseExists(tag) && !dryRun) {
+  const state = dryRun ? null : releaseState(tag, ASSET);
+  if (state === 'published') {
     console.log(`${tag} is already published on ${RELEASE_REPO}; nothing to do.`);
     return;
+  }
+  if (state === 'incomplete') {
+    console.error(
+      `release ${tag} on ${RELEASE_REPO} is incomplete (a draft, or ${ASSET} or its .sha256 ` +
+        `missing); finish or delete it before publishing again.`,
+    );
+    process.exit(1);
   }
 
   console.log(`building payload ${hash} at ${head.slice(0, 9)}`);
@@ -199,37 +254,49 @@ function publishWasm() {
   // back if anything after the swap throws (the package build, verify-rust-core,
   // the pack, the release), so a failed run leaves the payload it found.
   const fork = buildFork(repo);
-  assertStampMatches(fork, stampFacts(fork));
+  assertStampMatches(fork, stampFacts(fork), FORK_TARGET);
   const runtimeSrc = runtimeSrcCommit();
   // Before anything links: a library that doesn't match the pin stops here.
   const delta = fork.sha === runtimeSrc ? undefined : forkDelta(fork, runtimeSrc);
   forkLines({ fork, runtimeSrc, target: FORK_TARGET, delta });
   const { unbound, staged } = linkAgainstCommittedBindings(fork);
-  const backup = path.join(path.dirname(libDir), `.lib-backup-${process.pid}`);
+  // While the new payload is in place unverified, a SIGINT or SIGTERM puts the old
+  // one back before exiting; a kill that can't be caught leaves the backup, which
+  // the next run restores before anything else.
+  const onSignal = (signal) => {
+    running?.kill(signal);
+    restorePayload();
+    console.error(`${signal}: ${path.relative(repo, libDir)} restored; nothing published.`);
+    process.exit(signal === 'SIGINT' ? 130 : 143);
+  };
   try {
-    rmSync(backup, { recursive: true, force: true });
-    if (existsSync(libDir)) renameSync(libDir, backup);
+    rmSync(libBackup, { recursive: true, force: true });
+    if (existsSync(libDir)) renameSync(libDir, libBackup);
+    process.on('SIGINT', onSignal);
+    process.on('SIGTERM', onSignal);
     try {
       cpSync(staged, libDir, { recursive: true });
-      publishLinked();
+      await publishLinked();
     } catch (error) {
-      rmSync(libDir, { recursive: true, force: true });
-      if (existsSync(backup)) renameSync(backup, libDir);
+      restorePayload();
       throw error;
+    } finally {
+      process.off('SIGINT', onSignal);
+      process.off('SIGTERM', onSignal);
     }
-    rmSync(backup, { recursive: true, force: true });
+    rmSync(libBackup, { recursive: true, force: true });
   } finally {
     rmSync(staged, { recursive: true, force: true });
   }
 
-  function publishLinked() {
+  async function publishLinked() {
     // verify-rust-core.mjs imports @embedpdf/engine-runtime, which resolves to dist/.
-    sh('pnpm --filter @embedpdf/engine-runtime build');
-    sh('node packages/engine/runtime/scripts/verify-rust-core.mjs');
+    await shAsync('pnpm --filter @embedpdf/engine-runtime build');
+    await shAsync('node packages/engine/runtime/scripts/verify-rust-core.mjs');
 
     const out = mkdtempSync(path.join(tmpdir(), 'engine-payload-'));
     const archive = path.join(out, ASSET);
-    sh(
+    await shAsync(
       `tar -czf ${JSON.stringify(archive)} --exclude .payload-source -C ${JSON.stringify(libDir)} .`,
     );
     const digest = sha256(archive);
@@ -273,8 +340,10 @@ function publishWasm() {
       execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
       rmSync(out, { recursive: true, force: true });
     }
-    // The local payload now matches the release, so fetch-payload.sh keeps it.
-    writeFileSync(path.join(libDir, '.payload-source'), hash);
+    // A published payload matches its release, so fetch-payload.sh keeps it. A dry
+    // run's matches no release, so its marker names none and fetch-payload.sh
+    // fetches the published one over it.
+    writeFileSync(path.join(libDir, '.payload-source'), dryRun ? `dry-run-${hash}` : hash);
   }
   console.log(`${dryRun ? 'built' : 'published'} ${tag}`);
 }
@@ -357,6 +426,7 @@ function stampFacts(fork) {
     archiveSha256: sha256(archive),
     archiveSha: metadata.sha,
     archiveEmsdk: metadata.emsdkVersion ?? null,
+    archiveTarget: metadata.target ?? null,
     // The staging files must be the archive's own, not just named by it.
     archiveLibSha256: createHash('sha256').update(member('./lib/libembedpdf.a')).digest('hex'),
     archiveArgs: member('./args.gn', 'utf8'),

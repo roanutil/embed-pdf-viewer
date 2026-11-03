@@ -118,16 +118,20 @@ const outsideTheBuild = (file, blobs = {}) =>
  * `BUILD-METADATA.json` (`archiveEmsdk` is `null` for an archive that predates
  * the field, and the stamp's `source.emsdk` is then taken on trust), and
  * `archiveLibSha256` and `archiveArgs`, its `lib/libembedpdf.a` hash and
- * `args.gn`, which must be the staging ones (`libSha256`, `stagingArgs`).
+ * `args.gn`, which must be the staging ones (`libSha256`, `stagingArgs`), and
+ * `archiveTarget`, the `target` its metadata names, which must be `target`.
+ * `source.archivePath` must end in `source.archive`.
  */
-export function assertStampMatches(fork, facts) {
+export function assertStampMatches(fork, facts, target) {
   const problems = [];
   if (facts.libSha256 !== fork.libSha256) {
     problems.push(`libembedpdf.a hashes to ${facts.libSha256}, the stamp says ${fork.libSha256}`);
   }
   if (fork.source) {
     if (!fork.source.archivePath) problems.push('the stamp names no source.archivePath');
-    else if (facts.archiveSha256 === null)
+    else if (fork.source.archivePath.split('/').at(-1) !== fork.source.archive) {
+      problems.push(`source.archivePath isn't the archive the stamp names, ${fork.source.archive}`);
+    } else if (facts.archiveSha256 === null)
       problems.push(`no archive at ${fork.source.archivePath}`);
     else {
       if (facts.archiveSha256 !== fork.source.archiveSha256) {
@@ -148,6 +152,11 @@ export function assertStampMatches(fork, facts) {
       if (facts.archiveArgs !== facts.stagingArgs) {
         problems.push("the staging args.gn isn't the archive's");
       }
+      // The plain wasm32 archive has the same gn args, so only its metadata says
+      // it isn't the target this payload links.
+      if (facts.archiveTarget !== target) {
+        problems.push(`the archive is for target ${facts.archiveTarget}, not ${target}`);
+      }
       if (facts.archiveSha !== fork.sha) {
         problems.push(
           `the archive's BUILD-METADATA.json names ${facts.archiveSha}, the stamp says ${fork.sha}`,
@@ -167,11 +176,13 @@ export function assertStampMatches(fork, facts) {
  * archive rather than built here, `source` ({ archive, archiveSha256, emsdk }).
  * `runtimeSrc` is the commit the viewer pins. When the two differ, `delta`
  * says how: whether `fork.sha` is an ancestor of the pin (`ancestor`), the
- * commits between them, the paths they change, the emsdk the pin builds the
- * target with (`emsdkPin`, from `emsdk-version.sh`), and whether the
+ * commits between them, the paths they change, each `PINNED_SCRIPT_BLOBS`
+ * script's blobs at both ends (`blobs`), the emsdk the pin builds the target
+ * with (`emsdkPin`, from `emsdk-version.sh` at the pin), and whether the
  * archive's `args.gn` is what `target-args.sh` prints at `runtimeSrc`. Only a
- * delta that changes nothing but docs, the fork's tests and the
- * `BUILD_NEUTRAL_SCRIPTS`, with the same gn args, is
+ * delta that changes nothing but docs, the fork's tests, the
+ * `BUILD_NEUTRAL_SCRIPTS` and the `PINNED_SCRIPT_BLOBS` (each as its recorded
+ * pair), with the pin's emsdk the archive's and the same gn args, is
  * accepted; anything else throws, since the notes couldn't say the library
  * matches the pin.
  */
@@ -238,4 +249,17 @@ export function payloadNotes({
         ]
       : []),
   ].join('\n');
+}
+
+/**
+ * What a release found on the fork says: `missing` (no release, `null`),
+ * `published` (not a draft, with the asset and its `.sha256`), or `incomplete`
+ * (a draft, or an asset missing), which a `gh release create` that failed part
+ * way leaves. Only `published` is something a publish can skip.
+ */
+export function releaseVerdict(release, asset) {
+  if (!release) return 'missing';
+  const names = new Set((release.assets ?? []).map((a) => a.name));
+  if (release.isDraft || !names.has(asset) || !names.has(`${asset}.sha256`)) return 'incomplete';
+  return 'published';
 }

@@ -9,4 +9,6 @@ build/local-staging/
 .cache/
 
 npm/*/lib/
+# A payload a publish moved aside while it checks a new one (publish-engine-payload.mjs).
+npm/*/.lib-backup/
 .render-baseline/
