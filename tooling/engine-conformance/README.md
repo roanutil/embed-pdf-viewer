@@ -20,7 +20,7 @@ src/generate-vectors.ts               reads every case through the TypeScript en
 src/quantize.ts                       the fixed-point contract, with its Rust twin
 src/scope-cases.ts                    the auth/scope corpus, G3's gate
 vectors/<operation>/<case>.json       the committed vectors
-vectors/scope/{parse,resolve}.json    what the TypeScript scope resolver answers
+vectors/scope/{parse,resolve,coverage}.json  what the TypeScript scope resolver answers
 ```
 
 The Rust side reads them through `test_support::corpus`; the geometry runner is
@@ -176,10 +176,13 @@ pnpm --filter @embedpdf/tooling-engine-conformance run scope:check
 ```
 
 `parse.json` records, per scope string, whether the grammar accepted it and the
-shape it parsed to. `resolve.json` records the decoded bit table and then, per
-scope array and permission word, the expanded capability set, every
-`checkCapability` answer, and the `checkCollab` and `checkSetGroup` probes.
-`crates/epdf-engine/tests/scope_conformance.rs` replays both, with no
+shape it parsed to, or the refusal's message when it didn't. `resolve.json`
+records the decoded bit table and then, per scope array and permission word, the
+expanded capability set, every `checkCapability` answer, and the `checkCollab`
+and `checkSetGroup` probes. A case that installs plugins also records
+`pluginPermissionsOf`. `coverage.json` records `scopeNotCovered`: what handing
+out one scope gives beyond another.
+`crates/epdf-engine/tests/scope_conformance.rs` replays all three, with no
 known-divergence list: a search result that differs subtly is a worse search, a
 permission result that differs subtly is a security bug, and there is nothing
 about one worth writing down instead of fixing.

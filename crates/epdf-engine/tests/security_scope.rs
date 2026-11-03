@@ -180,11 +180,15 @@ fn bit_4_6_or_9_fills_in_and_signs_and_only_4_with_6_changes_fields() {
 
 #[test]
 fn every_bit_set_expands_to_exactly_the_materialized_set() {
-    // Every bit set: the expansion adds nothing the materialized set lacks,
-    // since every implication's source is already in it.
+    // Every bit set: the expansion adds nothing the materialized set lacks
+    // but `doc.render.thumbnail`, which no bit gives and `doc.render` implies
+    // (8638dc749). Every other implication's source is already in it.
     let bits = decode_pdf_bits(Some(0xffff_ffff));
     let materialized = materialize_pdf_permissions(bits);
-    assert_eq!(expand_raw_scope(&["pdf.permissions".into()], bits).unwrap(), materialized);
+    assert!(!materialized.contains(&DocCapability::DocRenderThumbnail));
+    let mut expected = materialized.clone();
+    expected.insert(DocCapability::DocRenderThumbnail);
+    assert_eq!(expand_raw_scope(&["pdf.permissions".into()], bits).unwrap(), expected);
     for grant_minted in [
         DocCapability::DocFormsSubmit,
         DocCapability::DocFormsImport,

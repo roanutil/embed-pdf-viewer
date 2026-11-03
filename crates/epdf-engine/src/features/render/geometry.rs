@@ -58,7 +58,14 @@ pub enum RenderViewport {
         #[serde(default = "no_dpi", deserialize_with = "dpi_or_nan")]
         dpi: f64,
     },
+    /// A thumbnail: the whole page, [`PAGE_THUMBNAIL_SIZE`] pixels on its
+    /// long side. Needs `doc.render.thumbnail`, which `doc.render` includes.
+    Thumbnail,
 }
+
+/// A thumbnail's long side, in pixels (`PAGE_THUMBNAIL_SIZE`): a thumbnail
+/// is the whole page at this size, whatever the page's.
+pub const PAGE_THUMBNAIL_SIZE: f64 = 512.0;
 
 /// A `dpi` viewport's `dpi` when it names none: no DPI a print takes.
 fn no_dpi() -> f64 {
@@ -115,7 +122,8 @@ pub fn print_scale(width: f64, height: f64, dpi: f64) -> f64 {
 
 /// Device pixel size for a region under a rotation and viewport
 /// (`renderSize`). A `dpi` viewport sizes a print picture for its paper
-/// ([`print_scale`]).
+/// ([`print_scale`]); a `thumbnail` one puts the long side at
+/// [`PAGE_THUMBNAIL_SIZE`].
 ///
 /// Width swaps with height on a quarter turn. Both dimensions are at least 1:
 /// a zero-pixel bitmap is not a smaller picture, it is no picture, and every
@@ -148,6 +156,7 @@ pub fn device_size(
         RenderViewport::Scale { scale } => scale,
         // The area as it is, before the turn: a print picture is upright.
         RenderViewport::Dpi { dpi } => print_scale(rect_width, rect_height, dpi),
+        RenderViewport::Thumbnail => PAGE_THUMBNAIL_SIZE / rect_width.max(rect_height),
     };
     if !scale.is_finite() || scale <= 0.0 {
         return Err(EngineError::with_message(

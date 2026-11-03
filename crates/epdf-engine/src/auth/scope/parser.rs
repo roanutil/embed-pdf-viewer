@@ -10,8 +10,8 @@ use super::types::{
 /// A scope string that matches no known shape.
 ///
 /// Carries the offending string verbatim, as `InvalidScope` does, so a caller
-/// can echo it. `reason` is diagnostic: the vectors compare the accept or
-/// reject verdict and not this text.
+/// can echo it. The vectors compare the [`Display`](std::fmt::Display) text,
+/// `reason` included, against TypeScript's message.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvalidScope {
     pub scope: String,
@@ -36,9 +36,10 @@ impl std::error::Error for InvalidScope {}
 ///
 /// The order of the checks is load-bearing and matches TypeScript: the
 /// wildcard and the virtual scope are exact strings, anything containing a
-/// colon is a collab scope even when malformed, and only what is left is
-/// tried as a capability. A parser that tried capability first would report
-/// "invalid capability name shape" for `annotations:create`.
+/// colon is a collab scope even when malformed, a dotted word outside the
+/// core namespaces is a plugin permission, and only what is left is tried as
+/// a capability. A parser that tried capability first would report "invalid
+/// capability name shape" for `annotations:create`.
 pub fn parse_scope(raw: &str) -> Result<ParsedScope, InvalidScope> {
     if raw == "*" {
         return Ok(ParsedScope::Wildcard);
@@ -49,7 +50,92 @@ pub fn parse_scope(raw: &str) -> Result<ParsedScope, InvalidScope> {
     if raw.contains(':') {
         return parse_collab(raw);
     }
+    if let Some(plugin) = plugin_of_permission(raw) {
+        return parse_plugin_permission(raw, plugin);
+    }
     parse_capability(raw)
+}
+
+/// The first segments the core owns (`CORE_NAMESPACES`), across every
+/// vocabulary a plugin shares with it: the permission namespaces, then the
+/// event namespaces. A plugin id can never be one of these, so a dotted word
+/// that starts with one is the core's and must be a word the core knows.
+pub const CORE_NAMESPACES: [&str; 14] = [
+    "doc",
+    "docs",
+    "pdf",
+    "annotations",
+    "fields",
+    "tokens",
+    "grants",
+    "shares",
+    "tenants",
+    "layer",
+    "visitor",
+    "document",
+    "submission",
+    "signature",
+];
+
+/// The plugin a permission belongs to (`pluginOfPermission`): its first
+/// segment, when the word is dotted and that segment is not one of the
+/// core's namespaces. `None` for every core word, and for anything that is
+/// not dotted or carries a colon.
+pub fn plugin_of_permission(raw: &str) -> Option<&str> {
+    if raw.contains(':') {
+        return None;
+    }
+    // `indexOf('.')`; a dot at 0 is no namespace. The byte index is a char
+    // boundary because '.' is ASCII.
+    let dot = raw.find('.')?;
+    if dot == 0 {
+        return None;
+    }
+    let namespace = &raw[..dot];
+    (!CORE_NAMESPACES.contains(&namespace)).then_some(namespace)
+}
+
+/// Whether `id` can be a plugin's id (`isPluginId`): lowercase words joined
+/// by dashes, and not one of [`CORE_NAMESPACES`].
+pub fn is_plugin_id(id: &str) -> bool {
+    has_plugin_word_shape(id) && !CORE_NAMESPACES.contains(&id)
+}
+
+/// `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` (`PLUGIN_ID_SHAPE`), which each segment of
+/// a plugin permission also has to match.
+fn has_plugin_word_shape(word: &str) -> bool {
+    let mut parts = word.split('-');
+    let first = parts.next().unwrap_or_default();
+    let mut chars = first.chars();
+    if !chars.next().is_some_and(|c| c.is_ascii_lowercase()) {
+        return false;
+    }
+    let tail = |c: char| c.is_ascii_lowercase() || c.is_ascii_digit();
+    chars.all(tail) && parts.all(|part| !part.is_empty() && part.chars().all(tail))
+}
+
+/// `^[a-z][a-z0-9]*(-[a-z0-9]+)*(\.[a-z][a-z0-9]*(-[a-z0-9]+)*)+$`
+/// (`PLUGIN_PERMISSION_SHAPE`): a plugin id, then one or more dotted actions
+/// of the same form.
+fn has_plugin_permission_shape(raw: &str) -> bool {
+    let mut segments = 0usize;
+    for segment in raw.split('.') {
+        segments += 1;
+        if !has_plugin_word_shape(segment) {
+            return false;
+        }
+    }
+    segments >= 2
+}
+
+fn parse_plugin_permission(raw: &str, plugin: &str) -> Result<ParsedScope, InvalidScope> {
+    if !has_plugin_permission_shape(raw) {
+        return Err(InvalidScope::new(
+            raw,
+            "invalid plugin permission shape (expected <plugin id>.<action>)",
+        ));
+    }
+    Ok(ParsedScope::Plugin { name: raw.to_string(), plugin: plugin.to_string() })
 }
 
 /// Validate every entry, discarding the parse output.
@@ -195,5 +281,49 @@ fn parse_capability(raw: &str) -> Result<ParsedScope, InvalidScope> {
     match DocCapability::parse(raw) {
         Some(name) => Ok(ParsedScope::Capability(name)),
         None => Err(InvalidScope::new(raw, format!("unknown capability: {raw}"))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plugin_of_permission_names_the_plugin_of_a_plugin_word_only() {
+        assert_eq!(plugin_of_permission("protected-display.view"), Some("protected-display"));
+        for core in
+            ["doc.render", "pdf.permissions", "grants.manage", "annotations:create:self", "*"]
+        {
+            assert_eq!(plugin_of_permission(core), None, "{core}");
+        }
+        assert_eq!(plugin_of_permission(".view"), None);
+        assert_eq!(plugin_of_permission("snapshot"), None);
+    }
+
+    #[test]
+    fn every_core_namespace_is_reserved() {
+        for namespace in CORE_NAMESPACES {
+            assert_eq!(plugin_of_permission(&format!("{namespace}.anything")), None);
+            assert!(!is_plugin_id(namespace), "{namespace}");
+        }
+    }
+
+    #[test]
+    fn a_plugin_id_is_lowercase_words_joined_by_dashes() {
+        for id in ["protected-display", "snapshot", "ai-chat", "stamp2", "a-1b"] {
+            assert!(is_plugin_id(id), "{id}");
+        }
+        for id in [
+            "",
+            "Protected",
+            "protected_display",
+            "protected--display",
+            "protected-",
+            "-x",
+            "1x",
+            "a.b",
+        ] {
+            assert!(!is_plugin_id(id), "{id}");
+        }
     }
 }

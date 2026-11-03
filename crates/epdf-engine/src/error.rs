@@ -20,11 +20,11 @@ pub enum EngineErrorCode {
     DocOpenFailed,
     DocPasswordRequired,
     DocPasswordIncorrect,
-    /// A share-token exchange needs the grant's passphrase: none was supplied,
-    /// or the supplied one was rejected, indistinguishable by design because
-    /// the server does not distinguish them either. Distinct from
+    /// A grant exchange needs the grant's passphrase: none was supplied, or
+    /// the supplied one was rejected, indistinguishable by design because the
+    /// server does not distinguish them either. Distinct from
     /// `DocPasswordRequired`, which is about the PDF's own encryption.
-    SharePasswordRequired,
+    GrantPassphraseRequired,
     Aborted,
     Network,
     Unauthenticated,
@@ -58,8 +58,6 @@ pub enum EngineErrorCode {
     SignatureRefused,
     /// A document's signatures forbid the change.
     ProtectedDocument,
-    /// The base the caller named is not the one the session is on.
-    StaleBase,
     /// A payload passed one of its limits: an annotation or form bundle's
     /// bytes, counts or image pixels. Nothing was read past the limit and
     /// nothing was written. `details` has the `limit`, its `max` and the
@@ -84,18 +82,24 @@ pub enum EngineErrorCode {
     UndoUnavailable,
     /// An `opId` that already answered one change was sent with another.
     IdempotencyKeyReused,
+    /// The layer was deleted: what it held is gone, and its name is refused
+    /// from then on. Work on another layer name.
+    LayerDeleted,
+    /// The grant asks its visitors who they are, and this visitor has not
+    /// answered what it requires. `details` is a `VisitorIdentityRequest`.
+    VisitorIdentityRequired,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 29] = [
+    pub const ALL: [EngineErrorCode; 30] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
         Self::DocOpenFailed,
         Self::DocPasswordRequired,
         Self::DocPasswordIncorrect,
-        Self::SharePasswordRequired,
+        Self::GrantPassphraseRequired,
         Self::Aborted,
         Self::Network,
         Self::Unauthenticated,
@@ -111,13 +115,14 @@ impl EngineErrorCode {
         Self::SigningVersionMismatch,
         Self::SignatureRefused,
         Self::ProtectedDocument,
-        Self::StaleBase,
         Self::PayloadTooLarge,
         Self::ObjectNumberUnavailable,
         Self::LayerFull,
         Self::ChangeConflict,
         Self::UndoUnavailable,
         Self::IdempotencyKeyReused,
+        Self::LayerDeleted,
+        Self::VisitorIdentityRequired,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -128,7 +133,7 @@ impl EngineErrorCode {
             Self::DocOpenFailed => "DocOpenFailed",
             Self::DocPasswordRequired => "DocPasswordRequired",
             Self::DocPasswordIncorrect => "DocPasswordIncorrect",
-            Self::SharePasswordRequired => "SharePasswordRequired",
+            Self::GrantPassphraseRequired => "GrantPassphraseRequired",
             Self::Aborted => "Aborted",
             Self::Network => "Network",
             Self::Unauthenticated => "Unauthenticated",
@@ -144,13 +149,14 @@ impl EngineErrorCode {
             Self::SigningVersionMismatch => "SigningVersionMismatch",
             Self::SignatureRefused => "SignatureRefused",
             Self::ProtectedDocument => "ProtectedDocument",
-            Self::StaleBase => "StaleBase",
             Self::PayloadTooLarge => "PayloadTooLarge",
             Self::ObjectNumberUnavailable => "ObjectNumberUnavailable",
             Self::LayerFull => "LayerFull",
             Self::ChangeConflict => "ChangeConflict",
             Self::UndoUnavailable => "UndoUnavailable",
             Self::IdempotencyKeyReused => "IdempotencyKeyReused",
+            Self::LayerDeleted => "LayerDeleted",
+            Self::VisitorIdentityRequired => "VisitorIdentityRequired",
         }
     }
 }
