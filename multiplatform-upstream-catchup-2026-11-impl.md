@@ -614,7 +614,7 @@ the publish script built both slices itself.
 
 `Render.swift` needed no change. `RenderTests.swift` didn't compile: `expectNoDifference` takes
 autoclosures, which can't hold `try await`. `4457cb2c6` fixes that. With
-`EMBEDPDF_PREBUILT_ENGINE=local` on simulator `5FA32A5D-6186-4C16-BE25-C87829DD1BFA`, all 327 tests
+`EMBEDPDF_PREBUILT_ENGINE=local` on an iOS simulator (iPhone 17, iOS 26.5), all 327 tests
 in 27 suites pass, `RenderTests` among them.
 
 At `1544594da`, `check-apple-engine.sh` exits 1 (pinned `apple-engine-3cf9c87caaf5b2de`, current
@@ -652,6 +652,26 @@ between them, lists the paths they change, and compares the archive's `args.gn` 
 that `8b1e69abd` adds 4 commits that change only `scripts/` and `docs/`, with identical source and
 gn args. `--target` stays `6dfc03697`. `embedpdf.wasm` is byte for byte the one built earlier
 (`044e72b0…15d8`).
+
+### Round 1 review fixes
+
+The fork stamp a payload publish reads is no longer trusted. A stamp for a library taken from a
+fork release archive goes at `<PERF_WORK_DIR>/fork/<runtime-src commit>/wasm32-eh.json`, beside the
+archive unpacked into its `staging` directory. Its `sha` is the archive's fork commit and its
+`libSha256` the hash of `staging/lib/libembedpdf.a`. Its `source` names the archive, the archive's
+path (`archivePath`) and sha256, and the emsdk version. The script header has the exact shape. The
+publish hashes the library and the archive again, reads the fork commit from the archive's own
+`BUILD-METADATA.json`, and refuses on any mismatch. It also refuses if the archive's commit isn't an
+ancestor of the pin, if anything between them changes more than `docs/`, the fork's tests and the
+three scripts in `BUILD_NEUTRAL_SCRIPTS`, or if a committed binding the runtime lacks isn't in
+`KNOWN_UNBOUND` (`scripts/lib/payload-notes.mjs`, today only `EPDFAnnot_GetStructurePosition`).
+Both lists need reading on every runtime merge.
+
+Accepted 2026-11-03, beside E3, E4, P1 and P3 as a kept Rust-only divergence: Rust's commands
+`app_state` is JSON only. The TypeScript `appState` can hold functions and getters that the app
+changes in place. In Rust, state that changes in place lives in a command's own closures, and
+`every_reader_wakes_once_a_command_ran` in `crates/plugins/commands/tests/behavior.rs` tests that
+case that way. The FFI side is left to another job.
 
 ### Checks at `1544594da`
 
