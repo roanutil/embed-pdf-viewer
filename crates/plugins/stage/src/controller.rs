@@ -142,6 +142,9 @@ pub(crate) struct Inner {
     pub(crate) initial_base: StageSettings,
     pub(crate) rules: RefCell<Rc<Vec<ResponsiveRule>>>,
     pub(crate) last_effective: RefCell<StageSettings>,
+    /// The locks, in the order they were taken: the last layer, over the
+    /// base and the rules.
+    pub(crate) locks: RefCell<Vec<Rc<StageSettingsLock>>>,
     // view/lifecycle: registration id, priority and provider
     pub(crate) providers: RefCell<Vec<(u64, f64, Provider)>>,
     pub(crate) next_provider: Cell<u64>,
@@ -190,6 +193,7 @@ pub(crate) fn create_stage_controller(
             initial_base: base.clone(),
             base: RefCell::new(base),
             rules: RefCell::new(Rc::new(rules)),
+            locks: RefCell::new(Vec::new()),
             providers: RefCell::new(Vec::new()),
             next_provider: Cell::new(0),
         }),
@@ -210,6 +214,8 @@ pub(crate) fn create_stage_controller(
             inner.placement.pending.borrow_mut().take();
             inner.cancel_frame.borrow_mut().take();
             inner.cancel_rest.borrow_mut().take();
+            // A lock lasts as long as its document.
+            inner.locks.borrow_mut().clear();
         }
     });
     stage

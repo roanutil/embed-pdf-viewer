@@ -9,8 +9,8 @@
 
 use epdf_geometry::{NO_FRAME, PageRotation};
 use epdf_stage_core::{
-    Align, AlignValue, Alignment, AlignmentValue, Direction, SizingMode, SpreadMode, ZoomMode,
-    ZoomSpec,
+    Align, AlignValue, Alignment, AlignmentValue, Direction, SizingMode, SpreadMode, ZOOM_MAX,
+    ZOOM_MIN, ZoomMode, ZoomSpec,
 };
 use serde::{Deserialize, Serialize};
 
@@ -47,10 +47,13 @@ pub fn default_settings() -> StageSettings {
         },
         view_rotation: PageRotation::DEG_0,
         zoom: ZoomSpec::Mode { mode: ZoomMode::Automatic },
+        min_zoom: ZOOM_MIN,
+        max_zoom: ZOOM_MAX,
         scroll_behavior: ScrollBehaviorKind::Smooth,
         interaction: true,
         pan_fallback: true,
         zoom_gestures: true,
+        zoom_box: ZoomBoxLook { fill: None, stroke: None },
         // Web: 1 PDF point is 96/72 CSS px.
         view_units_per_point: 96.0 / 72.0,
     }
@@ -104,10 +107,15 @@ macro_rules! for_each_setting {
         $m!(AnchorAlign, anchor_align, None);
         $m!(ViewRotation, view_rotation, Scene);
         $m!(Zoom, zoom, Refit);
+        // New limits re-resolve the zoom, which moves only when it falls outside them.
+        $m!(MinZoom, min_zoom, Refit);
+        $m!(MaxZoom, max_zoom, Refit);
         $m!(ScrollBehavior, scroll_behavior, None);
         $m!(Interaction, interaction, None);
         $m!(PanFallback, pan_fallback, None);
         $m!(ZoomGestures, zoom_gestures, None);
+        // Paint only.
+        $m!(ZoomBox, zoom_box, None);
         $m!(ViewUnitsPerPoint, view_units_per_point, Scene);
     };
 }
@@ -132,15 +140,18 @@ pub enum SettingKey {
     AnchorAlign,
     ViewRotation,
     Zoom,
+    MinZoom,
+    MaxZoom,
     ScrollBehavior,
     Interaction,
     PanFallback,
     ZoomGestures,
+    ZoomBox,
     ViewUnitsPerPoint,
 }
 
 /// `SETTING_KEYS`.
-pub const SETTING_KEYS: [SettingKey; 21] = [
+pub const SETTING_KEYS: [SettingKey; 24] = [
     SettingKey::Flow,
     SettingKey::Layout,
     SettingKey::Spread,
@@ -157,10 +168,13 @@ pub const SETTING_KEYS: [SettingKey; 21] = [
     SettingKey::AnchorAlign,
     SettingKey::ViewRotation,
     SettingKey::Zoom,
+    SettingKey::MinZoom,
+    SettingKey::MaxZoom,
     SettingKey::ScrollBehavior,
     SettingKey::Interaction,
     SettingKey::PanFallback,
     SettingKey::ZoomGestures,
+    SettingKey::ZoomBox,
     SettingKey::ViewUnitsPerPoint,
 ];
 
@@ -263,6 +277,7 @@ macro_rules! object_identity {
 object_identity!(
     epdf_geometry::PageFrame,
     PartialPageFrame,
+    ZoomBoxLook,
     Alignment,
     ArrivalAlignment,
     AlignmentValue,
@@ -274,6 +289,11 @@ object_identity!(
 pub(crate) fn patch_changes(current: &StageSettings, patch: &StageSettingsPatch) -> bool {
     macro_rules! arm {
         (PageFrame, $field:ident, $effect:ident) => {
+            if patch.$field.is_some() {
+                return true;
+            }
+        };
+        (ZoomBox, $field:ident, $effect:ident) => {
             if patch.$field.is_some() {
                 return true;
             }

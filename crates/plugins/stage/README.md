@@ -120,8 +120,9 @@ The kernel's default is a no-op, and so is the conformance fake's, as the TypeSc
 (`fake-engine.ts:625`); the native and web handles forward it to the engine (Task 13.33).
 `the_working_set_is_told_at_connect_and_on_each_change` pins the calls with a recording handle.
 
-A page transform whose view scale squares to zero (a huge device ratio over a tiny unbounded zoom)
-is not invertible. The TypeScript throws `Mat2D.invert: non-invertible matrix` from the page reads;
+A page transform whose view scale squares to zero (a huge device ratio over a tiny content scale)
+is not invertible. The zoom limits keep the camera at 5% or more, so only `view_units_per_point`
+reaches it now. The TypeScript throws `Mat2D.invert: non-invertible matrix` from the page reads;
 no Rust page read returns a `Result`, so the page is left out of `list_visible_pages` and
 `get_page_frame` answers `None` (`a_non_invertible_page_transform_leaves_the_page_out`).
 
@@ -131,6 +132,29 @@ deserialize, as a JavaScript read sees them.
 
 A pending navigation (`whenPlaced`) and the providers and rule predicates hold the capability; the
 instance's cleanup lets go of them at close, which a garbage collector does for the TypeScript.
+
+The zoom tool's drag is `navigation/zoom_drag.rs` (`begin_zoom_drag`, `move_zoom_drag`,
+`end_zoom_drag`, `cancel_zoom_drag`, `get_zoom_box`), and `zoom_drag_handler.rs` drives it from the
+interaction hub under the `zoom-box` tag, taking only its own lens's presses. A press that moves
+less than 4 px on both axes is a click and steps the zoom around the point; Alt steps out. The
+TypeScript memoizes `getZoomBox` so adapters can compare by reference; `get_zoom_box` computes the
+value on each call. A box clamps its zoom only to 0.05..64, not to `min_zoom`/`max_zoom`, because
+`zoom-drag.ts:118` does the same; the port keeps that.
+
+`min_zoom` and `max_zoom` bound every other zoom: `set_camera`, `zoom_around`, a fixed level's
+effective zoom, arrivals, reveals and the double-tap ladder. `zoom_in` and `zoom_out` step through
+round levels (100%, 125%, 150%, 200%, ...), and `can_zoom_in` and `can_zoom_out` say whether a step
+would move.
+
+`lock_settings` holds settings over every other writer (`update_settings`, the rules, a restored
+view, `reset_settings`) and returns an `Unsubscribe` that lets go. Locks are the last layer of the
+resolution, and `get_view_state` keeps what is under them. `tests/zoom_tools.rs` pins the drag, the
+limits and the locks, since the vectors record them only as state defaults. Two differences are
+kept on purpose. A lock's settings are checked and recorded in setting order, where the TypeScript
+uses the caller's key order, so the `locks` key order can differ, and so can which refusal wins
+when one lock both names the zoom and conflicts. Only the conformance harness can express an
+unknown key, and it refuses one before any zoom or conflict check. And the release can't throw, so
+a reframe that fails on release is dropped.
 
 ## Not ported
 

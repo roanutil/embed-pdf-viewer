@@ -56,6 +56,13 @@ impl StageCapability {
         self.st().settings.padding
     }
 
+    /// The `minZoom`/`maxZoom` range every zoom this view chooses is
+    /// clamped into.
+    pub(crate) fn zoom_limits(&self) -> sc::ZoomLimits {
+        let settings = &self.st().settings;
+        sc::resolve_zoom_limits(settings.min_zoom, settings.max_zoom)
+    }
+
     pub(crate) fn paged(&self) -> bool {
         self.st().settings.flow == FlowMode::Paged
     }
@@ -152,7 +159,7 @@ impl StageCapability {
     pub(crate) fn effective_zoom(&self) -> f64 {
         let state = self.st();
         match state.settings.zoom {
-            ZoomSpec::Level { level } => level,
+            ZoomSpec::Level { level } => sc::clamp_zoom(level, self.zoom_limits()),
             _ => js::max(state.camera.zoom, 0.0001),
         }
     }

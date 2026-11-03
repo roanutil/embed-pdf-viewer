@@ -933,3 +933,101 @@ Two things are left as they were. `cargo fmt -p pdfium` rewrites `crates/pdfium/
 which predates C5a. And the engine build (`pnpm --filter "@embedpdf/engine..." build`) rewrites
 `crates/plugins/acrojs/prelude.js` with upstream's `Field.setFocus`, which belongs to the form-focus
 port, so C5a put it back.
+
+## C5b: the stage's marquee zoom
+
+C5b ran on `research/catchup-2026-11-c5b`, branched from `509d2df20`, in the `embedpdf-c5b`
+container against the `6dfc03697` `linux-arm64` library. Nothing was pushed.
+
+### Three upstream commits, not one
+
+`search-stage` was blocked on more than the marquee zoom. Regenerated from the TypeScript at
+`509d2df20`, every stage state it records gains five members: `zoomDrag` and `zoomBox` from
+`a1ee5683f`, `minZoom` and `maxZoom` from `e2ee5215f`, and `locks` from `4331b55a3`. No case uses
+any of them; they show only as defaults. Adding the state fields alone would also break every other
+suite that records the stage state, since none of them had been regenerated either:
+`stage-capability`, `stage-events`, `stage-feeds`, `stage-motion`, `stage-pure`, `link`, `outline`
+and `attachment`. `stage-motion` also records `zoomIn` stepping to 1.25, the round levels from
+`e2ee5215f`, where the Rust multiplied by 1.2.
+
+So C5b ports the stage parts of all three commits and regenerates all nine suites. The cost is
+scope: `lockSettings` and the zoom limits are features no vector exercises, held only by the new
+tests in `crates/plugins/stage/tests/zoom_tools.rs`. The alternative was inert `minZoom`, `maxZoom`
+and `locks` settings that the state reports but nothing reads. `4d4e9ed55`'s per-side padding is
+not ported. Every recorded padding is a number, so the vectors don't see it, and `zoom_into` uses
+the per-side formula over a numeric padding, which gives the same floats.
+
+`1a9c53fb4` adds the core half of `e2ee5215f` to `epdf-stage-core`: `ZoomLimits`,
+`resolve_zoom_limits`, `clamp_zoom`, and `zoom_around_within` and `resolve_zoom_within` for the
+TypeScript's optional `limits` argument. `d53ad0bf4` ports the stage:
+
+| File | What changed |
+|---|---|
+| `contract.rs`, `settings.rs`, `responsive.rs` | `minZoom`, `maxZoom` (effect `refit`) and `zoomBox` (effect `none`, merged as `{ fill: null, stroke: null, ...look }`); `SettingLock`, `StageSettingsLock`, `EndZoomDragOptions` |
+| `model.rs` | `zoom_drag` and `locks` in the state, in the TypeScript's member order; `set_zoom_drag`, `set_locks` |
+| `navigation/zoom_drag.rs` (new) | `begin_zoom_drag`, `move_zoom_drag`, `end_zoom_drag`, `cancel_zoom_drag`, `get_zoom_box`: a click steps around the point, a box of 4 px or more zooms to fit it |
+| `zoom_drag_handler.rs` (new) | `create_zoom_drag_handler`, live under the `zoom-box` tag, own lens only, Alt for `zoom-out` |
+| `navigation/zoom.rs` | Round-level `zoom_in`/`zoom_out` with an optional `around`, `can_zoom_in`, `can_zoom_out`, limits on the double-tap ladder |
+| `camera/gestures.rs`, `services/scene.rs`, `navigation/arrive.rs`, `navigation/reveal.rs` | Every zoom clamped into the limits: `set_camera`, `zoom_around`, a fixed level's effective zoom, arrivals, reveals |
+| `scroll_handler.rs` | The pan fallback skips a tool with a `gap_cursor` |
+| `settings/area.rs` | `asked` keys land when the live value differs (a fit asked for again after a zoom step); locks as the last layer; `lock_settings`, `get_lock`; `get_view_state` keeps what is under a lock |
+| `harness.rs` | The new members; `lockSettings` refuses an unknown setting key before any zoom or conflict check, with the TypeScript's message |
+| `ffi.rs` | `min_zoom`, `max_zoom` and `zoom_box` (`StageZoomBoxLook`) in `StageSettings` and `StageSettingsPatch`, their `StageSettingKey` variants, and `can_zoom_in` and `can_zoom_out` on `StageHandle` |
+
+`tests/api.rs`'s `a_non_invertible_page_transform_leaves_the_page_out` reached its tiny view scale
+through `set_camera` at zoom `1e-170`, which now clamps to 0.05. It gets there through
+`view_units_per_point: 1e-170` instead. Two small Rust-only differences come with the typed lock.
+A lock's settings are checked and recorded in setting order, where the TypeScript keeps the caller's
+key order. So the key order of `locks` can differ, and so can which refusal wins when one lock both
+names the zoom and conflicts on another setting: here a conflict on a key before `zoom` is reported
+first. Only the harness can express an unknown key, and it refuses one before any zoom or
+conflict check. And a release can't throw, so a failed reframe on release is dropped. Neither is in a
+vector. Both were accepted on 2026-11-03 as kept Rust-only
+divergences, along with the wider scope above.
+
+The uniffi surface defers three things: the optional `around` on `zoom_in` and `zoom_out` (the
+handle's calls pass `None`), `lock_settings` and `get_lock`, and the zoom-drag members. A native
+adapter that draws the zoom tool needs the drag members first.
+
+### Vectors
+
+`df0dcfd04` regenerates the nine suites through `src/emit-one.ts` (`search`, `stage-plugin`,
+`stage-pure`, `link`, `outline`, `attachment`); `generate.ts --only` fails to import
+`annotation-pure.ts` (`font-css`). `link` and `attachment` also pick up `structurePosition`, which
+the annotation crate already reports. Every step matches. Changing one recorded `maxZoom` in
+`search-stage.json` from 64 to 63 fails `viewport-first-start-page: step 1:
+$.state.plugins.stage::a.maxZoom: expected 63, got 64`, and the file was restored. The page-view
+shim drops `search-stage`; five suites are left.
+
+Each generator run also rewrites `crates/plugins/acrojs/prelude.js` from the current TypeScript,
+which carries the form's `setFocus` (C5c's `2998c9004`) and a date-parsing change. C5b restored it
+each time and left it for C5c.
+
+### Overlap with C5c
+
+The built-in `zoom` tool, its `tool:zoom` command and its interaction model rows stay out, as
+`1544594da` left them. Without the tool no built-in tool carries `zoom-box`, so the handler is
+reachable only through a registered tool. C5c re-adds the tool. The stage needs nothing more for
+it: `create_zoom_drag_handler`, the `zoom-box` tag and the pan-fallback rule are in place.
+`4331b55a3`'s commands half (a command's `locked` setting and the third refusal reason) is not
+ported. `SettingLock` lives in the stage crate's contract here, where the TypeScript keeps it in
+core.
+
+### Checks after the review fixes
+
+The review's fixes added three tests to `tests/zoom_tools.rs`, extended two, and added one to
+`tests/ffi.rs`, plus a positive control in the non-invertible test and a harness unit test for an
+unknown lock key. Each new zoom test failed with its guard reverted: the
+lock layer in `apply_view_state`, the reveal clamp, the double-tap ladder's clamp, the arrival's
+limits, and `>=` in the 4 px threshold. The FFI test failed to compile before `can_zoom_in` and
+`can_zoom_out` existed.
+
+| Command | Exit | Result |
+|---|---|---|
+| `cargo test --workspace --no-fail-fast -- --test-threads=4`, `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib` | 0 | 3,154 passed, 0 failed, 1 ignored, 333 runs |
+| `rustfmt --check --edition 2024` on the Rust files changed since `509d2df20` | 0 | Formatted |
+| `cargo clippy --workspace --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-stage --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
+
+`tooling/engine-conformance/OPERATIONS.md` has no rows for these members, so `operations:check`
+doesn't apply.

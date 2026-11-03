@@ -229,8 +229,33 @@ pub struct Anchor {
     pub fy: f64,
 }
 
+/// The widest zoom range a view can have: 5% to 6400%.
 pub const ZOOM_MIN: f64 = 0.05;
 pub const ZOOM_MAX: f64 = 64.0;
+
+/// The zoom range one view allows: its `minZoom` and `maxZoom` settings,
+/// made safe by [`resolve_zoom_limits`]. Every zoom a view chooses (a fit, a
+/// level, a pinch, a reveal) is clamped into it with [`clamp_zoom`].
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ZoomLimits {
+    pub min: f64,
+    pub max: f64,
+}
+
+/// `ALL_ZOOMS`: the limits an absent `limits` argument means.
+pub const ALL_ZOOMS: ZoomLimits = ZoomLimits { min: ZOOM_MIN, max: ZOOM_MAX };
+
+/// The settings' `minZoom` and `maxZoom` as a range inside
+/// [`ZOOM_MIN`, `ZOOM_MAX`]; a `minZoom` above `maxZoom` counts as `maxZoom`.
+pub fn resolve_zoom_limits(min_zoom: f64, max_zoom: f64) -> ZoomLimits {
+    let max = clamp(max_zoom, ZOOM_MIN, ZOOM_MAX);
+    ZoomLimits { min: clamp(min_zoom, ZOOM_MIN, max), max }
+}
+
+/// A zoom inside `limits` ([`ALL_ZOOMS`] for the TypeScript's default).
+pub fn clamp_zoom(zoom: f64, limits: ZoomLimits) -> f64 {
+    clamp(zoom, limits.min, limits.max)
+}
 
 /// Where the TypeScript throws. Each carries the name and message a
 /// JavaScript engine (V8) gives it.
@@ -301,7 +326,12 @@ pub fn camera_world_rect(c: Camera, vp: Size) -> Rect {
 
 /// Focal zoom: keep the world point under `screen_pt` fixed.
 pub fn zoom_around(c: Camera, screen_pt: Point, factor: f64) -> Camera {
-    let zoom = clamp(c.zoom * factor, ZOOM_MIN, ZOOM_MAX);
+    zoom_around_within(c, screen_pt, factor, ALL_ZOOMS)
+}
+
+/// [`zoom_around`] with the TypeScript's `limits` argument.
+pub fn zoom_around_within(c: Camera, screen_pt: Point, factor: f64, limits: ZoomLimits) -> Camera {
+    let zoom = clamp_zoom(c.zoom * factor, limits);
     Camera {
         x: c.x + screen_pt.x / c.zoom - screen_pt.x / zoom,
         y: c.y + screen_pt.y / c.zoom - screen_pt.y / zoom,
@@ -488,22 +518,32 @@ pub fn reveal_camera(cam: Camera, rect: Rect, vp: Size, padding: f64) -> Camera 
 /// Resolve a zoom intent against a fit box (TypeScript default
 /// `padding = 0`).
 pub fn resolve_zoom(spec: ZoomSpec, bx: Size, vp: Size, padding: f64) -> f64 {
+    resolve_zoom_within(spec, bx, vp, padding, ALL_ZOOMS)
+}
+
+/// [`resolve_zoom`] with the TypeScript's `limits` argument: the limits win
+/// over the intent, so a fit outside them stops at the nearest one.
+pub fn resolve_zoom_within(
+    spec: ZoomSpec,
+    bx: Size,
+    vp: Size,
+    padding: f64,
+    limits: ZoomLimits,
+) -> f64 {
     let mode = match spec {
-        ZoomSpec::Level { level } => return clamp(level, ZOOM_MIN, ZOOM_MAX),
-        ZoomSpec::PageWidth { page_width } => {
-            return clamp(page_width / bx.width, ZOOM_MIN, ZOOM_MAX);
-        }
+        ZoomSpec::Level { level } => return clamp_zoom(level, limits),
+        ZoomSpec::PageWidth { page_width } => return clamp_zoom(page_width / bx.width, limits),
         ZoomSpec::PageHeight { page_height } => {
-            return clamp(page_height / bx.height, ZOOM_MIN, ZOOM_MAX);
+            return clamp_zoom(page_height / bx.height, limits);
         }
         ZoomSpec::Mode { mode } => mode,
     };
     let fit_w = js::max(1.0, vp.width - 2.0 * padding) / bx.width;
     let fit_h = js::max(1.0, vp.height - 2.0 * padding) / bx.height;
     match mode {
-        ZoomMode::FitWidth => clamp(fit_w, ZOOM_MIN, ZOOM_MAX),
-        ZoomMode::FitPage | ZoomMode::FitAll => clamp(js::min(fit_w, fit_h), ZOOM_MIN, ZOOM_MAX),
-        ZoomMode::Automatic => clamp(js::min(fit_w, 1.0), ZOOM_MIN, ZOOM_MAX),
+        ZoomMode::FitWidth => clamp_zoom(fit_w, limits),
+        ZoomMode::FitPage | ZoomMode::FitAll => clamp_zoom(js::min(fit_w, fit_h), limits),
+        ZoomMode::Automatic => clamp_zoom(js::min(fit_w, 1.0), limits),
     }
 }
 

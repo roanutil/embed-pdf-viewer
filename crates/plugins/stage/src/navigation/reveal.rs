@@ -160,6 +160,8 @@ impl StageCapability {
             if !zoom.is_finite() || zoom <= 0.0 {
                 zoom = self.camera().zoom;
             }
+            // A tiny rect fits at the zoom limit, centered, like any other zoom.
+            zoom = sc::clamp_zoom(zoom, self.zoom_limits());
             let zoom_changed = directive != RevealZoom::Word(RevealZoomWord::Keep);
             let anchor = options.anchor.unwrap_or_default();
             let camera = self.camera();

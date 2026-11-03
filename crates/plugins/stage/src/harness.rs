@@ -30,6 +30,7 @@ use plugin_conformance::js::{arg, from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
+use crate::controller::serde_str;
 use crate::model::{self, CameraObject, CameraOrder, StageState};
 use crate::motion::*;
 use crate::responsive::{box_of, eq_setting, matches_query, merge_settings, resolve_responsive};
@@ -255,6 +256,8 @@ const MEMBERS: &[&str] = &[
     "resetSettings",
     "updateSettings",
     "setResponsiveRules",
+    "lockSettings",
+    "getLock",
     "matchesRule",
     "listActiveRules",
     "applyViewState",
@@ -262,6 +265,8 @@ const MEMBERS: &[&str] = &[
     "doubleTapZoom",
     "zoomIn",
     "zoomOut",
+    "canZoomIn",
+    "canZoomOut",
     "zoomTo",
     "zoomBy",
     "fitWidth",
@@ -270,6 +275,12 @@ const MEMBERS: &[&str] = &[
     "fitAutomatic",
     "setViewRotation",
     "rotateViewBy",
+    // navigation/zoom-drag
+    "beginZoomDrag",
+    "moveZoomDrag",
+    "endZoomDrag",
+    "cancelZoomDrag",
+    "getZoomBox",
     // view/lifecycle
     "setViewportSize",
     "setDevicePixelRatio",
@@ -307,6 +318,32 @@ fn unsubscribe_ref(h: &Harness, off: Unsubscribe) -> Outcome {
         off.call();
         Outcome::undefined()
     })))
+}
+
+/// The refusal of a lock that names a key that is no Stage setting, as the
+/// TypeScript's `lockSettings` throws it. The typed patch has no room for
+/// an unknown key, so only the harness meets one, and it refuses it before
+/// `lock_settings` runs its zoom and conflict checks.
+fn unknown_lock_key(lock: &Value) -> Option<Error> {
+    let map = lock.get("settings")?.as_object()?;
+    let key = map.keys().find(|key| !SETTING_KEYS.iter().any(|k| serde_str(k) == key.as_str()))?;
+    Some(epdf_kernel::error::plugin_error(
+        "invalid-input",
+        "stage",
+        format!("\"{key}\" is not a Stage setting"),
+        None,
+        None,
+    ))
+}
+
+/// A `StageSettingsLock` as a scenario passes it.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LockJson {
+    by: String,
+    #[serde(default)]
+    reason_key: Option<String>,
+    settings: StageSettingsPatch,
 }
 
 /// The camera as the state holds it: its object literal's member order.
@@ -425,6 +462,21 @@ fn call_stage(
             present(args, 0).unwrap_or(&Value::Null),
             Some(h),
         )?)),
+        "lockSettings" => {
+            if let Some(error) = unknown_lock_key(&value(args, 0)) {
+                return Ok(Outcome::Threw(error));
+            }
+            let lock: LockJson = arg(args, 0)?;
+            match cap.lock_settings(StageSettingsLock {
+                by: lock.by,
+                reason_key: lock.reason_key,
+                settings: lock.settings,
+            }) {
+                Ok(release) => unsubscribe_ref(h, release),
+                Err(error) => Outcome::Threw(error),
+            }
+        }
+        "getLock" => r(option_json(cap.get_lock(arg(args, 0)?))),
         "matchesRule" => r(json!(cap.matches_rule(&arg::<String>(args, 0)?))),
         "listActiveRules" => r(json!(cap.list_active_rules())),
         "applyViewState" => {
@@ -433,8 +485,25 @@ fn call_stage(
         }
         // navigation/zoom
         "doubleTapZoom" => done(cap.double_tap_zoom(arg(args, 0)?)),
-        "zoomIn" => done(cap.zoom_in()),
-        "zoomOut" => done(cap.zoom_out()),
+        "zoomIn" => done(cap.zoom_in(opt(args, 0)?)),
+        "zoomOut" => done(cap.zoom_out(opt(args, 0)?)),
+        "canZoomIn" => r(json!(cap.can_zoom_in())),
+        "canZoomOut" => r(json!(cap.can_zoom_out())),
+        // navigation/zoom-drag
+        "beginZoomDrag" => {
+            cap.begin_zoom_drag(arg(args, 0)?);
+            unit()
+        }
+        "moveZoomDrag" => {
+            cap.move_zoom_drag(arg(args, 0)?);
+            unit()
+        }
+        "endZoomDrag" => done(cap.end_zoom_drag(opt(args, 0)?)),
+        "cancelZoomDrag" => {
+            cap.cancel_zoom_drag();
+            unit()
+        }
+        "getZoomBox" => r(option_json(cap.get_zoom_box())),
         "zoomTo" => done(cap.zoom_to(arg::<ZoomTarget>(args, 0)?, opt(args, 1)?)),
         "zoomBy" => done(cap.zoom_by(arg(args, 0)?, opt(args, 1)?)),
         "fitWidth" => done(cap.fit_width()),
@@ -737,4 +806,21 @@ pub fn functions() -> FunctionTable {
             Ok(observed(&state, model::set_active_rules(&state, arg(a, 1)?)))
         }),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_lock_with_an_unknown_key_is_refused_before_any_other_check() {
+        // Refused before `lock_settings` runs, so no zoom or conflict check
+        // can win over it.
+        let lock = json!({ "by": "x", "settings": { "flow": "continuous", "bogus": 1 } });
+        let error = unknown_lock_key(&lock).expect("refused");
+        assert_eq!(error.plugin_code(), Some("invalid-input"));
+        assert_eq!(error.message, "\"bogus\" is not a Stage setting");
+        let known = json!({ "by": "x", "settings": { "flow": "paged", "zoomBox": {} } });
+        assert!(unknown_lock_key(&known).is_none());
+    }
 }

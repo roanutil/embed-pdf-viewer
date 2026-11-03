@@ -1,8 +1,10 @@
 //! `scroll-handler.ts`: pan-the-camera as an interaction handler.
 //!
 //! Live under the built-in `pan` tool (the `scroll` tag) and, with
-//! `pan_fallback`, under every tool, where it then captures only page-gap
-//! downs. It pans by the sample's viewport delta.
+//! `pan_fallback`, under every tool that acts only on pages, where it then
+//! captures only page-gap downs. A tool with a `gap_cursor` acts over the
+//! gaps too (the `zoom` tool draws its box there), so the fallback leaves it
+//! alone. It pans by the sample's viewport delta.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -43,7 +45,7 @@ impl InteractionHandler for ScrollHandler {
     }
 
     fn enabled_for(&self, tool: &Tool) -> bool {
-        tool.enables("scroll") || self.pan_fallback
+        tool.enables("scroll") || (self.pan_fallback && tool.gap_cursor.is_none())
     }
 
     fn on_down(&self, s: &PointerSample) -> bool {

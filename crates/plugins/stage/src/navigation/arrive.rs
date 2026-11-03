@@ -37,11 +37,12 @@ impl StageCapability {
             // anchor's page is clamped into the scene by stage-core.
             let Some(item_index) = current.item_of_page(anchor.page_index) else { return };
             let item = &current.items[item_index];
-            let zoom = sc::resolve_zoom(
+            let zoom = sc::resolve_zoom_within(
                 self.st().settings.zoom,
                 self.fit_box(Some(item)),
                 self.viewport(),
                 self.padding(),
+                self.zoom_limits(),
             );
             // Resolved against the current viewport: a resize restores the
             // anchor to the new viewport's policy point.
@@ -99,11 +100,12 @@ impl StageCapability {
             } else {
                 current.items.get(self.item_index_of_page(target))?
             };
-            let zoom = sc::resolve_zoom(
+            let zoom = sc::resolve_zoom_within(
                 self.st().settings.zoom,
                 self.fit_box(Some(item)),
                 self.viewport(),
                 self.padding(),
+                self.zoom_limits(),
             );
             let subject = if self.is_fit_all() {
                 self.scene_rect()

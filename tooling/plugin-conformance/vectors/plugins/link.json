@@ -357,6 +357,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -422,6 +423,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 0,
@@ -496,6 +498,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -561,6 +564,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -623,6 +627,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -685,6 +690,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -747,6 +753,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -812,6 +819,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -877,6 +885,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -941,6 +950,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1006,6 +1016,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1071,6 +1082,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1136,6 +1148,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1201,6 +1214,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1253,6 +1267,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1328,6 +1343,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1393,6 +1409,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1476,6 +1493,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 20,
@@ -2996,6 +3014,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3079,6 +3098,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3162,6 +3182,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3245,6 +3266,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3328,6 +3350,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3411,6 +3434,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -5440,6 +5464,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 20,
@@ -5568,6 +5593,7 @@
                 },
                 "hasAppearance": false,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -5633,6 +5659,7 @@
                 },
                 "hasAppearance": false,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -6535,6 +6562,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6609,6 +6637,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6674,6 +6703,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6748,6 +6778,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6822,6 +6853,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6887,6 +6919,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6961,6 +6994,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -7088,6 +7122,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -7192,6 +7227,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -7300,6 +7336,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -7488,6 +7525,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -7592,6 +7630,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -8689,6 +8728,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8754,6 +8794,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8819,6 +8860,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8884,6 +8926,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8946,6 +8989,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 20,
@@ -9025,6 +9069,7 @@
                         },
                         "hasAppearance": false,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 100,
@@ -9136,6 +9181,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -9450,6 +9496,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -14538,6 +14585,7 @@
                   },
                   "hasAppearance": false,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -15333,6 +15381,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -15398,6 +15447,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -15524,6 +15574,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -15597,6 +15648,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -15667,6 +15719,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -15749,6 +15802,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -15847,6 +15901,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -23541,6 +23596,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23576,10 +23633,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -23598,6 +23661,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23633,10 +23698,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -23658,6 +23729,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23693,10 +23766,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -23715,6 +23794,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23750,10 +23831,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -23775,6 +23862,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23810,10 +23899,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -23832,6 +23927,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23867,10 +23964,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -23892,6 +23995,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23927,10 +24032,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -23949,6 +24060,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -23984,10 +24097,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -24029,6 +24148,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24064,10 +24185,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24086,6 +24213,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24121,10 +24250,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -24146,6 +24281,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24181,10 +24318,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24203,6 +24346,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24238,10 +24383,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -24263,6 +24414,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24298,10 +24451,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24320,6 +24479,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24355,10 +24516,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -24462,6 +24629,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24497,10 +24666,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24519,6 +24694,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24554,10 +24731,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -24579,6 +24762,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24614,10 +24799,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24636,6 +24827,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24671,10 +24864,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -24761,6 +24960,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24796,10 +24997,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24818,6 +25025,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24853,10 +25062,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -24878,6 +25093,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24913,10 +25130,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -24935,6 +25158,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -24970,10 +25195,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -25057,6 +25288,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25092,10 +25325,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -25114,6 +25353,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25149,10 +25390,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -25174,6 +25421,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25209,10 +25458,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -25231,6 +25486,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25266,10 +25523,16 @@
                 "zoom": {
                   "level": 2.38
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -25291,6 +25554,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25326,10 +25591,16 @@
                 "zoom": {
                   "level": 2.38
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -25348,6 +25619,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25383,10 +25656,16 @@
                 "zoom": {
                   "level": 2.38
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -25471,6 +25750,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25506,10 +25787,16 @@
                 "zoom": {
                   "level": 2.38
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -25528,6 +25815,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25563,10 +25852,16 @@
                 "zoom": {
                   "level": 3.26
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -25588,6 +25883,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25623,10 +25920,16 @@
                 "zoom": {
                   "level": 3.26
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -25645,6 +25948,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -25680,10 +25985,16 @@
                 "zoom": {
                   "level": 3.26
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -26410,6 +26721,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26445,10 +26758,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -26467,6 +26786,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26502,10 +26823,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -26527,6 +26854,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26562,10 +26891,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -26584,6 +26919,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26619,10 +26956,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -26644,6 +26987,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26679,10 +27024,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -26701,6 +27052,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26736,10 +27089,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -26761,6 +27120,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26796,10 +27157,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -26818,6 +27185,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26853,10 +27222,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -26898,6 +27273,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26933,10 +27310,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -26955,6 +27338,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -26990,10 +27375,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27015,6 +27406,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27050,10 +27443,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27072,6 +27471,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27107,10 +27508,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -27193,6 +27600,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27228,10 +27637,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27250,6 +27665,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27285,10 +27702,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27310,6 +27733,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27345,10 +27770,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27367,6 +27798,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27402,10 +27835,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27427,6 +27866,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27462,10 +27903,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27484,6 +27931,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27519,10 +27968,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27544,6 +27999,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27579,10 +28036,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27601,6 +28064,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27636,10 +28101,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27661,6 +28132,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27696,10 +28169,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27718,6 +28197,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27753,10 +28234,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27778,6 +28265,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27813,10 +28302,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27835,6 +28330,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27870,10 +28367,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -27895,6 +28398,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27930,10 +28435,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -27952,6 +28463,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -27987,10 +28500,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28012,6 +28531,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28047,10 +28568,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28069,6 +28596,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28104,10 +28633,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28129,6 +28664,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28164,10 +28701,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28186,6 +28729,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28221,10 +28766,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28246,6 +28797,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28281,10 +28834,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28303,6 +28862,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28338,10 +28899,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28363,6 +28930,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28398,10 +28967,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28420,6 +28995,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28455,10 +29032,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28480,6 +29063,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28515,10 +29100,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28537,6 +29128,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28572,10 +29165,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28597,6 +29196,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28632,10 +29233,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28654,6 +29261,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28689,10 +29298,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28714,6 +29329,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28749,10 +29366,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28771,6 +29394,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28806,10 +29431,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28831,6 +29462,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28866,10 +29499,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -28888,6 +29527,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28923,10 +29564,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -28948,6 +29595,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -28983,10 +29632,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -29005,6 +29660,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29040,10 +29697,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -29065,6 +29728,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29100,10 +29765,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -29122,6 +29793,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29157,10 +29830,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "smooth",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -29755,6 +30434,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29790,10 +30471,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -29812,6 +30499,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29847,10 +30536,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -29872,6 +30567,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29907,10 +30604,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -29929,6 +30632,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -29964,10 +30669,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -29989,6 +30700,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30024,10 +30737,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30046,6 +30765,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30081,10 +30802,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -30106,6 +30833,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30141,10 +30870,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30163,6 +30898,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30198,10 +30935,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -30243,6 +30986,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30278,10 +31023,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30300,6 +31051,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30335,10 +31088,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -30360,6 +31119,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30395,10 +31156,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30417,6 +31184,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30452,10 +31221,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -30477,6 +31252,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30512,10 +31289,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30534,6 +31317,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30569,10 +31354,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -30638,6 +31429,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30673,10 +31466,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30695,6 +31494,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30730,10 +31531,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -30755,6 +31562,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30790,10 +31599,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30812,6 +31627,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30847,10 +31664,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -30872,6 +31695,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30907,10 +31732,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -30929,6 +31760,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -30964,10 +31797,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -31543,6 +32382,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31578,10 +32419,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -31600,6 +32447,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31635,10 +32484,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -31660,6 +32515,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31695,10 +32552,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -31717,6 +32580,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31752,10 +32617,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -31777,6 +32648,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31812,10 +32685,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -31834,6 +32713,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31869,10 +32750,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -31894,6 +32781,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31929,10 +32818,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -31951,6 +32846,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -31986,10 +32883,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -32031,6 +32934,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32066,10 +32971,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -32088,6 +32999,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32123,10 +33036,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -32148,6 +33067,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32183,10 +33104,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -32205,6 +33132,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32240,10 +33169,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -32265,6 +33200,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32300,10 +33237,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -32322,6 +33265,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -32357,10 +33302,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -32800,6 +33751,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -37643,6 +38595,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37678,10 +38632,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -37700,6 +38660,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37735,10 +38697,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -37760,6 +38728,8 @@
                 "cursor": 0,
                 "motionCause": "user",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37795,10 +38765,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -37817,6 +38793,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37852,10 +38830,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -37877,6 +38861,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37912,10 +38898,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -37934,6 +38926,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -37969,10 +38963,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -37994,6 +38994,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38029,10 +39031,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38051,6 +39059,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38086,10 +39096,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -38238,6 +39254,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38273,10 +39291,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38295,6 +39319,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38330,10 +39356,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -38355,6 +39387,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38390,10 +39424,16 @@
                 "zoom": {
                   "mode": "automatic"
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38412,6 +39452,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38447,10 +39489,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -38472,6 +39520,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38507,10 +39557,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38529,6 +39585,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38564,10 +39622,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -38712,6 +39776,8 @@
                 "cursor": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38747,10 +39813,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38769,6 +39841,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38804,10 +39878,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -38829,6 +39909,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38864,10 +39946,16 @@
                 "zoom": {
                   "level": 2
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -38886,6 +39974,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38921,10 +40011,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             },
@@ -38946,6 +40042,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -38981,10 +40079,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               },
               "next": {
@@ -39003,6 +40107,8 @@
                 "cursor": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
+                "zoomDrag": null,
+                "locks": {},
                 "flow": "continuous",
                 "layout": "vertical",
                 "spread": "none",
@@ -39038,10 +40144,16 @@
                 "zoom": {
                   "level": 0.815
                 },
+                "minZoom": 0.05,
+                "maxZoom": 64,
                 "scrollBehavior": "instant",
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "zoomBox": {
+                  "fill": null,
+                  "stroke": null
+                },
                 "viewUnitsPerPoint": 1
               }
             }
@@ -39528,6 +40640,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -39593,6 +40706,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 150,
@@ -39658,6 +40772,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 160,
@@ -40757,6 +41872,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -40822,6 +41938,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -40887,6 +42004,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -41683,6 +42801,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -47891,6 +49010,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -47975,6 +49095,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 20,
@@ -48048,6 +49169,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -48113,6 +49235,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -48290,6 +49413,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -49228,6 +50352,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -49293,6 +50418,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 20,
@@ -55053,6 +56179,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -55754,6 +56881,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -55823,6 +56951,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 2,
@@ -56771,6 +57900,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -56840,6 +57970,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 4,
@@ -56892,6 +58023,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 5,
@@ -57021,6 +58153,7 @@
               },
               "hasAppearance": false,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 4,
@@ -57848,6 +58981,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -58872,6 +60006,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -59938,6 +61073,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -60996,6 +62132,7 @@
                       },
                       "hasAppearance": false,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,

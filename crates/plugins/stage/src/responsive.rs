@@ -38,13 +38,19 @@ fn rule_matches(rule: &ResponsiveRule, bx: &StageBox) -> bool {
 
 /// Merge a patch over settings, skipping absent values. Each value
 /// replaces the setting whole; a `pageFrame` that names only some sides
-/// reserves 0 on the others.
+/// reserves 0 on the others, and a `zoomBox` that names only some colors
+/// leaves the others following the accent.
 pub fn merge_settings(into: &StageSettings, patch: &StageSettingsPatch) -> StageSettings {
     let mut merged = into.clone();
     macro_rules! arm {
         (PageFrame, $field:ident, $effect:ident) => {
             if let Some(frame) = &patch.$field {
                 merged.$field = frame_of(frame);
+            }
+        };
+        (ZoomBox, $field:ident, $effect:ident) => {
+            if let Some(look) = &patch.$field {
+                merged.$field = zoom_box_of(look);
             }
         };
         ($key:ident, $field:ident, $effect:ident) => {
@@ -65,6 +71,11 @@ pub fn frame_of(frame: &PartialPageFrame) -> PageFrame {
         bottom: frame.bottom.unwrap_or(NO_FRAME.bottom),
         left: frame.left.unwrap_or(NO_FRAME.left),
     }
+}
+
+/// `{ fill: null, stroke: null, ...look }`.
+pub fn zoom_box_of(look: &PartialZoomBoxLook) -> ZoomBoxLook {
+    ZoomBoxLook { fill: look.fill.clone(), stroke: look.stroke.clone() }
 }
 
 /// Setting-value equality. The TypeScript compares primitives by identity

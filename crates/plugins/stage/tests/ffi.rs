@@ -223,6 +223,21 @@ fn fit_width_sets_the_mode_and_zoom_in_leaves_it() {
 }
 
 #[test]
+fn can_zoom_in_and_out_say_whether_a_step_moves() {
+    let (_thread, stage, _) = frameless();
+    sized(&stage);
+    assert!(block_on(stage.can_zoom_in()).unwrap());
+    assert!(block_on(stage.can_zoom_out()).unwrap());
+    block_on(stage.update_settings(StageSettingsPatch {
+        max_zoom: Some(block_on(stage.zoom_level()).unwrap()),
+        ..Default::default()
+    }))
+    .unwrap();
+    assert!(!block_on(stage.can_zoom_in()).unwrap(), "at maxZoom a step can't move");
+    assert!(block_on(stage.can_zoom_out()).unwrap());
+}
+
+#[test]
 fn page_and_viewport_points_round_trip() {
     let (_thread, stage, _) = frameless();
     sized(&stage);

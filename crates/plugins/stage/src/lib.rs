@@ -30,6 +30,7 @@ pub mod settings;
 pub mod state;
 pub mod token;
 pub mod working_set;
+pub mod zoom_drag_handler;
 
 mod prelude;
 
@@ -45,6 +46,7 @@ pub mod navigation {
     pub mod arrive;
     pub mod reveal;
     pub mod zoom;
+    pub mod zoom_drag;
 }
 
 /// `read/`: the page reads.
@@ -77,16 +79,17 @@ pub use contract::*;
 pub use controller::StageCapability;
 pub use destination::reveal_of_destination;
 pub use model::{
-    CameraObject, CameraOrder, MotionCause, StageState, initial_stage_state, mark_placed,
-    patch_settings, set_active_rules, set_camera, set_camera_resting, set_cursor, set_dpr,
-    set_motion_cause, set_viewport,
+    CameraObject, CameraOrder, MotionCause, StageLocks, StageState, ZoomDrag, initial_stage_state,
+    mark_placed, patch_settings, set_active_rules, set_camera, set_camera_resting, set_cursor,
+    set_dpr, set_locks, set_motion_cause, set_viewport, set_zoom_drag,
 };
 pub use responsive::{box_of, eq_setting, matches_query, merge_settings, resolve_responsive};
 pub use scroll_handler::{ScrollHandlerOptions, create_scroll_handler};
-pub use settings::{default_responsive, default_settings, settings_equal};
+pub use settings::{SettingKey, default_responsive, default_settings, settings_equal};
 pub use state::stage_state;
 pub use token::STAGE;
 pub use working_set::{WorkingSetPage, WorkingSetRole, working_set_of};
+pub use zoom_drag_handler::create_zoom_drag_handler;
 
 /// `stagePlugin(options)`: one lens's camera, layout, zoom and navigation
 /// over a document. Document-scoped, with actions as an optional

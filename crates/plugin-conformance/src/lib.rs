@@ -65,19 +65,17 @@ pub fn load(file: &str) -> Value {
 /// `pendingPages`, upstream `c7f6a7958` and `b32e74e4a`) has neither member
 /// in its document metas. Where the recorded meta lacks one and the Rust
 /// meta has it empty (`[]`, `{"$map": []}`), the Rust member is dropped
-/// before comparing; a non-empty one still differs. The suites that record
-/// a document meta and still predate it are held back by upstream changes
-/// their crates don't port yet, which regenerating them would bring in:
-/// `search-stage` by the stage's marquee zoom, `zoomDrag` (upstream
-/// `a1ee5683f`); `signature`, `stamp-api` and `stamp-placement` by the
-/// form's focus (upstream `2998c9004`), for which regenerating would add
-/// `focused`; and `interaction-functions` and `interaction` by the built-in
-/// zoom tool (also `a1ee5683f`), which regenerating would add to the tool
-/// lists of `annotation-tools` and `form-design`, along with `focused` in
-/// `form-design`. The form's focus also holds back `form-fill`, `form-core`,
-/// `form-scripting`, `form-actions` and `form-core-lifecycle`, which record
-/// no document meta, so this never applies to them. Remove this once they
-/// are regenerated.
+/// before comparing; a non-empty one still differs. Five suites that record
+/// a document meta are still from before it, because regenerating them
+/// brings in upstream changes their crates don't port yet: `signature`,
+/// `stamp-api` and `stamp-placement` wait on the form's `focused` (upstream
+/// `2998c9004`); `interaction-functions` and `interaction` wait on the
+/// built-in zoom tool (upstream `a1ee5683f`), which shows in the tool lists
+/// `annotation-tools` and `form-design` record, and `form-design` also waits
+/// on the form's `focused`. The form's focus also holds back `form-fill`,
+/// `form-core`, `form-scripting`, `form-actions` and `form-core-lifecycle`,
+/// which record no document meta, so this never applies to them. Remove this
+/// once they are regenerated.
 fn without_unrecorded_page_view(want: &Value, got: &mut Value) {
     match (want, got) {
         (Value::Object(want), Value::Object(got)) => {

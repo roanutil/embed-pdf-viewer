@@ -191,6 +191,15 @@ pub struct StageSettings {
     pub anchor_align: AlignmentValue,
     pub view_rotation: PageRotation,
     pub zoom: ZoomSpec,
+    /// The zoom range this view allows, as levels like `camera.zoom` (1 is
+    /// 100%). Every zoom stays inside it: the buttons, a pinch or wheel,
+    /// `zoom_to`, a reveal, and the fit modes, which stop at a limit rather
+    /// than fit. A marquee box is the exception: it clamps only to 0.05 to
+    /// 64, as the TypeScript's `zoom-drag.ts` does. Within 0.05 to 64; a
+    /// `min_zoom` above `max_zoom` counts as `max_zoom`.
+    pub min_zoom: f64,
+    /// See [`StageSettings::min_zoom`].
+    pub max_zoom: f64,
     pub scroll_behavior: ScrollBehaviorKind,
     /// Whether this view's pointer input reaches the interaction hub.
     pub interaction: bool,
@@ -198,7 +207,76 @@ pub struct StageSettings {
     pub pan_fallback: bool,
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
+    /// The look of the box the `zoom` tool drags. A color left `None`
+    /// follows the viewer's accent.
+    pub zoom_box: ZoomBoxLook,
     pub view_units_per_point: f64,
+}
+
+/// The colors of the zoom tool's box: see [`StageSettings::zoom_box`].
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ZoomBoxLook {
+    /// Inside the box; `None` (`null`) is the viewer's accent at 8%.
+    pub fill: Option<String>,
+    /// Its dashed edge; `None` (`null`) is the viewer's accent.
+    pub stroke: Option<String>,
+}
+
+/// `SettingLock` (core): who holds a locked setting, and why. A command
+/// that changes the setting shows disabled with the sentence under
+/// `reason_key` while it holds.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingLock {
+    /// Who holds it: a plugin's id, or `"app"`.
+    pub by: String,
+    /// The translation key of the sentence its controls show; without
+    /// one, `commands.locked.default`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason_key: Option<String>,
+}
+
+/// Settings held at a value for one document: they keep it over every
+/// other writer (`update_settings`, the responsive rules, a restored view
+/// state, `reset_settings`) until the release `lock_settings` returns is
+/// called. Those still change the settings underneath, so the user's own
+/// choice is back when the lock goes. Every setting but `zoom`, which
+/// gestures set too.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StageSettingsLock {
+    /// Who holds it: a plugin's id, or `"app"`.
+    pub by: String,
+    /// See [`SettingLock::reason_key`].
+    pub reason_key: Option<String>,
+    /// The settings it holds, at these values.
+    pub settings: StageSettingsPatch,
+}
+
+/// `endZoomDrag`'s options.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EndZoomDragOptions {
+    /// A click zooms out instead of in (the Alt or Option key). A box
+    /// ignores it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zoom_out: Option<bool>,
+}
+
+/// `Partial<ZoomBoxLook>`: the colors a `zoomBox` change names. The ones
+/// it leaves out follow the accent; JSON can't tell an absent color from a
+/// `null` one, and both read as `None`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PartialZoomBoxLook {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke: Option<String>,
+}
+
+impl From<ZoomBoxLook> for PartialZoomBoxLook {
+    fn from(look: ZoomBoxLook) -> Self {
+        PartialZoomBoxLook { fill: look.fill, stroke: look.stroke }
+    }
 }
 
 /// `Partial<PageFrame>`: the sides a `pageFrame` change names. The sides
@@ -264,6 +342,10 @@ pub struct StageSettingsPatch {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom: Option<ZoomSpec>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_zoom: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_zoom: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scroll_behavior: Option<ScrollBehaviorKind>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub interaction: Option<bool>,
@@ -271,6 +353,8 @@ pub struct StageSettingsPatch {
     pub pan_fallback: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom_gestures: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zoom_box: Option<PartialZoomBoxLook>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub view_units_per_point: Option<f64>,
 }
@@ -301,10 +385,13 @@ impl From<StageSettings> for StageSettingsPatch {
             anchor_align: Some(s.anchor_align),
             view_rotation: Some(s.view_rotation),
             zoom: Some(s.zoom),
+            min_zoom: Some(s.min_zoom),
+            max_zoom: Some(s.max_zoom),
             scroll_behavior: Some(s.scroll_behavior),
             interaction: Some(s.interaction),
             pan_fallback: Some(s.pan_fallback),
             zoom_gestures: Some(s.zoom_gestures),
+            zoom_box: Some(s.zoom_box.into()),
             view_units_per_point: Some(s.view_units_per_point),
         }
     }
