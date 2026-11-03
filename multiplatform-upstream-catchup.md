@@ -307,6 +307,8 @@ Upstream reference: `packages/engine/core/src/wire/worker-protocol.ts` (`ObjectN
 
 Kept divergences to re-check (all kept by the user; keep each unless upstream now does the same, and record which in the report): font bytes as payload 0 (missing is `WireFormat`), fractional or boolean `weight`/`italic` refused as `WireFormat`, NUL in `familyName` refused as `InvalidArg` (`7566552a2`); `document.setFontSettings` refuses an unknown `embeddingPolicy` as `InvalidArg` (`dd2e1c290`); `document.versioned` is added in `crates/epdf-viewer-host/src/native_engine.rs`, not the host (`517d0123d`).
 
+Accepted 2026-11-02 in the 2026-11 catch-up (C4, branch `c4/fonts`), next to the `fonts.register` strict numbers: `document.fonts.resolve` refuses a run whose `text`, `family` or `fontFamily` isn't a string, whose `weight` isn't a number or whose `italic` isn't a boolean as `WireFormat` (`FontResolveRun::from_wire` in `crates/epdf-engine/src/features/fonts/document.rs`). A numeric `weight` takes `ToInt32`, as the TypeScript's `Int32Array` does. The TypeScript passes such values to its `Int32Array` and string writers unchecked.
+
 - [ ] Open kinds take `objectNumbers`, `reserveObjectNumbers` and `signedDocumentPolicy`, and the open answer carries `objectNumbers` and `lastObjectNumber` as upstream's does.
 - [ ] `objectNumbers.reserve`: hand the session `count` more numbers; refuse a session that does not issue its own; refuse past `OBJECT_NUMBER_ISSUE_LIMIT` with `LayerFull`. Writes honour `objectNumberFloor`.
 - [ ] `pages.workingSet`: take it on arrival, never answer, and set the order parsed pages close in, as WorkerHost does.
