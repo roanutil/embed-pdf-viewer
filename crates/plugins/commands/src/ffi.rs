@@ -81,9 +81,9 @@ fn context(command_id: &str, ctx: &CommandCtx) -> CommandContext {
 
 /// A Swift-defined command's hooks. Called on the kernel thread. `derive`
 /// and `icon_accent` run on every resolve and must answer from state the
-/// implementation already has. Absent derive hooks use the defaults (`enabled`
-/// and `visible` true, `active` false). A throwing present derive hook answers
-/// false; a throwing `icon_accent` hook answers no accent. `run` returns at once
+/// implementation already has. Absent derive hooks retain the command resolution
+/// defaults. A throwing present derive hook answers false; a throwing `icon_accent`
+/// hook answers no accent. `run` returns at once
 /// and answers through `completion`, from any thread.
 #[uniffi::export(with_foreign)]
 pub trait CommandRunner: Send + Sync {
