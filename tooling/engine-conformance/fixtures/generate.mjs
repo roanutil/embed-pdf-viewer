@@ -588,6 +588,34 @@ function documentActions() {
   ]);
 }
 
+/**
+ * Five pages under three label sections (`/PageLabels`): lower-case roman
+ * from the first page, decimal with a prefix and a start of 5 from the
+ * third, and a prefix alone on the last, which labels it with no number.
+ */
+function pageLabels() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+  const page = '<< /Type /Page /Parent 2 0 R /Contents 8 0 R /Resources << >> >>';
+  return buildPdf([
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [' +
+        '0 << /S /r >> 2 << /S /D /P (A-) /St 5 >> 4 << /P (Back) >>' +
+        '] >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(page, 'latin1'),
+    Buffer.from(page, 'latin1'),
+    Buffer.from(page, 'latin1'),
+    Buffer.from(page, 'latin1'),
+    Buffer.from(page, 'latin1'),
+    stream('', content),
+  ]);
+}
+
 function pageActions() {
   const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
 
@@ -1569,6 +1597,8 @@ const outputs = [
   ],
 
   ['unsupported-security.pdf', unsupportedSecurityDocument()],
+
+  ['page_labels.pdf', pageLabels()],
 ];
 for (const [name, bytes] of outputs) {
   writeFileSync(resolve(here, name), bytes);

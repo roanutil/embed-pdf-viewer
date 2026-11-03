@@ -41,6 +41,12 @@ const CASES: readonly MetadataCase[] = [
       'Every distinction the read has to make: an absent key, a present-but-empty one, a UTF-16 title outside Latin-1, custom keys including an empty one, and dates in both the offset and the Z forms.',
   },
   {
+    name: 'page-labels',
+    fixture: 'tooling/engine-conformance/fixtures/page_labels.pdf',
+    covers:
+      'Five pages under three /PageLabels sections: lower-case roman, decimal with a prefix and a start of 5, and a prefix with no style, so the list records non-empty labels.',
+  },
+  {
     name: 'report',
     fixture: 'pdfium-multiplatform-prototype/fixtures/report.pdf',
     covers: 'A real document, whose Info dictionary is whatever its producer wrote.',

@@ -68,6 +68,302 @@
       }
     },
     {
+      "name": "page-labels",
+      "fixture": "tooling/engine-conformance/fixtures/page_labels.pdf",
+      "covers": "Five pages under three /PageLabels sections: lower-case roman, decimal with a prefix and a start of 5, and a prefix with no style, so the list records non-empty labels.",
+      "pages": {
+        "pageCount": 5,
+        "pages": [
+          {
+            "index": 0,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
+            "label": "i",
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "tabOrder": null,
+            "boxes": {
+              "media": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "crop": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
+            }
+          },
+          {
+            "index": 1,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 4
+            },
+            "label": "ii",
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "tabOrder": null,
+            "boxes": {
+              "media": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "crop": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
+            }
+          },
+          {
+            "index": 2,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 5
+            },
+            "label": "A-5",
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "tabOrder": null,
+            "boxes": {
+              "media": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "crop": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
+            }
+          },
+          {
+            "index": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 6
+            },
+            "label": "A-6",
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "tabOrder": null,
+            "boxes": {
+              "media": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "crop": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
+            }
+          },
+          {
+            "index": 4,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 7
+            },
+            "label": "Back",
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "tabOrder": null,
+            "boxes": {
+              "media": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "crop": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
+            }
+          }
+        ],
+        "labels": [
+          {
+            "firstPage": 0,
+            "style": "lowerRoman",
+            "firstNumber": 1,
+            "prefix": ""
+          },
+          {
+            "firstPage": 2,
+            "style": "decimal",
+            "firstNumber": 5,
+            "prefix": "A-"
+          },
+          {
+            "firstPage": 4,
+            "style": null,
+            "firstNumber": 1,
+            "prefix": "Back"
+          }
+        ],
+        "namedPages": []
+      }
+    },
+    {
       "name": "report",
       "fixture": "pdfium-multiplatform-prototype/fixtures/report.pdf",
       "covers": "A real document, whose Info dictionary is whatever its producer wrote.",

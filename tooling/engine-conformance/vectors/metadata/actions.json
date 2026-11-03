@@ -13,6 +13,16 @@
       }
     },
     {
+      "name": "page-labels",
+      "fixture": "tooling/engine-conformance/fixtures/page_labels.pdf",
+      "covers": "Five pages under three /PageLabels sections: lower-case roman, decimal with a prefix and a start of 5, and a prefix with no style, so the list records non-empty labels.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
       "name": "report",
       "fixture": "pdfium-multiplatform-prototype/fixtures/report.pdf",
       "covers": "A real document, whose Info dictionary is whatever its producer wrote.",
