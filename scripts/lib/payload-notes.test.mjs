@@ -21,9 +21,11 @@ const archived = {
     emsdk: '4.0.0',
   },
 };
+const BUILD_TARGET = 'scripts/embedpdf-runtime/build-target.sh';
 const delta = {
   ancestor: true,
   emsdkPin: '4.0.0',
+  blobs: { [BUILD_TARGET]: '88272b4ee0b326199d4a5668fc16475072ca14db' },
   commits: 4,
   paths: ['scripts/embedpdf-runtime/target-args.sh', 'docs/embedpdf/fork-ledger.md'],
   argsMatch: true,
@@ -179,7 +181,7 @@ test('only docs, the fork tests and the named build scripts may change', () => {
   );
   // build-target.sh only checks the emsdk against the pin and records it, so it
   // may change while the pin's emsdk is the archive's.
-  assert.doesNotThrow(at(['scripts/embedpdf-runtime/build-target.sh']));
+  assert.doesNotThrow(at([BUILD_TARGET]));
   assert.throws(at(['scripts/embedpdf-runtime/sync-deps.sh']), /changes the build/);
   assert.throws(at(['scripts/sync-upstream.sh']), /changes the build/);
 });
@@ -218,4 +220,25 @@ test('the pin must build with the emsdk the archive was built with', () => {
       }),
     /emsdk/,
   );
+});
+
+test('build-target.sh passes only as the blob it was read at', () => {
+  const at = (blobs) => () =>
+    forkLines({
+      fork: archived,
+      runtimeSrc: PINNED,
+      target: 'wasm32-eh',
+      delta: { ...delta, paths: [BUILD_TARGET], blobs },
+    });
+  assert.doesNotThrow(at(delta.blobs));
+  assert.throws(at({ [BUILD_TARGET]: 'f'.repeat(40) }), /build-target.sh/);
+  assert.throws(at({}), /build-target.sh/);
+});
+
+test('an archive that records its emsdk must record the stamp one', () => {
+  const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
+  const facts = { libSha256: 'lib', archiveSha256: 'tar', archiveSha: ARCHIVED };
+  assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: null }));
+  assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '4.0.0' }));
+  assert.throws(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '3.1.72' }), /emsdk/);
 });

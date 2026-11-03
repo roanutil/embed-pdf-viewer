@@ -63,9 +63,8 @@ export function abiCheckFunctions(committed, declared) {
 
 /**
  * The fork's scripts that may change between the archive's commit and the pin
- * without changing the library: they pin the emsdk (`emsdk-version.sh`, and
- * `build-target.sh`, which checks the active emsdk against that pin and records
- * it), package an archive, and print the gn args. The delta's `emsdkPin` and
+ * without changing the library: they pin the emsdk (`emsdk-version.sh`),
+ * package an archive, and print the gn args. The delta's `emsdkPin` and
  * `argsMatch` compare the two that could matter against the archive.
  *
  * The cost of keeping it: a fork commit that changes any other script, however
@@ -74,24 +73,43 @@ export function abiCheckFunctions(committed, declared) {
  * needs reading on every runtime merge, beside `KNOWN_UNBOUND`.
  */
 export const BUILD_NEUTRAL_SCRIPTS = Object.freeze([
-  'scripts/embedpdf-runtime/build-target.sh',
   'scripts/embedpdf-runtime/emsdk-version.sh',
   'scripts/embedpdf-runtime/package-target.sh',
   'scripts/embedpdf-runtime/target-args.sh',
 ]);
 
-/** Whether a path changed between two fork commits leaves the built library alone. */
-const outsideTheBuild = (file) =>
+/**
+ * Build scripts that may change only as one known blob each: `build-target.sh`
+ * is the build driver, so a path alone can't vouch for it. The blob is the one
+ * at `8b1e69abd`, whose change from `6dfc03697` checks the active emsdk against
+ * `emsdk-version.sh` and records it, and compiles nothing.
+ *
+ * The cost of keeping it: every fork merge that touches one of these files
+ * needs its new blob (`git rev-parse <commit>:<path>`) read and recorded here,
+ * or the publish refuses.
+ */
+export const PINNED_SCRIPT_BLOBS = Object.freeze({
+  'scripts/embedpdf-runtime/build-target.sh': '88272b4ee0b326199d4a5668fc16475072ca14db',
+});
+
+/**
+ * Whether a path changed between two fork commits leaves the built library
+ * alone. `blobs` is each pinned script's blob at the pin.
+ */
+const outsideTheBuild = (file, blobs = {}) =>
   file.startsWith('docs/') ||
   file.startsWith('scripts/embedpdf-runtime/tests/') ||
-  BUILD_NEUTRAL_SCRIPTS.includes(file);
+  BUILD_NEUTRAL_SCRIPTS.includes(file) ||
+  (file in PINNED_SCRIPT_BLOBS && blobs[file] === PINNED_SCRIPT_BLOBS[file]);
 
 /**
  * Refuses a fork stamp whose files don't match it. `facts` is what the
  * publish read from disk: `libSha256` of `staging/lib/libembedpdf.a`, and for
  * a stamp with `source`, `archiveSha256` of the archive at
- * `source.archivePath` (`null` when there is no such file) and `archiveSha`,
- * the `sha` in the archive's own `BUILD-METADATA.json`.
+ * `source.archivePath` (`null` when there is no such file) and `archiveSha`
+ * and `archiveEmsdk`, the `sha` and `emsdkVersion` in the archive's own
+ * `BUILD-METADATA.json` (`archiveEmsdk` is `null` for an archive that predates
+ * the field, and the stamp's `source.emsdk` is then taken on trust).
  */
 export function assertStampMatches(fork, facts) {
   const problems = [];
@@ -106,6 +124,11 @@ export function assertStampMatches(fork, facts) {
       if (facts.archiveSha256 !== fork.source.archiveSha256) {
         problems.push(
           `the archive hashes to ${facts.archiveSha256}, the stamp says ${fork.source.archiveSha256}`,
+        );
+      }
+      if (facts.archiveEmsdk != null && facts.archiveEmsdk !== fork.source.emsdk) {
+        problems.push(
+          `the archive was built with emsdk ${facts.archiveEmsdk}, the stamp says ${fork.source.emsdk}`,
         );
       }
       if (facts.archiveSha !== fork.sha) {
@@ -150,7 +173,7 @@ export function forkLines({ fork, runtimeSrc, target, delta }) {
     throw new Error(`${fork.sha} is not an ancestor of the pinned ${runtimeSrc}`);
   }
   if (delta.commits < 1) throw new Error(`no commits from ${fork.sha} to ${runtimeSrc}`);
-  const inside = delta.paths.filter((file) => !outsideTheBuild(file));
+  const inside = delta.paths.filter((file) => !outsideTheBuild(file, delta.blobs));
   if (inside.length > 0) {
     throw new Error(`${runtimeSrc} changes the build beyond ${fork.sha}: ${inside.join(', ')}`);
   }

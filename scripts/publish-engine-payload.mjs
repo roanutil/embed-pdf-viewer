@@ -25,8 +25,12 @@
 // (src/core/pdf-functions.generated.ts), not the ones the header generator
 // writes on the way. A fork stamp whose library came from a fork release
 // archive (its `source`) may be at another commit than runtime-src, as long as
-// the commits between them change only scripts/ and docs/ and the gn args are
-// the same; the notes then say so.
+// the archive's commit is an ancestor of runtime-src and the commits between
+// them change only docs/, the fork's tests (scripts/embedpdf-runtime/tests/),
+// the BUILD_NEUTRAL_SCRIPTS, and the PINNED_SCRIPT_BLOBS, each only as its
+// recorded blob (scripts/lib/payload-notes.mjs). The emsdk-version.sh pin for
+// the target and the target-args.sh gn args, both read at runtime-src, must
+// match the archive's emsdk and args.gn. The notes then say so.
 //
 // Such a stamp is written by hand, at
 // <PERF_WORK_DIR>/fork/<runtime-src commit>/wasm32-eh.json, beside the
@@ -38,9 +42,11 @@
 //     "source": { "archive": "<its file name>", "archivePath": "<the .tar.gz>",
 //                 "archiveSha256": "<its sha256>", "emsdk": "<the emsdk it was built with>" } }
 //
-// The publish trusts none of it: it hashes libembedpdf.a and the archive
-// again, reads the fork commit from the archive's own BUILD-METADATA.json, and
-// refuses on any mismatch.
+// The publish checks it against its files: it hashes libembedpdf.a and the
+// archive again, reads the fork commit, and the emsdk when the archive records
+// one (emsdkVersion), from the archive's own BUILD-METADATA.json, and refuses on
+// any mismatch. An archive without emsdkVersion (the 6dfc03697 one) leaves
+// source.emsdk the one stamp field taken on trust.
 //
 // The Apple half rewrites engineRelease and engineChecksum in Package.swift
 // after it publishes, and leaves that edit for you to commit: the release names
@@ -76,6 +82,7 @@ import {
   assertKnownUnbound,
   assertStampMatches,
   committedSignatures,
+  PINNED_SCRIPT_BLOBS,
   forkLines,
   payloadNotes,
 } from './lib/payload-notes.mjs';
@@ -278,16 +285,27 @@ function forkDelta(fork, runtimeSrc) {
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
-  const pinned = run('bash', [
-    path.join(src, 'scripts/embedpdf-runtime/target-args.sh'),
-    FORK_TARGET,
-  ]);
+  // The fork's scripts as they are at the pin, not in the working tree.
+  const atPin = (file) =>
+    spawnSync('git', ['-C', src, 'cat-file', '-e', `${runtimeSrc}:${file}`]).status === 0;
+  const runAtPin = (file, ...args) =>
+    execFileSync('bash', ['-euo', 'pipefail', '-s', '--', ...args], {
+      input: git(['show', `${runtimeSrc}:${file}`]),
+      encoding: 'utf8',
+      env: { ...process.env, PDF_RUNTIME_SOURCE_DIR: src },
+    }).trim();
+  const pinned = runAtPin('scripts/embedpdf-runtime/target-args.sh', FORK_TARGET);
   const built = readFileSync(path.join(fork.staging, 'args.gn'), 'utf8');
   const argsMatch = lines(pinned).join('\n') === lines(built).join('\n');
   // Nothing for a pin from before emsdk-version.sh, which then can't match.
-  const pinScript = path.join(src, 'scripts/embedpdf-runtime/emsdk-version.sh');
-  const emsdkPin = existsSync(pinScript) ? run('bash', [pinScript, FORK_TARGET]) : null;
-  return { ancestor, commits, paths, emsdkPin, argsMatch };
+  const pinScript = 'scripts/embedpdf-runtime/emsdk-version.sh';
+  const emsdkPin = atPin(pinScript) ? runAtPin(pinScript, FORK_TARGET) : null;
+  const blobs = Object.fromEntries(
+    Object.keys(PINNED_SCRIPT_BLOBS)
+      .filter(atPin)
+      .map((file) => [file, git(['rev-parse', `${runtimeSrc}:${file}`])]),
+  );
+  return { ancestor, commits, paths, emsdkPin, argsMatch, blobs };
 }
 
 // What the fork stamp's files really are, for assertStampMatches: the library's
@@ -297,9 +315,16 @@ function stampFacts(fork) {
   const facts = { libSha256: sha256(path.join(fork.staging, 'lib/libembedpdf.a')) };
   const archive = fork.source?.archivePath;
   if (!fork.source || !archive) return facts;
-  if (!existsSync(archive)) return { ...facts, archiveSha256: null, archiveSha: null };
+  if (!existsSync(archive)) {
+    return { ...facts, archiveSha256: null, archiveSha: null, archiveEmsdk: null };
+  }
   const metadata = JSON.parse(run('tar', ['-xzOf', archive, './BUILD-METADATA.json']));
-  return { ...facts, archiveSha256: sha256(archive), archiveSha: metadata.sha };
+  return {
+    ...facts,
+    archiveSha256: sha256(archive),
+    archiveSha: metadata.sha,
+    archiveEmsdk: metadata.emsdkVersion ?? null,
+  };
 }
 
 // The viewer half of `build:target wasm32`, as build-arm.mjs's linkRustCore runs it, with
