@@ -109,16 +109,19 @@ pub enum StageSettingKey {
     AnchorAlign,
     ViewRotation,
     Zoom,
+    MinZoom,
+    MaxZoom,
     ScrollBehavior,
     Interaction,
     PanFallback,
     ZoomGestures,
+    ZoomBox,
     ViewUnitsPerPoint,
 }
 mirror_enum!(StageSettingKey <=> SettingKey {
     Flow, Layout, Spread, Sizing, Columns, Bounded, Padding, Gap, PageFrame, Direction,
-    FitAlign, ArrivalAlign, ZoomAlign, AnchorAlign, ViewRotation, Zoom, ScrollBehavior,
-    Interaction, PanFallback, ZoomGestures, ViewUnitsPerPoint,
+    FitAlign, ArrivalAlign, ZoomAlign, AnchorAlign, ViewRotation, Zoom, MinZoom, MaxZoom,
+    ScrollBehavior, Interaction, PanFallback, ZoomGestures, ZoomBox, ViewUnitsPerPoint,
 });
 
 /// Grid columns: about the square root of the item count, as many as fit,
@@ -238,6 +241,16 @@ impl From<StagePartialArrivalAlignment> for PartialArrivalAlignment {
     }
 }
 
+/// The colors of the zoom tool's box; a color left `None` follows the
+/// viewer's accent.
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
+pub struct StageZoomBoxLook {
+    #[uniffi(default = None)]
+    pub fill: Option<String>,
+    #[uniffi(default = None)]
+    pub stroke: Option<String>,
+}
+
 /// Every stage setting. `view_rotation` is degrees clockwise.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StageSettings {
@@ -257,6 +270,9 @@ pub struct StageSettings {
     pub anchor_align: StageAlignmentValue,
     pub view_rotation: f64,
     pub zoom: ZoomSpec,
+    /// The zoom range this view allows (1 is 100%).
+    pub min_zoom: f64,
+    pub max_zoom: f64,
     pub scroll_behavior: StageScrollBehavior,
     /// Whether this view's pointer input reaches the interaction hub.
     pub interaction: bool,
@@ -264,6 +280,8 @@ pub struct StageSettings {
     pub pan_fallback: bool,
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
+    /// The look of the box the `zoom` tool drags.
+    pub zoom_box: StageZoomBoxLook,
     pub view_units_per_point: f64,
 }
 
@@ -287,10 +305,13 @@ impl TryFrom<crate::StageSettings> for StageSettings {
             anchor_align: s.anchor_align.into(),
             view_rotation: s.view_rotation.0,
             zoom: s.zoom.into(),
+            min_zoom: s.min_zoom,
+            max_zoom: s.max_zoom,
             scroll_behavior: s.scroll_behavior.into(),
             interaction: s.interaction,
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
+            zoom_box: StageZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
     }
@@ -316,10 +337,13 @@ impl TryFrom<StageSettings> for crate::StageSettings {
             anchor_align: s.anchor_align.into(),
             view_rotation: PageRotation(s.view_rotation),
             zoom: s.zoom.into(),
+            min_zoom: s.min_zoom,
+            max_zoom: s.max_zoom,
             scroll_behavior: s.scroll_behavior.into(),
             interaction: s.interaction,
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
+            zoom_box: crate::ZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
     }
@@ -361,6 +385,10 @@ pub struct StageSettingsPatch {
     #[uniffi(default = None)]
     pub zoom: Option<ZoomSpec>,
     #[uniffi(default = None)]
+    pub min_zoom: Option<f64>,
+    #[uniffi(default = None)]
+    pub max_zoom: Option<f64>,
+    #[uniffi(default = None)]
     pub scroll_behavior: Option<StageScrollBehavior>,
     #[uniffi(default = None)]
     pub interaction: Option<bool>,
@@ -368,6 +396,9 @@ pub struct StageSettingsPatch {
     pub pan_fallback: Option<bool>,
     #[uniffi(default = None)]
     pub zoom_gestures: Option<bool>,
+    /// The colors it names; the ones left `None` follow the accent.
+    #[uniffi(default = None)]
+    pub zoom_box: Option<StageZoomBoxLook>,
     #[uniffi(default = None)]
     pub view_units_per_point: Option<f64>,
 }
@@ -394,10 +425,15 @@ impl TryFrom<StageSettingsPatch> for crate::StageSettingsPatch {
             anchor_align: p.anchor_align.map(Into::into),
             view_rotation: p.view_rotation.map(PageRotation),
             zoom: p.zoom.map(Into::into),
+            min_zoom: p.min_zoom,
+            max_zoom: p.max_zoom,
             scroll_behavior: p.scroll_behavior.map(Into::into),
             interaction: p.interaction,
             pan_fallback: p.pan_fallback,
             zoom_gestures: p.zoom_gestures,
+            zoom_box: p
+                .zoom_box
+                .map(|look| crate::PartialZoomBoxLook { fill: look.fill, stroke: look.stroke }),
             view_units_per_point: p.view_units_per_point,
         })
     }
@@ -1333,11 +1369,11 @@ impl StageHandle {
     }
 
     pub async fn zoom_in(&self) -> Result<(), ViewerError> {
-        self.read(|c| c.zoom_in()).await
+        self.read(|c| c.zoom_in(None)).await
     }
 
     pub async fn zoom_out(&self) -> Result<(), ViewerError> {
-        self.read(|c| c.zoom_out()).await
+        self.read(|c| c.zoom_out(None)).await
     }
 
     /// `around` (viewport) stays fixed; `None` is the zoom-align point.

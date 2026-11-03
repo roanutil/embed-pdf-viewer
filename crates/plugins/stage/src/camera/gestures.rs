@@ -16,7 +16,10 @@ impl StageCapability {
     pub fn set_camera_object(&self, next: CameraObject) -> Result<(), Error> {
         self.mark_cause(MotionCause::User);
         self.cancel_animation();
-        self.write_camera_stay(next)?;
+        // `{ ...next, zoom: clampZoom(next.zoom, zoomLimits()) }`: a new
+        // object in the caller's member order.
+        let zoom = sc::clamp_zoom(next.camera.zoom, self.zoom_limits());
+        self.write_camera_stay(CameraObject::new(Camera { zoom, ..next.camera }, next.order))?;
         self.sync_cursor_from_camera()
     }
 
@@ -101,10 +104,11 @@ impl StageCapability {
         } else {
             None
         };
-        self.write_camera_stay(CameraObject::xy_zoom(sc::zoom_around(
+        self.write_camera_stay(CameraObject::xy_zoom(sc::zoom_around_within(
             self.camera(),
             point,
             factor,
+            self.zoom_limits(),
         )))?;
         // Record the resulting level as the zoom intent; inside a gesture
         // bracket it is deferred to endGesture.

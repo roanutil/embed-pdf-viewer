@@ -46,6 +46,10 @@ name = "api"
 required-features = ["harness"]
 
 [[test]]
+name = "zoom_tools"
+required-features = ["harness"]
+
+[[test]]
 name = "ffi"
 required-features = ["uniffi"]
 

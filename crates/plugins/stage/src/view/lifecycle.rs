@@ -75,7 +75,9 @@ impl StageCapability {
     /// Serializable view state: the unit of session persistence.
     pub fn get_view_state(&self) -> Result<StageViewState, Error> {
         Ok(StageViewState {
-            settings: self.snapshot_settings(),
+            // A lock is this document's now, not the user's: the saved view
+            // keeps what's under it.
+            settings: self.view_state_settings(),
             cursor: Some(self.st().cursor),
             anchor: self.current_anchor()?,
         })

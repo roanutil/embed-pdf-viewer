@@ -255,6 +255,8 @@ const MEMBERS: &[&str] = &[
     "resetSettings",
     "updateSettings",
     "setResponsiveRules",
+    "lockSettings",
+    "getLock",
     "matchesRule",
     "listActiveRules",
     "applyViewState",
@@ -262,6 +264,8 @@ const MEMBERS: &[&str] = &[
     "doubleTapZoom",
     "zoomIn",
     "zoomOut",
+    "canZoomIn",
+    "canZoomOut",
     "zoomTo",
     "zoomBy",
     "fitWidth",
@@ -270,6 +274,12 @@ const MEMBERS: &[&str] = &[
     "fitAutomatic",
     "setViewRotation",
     "rotateViewBy",
+    // navigation/zoom-drag
+    "beginZoomDrag",
+    "moveZoomDrag",
+    "endZoomDrag",
+    "cancelZoomDrag",
+    "getZoomBox",
     // view/lifecycle
     "setViewportSize",
     "setDevicePixelRatio",
@@ -307,6 +317,16 @@ fn unsubscribe_ref(h: &Harness, off: Unsubscribe) -> Outcome {
         off.call();
         Outcome::undefined()
     })))
+}
+
+/// A `StageSettingsLock` as a scenario passes it.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LockJson {
+    by: String,
+    #[serde(default)]
+    reason_key: Option<String>,
+    settings: StageSettingsPatch,
 }
 
 /// The camera as the state holds it: its object literal's member order.
@@ -425,6 +445,18 @@ fn call_stage(
             present(args, 0).unwrap_or(&Value::Null),
             Some(h),
         )?)),
+        "lockSettings" => {
+            let lock: LockJson = arg(args, 0)?;
+            match cap.lock_settings(StageSettingsLock {
+                by: lock.by,
+                reason_key: lock.reason_key,
+                settings: lock.settings,
+            }) {
+                Ok(release) => unsubscribe_ref(h, release),
+                Err(error) => Outcome::Threw(error),
+            }
+        }
+        "getLock" => r(option_json(cap.get_lock(arg(args, 0)?))),
         "matchesRule" => r(json!(cap.matches_rule(&arg::<String>(args, 0)?))),
         "listActiveRules" => r(json!(cap.list_active_rules())),
         "applyViewState" => {
@@ -433,8 +465,25 @@ fn call_stage(
         }
         // navigation/zoom
         "doubleTapZoom" => done(cap.double_tap_zoom(arg(args, 0)?)),
-        "zoomIn" => done(cap.zoom_in()),
-        "zoomOut" => done(cap.zoom_out()),
+        "zoomIn" => done(cap.zoom_in(opt(args, 0)?)),
+        "zoomOut" => done(cap.zoom_out(opt(args, 0)?)),
+        "canZoomIn" => r(json!(cap.can_zoom_in())),
+        "canZoomOut" => r(json!(cap.can_zoom_out())),
+        // navigation/zoom-drag
+        "beginZoomDrag" => {
+            cap.begin_zoom_drag(arg(args, 0)?);
+            unit()
+        }
+        "moveZoomDrag" => {
+            cap.move_zoom_drag(arg(args, 0)?);
+            unit()
+        }
+        "endZoomDrag" => done(cap.end_zoom_drag(opt(args, 0)?)),
+        "cancelZoomDrag" => {
+            cap.cancel_zoom_drag();
+            unit()
+        }
+        "getZoomBox" => r(option_json(cap.get_zoom_box())),
         "zoomTo" => done(cap.zoom_to(arg::<ZoomTarget>(args, 0)?, opt(args, 1)?)),
         "zoomBy" => done(cap.zoom_by(arg(args, 0)?, opt(args, 1)?)),
         "fitWidth" => done(cap.fit_width()),

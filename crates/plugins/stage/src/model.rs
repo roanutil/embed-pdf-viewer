@@ -14,14 +14,15 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use epdf_geometry::Size;
+use epdf_geometry::{Point, Size};
+use epdf_kernel::geometry::PageRef;
 use epdf_stage_core::Camera;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::contract::*;
 use crate::responsive::merge_settings;
-use crate::settings::default_settings;
+use crate::settings::{SettingKey, default_settings};
 
 /// What last drove the camera or cursor.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -138,6 +139,55 @@ impl CameraObject {
     }
 }
 
+/// A drag of the `zoom` tool, as two corners on one page's plane: the page
+/// under the press (or a visible one, for a press between pages). Page
+/// points keep the box on the content when the view scrolls during the
+/// drag, and the box may reach past that page onto its neighbours.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ZoomDrag {
+    pub page: PageRef,
+    /// Where the press was, in page coordinates.
+    pub from: Point,
+    /// Where the pointer is now, in page coordinates.
+    pub to: Point,
+}
+
+/// `StageLocks`: the holder of each locked setting, in the order the
+/// TypeScript record gained its keys.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct StageLocks(pub Vec<(SettingKey, SettingLock)>);
+
+impl StageLocks {
+    /// `locks[key]`.
+    pub fn get(&self, key: SettingKey) -> Option<&SettingLock> {
+        self.0.iter().find(|(k, _)| *k == key).map(|(_, lock)| lock)
+    }
+}
+
+impl Serialize for StageLocks {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut map = s.serialize_map(Some(self.0.len()))?;
+        for (key, lock) in &self.0 {
+            map.serialize_entry(key, lock)?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for StageLocks {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let map = serde_json::Map::<String, serde_json::Value>::deserialize(d)?;
+        let mut locks = Vec::with_capacity(map.len());
+        for (key, lock) in map {
+            let key = serde_json::from_value(serde_json::Value::String(key))
+                .map_err(serde::de::Error::custom)?;
+            let lock = serde_json::from_value(lock).map_err(serde::de::Error::custom)?;
+            locks.push((key, lock));
+        }
+        Ok(StageLocks(locks))
+    }
+}
+
 /// The stage slice.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StageState {
@@ -156,6 +206,12 @@ pub struct StageState {
     pub motion_cause: MotionCause,
     /// Names of the matching responsive rules, in source order.
     pub active_rules: Vec<String>,
+    /// The `zoom` tool's drag in progress, or `None` when there is none.
+    pub zoom_drag: Option<ZoomDrag>,
+    /// Who holds each locked setting (`lock_settings`). State, so a lock
+    /// that changes no value still reaches the controls that read
+    /// `get_lock`.
+    pub locks: StageLocks,
     pub settings: StageSettings,
     pub(crate) camera_id: u64,
     pub(crate) camera_order: CameraOrder,
@@ -188,6 +244,8 @@ struct StateOut<'a> {
     cursor: usize,
     motion_cause: MotionCause,
     active_rules: &'a [String],
+    zoom_drag: &'a Option<ZoomDrag>,
+    locks: &'a StageLocks,
     #[serde(flatten)]
     settings: &'a StageSettings,
 }
@@ -203,6 +261,8 @@ impl Serialize for StageState {
             cursor: self.cursor,
             motion_cause: self.motion_cause,
             active_rules: &self.active_rules,
+            zoom_drag: &self.zoom_drag,
+            locks: &self.locks,
             settings: &self.settings,
         }
         .serialize(s)
@@ -221,6 +281,10 @@ pub(crate) struct StateJson {
     cursor: usize,
     motion_cause: MotionCause,
     active_rules: Vec<String>,
+    #[serde(default)]
+    zoom_drag: Option<ZoomDrag>,
+    #[serde(default)]
+    locks: StageLocks,
     #[serde(flatten)]
     settings: StageSettings,
 }
@@ -243,6 +307,8 @@ impl StageState {
             cursor: json.cursor,
             motion_cause: json.motion_cause,
             active_rules: json.active_rules,
+            zoom_drag: json.zoom_drag,
+            locks: json.locks,
             settings: json.settings,
             camera_id: next_object_id(),
             camera_order: order,
@@ -264,6 +330,8 @@ pub fn initial_stage_state(overrides: &StageSettingsPatch) -> StageState {
         cursor: 0,
         motion_cause: MotionCause::User,
         active_rules: Vec::new(),
+        zoom_drag: None,
+        locks: StageLocks::default(),
         settings: merge_settings(&default_settings(), overrides),
         camera_id: camera.id,
         camera_order: camera.order,
@@ -354,4 +422,19 @@ pub fn patch_settings(state: &Rc<StageState>, patch: &StageSettingsPatch) -> Rc<
 /// An active-rule list is always a new array, so it always lands.
 pub fn set_active_rules(state: &Rc<StageState>, active: Vec<String>) -> Rc<StageState> {
     with(state, |next| next.active_rules = active)
+}
+
+/// `setZoomDrag`: a drag is always a new object, so only `None` over
+/// `None` is no change.
+pub fn set_zoom_drag(state: &Rc<StageState>, zoom_drag: Option<ZoomDrag>) -> Rc<StageState> {
+    if state.zoom_drag.is_none() && zoom_drag.is_none() {
+        return state.clone();
+    }
+    with(state, |next| next.zoom_drag = zoom_drag)
+}
+
+/// `setLocks`: the caller publishes only a changed record, which is a new
+/// object, so it always lands.
+pub fn set_locks(state: &Rc<StageState>, locks: StageLocks) -> Rc<StageState> {
+    with(state, |next| next.locks = locks)
 }

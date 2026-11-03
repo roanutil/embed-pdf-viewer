@@ -189,7 +189,7 @@ fn motion_runs_on_frames_and_stops_when_the_document_closes() {
 
     // A tween, a rest countdown and a fling are all pending at close.
     stage.go_to_page(0usize, Some(GoToOptions::behavior(ScrollBehaviorKind::Smooth)));
-    stage.zoom_in().expect("zoom arms the rest countdown");
+    stage.zoom_in(None).expect("zoom arms the rest countdown");
     stage.fling(0.0, -3000.0).expect("fling");
     assert!(stage.is_moving());
     f.kernel.documents().close("a");
@@ -346,7 +346,7 @@ fn paged_flow_over_no_pages_refuses_camera_writes_as_the_typescript_does() {
     };
     refused(stage.set_camera(Camera { x: 1.0, y: 2.0, zoom: 1.0 }));
     refused(stage.pan_by(5.0, 5.0));
-    refused(stage.zoom_in());
+    refused(stage.zoom_in(None));
     refused(stage.fling(0.0, 100.0));
     refused(stage.update_settings(StageSettingsPatch { padding: Some(8.0), ..Default::default() }));
     stage.begin_gesture(Some(GestureOptions { elastic: Some(true) }));
@@ -552,16 +552,22 @@ fn a_nan_zoom_on_an_auto_wrapped_grid_does_not_panic() {
 
 #[test]
 fn a_non_invertible_page_transform_leaves_the_page_out() {
-    // A huge device ratio over a tiny unbounded zoom: the view scale's
-    // square underflows, and the TypeScript throws `Mat2D.invert:
-    // non-invertible matrix` from the page reads. Rust leaves the page out
-    // of the visible list and answers no frame, without a panic.
-    let settings = StageSettingsPatch { bounded: Some(false), ..units() };
+    // A huge device ratio over a tiny view scale: the scale's square
+    // underflows, and the TypeScript throws `Mat2D.invert: non-invertible
+    // matrix` from the page reads. Rust leaves the page out of the visible
+    // list and answers no frame, without a panic. The zoom limits keep
+    // `set_camera` at 5% or more, so the tiny scale comes from the view
+    // units instead.
+    let settings = StageSettingsPatch {
+        bounded: Some(false),
+        view_units_per_point: Some(1e-170),
+        ..Default::default()
+    };
     let f = fixture(false, three_pages(), settings);
     let stage = f.stage();
     stage.set_viewport_size(VIEWPORT).expect("viewport");
     stage.set_device_pixel_ratio(1e160);
-    let _ = stage.set_camera(Camera { x: 0.0, y: 0.0, zoom: 1e-170 });
+    let _ = stage.set_camera(Camera { x: 0.0, y: 0.0, zoom: 1.0 });
     assert!(stage.list_visible_pages().is_empty());
     assert!(stage.get_page_frame(0usize).is_none());
     assert!(stage.get_page_at(Point { x: 1.0, y: 1.0 }).is_none());

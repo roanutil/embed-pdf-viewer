@@ -1,13 +1,17 @@
-//! `settings/settings.ts`: the settings bag and its responsive resolution.
-//! The base (config plus `update_settings` changes) merged with the
-//! matching rules' patches is the effective settings the state holds.
+//! `settings/settings.ts`: the settings bag and its resolution. The base
+//! (config plus `update_settings` changes), then the matching rules'
+//! patches, then the locks, is the effective settings the state holds.
 //! `apply_settings` is the one reactive applier: the strongest effect among
 //! the touched settings wins (`reflow` over `scene` and `refit` over
 //! `reclamp` over `none`), so a breakpoint crossing gets exactly the
 //! invariant a hand-written update would.
 
-use crate::model::{patch_settings, set_active_rules, set_cursor};
+use epdf_kernel::Unsubscribe;
+use epdf_kernel::error::plugin_error;
+
+use crate::model::{StageLocks, patch_settings, set_active_rules, set_cursor, set_locks};
 use crate::prelude::*;
+use crate::responsive::ResolvedResponsive;
 use crate::settings::pick_settings;
 
 impl StageCapability {
@@ -71,23 +75,63 @@ impl StageCapability {
         }
     }
 
-    /// Re-resolve and diff against the last resolution: the patch of what
-    /// changed and its keys (`syncResponsive`'s first half).
-    fn resolve_changes(&self) -> (StageSettingsPatch, Vec<SettingKey>) {
+    /// Base, then the matching rules, then the locks: what the state holds.
+    fn resolve(&self) -> ResolvedResponsive {
         let rules = self.inner.rules.borrow().clone();
-        let resolved =
+        let mut resolved =
             resolve_responsive(&self.inner.base.borrow(), &rules, &box_of(self.viewport()));
-        let patch = diff_settings(&resolved.effective, &self.inner.last_effective.borrow());
+        for lock in self.inner.locks.borrow().iter() {
+            resolved.effective = merge_settings(&resolved.effective, &lock.settings);
+        }
+        resolved
+    }
+
+    /// Who holds each locked setting, in state: the first lock that names it.
+    fn publish_locks(&self) {
+        let mut holders = StageLocks::default();
+        for lock in self.inner.locks.borrow().iter() {
+            for key in patch_keys(&lock.settings) {
+                if holders.get(key).is_none() {
+                    let holder =
+                        SettingLock { by: lock.by.clone(), reason_key: lock.reason_key.clone() };
+                    holders.0.push((key, holder));
+                }
+            }
+        }
+        let current = &self.st().locks;
+        let same = holders.0.len() == current.0.len()
+            && holders.0.iter().all(|(key, holder)| current.get(*key) == Some(holder));
+        if !same {
+            self.update(|s| set_locks(s, holders));
+        }
+    }
+
+    /// Re-resolve and diff against the last resolution: the patch of what
+    /// changed and its keys (`syncResponsive`'s first half). `asked` names
+    /// the settings a caller just set. Each of them lands whenever the live
+    /// value differs, even if the resolution itself didn't move: a zoom
+    /// step, a pinch or a zoom box records its level straight into the
+    /// state, so the resolution can still hold the fit mode the user now
+    /// asks for again.
+    fn resolve_changes(&self, asked: &[SettingKey]) -> (StageSettingsPatch, Vec<SettingKey>) {
+        let resolved = self.resolve();
+        let live = self.st();
+        let patch = diff_settings(
+            &resolved.effective,
+            &self.inner.last_effective.borrow(),
+            &live.settings,
+            asked,
+        );
         *self.inner.last_effective.borrow_mut() = resolved.effective;
         self.publish_active(resolved.active);
         let keys = patch_keys(&patch);
         (patch, keys)
     }
 
-    /// `syncResponsive(true)`: re-resolve and route what changed through
-    /// `apply_settings`, the full anchor-preserving update.
-    pub(crate) fn sync_responsive(&self) -> Result<(), Error> {
-        let (patch, keys) = self.resolve_changes();
+    /// `syncResponsive(true, asked)`: re-resolve and route what changed
+    /// through `apply_settings`, the full anchor-preserving update.
+    pub(crate) fn sync_responsive(&self, asked: &[SettingKey]) -> Result<(), Error> {
+        let (patch, keys) = self.resolve_changes(asked);
         if keys.is_empty() {
             return Ok(());
         }
@@ -99,7 +143,7 @@ impl StageCapability {
     /// and the strongest effect is reported so the caller can escalate a
     /// rule-driven flow flip. Nothing here clamps, so nothing can fail.
     pub(crate) fn sync_responsive_quietly(&self) -> SettingEffect {
-        let (patch, keys) = self.resolve_changes();
+        let (patch, keys) = self.resolve_changes(&[]);
         if keys.is_empty() {
             return SettingEffect::None;
         }
@@ -113,17 +157,35 @@ impl StageCapability {
     }
 }
 
-/// The keys whose effective value changed, carrying the new value.
-fn diff_settings(effective: &StageSettings, last: &StageSettings) -> StageSettingsPatch {
+/// The keys whose effective value changed since the last resolution, and
+/// the asked ones whose live value differs, carrying the effective value.
+fn diff_settings(
+    effective: &StageSettings,
+    last: &StageSettings,
+    live: &StageSettings,
+    asked: &[SettingKey],
+) -> StageSettingsPatch {
     let mut patch = StageSettingsPatch::default();
+    macro_rules! lands {
+        ($key:ident, $field:ident) => {
+            !eq_setting(&effective.$field, &last.$field)
+                || (asked.contains(&SettingKey::$key)
+                    && !eq_setting(&effective.$field, &live.$field))
+        };
+    }
     macro_rules! arm {
         (PageFrame, $field:ident, $effect:ident) => {
-            if !eq_setting(&effective.$field, &last.$field) {
+            if lands!(PageFrame, $field) {
                 patch.$field = Some(effective.$field.into());
             }
         };
+        (ZoomBox, $field:ident, $effect:ident) => {
+            if lands!(ZoomBox, $field) {
+                patch.$field = Some(effective.$field.clone().into());
+            }
+        };
         ($key:ident, $field:ident, $effect:ident) => {
-            if !eq_setting(&effective.$field, &last.$field) {
+            if lands!($key, $field) {
                 patch.$field = Some(effective.$field.clone());
             }
         };
@@ -144,7 +206,7 @@ impl StageCapability {
     /// `on_settings_changed`.
     pub fn reset_settings(&self) -> Result<(), Error> {
         *self.inner.base.borrow_mut() = self.inner.initial_base.clone();
-        self.sync_responsive()
+        self.sync_responsive(&SETTING_KEYS)
     }
 
     /// Change any subset in one update that keeps the view on the same
@@ -153,13 +215,13 @@ impl StageCapability {
     pub fn update_settings(&self, changes: StageSettingsPatch) -> Result<(), Error> {
         let merged = merge_settings(&self.inner.base.borrow(), &changes);
         *self.inner.base.borrow_mut() = merged;
-        self.sync_responsive()
+        self.sync_responsive(&patch_keys(&changes))
     }
 
     /// Replace the container-query rules and re-resolve.
     pub fn set_responsive_rules(&self, rules: Vec<ResponsiveRule>) -> Result<(), Error> {
         *self.inner.rules.borrow_mut() = Rc::new(rules);
-        self.sync_responsive()
+        self.sync_responsive(&[])
     }
 
     /// Whether the named responsive rule matches the current box.
@@ -180,9 +242,7 @@ impl StageCapability {
         self.cancel_animation();
         let merged = merge_settings(&self.inner.base.borrow(), &view.settings);
         *self.inner.base.borrow_mut() = merged;
-        let rules = self.inner.rules.borrow().clone();
-        let resolved =
-            resolve_responsive(&self.inner.base.borrow(), &rules, &box_of(self.viewport()));
+        let resolved = self.resolve();
         *self.inner.last_effective.borrow_mut() = resolved.effective.clone();
         self.publish_active(resolved.active);
         let effective = StageSettingsPatch::from(resolved.effective);
@@ -192,4 +252,107 @@ impl StageCapability {
         self.invalidate_scene();
         self.apply_anchor(view.anchor, None);
     }
+}
+
+// ── locks ──
+
+impl StageCapability {
+    /// The settings a saved view keeps: what shows, but the locked ones as
+    /// they are underneath, so restoring it never writes a lock's value as
+    /// the user's.
+    pub(crate) fn view_state_settings(&self) -> StageSettings {
+        let shown = self.snapshot_settings();
+        if self.inner.locks.borrow().is_empty() {
+            return shown;
+        }
+        let rules = self.inner.rules.borrow().clone();
+        let unlocked =
+            resolve_responsive(&self.inner.base.borrow(), &rules, &box_of(self.viewport()))
+                .effective;
+        let mut settings = shown;
+        for (key, _) in &self.st().locks.0 {
+            copy_setting(&mut settings, &unlocked, *key);
+        }
+        settings
+    }
+
+    /// Hold `lock.settings` at their values for this document until the
+    /// returned release is called, or the document closes. A lock on a
+    /// setting another lock holds at a different value is refused
+    /// (`conflict`), naming the holder; at the same value both hold, until
+    /// both let go. `get_view_state` keeps the locked settings as they are
+    /// underneath. The zoom can't be locked (`invalid-input`): gestures set
+    /// it. A lock names its settings in setting order, where the TypeScript
+    /// record keeps the caller's order.
+    pub fn lock_settings(&self, lock: StageSettingsLock) -> Result<Unsubscribe, Error> {
+        let keys = patch_keys(&lock.settings);
+        for &key in &keys {
+            if key == SettingKey::Zoom {
+                return Err(plugin_error(
+                    "invalid-input",
+                    "stage",
+                    "the zoom cannot be locked: gestures set it",
+                    None,
+                    None,
+                ));
+            }
+            let holder = self.inner.locks.borrow().iter().find_map(|held| {
+                (patch_has(&held.settings, key)
+                    && !patch_value_eq(&held.settings, &lock.settings, key))
+                .then(|| held.by.clone())
+            });
+            if let Some(by) = holder {
+                return Err(plugin_error(
+                    "conflict",
+                    "stage",
+                    format!("\"{}\" is locked by {by} at another value", serde_str(&key)),
+                    None,
+                    None,
+                ));
+            }
+        }
+        let held = Rc::new(lock);
+        self.inner.locks.borrow_mut().push(held.clone());
+        self.publish_locks();
+        self.sync_responsive(&keys)?;
+        let stage = self.clone();
+        Ok(Unsubscribe::new(move || {
+            stage.inner.locks.borrow_mut().retain(|other| !Rc::ptr_eq(other, &held));
+            stage.publish_locks();
+            // Rust only: the release can't throw; a failed reframe goes the
+            // way of the TypeScript's throw out of the release function, which
+            // a caller can't act on either.
+            let _ = stage.sync_responsive(&keys);
+        }))
+    }
+
+    /// Who holds a setting and why, or `None` when it isn't locked.
+    pub fn get_lock(&self, setting: SettingKey) -> Option<SettingLock> {
+        self.st().locks.get(setting).cloned()
+    }
+}
+
+/// `settings[key] = from[key]` for one key.
+fn copy_setting(settings: &mut StageSettings, from: &StageSettings, key: SettingKey) {
+    macro_rules! arm {
+        ($key:ident, $field:ident, $effect:ident) => {
+            if key == SettingKey::$key {
+                settings.$field = from.$field.clone();
+            }
+        };
+    }
+    crate::for_each_setting!(arm);
+}
+
+/// `eqSetting(a[key], b[key])` over two patches' values.
+fn patch_value_eq(a: &StageSettingsPatch, b: &StageSettingsPatch, key: SettingKey) -> bool {
+    macro_rules! arm {
+        ($key:ident, $field:ident, $effect:ident) => {
+            if key == SettingKey::$key {
+                return eq_setting(&a.$field, &b.$field);
+            }
+        };
+    }
+    crate::for_each_setting!(arm);
+    false
 }
