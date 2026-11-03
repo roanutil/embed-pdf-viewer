@@ -69,13 +69,15 @@ pub fn load(file: &str) -> Value {
 /// a document meta and still predate it are held back by upstream changes
 /// their crates don't port yet, which regenerating them would bring in:
 /// `search-stage` by the stage's marquee zoom, `zoomDrag` (upstream
-/// `a1ee5683f`); `signature`, `stamp-api`, `stamp-placement`, `form-fill`,
-/// `form-core`, `form-scripting`, `form-actions` and `form-core-lifecycle` by
-/// the form's focus, `focused` (upstream `2998c9004`); and
-/// `interaction-functions` and `interaction` by the built-in zoom tool (also
-/// `a1ee5683f`), which shows in the tool lists `annotation-tools` and
-/// `form-design` record, `form-design` also recording `focused`. Remove
-/// this once they are regenerated.
+/// `a1ee5683f`); `signature`, `stamp-api` and `stamp-placement` by the
+/// form's focus (upstream `2998c9004`), for which regenerating would add
+/// `focused`; and `interaction-functions` and `interaction` by the built-in
+/// zoom tool (also `a1ee5683f`), which regenerating would add to the tool
+/// lists of `annotation-tools` and `form-design`, along with `focused` in
+/// `form-design`. The form's focus also holds back `form-fill`, `form-core`,
+/// `form-scripting`, `form-actions` and `form-core-lifecycle`, which record
+/// no document meta, so this never applies to them. Remove this once they
+/// are regenerated.
 fn without_unrecorded_page_view(want: &Value, got: &mut Value) {
     match (want, got) {
         (Value::Object(want), Value::Object(got)) => {

@@ -760,18 +760,25 @@ changed, and the Rust export now matches both.
 differs from the recorded file only by `structurePosition: null`. Their Rust replays all pass, with no Rust change.
 
 Those eighteen aren't all of it. Sixteen more plugin suites get `structurePosition: null` from the
-oracle, and their recorded files lack it, but each is also behind the oracle for an older reason, so
-none is regenerated here. Eight wait on the form's focus, `focused` (upstream `2998c9004`):
-`form-fill`, `form-core`, `form-scripting`, `form-actions` and `form-core-lifecycle`, and
-`signature`, `stamp-api` and `stamp-placement`, which also lack the page view's `pageLabels` and
-`pendingPages`. `actions-script` waits on the actions plugin's half of the same port
-(`registerFormFocus`). `form-design` records `focused` and the built-in zoom tool, and
-`annotation-tools` records the zoom tool (`a1ee5683f`). `link` and `attachment` record the stage's
-`zoomDrag` settings (also `a1ee5683f`). `annotation-hover` moves from `exec.named` to
-`lender.records`, `annotation-api` records a font `TypeError` the oracle no longer throws, and in
-`annotation-comments` a thread delete the recording refused ("delete not permitted") now succeeds.
-Each gets `structurePosition` when it is regenerated for its own blocker. `link` and `attachment`
-are also regenerated on the C5b branch, so the merge of the two branches settles those.
+oracle, and their recorded files lack it, but regenerating any of them would also bring in an older
+upstream change the Rust doesn't port, so none is regenerated here. Eight wait on the form's focus
+(upstream `2998c9004`): regenerating would add `focused` to `form-fill`, `form-core`,
+`form-scripting`, `form-actions`, `form-core-lifecycle`, `signature`, `stamp-api` and
+`stamp-placement`. None of the eight recordings has the page view's `pageLabels` or
+`pendingPages` either; regenerating would add them to `signature`, `stamp-api` and
+`stamp-placement`, while the five form suites record no document meta. `actions-script` waits on
+the actions plugin's half of the focus port (`registerFormFocus`). For `form-design`, regenerating
+would add `focused` and the built-in zoom tool (upstream `a1ee5683f`) to its tool lists, and for
+`annotation-tools` the zoom tool. For `link` and `attachment` it would add the stage's `zoomDrag`
+and `zoomBox` settings (also `a1ee5683f`). In `annotation-hover`, both the recording and the
+oracle call `exec.named` six times, but the oracle makes eleven more calls to each lender callback
+(`records`, `version`, `authority`, `painter`, `pending`) and returns changed annotation lists. In
+`annotation-api`, two calls the recording answers with a font family (`"Helvetica, Arial,
+sans-serif"` and `"\"Fancy\", sans-serif"`) now throw "TypeError: Cannot read properties of
+undefined (reading 'toLowerCase')" in the oracle. In `annotation-comments`, a thread delete the
+recording refused ("delete not permitted") now succeeds. Each gets `structurePosition` when it is
+regenerated for its own blocker. `link` and `attachment` are also regenerated on the C5b branch, so
+the merge of the two branches settles those.
 
 Two findings came out of the plugin side. First, `tooling/plugin-conformance/src/generate.ts`
 doesn't load on this branch, because two suite modules import files upstream removed:
