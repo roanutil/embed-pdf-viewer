@@ -31,6 +31,7 @@ use crate::cancel::CancelToken;
 use crate::clock::format_pdf_date;
 use crate::dto::{CustomMetadataPatch, MetadataPatch, Patch};
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::xmp::{sync_xmp, xmp_edits_for_custom_metadata, xmp_edits_for_metadata};
 use crate::mutation::MutationMeta;
 
 /// What a `metadata.update` leaves behind (`MetadataUpdateResult`).
@@ -93,6 +94,8 @@ fn custom_key_problem(key: &str) -> Option<String> {
 /// Apply a [`MetadataPatch`] to the Info dict in place
 /// (`applyMetadataPatch`): an absent field stays, `null` clears it, a value
 /// sets it (dates in PDF date syntax, keeping their offset); `''` is a value.
+/// Then the same fields in the XMP packet, when the document has one
+/// ([`crate::features::xmp`]).
 ///
 /// A native write that fails is `Unknown`, so a caller never reports a
 /// partly applied edit as success. Undoing what was written before it is the
@@ -125,7 +128,9 @@ pub fn apply_metadata_patch(document: &Document, patch: &MetadataPatch) -> Resul
     {
         return Err(failed("Trapped"));
     }
-    Ok(())
+    // The same fields in the XMP packet, when the document has one
+    // (`syncXmp`, which `MetadataMutator.update` runs after the patch).
+    sync_xmp(document, &xmp_edits_for_metadata(patch)?)
 }
 
 /// Apply a [`CustomMetadataPatch`] in place (`applyCustomMetadataPatch`): a
@@ -144,7 +149,9 @@ pub fn apply_custom_metadata_patch(
         };
         write_text(document, key, value)?;
     }
-    Ok(())
+    // The `pdfx:` properties the packet has for these keys
+    // (`MetadataMutator.updateCustom`'s `syncXmp`).
+    sync_xmp(document, &xmp_edits_for_custom_metadata(patch))
 }
 
 /// Refuse a custom patch naming a key it cannot write: `InvalidArg` naming
@@ -162,8 +169,8 @@ pub fn check_custom_keys<'a>(
     Ok(())
 }
 
-/// Apply a patch and re-read the standard fields (`MetadataMutator.update`
-/// without its `meta`, which the change adds).
+/// Apply a patch and re-read the standard fields (`MetadataMutator.update` without its
+/// `meta`, which the change adds).
 pub fn update_metadata(
     document: &Document,
     patch: &MetadataPatch,

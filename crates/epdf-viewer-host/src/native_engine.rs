@@ -758,19 +758,18 @@ impl NativeDocument {
             "pages.delete" => {
                 (json!({ "type": "pages.delete", "pages": arg(0) }), arg(1), &["layout", "meta"])
             }
-            "pages.insert" | "pages.insertBlank" => {
-                let mut op = if path == "pages.insert" {
-                    json!({ "type": "pages.insert", "source": arg(0) })
-                } else {
-                    json!({ "type": "pages.insertBlank", "spec": arg(0) })
+            "pages.insert" | "pages.insertBlank" | "pages.copy" => {
+                let mut op = match path {
+                    "pages.insert" => json!({ "type": "pages.insert", "source": arg(0) }),
+                    "pages.copy" => json!({ "type": "pages.copy", "pages": arg(0) }),
+                    _ => json!({ "type": "pages.insertBlank", "spec": arg(0) }),
                 };
                 if !absent(&arg(1)) {
                     op["position"] = arg(1);
                 }
                 let options = arg(2);
-                if path == "pages.insertBlank"
-                    && let Some(numbers) = options.get("objectNumbers").filter(|v| !absent(v))
-                {
+                // Each takes the numbers its pages are born at (`pageVerbs`).
+                if let Some(numbers) = options.get("objectNumbers").filter(|v| !absent(v)) {
                     op["objectNumbers"] = numbers.clone();
                 }
                 (op, options, &["insertedPages", "layout", "meta"])
@@ -889,7 +888,7 @@ impl DocumentHandle for NativeDocument {
             // local engine's default `CONTINUOUS_RENDER_POLICY`.
             "render.getPolicy" => return Promise::resolved(json!({ "kind": "continuous" })),
             "pages.reorder" | "pages.rotate" | "pages.delete" | "pages.insert"
-            | "pages.insertBlank" => return self.page_verb(path, &args),
+            | "pages.insertBlank" | "pages.copy" => return self.page_verb(path, &args),
             "download" => {
                 if let Err(error) = self.state.may_download(args.first()) {
                     return Promise::rejected(error);

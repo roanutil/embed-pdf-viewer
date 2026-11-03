@@ -27,6 +27,23 @@ impl Document {
         Ok(unsafe { pdfium_sys::EPDF_SetMetaText(self.as_raw(), key.as_ptr(), pointer) != 0 })
     }
 
+    /// Replace the catalog's `/Metadata` stream (the XMP packet) with
+    /// `bytes`, unfiltered, keeping its object number
+    /// (`EPDFCatalog_SetMetadata`); `None` removes it. The bytes are not
+    /// checked. `false` for a document PDFium refuses.
+    pub fn set_xmp_metadata(&self, bytes: Option<&[u8]>) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(bytes.map_or(0, <[u8]>::len)) else {
+            return false;
+        };
+        // Never a null pointer for bytes, even none: null is the removal.
+        let pointer = bytes.map_or(std::ptr::null(), |bytes| {
+            if bytes.is_empty() { [0u8].as_ptr() } else { bytes.as_ptr() }
+        });
+        // SAFETY: the handle is live and `pointer` is null or holds `size`
+        // bytes that outlive the call.
+        unsafe { pdfium_sys::EPDFCatalog_SetMetadata(self.as_raw(), pointer.cast(), size) != 0 }
+    }
+
     /// `/Trapped`.
     ///
     /// No clear form: the wire vocabulary is three states and none of them

@@ -99,6 +99,29 @@ impl Document {
         }
     }
 
+    /// The catalog's `/Metadata` stream (the document's XMP packet), its
+    /// bytes with every filter applied (`EPDFCatalog_GetMetadata`). `None`
+    /// when the catalog has none, or an empty one. What the bytes say is the
+    /// caller's to read.
+    pub fn xmp_metadata(&self) -> Result<Option<Vec<u8>>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the documented probe.
+        let size =
+            unsafe { pdfium_sys::EPDFCatalog_GetMetadata(self.handle, std::ptr::null_mut(), 0) };
+        if size == 0 {
+            return Ok(None);
+        }
+        let mut bytes: Vec<u8> = Vec::new();
+        bytes.try_reserve_exact(size as usize).map_err(|_| PdfiumError::OutOfMemory)?;
+        bytes.resize(size as usize, 0u8);
+        // SAFETY: the buffer holds `size` bytes, as the length argument
+        // claims; PDFium copies only when they all fit.
+        let read = unsafe {
+            pdfium_sys::EPDFCatalog_GetMetadata(self.handle, bytes.as_mut_ptr().cast(), size)
+        };
+        // A stream that changed size between the calls wasn't copied.
+        Ok((read == size).then_some(bytes))
+    }
+
     /// Every custom key in the Info dictionary, in document order.
     ///
     /// Custom means not one of the reserved names. A reader that returned

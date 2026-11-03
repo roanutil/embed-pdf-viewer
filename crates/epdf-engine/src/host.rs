@@ -3315,6 +3315,7 @@ fn strip_item(
         | ChangeItem::PagesDelete { .. }
         | ChangeItem::PagesInsertBlank { .. }
         | ChangeItem::PagesInsert { .. }
+        | ChangeItem::PagesCopy { .. }
         | ChangeItem::PagesRestore { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a page op has no single verb"))
         }

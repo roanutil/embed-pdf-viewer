@@ -26,6 +26,7 @@ use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::reader::{ActionTree, read_action_model};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
+use crate::features::page_labels::{PageLabelSection, label_at, read_label_sections};
 use crate::geom::{
     PageBoxes, PdfRect, PdfRotation, PdfSize, WrittenPageBoxes, normalize_pdf_rect, page_boxes_of,
     page_rotation_of, pdf_rect_size,
@@ -71,7 +72,8 @@ pub struct PageLayout<C: Coordinates = PdfCoordinates> {
     /// The durable key, `ref` on the wire.
     #[serde(rename = "ref", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
-    /// `/PageLabel`, or absent. An empty label reads as absent.
+    /// Its label as its section writes it (`labelAt`), or absent. An empty
+    /// label reads as absent.
     pub label: Option<String>,
     /// The visible box's size (`boxes.crop`), never swapped for rotation.
     pub size: PdfSize,
@@ -122,6 +124,10 @@ impl<D> PageActions<D> {
 pub struct PageListSnapshot<C: Coordinates = PdfCoordinates> {
     pub page_count: u32,
     pub pages: Vec<PageLayout<C>>,
+    /// The page label sections (`/PageLabels`), in page order: each page's
+    /// `label` is read from them. Empty when the document has none, and then
+    /// no page has a label.
+    pub labels: Vec<PageLabelSection>,
     /// The catalog's `/Names /Pages` and `/Names /Templates` registrations,
     /// `/Pages` first, each in key order. Always present, so a consumer can
     /// tell "no registrations" from an engine that predates the field.
@@ -191,6 +197,7 @@ pub fn list_pages(
     // otherwise build an unbounded snapshot out of individually reasonable
     // ones.
     let mut budget = ActionReadBudgetTracker::default();
+    let labels = read_label_sections(document)?;
 
     for index in 0..count {
         cancel.check()?;
@@ -209,12 +216,7 @@ pub fn list_pages(
         pages.push(PageLayout {
             index,
             page_object_number: number,
-            label: document.page_label_by_index(index).map_err(|e| {
-                EngineError::with_message(
-                    EngineErrorCode::RuntimeUnavailable,
-                    format!("reading the label of page {index} failed: {e}"),
-                )
-            })?,
+            label: label_at(&labels, index),
             size: pdf_rect_size(boxes.crop),
             rotation: rotation_at(document, index),
             user_unit: document.page_user_unit_by_index(index),
@@ -228,6 +230,7 @@ pub fn list_pages(
     Ok(PageListSnapshot {
         page_count: pages.len() as u32,
         pages,
+        labels,
         named_pages: read_named_pages(document)?,
     })
 }

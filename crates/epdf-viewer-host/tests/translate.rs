@@ -774,6 +774,33 @@ fn a_page_verb_is_one_apply_and_answers_its_items_members() {
 }
 
 #[test]
+fn a_page_copy_is_one_apply_and_answers_the_inserts_members() {
+    // `pageVerbs.copy`: one `pages.copy` op, answering `{insertedPages,
+    // layout, meta}`, published as `pages.inserted`.
+    let (answer, events) = with_document(test_support::REPORT, |doc, tx| {
+        let events = Rc::new(RefCell::new(Vec::<Value>::new()));
+        let seen = events.clone();
+        let _off = doc
+            .subscribe(Rc::new(move |event: &Value| seen.borrow_mut().push(event["type"].clone())));
+        let list = doc.clone().call("pages.list", None, vec![]);
+        let doc2 = doc.clone();
+        list.on_settle(move |list| {
+            let first = list.as_ref().map(|l| l["pages"][0]["ref"].clone()).unwrap_or_default();
+            doc2.call("pages.copy", None, vec![json!([first]), json!("start")]).on_settle(
+                move |answer| {
+                    let _ = tx.send((answer.clone(), events.borrow().clone()));
+                },
+            );
+        });
+    });
+    let answer = answer.unwrap();
+    assert_eq!(answer["insertedPages"].as_array().map(Vec::len), Some(1), "{answer}");
+    assert!(answer.get("layout").is_some() && answer.get("meta").is_some(), "{answer}");
+    assert_eq!(answer.as_object().unwrap().len(), 3, "{answer}");
+    assert_eq!(events, vec![json!("pages.inserted")]);
+}
+
+#[test]
 fn the_render_policy_is_the_local_engines_default() {
     let policy = with_document(test_support::REPORT, |doc, tx| {
         doc.call("render.getPolicy", None, vec![]).on_settle(move |p| {
