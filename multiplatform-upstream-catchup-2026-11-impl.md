@@ -680,15 +680,22 @@ TypeScript's optional `limits` argument. `d53ad0bf4` ports the stage:
 | `camera/gestures.rs`, `services/scene.rs`, `navigation/arrive.rs`, `navigation/reveal.rs` | Every zoom clamped into the limits: `set_camera`, `zoom_around`, a fixed level's effective zoom, arrivals, reveals |
 | `scroll_handler.rs` | The pan fallback skips a tool with a `gap_cursor` |
 | `settings/area.rs` | `asked` keys land when the live value differs (a fit asked for again after a zoom step); locks as the last layer; `lock_settings`, `get_lock`; `get_view_state` keeps what is under a lock |
-| `harness.rs`, `ffi.rs` | The new members; the three settings in the uniffi records and `StageSettingKey` |
+| `harness.rs` | The new members; `lockSettings` refuses an unknown setting key, as the TypeScript does |
+| `ffi.rs` | `min_zoom`, `max_zoom` and `zoom_box` (`StageZoomBoxLook`) in `StageSettings` and `StageSettingsPatch`, their `StageSettingKey` variants, and `can_zoom_in` and `can_zoom_out` on `StageHandle` |
 
 `tests/api.rs`'s `a_non_invertible_page_transform_leaves_the_page_out` reached its tiny view scale
 through `set_camera` at zoom `1e-170`, which now clamps to 0.05. It gets there through
-`view_units_per_point: 1e-170` instead. Two small Rust-only differences come with the typed lock:
-a lock names its settings in setting order where the TypeScript keeps the caller's key order (only
-the order of `locks`' keys could differ), and a release can't throw, so a failed reframe on release
-is dropped. Neither is in a vector. Both were accepted on 2026-11-03 as kept Rust-only
+`view_units_per_point: 1e-170` instead. Two small Rust-only differences come with the typed lock.
+A lock's settings are checked and recorded in setting order, where the TypeScript keeps the caller's
+key order. So the key order of `locks` can differ, and so can which refusal wins when one lock both
+names the zoom and conflicts on another setting: here a conflict on a key before `zoom` is reported
+first. And a release can't throw, so a failed reframe on release is dropped. Neither is in a
+vector. Both were accepted on 2026-11-03 as kept Rust-only
 divergences, along with the wider scope above.
+
+The uniffi surface defers three things: the optional `around` on `zoom_in` and `zoom_out` (the
+handle's calls pass `None`), `lock_settings` and `get_lock`, and the zoom-drag members. A native
+adapter that draws the zoom tool needs the drag members first.
 
 ### Vectors
 
@@ -714,12 +721,18 @@ it: `create_zoom_drag_handler`, the `zoom-box` tag and the pan-fallback rule are
 ported. `SettingLock` lives in the stage crate's contract here, where the TypeScript keeps it in
 core.
 
-### Checks at `df0dcfd04`
+### Checks after the review fixes
+
+The review's fixes added five tests to `tests/zoom_tools.rs` and one to `tests/ffi.rs`, and a
+positive control to the non-invertible test. Each new zoom test failed with its guard reverted: the
+lock layer in `apply_view_state`, the reveal clamp, the double-tap ladder's clamp, the arrival's
+limits, and `>=` in the 4 px threshold. The FFI test failed to compile before `can_zoom_in` and
+`can_zoom_out` existed.
 
 | Command | Exit | Result |
 |---|---|---|
-| `cargo test --workspace --no-fail-fast -- --test-threads=4`, `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib` | 0 | 3,150 passed, 0 failed, 1 ignored, 333 runs |
-| `rustfmt --check --edition 2024` on the 24 Rust files changed since `509d2df20` | 0 | Formatted |
+| `cargo test --workspace --no-fail-fast -- --test-threads=4`, `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib` | 0 | 3,154 passed, 0 failed, 1 ignored, 333 runs |
+| `rustfmt --check --edition 2024` on the Rust files changed since `509d2df20` | 0 | Formatted |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 0 | No warnings |
 | `cargo clippy -p epdf-plugin-stage --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
 
