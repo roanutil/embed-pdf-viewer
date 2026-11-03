@@ -630,6 +630,29 @@ and the generated render API has `canRenderThumbnail`, `renderThumbnail` without
 `epdf-uniffi`, which the Android AAR builds, doesn't link the render plugin. C5 didn't run a full
 Android build.
 
+### The two publish-script fixes
+
+`e4c67731d` and `d98a63e76` fix both defects in `scripts/publish-engine-payload.mjs`, and
+`--dry-run --only wasm` now exits 0 end to end. The wasm half runs the link itself. It puts back
+the committed `pdf-functions.generated.ts` after the header generator runs, and rewrites
+`build/generated/functions.json` from the committed signatures, so the postlink check in
+`compile.esm.sh` reads the bindings that ship: "all 1053 bound functions match their bindings".
+`EPDFAnnot_GetStructurePosition` is committed but not declared by this runtime, so the check can't
+hold the engine to it. The log names it, and so do the notes. `compile.esm.sh`, `build-arm.mjs`
+and the generator are unchanged, which keeps both hashes where they were: `cd135983bd35d8da` for
+the payload and `713b1b6b066f8a3f` for the Apple engine. The cost is that the link steps now exist
+twice, here and in `linkRustCore`.
+
+The notes come from `scripts/lib/payload-notes.mjs`, which has tests in `payload-notes.test.mjs`.
+A fork stamp can carry `source` (the archive, its sha256 and the emsdk version) for a library taken
+from a release archive. When the stamp's commit isn't `runtime-src`, the script counts the commits
+between them, lists the paths they change, and compares the archive's `args.gn` with what
+`target-args.sh` prints at the pin. It refuses before linking if anything outside `scripts/` and
+`docs/` changed or the gn args differ. The would-be notes now name the `6dfc03697` archive and say
+that `8b1e69abd` adds 4 commits that change only `scripts/` and `docs/`, with identical source and
+gn args. `--target` stays `6dfc03697`. `embedpdf.wasm` is byte for byte the one built earlier
+(`044e72b0…15d8`).
+
 ### Checks at `1544594da`
 
 | Command | Exit | Result |
