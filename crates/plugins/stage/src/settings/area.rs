@@ -286,7 +286,9 @@ impl StageCapability {
     /// where the TypeScript keeps the caller's key order: the order of the
     /// `locks` keys can differ, and so can which refusal wins when one lock
     /// both names the zoom and conflicts on another setting (a conflict on
-    /// a key before `zoom` is reported first here).
+    /// a key before `zoom` is reported first here). An unknown key can't be
+    /// expressed in the typed patch; the conformance harness refuses one
+    /// before any zoom or conflict check.
     pub fn lock_settings(&self, lock: StageSettingsLock) -> Result<Unsubscribe, Error> {
         let keys = patch_keys(&lock.settings);
         for &key in &keys {

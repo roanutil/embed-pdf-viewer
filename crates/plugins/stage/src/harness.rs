@@ -320,6 +320,22 @@ fn unsubscribe_ref(h: &Harness, off: Unsubscribe) -> Outcome {
     })))
 }
 
+/// The refusal of a lock that names a key that is no Stage setting, as the
+/// TypeScript's `lockSettings` throws it. The typed patch has no room for
+/// an unknown key, so only the harness meets one, and it refuses it before
+/// `lock_settings` runs its zoom and conflict checks.
+fn unknown_lock_key(lock: &Value) -> Option<Error> {
+    let map = lock.get("settings")?.as_object()?;
+    let key = map.keys().find(|key| !SETTING_KEYS.iter().any(|k| serde_str(k) == key.as_str()))?;
+    Some(epdf_kernel::error::plugin_error(
+        "invalid-input",
+        "stage",
+        format!("\"{key}\" is not a Stage setting"),
+        None,
+        None,
+    ))
+}
+
 /// A `StageSettingsLock` as a scenario passes it.
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -447,21 +463,8 @@ fn call_stage(
             Some(h),
         )?)),
         "lockSettings" => {
-            // The typed patch has no room for an unknown key, so the harness
-            // refuses one as the TypeScript's `lockSettings` does.
-            let raw = value(args, 0);
-            if let Some(map) = raw.get("settings").and_then(Value::as_object)
-                && let Some(key) = map
-                    .keys()
-                    .find(|key| !SETTING_KEYS.iter().any(|k| serde_str(k) == key.as_str()))
-            {
-                return Ok(Outcome::Threw(epdf_kernel::error::plugin_error(
-                    "invalid-input",
-                    "stage",
-                    format!("\"{key}\" is not a Stage setting"),
-                    None,
-                    None,
-                )));
+            if let Some(error) = unknown_lock_key(&value(args, 0)) {
+                return Ok(Outcome::Threw(error));
             }
             let lock: LockJson = arg(args, 0)?;
             match cap.lock_settings(StageSettingsLock {
@@ -803,4 +806,21 @@ pub fn functions() -> FunctionTable {
             Ok(observed(&state, model::set_active_rules(&state, arg(a, 1)?)))
         }),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_lock_with_an_unknown_key_is_refused_before_any_other_check() {
+        // Refused before `lock_settings` runs, so no zoom or conflict check
+        // can win over it.
+        let lock = json!({ "by": "x", "settings": { "flow": "continuous", "bogus": 1 } });
+        let error = unknown_lock_key(&lock).expect("refused");
+        assert_eq!(error.plugin_code(), Some("invalid-input"));
+        assert_eq!(error.message, "\"bogus\" is not a Stage setting");
+        let known = json!({ "by": "x", "settings": { "flow": "paged", "zoomBox": {} } });
+        assert!(unknown_lock_key(&known).is_none());
+    }
 }

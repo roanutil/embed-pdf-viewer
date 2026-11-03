@@ -152,8 +152,9 @@ resolution, and `get_view_state` keeps what is under them. `tests/zoom_tools.rs`
 limits and the locks, since the vectors record them only as state defaults. Two differences are
 kept on purpose. A lock's settings are checked and recorded in setting order, where the TypeScript
 uses the caller's key order, so the `locks` key order can differ, and so can which refusal wins
-when one lock both names the zoom and conflicts. And the release can't throw, so a reframe that
-fails on release is dropped.
+when one lock both names the zoom and conflicts. Only the conformance harness can express an
+unknown key, and it refuses one before any zoom or conflict check. And the release can't throw, so
+a reframe that fails on release is dropped.
 
 ## Not ported
 
