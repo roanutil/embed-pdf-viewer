@@ -27,7 +27,7 @@ import {
   zoomLerp,
 } from '../../../../packages/plugin/stage/src/motion';
 import * as model from '../../../../packages/plugin/stage/src/model';
-import { initialStageState } from '../../../../packages/plugin/stage/src/model';
+import { initialStageModel as initialStageState } from '../../../../packages/plugin/stage/src/model';
 import {
   boxOf,
   eqSetting,
@@ -48,7 +48,7 @@ import type {
   StageConfig,
   StageSettings,
 } from '../../../../packages/plugin/stage/src/contract';
-import type { StageState } from '../../../../packages/plugin/stage/src/model';
+import type { StageModel as StageState } from '../../../../packages/plugin/stage/src/model';
 
 import { pageDestinationOf } from '../../../../packages/engine/core/src/pageSpace/destinations';
 import type { PdfDestination } from '@embedpdf/engine-core/runtime';

@@ -6,7 +6,7 @@
  * policy, and a resolved zoom becomes the zoom intent. A destination is a
  * positioned reveal of the spot it names.
  */
-import { revealCamera, type Camera, type Rect as StageRect } from '@embedpdf/core-stage';
+import { clampZoom, revealCamera, type Camera, type Rect as StageRect } from '@embedpdf/core-stage';
 import type { PageDestination, PluginContext, PageRef } from '@embedpdf/core';
 
 import type { GoToDestinationOptions, RevealAnchorValue, RevealOptions } from '../contract';
@@ -14,13 +14,13 @@ import { revealOfDestination } from '../destination';
 import type { StageAnimation } from '../camera/animation';
 import type { StageCameraWrite } from '../camera/write';
 import type { StageHostCapability } from '../host-contract';
-import { patchSettings, setCursor, type StageState } from '../model';
+import { patchSettings, setCursor, type StageModel } from '../model';
 import type { StageServices } from '../services';
 import { whenPlaced } from '../services/placement-latch';
 import type { StageArrival } from './arrive';
 
 export function createReveal(
-  ctx: PluginContext<StageState>,
+  ctx: PluginContext<StageModel>,
   { scene, placement }: Pick<StageServices, 'scene' | 'placement'>,
   { writeCamera, markCause }: Pick<StageCameraWrite, 'writeCamera' | 'markCause'>,
   { cancelAnimation, animateTo }: Pick<StageAnimation, 'cancelAnimation' | 'animateTo'>,
@@ -30,6 +30,7 @@ export function createReveal(
     camera,
     viewport,
     padding,
+    zoomLimits,
     paged,
     itemIndexOfPage,
     worldPageFrame,
@@ -56,23 +57,27 @@ export function createReveal(
     viewportExtent: number,
     zoom: number,
     zoomChanged: boolean,
+    before: number,
+    after: number,
   ): number => {
     if (anchor === 'keep') return cameraPosition;
-    const inset = padding();
     if (anchor === undefined) {
       if (!zoomChanged) {
-        const low = cameraPosition + inset / zoom;
-        const high = cameraPosition + (viewportExtent - inset) / zoom;
+        const low = cameraPosition + before / zoom;
+        const high = cameraPosition + (viewportExtent - after) / zoom;
         if (rectPosition >= low && rectPosition + rectExtent <= high) return cameraPosition; // already visible
-        if (rectExtent > high - low || rectPosition < low) return rectPosition - inset / zoom;
-        return rectPosition + rectExtent - (viewportExtent - inset) / zoom;
+        if (rectExtent > high - low || rectPosition < low) return rectPosition - before / zoom;
+        return rectPosition + rectExtent - (viewportExtent - after) / zoom;
       }
       anchor = 'center';
     }
-    if (anchor === 'start') return rectPosition - inset / zoom;
-    if (anchor === 'end') return rectPosition + rectExtent - (viewportExtent - inset) / zoom;
+    if (anchor === 'start') return rectPosition - before / zoom;
+    if (anchor === 'end') return rectPosition + rectExtent - (viewportExtent - after) / zoom;
     const fraction = anchor === 'center' ? 0.5 : Math.min(1, Math.max(0, anchor));
-    return rectPosition + rectExtent / 2 - (viewportExtent * fraction) / zoom;
+    // Over the viewport moved by half the sides' difference, as `placeCamera` does.
+    return (
+      rectPosition + rectExtent / 2 - (viewportExtent * fraction + (before - after) / 2) / zoom
+    );
   };
 
   const revealAt = (pageIndex: number, options?: RevealOptions): void => {
@@ -134,8 +139,9 @@ export function createReveal(
         ? worldRectForContent(item, target, options.rect)
         : pageRectOf(item, target);
       const zoomDirective = options.zoom ?? 'keep';
-      const availableWidth = Math.max(1, viewport().width - 2 * padding());
-      const availableHeight = Math.max(1, viewport().height - 2 * padding());
+      const inset = padding();
+      const availableWidth = Math.max(1, viewport().width - inset.left - inset.right);
+      const availableHeight = Math.max(1, viewport().height - inset.top - inset.bottom);
       let zoom =
         typeof zoomDirective === 'object'
           ? zoomDirective.level
@@ -148,6 +154,8 @@ export function createReveal(
                 : camera().zoom;
       // A degenerate target (a point with a fit directive) only pans.
       if (!Number.isFinite(zoom) || zoom <= 0) zoom = camera().zoom;
+      // A tiny rect fits at the zoom limit, centered, like any other zoom.
+      zoom = clampZoom(zoom, zoomLimits());
       const zoomChanged = zoomDirective !== 'keep';
       const anchor = options.anchor ?? {};
       return {
@@ -160,6 +168,8 @@ export function createReveal(
             viewport().width,
             zoom,
             zoomChanged,
+            inset.left,
+            inset.right,
           ),
           y: revealAxis(
             anchor.y,
@@ -169,6 +179,8 @@ export function createReveal(
             viewport().height,
             zoom,
             zoomChanged,
+            inset.top,
+            inset.bottom,
           ),
           zoom,
         },

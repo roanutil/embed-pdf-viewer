@@ -21,6 +21,49 @@ pub enum PageBoxType {
     Art = 4,
 }
 
+/// How a page label section numbers its pages (`/S`, ISO 32000-1 12.4.2),
+/// as `EPDF_PAGE_LABEL_STYLE_*` (`public/epdf_doc.h`) codes them. No style,
+/// `EPDF_PAGE_LABEL_STYLE_NONE`, is `None` where one is held.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageLabelStyle {
+    /// `/D`: 1, 2, 3.
+    Decimal = 1,
+    /// `/R`: I, II, III.
+    UpperRoman = 2,
+    /// `/r`: i, ii, iii.
+    LowerRoman = 3,
+    /// `/A`: A to Z, then AA to ZZ.
+    UpperLetters = 4,
+    /// `/a`: a to z, then aa to zz.
+    LowerLetters = 5,
+}
+
+impl PageLabelStyle {
+    /// The style a code names; `None` for no number, or a code the header
+    /// doesn't define.
+    fn from_code(code: i32) -> Option<Self> {
+        Some(match code {
+            1 => Self::Decimal,
+            2 => Self::UpperRoman,
+            3 => Self::LowerRoman,
+            4 => Self::UpperLetters,
+            5 => Self::LowerLetters,
+            _ => return None,
+        })
+    }
+}
+
+/// Pages numbered together (one `/PageLabels` entry): from `first_page` up
+/// to the next section's, each labelled `prefix` followed by its number in
+/// `style`, counting from `first_number` (`/St`, as written even below 1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PageLabelSection {
+    pub first_page: u32,
+    pub style: Option<PageLabelStyle>,
+    pub first_number: i32,
+    pub prefix: String,
+}
+
 impl Document {
     /// One of a page's boxes exactly as the file writes it, its corners put
     /// in order by PDFium.
@@ -122,6 +165,45 @@ impl Document {
         let produced = ((written as usize) / 2).saturating_sub(1).min(buffer.len());
         let label = String::from_utf16_lossy(&buffer[..produced]);
         Ok((!label.is_empty()).then_some(label))
+    }
+
+    /// The document's page label sections (`/PageLabels`), in page order,
+    /// the first at page 0, as the fork reads them
+    /// (`EPDFDoc_GetPageLabelSectionCount`, `EPDFDoc_GetPageLabelSectionAt`).
+    /// Empty when the document has none, and then no page has a label.
+    pub fn page_label_sections(&self) -> Result<Vec<PageLabelSection>, PdfiumError> {
+        // SAFETY: the handle is live.
+        let count = unsafe { pdfium_sys::EPDFDoc_GetPageLabelSectionCount(self.handle) };
+        let mut sections = Vec::new();
+        for index in 0..count.max(0) {
+            let (mut first_page, mut style, mut first_number) = (0i32, 0i32, 0i32);
+            let mut measured = false;
+            // SAFETY: measure-then-fill with a null probe; the buffer holds
+            // the length passed with it, and the three outs are locals.
+            let prefix = crate::action::read_utf16(|buf, len| unsafe {
+                let bytes = pdfium_sys::EPDFDoc_GetPageLabelSectionAt(
+                    self.handle,
+                    index,
+                    buf,
+                    len,
+                    &raw mut first_page,
+                    &raw mut style,
+                    &raw mut first_number,
+                );
+                measured |= bytes != 0;
+                bytes
+            })?;
+            if !measured {
+                continue;
+            }
+            sections.push(PageLabelSection {
+                first_page: u32::try_from(first_page).unwrap_or(0),
+                style: PageLabelStyle::from_code(style),
+                first_number,
+                prefix: prefix.unwrap_or_default(),
+            });
+        }
+        Ok(sections)
     }
 
     /// A page's indirect object number, by index.

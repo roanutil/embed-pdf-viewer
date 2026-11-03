@@ -1,8 +1,9 @@
 //! The typed API beyond what the vectors print, against
 //! `packages/plugin/page-edit/src/{controller,model,state}.ts`: the
 //! permission gates and atomic refusals, the history label and undo each
-//! verb stages, turns from the rotation a pending change gives a page, and
-//! the selection over the confirmed page list.
+//! verb stages, turns from the rotation a page shows with the changes on
+//! their way, the page list showing an edit before the engine answers, and
+//! the selection over the page list.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -217,17 +218,24 @@ fn without_assemble_every_write_refuses_before_the_engine_hears_of_it() {
     assert!(f.labels().is_empty());
 }
 
+/// `contract.ts`: `extract()` copies pages out and needs `doc.download`;
+/// `duplicate()` copies them within the document, so it needs only
+/// `doc.pages.assemble`.
 #[test]
-fn without_download_copying_pages_out_refuses() {
+fn without_download_extract_refuses_and_duplicate_does_not() {
     let f = Fixture::new(doc(Vec::new(), json!(["doc.pages.assemble"])));
     let pe = &f.page_edit;
     assert!(pe.can_edit() && !pe.can_extract());
     let error = settled(pe.extract(refs(&[10]), Default::default())).unwrap_err();
     assert_eq!(error.message, "pageEdit.extract requires doc.download");
-    let error = settled(pe.duplicate(refs(&[10]), Default::default())).unwrap_err();
-    assert_eq!(error.message, "pageEdit.duplicate requires doc.download");
     assert!(f.engine_paths().is_empty());
     assert!(f.labels().is_empty());
+    // The fake engine has no answer for the apply; what matters is that it
+    // was staged and sent.
+    let _ = settled(pe.duplicate(refs(&[10]), Default::default()));
+    assert_eq!(f.labels(), [json!({ "key": "pages.duplicate", "count": 1 })]);
+    assert_eq!(f.staged.borrow()[0].1[0]["type"], json!("pages.copy"));
+    assert_eq!(f.engine_paths().last().map(String::as_str), Some("apply"));
 }
 
 #[test]
@@ -275,7 +283,6 @@ fn each_edit_is_one_labelled_change_with_its_undo() {
     let f = Fixture::new(doc(
         vec![
             json!({ "path": "apply", "value": { "items": [{ "insertedPages": [] }], "meta": meta() } }),
-            json!({ "path": "pages.extract", "value": { "$bytes": "CgsM" } }),
         ],
         json!("*"),
     ));
@@ -311,22 +318,74 @@ fn each_edit_is_one_labelled_change_with_its_undo() {
     assert_eq!(staged[0].2, [rotate(&[10], 0), rotate(&[20], 90)]);
     assert_eq!(staged[1].1, [rotate(&[10, 30], 180)]);
     assert_eq!(staged[1].2, [rotate(&[10], 0), rotate(&[30], 270)]);
-    // The index named page 30 when the verb was called.
+    // The index named page 30 when the verb was called; undoing the move
+    // puts it back after page 20.
     assert_eq!(
         staged[2].1,
         [json!({ "type": "pages.reorder", "pages": [pr(30).to_json()], "position": "start" })]
     );
-    // A blank page matches the page it goes next to (the last, by default).
+    assert_eq!(
+        staged[2].2,
+        [
+            json!({ "type": "pages.reorder", "pages": [pr(30).to_json()], "position": { "after": pr(20).to_json() } })
+        ]
+    );
+    // Undoing a delete brings the page back after the page it followed.
+    assert_eq!(
+        staged[3].2,
+        [
+            json!({ "type": "pages.restore", "pages": [{ "page": three()[1], "after": pr(10).to_json() }] })
+        ]
+    );
+    // A blank page matches the page it goes next to (the last, by default),
+    // and is named from the session's pool, so its undo deletes it.
+    let named = |numbers: &[u32]| numbers.iter().map(|n| pr(*n).to_json()).collect::<Vec<_>>();
     assert_eq!(
         staged[4].1,
         [
-            json!({ "type": "pages.insertBlank", "spec": { "size": { "width": 500.0, "height": 600.0 }, "count": 3 }, "position": "end" })
+            json!({ "type": "pages.insertBlank", "spec": { "size": { "width": 500.0, "height": 600.0 }, "count": 3 }, "position": "end", "objectNumbers": [31, 32, 33] })
         ]
     );
-    // Only rotations carry an undo of their own; the engine records the rest.
-    assert!(staged[2..].iter().all(|(_, _, undo)| undo.is_empty()));
-    // A duplicate lands right after the last page it copies.
-    assert_eq!(staged[6].1[0]["position"], json!({ "after": pr(10).to_json() }));
+    assert_eq!(staged[4].2, [json!({ "type": "pages.delete", "pages": named(&[31, 32, 33]) })]);
+    // An insert that doesn't know its page count names nothing and has no
+    // undo of its own.
+    assert!(staged[5].2.is_empty());
+    // A duplicate is one `pages.copy`, right after the last page it copies.
+    assert_eq!(
+        staged[6].1,
+        [
+            json!({ "type": "pages.copy", "pages": named(&[10]), "position": { "after": pr(10).to_json() }, "objectNumbers": [34] })
+        ]
+    );
+    assert_eq!(staged[6].2, [json!({ "type": "pages.delete", "pages": named(&[34]) })]);
+}
+
+/// `labelsBack()`: with label sections, every undo ends by putting back
+/// the sections the pages show when the verb is called.
+#[test]
+fn an_undo_ends_with_the_label_sections() {
+    let sections = json!([
+        { "firstPage": 0, "style": "decimal", "firstNumber": 1, "prefix": "" },
+        { "firstPage": 2, "style": "lowerRoman", "firstNumber": 1, "prefix": "" },
+    ]);
+    let mut spec = doc(
+        vec![
+            json!({ "path": "apply", "value": { "items": [{ "insertedPages": [] }], "meta": meta() } }),
+        ],
+        json!("*"),
+    );
+    spec["labels"] = sections.clone();
+    let f = Fixture::new(spec);
+    let none = OperationOptions::default;
+    settled(f.page_edit.reorder(refs(&[30]), PagePosition::Start, none())).unwrap();
+    settled(f.page_edit.delete(refs(&[20]), none())).unwrap();
+    settled(f.page_edit.rotate_by(refs(&[10]), 90.0, none())).unwrap();
+    let staged = f.staged.borrow();
+    let relabel = json!({ "type": "pages.relabel", "labels": sections });
+    assert_eq!(staged[0].2.last(), Some(&relabel));
+    assert_eq!(staged[1].2.last(), Some(&relabel));
+    // A rotation moves no section, so its undo has none to put back.
+    assert!(staged[2].2.iter().all(|op| op["type"] == "pages.rotate"));
 }
 
 #[test]
@@ -445,15 +504,20 @@ fn racing_engine() -> Value {
 ///   `mapErrors(() => other.pages.extract(refs))`. Inside, `return await`
 ///   on the subclass promise takes the resolve-thenable job, its `then`
 ///   reaction and the await's own (3); the verb's `await mapErrors(...)` is
-///   the 4th, and `insertBytes` stages there.
+///   the 4th, and `insertBytes` starts there.
 /// - `insertFromBytes` with `pageIndexes` awaits `pagesOfBytes` (`:221`):
 ///   `await mapErrors(open)` 4, `await mapErrors(pages.list)` 4,
 ///   `return await mapErrors(pages.extract)` 4, `finally { await
 ///   source.close() }` 3 (a subclass), then the verb's `await
-///   pagesOfBytes(...)` 1: it stages on turn 16.
+///   pagesOfBytes(...)` 1: it has its bytes on turn 16.
+/// - Each then takes its page names (`withNumbers`): the pool holds none,
+///   so `await ctx.cancellable(signal, ctx.changes.reserveObjectNumbers(n))`
+///   waits for the async reserve, three turns on the subclass promise and
+///   one for the await, and stages after it: turns 8 and 20.
 /// - With a signal, `ctx.cancellable` (`cancellable.ts:20`) returns a plain
 ///   promise its `task.then` reaction settles (1), `mapErrors` resumes on
-///   the next (2) and the verb on the one after: turn 3.
+///   the next (2) and the verb on the one after: turn 3. Its reserve under
+///   the signal takes one turn more (5), so it stages on turn 8.
 #[test]
 fn await_first_verbs_stage_on_the_typescripts_turns() {
     let f = Fixture::over(racing_engine(), &["b"]);
@@ -463,13 +527,27 @@ fn await_first_verbs_stage_on_the_typescripts_turns() {
     let subset = f.page_edit.insert_from_bytes(Bytes(vec![1, 2, 3]), options);
     let copy = f.page_edit.insert_from_document("b".into(), refs(&[20]), Default::default());
     rt::run_until_stalled();
-    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 4), ("pages.insert".to_string(), 16)]);
+    // Both inserts know their page count, so each waits for its name from
+    // the pool (`withNumbers`): the reserve's async call takes three turns
+    // and the await on it a fourth.
+    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 8), ("pages.insert".to_string(), 20)]);
     // Both calls reach the engine at once (the open, b's extract); on turn
-    // 4 the subset lists its source, then the copy is sent; the subset
-    // extracts on 8 and closes on 12.
+    // 4 the subset lists its source, then the copy reserves its name; on 8
+    // the subset extracts and the copy is sent; the subset closes on 12,
+    // reserves on 16 and is sent on 20.
     assert_eq!(
         f.engine_paths(),
-        ["open", "pages.extract", "pages.list", "apply", "pages.extract", "close", "apply"]
+        [
+            "open",
+            "pages.extract",
+            "pages.list",
+            "objectNumbers.reserve",
+            "pages.extract",
+            "apply",
+            "close",
+            "objectNumbers.reserve",
+            "apply",
+        ]
     );
     assert!(subset.peek().is_some_and(|r| r.is_ok()) && copy.peek().is_some_and(|r| r.is_ok()));
 
@@ -479,7 +557,10 @@ fn await_first_verbs_stage_on_the_typescripts_turns() {
     let options = PagePositionOptions { signal: Some(AbortSignal::new()), ..Default::default() };
     let copy = f.page_edit.insert_from_document("b".into(), refs(&[20]), options);
     rt::run_until_stalled();
-    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 3)]);
+    // The copy has its bytes on turn 3; the reserve under the signal settles
+    // the plain promise `ctx.cancellable` returns a turn later than without
+    // one, so the name is in hand, and the copy staged, on turn 8.
+    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 8)]);
     assert!(copy.peek().is_some_and(|r| r.is_ok()));
 }
 
@@ -515,7 +596,7 @@ fn a_signal_fired_mid_flight_rejects_the_verb_and_the_edit_still_lands() {
         (code(&error), error.message.as_str()),
         (Some("operation-cancelled"), "operation cancelled")
     );
-    assert_eq!(f.pages()[0], (10, 0), "nothing shows before the engine answers");
+    assert_eq!(f.pages()[0], (10, 90), "the turn shows before the engine answers");
     assert!(f.fake.settle("rotate", Ok(value)));
     rt::run_until_stalled();
     assert_eq!(f.pages()[0], (10, 90));
@@ -533,4 +614,27 @@ fn an_insert_answer_item_is_read_with_the_in_operator() {
     let error = settled(f.page_edit.insert_blank(Default::default())).unwrap_err();
     assert_eq!(error.name, "TypeError");
     assert_eq!(error.message, "Cannot use 'in' operator to search for 'insertedPages' in 5");
+}
+
+/// `withNumbers` (`controller.ts:214`) asks the pool for
+/// `count - numbers.length` as given, and the pool refuses a count that
+/// isn't a whole number (`!Number.isInteger(count)`): a fractional blank
+/// insert is refused at the reserve, and stages nothing.
+#[test]
+fn a_fractional_blank_insert_count_is_refused_at_the_reserve() {
+    for (held, wanted) in [(json!([]), "1.5"), (json!([50]), "0.5")] {
+        let mut spec = doc(Vec::new(), json!("*"));
+        spec["objectNumbers"] = held;
+        let f = Fixture::new(spec);
+        let options = InsertBlankOptions { count: Some(1.5), ..Default::default() };
+        let error = settled(f.page_edit.insert_blank(options)).unwrap_err();
+        assert_eq!(code(&error), Some("invalid-input"), "{error:?}");
+        assert!(
+            error.message.contains(&format!("cannot reserve {wanted} object numbers")),
+            "{}",
+            error.message
+        );
+        assert_eq!(f.engine_paths(), ["objectNumbers.reserve"]);
+        assert!(f.labels().is_empty(), "nothing staged");
+    }
 }

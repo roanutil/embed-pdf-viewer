@@ -25,6 +25,7 @@ use epdf_kernel::engine::{CallFacts, CallPriority, DocumentHandle};
 use epdf_kernel::error::{code, plugin_error, to_plugin_error, to_plugin_error_info};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::page_view::PendingPage;
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::settings::{InstanceSettings, SettingsChanged};
@@ -62,6 +63,8 @@ use crate::tile_manager::{TileManager, TileManagerDeps};
 use crate::tiles::PageSizePt;
 
 const RENDER_SCOPE: &str = "doc.render";
+/// A page's thumbnail, which `doc.render` implies.
+const THUMBNAIL_SCOPE: &str = "doc.render.thumbnail";
 const FORMS_SCOPE: &str = "doc.forms.read";
 const ANNOTATIONS_SCOPE: &str = "doc.annotate.read";
 const DEFAULT_BATCH_CONCURRENCY: f64 = 4.0;
@@ -85,6 +88,25 @@ pub(crate) fn annotation_key(reference: &Value) -> String {
         Some("objectNumber") => format!("obj:{}", text(reference.get("objectNumber"))),
         _ => "undefined".to_string(),
     }
+}
+
+/// What `thumbnailOf` reads of either door's options.
+struct ThumbnailRequest {
+    layers: PageLayerOptions,
+    format: Option<RenderFormat>,
+    quality: Option<f64>,
+    view: Option<String>,
+    signal: Option<AbortSignal>,
+}
+
+/// `isPending(page)`: the page is in the page list and the engine doesn't
+/// have it yet.
+fn is_pending(cx: &Controller<RenderState, Value>, page: PageRef) -> bool {
+    let id = cx.document_id();
+    let core = cx.core();
+    let meta =
+        id.and_then(|id| core.documents.get(id).cloned()).or_else(|| cx.document().map(Rc::new));
+    meta.is_some_and(|meta| meta.pending_pages.has(&json!(page.page_object_number)))
 }
 
 /// What a raster request sends the engine besides its target.
@@ -203,6 +225,10 @@ impl Core {
     }
 
     // ── what a picture draws ──
+
+    fn can_render_thumbnail(&self) -> bool {
+        self.cx.allows(THUMBNAIL_SCOPE)
+    }
 
     fn can_render(&self) -> bool {
         self.cx.allows(RENDER_SCOPE)
@@ -421,6 +447,58 @@ impl Core {
         )
     }
 
+    /// A thumbnail is one picture per page, whatever the screen asks: its
+    /// key has no width.
+    fn thumbnail_key(
+        &self,
+        pon: u32,
+        layers: PageRenderLayers,
+        format: Option<RenderFormat>,
+        quality: Option<f64>,
+    ) -> String {
+        format!(
+            "{pon}|thumbnail|{}|e{}{}{}",
+            layers_key_of(layers),
+            num(self.epoch_of(pon, layers)),
+            format.map_or(String::new(), |f| format!("|f{}", f.as_str())),
+            quality.map_or(String::new(), |q| format!("|q{}", num(q)))
+        )
+    }
+
+    // ── pending pages ──
+    // A page a change on its way makes (a blank insert, a copy, an undone
+    // delete) is in the page list before the engine has it. Until it lands
+    // nothing asks the engine for its pictures: a blank page shows its
+    // background, a page coming back the pictures still kept under its
+    // keys, and a copy the pictures of the page it copies.
+
+    fn is_pending(&self, page: PageRef) -> bool {
+        is_pending(&self.cx, page)
+    }
+
+    /// The page a pending copy copies; `None` for any other page.
+    fn copied_from(&self, page: PageRef) -> Option<PageRef> {
+        self.with_meta(|meta| match meta?.pending_pages.get(&json!(page.page_object_number))? {
+            PendingPage::Copy { of } => PageRef::from_json(of),
+            _ => None,
+        })
+    }
+
+    /// `whenHeld(page, signal)`: resolves once the engine has a pending
+    /// page; rejects `not-found` when it went first.
+    fn when_held(&self, page: PageRef, signal: Option<AbortSignal>) -> Promise<()> {
+        let cx = self.cx.clone();
+        let waiting = cx.clone();
+        let held = cx.wait_for(move || Ok(!is_pending(&waiting, page)), signal);
+        Promise::spawn(async move {
+            held.await?;
+            if cx.get_page(page).is_none() {
+                cx.assert_page_ref(page)?;
+            }
+            Ok(())
+        })
+    }
+
     // ── the raster store door (shared by both render doors and the tiles) ──
 
     fn acquire_raster(
@@ -449,13 +527,25 @@ impl Core {
                     options.insert("quality".into(), json!(quality));
                 }
                 let facts = high_for(request.view.clone());
-                Ok(render_image(
-                    &self.cx.doc()?,
-                    &facts,
-                    page,
-                    Value::Object(options),
-                    store_signal,
-                ))
+                let doc = self.cx.doc()?;
+                // A copy draws as the page it copies, which the engine may
+                // not have yet either.
+                let drawn = self.copied_from(page).unwrap_or(page);
+                if !self.is_pending(drawn) {
+                    return Ok(render_image(
+                        &doc,
+                        &facts,
+                        drawn,
+                        Value::Object(options),
+                        store_signal,
+                    ));
+                }
+                let held = self.when_held(drawn, Some(store_signal.clone()));
+                let signal = store_signal.clone();
+                Ok(Promise::spawn(async move {
+                    held.reaction().await?;
+                    render_image(&doc, &facts, drawn, Value::Object(options), &signal).await
+                }))
             },
             signal,
         );
@@ -495,6 +585,16 @@ impl Core {
     ) -> Promise<PageImage> {
         let this = self.clone();
         Promise::spawn(async move {
+            if options.thumbnail {
+                let thumbnail = ThumbnailRequest {
+                    layers: options.layers,
+                    format: None,
+                    quality: None,
+                    view: options.view.clone(),
+                    signal: options.signal.clone(),
+                };
+                return adopt(this.thumbnail_of(page, thumbnail, "render.renderSource")).await;
+            }
             this.cx.assert_allowed(RENDER_SCOPE, "render.renderSource")?;
             let layers = this.picture_layers(options.layers, "render.renderSource")?;
             let width = this.base_width(page, options.scale)?;
@@ -550,6 +650,56 @@ impl Core {
             };
             let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
             adopt(cancellable(CAPABILITY, options.signal.clone(), raster)).await
+        })
+    }
+
+    /// `thumbnailOf(page, options, operation)`: a page's thumbnail, by
+    /// either door, one picture per page and layers.
+    fn thumbnail_of(
+        self: &Rc<Self>,
+        page: PageRef,
+        options: ThumbnailRequest,
+        operation: &'static str,
+    ) -> Promise<PageImage> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.cx.assert_allowed(THUMBNAIL_SCOPE, operation)?;
+            let layers = this.picture_layers(options.layers, operation)?;
+            let strategy = this.strategy();
+            let format = options.format.or(strategy.format);
+            let quality = options.quality.or(strategy.quality);
+            let key = this.thumbnail_key(page.page_object_number, layers, format, options.quality);
+            let request = RasterRequest {
+                viewport: PageRenderViewport::Thumbnail,
+                layers,
+                format,
+                quality,
+                view: options.view,
+            };
+            adopt(this.acquire_raster(page, key, request, options.signal.as_ref())).await
+        })
+    }
+
+    /// `renderThumbnail(page, options)`: the page's thumbnail through the
+    /// public door; the page is read first, then the right.
+    fn render_thumbnail(
+        self: &Rc<Self>,
+        page: PageArg,
+        options: RenderThumbnailOptions,
+    ) -> Promise<PageImage> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            let (page, _) = this.page_of(page)?;
+            let signal = options.signal.clone();
+            let request = ThumbnailRequest {
+                layers: options.layers,
+                format: options.format,
+                quality: options.quality,
+                view: None,
+                signal: options.signal,
+            };
+            let thumbnail = this.thumbnail_of(page, request, "render.renderThumbnail");
+            adopt(cancellable(CAPABILITY, signal, thumbnail)).await
         })
     }
 
@@ -673,9 +823,30 @@ impl Core {
         })
     }
 
+    /// A pending page's appearances wait until the engine has the page.
+    fn fetch_appearances(
+        self: &Rc<Self>,
+        pon: u32,
+        family: AppearanceFamily,
+        scale: f64,
+        versions: IndexMap<String, f64>,
+        signal: &AbortSignal,
+    ) -> Promise<Vec<AppearancePicture>> {
+        let page = PageRef::new(pon);
+        if !self.is_pending(page) {
+            return self.fetch_held_appearances(pon, family, scale, versions, signal);
+        }
+        let held = self.when_held(page, Some(signal.clone()));
+        let (this, signal) = (self.clone(), signal.clone());
+        Promise::spawn(async move {
+            held.await?;
+            this.fetch_held_appearances(pon, family, scale, versions, &signal).await
+        })
+    }
+
     /// The look at rest only, in every state: a check box keeps both its
     /// pictures, and the looks under the pointer and pressed aren't drawn.
-    fn fetch_appearances(
+    fn fetch_held_appearances(
         self: &Rc<Self>,
         pon: u32,
         family: AppearanceFamily,
@@ -962,21 +1133,22 @@ impl RenderCapability {
         self.0.render_page(page.into(), options)
     }
 
-    /// A small raster at `max_width` device pixels.
+    /// May this session have the pages' thumbnails
+    /// (`doc.render.thumbnail`, which `doc.render` includes)? A session that
+    /// may not render pages may still have them.
+    pub fn can_render_thumbnail(&self) -> bool {
+        self.0.can_render_thumbnail()
+    }
+
+    /// The page's thumbnail: the whole page, 512 pixels on its long side,
+    /// sharing the raster cache. Needs only `doc.render.thumbnail`; rejects
+    /// `permission-denied` without it, otherwise like `render_page`.
     pub fn render_thumbnail(
         &self,
         page: impl Into<PageArg>,
         options: RenderThumbnailOptions,
     ) -> Promise<PageImage> {
-        self.0.render_page(
-            page.into(),
-            RenderPageOptions {
-                width: Some(options.max_width),
-                layers: options.layers,
-                signal: options.signal,
-                ..Default::default()
-            },
-        )
+        self.0.render_thumbnail(page.into(), options)
     }
 
     /// Render several pages with bounded concurrency; best-effort per page.
@@ -1026,13 +1198,23 @@ impl RenderCapability {
     }
 
     /// The identity of the raster `render_source` would produce. `Err` is
-    /// `not-found` for a page not in this document.
+    /// `not-found` for a page not in this document; a thumbnail's key needs
+    /// no page width.
     pub fn get_source_key(
         &self,
         page: PageRef,
         scale: f64,
         layers: PageLayerOptions,
+        thumbnail: bool,
     ) -> Result<String, Error> {
+        if thumbnail {
+            return Ok(self.0.thumbnail_key(
+                page.page_object_number,
+                self.0.layers_of(layers),
+                self.0.strategy().format,
+                None,
+            ));
+        }
         let width = self.0.base_width(page, scale)?;
         Ok(self.0.raster_key(
             page.page_object_number,
@@ -1384,6 +1566,29 @@ fn fetch_tile(
     if let Err(error) = core.cx.assert_allowed(RENDER_SCOPE, "render.tile") {
         return Promise::rejected(error);
     }
+    let page = PageRef::new(pon);
+    if core.is_pending(page) {
+        let held = core.when_held(page, Some(signal.clone()));
+        let (core, view, signal) = (core.clone(), view.to_string(), signal.clone());
+        return Promise::spawn(async move {
+            held.await?;
+            fetch_held_tile(&core, &view, pon, rect, scale, layers, &signal).await
+        });
+    }
+    fetch_held_tile(core, view, pon, rect, scale, layers, signal)
+}
+
+/// `fetchTile` once the engine has the page: a page-space region at a
+/// scale.
+fn fetch_held_tile(
+    core: &Rc<Core>,
+    view: &str,
+    pon: u32,
+    rect: Rect,
+    scale: f64,
+    layers: PageRenderLayers,
+    signal: &AbortSignal,
+) -> Promise<Value> {
     let strategy = core.strategy();
     let doc = match core.cx.doc() {
         Ok(doc) => doc,

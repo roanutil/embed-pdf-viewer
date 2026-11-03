@@ -1319,6 +1319,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -1517,6 +1521,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -1626,6 +1634,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -1735,6 +1747,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"

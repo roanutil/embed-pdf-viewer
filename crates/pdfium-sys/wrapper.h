@@ -41,6 +41,7 @@
 #include "epdf_outline.h"
 #include "epdf_pieceinfo.h"
 #include "epdf_png.h"
+#include "epdf_ppo.h"
 #include "epdf_progressive.h"
 #include "epdf_redact.h"
 #include "epdf_save.h"

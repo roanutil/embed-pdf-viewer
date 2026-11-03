@@ -1,13 +1,14 @@
 //! `vectors/plugins/render-*.json`, generated from `packages/plugin/render`
 //! (and `engine-core`'s render-policy snaps).
 
+use epdf_plugin_page_edit::harness::PageEdit;
 use epdf_plugin_render::harness::{Render, functions};
 use std::collections::BTreeSet;
 
 use plugin_conformance::{Registry, assert_suite, load};
 
 fn replay(file: &str) {
-    assert_suite(file, &Registry::new().with(Render), &functions());
+    assert_suite(file, &Registry::new().with(Render).with(PageEdit), &functions());
 }
 
 #[test]

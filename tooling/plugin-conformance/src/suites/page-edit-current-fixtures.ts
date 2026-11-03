@@ -1,12 +1,14 @@
 /** Typed page snapshots and explicit engine answers; no page-edit rules are simulated. */
-import type {
-  PageLayout,
-  PageRef,
-  PdfRotation,
-  ChangeItem,
-  ChangeResult,
-  DocumentEvent,
-  EventOrigin,
+import {
+  labelAt,
+  type PageLabelSection,
+  type PageLayout,
+  type PageRef,
+  type PdfRotation,
+  type ChangeItem,
+  type ChangeResult,
+  type DocumentEvent,
+  type EventOrigin,
 } from '@embedpdf/engine-core/runtime';
 import type { PageEditCapability } from '../../../../packages/plugin/page-edit/src/contract';
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
@@ -33,11 +35,18 @@ export const page = (
   };
 };
 export const three = [page(10, 0), page(20, 1, 90, 300, 400), page(30, 2, 270, 500, 600)];
-export const layout = (pages: readonly PageLayout[]) => ({
+export const layout = (pages: readonly PageLayout[], labels?: readonly PageLabelSection[]) => ({
   pageCount: pages.length,
   pages: [...pages],
+  ...(labels ? { labels: [...labels] } : {}),
   namedPages: [],
 });
+/** `pages` as the engine lists them under `sections`: each at its index, labelled from them. */
+export const labelled = (
+  pages: readonly PageLayout[],
+  sections: readonly PageLabelSection[],
+): PageLayout[] =>
+  pages.map((each, index) => ({ ...each, index, label: labelAt(sections, index) }));
 export const local: EventOrigin = {
   kind: 'local',
   sessionId: 's1',
@@ -69,17 +78,22 @@ export const reordered = (pages: PageRef[], after: PageLayout[]): ChangeItem => 
   layout: layout(after),
   meta,
 });
-export const deleted = (pages: PageRef[], after: PageLayout[]): ChangeItem => ({
+export const deleted = (
+  pages: PageRef[],
+  after: PageLayout[],
+  labels?: readonly PageLabelSection[],
+): ChangeItem => ({
   type: 'pages.delete',
   pages,
-  layout: layout(after),
+  layout: layout(after, labels),
   meta,
 });
 export const inserted = (
-  type: 'pages.insert' | 'pages.insertBlank',
+  type: 'pages.insert' | 'pages.insertBlank' | 'pages.copy',
   nums: number[],
   after: PageLayout[],
-): ChangeItem => ({ type, insertedPages: nums.map(pr), layout: layout(after), meta });
+  labels?: readonly PageLabelSection[],
+): ChangeItem => ({ type, insertedPages: nums.map(pr), layout: layout(after, labels), meta });
 export const result = (...items: ChangeItem[]): ChangeResult => ({ items, meta });
 export const fact = (item: ChangeItem, origin = local): DocumentEvent => {
   switch (item.type) {
@@ -91,6 +105,7 @@ export const fact = (item: ChangeItem, origin = local): DocumentEvent => {
       return { ...item, type: 'pages.deleted', origin };
     case 'pages.insert':
     case 'pages.insertBlank':
+    case 'pages.copy':
       return { ...item, type: 'pages.inserted', origin };
     default:
       throw Error('not a page item');
@@ -169,6 +184,7 @@ export function bindTransactions(c: ScenarioCase): ScenarioCase {
           case 'pages.delete':
           case 'pages.insert':
           case 'pages.insertBlank':
+          case 'pages.copy':
             return { ...item, meta: { ...item.meta, opId: id } };
           default:
             throw Error('page fixture expected page result');

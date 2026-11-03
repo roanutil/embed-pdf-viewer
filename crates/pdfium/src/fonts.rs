@@ -23,7 +23,7 @@ pub struct FontId(u32);
 
 impl FontId {
     /// PDFium reports failure as zero rather than as an error.
-    fn from_raw(raw: u32) -> Option<Self> {
+    pub(crate) fn from_raw(raw: u32) -> Option<Self> {
         (raw != 0).then_some(Self(raw))
     }
 
@@ -115,11 +115,15 @@ pub fn register_font_file(
     FontId::from_raw(raw).ok_or(PdfiumError::FontRegistration)
 }
 
-/// Append a registered font to the ordered glyph-fallback chain.
-pub fn add_fallback_font(id: FontId) -> Result<(), PdfiumError> {
+/// Add a registered font to the glyph-fallback chain, in `tier`.
+///
+/// PDFium tries the chain tier by tier, lowest first, and in the order added
+/// within a tier. Adding a font that is already in the chain changes its tier
+/// only.
+pub fn add_fallback_font(id: FontId, tier: i32) -> Result<(), PdfiumError> {
     // SAFETY: `id` is non-zero by construction and names a font registered on
     // this thread.
-    let ok = unsafe { pdfium_sys::EPDFFont_AddFallbackFont(id.raw()) };
+    let ok = unsafe { pdfium_sys::EPDFFont_AddFallbackFont(id.raw(), tier) };
     if ok == 0 { Err(PdfiumError::FontRegistration) } else { Ok(()) }
 }
 

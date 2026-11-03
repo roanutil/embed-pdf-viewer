@@ -5,7 +5,10 @@
 //! A verb refuses before anything starts (permission, pages, position), then
 //! stages its edit as one change on the document's queue (`ctx.changes`):
 //! one step of the history, sent after everything staged before it. The page
-//! list shows it once the engine answers; nothing predicts pages yet.
+//! list shows a rotate, a move, a delete, a blank insert or a duplicate at
+//! once (the kernel's page view), with what undoing it shows, the page labels
+//! moving as the engine moves them; an insert of another PDF's pages shows
+//! once the engine answers.
 //!
 //! Every verb is a TypeScript `async` function, so each is a
 //! [`Promise::spawn`] here: the body runs at the call up to its first await,
@@ -23,6 +26,7 @@ use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::js::json_number;
+use epdf_kernel::page_predict::{reorder_back_of, restored_pages_of, rotate_back_of};
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Controller, DOCUMENTS, Error, Promise, rt};
 use serde_json::{Value, json};
@@ -90,7 +94,11 @@ fn base36(ms: f64) -> String {
 }
 
 fn refs_json(pages: &[PageRef]) -> Value {
-    Value::Array(pages.iter().map(|page| page.to_json()).collect())
+    Value::Array(ref_values(pages))
+}
+
+fn ref_values(pages: &[PageRef]) -> Vec<Value> {
+    pages.iter().map(|page| page.to_json()).collect()
 }
 
 /// `TypeError: Cannot read properties of <what> (reading '<member>')`.
@@ -152,8 +160,8 @@ impl PageEditCapability {
 
     // ── pages ──
 
-    /// `ctx.document()?.pages ?? []`: the confirmed page list. A verb's
-    /// promise settles after the engine's page fact replaced it.
+    /// `ctx.document()?.pages ?? []`: the page list as it shows, the
+    /// engine's with the edits on their way on top.
     pub(crate) fn registry(&self) -> Rc<Value> {
         self.0
             .cx
@@ -377,70 +385,124 @@ impl PageEditCapability {
         })
     }
 
-    /// `rotationOf(ref)`: a page's rotation once this session's changes on
-    /// their way apply, the last rotation one of them gives it, else the
-    /// page's own. What a turn starts from, so two quick quarter turns are a
-    /// half turn. A rotation that is not a number reads as `NaN`, as
-    /// `undefined + delta` does.
+    /// The rotation a page shows (`ctx.pageOf(ref).rotation`). A rotation
+    /// that is not a number reads as `NaN`, as `undefined + delta` does.
     fn rotation_of(&self, page: PageRef) -> Result<f64, Error> {
-        let rotation_value = |value: Option<&Value>| value.and_then(Value::as_f64);
-        let mut rotation = rotation_value(self.page_of(PageArg::Ref(page))?.get("rotation"));
-        for change in self.0.cx.changes()?.pending() {
-            for op in change.shows() {
-                if op.get("type").and_then(Value::as_str) != Some("pages.rotate") {
-                    continue;
-                }
-                let names = op.get("pages").and_then(Value::as_array).is_some_and(|pages| {
-                    pages.iter().any(|p| {
-                        p.get("objectNumber").and_then(Value::as_f64)
-                            == Some(f64::from(page.page_object_number))
-                    })
-                });
-                if names {
-                    rotation = rotation_value(op.get("rotation"));
-                }
-            }
-        }
-        Ok(rotation.unwrap_or(f64::NAN))
+        let layout = self.page_of(PageArg::Ref(page))?;
+        Ok(layout.get("rotation").and_then(Value::as_f64).unwrap_or(f64::NAN))
+    }
+
+    fn registry_pages(&self) -> Vec<Value> {
+        self.registry().as_array().cloned().unwrap_or_default()
     }
 
     /// `rotate(refs, rotationAfter)`: rotate pages as one change, one op per
-    /// rotation they end up with. Undoing it is each page turned back, so a
-    /// turn right after an undo starts from where the undo leaves the page.
-    /// The groups are keyed the way a `Map` keys numbers (`NaN` is one key,
-    /// `-0` is `0`), in first-seen order.
+    /// rotation they end up with. A turn starts from the rotation the page
+    /// shows, so two quick quarter turns are a half turn; undoing it turns
+    /// each page back (`rotateBackOf`). The groups are keyed the way a `Map`
+    /// keys numbers (`NaN` is one key, `-0` is `0`), in first-seen order.
     fn rotate(
         &self,
         refs: &[PageRef],
         rotation_after: impl Fn(&Self, PageRef) -> Result<f64, Error>,
     ) -> Result<PendingChange, Error> {
-        fn add(groups: &mut Vec<(f64, Vec<PageRef>)>, rotation: f64, page: PageRef) {
+        let mut after: Vec<(f64, Vec<PageRef>)> = Vec::new();
+        for page in refs {
+            let rotation = rotation_after(self, *page)?;
             let same = |key: f64| key == rotation || (key.is_nan() && rotation.is_nan());
-            match groups.iter_mut().find(|(key, _)| same(*key)) {
-                Some((_, pages)) => pages.push(page),
-                None => groups.push((rotation, vec![page])),
+            match after.iter_mut().find(|(key, _)| same(*key)) {
+                Some((_, pages)) => pages.push(*page),
+                None => after.push((rotation, vec![*page])),
             }
         }
-        let mut after = Vec::new();
-        let mut before = Vec::new();
-        for page in refs {
-            add(&mut before, self.rotation_of(*page)?, *page);
-            add(&mut after, rotation_after(self, *page)?, *page);
+        let ops = after
+            .into_iter()
+            .map(|(rotation, pages)| {
+                json!({ "type": "pages.rotate", "pages": refs_json(&pages), "rotation": json_number(rotation) })
+            })
+            .collect();
+        let undo = rotate_back_of(&self.registry_pages(), &ref_values(refs))?;
+        self.stage_change(PageVerb::Rotate, Some(refs.len() as f64), ops, Some(undo))
+    }
+
+    /// `labelsBack()`: what an undo of a page edit ends with, the label
+    /// sections the pages show now, which the edit is about to move. None
+    /// when the document has none.
+    fn labels_back(&self) -> Vec<Value> {
+        let labels = self.0.cx.document().map(|meta| meta.page_labels);
+        match labels.as_deref() {
+            Some(Value::Array(sections)) if !sections.is_empty() => {
+                vec![json!({ "type": "pages.relabel", "labels": sections })]
+            }
+            _ => Vec::new(),
         }
-        let ops_of = |groups: Vec<(f64, Vec<PageRef>)>| -> Vec<Value> {
-            groups
-                .into_iter()
-                .map(|(rotation, pages)| {
-                    json!({ "type": "pages.rotate", "pages": refs_json(&pages), "rotation": json_number(rotation) })
-                })
-                .collect()
-        };
-        self.stage_change(
-            PageVerb::Rotate,
-            Some(refs.len() as f64),
-            ops_of(after),
-            Some(ops_of(before)),
-        )
+    }
+
+    /// `takeNumbers(count)`: names for new pages from the session's pool,
+    /// as many as it holds up to `count`: final at birth, so the pages show
+    /// before the engine answers and later edits can name them.
+    fn take_numbers(&self, count: f64) -> Result<Vec<u32>, Error> {
+        let changes = self.0.cx.changes()?;
+        let mut numbers = Vec::new();
+        while (numbers.len() as f64) < count {
+            match changes.take_object_number()? {
+                Some(number) => numbers.push(number),
+                None => break,
+            }
+        }
+        Ok(numbers)
+    }
+
+    /// `withNumbers(count, options, stage)`'s slow half: once the pool
+    /// reserved more, the rest of the `count` names.
+    async fn reserved_numbers(
+        &self,
+        mut numbers: Vec<u32>,
+        count: f64,
+        signal: Option<AbortSignal>,
+    ) -> Result<Vec<u32>, Error> {
+        while (numbers.len() as f64) < count {
+            let changes = self.0.cx.changes()?;
+            // `reserveObjectNumbers(count - numbers.length)` as given: the
+            // pool refuses a count that isn't a whole number, so a
+            // fractional count stages nothing.
+            let wanted = count - numbers.len() as f64;
+            let reserve = changes.reserve_object_number_count(wanted);
+            cancellable(CAPABILITY, signal.clone(), reserve).await?;
+            let more = self.take_numbers(count - numbers.len() as f64)?;
+            numbers.extend(more);
+        }
+        Ok(numbers)
+    }
+
+    /// `withNumbers(count, options, stage)`: `count` names for new pages,
+    /// then `stage` with them, at once when the pool holds them, so verbs
+    /// stage in the order they're called, else once it reserved more.
+    fn with_numbers(
+        &self,
+        count: f64,
+        signal: Option<AbortSignal>,
+        stage: impl FnOnce(&Self, Vec<u32>) -> Promise<PageEditInsertResult> + 'static,
+    ) -> Result<Promise<PageEditInsertResult>, Error> {
+        let held = self.take_numbers(count)?;
+        if held.len() as f64 == count {
+            return Ok(stage(self, held));
+        }
+        let this = self.clone();
+        Ok(Promise::spawn(async move {
+            let numbers = this.reserved_numbers(held, count, signal).await?;
+            adopt(stage(&this, numbers)).await
+        }))
+    }
+
+    /// `[{ type: 'pages.delete', pages: numbers.map(toPageRef) }, ...labelsBack()]`:
+    /// what undoing an insert of these pages shows.
+    fn delete_back(&self, numbers: &[u32]) -> Vec<Value> {
+        let pages: Vec<Value> =
+            numbers.iter().map(|n| json!({ "kind": "objectNumber", "objectNumber": n })).collect();
+        let mut undo = vec![json!({ "type": "pages.delete", "pages": pages })];
+        undo.extend(self.labels_back());
+        undo
     }
 
     /// `settled(options)`: the pages as they show, every change on its way
@@ -468,20 +530,42 @@ impl PageEditCapability {
         .await
     }
 
-    /// `insertBytes(verb, count, bytes, position, options)`: stage the insert
-    /// of a PDF's pages; resolves the new pages.
+    /// `insertBytes(count, bytes, position, options)`: stage the insert of a
+    /// PDF's pages; resolves the new pages. When it knows how many pages the
+    /// PDF has (`count`), they are named first, so its undo shows at once;
+    /// the pages themselves show when the engine answers.
     fn insert_bytes(
         &self,
-        verb: PageVerb,
         count: Option<f64>,
         source: Value,
         position: ResolvedPosition,
         signal: Option<AbortSignal>,
     ) -> Promise<PageEditInsertResult> {
-        let op =
-            json!({ "type": "pages.insert", "source": source, "position": position.to_json() });
-        match self.stage_change(verb, count, vec![op], None) {
-            Ok(change) => Self::inserted(change, signal),
+        let staged = match count {
+            None => {
+                let op = json!({ "type": "pages.insert", "source": source.clone(), "position": position.to_json() });
+                self.stage_change(PageVerb::Insert, None, vec![op], None)
+                    .map(|change| Self::inserted(change, signal))
+            }
+            Some(count) => {
+                let (source, signal_for_stage) = (source.clone(), signal.clone());
+                self.with_numbers(count, signal, move |this, numbers| {
+                    let op = json!({
+                        "type": "pages.insert",
+                        "source": source,
+                        "position": position.to_json(),
+                        "objectNumbers": numbers,
+                    });
+                    let undo = this.delete_back(&numbers);
+                    match this.stage_change(PageVerb::Insert, Some(count), vec![op], Some(undo)) {
+                        Ok(change) => Self::inserted(change, signal_for_stage),
+                        Err(error) => Promise::rejected(error),
+                    }
+                })
+            }
+        };
+        match staged {
+            Ok(promise) => promise,
             Err(error) => {
                 // An extract's `{"$hostBytes": n}` is parked in the host until
                 // something reads it; nothing will now, so read it here to let
@@ -534,9 +618,8 @@ impl PageEditCapability {
 
     // ── the verbs ──
 
-    /// Turn each page by a quarter or half turn from its rotation, the one it
-    /// has once the edits on their way apply: two quick quarter turns are a
-    /// half turn. `delta` is any JavaScript number; the wrap is done in
+    /// Turn each page by a quarter or half turn from the rotation it shows,
+    /// with the edits on their way: two quick quarter turns are a half turn. `delta` is any JavaScript number; the wrap is done in
     /// `f64`, as the TypeScript does it.
     pub fn rotate_by(
         &self,
@@ -588,8 +671,14 @@ impl PageEditCapability {
             let refs = this.refs_of(&pages)?;
             let position = this.position_of(Some(position))?;
             let op = json!({ "type": "pages.reorder", "pages": refs_json(&refs), "position": position.to_json() });
-            let change =
-                this.stage_change(PageVerb::Reorder, Some(refs.len() as f64), vec![op], None)?;
+            let mut undo = reorder_back_of(&this.registry_pages(), &ref_values(&refs))?;
+            undo.extend(this.labels_back());
+            let change = this.stage_change(
+                PageVerb::Reorder,
+                Some(refs.len() as f64),
+                vec![op],
+                Some(undo),
+            )?;
             rt::returned(Self::answer(change, options.signal)).await?;
             Ok(())
         })
@@ -620,8 +709,11 @@ impl PageEditCapability {
                 ));
             }
             let op = json!({ "type": "pages.delete", "pages": refs_json(&refs) });
+            let restored = restored_pages_of(&this.registry_pages(), &ref_values(&refs))?;
+            let mut undo = vec![json!({ "type": "pages.restore", "pages": restored })];
+            undo.extend(this.labels_back());
             let change =
-                this.stage_change(PageVerb::Delete, Some(refs.len() as f64), vec![op], None)?;
+                this.stage_change(PageVerb::Delete, Some(refs.len() as f64), vec![op], Some(undo))?;
             rt::returned(Self::answer(change, options.signal)).await?;
             Ok(())
         })
@@ -643,9 +735,21 @@ impl PageEditCapability {
                 spec.insert("size".into(), size);
             }
             spec.insert("count".into(), json_number(count));
-            let op = json!({ "type": "pages.insertBlank", "spec": spec, "position": position.to_json() });
-            let change = this.stage_change(PageVerb::InsertBlank, Some(count), vec![op], None)?;
-            adopt(Self::inserted(change, options.signal)).await
+            let signal = options.signal.clone();
+            let staged = this.with_numbers(count, options.signal, move |this, numbers| {
+                let op = json!({
+                    "type": "pages.insertBlank",
+                    "spec": spec,
+                    "position": position.to_json(),
+                    "objectNumbers": numbers,
+                });
+                let undo = this.delete_back(&numbers);
+                match this.stage_change(PageVerb::InsertBlank, Some(count), vec![op], Some(undo)) {
+                    Ok(change) => Self::inserted(change, signal),
+                    Err(error) => Promise::rejected(error),
+                }
+            })?;
+            adopt(staged).await
         })
     }
 
@@ -669,7 +773,7 @@ impl PageEditCapability {
                 }
                 None => (bytes.to_json(), None),
             };
-            adopt(this.insert_bytes(PageVerb::Insert, count, source, position, signal)).await
+            adopt(this.insert_bytes(count, source, position, signal)).await
         })
     }
 
@@ -720,19 +824,15 @@ impl PageEditCapability {
                 extracted,
             )))
             .await?;
-            adopt(this.insert_bytes(
-                PageVerb::Insert,
-                Some(refs.len() as f64),
-                bytes,
-                position,
-                options.signal,
-            ))
-            .await
+            adopt(this.insert_bytes(Some(refs.len() as f64), bytes, position, options.signal)).await
         })
     }
 
     /// Copy pages as they show, with the edits on their way, right after the
-    /// last of them unless `position` says otherwise.
+    /// last of them unless `position` says otherwise: one `pages.copy`
+    /// change, shown at once. The copies bring the pages' annotations, and
+    /// their form fields as fields of their own. Needs only
+    /// `doc.pages.assemble`: the pages don't leave the document.
     pub fn duplicate(
         &self,
         pages: Vec<PageArg>,
@@ -741,22 +841,27 @@ impl PageEditCapability {
         let this = self.clone();
         Promise::spawn(async move {
             this.refuse(ASSEMBLE, "pageEdit.duplicate", options.signal.as_ref())?;
-            this.0.cx.assert_allowed(DOWNLOAD, "pageEdit.duplicate")?;
             let refs = this.refs_of(&pages)?;
             let position = match options.position {
                 Some(position) => this.position_of(Some(position))?,
                 None => ResolvedPosition::After(*refs.last().ok_or_else(no_pages)?),
             };
             let count = refs.len() as f64;
-            let bytes = rt::returned(this.extract_shown(refs, options.signal.clone())).await?;
-            adopt(this.insert_bytes(
-                PageVerb::Duplicate,
-                Some(count),
-                bytes,
-                position,
-                options.signal,
-            ))
-            .await
+            let signal = options.signal.clone();
+            let staged = this.with_numbers(count, options.signal, move |this, numbers| {
+                let op = json!({
+                    "type": "pages.copy",
+                    "pages": refs_json(&refs),
+                    "position": position.to_json(),
+                    "objectNumbers": numbers,
+                });
+                let undo = this.delete_back(&numbers);
+                match this.stage_change(PageVerb::Duplicate, Some(count), vec![op], Some(undo)) {
+                    Ok(change) => Self::inserted(change, signal),
+                    Err(error) => Promise::rejected(error),
+                }
+            })?;
+            adopt(staged).await
         })
     }
 

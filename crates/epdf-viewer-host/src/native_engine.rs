@@ -18,6 +18,11 @@ use std::rc::Rc;
 
 use epdf_engine::auth::scope::{
     CollabAction, CollabTarget, DocCapability, FieldWriteAction, IdentityClaims, decode_pdf_bits,
+    plugin_of_permission,
+};
+use epdf_engine::error::EngineError;
+use epdf_engine::features::render::raster::{
+    PageLayerRights, PagePictureRights, RenderOptions, check_render_usage_for, resolve_page_layers,
 };
 use epdf_engine::features::signature::protection::{describe_protection, protected_capabilities};
 use epdf_engine::host::HostResponse;
@@ -491,10 +496,63 @@ impl NativeDocumentState {
         state
     }
 
-    /// `guard.can(capability)`.
+    /// `guard.can(capability)`, or for a plugin's permission
+    /// (`LocalDocumentSecurityService.allows`), whether the scope names it or
+    /// holds `*`: nothing here knows which plugins are installed, and the
+    /// plugin checks its own.
     fn allows(&self, capability: &str) -> bool {
-        !self.locked.get()
-            && DocCapability::parse(capability).is_some_and(|c| self.authority.borrow().allows(c))
+        if self.locked.get() {
+            return false;
+        }
+        let authority = self.authority.borrow();
+        match plugin_of_permission(capability) {
+            Some(_) => authority.allows_plugin_permission(capability),
+            None => DocCapability::parse(capability).is_some_and(|c| authority.allows(c)),
+        }
+    }
+
+    /// `LocalPageRenderService.raw`'s guards, for `page.render.image`: each
+    /// kind of picture needs its own right and no other (`doc.render` on
+    /// screen, `doc.render.thumbnail` for a thumbnail, the print right of
+    /// its DPI), and the picture draws the annotations and form fields the
+    /// caller may read, resolved into the options it sends. Options the
+    /// engine can't read go as they are, for its own refusal.
+    fn guard_render(&self, args: &[Value]) -> Result<Vec<Value>, Error> {
+        let mut args = args.to_vec();
+        let given = args.first().cloned().unwrap_or_else(|| json!({}));
+        let Ok(options) = serde_json::from_value::<RenderOptions<Value>>(given.clone()) else {
+            return Ok(args);
+        };
+        let authority = self.authority.borrow();
+        let can = |c: DocCapability| authority.allows(c);
+        let rights = PagePictureRights {
+            render: can(DocCapability::DocRender),
+            thumbnail: can(DocCapability::DocRenderThumbnail),
+            print: can(DocCapability::DocPrint),
+            print_high: can(DocCapability::DocPrintHigh),
+        };
+        check_render_usage_for(&options, Some(rights)).map_err(engine_refusal)?;
+        let layers = resolve_page_layers(
+            options.include_annotations,
+            options.include_form_fields,
+            PageLayerRights {
+                annotations: can(DocCapability::DocAnnotateRead),
+                form_fields: can(DocCapability::DocFormsRead),
+            },
+        )
+        .map_err(engine_refusal)?;
+        let mut resolved = match given {
+            Value::Object(map) => map,
+            _ => serde_json::Map::new(),
+        };
+        resolved.insert("includeAnnotations".into(), layers.include_annotations.into());
+        resolved.insert("includeFormFields".into(), layers.include_form_fields.into());
+        if args.is_empty() {
+            args.push(Value::Object(resolved));
+        } else {
+            args[0] = Value::Object(resolved);
+        }
+        Ok(args)
     }
 
     /// The handle's side of a request: its authority, and what it may do.
@@ -700,19 +758,18 @@ impl NativeDocument {
             "pages.delete" => {
                 (json!({ "type": "pages.delete", "pages": arg(0) }), arg(1), &["layout", "meta"])
             }
-            "pages.insert" | "pages.insertBlank" => {
-                let mut op = if path == "pages.insert" {
-                    json!({ "type": "pages.insert", "source": arg(0) })
-                } else {
-                    json!({ "type": "pages.insertBlank", "spec": arg(0) })
+            "pages.insert" | "pages.insertBlank" | "pages.copy" => {
+                let mut op = match path {
+                    "pages.insert" => json!({ "type": "pages.insert", "source": arg(0) }),
+                    "pages.copy" => json!({ "type": "pages.copy", "pages": arg(0) }),
+                    _ => json!({ "type": "pages.insertBlank", "spec": arg(0) }),
                 };
                 if !absent(&arg(1)) {
                     op["position"] = arg(1);
                 }
                 let options = arg(2);
-                if path == "pages.insertBlank"
-                    && let Some(numbers) = options.get("objectNumbers").filter(|v| !absent(v))
-                {
+                // Each takes the numbers its pages are born at (`pageVerbs`).
+                if let Some(numbers) = options.get("objectNumbers").filter(|v| !absent(v)) {
                     op["objectNumbers"] = numbers.clone();
                 }
                 (op, options, &["insertedPages", "layout", "meta"])
@@ -831,16 +888,25 @@ impl DocumentHandle for NativeDocument {
             // local engine's default `CONTINUOUS_RENDER_POLICY`.
             "render.getPolicy" => return Promise::resolved(json!({ "kind": "continuous" })),
             "pages.reorder" | "pages.rotate" | "pages.delete" | "pages.insert"
-            | "pages.insertBlank" => return self.page_verb(path, &args),
+            | "pages.insertBlank" | "pages.copy" => return self.page_verb(path, &args),
             "download" => {
                 if let Err(error) = self.state.may_download(args.first()) {
                     return Promise::rejected(error);
                 }
             }
-            "page.render.image" if self.inner.encoded_renders => {
-                return self.inner.send(&self.id, |job| {
-                    translate::translate_encoded_render(&self.id, pon, &args, job)
-                });
+            "page.render.image" => {
+                let args = match self.state.guard_render(&args) {
+                    Ok(args) => args,
+                    Err(error) => return Promise::rejected(error),
+                };
+                if self.inner.encoded_renders {
+                    return self.inner.send(&self.id, |job| {
+                        translate::translate_encoded_render(&self.id, pon, &args, job)
+                    });
+                }
+                return self
+                    .inner
+                    .send(&self.id, |job| self.state.translate(path, pon, &args, job));
             }
             _ => {}
         }
@@ -1059,6 +1125,20 @@ impl DocumentSecurity for NativeSecurity {
         });
         promise
     }
+}
+
+/// An engine refusal made on this side, as the kernel sees one from the
+/// engine: a `PermissionDenied` keeps its shape, anything else is an
+/// `EngineError` with its code and details.
+fn engine_refusal(error: EngineError) -> Error {
+    let details = error.details.clone().unwrap_or(Value::Null);
+    if error.code == epdf_engine::error::EngineErrorCode::Forbidden
+        && let Some(required) = details.get("required").and_then(Value::as_str)
+    {
+        return Error::permission_denied(required, details.get("context").and_then(Value::as_str));
+    }
+    let refused = Error::engine(error.code.as_str(), error.message);
+    if details.is_null() { refused } else { refused.with("details", details) }
 }
 
 #[cfg(test)]

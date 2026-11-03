@@ -629,6 +629,12 @@ pub(super) fn try_read_field_by_number(
     try_read_field(ctx, &FormFieldRef::ObjectNumber { field: object_number })
 }
 
+/// The object numbers of the form's fields, in form order
+/// (`fieldNumbersOf`).
+pub(super) fn field_numbers_of(ctx: &ChangeContext<'_>) -> Result<Vec<u32>, EngineError> {
+    Ok(all_fields(ctx)?.into_iter().map(|field| field.object_number).collect())
+}
+
 /// Every field of the form with an object number (`allFields`).
 fn all_fields(ctx: &ChangeContext<'_>) -> Result<Vec<ReadField>, EngineError> {
     let document = ctx.session.document()?.document();

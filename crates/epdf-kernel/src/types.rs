@@ -39,11 +39,27 @@ pub struct DocumentMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub page_count: u32,
-    /// `PageLayout[]`, as the engine reported it. Shared, because nearly
-    /// every read of a document clones its meta, and a deep copy of every
-    /// page's layout per read made those reads O(pages).
+    /// `PageLayout[]`: the pages as the user sees them, the engine's with
+    /// this session's page changes that are on their way on top (a rotate,
+    /// a move, a delete, a blank insert, a copy, an undo of one), so an edit
+    /// shows before the engine answers (`page_view.rs`). An index a verb
+    /// takes names a page of this list. Shared, because nearly every read
+    /// of a document clones its meta, and a deep copy of every page's
+    /// layout per read made those reads O(pages).
     pub pages: Rc<Value>,
-    /// Bumps each time a mutation event replaces the page registry.
+    /// `PageLabelSection[]`: the page label sections of `pages`
+    /// (`PageListSnapshot.labels`), as they move with the changes on their
+    /// way; each page's `label` is read from them. Empty when the document
+    /// has none.
+    pub page_labels: Rc<Value>,
+    /// The pages of `pages` the engine doesn't have yet, by object number: a
+    /// change on its way makes them. Code that asks the engine about a page
+    /// (render, page mirrors) waits for these; everything else reads `pages`.
+    pub pending_pages: Rc<crate::page_view::PendingPages>,
+    /// Moves every time `pages` does: an edit shown, or the engine's pages
+    /// changing other than shown. Anything caching a derivation of `pages`
+    /// keys on it, so a change that keeps the page count (a rotation) still
+    /// invalidates.
     pub revision: u64,
     pub render_policy: Value,
     #[serde(default)]

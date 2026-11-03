@@ -1,3 +1,20 @@
+The committed manifest and `fixtures/records/latest` are a historical baseline
+for runtime `1461b0c5105137954b77dea0a6e2c15668518651`, not evidence for the
+runtime currently selected by `packages/engine/runtime/engine-runtime-build.json`.
+The baseline records identify their actual source commit
+`44169b853d3d7006185dcf4ab3780f147fdd2ae9`; preserve those identities and input
+hashes. They contain 22 passing entries: 16 decimal probes, the authoritative
+997-function WASM ABI check, and five real packed viewer/native cases. The
+raster summaries cover 20 renders with zero differing channels and no tolerance.
+
+The newer runtime pin and generated bindings require a fresh gate run. The
+baseline manifest intentionally retains the old binding-source and artifact
+hashes: the current-source guard must reject a mismatched graph. A managed
+build, comparator self-test, or package smoke test does not update this baseline
+or establish compatibility with the newer runtime. Rebuild and pin a matching
+native/WASM and packed viewer graph before capturing new acceptance records;
+keep the historical records available separately before replacing `latest`.
+
 Run the gate inside the approved development container:
 
 ```sh
@@ -14,7 +31,10 @@ recorded independently; the existing requested-backend label is never proof.
 
 1. Install with the lockfile; build the viewer and its dependencies using the
    repository build tooling. Fetch only the checksum-verified runtime pinned
-   by `packages/engine/runtime/engine-runtime-build.json`.
+   by `packages/engine/runtime/engine-runtime-build.json`. Update the gate
+   manifest's runtime identity, native/WASM inputs and binding-input hashes
+   to that matching graph; preserve the existing baseline evidence first.
+   Review the actual font bundle and environment pins for the new capture.
 2. Run `node tooling/dotnet-parity/fixtures/prepare-packed.mjs` after those
    builds. This installs local packed tarballs into
    `/tmp/embedpdf-dotnet-parity/vite-app` and builds the real e2e entry.

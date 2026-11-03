@@ -14,6 +14,8 @@
  *   zoom/pan/pointer/spread/scroll/rotate  → real Stage / Interaction / PageEdit
  *   modes                                  → shell exclusive surfaces ('mode')
  *   panels                                 → the layout's `panel:<id>` (panels.ts)
+ *   full screen                            → the layout root's `view:fullscreen`
+ *                                            (fullscreen.ts)
  *   menus / modals                         → declarative shell targets
  *   annotate + shape tools                 → real interaction tools
  *   form tools                             → real form plugin palette (draw-to-place)
@@ -43,6 +45,7 @@ import { saveFile } from '@embedpdf/web';
 
 import type { Feature } from '../features';
 import { attachmentCommands } from './attachments';
+import { commentCommands } from './comments';
 import { openModeSurfaceOf } from './modes';
 import { openFileCommand } from './open-files';
 import { outlineCommands } from './outline';
@@ -303,6 +306,7 @@ const spread = (id: string, mode: SpreadMode, labelKey: string, icon: string): C
   run: (commandContext) => stage(commandContext)?.updateSettings({ spread: mode }),
   active: (commandContext) => stage(commandContext)?.getSettings().spread === mode,
   enabled: (commandContext) => stage(commandContext) != null,
+  locked: (commandContext) => stage(commandContext)?.getLock('spread') ?? null,
 });
 
 export const defaultCommands: CommandDef[] = [
@@ -313,7 +317,7 @@ export const defaultCommands: CommandDef[] = [
     icon: 'zoomIn',
     shortcut: ['Mod+=', 'Mod+NumpadAdd'],
     run: (commandContext) => stage(commandContext)?.zoomIn(),
-    enabled: (commandContext) => stage(commandContext) != null,
+    enabled: (commandContext) => stage(commandContext)?.canZoomIn() ?? false,
   },
   {
     id: 'zoom:out',
@@ -321,7 +325,7 @@ export const defaultCommands: CommandDef[] = [
     icon: 'zoomOut',
     shortcut: ['Mod+-', 'Mod+NumpadSubtract'],
     run: (commandContext) => stage(commandContext)?.zoomOut(),
-    enabled: (commandContext) => stage(commandContext) != null,
+    enabled: (commandContext) => stage(commandContext)?.canZoomOut() ?? false,
   },
   {
     id: 'zoom:fit-page',
@@ -426,6 +430,15 @@ export const defaultCommands: CommandDef[] = [
     active: (commandContext) => interaction(commandContext)?.getActiveToolId() === 'pointer',
     enabled: (commandContext) => interaction(commandContext) != null,
   },
+  // Drag a box to fill the view with it, or click to zoom in a step (Alt: out).
+  {
+    id: 'tool:zoom',
+    labelKey: 'commands.zoom.marquee',
+    icon: 'zoomInArea',
+    run: (commandContext) => interaction(commandContext)?.activateTool('zoom'),
+    active: (commandContext) => interaction(commandContext)?.getActiveToolId() === 'zoom',
+    enabled: (commandContext) => interaction(commandContext) != null,
+  },
 
   // The panels' `panel:<id>` commands come from the layout's panels (config/panels.ts).
 
@@ -448,6 +461,9 @@ export const defaultCommands: CommandDef[] = [
 
   // ── the files the document carries ──────────────────────────────────────
   ...attachmentCommands,
+
+  // ── comment threads: their status, deleting one ─────────────────────────
+  ...commentCommands,
 
   // ── the pages: rotate, move, insert, delete, copy out ───────────────────
   ...pageCommands,
@@ -487,17 +503,6 @@ export const defaultCommands: CommandDef[] = [
     modal: PRINT_DIALOG,
     enabled: (commandContext) => commandContext.documentId != null,
   },
-  {
-    id: 'view:fullscreen',
-    labelKey: 'commands.fullscreen',
-    icon: 'externalLink',
-    run: () => {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen().catch(() => {});
-    },
-    active: () => Boolean(document.fullscreenElement),
-  },
-
   // ── page settings (spread / scroll / rotate) ────────────────────────────
   spread('view:single-page', 'none', 'commands.spread.none', 'singlePage'),
   spread('view:two-pages', 'odd', 'commands.spread.odd', 'doublePage'),
@@ -509,6 +514,7 @@ export const defaultCommands: CommandDef[] = [
     run: (commandContext) => stage(commandContext)?.updateSettings({ layout: 'vertical' }),
     active: (commandContext) => stage(commandContext)?.getSettings().layout === 'vertical',
     enabled: (commandContext) => stage(commandContext) != null,
+    locked: (commandContext) => stage(commandContext)?.getLock('layout') ?? null,
   },
   {
     id: 'view:scroll-horizontal',
@@ -517,6 +523,7 @@ export const defaultCommands: CommandDef[] = [
     run: (commandContext) => stage(commandContext)?.updateSettings({ layout: 'horizontal' }),
     active: (commandContext) => stage(commandContext)?.getSettings().layout === 'horizontal',
     enabled: (commandContext) => stage(commandContext) != null,
+    locked: (commandContext) => stage(commandContext)?.getLock('layout') ?? null,
   },
   // View rotation (Adobe's "Rotate View"): rotates how every page displays in
   // the main stage lens — non-persistent, nothing written to the PDF. The
@@ -528,6 +535,7 @@ export const defaultCommands: CommandDef[] = [
     icon: 'rotateClockwise',
     run: (commandContext) => stage(commandContext)?.rotateViewBy(90),
     enabled: (commandContext) => stage(commandContext) != null,
+    locked: (commandContext) => stage(commandContext)?.getLock('viewRotation') ?? null,
   },
   {
     id: 'view:rotate-counterclockwise',
@@ -535,6 +543,7 @@ export const defaultCommands: CommandDef[] = [
     icon: 'rotateCounterClockwise',
     run: (commandContext) => stage(commandContext)?.rotateViewBy(-90),
     enabled: (commandContext) => stage(commandContext) != null,
+    locked: (commandContext) => stage(commandContext)?.getLock('viewRotation') ?? null,
   },
 
   // ── modes (shell exclusive surfaces, tag 'mode') ────────────────────────

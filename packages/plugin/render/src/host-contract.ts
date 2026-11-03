@@ -21,6 +21,7 @@ import {
   RenderToken as PublicRenderToken,
   type PageImage,
   type PageLayerOptions,
+  type PictureReport,
   type RenderCapability,
 } from './contract';
 import type { PageViewDemand, TilePaintPlan } from './paint-plan';
@@ -35,8 +36,13 @@ export interface PaintSettings {
 }
 
 export interface RenderSourceOptions extends PageLayerOptions {
-  /** Device px per PDF point (the page transform's `renderScale`). */
+  /** Device px per PDF point (the page transform's `renderScale`). A thumbnail ignores it. */
   scale: number;
+  /**
+   * The page's thumbnail instead: the whole page at the engine's thumbnail
+   * size, which needs only `doc.render.thumbnail` (a thumbnail rail's layer).
+   */
+  thumbnail?: boolean;
   /**
    * The view the picture is for (the page context's `view`): the engine ranks
    * the render by where the page is in that view (`doc.with({ view })`).
@@ -97,6 +103,11 @@ export interface AppearancePicture extends AnnotationAppearanceImage {
   readonly version: number;
 }
 
+/** A report a page layer keeps on the page it paints: `close()` it when the layer goes. */
+export interface OpenPictureReport extends PictureReport {
+  close(): void;
+}
+
 export interface RenderCompletedEvent {
   readonly page: PageRef;
   readonly key: string;
@@ -135,6 +146,12 @@ export interface RenderHostCapability extends RenderCapability {
   getLayerRights(): PageLayerRights;
   /** This view's tile surface. Stable per view id; pair with `dispose`. */
   createViewDemand(viewId: string): ViewDemand;
+  /**
+   * Report on a page's picture in a view: the page is `loading` from now until `shown()`, and
+   * `idle` again once every report on it closed. A page layer opens one when it mounts and
+   * closes it when it unmounts; the box it lends a painter opens one and hands it to `paint`.
+   */
+  reportPicture(view: string, page: PageRef): OpenPictureReport;
   /**
    * The engine's pictures of the owner's items on a page (`family`): each
    * item's look at rest, in every state it stores, each labelled with its

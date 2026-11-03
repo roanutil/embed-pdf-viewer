@@ -170,7 +170,17 @@ fn result_of(
     for item in &mut items {
         item.meta_mut().undoable = undoable;
     }
-    let meta = MutationMeta::local(pages_of(&items), &session.write_stamp()?);
+    let mut meta = MutationMeta::local(pages_of(&items), &session.write_stamp()?);
+    // What any of its ops drew with no font, first seen first.
+    let mut missing: Vec<String> = Vec::new();
+    for character in items.iter().flat_map(|item| item.meta().missing_characters.iter().flatten()) {
+        if !missing.contains(character) {
+            missing.push(character.clone());
+        }
+    }
+    if !missing.is_empty() {
+        meta.missing_characters = Some(missing);
+    }
     let record = undoable.then_some(applied.record);
     Ok((ChangeResult { items, meta }, record))
 }
@@ -187,6 +197,9 @@ pub struct ServerChange {
 }
 
 /// What one change of a server request answered (`ServerChangeOutcome`).
+// An applied change's meta carries its `missingCharacters`; outcomes live
+// only for one request's answer, so the size is not worth a box.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum ServerChangeOutcome {
     Applied { op_id: String, result: ChangeResult, record: Option<ChangeRecord> },

@@ -359,6 +359,28 @@ fn write_delete(
     Ok(with_order_change(done, deleted.calculation_order))
 }
 
+/// Deletes each of the fields `object_numbers` whose widgets are all on
+/// `pages` (`deleteFieldsOn`): the fields the pages an insert copied in
+/// brought, when those pages go again. Answers the steps that bring them
+/// back, which run once the pages are back.
+pub(super) fn delete_fields_on(
+    ctx: &mut ChangeContext<'_>,
+    object_numbers: &[u32],
+    pages: &[u32],
+) -> Result<Vec<ReverseStep>, EngineError> {
+    let mut reverse = Vec::new();
+    for object_number in object_numbers {
+        let Some(field) = try_read_field_by_number(ctx, *object_number) else {
+            continue;
+        };
+        if !field.field.widgets().all(|widget| pages.contains(&widget.page_object_number)) {
+            continue;
+        }
+        reverse.extend(write_delete(ctx, &field, None)?.reverse);
+    }
+    Ok(reverse)
+}
+
 /// Deletes a field a create made, when nobody changed it since
 /// (`removeField`).
 pub fn remove_field(

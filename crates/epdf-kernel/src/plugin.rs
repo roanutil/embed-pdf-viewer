@@ -104,6 +104,7 @@ pub(crate) trait SessionView {
     fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe;
     fn around_print(&self, wrap: crate::settle::PrintWrap) -> Unsubscribe;
     fn changes(&self) -> crate::changes::DocumentChanges;
+    fn page_view(&self) -> crate::page_view::PageView;
     fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
     fn id(&self) -> String;
     /// Unique per open; a reopened id gets a new one.
@@ -737,6 +738,7 @@ impl ControllerContext {
             doc: Some(doc),
             lifetime: lifetime.clone(),
             changes: session.changes(),
+            pages: session.page_view(),
             events,
             cell: Rc::new(move |name, initial| {
                 let lease = store.lease_with_text(

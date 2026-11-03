@@ -29,8 +29,10 @@ import {
   type RevocationCheck,
   type SignDevTokenInput,
 } from '../auth/JwtVerifier';
+import { PermissionRegistry } from '../auth/permission-registry';
 import { RevokedJtisGuard } from '../auth/RevokedJtisGuard';
 import { SuspendedTenantsGuard } from '../auth/SuspendedTenantsGuard';
+import { VisitorHandles } from '../auth/visitor-handle';
 import { NoneCdnSigner } from '../cdn/adapters/NoneCdnSigner';
 import type { CdnSigner } from '../cdn/CdnSigner';
 import { validate as validateMigrations, type MigrationSource } from '../db/migrator/runner';
@@ -38,13 +40,16 @@ import { BaseVersionsRepo } from '../db/repos/base_versions.repo';
 import { DocumentImportsRepo } from '../db/repos/document_imports.repo';
 import { DocumentSigningsRepo } from '../db/repos/document_signings.repo';
 import { DocumentsRepo } from '../db/repos/documents.repo';
+import { FoldersRepo } from '../db/repos/folders.repo';
+import { GrantVisitorsRepo } from '../db/repos/grant_visitors.repo';
+import { GrantsRepo } from '../db/repos/grants.repo';
 import { DocumentPagesRepo, LayerPagesRepo, LayersRepo } from '../db/repos/page_state.repo';
 import { PdfPasswordSessionsRepo } from '../db/repos/pdf_password_sessions.repo';
 import { PdfPasswordVerificationsRepo } from '../db/repos/pdf_password_verifications.repo';
 import { SecurityEventsRepo } from '../db/repos/security-events.repo';
-import { ShareGrantsRepo } from '../db/repos/share_grants.repo';
 import { TenantUsageRepo } from '../db/repos/tenant_usage.repo';
 import { TenantsRepo } from '../db/repos/tenants.repo';
+import { UploadTokenUsesRepo } from '../db/repos/upload_token_uses.repo';
 import type { Database as Schema } from '../db/schema';
 import type { ImportConnection } from '../import/config/ImportConnectionSchema';
 import { defaultImportPolicy, type ImportPolicy } from '../import/config/ImportPolicySchema';
@@ -54,11 +59,16 @@ import type { ConnectedUsageReporter } from '../licensing/ConnectedUsageReporter
 import type { LicenseGate } from '../licensing/LicenseRuntime';
 import { isLicenseGateTrusted } from '../licensing/trusted-license-gates';
 import { UsageMeters } from '../licensing/UsageMeters';
+import { declareModules, mountModules } from '../modules/host';
+import type { HostedModule } from '../modules/protocol';
 import { InProcessRealtimeBus, type RealtimeBus } from '../realtime/RealtimeBus';
 import { SharpImageEncoder } from '../render/SharpImageEncoder';
+import { IMMUTABLE_CACHE_PRIVATE, IMMUTABLE_CACHE_SHARED } from '../routes/_helpers';
 import { registerAccessRoutes } from '../routes/access';
 import { registerAdminDocumentsRoutes } from '../routes/admin/documents';
-import { registerAdminSharesRoutes } from '../routes/admin/shares';
+import { registerAdminFoldersRoutes } from '../routes/admin/folders';
+import { registerAdminGrantsRoutes } from '../routes/admin/grants';
+import { registerAdminLayersRoutes } from '../routes/admin/layers';
 import { registerAdminTenantsRoutes } from '../routes/admin/tenants';
 import { registerAdminTokensRoutes } from '../routes/admin/tokens';
 import { registerAnnotationRoutes } from '../routes/annotations';
@@ -66,7 +76,9 @@ import { registerAttachmentRoutes } from '../routes/attachments';
 import { registerChangeRoutes } from '../routes/changes';
 import { registerDocsRoutes } from '../routes/docs';
 import { registerEventsRoutes } from '../routes/events';
+import { registerFontRoutes } from '../routes/fonts';
 import { registerFormRoutes } from '../routes/forms';
+import { registerGrantSessionRoutes } from '../routes/grant-sessions';
 import { registerMetadataRoutes } from '../routes/metadata';
 import { registerObjectNumberRoutes } from '../routes/object-numbers';
 import { registerOutlineRoutes } from '../routes/outline';
@@ -74,7 +86,6 @@ import { registerPageRoutes } from '../routes/pages';
 import { registerRedactionRoutes } from '../routes/redactions';
 import { registerSearchRoutes } from '../routes/search';
 import { registerSignatureRoutes } from '../routes/signatures';
-import { registerShareSessionRoutes } from '../routes/share-sessions';
 import { readCgroupMemory } from '../runtime/cgroup-memory';
 import { EngineHostClient } from '../runtime/EngineHostClient';
 import type { EnginePool } from '../runtime/EnginePool';
@@ -88,26 +99,47 @@ import {
 import { ShardedEnginePool } from '../runtime/ShardedEnginePool';
 import { defaultSigningRoot } from '../runtime/signing-paths';
 import { resolvePoolSize } from '../runtime/WorkerThreadPool';
-import { WorkerThreadPool, type FallbackFontDescriptor } from '../runtime/WorkerThreadPool';
+import { WorkerThreadPool, type ServerFontDescriptor } from '../runtime/WorkerThreadPool';
 import type { KmsKeyring } from '../security';
 import { CrashJournal, DocumentQuarantinedError } from '../services/CrashJournal';
+import { deleteStoredLayer } from '../services/deleteStoredLayer';
 import { DerivedRenderService } from '../services/DerivedRenderService';
 import {
   DocumentLifecycleService,
   type UploadProxyPolicy,
 } from '../services/DocumentLifecycleService';
+import { FolderService } from '../services/FolderService';
 import { DocumentSecurityProbe } from '../services/DocumentSecurityProbe';
 import { DocumentService } from '../services/DocumentService';
 import { EventLogService } from '../services/EventLogService';
+import { deleteVisitor, sweepIdleVisitors } from '../services/grantVisitors';
 import { LayerService } from '../services/LayerService';
-import { ObjectNumberService } from '../services/ObjectNumberService';
 import { LayerStateService } from '../services/LayerStateService';
+import { ObjectNumberService } from '../services/ObjectNumberService';
+import { ServerFonts } from '../services/ServerFonts';
 import { BaseFileCache } from '../storage/BaseFileCache';
 import type { ObjectStoreWithInfo } from '../storage/ObjectStore';
+
+/** A route as the app mounted it: its method(s) and its URL pattern. */
+export interface MountedRoute {
+  readonly method: string;
+  readonly url: string;
+}
 
 export interface BuildAppOptions {
   /** Required commercial gate for every server construction. */
   licenseGate: LicenseGate;
+  /**
+   * The installed plugins, as server modules (`CLOUDPDF_MODULES` in the CLI),
+   * in order. Their permissions are the plugin permissions this server knows:
+   * tokens carry any well-formed plugin permission, but only these take
+   * effect, and only these can be granted. A module that adds routes needs
+   * the document plane (`workerEntry`, `db` and `objectStore`); one that only
+   * declares permissions doesn't.
+   */
+  modules?: ReadonlyArray<HostedModule>;
+  /** Where module config (`CLOUDPDF_<ID>_*`) is read. Defaults to `process.env`. */
+  moduleEnv?: Readonly<Record<string, string | undefined>>;
   /** Connected-only reporting diagnostics; never constructed in air-gap mode. */
   usageReporter?: Pick<ConnectedUsageReporter, 'status'>;
   /**
@@ -144,14 +176,15 @@ export interface BuildAppOptions {
   enableJwksPersistence?: boolean;
   poolSize?: number;
   /**
-   * Deployment fallback fonts, registered on every worker thread at startup.
+   * The deployment's fonts, registered on every worker thread at startup.
    * Server-owned font policy: cloud clients cannot configure fonts, so the
-   * server decides which fallback fonts cover missing glyphs (page render +
-   * annotation appearance generation). Each is a file path that PDFium
-   * range-reads on demand — large CJK fallback fonts cost a file handle, not
-   * resident RAM. A font that fails to load fails worker startup.
+   * server decides which fonts text can be written in and which fallback
+   * fonts cover missing glyphs (page render + annotation appearance
+   * generation), and which go to browsers (`serve`). Each is a file path that
+   * PDFium range-reads on demand — large CJK fallback fonts cost a file
+   * handle, not resident RAM. A font that fails to load fails worker startup.
    */
-  fallbackFonts?: ReadonlyArray<FallbackFontDescriptor>;
+  fonts?: ReadonlyArray<ServerFontDescriptor>;
   /**
    * URL of the worker_thread entry script. The package's main entry exports
    * `defaultWorkerEntryUrl` which works in both dev (tsx -> src/) and after
@@ -265,8 +298,17 @@ export interface BuildAppOptions {
    * than `pendingTtlMs`. Set to 0 to disable. Defaults to 60_000 ms.
    */
   sweepIntervalMs?: number;
+  /** How long a layer's worker session may go unasked before the sweeper closes it. Default 10 minutes. */
+  layerSessionIdleMs?: number;
+  /** Most layer sessions one document keeps open; opening one more closes the least recently asked-for. Default 32. */
+  maxLayerSessionsPerDoc?: number;
   /** Max age of a `pending` doc before it's considered abandoned. */
   pendingTtlMs?: number;
+  /**
+   * How long a document may stay `deleting` before the sweeper finishes the
+   * delete itself. A live delete finishes well within it. Default 1 minute.
+   */
+  deletingGraceMs?: number;
   /**
    * When supplied (with `db`, `objectStore`, and a worker pool),
    * enables the cloud `/v1/docs/...` routes via the
@@ -392,6 +434,10 @@ export interface BuildAppOptions {
 
 export interface AppBundle {
   app: FastifyInstance;
+  /** The installed plugins' permissions, from their modules (empty without any). */
+  permissions: PermissionRegistry;
+  /** Every route the app mounted, in the order it mounted them. */
+  routes: readonly MountedRoute[];
   /** Present only when `workerEntry` was supplied. */
   pool?: EnginePool;
   /** Present only when `db` + `objectStore` were configured. */
@@ -537,6 +583,14 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
   // zero-config dev fallbacks; every other license refuses to boot on
   // missing / publicly-known / short secrets (fail closed).
   const enforceProductionSecrets = requiresProductionSecrets(opts.licenseGate.getStatus());
+  // The installed plugins' permissions, from their modules: checked and
+  // registered before anything starts, so a module's mistake stops the boot.
+  const permissions = new PermissionRegistry();
+  const declaredModules = declareModules(
+    opts.modules ?? [],
+    permissions,
+    opts.moduleEnv ?? process.env,
+  );
   const app = Fastify({
     logger: {
       level: process.env['LOG_LEVEL'] ?? 'info',
@@ -558,6 +612,14 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     // codec separately enforces a 512-char limit, so this stays bounded.
     maxParamLength: 512,
   });
+  const routes: MountedRoute[] = [];
+  app.addHook('onRoute', (route) => {
+    for (const method of [route.method].flat()) routes.push({ method, url: route.url });
+  });
+  // A CDN in front of the engine: shared caches may keep versioned reads,
+  // and /head asks for /access before the first cacheable read.
+  const cdnFronted = (opts.cdnSigner?.info.kind ?? 'none') !== 'none';
+  app.decorate('immutableCache', cdnFronted ? IMMUTABLE_CACHE_SHARED : IMMUTABLE_CACHE_PRIVATE);
   const usageMeters = opts.db ? new UsageMeters(opts.db, opts.licenseGate) : undefined;
   app.addHook('onRequest', async (request, reply) => {
     const pathname = request.url.split('?', 1)[0] ?? request.url;
@@ -686,18 +748,21 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
   }
 
   // Tenant suspension gate: consulted by the auth hook for every JWT
-  // and by the share exchange. API-token requests never touch it.
+  // and by the grant exchange. API-token requests never touch it.
   const suspendedTenantsGuard = opts.db ? new SuspendedTenantsGuard({ db: opts.db }) : undefined;
 
   // The deployment can sign iff it verifies with the shared secret —
   // the one condition gating every minting surface: tokens.issue, the
-  // share-grant routes, and the public exchange. Asymmetric/JWKS
+  // grant routes, and the public exchange. Asymmetric/JWKS
   // deployments verify only; their backends mint with their own keys.
   const verifierForSigning = opts.verifier;
   const signer =
     verifierForSigning.mode === 'hs256'
       ? (input: SignDevTokenInput) => signDevToken(verifierForSigning.secret, input)
       : undefined;
+  // Grant visitors' handles are signed by the same authority.
+  const visitorHandles =
+    verifierForSigning.mode === 'hs256' ? new VisitorHandles(verifierForSigning.secret) : undefined;
 
   // Inject the revocation + cache store into whichever mode the
   // caller picked. We don't overwrite if they're already set.
@@ -736,7 +801,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     // Prometheus target).
     ...((): { publicPaths?: string[] } => {
       const publicPaths = [
-        ...(signer && opts.db && opts.objectStore ? [adminWirePaths.shareSessions] : []),
+        ...(signer && opts.db && opts.objectStore ? [adminWirePaths.grantSessions] : []),
         ...(opts.metrics === true ? ['/metrics'] : []),
       ];
       return publicPaths.length > 0 ? { publicPaths } : {};
@@ -790,7 +855,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
             workerEntry: String(opts.workerEntry),
             ...(opts.poolSize !== undefined ? { poolSize: opts.poolSize } : {}),
             ...(opts.maxDocsPerSlot !== undefined ? { maxDocsPerSlot: opts.maxDocsPerSlot } : {}),
-            fonts: opts.fallbackFonts ?? [],
+            fonts: opts.fonts ?? [],
             signingRoot,
           },
           onEvict: evictForward,
@@ -830,7 +895,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
                 ...(opts.maxDocsPerSlot !== undefined
                   ? { maxDocsPerSlot: opts.maxDocsPerSlot }
                   : {}),
-                fonts: opts.fallbackFonts ?? [],
+                fonts: opts.fonts ?? [],
                 signingRoot,
               },
               onEvict: hooks.onEvict,
@@ -867,7 +932,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         workerEntry: opts.workerEntry,
         maxDocsPerSlot: opts.maxDocsPerSlot,
         onEvict: evictForward,
-        fonts: opts.fallbackFonts,
+        fonts: opts.fonts,
         signingRoot,
       });
     }
@@ -1028,6 +1093,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
   let importWorker: ImportWorker | undefined;
   let layerService: LayerService | undefined;
   let derivedRenders: DerivedRenderService | undefined;
+  let serverFonts: ServerFonts | undefined;
   let sweeperTimer: NodeJS.Timeout | undefined;
   let baseFileCache: BaseFileCache | undefined;
   if (opts.db && opts.objectStore) {
@@ -1054,6 +1120,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     // The derived-artifact plane for renders.
     // Needs a worker + the base-file cache — admin-only deploys skip it.
     if (baseFileCache && pool) {
+      serverFonts ??= new ServerFonts(pool);
       derivedRenders = new DerivedRenderService({
         storage: opts.objectStore,
         ...(opts.renderLattice?.widths ? { widths: opts.renderLattice.widths } : {}),
@@ -1071,6 +1138,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         encoder: new SharpImageEncoder(),
         ...(opts.encodeInEngine !== undefined ? { encodeInEngine: opts.encodeInEngine } : {}),
         documents: new DocumentsRepo(opts.db),
+        serverFonts,
         onWarmError: (err, ctx) =>
           app.log.warn({ err, ...ctx }, 'thumbnail warm failed; thumbnailState=failed'),
       });
@@ -1081,6 +1149,8 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     lifecycle = new DocumentLifecycleService({
       documents: new DocumentsRepo(opts.db),
       tenants: new TenantsRepo(opts.db),
+      folders: new FoldersRepo(opts.db),
+      uploadTokenUses: new UploadTokenUsesRepo(opts.db),
       storage: opts.objectStore,
       autoProvisionTenant: opts.autoProvisionTenant ?? false,
       uploadProxyPolicy: opts.uploadProxyPolicy ?? 'fallback-only',
@@ -1099,11 +1169,44 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       ...(derivedRenders ? { derivedRenders } : {}),
       ...(usageMeters ? { usageMeters } : {}),
       tenantUsage: new TenantUsageRepo(opts.db),
-      shareGrants: new ShareGrantsRepo(opts.db),
+      grants: new GrantsRepo(opts.db),
     });
     await registerAdminDocumentsRoutes(app, {
       lifecycle,
       storage: opts.objectStore,
+    });
+    await registerAdminFoldersRoutes(app, {
+      folders: new FolderService({
+        db: opts.db,
+        tenants: new TenantsRepo(opts.db),
+        autoProvisionTenant: opts.autoProvisionTenant ?? false,
+        finishDeletes: (tenantId, docIds) => {
+          lifecycle!
+            .finishDeletes(tenantId, docIds)
+            .catch((err) =>
+              app.log.error(
+                { err, tenantId },
+                'finishing a folder delete failed; the sweeper retries',
+              ),
+            );
+        },
+      }),
+    });
+    const storedLayers = {
+      db: opts.db,
+      storage: opts.objectStore,
+      documents: new DocumentsRepo(opts.db),
+    };
+    // The layer service exists only where the engine runs; it is made below.
+    const deleteLayer = (tenantId: string, input: { docId: string; layerName: string }) =>
+      layerService
+        ? layerService.deleteLayer(tenantId, input)
+        : deleteStoredLayer(storedLayers, tenantId, input);
+    await registerAdminLayersRoutes(app, {
+      deleteLayer,
+      layers: new LayersRepo(opts.db),
+      documents: new DocumentsRepo(opts.db),
+      grants: new GrantsRepo(opts.db),
     });
     // The async-import claim loop: in-process (like the sweeper), one
     // per replica, safe under multi-replica via fenced leased claims.
@@ -1134,22 +1237,32 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       ...(revokedJtisGuard ? { guard: revokedJtisGuard } : {}),
       ...(signer ? { sign: signer } : {}),
       documents: new DocumentsRepo(opts.db),
+      folders: new FoldersRepo(opts.db),
       securityEvents: new SecurityEventsRepo(opts.db),
+      permissions,
     });
-    // The share family (grant lifecycle + public exchange) exists only
+    // The grant family (grant lifecycle + public exchange) exists only
     // where minting does — same condition as tokens.issue, because a
     // grant is a standing mint capability.
-    if (signer) {
-      const shareGrants = new ShareGrantsRepo(opts.db);
-      await registerAdminSharesRoutes(app, {
-        grants: shareGrants,
+    if (signer && visitorHandles) {
+      const grants = new GrantsRepo(opts.db);
+      await registerAdminGrantsRoutes(app, {
+        grants: grants,
+        permissions,
         documents: new DocumentsRepo(opts.db),
+        layers: new LayersRepo(opts.db),
+        visitors: new GrantVisitorsRepo(opts.db),
+        deleteVisitor: (visitor) => deleteVisitor({ db: opts.db!, deleteLayer }, visitor),
         securityEvents: new SecurityEventsRepo(opts.db),
       });
-      await registerShareSessionRoutes(app, {
+      await registerGrantSessionRoutes(app, {
         sign: signer,
-        grants: shareGrants,
+        grants: grants,
         documents: new DocumentsRepo(opts.db),
+        layers: new LayersRepo(opts.db),
+        visitors: new GrantVisitorsRepo(opts.db),
+        handles: visitorHandles,
+        deleteLayer,
         suspendedTenants: suspendedTenantsGuard!,
         ...(usageMeters ? { usageMeters } : {}),
         tenantUsage,
@@ -1273,8 +1386,8 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       // CDN-signaling rule for /head: non-`none` adapters need /access
       // to be called before the first cacheable read so the SDK has
       // the signed URLs/cookies. The default (`none`) keeps /head
-      // saying "no access needed" so public shares stay cheap.
-      const cdnAccessRequired = (opts.cdnSigner?.info.kind ?? 'none') !== 'none';
+      // saying "no access needed" so public grants stay cheap.
+      const cdnAccessRequired = cdnFronted;
       const passwordSessionsRepo = opts.kms
         ? new PdfPasswordSessionsRepo(opts.db, {
             keyring: opts.kms,
@@ -1290,6 +1403,13 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         pool,
         layerState: layerStateService,
         cdnAccessRequired,
+        serverFonts: (serverFonts ??= new ServerFonts(pool)),
+        ...(opts.layerSessionIdleMs !== undefined
+          ? { layerSessionIdleMs: opts.layerSessionIdleMs }
+          : {}),
+        ...(opts.maxLayerSessionsPerDoc !== undefined
+          ? { maxLayerSessionsPerDoc: opts.maxLayerSessionsPerDoc }
+          : {}),
         passwordVerifications: new PdfPasswordVerificationsRepo(opts.db, {
           // The proof rows are HMACs over real document passwords: on a
           // production license a strong secret is mandatory, or a leaked DB
@@ -1327,19 +1447,13 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         storage: opts.objectStore,
         realtime: realtimeBus,
         signings: new DocumentSigningsRepo(opts.db),
-        ...(passwordSessionsRepo ? { passwordSessions: passwordSessionsRepo } : {}),
         signingRoot,
         ...(opts.signingTtlMs !== undefined ? { signingTtlMs: opts.signingTtlMs } : {}),
         objectNumbers,
       });
-      // A signature published on another replica: forget every session
-      // over the old base here too (this replica's own publish already did).
-      const unsubscribeBaseChanged = realtimeBus.subscribeBaseChanged((key) => {
-        void documentService?.onBaseVersionPublished(key.docId).catch(() => undefined);
-      });
-      app.addHook('onClose', () => unsubscribeBaseChanged());
       await registerAccessRoutes(app, {
         service: documentService,
+        permissions,
         layers: layerService,
         cdnSigner: opts.cdnSigner ?? new NoneCdnSigner(),
         ...(derivedRenders ? { derivedRenders } : {}),
@@ -1349,9 +1463,13 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       });
       await registerObjectNumberRoutes(app, { documentService, layerService });
       await registerChangeRoutes(app, { documentService, layerService });
-      await registerDocsRoutes(app, { service: documentService });
+      await registerDocsRoutes(app, {
+        service: documentService,
+        ...(signer ? { sign: signer } : {}),
+      });
       await registerMetadataRoutes(app, { service: documentService, layerService });
       await registerOutlineRoutes(app, { service: documentService });
+      await registerFontRoutes(app, { service: documentService });
       await registerSignatureRoutes(app, { service: documentService, layerService });
       await registerPageRoutes(app, {
         documentService,
@@ -1393,21 +1511,42 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
 
     const sweepIntervalMs = opts.sweepIntervalMs ?? 60_000;
     const pendingTtlMs = opts.pendingTtlMs ?? 60 * 60 * 1000; // 1h default
+    const deletingGraceMs = opts.deletingGraceMs ?? 60_000;
     if (sweepIntervalMs > 0) {
       sweeperTimer = setInterval(() => {
         lifecycle!
           .sweepStalePending({ olderThanMs: pendingTtlMs })
           .catch((err) => app.log.error({ err }, 'sweepStalePending failed'));
+        lifecycle!
+          .sweepDeleting({ olderThanMs: deletingGraceMs })
+          .catch((err) => app.log.error({ err }, 'sweepDeleting failed'));
         layerService
           ?.expireSignings(Date.now())
           .catch((err) => app.log.error({ err }, 'expireSignings failed'));
         layerService
           ?.sweepChanges(Date.now())
           .catch((err) => app.log.error({ err }, 'sweepChanges failed'));
+        layerService
+          ?.sweepObjectNumbers()
+          .catch((err) => app.log.error({ err }, 'sweepObjectNumbers failed'));
+        sweepIdleVisitors({ db: opts.db!, deleteLayer }, Date.now()).catch((err) =>
+          app.log.error({ err }, 'sweepIdleVisitors failed'),
+        );
+        documentService
+          ?.closeIdleLayerSessions(Date.now())
+          .catch((err) => app.log.error({ err }, 'closeIdleLayerSessions failed'));
       }, sweepIntervalMs);
       sweeperTimer.unref();
     }
   }
+
+  // After the core's routes: a module adds to the server, never in its place.
+  await mountModules(app, declaredModules, {
+    permissions,
+    ...(documentService ? { documentService } : {}),
+    ...(derivedRenders ? { derivedRenders } : {}),
+    ...(signer ? { sign: signer } : {}),
+  });
 
   app.setErrorHandler(handleAppError);
 
@@ -1465,6 +1604,8 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
 
   return {
     app,
+    permissions,
+    routes,
     pool,
     lifecycle,
     revokedJtisGuard,
@@ -1533,10 +1674,21 @@ export function handleAppError(err: unknown, req: FastifyRequest, reply: Fastify
     });
     return;
   }
-  const e = err as Error & { code?: string; status?: number; statusCode?: number };
+  const e = err as Error & {
+    code?: string;
+    status?: number;
+    statusCode?: number;
+    details?: Record<string, unknown>;
+  };
   if (e.status && typeof e.status === 'number') {
     logHandledServerError(req, e, e.status);
-    reply.code(e.status).send({ error: { code: e.code ?? 'Unknown', message: e.message } });
+    reply.code(e.status).send({
+      error: {
+        code: e.code ?? 'Unknown',
+        message: e.message,
+        ...(e.details ? { details: e.details } : {}),
+      },
+    });
     return;
   }
   // Fastify's own errors (body parsing, payload limits, validation) carry
@@ -1619,12 +1771,12 @@ function isReadOnlyLicenseRequest(method: string, pathname: string): boolean {
 
   // These POST endpoints calculate or mint read access, but do not change the
   // customer's document contents. They remain available so an expired or
-  // suspended license can never hold existing data hostage. The share
+  // suspended license can never hold existing data hostage. The grant
   // exchange belongs here for the same reason: it mints read sessions
-  // for already-shared documents.
+  // for documents already given out.
   return (
     method === 'POST' &&
-    (pathname === '/v1/access' || pathname === '/v1/warm' || pathname === '/v1/share-sessions')
+    (pathname === '/v1/access' || pathname === '/v1/warm' || pathname === '/v1/grant-sessions')
   );
 }
 
@@ -1636,6 +1788,7 @@ function mapToHttp(code: string): number {
     case EngineErrorCode.Unauthenticated:
       return 401;
     case EngineErrorCode.Forbidden:
+    case EngineErrorCode.VisitorIdentityRequired:
       return 403;
     // Signing: a pending candidate, a moved fence, or a layer behind the
     // head are all conflicts the client resolves by re-preparing; a dead
@@ -1645,7 +1798,6 @@ function mapToHttp(code: string): number {
     case EngineErrorCode.LayerVersionConflict:
     case EngineErrorCode.SigningPending:
     case EngineErrorCode.SigningVersionMismatch:
-    case EngineErrorCode.StaleBase:
     case EngineErrorCode.ProtectedDocument:
     case EngineErrorCode.ObjectNumberUnavailable:
     case EngineErrorCode.LayerFull:
@@ -1654,6 +1806,7 @@ function mapToHttp(code: string): number {
     case EngineErrorCode.DocNotOpen:
       return 404;
     case EngineErrorCode.SigningExpired:
+    case EngineErrorCode.LayerDeleted:
       return 410;
     case EngineErrorCode.PayloadTooLarge:
       return 413;

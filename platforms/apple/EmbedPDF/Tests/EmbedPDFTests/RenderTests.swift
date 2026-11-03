@@ -53,7 +53,7 @@ extension BaseSuite {
 
     @Test func renderThumbnailCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, page, render) = try await opened()
-      await expectCancelledBeforeItStarts { try await render.renderThumbnail(page, maxWidth: 40) }
+      await expectCancelledBeforeItStarts { try await render.renderThumbnail(page) }
     }
 
     @Test func renderPagesCancelsWhenTheTaskIsCancelled() async throws {
@@ -82,8 +82,12 @@ extension BaseSuite {
 
     @Test func aThumbnailAndABatchRender() async throws {
       let (viewer, document, page, render) = try await opened()
-      let thumbnail = try await render.renderThumbnail(page, maxWidth: 40)
-      expectNoDifference(thumbnail.width, 40)
+      expectNoDifference(try await render.canRenderThumbnail(), true)
+      let thumbnail = try await render.renderThumbnail(page)
+      // The whole page, 512 pixels on its long side.
+      expectNoDifference(max(thumbnail.width, thumbnail.height), 512)
+      let again = try await render.renderSource(page, scale: 3, thumbnail: true)
+      expectNoDifference(again.width, thumbnail.width)
       let pages = try await viewer.pages(of: document).map(\.page)
       let batch = try await render.renderPages(pages, options: RenderPageOptions(width: 30))
       expectNoDifference(batch.applied.map(\.page), pages)

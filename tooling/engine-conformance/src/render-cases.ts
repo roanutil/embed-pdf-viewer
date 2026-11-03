@@ -23,7 +23,8 @@ export interface RenderCase {
   readonly rotation: 0 | 90 | 180 | 270;
   readonly viewport:
     | { readonly kind: 'scale'; readonly scale: number }
-    | { readonly kind: 'width'; readonly width: number };
+    | { readonly kind: 'width'; readonly width: number }
+    | { readonly kind: 'thumbnail' };
 }
 
 /** US Letter, the page every case below is a region of unless it says otherwise. */
@@ -132,6 +133,33 @@ export const RENDER_CASES: readonly RenderCase[] = [
     pageHeight: LETTER.height,
     rotation: 0,
     viewport: { kind: 'width', width: 1 },
+  },
+
+  // Thumbnails (8638dc749): the long side of the area at 512, whatever the
+  // rotation, so a quarter turn swaps the two sizes rather than rescaling.
+  {
+    name: 'thumbnail-unrotated',
+    covers: 'A portrait page: its height becomes 512.',
+    rect: wholePage,
+    pageHeight: LETTER.height,
+    rotation: 0,
+    viewport: { kind: 'thumbnail' },
+  },
+  {
+    name: 'thumbnail-rotated-90',
+    covers: 'The long side is the area before the turn.',
+    rect: wholePage,
+    pageHeight: LETTER.height,
+    rotation: 90,
+    viewport: { kind: 'thumbnail' },
+  },
+  {
+    name: 'thumbnail-landscape-strip',
+    covers: 'A wide area: its width becomes 512.',
+    rect: { left: 0, bottom: 300, right: 612, top: 400 },
+    pageHeight: LETTER.height,
+    rotation: 0,
+    viewport: { kind: 'thumbnail' },
   },
 
   // Sub-rects. The display flip means a region near the top of the page is

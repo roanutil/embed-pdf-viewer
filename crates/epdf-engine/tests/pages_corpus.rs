@@ -85,9 +85,10 @@ fn the_listing_agrees_with_the_typescript_engine() {
         // a raw comparison would report every page as a difference. The
         // quantizer is the corpus-wide one, so a coordinate is pinned to 1e-4
         // of a PDF point rather than to a float's last bit.
-        let actual = test_support::corpus::quantized(
+        let actual = test_support::corpus::quantized(&test_support::without_unrecorded_labels(
+            &case.pages,
             &serde_json::to_value(listed(case)).expect("serialize"),
-        );
+        ));
         let expected = test_support::corpus::quantized(&case.pages);
         if let Some(difference) = test_support::corpus::first_difference(&expected, &actual) {
             panic!("{}: {difference} ({})", case.name, case.covers);
@@ -222,7 +223,10 @@ fn the_wire_answers_the_listing_the_typescript_engine_did() {
             Vec::new(),
         );
         let envelope: serde_json::Value = serde_json::from_str(&answer.json).expect("JSON");
-        let actual = test_support::corpus::quantized(&envelope["result"]);
+        let actual = test_support::corpus::quantized(&test_support::without_unrecorded_labels(
+            &case.pages,
+            &envelope["result"],
+        ));
         let expected = test_support::corpus::quantized(&case.pages);
         if let Some(difference) = test_support::corpus::first_difference(&expected, &actual) {
             panic!("{}: {difference} ({})", case.name, case.covers);

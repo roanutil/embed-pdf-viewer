@@ -119,6 +119,9 @@ impl DocumentHandle for GuardedHandle {
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
         self.guard.promise(self.inner.reserve_object_numbers(count))
     }
+    fn reserve_object_number_count(&self, count: f64) -> EngineCall<()> {
+        self.guard.promise(self.inner.reserve_object_number_count(count))
+    }
     /// A synchronous member: the TypeScript guard passes it through.
     fn on_lost_object_numbers(
         &self,

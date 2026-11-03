@@ -290,6 +290,7 @@ pub fn apply(
     for (at, op) in ops.into_iter().enumerate() {
         cancel.check()?;
         let op = space.op_in_file_space(ctx.session, op)?;
+        clear_missing_characters(ctx.session);
         let done = run_op(&mut ctx, &op, at)?;
         collected.push(&mut ctx, done, space)?;
     }
@@ -312,10 +313,32 @@ pub fn undo(
     let mut collected = Collected::default();
     for step in &record.steps {
         cancel.check()?;
+        clear_missing_characters(ctx.session);
         let done = run_step(&mut ctx, step)?;
         collected.push(&mut ctx, done, space)?;
     }
     Ok(collected.finish(authority))
+}
+
+/// `DocumentSession.clearMissingCharacters`: a run starts, so the
+/// characters earlier appearances drew with no font are forgotten. A
+/// session with no document has none.
+pub(crate) fn clear_missing_characters(session: &DocumentSession) {
+    if let Ok(owned) = session.document() {
+        owned.document().clear_missing_characters();
+    }
+}
+
+/// `DocumentSession.missingCharacters`: the characters appearances drew
+/// with no font since the last clear; none for a session with no document.
+pub(crate) fn missing_characters(session: &DocumentSession) -> Result<Vec<String>, EngineError> {
+    match session.document() {
+        Ok(owned) => owned
+            .document()
+            .missing_characters()
+            .map_err(|e| EngineError::with_message(EngineErrorCode::Unknown, format!("{e}"))),
+        Err(_) => Ok(Vec::new()),
+    }
 }
 
 /// Each run's item, measured as soon as it ran, and its reverse
@@ -330,9 +353,14 @@ impl Collected {
     fn push(
         &mut self,
         ctx: &mut ChangeContext<'_>,
-        done: Done,
+        mut done: Done,
         space: ChangeSpace,
     ) -> Result<(), EngineError> {
+        // Each item says what its run drew with no font for a character.
+        let missing = missing_characters(ctx.session)?;
+        if !missing.is_empty() {
+            done.item.meta_mut().missing_characters = Some(missing);
+        }
         self.items.push(space.item_out(ctx.session, done.item)?);
         self.reverses.push(done.reverse);
         Ok(())
@@ -432,8 +460,14 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
                 object_numbers.as_deref(),
             )
         }
-        ChangeOp::PagesInsert { source, position } => {
-            super::pages::insert_pages(ctx, source.bytes()?, position.as_ref())
+        ChangeOp::PagesInsert { source, position, object_numbers } => super::pages::insert_pages(
+            ctx,
+            source.bytes()?,
+            position.as_ref(),
+            object_numbers.as_deref(),
+        ),
+        ChangeOp::PagesCopy { pages, position, object_numbers } => {
+            super::pages::copy_pages(ctx, pages, position.as_ref(), object_numbers.as_deref())
         }
         ChangeOp::FormsSetValue { field, value, expect } => {
             super::forms::set_value(ctx, field, value, expect.as_ref(), at)

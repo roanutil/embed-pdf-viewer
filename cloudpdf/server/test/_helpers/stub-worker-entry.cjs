@@ -846,7 +846,8 @@ parentPort.on('message', (msg) => {
           }
           const items = entry.change.ops.map((op) => applyStubOp(meta, op, entry.opId));
           const pages = new Map();
-          for (const item of items) for (const page of item.meta.affectedPages) pages.set(page.objectNumber, page);
+          for (const item of items)
+            for (const page of item.meta.affectedPages) pages.set(page.objectNumber, page);
           outcomes.push({
             opId: entry.opId,
             status: 'applied',
@@ -888,8 +889,16 @@ parentPort.on('message', (msg) => {
         return;
       }
       const raster = stubRaster(msg.options);
+      // The area of the page the pixels show, as the real worker reports it.
+      const target = msg.options && msg.options.target;
+      const area =
+        target && target.kind === 'rect' ? target.rect : { x: 0, y: 0, width: 612, height: 792 };
       parentPort.postMessage(
-        { kind: 'resolve', jobId: msg.jobId, result: { tag: 'pages.render', raster } },
+        {
+          kind: 'resolve',
+          jobId: msg.jobId,
+          result: { tag: 'pages.render', page: msg.page, area, raster },
+        },
         [raster.data],
       );
       return;
@@ -1138,6 +1147,30 @@ parentPort.on('message', (msg) => {
         kind: 'resolve',
         jobId: msg.jobId,
         result: { tag: 'outline.read', outline: { items: [], incomplete: false } },
+      });
+      return;
+    }
+    case 'fonts.list': {
+      // The server's fonts, for its fingerprint: a stub registers none.
+      parentPort.postMessage({
+        kind: 'resolve',
+        jobId: msg.jobId,
+        result: { tag: 'fonts.list', engineFonts: [], fallbacks: [] },
+      });
+      return;
+    }
+    case 'document.fonts.list': {
+      if (!openDocs.get(sessionKey(msg))) {
+        rejectNotOpen(msg);
+        return;
+      }
+      parentPort.postMessage({
+        kind: 'resolve',
+        jobId: msg.jobId,
+        result: {
+          tag: 'document.fonts.list',
+          facts: { faces: [], engineFonts: [], fallbacks: [] },
+        },
       });
       return;
     }

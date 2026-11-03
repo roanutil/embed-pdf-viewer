@@ -16,7 +16,7 @@
 //! nulls the object instead of reusing the slot, so per-page state a caller
 //! kept can never silently attach to an unrelated future page.
 
-use crate::Document;
+use crate::{Document, PdfiumError};
 
 impl Document {
     /// Reorder pages.
@@ -191,23 +191,158 @@ impl Document {
         unsafe { pdfium_sys::FPDFPage_Delete(self.as_raw(), index) };
     }
 
-    /// Deep-copy pages out of another document.
+    /// Deep-copy pages out of another document, with the form fields of
+    /// their widgets (`EPDFDoc_ImportPages`).
     ///
-    /// `indices` empty means every page, in order. The copy is not a full
-    /// detach: imported streams still read through the SOURCE document, so
-    /// it has to stay open for as long as the destination might be saved.
-    /// That lifetime is the caller's to hold, which is why this takes a
-    /// borrow rather than consuming the source.
-    pub fn import_pages(&self, source: &Document, indices: &[i32], at: i32) -> bool {
+    /// `indices` empty means every page, in order. Each field above a copied
+    /// widget is copied once and the copied top-level fields join this
+    /// document's `/AcroForm /Fields` under the names they had: keeping a
+    /// clashing name apart is the caller's, in the source, before the copy
+    /// ([`Document::set_field_name`]).
+    ///
+    /// `object_numbers`, when given, holds one number per copied page, in
+    /// copy order, for its page dictionary (0 takes the next free one). A
+    /// number other than 0 needs a layer transaction and a free number. A
+    /// list of another length is refused here, before PDFium reads past it.
+    ///
+    /// The copy is not a full detach: imported streams still read through
+    /// the SOURCE document, so it has to stay open for as long as the
+    /// destination might be saved. That lifetime is the caller's to hold,
+    /// which is why this takes a borrow rather than consuming the source.
+    /// On a `false` other than a refused number, pages may already have been
+    /// copied: on a layer document the caller aborts its transaction.
+    pub fn import_pages(
+        &self,
+        source: &Document,
+        indices: &[i32],
+        at: i32,
+        object_numbers: Option<&[u32]>,
+    ) -> bool {
+        let copied = if indices.is_empty() { source.page_count() as usize } else { indices.len() };
+        let numbers = match object_numbers {
+            Some(numbers) if numbers.len() != copied => return false,
+            Some(numbers) => numbers.as_ptr(),
+            None => std::ptr::null(),
+        };
         let (pointer, length) = if indices.is_empty() {
             (std::ptr::null(), 0)
         } else {
             (indices.as_ptr(), indices.len() as std::os::raw::c_ulong)
         };
-        // SAFETY: both handles are live and the slice outlives the call.
+        // SAFETY: both handles are live, the index slice is `length`
+        // elements, and `numbers` is null or holds one element per copied
+        // page, which is all PDFium reads; both slices outlive the call.
         unsafe {
-            pdfium_sys::FPDF_ImportPagesByIndex(self.as_raw(), source.as_raw(), pointer, length, at)
-                != 0
+            pdfium_sys::EPDFDoc_ImportPages(
+                self.as_raw(),
+                source.as_raw(),
+                pointer,
+                length,
+                at,
+                numbers,
+            ) != 0
+        }
+    }
+
+    /// A new document with no pages (`FPDF_CreateNewDocument`), closed on
+    /// drop: the scratch a copy of this document's own pages goes out to.
+    pub fn new_scratch(&self) -> Result<Document, PdfiumError> {
+        // SAFETY: no arguments; a null return is the documented failure.
+        let handle = unsafe { pdfium_sys::FPDF_CreateNewDocument() };
+        if handle.is_null() {
+            return Err(PdfiumError::Load);
+        }
+        // SAFETY: a non-null handle of a document of its own, closed once,
+        // by the wrapper this returns.
+        Ok(unsafe { Document::from_raw_layer(handle, self.library()) })
+    }
+
+    /// The top-level form fields [`Document::import_pages`] would bring
+    /// with the pages at `indices` of this document (empty: every page), by
+    /// the object numbers of their dictionaries, in the order the import
+    /// adds them to `/Fields` (`EPDFDoc_GetImportFieldRoots`). Empty also
+    /// for an index out of range.
+    pub fn import_field_roots(&self, indices: &[i32]) -> Result<Vec<u32>, PdfiumError> {
+        let (pointer, length) = if indices.is_empty() {
+            (std::ptr::null(), 0)
+        } else {
+            (indices.as_ptr(), indices.len() as std::os::raw::c_ulong)
+        };
+        // SAFETY: the handle is live, the index slice is `length` elements,
+        // and a null buffer with a zero count is the documented measure call.
+        let count = unsafe {
+            pdfium_sys::EPDFDoc_GetImportFieldRoots(
+                self.as_raw(),
+                pointer,
+                length,
+                std::ptr::null_mut(),
+                0,
+            )
+        };
+        if count == 0 {
+            return Ok(Vec::new());
+        }
+        let mut roots: Vec<u32> = Vec::new();
+        roots.try_reserve_exact(count as usize).map_err(|_| PdfiumError::OutOfMemory)?;
+        roots.resize(count as usize, 0);
+        // SAFETY: the buffer holds `count` elements, as the count argument
+        // claims.
+        let filled = unsafe {
+            pdfium_sys::EPDFDoc_GetImportFieldRoots(
+                self.as_raw(),
+                pointer,
+                length,
+                roots.as_mut_ptr(),
+                count,
+            )
+        };
+        roots.truncate(filled.min(count) as usize);
+        Ok(roots)
+    }
+
+    /// Replace the document's page label sections (`/PageLabels`) with
+    /// `sections` (`EPDFDoc_SetPageLabelSections`); none removes them, and
+    /// with them every page's label. The first must start at page 0, each
+    /// after the one before, every one at a page of the document: `false`,
+    /// writing nothing, for sections that break that. Where the sections go
+    /// when pages move is the caller's.
+    pub fn set_page_label_sections(&self, sections: &[crate::PageLabelSection]) -> bool {
+        let Ok(count) = std::os::raw::c_ulong::try_from(sections.len()) else {
+            return false;
+        };
+        let mut first_pages = Vec::with_capacity(sections.len().max(1));
+        let mut styles = Vec::with_capacity(sections.len().max(1));
+        let mut first_numbers = Vec::with_capacity(sections.len().max(1));
+        let mut prefixes: Vec<Vec<u16>> = Vec::with_capacity(sections.len());
+        for section in sections {
+            let Ok(first_page) = i32::try_from(section.first_page) else {
+                return false;
+            };
+            first_pages.push(first_page);
+            styles.push(section.style.map_or(0, |style| style as i32));
+            first_numbers.push(section.first_number);
+            prefixes.push(section.prefix.encode_utf16().chain(std::iter::once(0)).collect());
+        }
+        // Never a null array, as upstream's marshalling never passes one,
+        // even for no sections.
+        first_pages.resize(first_pages.len().max(1), 0);
+        styles.resize(styles.len().max(1), 0);
+        first_numbers.resize(first_numbers.len().max(1), 0);
+        let mut table: Vec<pdfium_sys::FPDF_WIDESTRING> =
+            prefixes.iter().map(|prefix| prefix.as_ptr()).collect();
+        table.resize(table.len().max(1), std::ptr::null());
+        // SAFETY: the handle is live; every array holds at least `count`
+        // elements, each prefix is NUL-terminated, and all of them outlive
+        // the call.
+        unsafe {
+            pdfium_sys::EPDFDoc_SetPageLabelSections(
+                self.as_raw(),
+                first_pages.as_ptr(),
+                styles.as_ptr(),
+                first_numbers.as_ptr(),
+                table.as_ptr(),
+                count,
+            ) != 0
         }
     }
 

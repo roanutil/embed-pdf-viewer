@@ -18,6 +18,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -1782,6 +1783,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -3020,6 +3022,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -4123,6 +4126,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -5223,6 +5227,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -6608,6 +6613,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -7774,6 +7780,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -8991,6 +8998,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -10114,6 +10122,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -11271,6 +11280,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -12833,6 +12843,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -14092,6 +14103,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -15319,6 +15331,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -16647,6 +16660,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -17901,6 +17915,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -18831,7 +18846,6 @@
               "objectNumber": 11
             },
             {
-              "maxWidth": 40,
               "signal": {
                 "$abortSignal": "s1"
               }
@@ -18964,8 +18978,7 @@
               "args": [
                 {
                   "viewport": {
-                    "kind": "width",
-                    "width": 40
+                    "kind": "thumbnail"
                   },
                   "includeAnnotations": true,
                   "includeFormFields": true
@@ -19064,6 +19077,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -20325,6 +20339,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -21480,6 +21495,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -22964,6 +22980,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -24326,6 +24343,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -25860,6 +25878,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -29538,6 +29557,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -30697,6 +30717,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -32021,6 +32042,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -33966,6 +33988,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -36337,6 +36360,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -37598,6 +37622,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -38708,6 +38733,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -39766,6 +39792,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -40666,6 +40693,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -42273,6 +42301,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -43448,6 +43477,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -45190,6 +45220,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -46407,7 +46438,7 @@
     },
     {
       "name": "render-thumbnail",
-      "covers": "renderThumbnail is renderPage at maxWidth device pixels, annotations baked unless it says otherwise.",
+      "covers": "renderThumbnail draws the whole page at the engine's thumbnail size (viewport kind thumbnail): one picture per page and layers, whatever the screen asks, so renderSource's thumbnail and getSourceKey's share its key; a format or quality it is given overrides the strategy's, and a page not in the document is not-found.",
       "plugins": [
         {
           "factory": "render"
@@ -46420,6 +46451,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -47343,16 +47375,8 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderThumbnail",
-          "args": [
-            {
-              "kind": "objectNumber",
-              "objectNumber": 11
-            },
-            {
-              "maxWidth": 120
-            }
-          ]
+          "method": "canRenderThumbnail",
+          "args": []
         },
         {
           "op": "call",
@@ -47364,10 +47388,20 @@
           "args": [
             {
               "kind": "objectNumber",
-              "objectNumber": 22
-            },
+              "objectNumber": 11
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderThumbnail",
+          "args": [
+            1,
             {
-              "maxWidth": 120.6,
               "includeAnnotations": false
             }
           ]
@@ -47399,9 +47433,99 @@
             {
               "kind": "objectNumber",
               "objectNumber": 11
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
             },
             {
-              "maxWidth": 120
+              "scale": 0.5,
+              "thumbnail": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "getSourceKey",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            },
+            {
+              "scale": 0.5,
+              "thumbnail": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "getSourceKey",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            },
+            {
+              "scale": 0.5
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderThumbnail",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            },
+            {
+              "format": "webp",
+              "quality": 0.4
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "r2",
+          "value": {
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderThumbnail",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 99
             }
           ]
         }
@@ -47505,6 +47629,23 @@
           "settled": [],
           "stateChanges": [],
           "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
@@ -47513,8 +47654,7 @@
               "args": [
                 {
                   "viewport": {
-                    "kind": "width",
-                    "width": 120
+                    "kind": "thumbnail"
                   },
                   "includeAnnotations": true,
                   "includeFormFields": true
@@ -47546,8 +47686,7 @@
               "args": [
                 {
                   "viewport": {
-                    "kind": "width",
-                    "width": 121
+                    "kind": "thumbnail"
                   },
                   "includeAnnotations": false,
                   "includeFormFields": false
@@ -47635,6 +47774,1440 @@
           "outcome": {
             "promise": 4
           }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "11|thumbnail|a1f1|e0"
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "11|w306|a1f1|e0"
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "thumbnail"
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true,
+                  "format": "webp",
+                  "quality": 0.4
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "page 99 is not in this document",
+                  "code": "not-found",
+                  "capability": "render",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 7
+          }
+        }
+      ]
+    },
+    {
+      "name": "thumbnails-need-only-their-own-right",
+      "covers": "A session with doc.render.thumbnail and not doc.render has thumbnails, by either door, and no other page picture: canRender is false, canRenderThumbnail true, and renderPage and renderSource without thumbnail refuse permission-denied.",
+      "plugins": [
+        {
+          "factory": "render"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "services": [],
+            "security": {
+              "allows": [
+                "doc.render.thumbnail"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 22
+                },
+                "label": null,
+                "size": {
+                  "width": 792,
+                  "height": 612
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 792,
+                    "top": 612
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 792,
+                    "top": 612
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 33
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r0"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r1"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r2"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r3"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r4"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r5"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r6"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r7"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r8"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r9"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r10"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r11"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r12"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r13"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r14"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r15"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r16"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r17"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r18"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r19"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r20"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r21"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r22"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r23"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r24"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r25"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r26"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r27"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r28"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r29"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r30"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r31"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r32"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r33"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r34"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r35"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r36"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r37"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r38"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r39"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r40"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r41"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r42"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r43"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r44"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r45"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r46"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r47"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r48"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r49"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r50"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r51"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r52"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r53"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r54"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r55"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r56"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r57"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r58"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r59"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r60"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r61"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r62"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r63"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r64"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r65"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r66"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r67"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r68"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r69"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r70"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r71"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r72"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r73"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r74"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r75"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r76"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r77"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r78"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r79"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r80"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r81"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r82"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r83"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r84"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r85"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r86"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r87"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r88"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r89"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r90"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r91"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r92"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r93"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r94"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r95"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r96"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r97"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r98"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r99"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r100"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r101"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r102"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r103"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r104"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r105"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r106"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r107"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r108"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r109"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r110"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r111"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r112"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r113"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r114"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r115"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r116"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r117"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r118"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r119"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r120"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r121"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r122"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r123"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r124"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r125"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r126"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r127"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r128"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r129"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r130"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r131"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r132"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r133"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r134"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r135"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r136"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r137"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r138"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r139"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r140"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r141"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r142"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r143"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r144"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r145"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r146"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r147"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r148"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r149"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r150"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r151"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r152"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r153"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r154"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r155"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r156"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r157"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r158"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r159"
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "canRender",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "canRenderThumbnail",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderThumbnail",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            },
+            {
+              "scale": 0.5,
+              "thumbnail": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            },
+            {
+              "scale": 0.5
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderPage",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 11
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "r0",
+          "value": {
+            "width": 512,
+            "height": 512
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": false
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "thumbnail"
+                  },
+                  "includeAnnotations": false,
+                  "includeFormFields": false
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "render.renderSource requires doc.render",
+                  "code": "permission-denied",
+                  "capability": "render",
+                  "permission": "doc.render"
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "render.renderPage requires doc.render",
+                  "code": "permission-denied",
+                  "capability": "render",
+                  "permission": "doc.render"
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            },
+            {
+              "promise": 3,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
         }
       ]
     },
@@ -47653,6 +49226,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -48915,6 +50489,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -50340,7 +51915,7 @@
     },
     {
       "name": "render-page-permission-denied",
-      "covers": "Without doc.render every public render door refuses locally with permission-denied naming its own operation (renderThumbnail is renderPage), before touching the page registry or the engine.",
+      "covers": "Without doc.render every public render door refuses locally with permission-denied naming its own operation, renderThumbnail naming doc.render.thumbnail; renderPage refuses before touching the page registry, renderThumbnail reads the page first, and neither reaches the engine.",
       "plugins": [
         {
           "factory": "render"
@@ -51305,9 +52880,20 @@
             {
               "kind": "objectNumber",
               "objectNumber": 11
-            },
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderThumbnail",
+          "args": [
             {
-              "maxWidth": 40
+              "kind": "objectNumber",
+              "objectNumber": 99
             }
           ]
         },
@@ -51494,10 +53080,10 @@
               "rejected": {
                 "$error": {
                   "name": "PluginError",
-                  "message": "render.renderPage requires doc.render",
+                  "message": "render.renderThumbnail requires doc.render.thumbnail",
                   "code": "permission-denied",
                   "capability": "render",
-                  "permission": "doc.render"
+                  "permission": "doc.render.thumbnail"
                 }
               }
             }
@@ -51524,6 +53110,36 @@
               "rejected": {
                 "$error": {
                   "name": "PluginError",
+                  "message": "page 99 is not in this document",
+                  "code": "not-found",
+                  "capability": "render",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
                   "message": "render.renderPages requires doc.render",
                   "code": "permission-denied",
                   "capability": "render",
@@ -51544,7 +53160,7 @@
             }
           },
           "outcome": {
-            "promise": 5
+            "promise": 6
           }
         }
       ]
@@ -51567,6 +53183,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -54431,6 +56048,2516 @@
                 }
               }
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-pending-page-draws-once-the-engine-has-it",
+      "covers": "A page a change on its way makes is in the page list before the engine has it: a pending copy draws as the page it copies, and a pending blank page's picture waits until the engine has the page, then draws it.",
+      "plugins": [
+        {
+          "factory": "render"
+        },
+        {
+          "factory": "page-edit"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "services": [],
+            "security": {
+              "allows": [
+                "doc.render",
+                "doc.annotate.read",
+                "doc.forms.read",
+                "doc.pages.assemble"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 11
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 22
+                },
+                "label": null,
+                "size": {
+                  "width": 792,
+                  "height": 612
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 792,
+                    "top": 612
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 792,
+                    "top": 612
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 33
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "apply",
+                "times": 1,
+                "defer": "copy",
+                "events": [
+                  {
+                    "type": "pages.inserted",
+                    "insertedPages": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 77
+                      }
+                    ],
+                    "layout": {
+                      "pageCount": 4,
+                      "pages": [
+                        {
+                          "index": 0,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 11
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 612,
+                            "height": 792
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            }
+                          }
+                        },
+                        {
+                          "index": 1,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 77
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 612,
+                            "height": 792
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            }
+                          }
+                        },
+                        {
+                          "index": 2,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 22
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 792,
+                            "height": 612
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 792,
+                              "top": 612
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 792,
+                              "top": 612
+                            }
+                          }
+                        },
+                        {
+                          "index": 3,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 33
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 300,
+                            "height": 300
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            }
+                          }
+                        }
+                      ],
+                      "labels": [],
+                      "namedPages": []
+                    },
+                    "meta": {
+                      "affectedPages": [],
+                      "cacheDelta": null,
+                      "opId": "render-write",
+                      "undoable": true
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "sub": null,
+                      "ts": 0,
+                      "serverId": null
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "apply",
+                "times": 1,
+                "defer": "blank",
+                "events": [
+                  {
+                    "type": "pages.inserted",
+                    "insertedPages": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 88
+                      }
+                    ],
+                    "layout": {
+                      "pageCount": 5,
+                      "pages": [
+                        {
+                          "index": 0,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 11
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 612,
+                            "height": 792
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            }
+                          }
+                        },
+                        {
+                          "index": 1,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 77
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 612,
+                            "height": 792
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 612,
+                              "top": 792
+                            }
+                          }
+                        },
+                        {
+                          "index": 2,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 22
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 792,
+                            "height": 612
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 792,
+                              "top": 612
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 792,
+                              "top": 612
+                            }
+                          }
+                        },
+                        {
+                          "index": 3,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 33
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 300,
+                            "height": 300
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            }
+                          }
+                        },
+                        {
+                          "index": 4,
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 88
+                          },
+                          "label": null,
+                          "size": {
+                            "width": 300,
+                            "height": 300
+                          },
+                          "rotation": 0,
+                          "userUnit": 1,
+                          "boxes": {
+                            "media": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            },
+                            "crop": {
+                              "left": 0,
+                              "bottom": 0,
+                              "right": 300,
+                              "top": 300
+                            }
+                          }
+                        }
+                      ],
+                      "labels": [],
+                      "namedPages": []
+                    },
+                    "meta": {
+                      "affectedPages": [],
+                      "cacheDelta": null,
+                      "opId": "render-write",
+                      "undoable": true
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "sub": null,
+                      "ts": 0,
+                      "serverId": null
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r0"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r1"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r2"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r3"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r4"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r5"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r6"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r7"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r8"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r9"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r10"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r11"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r12"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r13"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r14"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r15"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r16"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r17"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r18"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r19"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r20"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r21"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r22"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r23"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r24"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r25"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r26"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r27"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r28"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r29"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r30"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r31"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r32"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r33"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r34"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r35"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r36"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r37"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r38"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r39"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r40"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r41"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r42"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r43"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r44"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r45"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r46"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r47"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r48"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r49"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r50"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r51"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r52"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r53"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r54"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r55"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r56"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r57"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r58"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r59"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r60"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r61"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r62"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r63"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r64"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r65"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r66"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r67"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r68"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r69"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r70"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r71"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r72"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r73"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r74"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r75"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r76"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r77"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r78"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r79"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r80"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r81"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r82"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r83"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r84"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r85"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r86"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r87"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r88"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r89"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r90"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r91"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r92"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r93"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r94"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r95"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r96"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r97"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r98"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r99"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r100"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r101"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r102"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r103"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r104"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r105"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r106"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r107"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r108"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r109"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r110"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r111"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r112"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r113"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r114"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r115"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r116"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r117"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r118"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r119"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r120"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r121"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r122"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r123"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r124"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r125"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r126"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r127"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r128"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r129"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r130"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r131"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r132"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r133"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r134"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r135"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r136"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r137"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r138"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r139"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r140"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r141"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r142"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r143"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r144"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r145"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r146"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r147"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r148"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r149"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r150"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r151"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r152"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r153"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r154"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r155"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r156"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r157"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r158"
+              },
+              {
+                "path": "page.render.image",
+                "times": 1,
+                "defer": "r159"
+              }
+            ],
+            "objectNumbers": [
+              77,
+              88
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "duplicate",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "objectNumber": 11
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 77
+            },
+            {
+              "scale": 0.5
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "r0",
+          "value": {
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertBlank",
+          "args": [
+            {
+              "position": "end"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 88
+            },
+            {
+              "scale": 0.5
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "copy",
+          "value": {
+            "items": [
+              {
+                "type": "pages.copy",
+                "insertedPages": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 77
+                  }
+                ],
+                "layout": {
+                  "pageCount": 4,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 11
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 77
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 2,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 22
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 792,
+                        "height": 612
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 792,
+                          "top": 612
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 792,
+                          "top": 612
+                        }
+                      }
+                    },
+                    {
+                      "index": 3,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 33
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 300
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        }
+                      }
+                    }
+                  ],
+                  "labels": [],
+                  "namedPages": []
+                },
+                "meta": {
+                  "affectedPages": [],
+                  "cacheDelta": null,
+                  "opId": "render-write",
+                  "undoable": true
+                }
+              }
+            ],
+            "meta": {
+              "affectedPages": [],
+              "cacheDelta": null,
+              "opId": "render-write",
+              "undoable": true
+            }
+          }
+        },
+        {
+          "op": "settle",
+          "label": "blank",
+          "value": {
+            "items": [
+              {
+                "type": "pages.insertBlank",
+                "insertedPages": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 88
+                  }
+                ],
+                "layout": {
+                  "pageCount": 5,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 11
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 77
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 2,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 22
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 792,
+                        "height": 612
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 792,
+                          "top": 612
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 792,
+                          "top": 612
+                        }
+                      }
+                    },
+                    {
+                      "index": 3,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 33
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 300
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        }
+                      }
+                    },
+                    {
+                      "index": 4,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 88
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 300
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 300
+                        }
+                      }
+                    }
+                  ],
+                  "labels": [],
+                  "namedPages": []
+                },
+                "meta": {
+                  "affectedPages": [],
+                  "cacheDelta": null,
+                  "opId": "render-write",
+                  "undoable": true
+                }
+              }
+            ],
+            "meta": {
+              "affectedPages": [],
+              "cacheDelta": null,
+              "opId": "render-write",
+              "undoable": true
+            }
+          }
+        },
+        {
+          "op": "settle",
+          "label": "r1",
+          "value": {
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "render",
+            "doc": "a"
+          },
+          "method": "renderSource",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 77
+            },
+            {
+              "scale": 0.5
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "revision": 1,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 11
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 77
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 22
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 792,
+                      "height": 612
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      }
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 33
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 300
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "pages.copy",
+                      "pages": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 11
+                        }
+                      ],
+                      "position": {
+                        "after": {
+                          "kind": "objectNumber",
+                          "objectNumber": 11
+                        }
+                      },
+                      "objectNumbers": [
+                        77
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000001"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 11,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 306
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "revision": 2,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 11
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 77
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 22
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 792,
+                      "height": 612
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      }
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 33
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 300
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      }
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 88
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 300
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 300
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 300
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 300
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 300
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 300
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 300
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "pages.insertBlank",
+                      "spec": {
+                        "size": {
+                          "width": 300,
+                          "height": 300
+                        },
+                        "count": 1
+                      },
+                      "position": "end",
+                      "objectNumbers": [
+                        88
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000002"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 77
+                  }
+                ]
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 88
+                  }
+                ]
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "revision": 3,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 11
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 77
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 612,
+                        "top": 792
+                      }
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 22
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 792,
+                      "height": 612
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 792,
+                        "top": 612
+                      }
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 33
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 300
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      }
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 88
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 300
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "boxes": {
+                      "media": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      },
+                      "crop": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 300,
+                        "top": 300
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.render.image",
+              "pon": 88,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 150
+                  },
+                  "includeAnnotations": true,
+                  "includeFormFields": true
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "resolved": {
+                "width": 512,
+                "height": 512
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 6
           }
         }
       ]

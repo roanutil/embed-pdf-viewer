@@ -23,8 +23,9 @@ use std::collections::BTreeSet;
 use epdf_engine::auth::scope::{
     CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight, FieldWriteAction,
     IdentityClaims, PdfBits, check_any_field_action, check_capability, check_collab,
-    check_field_action, check_set_group, decode_pdf_bits, expanded_capabilities, field_rights_of,
-    parse_all, parse_scope,
+    check_field_action, check_plugin_permission, check_set_group, decode_pdf_bits,
+    expanded_capabilities, field_rights_of, parse_all, parse_scope, plugin_permissions_of,
+    scope_not_covered,
 };
 use serde::Deserialize;
 
@@ -56,6 +57,11 @@ struct ParseCase {
     /// differently: `{kind: 'capability', name}` against an enum variant.
     #[serde(default)]
     parsed: Option<serde_json::Value>,
+    /// `InvalidScope`'s message for a refused case. Compared verbatim: a
+    /// caller that echoes the reason, as the `/access` route does, would
+    /// otherwise tell a different story on each platform.
+    #[serde(default)]
+    issue: Option<String>,
 }
 
 #[test]
@@ -86,7 +92,16 @@ fn the_grammar_accepts_and_refuses_what_typescript_does() {
                     ));
                 }
             }
-            (false, Err(_)) => {}
+            (false, Err(e)) => {
+                let want = case.issue.as_deref().expect("a refused case carries its issue");
+                let got = e.to_string();
+                if got != want {
+                    failures.push(format!(
+                        "{}: {:?} refused as {got:?}, TypeScript said {want:?}",
+                        case.name, case.scope,
+                    ));
+                }
+            }
         }
     }
     assert!(failures.is_empty(), "scope parse divergence:\n  {}", failures.join("\n  "));
@@ -111,6 +126,12 @@ fn shape_difference(
         ("virtual", ParsedScope::Virtual) => {
             let name = expected.get("name").and_then(|v| v.as_str());
             (name != Some("pdf.permissions")).then(|| format!("virtual name {name:?}"))
+        }
+        ("plugin", ParsedScope::Plugin { name, plugin }) => {
+            let want_name = expected.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let want_plugin = expected.get("plugin").and_then(|v| v.as_str()).unwrap_or("");
+            (want_name != name || want_plugin != plugin)
+                .then(|| format!("plugin {want_plugin}/{want_name} vs {plugin}/{name}"))
         }
         ("capability", ParsedScope::Capability(name)) => {
             let want = expected.get("name").and_then(|v| v.as_str()).unwrap_or("");
@@ -233,6 +254,10 @@ struct ResolveCase {
     #[serde(default)]
     identity: Option<IdentityShape>,
     results: Vec<PerBits>,
+    #[serde(default, rename = "installedPlugins")]
+    installed_plugins: Option<Vec<String>>,
+    #[serde(default, rename = "pluginPermissions")]
+    plugin_permissions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -318,6 +343,28 @@ fn resolution_agrees_with_typescript() {
                 continue;
             }
         };
+        if let Some(installed) = &case.installed_plugins {
+            let installed: BTreeSet<String> = installed.iter().cloned().collect();
+            let got: Vec<String> = plugin_permissions_of(&parsed, &installed).into_iter().collect();
+            let want = case.plugin_permissions.as_ref().expect("an installing case records them");
+            if &got != want {
+                failures.push(format!(
+                    "{}: plugin permissions {got:?}, TypeScript said {want:?}",
+                    case.name
+                ));
+            }
+            for permission in &installed {
+                let held = check_plugin_permission(permission, &parsed, &installed);
+                if held != want.contains(permission) {
+                    failures.push(format!(
+                        "{}: checkPluginPermission({permission}) was {held}",
+                        case.name
+                    ));
+                }
+            }
+            checked += 1;
+        }
+
         let shape = case.identity.as_ref();
         let identity = IdentityClaims {
             user_id: shape.and_then(|i| i.user_id.clone()),
@@ -478,4 +525,51 @@ fn parse_collab_probe(probe: &str) -> (CollabAction, CollabTarget) {
 fn parse_set_group_probe(probe: &str) -> (&str, Option<&str>) {
     let (new_group, caller) = probe.split_once("<-").expect("probe is new<-default");
     (new_group, (caller != "-").then_some(caller))
+}
+
+// --- coverage.json
+
+#[derive(Debug, Deserialize)]
+struct CoverageFile {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u32,
+    kind: String,
+    cases: Vec<CoverageCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CoverageCase {
+    name: String,
+    covers: String,
+    wanted: Vec<String>,
+    held: Vec<String>,
+    #[serde(rename = "notCovered")]
+    not_covered: Vec<String>,
+}
+
+#[test]
+fn minting_coverage_agrees_with_typescript() {
+    let file: CoverageFile = serde_json::from_str(&read("coverage.json")).expect("coverage.json");
+    assert_eq!(file.schema_version, SCHEMA_VERSION, "vector envelope moved");
+    assert_eq!(file.kind, "scope.coverage");
+    assert!(file.cases.len() >= 30, "the corpus shrank: {} cases", file.cases.len());
+
+    let mut failures = Vec::new();
+    for case in &file.cases {
+        let (wanted, held) = match (parse_all(&case.wanted), parse_all(&case.held)) {
+            (Ok(wanted), Ok(held)) => (wanted, held),
+            (Err(e), _) | (_, Err(e)) => {
+                failures.push(format!("{}: scope did not parse: {e}", case.name));
+                continue;
+            }
+        };
+        let got = scope_not_covered(&wanted, &held);
+        if got != case.not_covered {
+            failures.push(format!(
+                "{} ({}): not covered {got:?}, TypeScript said {:?}",
+                case.name, case.covers, case.not_covered,
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "scope coverage divergence:\n  {}", failures.join("\n  "));
 }

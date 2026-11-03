@@ -93,6 +93,10 @@ pub struct MutationMeta {
     /// signing and form repair), which also end undo for every write before
     /// them.
     pub undoable: bool,
+    /// The characters the write drew with no font that has them, each a
+    /// grapheme, first seen first; absent when every character was drawn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub missing_characters: Option<Vec<String>>,
 }
 
 impl MutationMeta {
@@ -107,6 +111,7 @@ impl MutationMeta {
             cache_delta: None,
             op_id: stamp.op_id.clone(),
             undoable: stamp.undoable,
+            missing_characters: None,
         }
     }
 }

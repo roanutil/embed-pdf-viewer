@@ -6,8 +6,8 @@
  * the identity the store's change notification keys on.
  */
 import * as model from '../../../../packages/plugin/search/src/model';
-import { initialSearchState } from '../../../../packages/plugin/search/src/model';
-import type { SearchState } from '../../../../packages/plugin/search/src/model';
+import { initialSearchModel as initialSearchState } from '../../../../packages/plugin/search/src/model';
+import type { SearchModel as SearchState } from '../../../../packages/plugin/search/src/model';
 import type { SearchHit } from '../../../../packages/plugin/search/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';

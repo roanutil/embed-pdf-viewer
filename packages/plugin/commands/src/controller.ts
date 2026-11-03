@@ -45,7 +45,12 @@ import {
   type ConfiguredCommands,
   type RegisteredCommand,
 } from './registry';
-import { createAvailability, labelOf, notAllowedMessage } from './services/availability';
+import {
+  createAvailability,
+  labelOf,
+  lockedMessage,
+  notAllowedMessage,
+} from './services/availability';
 import { createTurningOff } from './write/turning-off';
 
 const panelTarget = (
@@ -128,6 +133,7 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
       target ? ctx.forDocument(token, target) : ctx.get(token);
     return {
       documentId: target,
+      appState: settings.get().appState,
       ...(call.args === undefined ? {} : { args: call.args }),
       ...(call.signal ? { signal: call.signal } : {}),
       get,
@@ -178,19 +184,20 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
     },
   );
 
-  // Derivations run against live state; one that throws (it needs a document
-  // and none is open, say) falls back to a safe default, so the button renders
-  // disabled instead of breaking.
+  // Derivations run against live state: without one, the command is what
+  // `absent` says; one that throws (it needs a document and none is open, say)
+  // says no, so the button renders disabled, not pressed or hidden instead of
+  // breaking.
   const derive = (
     derivation: ((context: CommandContext) => boolean) | undefined,
     context: CommandContext,
-    fallback: boolean,
+    absent: boolean,
   ): boolean => {
-    if (!derivation) return fallback;
+    if (!derivation) return absent;
     try {
       return derivation(context);
     } catch {
-      return fallback;
+      return false;
     }
   };
   const deriveAccent = (
@@ -212,17 +219,19 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
     }
   };
 
-  const { isTurnedOff, notAllowedKeyOf, refusalOf } = createAvailability(ctx, settings);
+  const { isTurnedOff, notAllowedKeyOf, lockOf, refusalOf } = createAvailability(ctx, settings);
 
   const derivationsOf = (entry: RegisteredCommand, documentId?: string): Derivations => {
     const { definition } = entry;
     const context = commandContext(documentId);
     const label = labelOf(definition, context);
-    // Turned off hides it; not allowed hides it, or disables it with the reason.
+    // Turned off hides it; not allowed hides it, or disables it with the reason; a lock on the
+    // setting it changes disables it with the lock's reason, whatever `notAllowed` says.
     const turnedOff = isTurnedOff(definition);
     const notAllowed = turnedOff ? null : notAllowedKeyOf(definition, context);
     const shownWhenNotAllowed = settings.get().notAllowed === 'disable';
-    const ruledOut = turnedOff || notAllowed !== null;
+    const lock = turnedOff || notAllowed !== null ? null : lockOf(definition, context);
+    const ruledOut = turnedOff || notAllowed !== null || lock !== null;
     // A command that opens something is active while it's open, unless it says otherwise.
     let active: boolean;
     if (definition.active) {
@@ -253,7 +262,9 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
         derive(definition.visible, context, true),
       notAllowed !== null && shownWhenNotAllowed
         ? notAllowedMessage(notAllowed, label, context)
-        : undefined,
+        : lock !== null
+          ? lockedMessage(lock, label, context)
+          : undefined,
     ];
   };
 
@@ -379,6 +390,10 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
         error: toPluginErrorInfo(failure),
       });
       throw failure;
+    } finally {
+      // A run may change what the commands read outside the viewer (your app's state): every
+      // button asks its command again, so the one just pressed shows what it did.
+      ctx.notify();
     }
     executed.emit({ commandId: id, documentId: context.documentId, args });
     return { status: 'executed' };

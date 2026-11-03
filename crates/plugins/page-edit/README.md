@@ -2,9 +2,10 @@
 
 `packages/plugin/page-edit` in Rust, at upstream `b456ee4fd`: rotate, reorder, delete, insert,
 duplicate and extract pages, each edit one change of the document's history, plus the page
-selection. The vectors are `vectors/plugins/page-edit.json`, 19 scenario cases written by
+selection, with upstream's page view and `pages.copy` (`c7f6a7958`, `b32e74e4a`). The vectors are
+`vectors/plugins/page-edit.json`, 20 scenario cases written by
 `tooling/plugin-conformance/src/suites/page-edit.ts` (`cargo test -p epdf-plugin-page-edit`).
-All 19 replay.
+All 20 replay.
 
 The modules follow the TypeScript files. `contract.rs` is `contract.ts` with the token `PAGE_EDIT`,
 `model.rs` is `model.ts` (`selected` returns the state itself when nothing changes, so it writes
@@ -12,20 +13,24 @@ nothing), `controller.rs` is `controller.ts` and `state.rs` is `state.ts`. The p
 document-scoped and its state is `{ selected }`.
 
 A verb refuses before anything starts: the permission (`doc.pages.assemble`, or `doc.download` for
-`extract` and also for `duplicate`), an aborted signal, then its pages and its position, each read
-from the confirmed page list at the call. A page argument is a `PageArg`, a ref or an index. A
+`extract`), an aborted signal, then its pages and its position, each read from the page list as it
+shows at the call. A page argument is a `PageArg`, a ref or an index. A
 position is `Start`, `End`, or `After`/`Before` a page, sent to the engine as a ref. Then the verb
 stages one change on `ctx.changes` labelled `pages.<verb>` with the page count, and resolves once
-the engine answers. Nothing predicts pages: the layout changes when the engine's page fact lands,
-which is before the verb settles. `rotate_by` turns from the rotation the pending changes give a
-page, so two quick quarter turns are a half turn, and stages the undo as each page turned back.
+the engine answers. The kernel's page view shows a rotate, a move, a delete, a blank insert and a
+duplicate at once, and the change's undo says what undoing it shows: each page turned back, moved
+back, restored, or the new pages deleted, then the label sections the pages showed
+(`pages.relabel`). A blank insert, a duplicate (one `pages.copy`) and an insert of known count name
+their pages from the session's pool first. `rotate_by` turns from the rotation the page shows, so
+two quick quarter turns are a half turn.
 
 The awaits take the TypeScript's turns, so verbs that await before staging stage in the same order
 as there. A plain `.await` already costs what JavaScript's does (three turns for the
 `AbortablePromise` the raw engine and its handles answer), and the turn a caller spends resuming
 after an `async` helper is `rt::returned`. `await_first_verbs_stage_on_the_typescripts_turns` in
-`tests/behavior.rs` derives the counts from `controller.ts`: `insertFromDocument` stages on turn 4,
-`insertFromBytes` with `pageIndexes` on turn 16, and `insertFromDocument` with a signal on turn 3.
+`tests/behavior.rs` derives the counts from `controller.ts`: with the pool empty, each reserves its
+page names before staging, so `insertFromDocument` stages on turn 8, `insertFromBytes` with
+`pageIndexes` on turn 20, and `insertFromDocument` with a signal on turn 8.
 
 ## Where the port differs in shape
 

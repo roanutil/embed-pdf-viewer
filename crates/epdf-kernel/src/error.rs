@@ -283,11 +283,12 @@ fn engine_code(code: &str) -> Option<&'static str> {
         "DocNotOpen" => code::NOT_READY,
         "DocPasswordRequired"
         | "DocPasswordIncorrect"
-        | "SharePasswordRequired"
+        | "GrantPassphraseRequired"
         | "Unauthenticated"
         | "Forbidden"
-        | "ProtectedDocument" => code::PERMISSION_DENIED,
-        "NotFound" => code::NOT_FOUND,
+        | "ProtectedDocument"
+        | "VisitorIdentityRequired" => code::PERMISSION_DENIED,
+        "NotFound" | "LayerDeleted" => code::NOT_FOUND,
         "NotImplemented" => code::UNSUPPORTED,
         "IdempotencyKeyReused" => code::INVALID_INPUT,
         "Aborted" => code::OPERATION_CANCELLED,
@@ -296,7 +297,6 @@ fn engine_code(code: &str) -> Option<&'static str> {
         | "ChangeConflict"
         | "UndoUnavailable"
         | "LayerVersionConflict"
-        | "StaleBase"
         | "SigningPending"
         | "SigningExpired"
         | "SigningVersionMismatch" => code::CONFLICT,

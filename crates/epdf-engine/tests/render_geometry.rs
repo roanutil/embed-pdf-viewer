@@ -49,6 +49,7 @@ struct Size {
 enum Viewport {
     Scale { scale: f64 },
     Width { width: f64 },
+    Thumbnail,
 }
 
 impl From<&Viewport> for RenderViewport {
@@ -56,6 +57,7 @@ impl From<&Viewport> for RenderViewport {
         match v {
             Viewport::Scale { scale } => RenderViewport::Scale { scale: *scale },
             Viewport::Width { width } => RenderViewport::Width { width: *width },
+            Viewport::Thumbnail => RenderViewport::Thumbnail,
         }
     }
 }

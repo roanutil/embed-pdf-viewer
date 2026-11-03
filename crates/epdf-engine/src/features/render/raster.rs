@@ -171,16 +171,45 @@ fn invalid(field: &str, message: impl Into<String>) -> EngineError {
         .with_details(serde_json::json!({ "field": field }))
 }
 
+/// What a caller may draw, for [`check_render_usage_for`]
+/// (`PagePictureRights`): each kind of picture has its own right, and needs
+/// no other.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PagePictureRights {
+    /// `doc.render`: pictures on screen, any size, any area.
+    pub render: bool,
+    /// `doc.render.thumbnail`: thumbnails (`doc.render` implies it).
+    pub thumbnail: bool,
+    /// `doc.print`.
+    pub print: bool,
+    /// `doc.print.high`.
+    pub print_high: bool,
+}
+
 /// Check what a render is for (`checkRenderUsage(options, null)`, as the
 /// worker checks it). A print picture takes a `{kind: 'dpi', dpi}` viewport
 /// with a DPI of 150 or 300, and no `target`, `rotation` or `background`:
 /// it is the whole page, upright, on white. A `dpi` viewport is for print
-/// pictures only. Anything else is `InvalidArg`, naming the option in
-/// `details.field`.
+/// pictures only. A thumbnail (`{kind: 'thumbnail'}`) is for the screen and
+/// is always the whole page, so it takes no `target`. Anything else is
+/// `InvalidArg`, naming the option in `details.field`.
 ///
-/// Who may print, at what DPI (`doc.print`, `doc.print.high`), is the
-/// engine's caller's check, made before a render reaches this host.
+/// Who may draw which picture is the engine's caller's check, made before a
+/// render reaches this host: [`check_render_usage_for`].
 pub fn check_render_usage<R>(options: &RenderOptions<R>) -> Result<(), EngineError> {
+    check_render_usage_for(options, None)
+}
+
+/// [`check_render_usage`], and with the caller's rights
+/// (`checkRenderUsage(options, may)`), that the caller may make the picture:
+/// each kind by its own right only. A screen picture without `doc.render`,
+/// a thumbnail without `doc.render.thumbnail`, any print without
+/// `doc.print` and 300 DPI without `doc.print.high` are `PermissionDenied`.
+/// `None` leaves that to the caller's caller, as the worker does.
+pub fn check_render_usage_for<R>(
+    options: &RenderOptions<R>,
+    may: Option<PagePictureRights>,
+) -> Result<(), EngineError> {
     let is_dpi = matches!(options.viewport, Some(RenderViewport::Dpi { .. }));
     match options.usage {
         None | Some(RenderUsage::Display) => {
@@ -189,6 +218,25 @@ pub fn check_render_usage<R>(options: &RenderOptions<R>) -> Result<(), EngineErr
                     "viewport",
                     "a dpi viewport is only for a print picture (usage: \"print\")",
                 ));
+            }
+            if options.viewport == Some(RenderViewport::Thumbnail) {
+                if options.target.as_ref().is_some_and(|t| !matches!(t, RenderTarget::Page)) {
+                    return Err(invalid(
+                        "target",
+                        "a thumbnail is the whole page: it takes no target",
+                    ));
+                }
+                if may.is_some_and(|m| !m.thumbnail) {
+                    return Err(EngineError::permission_denied(
+                        "doc.render.thumbnail",
+                        Some("viewport"),
+                        None,
+                    ));
+                }
+                return Ok(());
+            }
+            if may.is_some_and(|m| !m.render) {
+                return Err(EngineError::permission_denied("doc.render", Some("usage"), None));
             }
             return Ok(());
         }
@@ -217,6 +265,15 @@ pub fn check_render_usage<R>(options: &RenderOptions<R>) -> Result<(), EngineErr
                 ),
             ));
         }
+    }
+    let Some(may) = may else { return Ok(()) };
+    if !may.print {
+        return Err(EngineError::permission_denied("doc.print", Some("usage"), None));
+    }
+    if matches!(options.viewport, Some(RenderViewport::Dpi { dpi }) if dpi == 300.0)
+        && !may.print_high
+    {
+        return Err(EngineError::permission_denied("doc.print.high", Some("viewport"), None));
     }
     Ok(())
 }

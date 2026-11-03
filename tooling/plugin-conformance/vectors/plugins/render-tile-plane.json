@@ -18,6 +18,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -1478,6 +1479,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -2812,6 +2814,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -5478,6 +5481,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -6965,6 +6969,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -8981,6 +8986,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -11794,6 +11800,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -14489,6 +14496,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -16582,6 +16590,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -18273,6 +18282,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -21067,6 +21077,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -23187,6 +23198,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -26122,6 +26134,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -28081,6 +28094,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -31589,6 +31603,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -33634,6 +33649,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -35252,6 +35268,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -37512,6 +37529,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -39306,6 +39324,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -41936,6 +41955,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -43512,6 +43532,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -45030,6 +45051,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -46432,6 +46454,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -47718,6 +47741,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -49035,6 +49059,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -50875,6 +50900,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -52847,6 +52873,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -54088,6 +54115,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -55332,6 +55360,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -56738,6 +56767,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -57956,6 +57986,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -59744,6 +59775,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -61322,6 +61354,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -63706,6 +63739,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -65877,6 +65911,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -68903,6 +68938,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -70763,6 +70799,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -72906,6 +72943,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -74613,6 +74651,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -76373,6 +76412,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -78145,6 +78185,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]
@@ -79933,6 +79974,7 @@
             "security": {
               "allows": [
                 "doc.render",
+                "doc.render.thumbnail",
                 "doc.annotate.read",
                 "doc.forms.read"
               ]

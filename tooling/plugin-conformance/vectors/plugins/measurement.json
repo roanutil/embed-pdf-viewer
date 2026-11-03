@@ -354,6 +354,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -23789,6 +23790,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -47130,6 +47132,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -47233,6 +47236,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -47350,6 +47354,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -47499,6 +47504,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -47654,6 +47660,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -47803,6 +47810,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -48105,6 +48113,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 99,
@@ -60151,6 +60160,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -60254,6 +60264,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -60371,6 +60382,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -60520,6 +60532,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -60674,6 +60687,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -60823,6 +60837,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -101025,6 +101040,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -101142,6 +101158,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -101291,6 +101308,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -137460,6 +137478,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -137605,6 +137624,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -137755,6 +137775,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 1,
@@ -137898,6 +137919,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 1,
@@ -138046,6 +138068,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": -0.2071067811865479,
@@ -138186,6 +138209,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": -0.2071067811865479,
@@ -143884,6 +143908,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 99,
@@ -144936,6 +144961,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 99,
@@ -145225,6 +145251,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 1,
@@ -146283,6 +146310,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 1,
@@ -146571,6 +146599,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": -0.2071067811865479,
@@ -147628,6 +147657,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": -0.2071067811865479,
@@ -168850,176 +168880,7 @@
         {
           "settled": [],
           "stateChanges": [],
-          "documentEvents": [
-            {
-              "event": "pagesChanged",
-              "value": {
-                "documentId": "a",
-                "revision": 2,
-                "pages": [
-                  {
-                    "index": 0,
-                    "ref": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "label": null,
-                    "size": {
-                      "width": 600,
-                      "height": 800
-                    },
-                    "rotation": 0,
-                    "userUnit": 1,
-                    "tabOrder": null,
-                    "pdfCropBox": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 600,
-                      "top": 800
-                    },
-                    "boxes": {
-                      "media": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "crop": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "bleed": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "trim": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "art": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      }
-                    }
-                  },
-                  {
-                    "index": 1,
-                    "ref": {
-                      "kind": "objectNumber",
-                      "objectNumber": 2
-                    },
-                    "label": null,
-                    "size": {
-                      "width": 400,
-                      "height": 500
-                    },
-                    "rotation": 0,
-                    "userUnit": 1,
-                    "tabOrder": null,
-                    "pdfCropBox": {
-                      "left": 10,
-                      "bottom": 20,
-                      "right": 410,
-                      "top": 520
-                    },
-                    "boxes": {
-                      "media": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 400,
-                        "height": 500
-                      },
-                      "crop": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 400,
-                        "height": 500
-                      },
-                      "bleed": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 400,
-                        "height": 500
-                      },
-                      "trim": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 400,
-                        "height": 500
-                      },
-                      "art": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 400,
-                        "height": 500
-                      }
-                    }
-                  },
-                  {
-                    "index": 2,
-                    "ref": {
-                      "kind": "objectNumber",
-                      "objectNumber": 3
-                    },
-                    "label": null,
-                    "size": {
-                      "width": 200,
-                      "height": 200
-                    },
-                    "rotation": 0,
-                    "userUnit": 1,
-                    "tabOrder": null,
-                    "pdfCropBox": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 200,
-                      "top": 200
-                    },
-                    "boxes": {
-                      "media": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 200,
-                        "height": 200
-                      },
-                      "crop": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 200,
-                        "height": 200
-                      },
-                      "bleed": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 200,
-                        "height": 200
-                      },
-                      "trim": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 200,
-                        "height": 200
-                      },
-                      "art": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 200,
-                        "height": 200
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          ],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -169363,7 +169224,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "revision": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -170644,6 +170505,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -170761,6 +170623,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 99,
@@ -170910,6 +170773,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 99,
@@ -171260,6 +171124,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 99,

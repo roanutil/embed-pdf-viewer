@@ -231,6 +231,39 @@ export function sitePages(section, engine) {
   }));
 }
 
+// ── examples on a page of their own ─────────────────────────────────────────
+
+/** Where a site serves the examples' screenshots (`docs/content/screenshots/build.mjs`). */
+export const SCREENSHOTS_DIR = 'public/screenshots';
+
+/**
+ * The examples a flavor's viewer pages show as a screenshot (`<Example name size="page">`), as
+ * `{ name, slug, source }`. Such an example is an app that needs the whole window: it opens on a
+ * page of its own, `/examples/<slug>`, and its docs page shows a picture of it that links there.
+ * It's one of the Examples section's, `viewer/examples/<slug>`, shown by that section's page of
+ * the same name.
+ */
+export function pageExamples(engine) {
+  const examples = [];
+  for (const page of sitePages('viewer', engine)) {
+    for (const [tag] of page.mdx.matchAll(/<Example\b[^>]*>/g)) {
+      const attributes = Object.fromEntries(
+        [...tag.matchAll(/(\w+)="([^"]*)"/g)].map(([, key, value]) => [key, value]),
+      );
+      if (attributes.size !== 'page') continue;
+      const slug = attributes.name?.match(/^viewer\/examples\/([\w-]+)$/)?.[1];
+      if (!slug || page.name !== `examples/${slug}`) {
+        throw new Error(
+          `${page.source}: <Example name="${attributes.name}" size="page"> is an example of the ` +
+            'Examples section (viewer/examples/<slug>), shown by its page there',
+        );
+      }
+      examples.push({ name: attributes.name, slug, source: page.source });
+    }
+  }
+  return examples;
+}
+
 // ── engine lines (headless samples, engine pages) ───────────────────────────
 
 /**
@@ -332,7 +365,7 @@ function swapDocSources(source, relative, replace) {
 
 // ── the ready-made viewer ───────────────────────────────────────────────────
 
-/** A viewer document's declaration, up to its value: `const ebook = `, `readonly ebook = `. */
+/** A viewer document's declaration, up to its value: `const welcome = `, `readonly welcome = `. */
 const DECLARATION =
   /^([ \t]*(?:(?:export|public|protected|private|static|readonly|const|let|var)\s+)+[A-Za-z_$][\w$]*\s*=\s*)/;
 
@@ -411,7 +444,7 @@ export function transformViewerFile(source, engine, relative) {
     if (!declaration || !/;\s*$/.test(body)) {
       throw new Error(
         `${relative}: a viewer doc-source block declares one document, untyped: ` +
-          '`const ebook = …;`',
+          '`const welcome = …;`',
       );
     }
     const value = DEMO_DOCUMENTS[key].viewerCloud;
@@ -422,18 +455,18 @@ export function transformViewerFile(source, engine, relative) {
   const swapped = swapViewerDocuments(swapViewerNames(output, engine), engine, integration);
   // A per-site file writes the demo document as its site shows it; when the grant changes in
   // documents.mjs, a copy of the old one would still open nothing.
-  for (const [, token] of swapped.matchAll(/\bshareToken:\s*['"](shr_[\w-]+)['"]/g)) {
-    if (!DEMO_SHARE_TOKENS.has(token)) {
-      throw new Error(`${relative}: ${token} isn't a demo document's share grant (documents.mjs)`);
+  for (const [, grant] of swapped.matchAll(/\bgrant:\s*['"]((?:grt|shr)_[\w-]+)['"]/g)) {
+    if (!DEMO_GRANTS.has(grant)) {
+      throw new Error(`${relative}: ${grant} isn't a demo document's grant (documents.mjs)`);
     }
   }
   return swapped;
 }
 
-/** The share grants of the demo documents, as their `viewerCloud` forms name them. */
-const DEMO_SHARE_TOKENS = new Set(
+/** The grants of the demo documents, as their `viewerCloud` forms name them. */
+const DEMO_GRANTS = new Set(
   Object.values(DEMO_DOCUMENTS).flatMap(
-    ({ viewerCloud = '' }) => viewerCloud.match(/shr_[\w-]+/g) ?? [],
+    ({ viewerCloud = '' }) => viewerCloud.match(/(?:grt|shr)_[\w-]+/g) ?? [],
   ),
 );
 
@@ -558,6 +591,15 @@ async function main() {
         console.error(`- ${file}`);
       }
       console.error('Run: pnpm docs:sync');
+      process.exit(1);
+    }
+    const unpictured = pageExamples(args.engine).filter(
+      ({ name }) => !fs.existsSync(path.join(args.target, SCREENSHOTS_DIR, `${name}.webp`)),
+    );
+    if (unpictured.length) {
+      console.error('Examples on a page of their own with no screenshot:');
+      for (const { name } of unpictured) console.error(`- ${SCREENSHOTS_DIR}/${name}.webp`);
+      console.error('Run: pnpm --filter @embedpdf/docs-content screenshots');
       process.exit(1);
     }
     console.log(`Docs content is current (${expected.size} files, engine=${args.engine}).`);

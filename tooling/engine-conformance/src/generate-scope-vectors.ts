@@ -1,7 +1,8 @@
 /**
- * Emits `vectors/scope/parse.json` and `vectors/scope/resolve.json`: what the
- * scope grammar accepts and refuses, and what a scope array grants once
- * `pdf.permissions` has expanded.
+ * Emits `vectors/scope/parse.json`, `vectors/scope/resolve.json` and
+ * `vectors/scope/coverage.json`: what the scope grammar accepts and refuses,
+ * what a scope array grants once `pdf.permissions` has expanded, and what
+ * handing out one scope gives beyond another.
  *
  * From the repository root:
  *   pnpm --filter @embedpdf/tooling-engine-conformance run scope
@@ -17,6 +18,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
+import { scopeNotCovered } from '../../../packages/engine/core/src/auth/scope/coverage';
 import { parseScope } from '../../../packages/engine/core/src/auth/scope/parser';
 import {
   checkAnyFieldAction,
@@ -26,6 +28,7 @@ import {
   checkSetGroup,
   expandRawScope,
   fieldRightsOf,
+  pluginPermissionsOf,
   type FieldRights,
 } from '../../../packages/engine/core/src/auth/scope/resolver';
 import type {
@@ -37,8 +40,10 @@ import type {
 import {
   ALL_CAPABILITIES,
   BITS_CASES,
+  COVERAGE_CASES,
   PARSE_CASES,
   RESOLVE_CASES,
+  type CoverageCase,
   type ParseCase,
   type ResolveCase,
 } from './scope-cases';
@@ -53,7 +58,7 @@ interface ParseResult extends ParseCase {
   readonly valid: boolean;
   /** The parsed shape, verbatim, when it parsed. */
   readonly parsed?: unknown;
-  /** `InvalidScope`'s message, when it did not. Diagnostic, not a contract. */
+  /** `InvalidScope`'s message, when it did not. The Rust runner compares it. */
   readonly issue?: string;
 }
 
@@ -86,6 +91,12 @@ interface PerBitsResult {
 
 interface ResolveResult extends ResolveCase {
   readonly results: readonly PerBitsResult[];
+  /** `pluginPermissionsOf(scope, installedPlugins)`, sorted, when the case installs plugins. */
+  readonly pluginPermissions?: readonly string[];
+}
+
+interface CoverageResult extends CoverageCase {
+  readonly notCovered: readonly string[];
 }
 
 const BITS_BY_NAME = new Map(BITS_CASES.map((b) => [b.name, b]));
@@ -167,7 +178,14 @@ function runResolveCase(entry: ResolveCase): ResolveResult {
       ...(fieldSetGroup && { fieldSetGroup }),
     };
   });
-  return { ...entry, results };
+  const pluginPermissions = entry.installedPlugins
+    ? [...pluginPermissionsOf(entry.scope, new Set(entry.installedPlugins))].sort()
+    : undefined;
+  return { ...entry, results, ...(pluginPermissions && { pluginPermissions }) };
+}
+
+function runCoverageCase(entry: CoverageCase): CoverageResult {
+  return { ...entry, notCovered: scopeNotCovered(entry.wanted, entry.held) };
 }
 
 function serialize(kind: string, extra: Record<string, unknown>, entries: readonly unknown[]): string {
@@ -207,6 +225,7 @@ async function main(): Promise<void> {
   for (const [label, entries] of [
     ['parse', PARSE_CASES],
     ['resolve', RESOLVE_CASES],
+    ['coverage', COVERAGE_CASES],
   ] as const) {
     const names = new Set<string>();
     for (const entry of entries) {
@@ -239,6 +258,12 @@ async function main(): Promise<void> {
         { capabilities: ALL_CAPABILITIES, bits: bitsTable },
         RESOLVE_CASES.map(runResolveCase),
       ),
+      check,
+    )) || differed;
+  differed =
+    (await emit(
+      'coverage.json',
+      serialize('scope.coverage', {}, COVERAGE_CASES.map(runCoverageCase)),
       check,
     )) || differed;
 

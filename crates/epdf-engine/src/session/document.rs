@@ -153,7 +153,7 @@ pub struct DocumentSession {
     authority: SessionAuthority,
     /// Disposers that run when this session closes, in reverse order.
     ///
-    /// `pages.insert` needs this: `FPDF_ImportPagesByIndex` does not fully
+    /// `pages.insert` needs this: `EPDFDoc_ImportPages` does not fully
     /// detach imported objects from their source, so the source document and
     /// its bytes have to outlive every save of the destination.
     retained: Vec<Box<dyn FnOnce()>>,
@@ -185,6 +185,10 @@ pub struct DocumentSession {
     /// A native failure a test forces at the next commit (see
     /// [`DocumentSession::force_commit_failure`]).
     forced_failure: Cell<Option<CommitFailure>>,
+    /// What this session's fonts were when last read, once something needs
+    /// to hear of every change to them (`fontsSeen` in
+    /// `DocumentFontReader.ts`). `None`: not tracked.
+    fonts_seen: Option<crate::features::fonts::document::FontsSeen>,
 }
 
 /// Where [`DocumentSession::force_commit_failure`] makes the next commit
@@ -294,7 +298,18 @@ impl DocumentSession {
             unusable_reason: None,
             residency: None,
             forced_failure: Cell::new(None),
+            fonts_seen: None,
         }
+    }
+
+    /// What the session's fonts were when last read, while they are tracked
+    /// ([`crate::features::fonts::document::track_font_changes`]).
+    pub fn fonts_seen(&self) -> Option<&crate::features::fonts::document::FontsSeen> {
+        self.fonts_seen.as_ref()
+    }
+
+    pub(crate) fn set_fonts_seen(&mut self, seen: crate::features::fonts::document::FontsSeen) {
+        self.fonts_seen = Some(seen);
     }
 
     pub fn session_id(&self) -> &str {

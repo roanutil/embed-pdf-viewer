@@ -137,7 +137,9 @@ export function installAcroJs(globalObject: Record<string, unknown>): void {
       },
       source: { enumerable: false, get: () => doc },
     });
-    wrapper.setFocus = () => diagnostic('unsupported-api', 'Field.setFocus is not supported in v1');
+    wrapper.setFocus = () => {
+      state?.uiEffects.push({ kind: 'focusField', field: String(input.name) });
+    };
     return wrapper;
   };
 
@@ -1180,12 +1182,12 @@ export function installAcroJs(globalObject: Record<string, unknown>): void {
     if (!state) return;
     const raw = String(state.event.value ?? '');
     if (raw.trim() === '') return;
-    let date: Date = new FixedDate(raw);
-    if (Number.isNaN(date.getTime())) {
-      const parts = parseDateLoose(raw, format);
-      if (!parts) return; // unparsable: leave the value untouched
-      date = wallDate(parts);
-    }
+    // The field's own format first, as Acrobat reads it: '12/02/2027' under dd/mm/yyyy is
+    // 12 February. JavaScript's own parse reads it month first, so it only reads what the
+    // format can't, such as an ISO date.
+    const parts = parseDateLoose(raw, format);
+    const date = parts ? wallDate(parts) : new FixedDate(raw);
+    if (Number.isNaN(date.getTime())) return; // unparsable: leave the value untouched
     state.event.value = printd(format, date);
   };
   host.AFDate_FormatEx = afDateFormatEx;

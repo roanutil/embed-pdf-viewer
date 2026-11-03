@@ -11,7 +11,25 @@ public class FacadeTests
 {
     internal static string Root => FindRoot();
     static string FindRoot() { var p = new DirectoryInfo(AppContext.BaseDirectory); while (p != null && !Directory.Exists(Path.Combine(p.FullName, "crates"))) p = p.Parent; return p!.FullName; }
-    [ModuleInitializer] internal static void LoadNative() => NativeLibrary.SetDllImportResolver(typeof(PdfEngine).Assembly, (name, assembly, path) => name == "epdf_capi" ? NativeLibrary.Load(Path.Combine(Environment.GetEnvironmentVariable("EPDF_NATIVE_DIR") ?? throw new InvalidOperationException("Set test-only EPDF_NATIVE_DIR to cargo build output"), OperatingSystem.IsWindows() ? "epdf_capi.dll" : OperatingSystem.IsMacOS() ? "libepdf_capi.dylib" : "libepdf_capi.so")) : 0);
+    internal static void StageWindowsDependency(string runtimeDirectory, string outputDirectory) =>
+        File.Copy(Path.Combine(runtimeDirectory, "embedpdf.dll"), Path.Combine(outputDirectory, "embedpdf.dll"), overwrite: true);
+
+    [ModuleInitializer]
+    internal static void LoadNative()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            // The production preload must run against test-owned output, before the wrapper resolver.
+            var runtime = Environment.GetEnvironmentVariable("PDF_RUNTIME_LIB_DIR")
+                ?? Environment.GetEnvironmentVariable("EPDF_NATIVE_DIR")
+                ?? throw new InvalidOperationException("Set test-only PDF_RUNTIME_LIB_DIR to the directory containing embedpdf.dll");
+            StageWindowsDependency(runtime, AppContext.BaseDirectory);
+        }
+        NativeLibrary.SetDllImportResolver(typeof(PdfEngine).Assembly, (name, assembly, path) => name == "epdf_capi"
+            ? NativeLibrary.Load(Path.Combine(Environment.GetEnvironmentVariable("EPDF_NATIVE_DIR")
+                ?? throw new InvalidOperationException("Set test-only EPDF_NATIVE_DIR to cargo build output"),
+                OperatingSystem.IsWindows() ? "epdf_capi.dll" : OperatingSystem.IsMacOS() ? "libepdf_capi.dylib" : "libepdf_capi.so")) : 0);
+    }
     internal static byte[] Pdf => File.ReadAllBytes(Path.Combine(Root, "tooling/engine-conformance/fixtures/embedded_orientations.pdf"));
     [Fact]
     public async Task OpenReadAndHelpers()

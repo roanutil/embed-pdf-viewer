@@ -261,6 +261,8 @@ pub enum RenderViewport {
     Scale { scale: Option<f64> },
     /// Exact output width in device pixels.
     Width { width: f64 },
+    /// The page's thumbnail: the whole page at the engine's thumbnail size.
+    Thumbnail,
 }
 
 impl From<PageRenderViewport> for RenderViewport {
@@ -268,6 +270,7 @@ impl From<PageRenderViewport> for RenderViewport {
         match v {
             PageRenderViewport::Scale { scale } => RenderViewport::Scale { scale },
             PageRenderViewport::Width { width } => RenderViewport::Width { width },
+            PageRenderViewport::Thumbnail => RenderViewport::Thumbnail,
         }
     }
 }
@@ -543,6 +546,13 @@ impl RenderHandle {
         self.bound.call(|b| Ok(open(b)?.can_render())).await
     }
 
+    /// Whether the pages' thumbnails would be served to this session
+    /// (`doc.render.thumbnail`, which `doc.render` includes). A session that
+    /// may not render pages may still have them.
+    pub async fn can_render_thumbnail(&self) -> Result<bool, ViewerError> {
+        self.bound.call(|b| Ok(open(b)?.can_render_thumbnail())).await
+    }
+
     /// Render one page at exactly the size asked for. Rejects
     /// `invalid-input` for a width or scale that is not a positive number,
     /// `not-found` for a page not in this document, `permission-denied`
@@ -562,11 +572,12 @@ impl RenderHandle {
             .await
     }
 
-    /// A small raster `max_width` device pixels wide.
+    /// The page's thumbnail: the whole page, 512 pixels on its long side,
+    /// sharing the raster cache. Needs only `doc.render.thumbnail`; throws
+    /// `permission-denied` without it, otherwise like `render_page`.
     pub async fn render_thumbnail(
         &self,
         page: PageRef,
-        max_width: f64,
         include_annotations: Option<bool>,
         include_form_fields: Option<bool>,
         cancel: Arc<CancelToken>,
@@ -576,12 +587,11 @@ impl RenderHandle {
                 cancel,
                 move |b| {
                     let cap = open(b)?;
-                    let max_width = positive(Some(max_width), "max_width")?.unwrap_or_default();
                     let (signal, abort) = abortable();
                     let options = RenderThumbnailOptions {
-                        max_width,
                         layers: layers(include_annotations, include_form_fields),
                         signal: Some(signal),
+                        ..Default::default()
                     };
                     let image =
                         cap.render_thumbnail(epdf_kernel::geometry::PageRef::from(page), options);
@@ -710,13 +720,16 @@ impl RenderHandle {
     }
 
     /// The viewer door: render at the scale a view shows the page,
-    /// conformed through the policy's render points.
+    /// conformed through the policy's render points. With `thumbnail`, the
+    /// page's thumbnail instead (`scale` is ignored), which needs only
+    /// `doc.render.thumbnail`.
     pub async fn render_source(
         &self,
         page: PageRef,
         scale: f64,
         include_annotations: Option<bool>,
         include_form_fields: Option<bool>,
+        thumbnail: Option<bool>,
         cancel: Arc<CancelToken>,
     ) -> Result<RenderedImage, ViewerError> {
         self.bound
@@ -729,6 +742,7 @@ impl RenderHandle {
                         page.into(),
                         RenderSourceOptions {
                             scale,
+                            thumbnail: thumbnail.unwrap_or(false),
                             view: None,
                             layers: layers(include_annotations, include_form_fields),
                             signal: Some(signal),
@@ -741,13 +755,15 @@ impl RenderHandle {
             .await
     }
 
-    /// The identity of the raster `render_source` would produce.
+    /// The identity of the raster `render_source` would produce, the
+    /// thumbnail's with `thumbnail`.
     pub async fn source_key(
         &self,
         page: PageRef,
         scale: f64,
         include_annotations: Option<bool>,
         include_form_fields: Option<bool>,
+        thumbnail: Option<bool>,
     ) -> Result<String, ViewerError> {
         self.bound
             .call(move |b| {
@@ -755,6 +771,7 @@ impl RenderHandle {
                     page.into(),
                     scale,
                     layers(include_annotations, include_form_fields),
+                    thumbnail.unwrap_or(false),
                 )
             })
             .await

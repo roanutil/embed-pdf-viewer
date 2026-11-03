@@ -107,9 +107,17 @@ export interface FakeDocumentSpec {
    *  from it unless the table says otherwise. Page service calls refuse a ref
    *  whose object number is not in the current registry. */
   readonly pages?: readonly unknown[];
+  /** The registry's page label sections (`PageListSnapshot.labels`); none when left out. */
+  readonly labels?: readonly unknown[];
   readonly namedPages?: readonly unknown[];
   readonly responses?: readonly ResponseSpec[];
 }
+
+/** A page list answered without `labels`, as every case before page label sections writes it, has none. */
+const withLabels = (value: unknown): unknown =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) && !('labels' in value)
+    ? { ...value, labels: [] }
+    : value;
 
 export interface FakeEngineSpec {
   readonly documents?: Readonly<Record<string, FakeDocumentSpec>>;
@@ -442,11 +450,19 @@ export function createFakeEngine(
     const security = document.security ?? {};
     const listeners = new Set<(event: DocumentEvent) => void>();
     let pages = decode(document.pages ?? []) as PageLayout[];
+    let labels = decode(document.labels ?? []);
     let namedPages = decode(document.namedPages ?? []);
     let lastServerId: number | null = null;
-    const publish = (event: DocumentEvent) => {
+    const publish = (given: DocumentEvent) => {
+      let event = given;
       if ('layout' in event) {
+        // A layout written without `labels` (every case before page label
+        // sections) is one with none, as `PageListSnapshot` now requires.
+        if (event.layout && !('labels' in event.layout)) {
+          event = { ...event, layout: { ...event.layout, labels: [] } } as DocumentEvent;
+        }
         pages = event.layout.pages ?? [];
+        labels = event.layout.labels ?? [];
         namedPages = event.layout.namedPages ?? [];
       }
       if ('origin' in event && event.origin.serverId !== null) {
@@ -644,9 +660,11 @@ export function createFakeEngine(
                   ? () => ({
                       pageCount: pages.length,
                       pages: decode(pages),
+                      labels: decode(labels),
                       namedPages: decode(namedPages),
                     })
                   : undefined,
+                member === 'list' ? withLabels : undefined,
               );
           },
         },

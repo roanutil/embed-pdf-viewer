@@ -239,8 +239,9 @@ impl PageEditHandle {
         self.cap.call(|c| Ok(open(c)?.can_edit())).await
     }
 
-    /// Whether copying pages out is allowed (`doc.download`): `extract`,
-    /// `duplicate` and `insert_from_document` need it.
+    /// Whether copying pages out is allowed (`doc.download`): `extract` and
+    /// `insert_from_document` need it. `duplicate` needs only
+    /// `doc.pages.assemble`.
     pub async fn can_extract(&self) -> Result<bool, ViewerError> {
         self.cap.call(|c| Ok(open(c)?.can_extract())).await
     }

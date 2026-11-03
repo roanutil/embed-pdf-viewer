@@ -229,13 +229,17 @@ describe('what a turned-off feature made stays, frozen', () => {
         reply: root.textContent!.includes('Agreed'),
         inputs: root.querySelectorAll('li input, li select, li textarea').length,
         deletes: [...root.querySelectorAll('li button')].filter((button) =>
-          /Delete/.test(button.getAttribute('title') ?? ''),
+          /Delete/.test(button.getAttribute('aria-label') ?? ''),
         ).length,
       };
     });
     expect(panel).toEqual({ reply: true, inputs: 0, deletes: 0 });
 
+    // With writing back, the selected card offers its reply box.
     await tab.evaluate(() => (window.element.readOnly = false));
+    await tab.evaluate((ref) => {
+      window.element.viewer.get('annotation').selection.set([ref]);
+    }, square);
     await tab.waitForFunction(
       () => window.element.shadowRoot!.querySelectorAll('li input').length > 0,
     );

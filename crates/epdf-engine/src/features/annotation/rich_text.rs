@@ -146,7 +146,7 @@ pub type DescribeFont<'a> = &'a dyn Fn(&str) -> Option<pdfium::FontIdentity>;
 pub type KeyForFace<'a> = &'a dyn Fn(&str, u32, bool) -> Option<String>;
 
 /// `STANDARD_FACES`: the family, weight and italic of each standard name.
-fn standard_face(font: StandardFont) -> (&'static str, u32, bool) {
+pub(crate) fn standard_face(font: StandardFont) -> (&'static str, u32, bool) {
     use StandardFont as S;
     match font {
         S::Courier => ("Courier", 400, false),
@@ -177,7 +177,7 @@ pub fn family_key(family: &str) -> String {
 }
 
 /// `STANDARD_FAMILY_KEYS`: the family names that mean a standard family.
-fn standard_family(key: &str) -> Option<&'static str> {
+pub(crate) fn standard_family(key: &str) -> Option<&'static str> {
     Some(match key {
         "helvetica" | "arial" | "arialmt" | "sansserif" => "Helvetica",
         "times" | "timesroman" | "timesnewroman" | "timesnewromanpsmt" | "serif" => "Times",

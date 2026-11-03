@@ -24,7 +24,7 @@ import {
   widgetAt,
   widgetRowOf,
   pageWidgetsOf,
-  initialFormState,
+  initialFormModel as initialFormState,
   type FieldIndex,
   type PageWidgets,
 } from '../../../../packages/plugin/form/src/model';

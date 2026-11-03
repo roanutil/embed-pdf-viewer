@@ -245,6 +245,20 @@ pub struct PagePlacement {
 pub struct PageReorderStep {
     pub placements: Vec<PagePlacement>,
     pub left: Vec<PagePlacement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub labels: Option<PageLabelsStep>,
+}
+
+/// The page label sections a page step puts back once its pages moved:
+/// those the change found, while the document's read as the change left
+/// them (`left`). Otherwise the sections follow the pages as an edit's do. A
+/// step whose change left the sections as they were has none
+/// (`PageLabelsStep`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageLabelsStep {
+    pub sections: Vec<crate::features::page_labels::PageLabelSection>,
+    pub left: Vec<crate::features::page_labels::PageLabelSection>,
 }
 
 /// One page a delete removed, and the fork's capture of it
@@ -266,6 +280,8 @@ pub struct CapturedPage {
 #[serde(rename_all = "camelCase")]
 pub struct PageRestoreStep {
     pub pages: Vec<CapturedPage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub labels: Option<PageLabelsStep>,
 }
 
 /// One page an insert or a restore brought, and the digest of how the
@@ -286,6 +302,13 @@ pub struct LeftPage {
 #[serde(rename_all = "camelCase")]
 pub struct PageRemoveStep {
     pub pages: Vec<LeftPage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub labels: Option<PageLabelsStep>,
+    /// The form fields the pages brought, when an insert copied them in:
+    /// they go first, those whose widgets are all on these pages still, and
+    /// come back after the pages.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<u32>,
 }
 
 /// Bytes as hex, as a record crosses the wire here.

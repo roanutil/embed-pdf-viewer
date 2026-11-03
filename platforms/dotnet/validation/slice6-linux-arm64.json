@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "slice": 6,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "e2cf932e87fae859f3f5d58d152d63f6a8fe5102",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.41",
+    "arch": "arm64",
+    "emulated": false,
+    "tools": {
+      "dotnet": "10.0.403",
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "libc": "ldd (Debian GLIBC 2.41-12+deb13u3) 2.41",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "hostOs": "macOS-arm64"
+  },
+  "inputs": [
+    {
+      "path": "packages/engine/runtime/engine-runtime-build.json",
+      "sha256": "eed8f17df69ec8c9fdf34ea507b08c99aea25b391647384c0f496b656ffbaaae",
+      "bytes": 2728
+    },
+    {
+      "path": "platforms/dotnet/packaging/fonts.json",
+      "sha256": "e8e50da21f8c48abe31b66206d183bd2a73596b3d068808f9c8b4e42be2dd806",
+      "bytes": 148
+    },
+    {
+      "path": "crates/test-support/fixtures/measure-foreign-viewport.pdf",
+      "sha256": "9f6623cbe37551bac7ca3a86f0048e6c1e1f34a6a60624e04c62b2c97d2a07fd",
+      "bytes": 788
+    }
+  ],
+  "commands": [
+    {
+      "command": "/usr/bin/python3 /repo/.claude/worktrees/dotnet-native-packaging/source/platforms/dotnet/packaging/package.py smoke --rid linux-arm64 --package /repo/.claude/worktrees/dotnet-native-packaging/artifacts/linux-arm64-r4/EmbedPDF.Engine.0.0.0-local.nupkg --manifest /repo/.claude/worktrees/dotnet-native-packaging/artifacts/linux-arm64-r4/package-manifest.linux-arm64.json",
+      "cwd": "/repo/.claude/worktrees/dotnet-native-packaging/source",
+      "exitCode": 1,
+      "results": "  Determining projects to restore...\n/tmp/epdf-relocated-robfvopy/Consumer.csproj : error NU1101: Unable to find package Microsoft.NETCore.App.Runtime.linux-arm64. No packages exist with this id in source(s): /tmp/epdf-relocated-robfvopy/local\n/tmp/epdf-relocated-robfvopy/Consumer.csproj : error NU1101: Unable to find package Microsoft.AspNetCore.App.Runtime.linux-arm64. No packages exist with this id in source(s): /tmp/epdf-relocated-robfvopy/local\n  Failed to restore /tmp/epdf-relocated-robfvopy/Consumer.csproj (in 168 ms).\nERROR: command failed (1): ['dotnet', 'restore', 'Consumer.csproj', '--source', '/tmp/epdf-relocated-robfvopy/local', '--runtime', 'linux-arm64']\n"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "../artifacts/linux-arm64-r4/EmbedPDF.Engine.0.0.0-local.nupkg",
+      "sha256": "0e4c44b365d424753c208531e31ca0feeff6656b2da9e189be984117949c50d0",
+      "bytes": 8651373
+    },
+    {
+      "path": "../artifacts/linux-arm64-r4/package-manifest.linux-arm64.json",
+      "sha256": "69deca9af80109f8b5b83884b4dfbdefd90e516a1fb0c719af08a7ac0b7e9395",
+      "bytes": 4181
+    }
+  ],
+  "limitations": [
+    "Live viewer parity is a separate required acceptance gate.",
+    "Relocated validation failed; no compatibility or RID success claim.",
+    "At this recorded source, Windows dependency staging and single-RID package-status guards were unresolved. This preliminary packaging smoke does not establish release acceptance.",
+    "Live viewer/native parity has not passed. Known stale runtime 1461/#16 corpus limitations are not cleared by this focused smoke.",
+    "osx-x64 and win-x64 are UNVALIDATED because no native hosts are available. No emulation or cross compilation substitutes for those hosts.",
+    "Default fallback-font inventory is empty; no deployed-font or browser geometry compatibility claim.",
+    "The release-library hashes identify the native inputs used in this historical run. Later source changes require refreshed package and relocation evidence.",
+    "Historical development run, superseded by the nonempty-text run record. Artifact manifest hashes may identify a superseded development status snapshot."
+  ]
+}

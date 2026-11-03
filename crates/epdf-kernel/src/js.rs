@@ -556,6 +556,30 @@ impl<'de> VariantAccess<'de> for JsDeserializer<'_> {
     }
 }
 
+/// `sameValue(left, right)` (`same-value.ts`): equal by value, arrays and
+/// objects by equal entries. Numbers compare by what they hold, as
+/// `Object.is` does, so the `1` a prediction writes and the `1.0` an engine
+/// answers are one number; `0` and `-0` are not.
+pub fn same_value(left: &Value, right: &Value) -> bool {
+    match (left, right) {
+        (Value::Number(a), Value::Number(b)) => match (a.as_f64(), b.as_f64()) {
+            (Some(a), Some(b)) => {
+                (a == b && a.is_sign_negative() == b.is_sign_negative())
+                    || (a.is_nan() && b.is_nan())
+            }
+            _ => a == b,
+        },
+        (Value::Array(a), Value::Array(b)) => {
+            a.len() == b.len() && a.iter().zip(b).all(|(x, y)| same_value(x, y))
+        }
+        (Value::Object(a), Value::Object(b)) => {
+            a.len() == b.len()
+                && a.iter().all(|(key, x)| b.get(key).is_some_and(|y| same_value(x, y)))
+        }
+        _ => left == right,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};

@@ -2,7 +2,10 @@
 //!
 //! G4. Replaces `services/src/features/fonts/FontRegistrar.ts`. Operations:
 //! `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`,
-//! `fonts.clear`.
+//! `fonts.clear`, `fonts.authorizeEditing`, `fonts.list`, `fonts.program`.
+//! [`document`] ports `DocumentFontReader.ts` (the `document.fonts.*`
+//! kinds), and [`list`] the parts of engine-core's `fontList.ts` it reads
+//! with.
 //!
 //! One registry per worker, selected at initialization and before any startup
 //! font or document is loaded. Fonts are engine-level and not session-level:
@@ -38,6 +41,13 @@ use pdfium::{
 use serde::Serialize;
 
 use crate::error::{EngineError, EngineErrorCode};
+
+pub mod document;
+pub mod list;
+
+// `LAST_RESORT_HASH` and `LAST_RESORT_PROGRAM`, from
+// `packages/core/fonts/src/last-resort.generated.ts` (`build.rs`).
+include!(concat!(env!("OUT_DIR"), "/last_resort.rs"));
 
 /// `FontEmbeddingPermission`: the OS/2 `fsType` licence as the wire spells
 /// it. Restricted and bitmap-only fonts are refused at registration, so
@@ -87,6 +97,20 @@ impl FontIdentityInfo {
     }
 }
 
+/// The glyph-fallback tiers, `FALLBACK_TIERS` in
+/// `engine/core/src/fonts/fontList.ts`.
+///
+/// PDFium tries every font of a lower tier before any of a higher one, so a
+/// host's own fallbacks win over the built-in ones whatever order they were
+/// added in. A tier is a JavaScript number here, as the TypeScript types it;
+/// see [`FontRegistry::add_fallback_in_tier`].
+pub mod fallback_tier {
+    /// The host's or the application's own fonts. The default tier.
+    pub const OWN: f64 = 0.0;
+    /// The fonts the engine ships.
+    pub const BUILT_IN: f64 = 1.0;
+}
+
 /// A font to register at startup, from a file.
 ///
 /// By path rather than by bytes, mirroring how a file-backed base document is
@@ -100,6 +124,239 @@ pub struct StartupFont {
     pub description: FontDescription,
     /// Also append to the glyph-fallback chain.
     pub fallback: bool,
+    /// The fallback tier, when `fallback` is set. See [`fallback_tier`].
+    pub tier: f64,
+    /// Whether its bytes may go to a browser (`StartupFontSpec.serve`, the
+    /// server's `serve`); false by default there.
+    pub serve: bool,
+}
+
+/// `FontFormat`: what a program is, as the wire spells it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FontFormat {
+    Truetype,
+    Opentype,
+    Cff,
+    Type1,
+    Type3,
+}
+
+impl FontFormat {
+    /// `FORMATS` in `DocumentFontReader.ts`: `EPDF_FONT_FORMAT_*`, `None`
+    /// for `EPDF_FONT_FORMAT_NONE` and any code it doesn't name.
+    pub fn of_program(format: Option<pdfium::FontProgramFormat>) -> Option<Self> {
+        use pdfium::FontProgramFormat as F;
+        Some(match format? {
+            F::TrueType => Self::Truetype,
+            F::OpenTypeCff => Self::Opentype,
+            F::Cff => Self::Cff,
+            F::Type1 => Self::Type1,
+            F::Type3 => Self::Type3,
+        })
+    }
+}
+
+/// `CodePointRange`: `start` and the `count` of code points that follow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct CodePointRange {
+    pub start: u32,
+    pub count: u32,
+}
+
+impl From<pdfium::CodePointRange> for CodePointRange {
+    fn from(range: pdfium::CodePointRange) -> Self {
+        Self { start: range.start, count: range.count }
+    }
+}
+
+/// `EngineFontFacts`: one of the engine's fonts as a font list takes it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EngineFontFacts {
+    pub key: String,
+    pub identity: FontIdentityInfo,
+    pub post_script_name: Option<String>,
+    pub format: FontFormat,
+    /// SHA-256 (hex) of the program the engine lays text out with.
+    pub sha256: String,
+    /// Whether its bytes may go to a browser.
+    pub served: bool,
+}
+
+/// A program's coverage and line metrics, as `programFor(..).info()` and
+/// `document.fonts.program` answer them: thousandths of the font size,
+/// descent negative.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ProgramInfo {
+    pub covers: Vec<CodePointRange>,
+    pub ascent: f64,
+    pub descent: f64,
+}
+
+/// `Math.round`: halves round up, toward positive infinity.
+pub(crate) fn js_round(value: f64) -> f64 {
+    let floor = value.floor();
+    if value - floor >= 0.5 { floor + 1.0 } else { floor }
+}
+
+/// `Math.round(ascent * 1000)` and `-Math.round(descent * 1000)` of the
+/// fork's em metrics, `0` and `-0` folded to `0` as JSON writes them.
+pub(crate) fn thousandths(metrics: Option<pdfium::FontLineMetrics>) -> (f64, f64) {
+    let (ascent, descent) =
+        metrics.map_or((0.0, 0.0), |m| (f64::from(m.ascent), f64::from(m.descent)));
+    (js_round(ascent * 1000.0) + 0.0, -js_round(descent * 1000.0) + 0.0)
+}
+
+/// Lowercase hex, as `hex` in `DocumentFontReader.ts` writes a hash.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut out, byte| {
+        let _ = write!(out, "{byte:02x}");
+        out
+    })
+}
+
+/// What `FontRegistrar.readProgram` read for a key, and whether its bytes
+/// may go to a browser.
+#[derive(Debug, Clone, PartialEq)]
+struct RegisteredProgram {
+    sha256: String,
+    format: FontFormat,
+    post_script_name: Option<String>,
+    served: bool,
+}
+
+impl RegisteredProgram {
+    /// `readProgram`: the hash, `''` when the fork has none; `opentype` for
+    /// `EPDF_FONT_FORMAT_OPENTYPE` and `truetype` for anything else; the
+    /// PostScript name, `null` when empty.
+    fn read(id: FontId, served: bool) -> Self {
+        Self {
+            sha256: pdfium::font_program_hash(id).map(|hash| hex(&hash)).unwrap_or_default(),
+            format: match pdfium::font_program_format(id) {
+                Some(pdfium::FontProgramFormat::OpenTypeCff) => FontFormat::Opentype,
+                _ => FontFormat::Truetype,
+            },
+            post_script_name: pdfium::font_postscript_name(id)
+                .ok()
+                .flatten()
+                .filter(|name| !name.is_empty()),
+            served,
+        }
+    }
+}
+
+/// `FontRegistrar.registerLastResort`: the font a character no other font
+/// has is drawn in, as a box. It has no key, so no list names it.
+fn register_last_resort() -> Result<FontId, EngineError> {
+    let registered =
+        pdfium::register_memory_font(&FontDescription::inferred(), LAST_RESORT_PROGRAM);
+    match registered {
+        Ok(id) if pdfium::set_last_resort_font(Some(id)) => Ok(id),
+        _ => Err(EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            "the last-resort font did not register",
+        )),
+    }
+}
+
+/// This thread's last resort, shared by everything that holds it.
+///
+/// `FontRegistrar` registers it when a `WorkerHost` is built, and a thread
+/// has one host there. Here a thread can hold several hosts, and a registry
+/// beside them, so the registration is counted: the first hold registers it,
+/// a later one finds it in place, and the last one to go unsets it. PDFium
+/// has no call that unregisters one font, so an unset last resort stays
+/// registered and the next hold sets it again, until something clears the
+/// thread's fonts.
+#[derive(Debug, Default)]
+struct LastResortState {
+    holders: usize,
+    /// The registered program, while PDFium still has it.
+    id: Option<FontId>,
+    /// Whether PDFium draws with it now.
+    active: bool,
+}
+
+thread_local! {
+    static LAST_RESORT: std::cell::RefCell<LastResortState> =
+        std::cell::RefCell::new(LastResortState::default());
+}
+
+/// Set the last resort for this thread's holders, registering it unless
+/// PDFium still has it.
+fn ensure_last_resort(state: &mut LastResortState) -> Result<(), EngineError> {
+    if state.holders == 0 || state.active {
+        return Ok(());
+    }
+    if let Some(id) = state.id
+        && pdfium::set_last_resort_font(Some(id))
+    {
+        state.active = true;
+        return Ok(());
+    }
+    state.id = Some(register_last_resort()?);
+    state.active = true;
+    Ok(())
+}
+
+/// Every registered font on the thread is gone (`EPDFFont_ClearRegisteredFonts`),
+/// the last resort with them: registered again at once while anything holds
+/// it, as `FontRegistrar.clear` registers it again.
+fn last_resort_cleared() -> Result<(), EngineError> {
+    LAST_RESORT.with(|state| {
+        let mut state = state.borrow_mut();
+        state.id = None;
+        state.active = false;
+        ensure_last_resort(&mut state)
+    })
+}
+
+/// A hold on this thread's last resort. A [`crate::host::Host`] takes one
+/// when it is built, as `WorkerHost` builds its `FontRegistrar`, and a
+/// [`FontRegistry`] takes one of its own.
+#[derive(Debug)]
+pub struct LastResortHold {
+    /// PDFium must be up on this thread for every `EPDFFont_*` call.
+    _library: Rc<Library>,
+}
+
+impl LastResortHold {
+    /// Hold the last resort, registering it on this thread unless something
+    /// already holds it. `RuntimeUnavailable` when it doesn't register.
+    pub fn acquire() -> Result<Self, EngineError> {
+        let library = Library::acquire();
+        LAST_RESORT.with(|state| {
+            let mut state = state.borrow_mut();
+            state.holders += 1;
+            let ensured = ensure_last_resort(&mut state);
+            if ensured.is_err() {
+                state.holders -= 1;
+            }
+            ensured
+        })?;
+        Ok(Self { _library: library })
+    }
+}
+
+impl Drop for LastResortHold {
+    fn drop(&mut self) {
+        // A thread tearing down has nothing left to draw with it.
+        let _ = LAST_RESORT.try_with(|state| {
+            let mut state = state.borrow_mut();
+            state.holders -= 1;
+            if state.holders == 0 {
+                if state.active {
+                    pdfium::set_last_resort_font(None);
+                }
+                state.active = false;
+            } else {
+                // A registry that went cleared it for the hosts still here.
+                let _ = ensure_last_resort(&mut state);
+            }
+        });
+    }
 }
 
 /// One thread's fonts.
@@ -117,9 +374,16 @@ pub struct FontRegistry {
     /// registered successfully, at the moment something first tried to draw
     /// with it.
     retained: Vec<FileAccess>,
-    /// The order fonts were added to the fallback chain, for reporting. The
-    /// chain itself lives in PDFium.
-    fallback_order: Vec<String>,
+    /// The keys in the fallback chain with their tiers as given, in the order
+    /// added, for reporting. The chain itself lives in PDFium.
+    fallbacks: Vec<(String, f64)>,
+    /// Each key's program, in the order first registered (a `Map`'s order,
+    /// which `programFor` searches in).
+    programs: Vec<(String, RegisteredProgram)>,
+    /// The registry's own hold on the last resort (`FontRegistrar`'s
+    /// constructor registers it). Dropped after `Drop` cleared the fonts, so
+    /// a host still on the thread gets it back.
+    _last_resort: LastResortHold,
     /// Keeps PDFium initialized on this thread.
     ///
     /// Not optional and not the caller's job. Every `EPDFFont_*` call reads
@@ -197,10 +461,12 @@ pub fn key_for_face(family: &str, weight: u32, italic: bool) -> Option<String> {
 }
 
 impl FontRegistry {
-    /// The one registry for this thread.
+    /// The one registry for this thread, with the last resort registered,
+    /// as `FontRegistrar`'s constructor registers it.
     ///
     /// Reports `InvalidArg` when this thread already has one. See
-    /// [`REGISTRY_ON_THREAD`].
+    /// [`REGISTRY_ON_THREAD`]. `RuntimeUnavailable` when the last resort
+    /// doesn't register.
     pub fn new() -> Result<Self, EngineError> {
         REGISTRY_ON_THREAD.with(|taken| {
             if taken.get() {
@@ -213,12 +479,31 @@ impl FontRegistry {
             taken.set(true);
             Ok(())
         })?;
+        let library = Library::acquire();
+        let last_resort = match LastResortHold::acquire() {
+            Ok(hold) => hold,
+            Err(refused) => {
+                REGISTRY_ON_THREAD.with(|taken| taken.set(false));
+                return Err(refused);
+            }
+        };
         Ok(Self {
             ids: BTreeMap::new(),
             retained: Vec::new(),
-            fallback_order: Vec::new(),
-            _library: Library::acquire(),
+            fallbacks: Vec::new(),
+            programs: Vec::new(),
+            _last_resort: last_resort,
+            _library: library,
         })
+    }
+
+    /// Record what `readProgram` reads for a key, keeping its first place.
+    fn remember_program(&mut self, key: &str, id: FontId, served: bool) {
+        let program = RegisteredProgram::read(id, served);
+        match self.programs.iter_mut().find(|(k, _)| k == key) {
+            Some(entry) => entry.1 = program,
+            None => self.programs.push((key.to_owned(), program)),
+        }
     }
 
     /// Register a font from bytes.
@@ -242,16 +527,31 @@ impl FontRegistry {
         let id = pdfium::register_memory_font(description, bytes)
             .map_err(|e| registration_failed(&key, None, e))?;
         remember_identity(&key, id, description);
+        // An application's own font: its bytes may go to a browser.
+        self.remember_program(&key, id, true);
         self.ids.insert(key, id);
         Ok(id)
     }
 
-    /// Register a font PDFium reads from a file on demand.
+    /// Register a font PDFium reads from a file on demand, its bytes kept
+    /// from browsers (`registerFromNodeFile`'s default).
     pub fn register_file(
         &mut self,
         key: impl Into<String>,
         description: &FontDescription,
         path: &std::path::Path,
+    ) -> Result<FontId, EngineError> {
+        self.register_file_served(key, description, path, false)
+    }
+
+    /// [`FontRegistry::register_file`], saying whether its bytes may go to a
+    /// browser (`registerFromNodeFile`'s `served`).
+    pub fn register_file_served(
+        &mut self,
+        key: impl Into<String>,
+        description: &FontDescription,
+        path: &std::path::Path,
+        served: bool,
     ) -> Result<FontId, EngineError> {
         let key = key.into();
         let access =
@@ -262,6 +562,7 @@ impl FontRegistry {
         // would leak a file descriptor per attempt.
         self.retained.push(access);
         remember_identity(&key, id, description);
+        self.remember_program(&key, id, served);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -274,49 +575,162 @@ impl FontRegistry {
     /// workers different answers for the same missing glyph.
     pub fn register_startup(&mut self, fonts: &[StartupFont]) -> Result<(), EngineError> {
         for font in fonts {
-            self.register_file(font.key.clone(), &font.description, &font.path)?;
+            self.register_file_served(font.key.clone(), &font.description, &font.path, font.serve)?;
             if font.fallback {
-                self.add_fallback(&font.key)?;
+                self.add_fallback_in_tier(&font.key, font.tier)?;
             }
         }
         Ok(())
     }
 
-    /// Append a registered font to the glyph-fallback chain.
+    /// Add a registered font to the glyph-fallback chain in the host's own
+    /// tier, [`fallback_tier::OWN`], which is the TypeScript default.
     pub fn add_fallback(&mut self, key: &str) -> Result<(), EngineError> {
+        self.add_fallback_in_tier(key, fallback_tier::OWN)
+    }
+
+    /// Add a registered font to the glyph-fallback chain in `tier`: it is
+    /// tried after every font of a lower tier. Adding it again changes its
+    /// tier only, keeping its place among the fonts added before it.
+    ///
+    /// `tier` is the number `FontRegistrar.addFallback` takes, and it goes
+    /// where the TypeScript's does. PDFium gets `ToInt32(tier)`, which is what
+    /// the WebAssembly call does to it: 1.7 is tier 1, NaN is tier 0, 2^32 + 1
+    /// is tier 1. [`FontRegistry::fallback_order`] sorts by the number itself.
+    pub fn add_fallback_in_tier(&mut self, key: &str, tier: f64) -> Result<(), EngineError> {
         let id = self.id_for(key)?;
-        pdfium::add_fallback_font(id).map_err(|_| {
+        pdfium::add_fallback_font(id, crate::js_number::to_int32(tier)).map_err(|_| {
             EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!("addFallback failed: {key}"),
             )
         })?;
-        self.fallback_order.push(key.to_string());
+        match self.fallbacks.iter_mut().find(|(existing, _)| existing == key) {
+            Some(existing) => existing.1 = tier,
+            None => self.fallbacks.push((key.to_string(), tier)),
+        }
         Ok(())
     }
 
     /// Empty the fallback chain, leaving every font registered.
     pub fn clear_fallbacks(&mut self) {
         pdfium::clear_fallback_fonts();
-        self.fallback_order.clear();
+        self.fallbacks.clear();
     }
 
-    /// The fallback chain, in precedence order.
-    pub fn fallback_order(&self) -> &[String] {
-        &self.fallback_order
+    /// The fallback chain by tier, each tier in the order added.
+    /// `FontRegistrar.fallbackKeys`, which sorts with `left.tier - right.tier`
+    /// on the tiers as given, so 1 comes before 1.7 here although PDFium
+    /// tries both as tier 1.
+    ///
+    /// A difference that is NaN (a tier that was a word, or two infinities)
+    /// counts as equal, as `Array.prototype.sort` counts it. That comparator
+    /// is not an order, and the TypeScript's answer then depends on the
+    /// JavaScript engine's sort; this answers what a stable insertion sort
+    /// does with it, and never panics, which `sort_by` may on a comparator
+    /// that is not total.
+    pub fn fallback_order(&self) -> Vec<String> {
+        let mut ordered: Vec<&(String, f64)> = self.fallbacks.iter().collect();
+        for end in 1..ordered.len() {
+            let mut at = end;
+            while at > 0 && ordered[at - 1].1 - ordered[at].1 > 0.0 {
+                ordered.swap(at - 1, at);
+                at -= 1;
+            }
+        }
+        ordered.into_iter().map(|(key, _)| key.clone()).collect()
     }
 
-    /// Unregister everything and release the retained handles.
+    /// Unregister everything and release the retained handles. The last
+    /// resort stays: it is registered again, as `FontRegistrar.clear` does,
+    /// and in its order, so a last resort that doesn't register refuses the
+    /// clear with `RuntimeUnavailable` before the keys are forgotten.
     ///
     /// The order matters: PDFium stops reading through the handles only once
     /// the fonts are gone, so releasing them first would leave the registry
     /// reading closed files.
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self) -> Result<(), EngineError> {
         pdfium::clear_registered_fonts();
+        last_resort_cleared()?;
+        self.forget_all();
+        Ok(())
+    }
+
+    /// Forget every key, program and fallback, and release the handles.
+    fn forget_all(&mut self) {
         self.ids.clear();
         IDENTITIES.with(|all| all.borrow_mut().clear());
-        self.fallback_order.clear();
+        self.fallbacks.clear();
+        self.programs.clear();
         self.retained.clear();
+    }
+
+    /// `FontRegistrar.engineFontFacts`: the registered fonts, in
+    /// registration order, as a font list takes them.
+    pub fn engine_font_facts(&self) -> Vec<EngineFontFacts> {
+        let keys: Vec<String> =
+            IDENTITIES.with(|all| all.borrow().iter().map(|(key, _)| key.clone()).collect());
+        keys.into_iter()
+            .filter_map(|key| {
+                let program = self.programs.iter().find(|(k, _)| *k == key)?.1.clone();
+                let identity = self.identity_info(&key).ok()?;
+                Some(EngineFontFacts {
+                    key,
+                    identity,
+                    post_script_name: program.post_script_name,
+                    format: program.format,
+                    sha256: program.sha256,
+                    served: program.served,
+                })
+            })
+            .collect()
+    }
+
+    /// `FontRegistrar.keyForId`: the key of this thread's native id.
+    pub fn key_for_id(&self, id: FontId) -> Option<String> {
+        self.ids.iter().find(|(_, candidate)| **candidate == id).map(|(key, _)| key.clone())
+    }
+
+    /// `FontRegistrar.programFor`: the first key (in registration order)
+    /// whose program has this hash. `None` for a hash no key has.
+    fn key_for_program(&self, sha256: &str) -> Option<&str> {
+        self.programs.iter().find(|(_, p)| p.sha256 == sha256).map(|(key, _)| key.as_str())
+    }
+
+    /// `programFor(sha256).info()`: a registered program's coverage and
+    /// metrics. `None` for a hash no registered font has.
+    pub fn program_info(&self, sha256: &str) -> Result<Option<ProgramInfo>, EngineError> {
+        let Some(key) = self.key_for_program(sha256) else { return Ok(None) };
+        let id = self.id_for(key)?;
+        let covers = pdfium::font_coverage(id).map_err(engine_error)?;
+        let (ascent, descent) = thousandths(pdfium::font_metrics(id));
+        Ok(Some(ProgramInfo {
+            covers: covers.into_iter().map(Into::into).collect(),
+            ascent,
+            descent,
+        }))
+    }
+
+    /// `programFor(sha256).bytes()`: a registered program's bytes, empty
+    /// when the fork reports none. `None` for a hash no registered font has.
+    pub fn program_bytes(&self, sha256: &str) -> Result<Option<Vec<u8>>, EngineError> {
+        let Some(key) = self.key_for_program(sha256) else { return Ok(None) };
+        let id = self.id_for(key)?;
+        Ok(Some(pdfium::font_program_data(id).map_err(engine_error)?.unwrap_or_default()))
+    }
+
+    /// `WorkerHost.handleFontsProgram`: a served engine font's bytes, by
+    /// its program's hash. `NotFound` for a font not served.
+    pub fn served_program(&self, sha256: &str) -> Result<Vec<u8>, EngineError> {
+        let served =
+            self.programs.iter().any(|(_, program)| program.sha256 == sha256 && program.served);
+        let bytes = if served { self.program_bytes(sha256)? } else { None };
+        bytes.ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no served font has the program {sha256}"),
+            )
+        })
     }
 
     /// Resolve a stable key to this thread's id.
@@ -412,9 +826,24 @@ impl Drop for FontRegistry {
     /// This is safe to do on drop only because a thread has one registry;
     /// [`FontRegistry::new`] is what makes that true.
     fn drop(&mut self) {
-        self.clear();
+        // Not `clear`: the registry's fonts go, the last resort with them,
+        // and its own hold, dropped after this, gives the last resort back
+        // to any host still on the thread.
+        pdfium::set_last_resort_font(None);
+        pdfium::clear_registered_fonts();
+        let _ = LAST_RESORT.try_with(|state| {
+            let mut state = state.borrow_mut();
+            state.id = None;
+            state.active = false;
+        });
+        self.forget_all();
         REGISTRY_ON_THREAD.with(|taken| taken.set(false));
     }
+}
+
+/// A fork read that failed for want of memory.
+fn engine_error(error: PdfiumError) -> EngineError {
+    EngineError::with_message(EngineErrorCode::Unknown, error.to_string())
 }
 
 /// `FontRegistrar`'s refusal, worded as it words it when the runtime

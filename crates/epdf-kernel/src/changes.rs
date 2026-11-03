@@ -102,7 +102,7 @@ struct Inner {
     apply: Apply,
     notify: Rc<dyn Fn()>,
     take: RefCell<Rc<dyn Fn() -> Result<Option<u32>, Error>>>,
-    reserve: RefCell<Rc<dyn Fn(u32) -> Promise<()>>>,
+    reserve: RefCell<Rc<dyn Fn(f64) -> Promise<()>>>,
     staged: EventHookSource<PendingChange>,
     settled: EventHookSource<SettledChange>,
 }
@@ -130,7 +130,7 @@ impl DocumentChanges {
     pub fn set_object_numbers(
         &self,
         take: Rc<dyn Fn() -> Result<Option<u32>, Error>>,
-        reserve: Rc<dyn Fn(u32) -> Promise<()>>,
+        reserve: Rc<dyn Fn(f64) -> Promise<()>>,
     ) {
         *self.0.take.borrow_mut() = take;
         *self.0.reserve.borrow_mut() = reserve;
@@ -399,14 +399,18 @@ impl ChangeQueue {
         }
         result
     }
+    /// `takeObjectNumber()`: the handle's pool, open or not; the change
+    /// that names the number is what a closed queue refuses.
     pub fn take_object_number(&self) -> Result<Option<u32>, Error> {
-        self.assert_open()?;
         (self.changes.0.take.borrow())().map_err(|e| to_plugin_error(&self.capability, &e))
     }
+    /// `reserveObjectNumbers(count)`: as `takeObjectNumber`, no open check.
     pub fn reserve_object_numbers(&self, count: u32) -> Promise<()> {
-        if let Err(e) = self.assert_open() {
-            return Promise::rejected(e);
-        }
+        self.reserve_object_number_count(f64::from(count))
+    }
+    /// `reserveObjectNumbers(count)` for a count as JavaScript passes it:
+    /// one that isn't a whole number is the handle's to refuse.
+    pub fn reserve_object_number_count(&self, count: f64) -> Promise<()> {
         let call = (self.changes.0.reserve.borrow())(count);
         let capability = self.capability.clone();
         Promise::spawn(async move { call.await.map_err(|e| to_plugin_error(&capability, &e)) })
@@ -506,7 +510,7 @@ fn named_by(change: &Value) -> HashSet<u64> {
                         out.extend(ns.iter().filter_map(Value::as_u64));
                     }
                 }
-                "pages.insertBlank" => {
+                "pages.insertBlank" | "pages.insert" | "pages.copy" => {
                     if let Some(ns) = op["objectNumbers"].as_array() {
                         out.extend(ns.iter().filter_map(Value::as_u64));
                     }

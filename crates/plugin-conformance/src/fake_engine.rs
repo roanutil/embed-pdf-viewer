@@ -327,13 +327,31 @@ impl FakeEngine {
         let id = spec.get("id").and_then(Value::as_str).unwrap_or(key).to_string();
         let listeners: Rc<RefCell<Vec<(u64, Publish)>>> = Rc::default();
         let pages = Rc::new(RefCell::new(spec["pages"].as_array().cloned().unwrap_or_default()));
+        let labels =
+            Rc::new(RefCell::new(spec.get("labels").cloned().unwrap_or_else(|| json!([]))));
         let named_pages =
             Rc::new(RefCell::new(spec.get("namedPages").cloned().unwrap_or_else(|| json!([]))));
         let cursor = Rc::new(Cell::new(None::<i64>));
-        let (p, n, c, l) = (pages.clone(), named_pages.clone(), cursor.clone(), listeners.clone());
-        let publish: Publish = Rc::new(move |event| {
+        let (p, b, n, c, l) =
+            (pages.clone(), labels.clone(), named_pages.clone(), cursor.clone(), listeners.clone());
+        let publish: Publish = Rc::new(move |given| {
+            // A layout written without `labels` (every case before page label
+            // sections) is one with none, as `PageListSnapshot` now requires.
+            let normalized;
+            let mut event = given;
+            if let Some(layout) = event.get("layout").and_then(Value::as_object)
+                && !layout.contains_key("labels")
+            {
+                let mut layout = layout.clone();
+                layout.insert("labels".into(), json!([]));
+                let mut whole = event.clone();
+                whole["layout"] = Value::Object(layout);
+                normalized = whole;
+                event = &normalized;
+            }
             if let Some(layout) = event.get("layout") {
                 *p.borrow_mut() = layout["pages"].as_array().cloned().unwrap_or_default();
+                *b.borrow_mut() = layout.get("labels").cloned().unwrap_or_else(|| json!([]));
                 *n.borrow_mut() = layout.get("namedPages").cloned().unwrap_or_else(|| json!([]));
             }
             if let Some(server) = event["origin"]["serverId"].as_i64() {
@@ -358,6 +376,7 @@ impl FakeEngine {
         Ok(Rc::new(FakeHandle {
             engine: self.clone(),
             pages,
+            labels,
             named_pages,
             cursor,
             publish,
@@ -505,9 +524,21 @@ fn password_prompt(state: &Value) -> Value {
     json!({"state":"none"})
 }
 
+/// A page list answered without `labels`, as every case before page label
+/// sections writes it, has none.
+fn with_labels(mut value: Value) -> Value {
+    if let Value::Object(fields) = &mut value
+        && !fields.contains_key("labels")
+    {
+        fields.insert("labels".into(), json!([]));
+    }
+    value
+}
+
 struct FakeHandle {
     security_state: Rc<RefCell<(Value, Value)>>,
     pages: Rc<RefCell<Vec<Value>>>,
+    labels: Rc<RefCell<Value>>,
     named_pages: Rc<RefCell<Value>>,
     cursor: Rc<Cell<Option<i64>>>,
     publish: Publish,
@@ -554,15 +585,26 @@ impl DocumentHandle for FakeHandle {
         Ok(if numbers.is_empty() { None } else { Some(numbers.remove(0)) })
     }
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
-        // Logged first, then refused, as the TypeScript validates.
-        let validation =
-            (count == 0).then(|| Error::engine("InvalidArg", "cannot reserve 0 object numbers"));
+        self.reserve_object_number_count(f64::from(count))
+    }
+    fn reserve_object_number_count(&self, count: f64) -> EngineCall<()> {
+        // Logged first, then refused, as the TypeScript validates
+        // (`!Number.isInteger(count) || count < 1`).
+        let validation = (count.fract() != 0.0 || count < 1.0).then(|| {
+            Error::engine(
+                "InvalidArg",
+                format!(
+                    "cannot reserve {} object numbers",
+                    epdf_kernel::js::number_to_string(count)
+                ),
+            )
+        });
         let numbers = self.numbers.clone();
         let sequence = self.next_number.clone();
         let map = Rc::new(move |value| {
             let mut numbers = numbers.borrow_mut();
             let mut next = sequence.get();
-            while numbers.len() < count as usize {
+            while (numbers.len() as f64) < count {
                 numbers.push(next);
                 next += 1;
             }
@@ -575,7 +617,7 @@ impl DocumentHandle for FakeHandle {
                 self.table,
                 "objectNumbers.reserve",
                 None,
-                vec![json!(count)],
+                vec![epdf_kernel::js::json_number(count)],
                 Some(Box::new(|| Ok(undefined()))),
                 Some(map),
                 None,
@@ -639,11 +681,15 @@ impl DocumentHandle for FakeHandle {
         let fallback: Option<Box<dyn FnOnce() -> Result<Value, Error>>> = match (path, pon) {
             ("pages.list", None) => {
                 let pages = self.pages();
+                let labels = self.labels.borrow().clone();
                 let named_pages = self.named_pages.borrow().clone();
                 Some(Box::new(move || {
-                    Ok(
-                        json!({ "pageCount": pages.len(), "pages": pages, "namedPages": named_pages }),
-                    )
+                    Ok(json!({
+                        "pageCount": pages.len(),
+                        "pages": pages,
+                        "labels": labels,
+                        "namedPages": named_pages,
+                    }))
                 }))
             }
             ("close", None) => Some(Box::new(|| Ok(undefined()))),
@@ -656,11 +702,16 @@ impl DocumentHandle for FakeHandle {
                 hydrate_text_layout(&value)?;
                 Ok(value)
             }))
+        } else if path == "pages.list" {
+            Some(Rc::new(|value| Ok(with_labels(value))))
         } else {
             None
         };
         #[cfg(target_arch = "wasm32")]
-        let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> = None;
+        let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> =
+            (path == "pages.list").then(|| -> Rc<dyn Fn(Value) -> Result<Value, Error>> {
+                Rc::new(|value| Ok(with_labels(value)))
+            });
         self.engine.call(
             Some(&self.id),
             self.table,

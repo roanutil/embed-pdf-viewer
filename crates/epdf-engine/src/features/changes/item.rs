@@ -127,6 +127,8 @@ pub enum ChangeItem {
     PagesInsertBlank { inserted_pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
     #[serde(rename = "pages.insert", rename_all = "camelCase")]
     PagesInsert { inserted_pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    #[serde(rename = "pages.copy", rename_all = "camelCase")]
+    PagesCopy { inserted_pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
     /// `PageRestoreResult`, only in an undo: the pages a delete removed (or
     /// an insert brought, redone), back, in display order.
     #[serde(rename = "pages.restore")]
@@ -347,6 +349,7 @@ impl ChangeItem {
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
             | Self::PagesInsert { meta, .. }
+            | Self::PagesCopy { meta, .. }
             | Self::PagesRestore { meta, .. }
             | Self::Skipped { meta, .. } => meta,
             Self::FormsSetValue { meta, .. }
@@ -393,6 +396,7 @@ impl ChangeItem {
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
             | Self::PagesInsert { meta, .. }
+            | Self::PagesCopy { meta, .. }
             | Self::PagesRestore { meta, .. }
             | Self::Skipped { meta, .. } => meta,
             Self::FormsSetValue { meta, .. }
@@ -518,7 +522,8 @@ impl ChangeItem {
                 serde_json::json!({ "pages": pages, "layout": layout, "meta": to_value(meta)? }),
             ),
             Self::PagesInsertBlank { inserted_pages, layout, meta }
-            | Self::PagesInsert { inserted_pages, layout, meta } => (
+            | Self::PagesInsert { inserted_pages, layout, meta }
+            | Self::PagesCopy { inserted_pages, layout, meta } => (
                 "pages.inserted",
                 serde_json::json!({ "insertedPages": inserted_pages, "layout": layout,
                     "meta": to_value(meta)? }),
@@ -676,6 +681,7 @@ fn form_reset_facts(
                     cache_delta: None,
                     op_id: meta.meta.op_id.clone(),
                     undoable: meta.meta.undoable,
+                    missing_characters: None,
                 },
                 changed_fields: vec![serde_json::from_value(field["ref"].clone()).map_err(
                     |e| {

@@ -20,11 +20,11 @@ import {
 import {
   activateTool,
   builtinTools,
-  initialInteractionState,
+  initialInteractionModel,
   popTool,
   pushTool,
   setCursor,
-  type InteractionState,
+  type InteractionModel,
 } from '../../../../packages/plugin/interaction/src/model';
 import type {
   InteractionConfig,
@@ -680,9 +680,9 @@ const functions = {
   builtinTools,
   // Upstream's state no longer takes the config: the controller activates
   // `defaultTool` after the document opens.
-  initialInteractionState: (_config: unknown) => initialInteractionState(),
+  initialInteractionState: (_config: unknown) => initialInteractionModel(),
   // Upstream replaced the reducer with one pure transition per action.
-  reduceInteraction: (state: InteractionState, action: { type: string; toolId?: string; cursor?: string }) => {
+  reduceInteraction: (state: InteractionModel, action: { type: string; toolId?: string; cursor?: string }) => {
     switch (action.type) {
       case 'SET_TOOL':
         return activateTool(state, action.toolId!);
@@ -691,7 +691,7 @@ const functions = {
       case 'POP_TOOL':
         return popTool(state);
       case 'SET_CURSOR':
-        return setCursor(state, action.cursor as InteractionState['cursor']);
+        return setCursor(state, action.cursor as InteractionModel['cursor']);
       default:
         return state;
     }

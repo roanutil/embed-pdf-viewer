@@ -4,12 +4,14 @@ import { SIGNATURE_POLICY_VERSION } from '../signature/protection';
 import {
   PAGE_PRINT_FAMILIES,
   PAGE_RENDER_FAMILIES,
+  PAGE_THUMBNAIL_FAMILIES,
   type PagePrintTier,
   type PageRenderFamily,
 } from './renderFamilies';
 import type {
   AnalysisToken,
   AnnotationsExportToken,
+  FontsToken,
   FormExportToken,
   OutlineToken,
 } from './tokens';
@@ -30,6 +32,7 @@ import type {
  *   /v1/docs/{id}/manifest@{ver}                        — doc-level read
  *   /v1/docs/{id}/render/pages/{N}/data@{ver}                — render is its own prefix
  *   /v1/docs/{id}/render/{annotations,fields,all}/pages/{N}/data@{ver} — and each picture family
+ *   /v1/docs/{id}/render/thumbnail/…/pages/{N}/data@{ver}  — and each family's thumbnails
  *   /v1/docs/{id}/render/{print,print-high}/…/pages/{N}/data@{ver}  — and each print tier of each
  *   /v1/docs/{id}/text/pages/{N}/data@{ver}                  — text is its own prefix
  *   /v1/docs/{id}/geometry/pages/{N}/data@{ver}              — geometry is its own prefix
@@ -84,6 +87,7 @@ import {
   encodeLayoutToken,
   encodeMetadataToken,
   encodeOutlineToken,
+  encodeFontsToken,
   encodeRenderToken,
   encodeTokenText,
   encodeWidgetAppearancesRenderToken,
@@ -261,31 +265,43 @@ export const wirePaths = {
   layerSignatureCancel: (docId: string, layerName: string, signingId: string) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/signatures/${encodeURIComponent(signingId)}`,
 
-  /** The document's base versions, oldest first (grows; never cached). */
-  docVersions: (docId: string) => `/v1/docs/${encodeURIComponent(docId)}/versions`,
-  /** Immutable: the signature snapshot of one base version. */
-  docVersionSignatures: (docId: string, sha256: string) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/signatures/${sha256}`,
-  /** Immutable: a signed field's DER `/Contents` in one base version (`application/pkcs7-signature`). */
-  docVersionSignatureContents: (docId: string, sha256: string, fieldName: string) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/signatures/${sha256}/${encodeTokenText(fieldName)}/contents`,
-  /** Immutable: the digest of a signed field's `/ByteRange` in one base version. */
-  docVersionSignatureDigest: (
+  /** A layer's versions, oldest first: the upload, then its signatures' (grows; never cached). */
+  layerVersions: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions`,
+  /** Immutable: the signature snapshot of one of a layer's versions. */
+  layerVersionSignatures: (docId: string, layerName: string, sha256: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/signatures/${sha256}`,
+  /** Immutable: a signed field's DER `/Contents` in one of a layer's versions (`application/pkcs7-signature`). */
+  layerVersionSignatureContents: (
     docId: string,
+    layerName: string,
+    sha256: string,
+    fieldName: string,
+  ) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/signatures/${sha256}/${encodeTokenText(fieldName)}/contents`,
+  /** Immutable: the digest of a signed field's `/ByteRange` in one of a layer's versions. */
+  layerVersionSignatureDigest: (
+    docId: string,
+    layerName: string,
     sha256: string,
     fieldName: string,
     algorithm: 'sha1' | 'sha256' | 'sha384' | 'sha512',
   ) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/signatures/${sha256}/${encodeTokenText(fieldName)}/digest/${algorithm}`,
-  /** Immutable: history between two revisions of one base version. */
-  docVersionAnalysis: (docId: string, sha256: string, query: AnalysisQueryInput) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/analysis/${sha256}?${analysisQueryString(query)}`,
-  /** Immutable: the bytes of one base version. */
-  docVersionDownload: (docId: string, sha256: string) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/download/${sha256}`,
-  /** Immutable: the byte prefix `[0, end)` of revision `index` of one base version. */
-  docVersionRevision: (docId: string, sha256: string, index: number) =>
-    `/v1/docs/${encodeURIComponent(docId)}/versions/revisions/${sha256}/${index}`,
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/signatures/${sha256}/${encodeTokenText(fieldName)}/digest/${algorithm}`,
+  /** Immutable: history between two revisions of one of a layer's versions. */
+  layerVersionAnalysis: (
+    docId: string,
+    layerName: string,
+    sha256: string,
+    query: AnalysisQueryInput,
+  ) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/analysis/${sha256}?${analysisQueryString(query)}`,
+  /** Immutable: the bytes of one of a layer's versions. */
+  layerVersionDownload: (docId: string, layerName: string, sha256: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/download/${sha256}`,
+  /** Immutable: the byte prefix `[0, end)` of revision `index` of one of a layer's versions. */
+  layerVersionRevision: (docId: string, layerName: string, sha256: string, index: number) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/versions/revisions/${sha256}/${index}`,
 
   /** POST (multipart envelope): draw a PDF page into an unsigned signature field's widgets. */
   layerFormFieldSignatureAppearance: (docId: string, layerName: string, fieldKey: string) =>
@@ -298,6 +314,44 @@ export const wirePaths = {
   /** POST: set and remove the Info dict's custom keys for the layer. */
   layerCustomMetadataUpdate: (docId: string, layerName: string) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/metadata/custom`,
+
+  /**
+   * GET: the fonts that can be named in the layer (`doc.fonts.list()`), at
+   * its `fontsVersion` and the server's fonts' fingerprint. Content-addressed:
+   * a stale pin, or another server's fonts, 404s and the client refreshes its
+   * manifest.
+   */
+  layerFonts: (docId: string, layerName: string, token: FontsToken) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/fonts@${encodeFontsToken(token)}`,
+
+  layerFontsCurrent: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/fonts`,
+
+  /** Immutable base font list: the shared-URL twin a layer resolves at while it draws what the base does. */
+  docFonts: (docId: string, token: FontsToken) =>
+    `/v1/docs/${encodeURIComponent(docId)}/fonts@${encodeFontsToken(token)}`,
+
+  /** POST: the fonts a write would draw each run in (`doc.fonts.resolve()`), a read with a body. */
+  layerFontsResolve: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/fonts/resolve`,
+
+  /** GET: a program's facts (`doc.fonts.getProgram()`), content-addressed by its display hash. */
+  layerFontProgram: (docId: string, layerName: string, displayHash: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/font-programs/${encodeURIComponent(displayHash)}`,
+
+  /**
+   * GET: a program's bytes (`doc.fonts.downloadProgram()`), for a token that
+   * may write text in the document. Private: never cached on a shared CDN.
+   */
+  layerFontProgramFile: (docId: string, layerName: string, displayHash: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/font-program-files/${encodeURIComponent(displayHash)}`,
+
+  /**
+   * GET: a served server font's bytes, one URL for every document, so a
+   * browser keeps one copy. Any valid token; private.
+   */
+  fontProgramFile: (displayHash: string) =>
+    `/v1/font-program-files/${encodeURIComponent(displayHash)}`,
 
   /**
    * Immutable base /EmbeddedFiles listing: the shared-URL variant an
@@ -405,6 +459,18 @@ export const wirePaths = {
   ) =>
     `/v1/docs/${encodeURIComponent(docId)}/${PAGE_PRINT_FAMILIES[tier][family].path}/${encodeURIComponent(encodePageKey(page))}/data`,
 
+  /**
+   * A thumbnail (`PAGE_THUMBNAIL_FAMILIES`): a family as a small picture of
+   * the whole page. A thumbnail is its own right, so it is in the path like the
+   * family; the token carries the family's pins and the image format, nothing
+   * that sizes the picture.
+   */
+  docPageThumbnail: (docId: string, family: PageRenderFamily, page: PageRef, token: TokenInput) =>
+    `/v1/docs/${encodeURIComponent(docId)}/${PAGE_THUMBNAIL_FAMILIES[family].path}/${encodeURIComponent(encodePageKey(page))}/data@${encodeRenderToken(token)}`,
+
+  docPageThumbnailCurrent: (docId: string, family: PageRenderFamily, page: PageRef) =>
+    `/v1/docs/${encodeURIComponent(docId)}/${PAGE_THUMBNAIL_FAMILIES[family].path}/${encodeURIComponent(encodePageKey(page))}/data`,
+
   layerPageGeometry: (docId: string, layerName: string, page: PageRef, contentVersion: number) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/geometry/pages/${encodeURIComponent(encodePageKey(page))}/data@${encodeContentToken(contentVersion)}`,
 
@@ -427,6 +493,24 @@ export const wirePaths = {
     page: PageRef,
   ) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/${PAGE_RENDER_FAMILIES[family].path}/${encodeURIComponent(encodePageKey(page))}/data`,
+
+  /** Layer twin of `docPageThumbnail`. */
+  layerPageThumbnail: (
+    docId: string,
+    layerName: string,
+    family: PageRenderFamily,
+    page: PageRef,
+    token: TokenInput,
+  ) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/${PAGE_THUMBNAIL_FAMILIES[family].path}/${encodeURIComponent(encodePageKey(page))}/data@${encodeRenderToken(token)}`,
+
+  layerPageThumbnailCurrent: (
+    docId: string,
+    layerName: string,
+    family: PageRenderFamily,
+    page: PageRef,
+  ) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/${PAGE_THUMBNAIL_FAMILIES[family].path}/${encodeURIComponent(encodePageKey(page))}/data`,
 
   /** Layer twin of `docPagePrint`. */
   layerPagePrint: (
@@ -729,6 +813,10 @@ export const wirePaths = {
   layerDownloadVersioned: (docId: string, layerName: string, token: DownloadToken) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/download@${encodeDownloadToken(token)}`,
 
+  /** POST: a short-lived URL that downloads the layer's current PDF without an Authorization header. */
+  layerDownloadLink: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/download-link`,
+
   /**
    * POST: pre-warm the doc cache + worker open before any user
    * request lands. Body is `{ docId }`. Doc-scoped token required.
@@ -775,6 +863,10 @@ export const wireTemplates = {
   layerMetadata: '/v1/docs/:docId/layers/:layerName/metadata',
   layerCustomMetadata: '/v1/docs/:docId/layers/:layerName/metadata/custom',
   layerOutline: '/v1/docs/:docId/layers/:layerName/outline',
+  layerFonts: '/v1/docs/:docId/layers/:layerName/fonts',
+  layerFontsResolve: '/v1/docs/:docId/layers/:layerName/fonts/resolve',
+  layerFontProgram: '/v1/docs/:docId/layers/:layerName/font-programs/:displayHash',
+  layerFontProgramFile: '/v1/docs/:docId/layers/:layerName/font-program-files/:displayHash',
   layerAttachments: '/v1/docs/:docId/layers/:layerName/attachments',
   layerAttachmentFile: '/v1/docs/:docId/layers/:layerName/attachment-files/:fileKey/data',
   layerRenderPage: '/v1/docs/:docId/layers/:layerName/render/pages/:pageKey/data',
@@ -811,16 +903,19 @@ export const wireTemplates = {
   layerPagesExtract: '/v1/docs/:docId/layers/:layerName/pages/extract',
   layerRedactionsApply: '/v1/docs/:docId/layers/:layerName/redactions/apply',
   layerDownload: '/v1/docs/:docId/layers/:layerName/download',
+  layerDownloadLink: '/v1/docs/:docId/layers/:layerName/download-link',
   layerSignatures: '/v1/docs/:docId/layers/:layerName/signatures',
   layerSignaturesAnalysis: '/v1/docs/:docId/layers/:layerName/signatures/analysis',
   layerSignaturesPrepare: '/v1/docs/:docId/layers/:layerName/signatures/prepare',
   layerSignatureComplete: '/v1/docs/:docId/layers/:layerName/signatures/:signingId/complete',
   layerSignatureCancel: '/v1/docs/:docId/layers/:layerName/signatures/:signingId',
-  docVersions: '/v1/docs/:docId/versions',
-  docVersionSignatures: '/v1/docs/:docId/versions/signatures/:sha',
-  docVersionSignatureContents: '/v1/docs/:docId/versions/signatures/:sha/:fieldKey/contents',
-  docVersionSignatureDigest: '/v1/docs/:docId/versions/signatures/:sha/:fieldKey/digest/:algorithm',
-  docVersionAnalysis: '/v1/docs/:docId/versions/analysis/:sha',
-  docVersionDownload: '/v1/docs/:docId/versions/download/:sha',
-  docVersionRevision: '/v1/docs/:docId/versions/revisions/:sha/:index',
+  layerVersions: '/v1/docs/:docId/layers/:layerName/versions',
+  layerVersionSignatures: '/v1/docs/:docId/layers/:layerName/versions/signatures/:sha',
+  layerVersionSignatureContents:
+    '/v1/docs/:docId/layers/:layerName/versions/signatures/:sha/:fieldKey/contents',
+  layerVersionSignatureDigest:
+    '/v1/docs/:docId/layers/:layerName/versions/signatures/:sha/:fieldKey/digest/:algorithm',
+  layerVersionAnalysis: '/v1/docs/:docId/layers/:layerName/versions/analysis/:sha',
+  layerVersionDownload: '/v1/docs/:docId/layers/:layerName/versions/download/:sha',
+  layerVersionRevision: '/v1/docs/:docId/layers/:layerName/versions/revisions/:sha/:index',
 } as const;

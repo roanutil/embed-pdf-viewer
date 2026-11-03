@@ -90,6 +90,9 @@ wire_kinds! {
     Close => "close",
     DocumentApply => "document.apply",
     DocumentApplyChanges => "document.applyChanges",
+    DocumentFontsList => "document.fonts.list",
+    DocumentFontsProgram => "document.fonts.program",
+    DocumentFontsResolve => "document.fonts.resolve",
     DocumentCheckPasswordPermissions => "document.checkPasswordPermissions",
     DocumentProbeSecurityFile => "document.probeSecurityFile",
     DocumentRenderPageFile => "document.renderPageFile",
@@ -103,6 +106,8 @@ wire_kinds! {
     FontsAuthorizeEditing => "fonts.authorizeEditing",
     FontsClear => "fonts.clear",
     FontsClearFallbacks => "fonts.clearFallbacks",
+    FontsList => "fonts.list",
+    FontsProgram => "fonts.program",
     FontsRegister => "fonts.register",
     FormsAddWidget => "forms.addWidget",
     FormsCreateField => "forms.createField",
@@ -275,6 +280,9 @@ pub fn request_in_file_space(
         | K::AttachmentsList
         | K::AttachmentsReadFile
         | K::Close
+        | K::DocumentFontsList
+        | K::DocumentFontsProgram
+        | K::DocumentFontsResolve
         | K::DocumentCheckPasswordPermissions
         | K::DocumentProbeSecurityFile
         | K::DocumentSaveBuffer
@@ -286,6 +294,8 @@ pub fn request_in_file_space(
         | K::FontsAuthorizeEditing
         | K::FontsClear
         | K::FontsClearFallbacks
+        | K::FontsList
+        | K::FontsProgram
         | K::FontsRegister
         | K::FormsDeleteField
         | K::FormsDeleteWidget
@@ -514,6 +524,9 @@ pub fn result_in_page_space(
         | K::AttachmentsList
         | K::AttachmentsReadFile
         | K::Close
+        | K::DocumentFontsList
+        | K::DocumentFontsProgram
+        | K::DocumentFontsResolve
         | K::DocumentCheckPasswordPermissions
         | K::DocumentProbeSecurityFile
         | K::DocumentRenderPageFile
@@ -527,6 +540,8 @@ pub fn result_in_page_space(
         | K::FontsAuthorizeEditing
         | K::FontsClear
         | K::FontsClearFallbacks
+        | K::FontsList
+        | K::FontsProgram
         | K::FontsRegister
         | K::FormsDeleteField
         | K::FormsExport
@@ -676,6 +691,7 @@ pub fn change_op_in_file_space(
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
         | ChangeOp::PagesInsert { .. }
+        | ChangeOp::PagesCopy { .. }
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
@@ -781,6 +797,9 @@ pub fn change_item_in_page_space(
         }
         ChangeItem::PagesInsert { inserted_pages, layout, meta } => {
             Ok(ChangeItem::PagesInsert { inserted_pages, layout: page_layout_value(layout)?, meta })
+        }
+        ChangeItem::PagesCopy { inserted_pages, layout, meta } => {
+            Ok(ChangeItem::PagesCopy { inserted_pages, layout: page_layout_value(layout)?, meta })
         }
         ChangeItem::PagesRestore { pages, layout, meta } => {
             Ok(ChangeItem::PagesRestore { pages, layout: page_layout_value(layout)?, meta })
@@ -1031,7 +1050,7 @@ mod tests {
             assert_eq!(WireKind::of(spelling), Some(*kind));
             assert_eq!(kind.as_str(), *spelling);
         }
-        assert_eq!(WireKind::ALL.len(), 89);
+        assert_eq!(WireKind::ALL.len(), 94);
         assert_eq!(WireKind::of("pages.move"), None, "a removed kind is not on the wire");
     }
 

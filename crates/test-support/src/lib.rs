@@ -51,6 +51,28 @@ pub const FEATURES: &str = "tooling/viewer-e2e/fixtures/features.pdf";
 pub const MEASURE_FOREIGN_VIEWPORT: &str =
     "crates/test-support/fixtures/measure-foreign-viewport.pdf";
 
+/// TEMPORARY: remove when C5 regenerates the pages/metadata vectors with the
+/// new wasm payload.
+///
+/// `actual` without its `labels: []` when `expected`, a page list the
+/// TypeScript engine recorded before upstream's page lists carried label
+/// sections (`PageListSnapshot.labels`), has no `labels` key. A list that has
+/// sections keeps them, so a vector of a labelled document still fails until
+/// it is regenerated.
+pub fn without_unrecorded_labels(
+    expected: &serde_json::Value,
+    actual: &serde_json::Value,
+) -> serde_json::Value {
+    let mut actual = actual.clone();
+    if let (Some(recorded), Some(answered)) = (expected.as_object(), actual.as_object_mut())
+        && !recorded.contains_key("labels")
+        && answered.get("labels") == Some(&serde_json::Value::Array(Vec::new()))
+    {
+        answered.remove("labels");
+    }
+    actual
+}
+
 /// Put a JSON tree into the one spelling both engines agree on.
 ///
 /// Two things differ between a `serde_json` value and the JavaScript that

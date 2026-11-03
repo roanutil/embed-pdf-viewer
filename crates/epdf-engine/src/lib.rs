@@ -30,6 +30,7 @@ pub mod error;
 pub mod geom;
 pub mod identity;
 pub mod ids;
+pub(crate) mod js_number;
 pub mod mutation;
 pub mod revision;
 

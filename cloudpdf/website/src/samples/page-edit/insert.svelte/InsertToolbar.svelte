@@ -6,7 +6,7 @@
 
   /** Another PDF's bytes, to insert pages from. */
   const otherPdf = async () =>
-    (await fetch('https://snippet.embedpdf.com/ebook.pdf')).arrayBuffer();
+    (await fetch('/pdfs/welcome.pdf')).arrayBuffer();
 
   const pageEdit = usePageEdit();
   const stage = useStage();
@@ -62,7 +62,7 @@
     <button
       type="button"
       class="button"
-      disabled={!canEdit || !pageEdit.canExtract()}
+      disabled={!canEdit}
       onclick={() => pageEdit.duplicate([page.ref]).then(show)}
     >
       Duplicate page

@@ -164,6 +164,9 @@ pub struct MirrorEnvironment {
     pub doc: Option<Rc<dyn DocumentHandle>>,
     pub lifetime: AbortSignal,
     pub changes: DocumentChanges,
+    /// The document's pages as the user sees them: a page mirror reads a
+    /// page once the engine has it.
+    pub pages: crate::page_view::PageView,
     pub events: EventHookSource<Value>,
     pub cell: Rc<dyn Fn(&str, Value) -> SliceLease>,
     pub notify: Rc<dyn Fn()>,
@@ -180,6 +183,7 @@ impl MirrorEnvironment {
         Self {
             doc: None,
             lifetime,
+            pages: crate::page_view::PageView::new(changes.clone(), Rc::new(|_| {})),
             changes,
             events,
             cell: Rc::new(move |name, initial| {

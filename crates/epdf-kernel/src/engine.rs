@@ -133,6 +133,22 @@ pub trait DocumentHandle {
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
         self.call("objectNumbers.reserve", None, vec![Value::from(count)]).convert(|_| Ok(()))
     }
+    /// `objectNumbers.reserve(count)` for a count as JavaScript passes it:
+    /// a whole number in range goes to [`Self::reserve_object_numbers`],
+    /// and any other is refused as `LocalObjectNumberPool.reserve` refuses
+    /// it, before the engine hears of it.
+    fn reserve_object_number_count(&self, count: f64) -> EngineCall<()> {
+        if count.fract() == 0.0 && (0.0..=f64::from(u32::MAX)).contains(&count) {
+            return self.reserve_object_numbers(count as u32);
+        }
+        Promise::rejected(
+            Error::engine(
+                "InvalidArg",
+                format!("cannot reserve {} object numbers", crate::js::number_to_string(count)),
+            )
+            .with("details", serde_json::json!({ "field": "count" })),
+        )
+    }
     fn id(&self) -> String;
     /// `DocumentCapabilities`.
     fn capabilities(&self) -> Value;

@@ -723,7 +723,7 @@ const cases: ScenarioCase[] = [
 import { pending } from './redaction-read-inputs';
 
 const functions = {
-  initialRedactionState: model.initialRedactionState,
+  initialRedactionState: model.initialRedactionModel,
   startApply: model.startApply,
   finishApply: model.finishApply,
   setLastResult: model.setLastResult,
@@ -734,7 +734,7 @@ const functions = {
     refs?: readonly AnnotationRef[],
   ) => pending(pages, records).api.estimateCollateral(refs),
 };
-const initial = model.initialRedactionState(),
+const initial = model.initialRedactionModel(),
   busy = { applying: true, lastResult: null },
   done = { applying: false, lastResult: answer };
 const f = <K extends keyof typeof functions>(

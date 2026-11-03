@@ -130,9 +130,13 @@ fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
         assert_eq!(items.len(), 1, "{}: one op, one item", case.name);
         let item = &items[0];
         assert_eq!(item["type"], case.request["change"]["ops"][0]["type"], "{}", case.name);
+        let recorded = case.layout.as_ref().expect("a recorded layout");
         assert_eq!(
-            test_support::canonical_numbers(&item["layout"]),
-            test_support::canonical_numbers(case.layout.as_ref().expect("a recorded layout")),
+            test_support::canonical_numbers(&test_support::without_unrecorded_labels(
+                recorded,
+                &item["layout"]
+            )),
+            test_support::canonical_numbers(recorded),
             "{}: {}",
             case.name,
             case.covers,

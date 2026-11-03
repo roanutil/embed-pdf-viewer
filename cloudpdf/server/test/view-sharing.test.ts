@@ -21,6 +21,10 @@ import { buildAppForTesting } from '../src/app/buildApp';
 import type { CdnSigner, SignInput } from '../src/cdn/CdnSigner';
 import { createValidTestLicenseGate } from '../src/licensing/testing';
 import { appliedResult, postChange, type ChangeTarget } from './_helpers/changes';
+import { serverFontsFingerprint } from '../src/services/ServerFonts';
+
+/** The stub worker's server fonts: it registers none. */
+const SERVER_FONTS = serverFontsFingerprint([], []);
 
 /**
  * Plane-scoped view sharing. The rule under test: a layer is a set of
@@ -36,14 +40,11 @@ const STUB_ENTRY = new URL('./_helpers/stub-worker-entry.cjs', import.meta.url);
 const SECRET = 'view-sharing-secret';
 
 /** Canonical lattice token: durable read-through → countable single render. */
-const W320_TOKEN =
-  'background=white,contentVersion=1,format=webp,viewport.kind=width,viewport.width=320';
+const W320_TOKEN = `background=white,contentVersion=1,format=webp,serverFonts=${SERVER_FONTS},viewport.kind=width,viewport.width=320`;
 /** The picture with annotations: its own path (`/render/annotations/…`), its own pins. */
-const W320_ANNOTATIONS_TOKEN =
-  'annotationVersion=1,background=white,contentVersion=1,format=webp,viewport.kind=width,viewport.width=320';
+const W320_ANNOTATIONS_TOKEN = `annotationVersion=1,background=white,contentVersion=1,format=webp,serverFonts=${SERVER_FONTS},viewport.kind=width,viewport.width=320`;
 /** The picture with form fields (`/render/fields/…`). */
-const W320_FIELDS_TOKEN =
-  'background=white,contentVersion=1,format=webp,viewport.kind=width,viewport.width=320,widgetVersion=1';
+const W320_FIELDS_TOKEN = `background=white,contentVersion=1,format=webp,serverFonts=${SERVER_FONTS},viewport.kind=width,viewport.width=320,widgetVersion=1`;
 
 const ALL_BASE = {
   content: 'base',
@@ -466,7 +467,8 @@ describe('attachments plane (independent axis)', () => {
     const b = await fetch(url, { headers: auth(docToken(tenantId, docId, 'bob')) });
     expect(a.status).toBe(200);
     expect(b.status).toBe(200);
-    expect(a.headers.get('cache-control')).toContain('immutable');
+    // This fixture's signer fronts the engine with a CDN, so shared caches may keep it.
+    expect(a.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
     // The sidebar-on-open economics: base session only, no layer sessions.
     expect(spy.count('open.layerFileBase')).toBe(0);
   });

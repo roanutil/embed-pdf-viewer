@@ -22,11 +22,15 @@
 use super::applier::{ChangeContext, Done, left_alone};
 use super::item::ChangeItem;
 use super::record::{
-    CapturedPage, LeftPage, PagePlacement, PageRemoveStep, PageReorderStep, PageRestoreStep,
-    PageRotateStep, ReverseStep,
+    CapturedPage, LeftPage, PageLabelsStep, PagePlacement, PageRemoveStep, PageReorderStep,
+    PageRestoreStep, PageRotateStep, ReverseStep,
 };
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::page_labels::{
+    PageLabelSection, read_label_sections, sections_after_delete, sections_after_insert,
+    sections_after_move, write_label_sections,
+};
 use crate::features::pages::{list_pages, rotation_at};
 use crate::features::pages_write::{
     self as mutator, PageInsertResult, PageLayoutResult, PagePosition,
@@ -108,16 +112,26 @@ pub fn reorder_pages(
 ) -> Result<Done, EngineError> {
     authorize(ctx)?;
     let numbers: Vec<u32> = pages.iter().map(|page| page.object_number().get()).collect();
-    let back = placements_of(&order_of(ctx)?, &numbers);
+    let before = order_of(ctx)?;
+    let found = labels_of(ctx)?;
+    let back = placements_of(&before, &numbers);
     let result = mutator::reorder_pages(ctx.session, pages, position, ctx.cancel)?;
-    let left = placements_of(&order_of(ctx)?, &numbers);
+    let after = order_of(ctx)?;
+    // A move that changes the order moves the label sections too: a
+    // delete, then an insert.
+    let labels = relabel(ctx, &found, &labels_moved(&found, &before, &after, &numbers))?;
+    let left = placements_of(&after, &numbers);
     Ok(Done {
         item: ChangeItem::PagesReorder {
             pages: result.pages,
-            layout: to_value(&result.layout)?,
+            layout: layout_after(ctx, labels.as_ref(), &result.layout)?,
             meta: result.meta,
         },
-        reverse: vec![ReverseStep::PagesReorder(PageReorderStep { placements: back, left })],
+        reverse: vec![ReverseStep::PagesReorder(PageReorderStep {
+            placements: back,
+            left,
+            labels,
+        })],
     })
 }
 
@@ -150,7 +164,10 @@ pub fn reorder_pages_back(
     authorize(ctx)?;
     let pages: Vec<u32> = placements.iter().map(|placement| placement.page).collect();
     let back = placements_of(&order, &pages);
+    let found = labels_of(ctx)?;
     let mut layout = None;
+    let mut ruled = found.clone();
+    let mut moving = order;
     for placement in &placements {
         let position = if placement.after == 0 {
             ListPosition::End(End::Start)
@@ -164,15 +181,23 @@ pub fn reorder_pages_back(
             ctx.cancel,
         )?;
         layout = Some(moved.layout);
+        let now = order_of(ctx)?;
+        ruled = labels_moved(&ruled, &moving, &now, &[placement.page]);
+        moving = now;
     }
+    let labels = relabel(ctx, &found, &labels_after(&found, ruled, step.labels.as_ref()))?;
+    let layout = match &labels {
+        Some(_) => to_value(&list_pages(ctx.session.document()?.document(), ctx.cancel)?)?,
+        None => to_value(&layout)?,
+    };
     let left = placements_of(&order_of(ctx)?, &pages);
     Ok(Done {
-        item: ChangeItem::PagesReorder {
-            pages: page_refs(&pages)?,
-            layout: to_value(&layout)?,
-            meta: meta_of(ctx)?,
-        },
-        reverse: vec![ReverseStep::PagesReorder(PageReorderStep { placements: back, left })],
+        item: ChangeItem::PagesReorder { pages: page_refs(&pages)?, layout, meta: meta_of(ctx)? },
+        reverse: vec![ReverseStep::PagesReorder(PageReorderStep {
+            placements: back,
+            left,
+            labels,
+        })],
     })
 }
 
@@ -184,7 +209,7 @@ pub fn delete_pages(ctx: &mut ChangeContext<'_>, pages: &[PageRef]) -> Result<Do
     let resolved = mutator::resolve_page_refs(ctx.session, pages)?;
     let numbers: Vec<u32> = resolved.iter().map(|page| page.get()).collect();
     let pages = in_display_order(&order_of(ctx)?, &numbers);
-    write_delete(ctx, &pages)
+    write_delete(ctx, &pages, None)
 }
 
 /// Brings back pages a delete removed, those that aren't back already
@@ -200,6 +225,7 @@ pub fn restore_pages(
         return left_alone(ctx, "pages.restore");
     }
     authorize(ctx)?;
+    let found = labels_of(ctx)?;
     {
         // An import runs inside the change's layer transaction. In the
         // display order they had: each page it followed is back before it.
@@ -212,9 +238,17 @@ pub fn restore_pages(
     }
     ctx.session.refresh_page_registry()?;
     let numbers: Vec<u32> = gone.iter().map(|captured| captured.page).collect();
-    let pages = in_display_order(&order_of(ctx)?, &numbers);
+    let restored = order_of(ctx)?;
+    let pages = in_display_order(&restored, &numbers);
+    // Each came back where the pages before it already were, and lands in
+    // the numbering of the section it lands in when the sections moved
+    // since the delete.
+    let ruled = pages.iter().fold(found.clone(), |sections, page| {
+        sections_after_insert(&sections, index_in(&restored, *page), 1)
+    });
+    let labels = relabel(ctx, &found, &labels_after(&found, ruled, step.labels.as_ref()))?;
     let layout = list_pages(ctx.session.document()?.document(), ctx.cancel)?;
-    let reverse = remove_step_of(ctx, &pages)?;
+    let reverse = remove_step_of(ctx, &pages, labels, Vec::new())?;
     Ok(Done {
         item: ChangeItem::PagesRestore {
             pages: page_refs(&pages)?,
@@ -242,8 +276,11 @@ pub fn remove_pages(
         return left_alone(ctx, "pages.delete");
     }
     authorize(ctx)?;
+    let fields = super::fields::delete_fields_on(ctx, &step.fields, &pages)?;
     let pages = in_display_order(&order, &pages);
-    write_delete(ctx, &pages)
+    let mut done = write_delete(ctx, &pages, step.labels.as_ref())?;
+    done.reverse.extend(fields);
+    Ok(done)
 }
 
 /// `pages.insertBlank`; its reverse deletes the new pages while nobody
@@ -255,6 +292,7 @@ pub fn insert_blank_pages(
     object_numbers: Option<&[serde_json::Number]>,
 ) -> Result<Done, EngineError> {
     authorize(ctx)?;
+    let found = labels_of(ctx)?;
     let result = mutator::insert_blank_pages(
         ctx.session,
         spec,
@@ -262,7 +300,7 @@ pub fn insert_blank_pages(
         object_numbers,
         ctx.cancel,
     )?;
-    let (item, reverse) = inserted(ctx, result, false)?;
+    let (item, reverse) = inserted(ctx, InsertKind::Blank, result, &found, None)?;
     Ok(Done { item, reverse })
 }
 
@@ -272,43 +310,98 @@ pub fn insert_pages(
     ctx: &mut ChangeContext<'_>,
     source: &[u8],
     position: Option<&PagePosition>,
+    object_numbers: Option<&[serde_json::Number]>,
 ) -> Result<Done, EngineError> {
     authorize(ctx)?;
+    let found = labels_of(ctx)?;
+    let fields_before = super::forms::field_numbers_of(ctx)?;
     let result = mutator::insert_pages(
         ctx.session,
         source,
         position.unwrap_or(&ListPosition::End(End::End)),
+        object_numbers,
         ctx.cancel,
     )?;
-    let (item, reverse) = inserted(ctx, result, true)?;
+    let (item, reverse) =
+        inserted(ctx, InsertKind::Insert, result, &found, Some(&fields_before[..]))?;
     Ok(Done { item, reverse })
 }
 
-/// An insert's item, and the step that deletes its pages again.
+/// `pages.copy`; its reverse deletes the copies while nobody changed them,
+/// with the form fields they brought (`copyPages`).
+pub fn copy_pages(
+    ctx: &mut ChangeContext<'_>,
+    pages: &[PageRef],
+    position: Option<&PagePosition>,
+    object_numbers: Option<&[serde_json::Number]>,
+) -> Result<Done, EngineError> {
+    authorize(ctx)?;
+    let found = labels_of(ctx)?;
+    let fields_before = super::forms::field_numbers_of(ctx)?;
+    let result = mutator::copy_pages(
+        ctx.session,
+        pages,
+        position.unwrap_or(&ListPosition::End(End::End)),
+        object_numbers,
+        ctx.cancel,
+    )?;
+    let (item, reverse) =
+        inserted(ctx, InsertKind::Copy, result, &found, Some(&fields_before[..]))?;
+    Ok(Done { item, reverse })
+}
+
+/// An insert's item, and the step that deletes its pages again
+/// (`inserting`): the new pages take the numbering of the section they land
+/// in. Pages copied in (`fields_before` is the form's fields before them)
+/// may bring form fields, which its reverse deletes with them.
 fn inserted(
-    ctx: &ChangeContext<'_>,
+    ctx: &mut ChangeContext<'_>,
+    kind: InsertKind,
     result: PageInsertResult,
-    copied: bool,
+    found: &[PageLabelSection],
+    fields_before: Option<&[u32]>,
 ) -> Result<(ChangeItem, Vec<ReverseStep>), EngineError> {
+    let fields: Vec<u32> = match fields_before {
+        Some(before) => super::forms::field_numbers_of(ctx)?
+            .into_iter()
+            .filter(|field| !before.contains(field))
+            .collect(),
+        None => Vec::new(),
+    };
     let pages: Vec<u32> =
         result.inserted_pages.iter().map(|page| page.object_number().get()).collect();
-    let reverse = vec![remove_step_of(ctx, &pages)?];
-    let layout = to_value(&result.layout)?;
-    let item = if copied {
-        ChangeItem::PagesInsert { inserted_pages: result.inserted_pages, layout, meta: result.meta }
-    } else {
-        ChangeItem::PagesInsertBlank {
-            inserted_pages: result.inserted_pages,
-            layout,
-            meta: result.meta,
-        }
+    let order = order_of(ctx)?;
+    let at = pages.first().map_or(0, |first| index_in(&order, *first));
+    let labels = relabel(ctx, found, &sections_after_insert(found, at, pages.len() as u32))?;
+    let layout = layout_after(ctx, labels.as_ref(), &result.layout)?;
+    let reverse = vec![remove_step_of(ctx, &pages, labels, fields)?];
+    let (inserted_pages, meta) = (result.inserted_pages, result.meta);
+    let item = match kind {
+        InsertKind::Blank => ChangeItem::PagesInsertBlank { inserted_pages, layout, meta },
+        InsertKind::Insert => ChangeItem::PagesInsert { inserted_pages, layout, meta },
+        InsertKind::Copy => ChangeItem::PagesCopy { inserted_pages, layout, meta },
     };
     Ok((item, reverse))
 }
 
+/// Which insert an item answers.
+enum InsertKind {
+    Blank,
+    Insert,
+    Copy,
+}
+
 /// Deletes `pages`, in display order, each captured first so its restore
-/// brings it back (`writeDelete`).
-fn write_delete(ctx: &mut ChangeContext<'_>, pages: &[u32]) -> Result<Done, EngineError> {
+/// brings it back (`writeDelete`). The label sections follow
+/// (`sectionsAfterDelete`), or become a step's (`labels`) while they read as
+/// its change left them.
+fn write_delete(
+    ctx: &mut ChangeContext<'_>,
+    pages: &[u32],
+    step: Option<&PageLabelsStep>,
+) -> Result<Done, EngineError> {
+    let order = order_of(ctx)?;
+    let found = labels_of(ctx)?;
     // Every capture before any page goes, so each holds the page it
     // followed.
     let captures = {
@@ -325,24 +418,102 @@ fn write_delete(ctx: &mut ChangeContext<'_>, pages: &[u32]) -> Result<Done, Engi
     };
     let refs = page_refs(pages)?;
     let result: PageLayoutResult = mutator::delete_pages(ctx.session, &refs, ctx.cancel)?;
+    let indexes: Vec<u32> = pages.iter().map(|page| index_in(&order, *page)).collect();
+    let ruled = sections_after_delete(&found, order.len() as u32, &indexes);
+    let labels = relabel(ctx, &found, &labels_after(&found, ruled, step))?;
     Ok(Done {
         item: ChangeItem::PagesDelete {
             pages: refs,
-            layout: to_value(&result.layout)?,
+            layout: layout_after(ctx, labels.as_ref(), &result.layout)?,
             meta: result.meta,
         },
-        reverse: vec![ReverseStep::PagesRestore(PageRestoreStep { pages: captures })],
+        reverse: vec![ReverseStep::PagesRestore(PageRestoreStep { pages: captures, labels })],
     })
 }
 
 /// The step that deletes `pages` again while each reads as it does now
-/// (`removeStepOf`).
-fn remove_step_of(ctx: &ChangeContext<'_>, pages: &[u32]) -> Result<ReverseStep, EngineError> {
+/// (`removeStepOf`), with the sections to put back and the fields the pages
+/// brought.
+fn remove_step_of(
+    ctx: &ChangeContext<'_>,
+    pages: &[u32],
+    labels: Option<PageLabelsStep>,
+    fields: Vec<u32>,
+) -> Result<ReverseStep, EngineError> {
     let pages = pages
         .iter()
         .map(|page| Ok(LeftPage { page: *page, left: digest_of(ctx, *page)? }))
         .collect::<Result<_, EngineError>>()?;
-    Ok(ReverseStep::PagesRemove(PageRemoveStep { pages }))
+    Ok(ReverseStep::PagesRemove(PageRemoveStep { pages, labels, fields }))
+}
+
+/// The document's page label sections now (`labelsOf`).
+fn labels_of(ctx: &ChangeContext<'_>) -> Result<Vec<PageLabelSection>, EngineError> {
+    read_label_sections(ctx.session.document()?.document())
+}
+
+/// The sections a step leaves (`labelsAfter`): those it puts back while
+/// the document's read as its change left them (`found` is how they read
+/// before the step), else those the rules give.
+fn labels_after(
+    found: &[PageLabelSection],
+    ruled: Vec<PageLabelSection>,
+    step: Option<&PageLabelsStep>,
+) -> Vec<PageLabelSection> {
+    match step {
+        Some(step) if step.left == found => step.sections.clone(),
+        _ => ruled,
+    }
+}
+
+/// Writes `sections` when they say other than `found`, and answers the step
+/// that puts `found` back; `None` when the sections stay (`relabel`).
+fn relabel(
+    ctx: &ChangeContext<'_>,
+    found: &[PageLabelSection],
+    sections: &[PageLabelSection],
+) -> Result<Option<PageLabelsStep>, EngineError> {
+    if found == sections {
+        return Ok(None);
+    }
+    write_label_sections(ctx.session.document()?.document(), sections)?;
+    Ok(Some(PageLabelsStep { sections: found.to_vec(), left: sections.to_vec() }))
+}
+
+/// The sections once `pages` moved together from `before` to `after`
+/// (`labelsMoved`): a move that changes the order is a delete followed by
+/// an insert, where the first of them lands.
+fn labels_moved(
+    sections: &[PageLabelSection],
+    before: &[u32],
+    after: &[u32],
+    pages: &[u32],
+) -> Vec<PageLabelSection> {
+    if before.iter().enumerate().all(|(index, page)| after.get(index) == Some(page)) {
+        return sections.to_vec();
+    }
+    let indexes: Vec<u32> = pages.iter().map(|page| index_in(before, *page)).collect();
+    let at = pages.first().map_or(0, |first| index_in(after, *first));
+    sections_after_move(sections, before.len() as u32, &indexes, at)
+}
+
+/// A write's layout, read again when it wrote label sections: the labels
+/// moved after its read (`layoutIfRelabelled`).
+fn layout_after(
+    ctx: &ChangeContext<'_>,
+    labels: Option<&PageLabelsStep>,
+    layout: &crate::features::pages::PageListSnapshot,
+) -> Result<serde_json::Value, EngineError> {
+    match labels {
+        Some(_) => to_value(&list_pages(ctx.session.document()?.document(), ctx.cancel)?),
+        None => to_value(layout),
+    }
+}
+
+/// Where `page` is in `order` (`indexOf`). Every caller asks for a page
+/// that is there; one that isn't counts as past the end.
+fn index_in(order: &[u32], page: u32) -> u32 {
+    order.iter().position(|p| *p == page).map_or(u32::MAX, |at| at as u32)
 }
 
 /// How a page reads now (`digestOf`): the SHA-256 of its dictionary and of

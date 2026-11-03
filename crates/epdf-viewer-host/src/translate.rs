@@ -163,6 +163,7 @@ pub const LOCAL_PATHS: &[&str] = &[
     "pages.delete",
     "pages.insert",
     "pages.insertBlank",
+    "pages.copy",
 ];
 
 /// Whether the native handle has `path`; or, for a bare namespace such as

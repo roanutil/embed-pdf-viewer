@@ -1,6 +1,6 @@
 //! Copying pages into a new document, and serializing it.
 //!
-//! A read over the source: `FPDF_ImportPagesByIndex` copies into a scratch
+//! A read over the source: `EPDFDoc_ImportPages` copies into a scratch
 //! document, so nothing about the original changes. The scratch is closed
 //! before anything returns, success or failure.
 //!
@@ -50,7 +50,9 @@ impl Drop for OwnedBuffer {
 /// How [`Document::extract_pages`] copies its pages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExtractCopy {
-    /// As they are (`FPDF_ImportPagesByIndex`).
+    /// As they are, with the form fields of their widgets
+    /// (`EPDFDoc_ImportPages`): a new document has no fields of its own, so
+    /// no name needs keeping apart.
     Plain,
     /// As they draw for `usage` (`EPDFDoc_ExportPagesFlattened`): the
     /// annotations and the form fields painted in when chosen, nothing
@@ -101,15 +103,17 @@ impl Document {
                     return Err(PdfiumError::Load);
                 }
                 let scratch = Scratch(dest);
-                // SAFETY: both handles are live, and the slice is
-                // `signed.len()` elements as the length argument claims.
+                // SAFETY: both handles are live, the slice is `signed.len()`
+                // elements as the length argument claims, and no numbers are
+                // passed.
                 let ok = unsafe {
-                    pdfium_sys::FPDF_ImportPagesByIndex(
+                    pdfium_sys::EPDFDoc_ImportPages(
                         scratch.0,
                         self.handle,
                         signed.as_ptr(),
                         signed.len() as std::os::raw::c_ulong,
                         0,
+                        std::ptr::null(),
                     )
                 };
                 if ok == 0 {

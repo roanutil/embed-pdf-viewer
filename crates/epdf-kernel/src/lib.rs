@@ -32,6 +32,8 @@ pub mod kernel;
 pub mod lanes;
 pub mod mirror;
 pub mod page_mirror;
+pub mod page_predict;
+pub mod page_view;
 pub mod plan;
 pub mod plugin;
 pub mod print;
