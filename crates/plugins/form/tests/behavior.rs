@@ -407,3 +407,8 @@ fn the_fields_mirror_cell_dumps_the_whole_field_index() {
         expected["value"]["snapshot"].as_object().unwrap().keys().collect::<Vec<_>>(),
     );
 }
+
+#[test]
+fn the_form_starts_with_no_focused_widget() {
+    assert_eq!(epdf_plugin_form::model::initial_form_state(), json!({ "focused": null }));
+}

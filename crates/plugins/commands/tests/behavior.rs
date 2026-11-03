@@ -962,3 +962,118 @@ fn the_readers_wake_after_a_run_the_caller_cancelled() {
     );
     assert!(wakes.get() > 0, "a cancelled run woke the readers");
 }
+
+#[test]
+fn a_setting_lock_disables_without_hiding_and_preserves_active_value() {
+    let held = Rc::new(Cell::new(true));
+    let lock = held.clone();
+    let runs = Rc::new(Cell::new(0));
+    let ran = runs.clone();
+    let command = CommandDef {
+        id: "view:single".into(),
+        label: Some("Single page".into()),
+        active: Some(derivation(true)),
+        locked: Some(Rc::new(move |_| {
+            Ok(lock.get().then(|| epdf_kernel::settings::SettingLock {
+                by: "kiosk".into(),
+                reason_key: None,
+            }))
+        })),
+        run: Some(Rc::new(move |_| {
+            ran.set(ran.get() + 1);
+            Ok(Some(Promise::resolved(Value::Null)))
+        })),
+        ..Default::default()
+    };
+    let mut settings = config(vec![command]);
+    settings.not_allowed = Some(NotAllowedMode::Hide);
+    let rig = rig(settings);
+    let resolved = rig.resolve("view:single");
+    assert!(resolved.visible);
+    assert!(resolved.active);
+    assert!(!resolved.enabled);
+    assert_eq!(
+        resolved.disabled_reason.as_deref(),
+        Some("Single page can't be changed in this document")
+    );
+    assert_eq!(
+        rig.commands.get_refusal("view:single", None).unwrap().unwrap().reason,
+        RefusalReason::Locked
+    );
+    assert_eq!(
+        settle(&rig.commands.execute("view:single", ExecuteOptions::default())).unwrap(),
+        ExecuteResult::Rejected { reason: RejectReason::Disabled }
+    );
+    assert_eq!(runs.get(), 0);
+    held.set(false);
+    assert!(rig.commands.get_refusal("view:single", None).unwrap().is_none());
+    assert!(rig.resolve("view:single").enabled);
+    assert_eq!(
+        settle(&rig.commands.execute("view:single", ExecuteOptions::default())).unwrap(),
+        ExecuteResult::Executed
+    );
+    assert_eq!(runs.get(), 1);
+}
+
+#[test]
+fn lock_sentences_translate_and_throwing_checks_count_as_unlocked() {
+    let warnings = Rc::default();
+    let locked = CommandDef {
+        id: "spread".into(),
+        label: Some("Two pages".into()),
+        locked: Some(Rc::new(|_| {
+            Ok(Some(epdf_kernel::settings::SettingLock {
+                by: "protected".into(),
+                reason_key: Some("protected.onePage".into()),
+            }))
+        })),
+        ..Default::default()
+    };
+    let throwing = CommandDef {
+        id: "throws".into(),
+        locked: Some(Rc::new(|_| Err(Error::new("no stage")))),
+        ..Default::default()
+    };
+    let rig = rig_with(
+        Some(config(vec![locked, throwing])),
+        vec![i18n_with(
+            json!({"protected.onePage":"Protected pages show one at a time"}),
+            &warnings,
+        )],
+        json!({}),
+    );
+    assert_eq!(
+        rig.resolve("spread").disabled_reason.as_deref(),
+        Some("Protected pages show one at a time")
+    );
+    assert!(rig.resolve("throws").enabled);
+    assert!(rig.commands.get_refusal("throws", None).unwrap().is_none());
+}
+
+#[test]
+fn turned_off_and_not_allowed_refusals_precede_lock_checks() {
+    let checked = Rc::new(Cell::new(0));
+    let log = checked.clone();
+    let command = CommandDef {
+        id: "print".into(),
+        requires: Some(vec!["doc.print".into()]),
+        locked: Some(Rc::new(move |_| {
+            log.set(log.get() + 1);
+            Ok(Some(epdf_kernel::settings::SettingLock { by: "kiosk".into(), reason_key: None }))
+        })),
+        ..Default::default()
+    };
+    let rig = rig_with(Some(config(vec![command])), vec![], json!({"a":document(json!([]))}));
+    rig.open("a");
+    assert_eq!(
+        rig.commands.get_refusal("print", None).unwrap().unwrap().reason,
+        RefusalReason::NotAllowed
+    );
+    assert_eq!(checked.get(), 0);
+    rig.commands.disable_command("print");
+    assert_eq!(
+        rig.commands.get_refusal("print", None).unwrap().unwrap().reason,
+        RefusalReason::TurnedOff
+    );
+    assert_eq!(checked.get(), 0);
+}

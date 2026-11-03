@@ -242,3 +242,38 @@ fn cancelling_a_set_value_before_it_runs_leaves_the_field_alone() {
     let value = block_on(form.value(text_ref())).unwrap();
     assert_eq!(value, Some(FormValueInput::Value { value: Some("Ada".into()) }));
 }
+
+struct FocusTarget(Mutex<Vec<bool>>);
+impl epdf_plugin_form::ffi::FormFocusTarget for FocusTarget {
+    fn focus(&self, select: bool) {
+        self.0.lock().unwrap().push(select);
+    }
+}
+#[test]
+fn a_native_focus_target_receives_selection_and_unregisters() {
+    let (_thread, form) = handle();
+    let target = Arc::new(FocusTarget(Mutex::new(Vec::new())));
+    let widget = epdf_ffi::AnnotationRef::ObjectNumber {
+        page: PageRef { page_object_number: 1 },
+        annot_object_number: 101,
+    };
+    let registration = block_on(form.attach_focus_target(widget.clone(), target.clone())).unwrap();
+    let reference = FormFieldRef::ObjectNumber { field_object_number: 1 };
+    assert!(
+        block_on(form.focus(
+            reference.clone(),
+            Some(epdf_plugin_form::ffi::FormFocusOptions { select: true, widget: None })
+        ))
+        .unwrap()
+    );
+    assert_eq!(*target.0.lock().unwrap(), vec![true]);
+    block_on(form.notify_widget_event(
+        reference.clone(),
+        widget,
+        epdf_plugin_form::ffi::FormWidgetEvent::Focus,
+    ))
+    .unwrap();
+    assert_eq!(block_on(form.focused_field()).unwrap().unwrap().name, "name");
+    registration.unregister();
+    assert!(!block_on(form.focus(reference, None)).unwrap());
+}
