@@ -6,6 +6,17 @@ namespace EmbedPDF.Engine;
 internal struct NativeReply { internal ulong Result; internal ulong Document; }
 internal static unsafe partial class NativeMethods
 {
+    static NativeMethods()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Absolute dependency loading avoids changing the process DLL search path.
+        var directory = AppContext.BaseDirectory;
+        var dependency = Path.Combine(directory, "embedpdf.dll");
+        if (!File.Exists(dependency))
+            dependency = Path.Combine(directory, "runtimes", "win-x64", "native", "embedpdf.dll");
+        NativeLibrary.Load(Path.GetFullPath(dependency), typeof(NativeMethods).Assembly,
+            DllImportSearchPath.UseDllDirectoryForDependencies | DllImportSearchPath.System32);
+    }
     const string Library = "epdf_capi";
     [LibraryImport(Library, EntryPoint = "epdf_abi_version")][UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])] internal static partial uint AbiVersion();
     [LibraryImport(Library, EntryPoint = "epdf_engine_create")][UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])] internal static partial uint Create(byte* options, ulong optionsLength, byte* payloads, ulong payloadsLength, out ulong engine, out ulong error);
