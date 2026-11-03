@@ -63,7 +63,7 @@
 // and an iOS simulator; EMBEDPDF_TEST_DESTINATION overrides the default one
 // when two simulators share its name.
 
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   chmodSync,
@@ -86,13 +86,13 @@ import { buildFork } from '../perf-compare/scripts/build-arm.mjs';
 import { workDir } from '../perf-compare/scripts/materialize.mjs';
 import { forkContains } from './lib/fork-ancestry.mjs';
 import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
+import { assertGroupRecord, fileDigests } from './lib/publish-guard.mjs';
 import {
-  fileDigests,
-  identityOf,
-  lockHeld,
-  parseProcessRows,
-  recordedGroupAlive,
-} from './lib/publish-guard.mjs';
+  acquireRunLock,
+  checkedGroupAlive,
+  startOwnedStep,
+  surveyProcesses,
+} from './lib/publish-process.mjs';
 import {
   ALL_BOUND_SINCE,
   abiCheckFunctions,
@@ -127,7 +127,7 @@ const PUBLISHING = '.publishing';
 // later run keeps libDir as published only while it is still that payload.
 const PUBLISHED_DIGESTS = '.publishing-digests.json';
 // The process group of the step running while the payload is swapped in, as
-// { pgid, start, args } (its leader's start time and command). A run that finds
+// { pgid, start, args } (its leader's birth identity and diagnostic command). A run that finds
 // that group still alive refuses: that build may still write into libDir.
 const PGID = '.pgid';
 const MARKERS = [PUBLISHING, PUBLISHED_DIGESTS, PGID];
@@ -154,60 +154,22 @@ function normalizeModes(dir) {
   }
 }
 
-// Every process, as scripts/lib/publish-guard.mjs reads them.
+// Unknown process inspection never counts as proof that an owner is gone.
 function processRows() {
-  const ps = spawnSync('ps', ['-A', '-ww', '-o', 'pid=,pgid=,lstart=,args='], {
-    encoding: 'utf8',
-  });
-  return parseProcessRows(ps.stdout ?? '');
+  return surveyProcesses();
 }
 
-// Whether any process of group `pgid` is still alive, for the signal handler's
-// wait on a group it started itself. EPERM is a group that isn't ours.
-function groupAlive(pgid) {
-  try {
-    process.kill(-pgid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Takes the wasm half's run lock, or refuses while another run holds it. A lock
-// whose pid is gone or runs with another start time is a dead run's, and goes.
-// The lock is removed on every exit, signal paths included (they exit through
-// process.exit); a SIGKILL leaves it, and the next run sees it is stale.
 function takeRunLock() {
-  const rows = processRows();
-  const mine = JSON.stringify({ pid: process.pid, start: identityOf(rows, process.pid)?.start });
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const release = acquireRunLock(runLock);
+  process.on('exit', () => {
     try {
-      writeFileSync(runLock, mine, { flag: 'wx' });
-      process.on('exit', () => {
-        try {
-          if (readFileSync(runLock, 'utf8') === mine) rmSync(runLock, { force: true });
-        } catch {}
-      });
-      return;
+      release();
     } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      let held = null;
-      try {
-        held = JSON.parse(readFileSync(runLock, 'utf8'));
-      } catch {}
-      if (lockHeld(rows, held)) {
-        console.error(
-          `another publish is running (pid ${held.pid}); wait for it. If it is not a publish, ` +
-            `remove ${path.relative(repo, runLock)} and rerun.`,
-        );
-        process.exit(1);
-      }
-      rmSync(runLock, { force: true });
+      console.error(`publish lock left for verified recovery: ${error.message}`);
     }
-  }
-  console.error(`couldn't take ${path.relative(repo, runLock)}`);
-  process.exit(1);
+  });
 }
+
 const apple = path.join(repo, 'platforms/apple');
 const manifest = path.join(apple, 'EmbedPDF/Package.swift');
 // The fork target the wasm32 payload links, as build-arm.mjs builds it.
@@ -230,58 +192,41 @@ const sh = (cmd, cwd = repo, env = {}) => {
     env: { ...process.env, ...env },
   });
 };
-// sh, but the event loop runs while the command does, so a SIGINT or SIGTERM
-// handler can act (restore the payload) instead of waiting for it to end.
-// Each runs in a process group of its own (detached), so a signal handler can stop
-// it with everything it started, a grandchild that writes into libDir included.
-// Once a signal handler starts stopping the run, no step starts. lastGroup is
-// the last step's group, which the handler waits on even once its leader is gone.
+// A step settles only once its persistent leader and every owned writer have
+// drained. Success, errors and signals share that boundary before payload moves.
 let running = null;
 let stopping = false;
-let lastGroup = null;
-// A signal that came during the release step, which isn't interruptible: the
-// run honors it once the step ends.
 let releasing = false;
 let deferredSignal = null;
-const shAsync = (cmd, cwd = repo, env = {}) => {
-  if (stopping) return Promise.reject(new Error(`not started, the run is stopping: ${cmd}`));
-  console.log(`  $ ${cmd}`);
-  return new Promise((resolve, reject) => {
-    running = spawn('bash', ['-euo', 'pipefail', '-c', cmd], {
-      cwd,
-      stdio: 'inherit',
-      env: { ...process.env, ...env },
-      detached: true,
-    });
-    lastGroup = {
-      pgid: running.pid,
-      start: identityOf(processRows(), running.pid)?.start ?? null,
-      args: 'bash -euo pipefail -c',
-    };
-    // Recorded in the backup while the payload is swapped in (see PGID).
-    if (existsSync(libBackup)) writeFileSync(path.join(libBackup, PGID), JSON.stringify(lastGroup));
-    running.on('error', reject);
-    running.on('exit', (code, signal) => {
-      running = null;
-      if (code === 0) resolve();
-      else reject(new Error(`Command failed (${signal ?? `exit ${code}`}): ${cmd}`));
-    });
+const runOwned = async (file, args, cwd = repo, env = {}, orphanPolicy = 'stop') => {
+  if (stopping) throw new Error(`not started, the run is stopping: ${file}`);
+  const step = startOwnedStep(file, args, {
+    cwd,
+    env: { ...process.env, ...env },
+    orphanPolicy,
+    onGroup: (group) => {
+      if (existsSync(libBackup)) writeFileSync(path.join(libBackup, PGID), JSON.stringify(group));
+    },
   });
+  running = step;
+  let drained = false;
+  try {
+    await step.completion;
+    drained = true;
+  } catch (error) {
+    drained = !error.preservePayload;
+    throw error;
+  } finally {
+    if (drained && running === step) running = null;
+  }
+};
+const shAsync = (cmd, cwd = repo, env = {}) => {
+  console.log(`  $ ${cmd}`);
+  return runOwned('bash', ['-euo', 'pipefail', '-c', cmd], cwd, env);
 };
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
-// gh, with the event loop running, so a signal during the upload is seen and
-// deferred (releasing) rather than lost. Detached, so a terminal's SIGINT to the
-// foreground group doesn't cut the upload short.
-const ghAsync = (args) =>
-  new Promise((resolve, reject) => {
-    const gh = spawn('gh', args, { cwd: repo, stdio: 'inherit', detached: true });
-    gh.on('error', reject);
-    gh.on('exit', (code, signal) =>
-      code === 0
-        ? resolve()
-        : reject(new Error(`gh release create failed (${signal ?? `exit ${code}`})`)),
-    );
-  });
+// Release creation shares step ownership, while its caller defers user signals.
+const ghAsync = (args) => runOwned('gh', args, repo, {}, 'continue');
 // The pack, the same bytes for the same files: names sorted, times, owners and
 // modes fixed, and gzip without a name or time. GNU tar does it with flags; with
 // bsdtar the files' times are set first and the names listed in order.
@@ -420,10 +365,16 @@ async function publishWasm() {
     // the SIGHUP handler): leave everything until it ends.
     const pgidFile = path.join(libBackup, PGID);
     let group = null;
-    try {
-      group = existsSync(pgidFile) ? JSON.parse(readFileSync(pgidFile, 'utf8')) : null;
-    } catch {}
-    if (recordedGroupAlive(processRows(), group)) {
+    if (existsSync(pgidFile)) {
+      try {
+        group = assertGroupRecord(JSON.parse(readFileSync(pgidFile, 'utf8')));
+      } catch (error) {
+        throw new Error(
+          `${path.relative(repo, pgidFile)} has unknown ownership; verify the previous build has stopped before changing it: ${error.message}`,
+        );
+      }
+    }
+    if (checkedGroupAlive(processRows(), group)) {
       console.error(
         `a previous publish's build is still running: pgid ${group.pgid} (${group.args} …, ` +
           `started ${group.start}). Wait for it to end. If this is not the publish, remove ` +
@@ -526,6 +477,7 @@ async function publishWasm() {
   // the next run restores before anything else.
   // The temp dirs this half made, removed on the signal path too.
   const temps = new Set([staged]);
+  let preserveTemps = false;
   const onSignal = async (signal) => {
     if (releasing) {
       // gh is uploading: stopping it could leave a release half made.
@@ -537,37 +489,14 @@ async function publishWasm() {
     }
     if (stopping) return;
     stopping = true;
-    // Stop the step and everything it started, and wait until no process of its
-    // group is left, so nothing writes into libDir after the restore. Whatever
-    // still runs after 5 s gets SIGKILL, the leader gone or not.
-    const group = lastGroup;
-    if (group) {
-      const pgid = group.pgid;
-      const signalGroup = (sig) => {
-        try {
-          process.kill(-pgid, sig);
-        } catch {}
-      };
-      signalGroup(signal);
-      const deadline = Date.now() + 5000;
-      let killed = false;
-      while (groupAlive(pgid)) {
-        if (!killed && Date.now() >= deadline) {
-          signalGroup('SIGKILL');
-          killed = true;
-        }
-        if (killed && Date.now() >= deadline + 2000) {
-          // Still there after SIGKILL: it may yet write into libDir, so nothing
-          // is restored. The backup and its .pgid stay for the next run.
-          for (const dir of temps) rmSync(dir, { recursive: true, force: true });
-          console.error(
-            `${signal}: pgid ${pgid} is still alive after SIGKILL; ${path.relative(repo, libBackup)} ` +
-              `and its .pgid are left for the next run.`,
-          );
-          process.exit(1);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
+    try {
+      if (running) await running.stop(signal);
+    } catch (error) {
+      preserveTemps = true;
+      console.error(
+        `${signal}: ${error.message}; the payload, backup, process record and temporary directories are left as they are.`,
+      );
+      process.exit(1);
     }
     restorePayload();
     for (const dir of temps) rmSync(dir, { recursive: true, force: true });
@@ -593,6 +522,13 @@ async function publishWasm() {
     } catch (error) {
       // A step stopped by onSignal: the handler restores, cleans up and exits.
       if (stopping) await new Promise(() => {});
+      if (error.preservePayload) {
+        preserveTemps = true;
+        console.error(
+          `${error.message}; the payload, backup, process record and temporary directories are left as they are.`,
+        );
+        throw error;
+      }
       restorePayload();
       throw error;
     } finally {
@@ -602,7 +538,7 @@ async function publishWasm() {
     }
     rmSync(libBackup, { recursive: true, force: true });
   } finally {
-    rmSync(staged, { recursive: true, force: true });
+    if (!preserveTemps) rmSync(staged, { recursive: true, force: true });
   }
   if (deferredSignal) {
     console.error(`${deferredSignal}: the release step ended; ${tag} is published, stopping now.`);

@@ -38,10 +38,10 @@ test('parseProcessRows reads pid, pgid, start and command', () => {
 test('a recorded group is alive only as itself', () => {
   const ours = { pgid: 200, start: 'Tue Nov 3 19:12:00 2026', args: 'bash -euo pipefail -c' };
   assert.equal(recordedGroupAlive(rows, ours), true);
-  // The same id, but a leader started at another time or running another command.
+  // The same id, but a leader started at another time.
   assert.equal(recordedGroupAlive(rows, { ...ours, start: 'Tue Nov 3 18:00:00 2026' }), false);
   assert.equal(
-    recordedGroupAlive(rows, { pgid: 300, start: 'Tue Nov 3 19:13:00 2026', args: 'bash -euo' }),
+    recordedGroupAlive(rows, { pgid: 300, start: 'Mon Nov 2 19:13:00 2026', args: 'bash -euo' }),
     false,
   );
   // No process in the group.

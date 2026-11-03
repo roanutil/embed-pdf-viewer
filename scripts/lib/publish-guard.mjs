@@ -6,6 +6,15 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
+/** Whether a process birth timestamp has the complete shape ps supplies. */
+export function isProcessStart(value) {
+  return (
+    typeof value === 'string' &&
+    /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/.test(value) &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
 /**
  * `ps -A -ww -o pid=,pgid=,lstart=,args=` as rows. `lstart` is the five fields
  * ps prints for a start time (`Tue Nov  3 19:11:02 2026`), with its runs of
@@ -14,11 +23,20 @@ import path from 'node:path';
 export function parseProcessRows(text) {
   const rows = [];
   for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
     const fields = line.trim().split(/\s+/);
-    if (fields.length < 7) continue;
+    if (fields.length < 8) throw new Error('process survey has an incomplete row');
     const pid = Number(fields[0]);
     const pgid = Number(fields[1]);
-    if (!Number.isInteger(pid) || !Number.isInteger(pgid)) continue;
+    if (
+      !Number.isInteger(pid) ||
+      pid < 0 ||
+      !Number.isInteger(pgid) ||
+      pgid < 0 ||
+      !isProcessStart(fields.slice(2, 7).join(' ')) ||
+      rows.some((row) => row.pid === pid)
+    )
+      throw new Error('process survey has an invalid or duplicate identity');
     rows.push({
       pid,
       pgid,
@@ -35,21 +53,30 @@ export function identityOf(rows, pid) {
   return row ? { start: row.lstart, args: row.args } : null;
 }
 
+/** A recorded group's process birth identity, independent of command changes on exec. */
+export function assertGroupRecord(record) {
+  if (
+    !record ||
+    !Number.isInteger(record.pgid) ||
+    record.pgid <= 0 ||
+    !isProcessStart(record.start)
+  ) {
+    throw new Error('publish process group ownership is unknown');
+  }
+  return record;
+}
+
 /**
- * Whether the process group recorded as `{ pgid, start, args }` still has a
- * process of its own among `rows`. A leader with that pid counts only with the
- * recorded start time and a command that starts with the recorded one; any
- * other is an unrelated group that reuses the id. With the leader gone, members
- * left in the group are ours: a group id isn't handed out again while members
- * of it live.
+ * A leader keeps its PID, group and start time through exec. With its leader
+ * gone, remaining members still own the group id: it cannot be reused yet.
  */
 export function recordedGroupAlive(rows, record) {
-  if (!record || !Number.isInteger(record.pgid) || record.pgid <= 0) return false;
+  if (record === null) return false;
+  assertGroupRecord(record);
   const members = rows.filter((row) => row.pgid === record.pgid);
   if (members.length === 0) return false;
   const leader = members.find((row) => row.pid === record.pgid);
-  if (!leader) return true;
-  return leader.lstart === record.start && leader.args.startsWith(record.args);
+  return !leader || leader.lstart === record.start;
 }
 
 /**

@@ -13,4 +13,6 @@ npm/*/lib/
 npm/*/.lib-backup/
 # The run lock of a publish in progress.
 npm/*/.publish.lock
+npm/*/.publish.lock.gate/
+npm/*/.publish.lock.owner-*
 .render-baseline/

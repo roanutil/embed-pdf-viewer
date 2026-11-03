@@ -758,6 +758,23 @@ checks both the payload's recursive file digests and the release archive's recor
 it writes the payload marker before removing the backup. The pack fixes file order, times,
 owners and modes so repeated dry runs produce identical archive bytes.
 
+### Publish ownership and writer lifetime
+
+A short acquisition gate serializes atomic publication and stale recovery of the run lock.
+Owner metadata is complete before its lock name appears. A stale owner is removed only after
+fresh process inspection, a kernel check when the owner is absent from that inspection, and
+confirmation that the lock has not changed. An initializing, unreadable or abandoned gate is
+left for verified manual recovery; inspect `.publish.lock.gate/owner` and confirm its owner
+has stopped before changing that gate.
+
+Each asynchronous command starts only after its persistent group leader is recorded in the
+backup. A shell exec keeps its process birth identity; command text is diagnostic. Success
+waits for background writers, while errors and signals stop and drain them before rollback.
+A success that requires forced termination fails instead of stamping incomplete output. Failed,
+truncated or otherwise unprovable process inspection leaves the payload, backup, group record
+and temporary directories for recovery. A release remains noninterruptible if its publisher
+disappears: its recorded leader keeps ownership visible until the upload finishes.
+
 ### Checks at `1544594da`
 
 | Command | Exit | Result |
