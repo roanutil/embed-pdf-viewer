@@ -194,8 +194,9 @@ pub struct StageSettings {
     /// The zoom range this view allows, as levels like `camera.zoom` (1 is
     /// 100%). Every zoom stays inside it: the buttons, a pinch or wheel,
     /// `zoom_to`, a reveal, and the fit modes, which stop at a limit rather
-    /// than fit. Within 0.05 to 64; a `min_zoom` above `max_zoom` counts as
-    /// `max_zoom`.
+    /// than fit. A marquee box is the exception: it clamps only to 0.05 to
+    /// 64, as the TypeScript's `zoom-drag.ts` does. Within 0.05 to 64; a
+    /// `min_zoom` above `max_zoom` counts as `max_zoom`.
     pub min_zoom: f64,
     /// See [`StageSettings::min_zoom`].
     pub max_zoom: f64,

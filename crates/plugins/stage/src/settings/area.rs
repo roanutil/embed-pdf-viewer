@@ -282,8 +282,11 @@ impl StageCapability {
     /// (`conflict`), naming the holder; at the same value both hold, until
     /// both let go. `get_view_state` keeps the locked settings as they are
     /// underneath. The zoom can't be locked (`invalid-input`): gestures set
-    /// it. A lock names its settings in setting order, where the TypeScript
-    /// record keeps the caller's order.
+    /// it. A lock's settings are checked and recorded in setting order,
+    /// where the TypeScript keeps the caller's key order: the order of the
+    /// `locks` keys can differ, and so can which refusal wins when one lock
+    /// both names the zoom and conflicts on another setting (a conflict on
+    /// a key before `zoom` is reported first here).
     pub fn lock_settings(&self, lock: StageSettingsLock) -> Result<Unsubscribe, Error> {
         let keys = patch_keys(&lock.settings);
         for &key in &keys {

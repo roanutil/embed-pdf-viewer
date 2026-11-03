@@ -148,6 +148,42 @@ fn a_fit_or_a_pinch_outside_the_limits_stops_at_the_nearest_one() {
     assert!(close(stage.get_zoom_level(), 1.0), "a new limit re-resolves the zoom");
 }
 
+fn limited() -> (Kernel, StageCapability) {
+    placed(StageSettingsPatch { max_zoom: Some(1.2), ..Default::default() })
+}
+
+#[test]
+fn a_reveal_of_a_tiny_rect_stops_at_the_limit() {
+    let (_k, stage) = limited();
+    stage.reveal(
+        1usize,
+        Some(RevealOptions {
+            behavior: Some(ScrollBehaviorKind::Instant),
+            rect: Some(epdf_geometry::Rect { x: 10.0, y: 10.0, width: 2.0, height: 2.0 }),
+            zoom: Some(RevealZoom::Word(RevealZoomWord::Fit)),
+            ..Default::default()
+        }),
+    );
+    assert!(stage.get_zoom_level() <= 1.2, "zoom {}", stage.get_zoom_level());
+}
+
+#[test]
+fn the_double_tap_ladder_stops_at_the_limit() {
+    let (_k, stage) = limited();
+    for _ in 0..3 {
+        stage.double_tap_zoom(Point { x: 500.0, y: 350.0 }).expect("tap");
+        assert!(stage.get_zoom_level() <= 1.2 + 1e-9, "zoom {}", stage.get_zoom_level());
+    }
+}
+
+#[test]
+fn an_arrival_under_fit_width_stops_at_the_limit() {
+    let (_k, stage) = limited();
+    stage.fit_width().expect("fit");
+    stage.go_to_page(1usize, Some(GoToOptions::behavior(ScrollBehaviorKind::Instant)));
+    assert!(stage.get_zoom_level() <= 1.2 + 1e-9, "zoom {}", stage.get_zoom_level());
+}
+
 // ── marquee zoom ──
 
 #[test]
@@ -180,6 +216,8 @@ fn a_short_drag_shows_no_box_and_a_long_one_does() {
     assert_eq!(stage.get_zoom_box(), None, "a press is a click until it moves");
     stage.move_zoom_drag(Point { x: 303.0, y: 202.0 });
     assert_eq!(stage.get_zoom_box(), None, "under 4 px on both axes is still a click");
+    stage.move_zoom_drag(Point { x: 304.0, y: 200.0 });
+    assert!(stage.get_zoom_box().is_some(), "4 px on one axis is a box");
     stage.move_zoom_drag(Point { x: 400.0, y: 250.0 });
     let zoom_box = stage.get_zoom_box().expect("a box");
     assert!(close(zoom_box.x, 300.0) && close(zoom_box.y, 200.0));
@@ -333,6 +371,24 @@ fn a_lock_holds_a_setting_over_every_writer_until_it_is_released() {
         FlowMode::Continuous,
         "a saved view keeps what is under the lock"
     );
+    // A restored view, a reset and a rule write underneath too.
+    let mut view = StageViewPatch::from(stage.get_view_state().expect("view"));
+    view.settings.flow = Some(FlowMode::Continuous);
+    stage.apply_view_state(view);
+    assert_eq!(stage.get_settings().flow, FlowMode::Paged, "a restored view stays under the lock");
+    stage.reset_settings().expect("reset");
+    assert_eq!(stage.get_settings().flow, FlowMode::Paged, "a reset stays under the lock");
+    stage
+        .set_responsive_rules(vec![ResponsiveRule {
+            name: Some("always".into()),
+            when: RuleWhen::Query(BoxQuery::default()),
+            settings: Some(StageSettingsPatch {
+                flow: Some(FlowMode::Continuous),
+                ..Default::default()
+            }),
+        }])
+        .expect("rules");
+    assert_eq!(stage.get_settings().flow, FlowMode::Paged, "a rule stays under the lock");
     release.call();
     assert_eq!(stage.get_settings().flow, FlowMode::Continuous, "the user's choice is back");
     assert_eq!(stage.get_lock(SettingKey::Flow), None);

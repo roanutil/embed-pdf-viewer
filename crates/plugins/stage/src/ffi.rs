@@ -1252,6 +1252,16 @@ impl StageHandle {
         self.read(|c| Ok(c.can_go_previous())).await
     }
 
+    /// The zoom is below `max_zoom`, so `zoom_in` moves.
+    pub async fn can_zoom_in(&self) -> Result<bool, ViewerError> {
+        self.read(|c| Ok(c.can_zoom_in())).await
+    }
+
+    /// The zoom is above `min_zoom`, so `zoom_out` moves.
+    pub async fn can_zoom_out(&self) -> Result<bool, ViewerError> {
+        self.read(|c| Ok(c.can_zoom_out())).await
+    }
+
     pub async fn next_page(&self, options: Option<StageGoToOptions>) -> Result<(), ViewerError> {
         self.read(move |c| {
             c.next_page(options.map(Into::into));

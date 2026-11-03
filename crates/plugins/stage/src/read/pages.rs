@@ -40,8 +40,9 @@ impl StageCapability {
 
     /// Attach durable identity and the per-page transform. `None` where the
     /// TypeScript throws `Mat2D.invert: non-invertible matrix`: a view scale
-    /// whose square underflows (a huge device ratio over a tiny unbounded
-    /// zoom). No read here returns a `Result`, so the page is left out of
+    /// whose square underflows (a huge device ratio over a tiny content
+    /// scale, which the zoom limits leave only `view_units_per_point` to
+    /// reach). No read here returns a `Result`, so the page is left out of
     /// the visible list and `get_page_frame` answers `None` (a Rust-only
     /// divergence, registered with the crate's other kept ones).
     pub(crate) fn with_transform(&self, b: &PageBox) -> Option<VisiblePage> {

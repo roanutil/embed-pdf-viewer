@@ -30,6 +30,7 @@ use plugin_conformance::js::{arg, from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
+use crate::controller::serde_str;
 use crate::model::{self, CameraObject, CameraOrder, StageState};
 use crate::motion::*;
 use crate::responsive::{box_of, eq_setting, matches_query, merge_settings, resolve_responsive};
@@ -446,6 +447,22 @@ fn call_stage(
             Some(h),
         )?)),
         "lockSettings" => {
+            // The typed patch has no room for an unknown key, so the harness
+            // refuses one as the TypeScript's `lockSettings` does.
+            let raw = value(args, 0);
+            if let Some(map) = raw.get("settings").and_then(Value::as_object)
+                && let Some(key) = map
+                    .keys()
+                    .find(|key| !SETTING_KEYS.iter().any(|k| serde_str(k) == key.as_str()))
+            {
+                return Ok(Outcome::Threw(epdf_kernel::error::plugin_error(
+                    "invalid-input",
+                    "stage",
+                    format!("\"{key}\" is not a Stage setting"),
+                    None,
+                    None,
+                )));
+            }
             let lock: LockJson = arg(args, 0)?;
             match cap.lock_settings(StageSettingsLock {
                 by: lock.by,

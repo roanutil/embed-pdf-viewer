@@ -566,8 +566,12 @@ fn a_non_invertible_page_transform_leaves_the_page_out() {
     let f = fixture(false, three_pages(), settings);
     let stage = f.stage();
     stage.set_viewport_size(VIEWPORT).expect("viewport");
-    stage.set_device_pixel_ratio(1e160);
     let _ = stage.set_camera(Camera { x: 0.0, y: 0.0, zoom: 1.0 });
+    assert!(
+        stage.list_visible_pages().iter().any(|p| p.page.page_index == 0),
+        "at device ratio 1 the tiny page still inverts"
+    );
+    stage.set_device_pixel_ratio(1e160);
     assert!(stage.list_visible_pages().is_empty());
     assert!(stage.get_page_frame(0usize).is_none());
     assert!(stage.get_page_at(Point { x: 1.0, y: 1.0 }).is_none());
