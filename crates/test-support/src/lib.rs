@@ -51,8 +51,11 @@ pub const FEATURES: &str = "tooling/viewer-e2e/fixtures/features.pdf";
 pub const MEASURE_FOREIGN_VIEWPORT: &str =
     "crates/test-support/fixtures/measure-foreign-viewport.pdf";
 
-/// TEMPORARY: remove when C5 regenerates the pages/metadata vectors with the
-/// new wasm payload.
+/// TEMPORARY: only `pages_mutate.rs` still needs it. Remove it when
+/// `vectors/pages/mutate.json` is regenerated, which needs a payload whose
+/// runtime exports `EPDFAnnot_GetStructurePosition`: the TypeScript oracle
+/// aborts without it. `metadata/pages.json` is regenerated and records
+/// `labels`.
 ///
 /// `actual` without its `labels: []` when `expected`, a page list the
 /// TypeScript engine recorded before upstream's page lists carried label
