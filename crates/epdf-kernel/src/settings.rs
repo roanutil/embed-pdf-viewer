@@ -75,8 +75,16 @@ impl Settings {
                 }
             }
         }
-        let changed =
-            keys.into_iter().filter(|k| current.get(k) != next.get(k)).collect::<Vec<_>>();
+        // `changedKeys`: `sameValue` per top-level key, so a setting the
+        // host writes as `1.0` is the `1` it was.
+        let changed = keys
+            .into_iter()
+            .filter(|k| match (current.get(k), next.get(k)) {
+                (Some(before), Some(after)) => !crate::js::same_value(before, after),
+                (None, None) => false,
+                _ => true,
+            })
+            .collect::<Vec<_>>();
         if changed.is_empty() {
             return;
         }
@@ -168,4 +176,41 @@ pub fn merge_settings(base: &Value, change: Option<&Value>, whole: &[String]) ->
         result.insert(key.clone(), next);
     }
     if result.is_empty() && !base.is_object() { base.clone() } else { json!(result) }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    /// `changedKeys` compares with `sameValue`: a setting written again as
+    /// `1.0` where it was `1` changed nothing, and nothing is announced.
+    #[test]
+    fn a_setting_written_again_in_floats_changes_nothing() {
+        let notified = Rc::new(Cell::new(0));
+        let count = notified.clone();
+        let settings = Settings::new(
+            SettingsDeclaration {
+                defaults: json!({ "zoom": { "level": 1, "steps": [1, 2] }, "page": 3 }),
+                registered: None,
+                whole: vec![],
+            },
+            Rc::new(move || count.set(count.get() + 1)),
+            Rc::new(|e| panic!("{e}")),
+        );
+        let changed = Rc::new(RefCell::new(Vec::new()));
+        let log = changed.clone();
+        settings.on_settings_changed().on(move |e: &SettingsChanged| {
+            log.borrow_mut().push(e.changed.clone());
+            Ok(())
+        });
+        settings.update_settings(
+            &json!({ "zoom": { "level": 1.0, "steps": [1.0, 2.0] }, "page": 3.0 }),
+        );
+        assert_eq!(notified.get(), 0);
+        assert!(changed.borrow().is_empty());
+        settings.update_settings(&json!({ "page": 4.0 }));
+        assert_eq!(*changed.borrow(), vec![vec!["page".to_string()]]);
+    }
 }

@@ -162,6 +162,8 @@ pub fn pages_after_restore(list: &Rc<PageList>, restored: &Value) -> Result<Rc<P
             continue;
         }
         let anchor = match member(each, "after").filter(|a| !a.is_null()) {
+            // `order.findIndex(...)` over no pages never encodes `after`.
+            Some(_) if order.is_empty() => -1,
             Some(after) => {
                 let wanted = encode_page_key(after)?;
                 let mut found = -1i64;
@@ -278,8 +280,12 @@ fn pages_after_rotate(
     if !valid {
         return Ok(list.clone());
     }
-    let pages = array(&list.pages, "map")?;
+    // `namesPagesOnce` answers no pages named before it reads the pages.
     let refs = array(refs, "length")?;
+    if refs.is_empty() {
+        return Ok(list.clone());
+    }
+    let pages = array(&list.pages, "map")?;
     if !names_pages_once(pages, refs)? {
         return Ok(list.clone());
     }
@@ -312,10 +318,10 @@ fn pages_after_reorder(
     position: &Value,
 ) -> Result<Rc<PageList>, Error> {
     let refs = array(refs, "length")?;
-    let pages = array(&list.pages, "map")?;
     if refs.is_empty() {
         return Ok(list.clone());
     }
+    let pages = array(&list.pages, "map")?;
     let mut by_key: Vec<(String, usize)> = Vec::with_capacity(pages.len());
     for (index, page) in pages.iter().enumerate() {
         let key = key_of(page)?;
@@ -354,8 +360,12 @@ fn pages_after_reorder(
 }
 
 fn pages_after_delete(list: &Rc<PageList>, refs: &Value) -> Result<Rc<PageList>, Error> {
-    let pages = array(&list.pages, "map")?;
+    // `namesPagesOnce` answers no pages named before it reads the pages.
     let refs = array(refs, "length")?;
+    if refs.is_empty() {
+        return Ok(list.clone());
+    }
+    let pages = array(&list.pages, "map")?;
     if !names_pages_once(pages, refs)? || refs.len() >= pages.len() {
         return Ok(list.clone());
     }
@@ -374,17 +384,25 @@ fn pages_after_delete(list: &Rc<PageList>, refs: &Value) -> Result<Rc<PageList>,
 fn pages_after_insert_blank(list: &Rc<PageList>, op: &Value) -> Result<Rc<PageList>, Error> {
     let spec = op.get("spec").filter(|v| v.is_object() && !crate::is_undefined(v));
     let Some(spec) = spec else { return Err(type_error("undefined", "size")) };
-    let size = member(spec, "size").filter(|v| v.is_object());
-    let Some(size) = size else { return Err(type_error("undefined", "width")) };
-    let count_value = member(spec, "count").cloned().unwrap_or(json!(1));
+    // `op.spec.count ?? 1`: a null count is one page too.
+    let count_value = member(spec, "count").filter(|v| !v.is_null()).cloned().unwrap_or(json!(1));
     let count = count_value.as_f64();
+    let count_valid = count.is_some_and(|c| {
+        c.fract() == 0.0 && c.is_finite() && (1.0..=PAGE_INSERT_BLANK_MAX_COUNT).contains(&c)
+    });
+    // The checks short-circuit: `size.width` is read only for a good count.
+    if !count_valid {
+        return Ok(list.clone());
+    }
+    let size = match member(spec, "size") {
+        None => return Err(type_error("undefined", "width")),
+        Some(Value::Null) => return Err(type_error("null", "width")),
+        Some(size) => size,
+    };
+    // A size that isn't an object has no `width`: the engine refuses it.
     let positive =
         |v: Option<&Value>| v.and_then(Value::as_f64).is_some_and(|n| n.is_finite() && n > 0.0);
-    let valid = count.is_some_and(|c| {
-        c.fract() == 0.0 && c.is_finite() && (1.0..=PAGE_INSERT_BLANK_MAX_COUNT).contains(&c)
-    }) && positive(size.get("width"))
-        && positive(size.get("height"));
-    if !valid {
+    if !size.is_object() || !positive(size.get("width")) || !positive(size.get("height")) {
         return Ok(list.clone());
     }
     let (width, height) = (size["width"].clone(), size["height"].clone());
@@ -635,6 +653,7 @@ pub fn label_at(sections: &Value, index: f64) -> Result<Value, Error> {
     let Some(section) = found else { return Ok(Value::Null) };
     let prefix = match section.get("prefix") {
         Some(Value::String(s)) => s.clone(),
+        Some(v) if crate::is_undefined(v) => "undefined".into(),
         other => shown(other),
     };
     let first_number = section.get("firstNumber").and_then(Value::as_f64).unwrap_or(f64::NAN);
@@ -759,15 +778,21 @@ const ROMAN: [(f64, &str); 13] = [
 ];
 
 /// `numberIn(style, number)`: `number` in `style`, as PDFium writes it;
-/// nothing for a number a style can't write.
+/// nothing for a number a style can't write, or for no style (`null`). A
+/// style that is absent or none of these falls out of the `switch` as
+/// `undefined`, which the label then reads as text.
 fn number_in(style: Option<&Value>, number: f64) -> String {
-    match style.and_then(Value::as_str) {
-        Some("decimal") => number_to_string(number),
-        Some("upperRoman") => roman(number).to_uppercase(),
-        Some("lowerRoman") => roman(number),
-        Some("upperLetters") => letters(number).to_uppercase(),
-        Some("lowerLetters") => letters(number),
-        _ => String::new(),
+    match style {
+        Some(Value::Null) => String::new(),
+        Some(Value::String(style)) => match style.as_str() {
+            "decimal" => number_to_string(number),
+            "upperRoman" => roman(number).to_uppercase(),
+            "lowerRoman" => roman(number),
+            "upperLetters" => letters(number).to_uppercase(),
+            "lowerLetters" => letters(number),
+            _ => "undefined".into(),
+        },
+        _ => "undefined".into(),
     }
 }
 
@@ -972,6 +997,84 @@ mod tests {
         let relabelled =
             pages_relabelled(&undone, &json!([section(0.0, Some("decimal"), 5.0, "")])).unwrap();
         assert_eq!(labels(&relabelled), vec![json!("5"), json!("6"), json!("7")]);
+    }
+
+    #[test]
+    fn a_blank_insert_reads_its_spec_as_the_typescript_does() {
+        let before = list(vec![page(1, 0)], json!([]));
+        // `count ?? 1`: a null count is one page.
+        let null_count = json!({ "type": "pages.insertBlank",
+            "spec": { "size": { "width": 10, "height": 20 }, "count": null },
+            "objectNumbers": [8] });
+        assert_eq!(numbers(&pages_after(&before, &null_count).unwrap()), vec![1, 8]);
+        // A size that isn't an object has no width: the list stays.
+        for size in [json!(5), json!("a4"), json!([10, 20]), json!(true)] {
+            let op = json!({ "type": "pages.insertBlank", "spec": { "size": size },
+                "objectNumbers": [8] });
+            assert!(Rc::ptr_eq(&pages_after(&before, &op).unwrap(), &before), "{size}");
+        }
+        // A bad count stays before the size is read.
+        let no_size = json!({ "type": "pages.insertBlank", "spec": { "count": 0 },
+            "objectNumbers": [8] });
+        assert!(Rc::ptr_eq(&pages_after(&before, &no_size).unwrap(), &before));
+        // A good count reads the size, which is not there.
+        let error = pages_after(
+            &before,
+            &json!({ "type": "pages.insertBlank", "spec": {}, "objectNumbers": [8] }),
+        )
+        .unwrap_err();
+        assert_eq!(error.name, "TypeError");
+        let error = pages_after(
+            &before,
+            &json!({ "type": "pages.insertBlank", "spec": { "size": null }, "objectNumbers": [8] }),
+        )
+        .unwrap_err();
+        assert!(error.message.contains("null"), "{}", error.message);
+    }
+
+    #[test]
+    fn a_label_in_no_style_it_knows_reads_undefined() {
+        let label = |section: Value| label_at(&json!([section]), 0.0).unwrap();
+        assert_eq!(
+            label(json!({ "firstPage": 0, "firstNumber": 1, "prefix": "p" })),
+            json!("pundefined")
+        );
+        assert_eq!(
+            label(json!({ "firstPage": 0, "style": "fancy", "firstNumber": 1, "prefix": "p" })),
+            json!("pundefined")
+        );
+        assert_eq!(
+            label(json!({ "firstPage": 0, "style": null, "firstNumber": 1, "prefix": "p" })),
+            json!("p")
+        );
+        assert_eq!(
+            label(json!({ "firstPage": 0, "style": null, "firstNumber": 1 })),
+            json!("undefined")
+        );
+    }
+
+    #[test]
+    fn ops_that_name_no_pages_answer_before_they_read_the_pages() {
+        // An engine answer without its pages: an op that names none never reads them.
+        let unread = PageList::new(Rc::new(crate::undefined()), Rc::new(json!([])));
+        for op in [
+            json!({ "type": "pages.reorder", "pages": [], "position": "start" }),
+            json!({ "type": "pages.delete", "pages": [] }),
+            json!({ "type": "pages.rotate", "pages": [], "rotation": 90 }),
+        ] {
+            assert!(Rc::ptr_eq(&pages_after(&unread, &op).unwrap(), &unread), "{op}");
+        }
+        // One that names a page does read them.
+        let named = json!({ "type": "pages.delete", "pages": [r(1)] });
+        assert_eq!(pages_after(&unread, &named).unwrap_err().name, "TypeError");
+        // A restore into no pages never encodes the page it followed.
+        let empty = list(vec![], json!([]));
+        let restored = json!([{ "page": page(2, 0),
+            "after": { "kind": "objectNumber", "objectNumber": 0 } }]);
+        assert_eq!(numbers(&pages_after_restore(&empty, &restored).unwrap()), vec![2]);
+        // Into some pages it does.
+        let some = list(vec![page(1, 0)], json!([]));
+        assert_eq!(pages_after_restore(&some, &restored).unwrap_err().name, "RangeError");
     }
 
     #[test]

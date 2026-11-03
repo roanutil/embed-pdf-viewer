@@ -239,11 +239,18 @@ impl PageMirror {
         let (promise, resolver) = Promise::pending();
         let resolver = Rc::new(RefCell::new(Some(resolver)));
         let off: Rc<RefCell<Option<Rc<dyn Fn()>>>> = Rc::default();
+        // The abort listener's id, so a page the engine came to hold takes
+        // its listener off the lifetime (`removeEventListener`).
+        let aborting: Rc<Cell<Option<u64>>> = Rc::default();
+        let lifetime = self.0.env.lifetime.clone();
         let done = {
-            let (resolver, off) = (resolver.clone(), off.clone());
+            let (resolver, off, aborting) = (resolver.clone(), off.clone(), aborting.clone());
             Rc::new(move |held: bool| {
                 if let Some(stop) = off.borrow_mut().take() {
                     stop();
+                }
+                if let Some(id) = aborting.take() {
+                    lifetime.remove(id);
                 }
                 if let Some(resolver) = resolver.borrow_mut().take() {
                     resolver.settle(Ok(held));
@@ -259,7 +266,7 @@ impl PageMirror {
         }));
         *off.borrow_mut() = Some(stop);
         let closed = done.clone();
-        self.0.env.lifetime.on_abort(Rc::new(move |_| closed(false)));
+        aborting.set(Some(self.0.env.lifetime.on_abort(Rc::new(move |_| closed(false)))));
         promise
     }
 

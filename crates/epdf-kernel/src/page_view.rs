@@ -26,6 +26,7 @@ use serde_json::Value;
 
 use crate::Error;
 use crate::changes::{DocumentChanges, PendingChange};
+use crate::js::same_value;
 use crate::mirror::{last_event_of, showing};
 use crate::page_predict::{
     PageList, pages_after, pages_after_restore, pages_relabelled, same_sections,
@@ -37,11 +38,23 @@ use crate::store::Report;
 /// (`blank`); a deleted page an undo brings back has the pictures it had
 /// (`own`); a copy draws as the page it copies (`copy`, with that page's
 /// ref).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum PendingPage {
     Blank,
     Own,
     Copy { of: Value },
+}
+
+/// `sameValue` over two looks: a copy's page ref by what it holds, so an
+/// object number the engine wrote as `2.0` is the page `2`.
+impl PartialEq for PendingPage {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (PendingPage::Blank, PendingPage::Blank) | (PendingPage::Own, PendingPage::Own) => true,
+            (PendingPage::Copy { of: a }, PendingPage::Copy { of: b }) => same_value(a, b),
+            _ => false,
+        }
+    }
 }
 
 impl Serialize for PendingPage {
@@ -337,7 +350,7 @@ fn kept_where_same(previous: &Rc<Value>, next: &Rc<Value>) -> Result<Rc<Value>, 
             before.iter().rposition(|p| object_number(p).is_some_and(|n| same_number(n, number)))
         });
         match was {
-            Some(at) if before[at] == page => {
+            Some(at) if same_value(&before[at], &page) => {
                 if at != index {
                     same = false;
                 }
@@ -423,4 +436,125 @@ fn pending_of(pages: &Value, engine: &Value, showing: &[PendingChange]) -> Rc<Pe
         out.set(number.clone(), look);
     }
     Rc::new(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use serde_json::json;
+
+    use super::*;
+    use crate::Promise;
+    use crate::changes::StagedChange;
+
+    fn page_ref(number: u32) -> Value {
+        json!({ "kind": "objectNumber", "objectNumber": number })
+    }
+
+    /// A page as the Rust engine answers it: every geometry number a float.
+    fn engine_page(number: u32, index: usize, width: f64, height: f64) -> Value {
+        let page_box = json!({ "x": 0.0, "y": 0.0, "width": width, "height": height });
+        json!({
+            "index": index,
+            "ref": page_ref(number),
+            "label": null,
+            "size": { "width": width, "height": height },
+            "rotation": 0,
+            "userUnit": 1.0,
+            "tabOrder": null,
+            "boxes": { "media": page_box, "crop": page_box, "bleed": page_box,
+                "trim": page_box, "art": page_box },
+            "pdfCropBox": { "left": 0.0, "bottom": 0.0, "right": width, "top": height },
+        })
+    }
+
+    fn view_of(changes: &DocumentChanges) -> (PageView, Rc<Cell<u32>>) {
+        let view = PageView::new(changes.clone(), Rc::new(|e| panic!("{e}")));
+        let fired = Rc::new(Cell::new(0));
+        let count = fired.clone();
+        let _ = view.on_change(Rc::new(move || count.set(count.get() + 1)));
+        (view, fired)
+    }
+
+    #[test]
+    fn same_value_compares_numbers_by_what_they_hold() {
+        assert!(same_value(&json!(1), &json!(1.0)));
+        assert!(same_value(&json!({ "a": [0, { "b": 2 }] }), &json!({ "a": [0.0, { "b": 2.0 }] })));
+        assert!(!same_value(&json!(0.0), &json!(-0.0)));
+        assert!(!same_value(&json!({ "a": 1 }), &json!({ "a": 1, "b": 1 })));
+        assert!(!same_value(&json!([1]), &json!({ "0": 1 })));
+        assert!(
+            PendingPage::Copy { of: json!({ "objectNumber": 2 }) }
+                == PendingPage::Copy { of: json!({ "objectNumber": 2.0 }) }
+        );
+    }
+
+    #[test]
+    fn an_engine_answer_in_floats_keeps_the_integer_prediction_it_matches() {
+        crate::rt::reset();
+        let (answer, _resolve) = Promise::pending();
+        let changes = DocumentChanges::new(
+            Rc::new(move |_, _| answer.clone()),
+            Rc::new(|| {}),
+            Rc::new(|e| panic!("{e}")),
+        );
+        let (view, fired) = view_of(&changes);
+        let one = engine_page(1, 0, 612.0, 792.0);
+        view.set_engine_pages(&json!({ "pages": [one], "labels": [] }));
+        view.refresh().unwrap();
+        let fired_at_open = fired.get();
+
+        // The blank page the prediction writes has integer geometry.
+        let change = changes
+            .for_plugin("test")
+            .stage(StagedChange::ops(
+                json!({ "key": "pages.insertBlank" }),
+                vec![json!({ "type": "pages.insertBlank",
+                    "spec": { "size": { "width": 300, "height": 200 } },
+                    "objectNumbers": [40] })],
+            ))
+            .unwrap();
+        view.refresh().unwrap().expect("the blank page shows at once");
+        let shown = view.current();
+        assert_eq!(shown.pages.as_array().unwrap().len(), 2);
+        assert_eq!(shown.pages[1]["size"]["width"], json!(300));
+        assert!(shown.pending.has(&json!(40)));
+
+        // The engine answers the same page, every number a float.
+        let layout = json!({ "pages": [one, engine_page(40, 1, 300.0, 200.0)], "labels": [] });
+        view.set_engine_pages(&layout);
+        view.fold(&json!({ "type": "pages.inserted", "layout": layout,
+            "origin": { "kind": "local", "tx": { "id": change.op_id(), "index": 0, "count": 1 } } }));
+        let answered = view.refresh().unwrap().expect("the page is no longer pending");
+        assert!(Rc::ptr_eq(&answered.pages, &shown.pages), "the same pages, kept whole");
+        assert!(answered.pending.is_empty());
+        assert_eq!(fired.get(), fired_at_open + 2);
+
+        // Nothing moved since: no new view, and no listener runs.
+        assert!(view.refresh().unwrap().is_none());
+        assert_eq!(fired.get(), fired_at_open + 2);
+    }
+
+    #[test]
+    fn engine_pages_that_read_the_same_in_floats_change_nothing() {
+        let changes = DocumentChanges::new(
+            Rc::new(|_, _| Promise::pending().0),
+            Rc::new(|| {}),
+            Rc::new(|e| panic!("{e}")),
+        );
+        let (view, fired) = view_of(&changes);
+        // An engine that writes integers, then one that writes the same in floats.
+        let integers = json!({ "pages": [{ "index": 0, "ref": page_ref(1),
+            "size": { "width": 612, "height": 792 }, "rotation": 0 }], "labels": [] });
+        view.set_engine_pages(&integers);
+        let opened = view.refresh().unwrap().expect("the first pages");
+        let before = fired.get();
+        let floats = json!({ "pages": [{ "index": 0, "ref": page_ref(1),
+            "size": { "width": 612.0, "height": 792.0 }, "rotation": 0 }], "labels": [] });
+        view.set_engine_pages(&floats);
+        assert!(view.refresh().unwrap().is_none(), "the same pages are no new view");
+        assert!(Rc::ptr_eq(&view.current().pages, &opened.pages));
+        assert_eq!(fired.get(), before);
+    }
 }
