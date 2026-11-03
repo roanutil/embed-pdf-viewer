@@ -712,6 +712,20 @@ so `fetch-payload.sh` fetches the published one over it. A release that is a dra
 payload or its `.sha256`, counts as incomplete: the wasm half refuses instead of reporting nothing to
 do, as the Apple half does.
 
+### Round 5 review fixes
+
+`9ea74337a` closes the gaps round 5 found in the swap. The backup is always made: with no payload
+before, `npm/wasm32/.lib-backup` holds only an `.absent` sentinel, so a restore removes the new,
+unverified payload instead of leaving it unmarked for `fetch-payload.sh` to keep. The steps after
+the swap run detached, each in its own process group. The signal handler runs once, kills the whole
+group, waits for it (`SIGKILL` after 5 s), restores, removes its temporary directories and exits, so
+a grandchild such as `generate-wasm-inline.mjs` can't write into the restored lib. Before `gh
+release create`, the backup gets a `.publishing` marker naming the tag. A later run that finds it
+keeps the new payload if the fork has that release published, and restores otherwise. A run killed
+inside the header generator leaves the committed bindings changed, and the clean-tree check at
+startup refuses it and says how to restore them. Each of these has a scripted check that failed on
+`31b8ddbee` and passes on `9ea74337a`.
+
 ### Checks at `1544594da`
 
 | Command | Exit | Result |
