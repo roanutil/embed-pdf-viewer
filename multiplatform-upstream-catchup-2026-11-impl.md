@@ -726,6 +726,38 @@ inside the header generator leaves the committed bindings changed, and the clean
 startup refuses it and says how to restore them. Each of these has a scripted check that failed on
 `31b8ddbee` and passes on `9ea74337a`.
 
+### Round 6 review fixes
+
+`2e5bbedfb` closes the round 6 findings. `SIGHUP` restores the payload like `SIGINT` and `SIGTERM`,
+and exits 129. Each step running while the payload is swapped in records its process group in the
+backup (`.pgid`). A run that finds that group still alive refuses with the pgid and touches nothing.
+The signal handler waits until no process of the group is left, not just its leader, and sends
+`SIGKILL` to the group at 5 s either way. Once it starts, no new step can start. `gh` saying
+"release not found" is now told apart from any other `gh` failure: an unknown answer exits non-zero
+and leaves the backup and its marker. A run kept after a published release must still match the
+file digests recorded beside the `.publishing` marker, or it refuses. Every file in the payload is
+`0644` before the pack, so a container build no longer ships mode-`0200` files. Each of these
+has a scripted check that failed on `1b45692fe` and passes on `2e5bbedfb`.
+
+### Round 7 review fixes
+
+`6c4ca1c96` holds a run lock for the whole wasm publish, so a second run cannot
+restore or stamp the first run's payload. The lock records the process id and start time;
+a later run removes it only when that identity is gone. A step's `.pgid` also records its
+leader's start time and command, so an unrelated process that reuses the group id does
+not block recovery. When a refusal names a live group, check its command and start time
+before changing the marker. From `packages/engine/runtime/npm/wasm32`:
+If this is not the publish, remove `.lib-backup/.pgid` and rerun.
+The backup stays in place for recovery.
+
+The signal handler waits for the whole step group, stops new steps once shutdown begins,
+and keeps the backup if the group survives `SIGKILL`. A signal during release creation
+waits for that step to finish, then exits with the signal's status. Before stamping a new
+payload, the script checks that its backup still exists. Recovery after a published release
+checks both the payload's recursive file digests and the release archive's recorded sha256;
+it writes the payload marker before removing the backup. The pack fixes file order, times,
+owners and modes so repeated dry runs produce identical archive bytes.
+
 ### Checks at `1544594da`
 
 | Command | Exit | Result |

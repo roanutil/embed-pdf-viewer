@@ -11,4 +11,6 @@ build/local-staging/
 npm/*/lib/
 # A payload a publish moved aside while it checks a new one (publish-engine-payload.mjs).
 npm/*/.lib-backup/
+# The run lock of a publish in progress.
+npm/*/.publish.lock
 .render-baseline/
