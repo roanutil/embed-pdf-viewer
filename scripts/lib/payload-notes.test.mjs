@@ -69,7 +69,7 @@ test('a runtime from the structure-position merge on must export every binding',
   const unbound = ['EPDFAnnot_GetStructurePosition'];
   assert.throws(
     () => assertAllBound(unbound, { containsAllBoundSince: true }),
-    /must export every committed binding.*EPDFAnnot_GetStructurePosition/,
+    /must declare every committed binding.*EPDFAnnot_GetStructurePosition/,
   );
   assert.doesNotThrow(() => assertAllBound([], { containsAllBoundSince: true }));
   // An older runtime may still lack one; the notes name it.
@@ -139,7 +139,7 @@ test('payloadNotes keeps the release fields and names unbound functions', () => 
   assert.equal(lines.at(-2), '- engine-runtime-payload-wasm32.tar.gz sha256: `digest`');
   assert.equal(
     lines.at(-1),
-    '- Bound in the TypeScript but not exported by this runtime: `EPDFAnnot_GetStructurePosition`',
+    "- Bound in the TypeScript but not declared by the runtime's headers: `EPDFAnnot_GetStructurePosition`",
   );
   const none = payloadNotes({
     hash: 'h',
@@ -152,5 +152,5 @@ test('payloadNotes keeps the release fields and names unbound functions', () => 
     digest: 'd',
     unbound: [],
   });
-  assert.ok(!none.includes('not exported'));
+  assert.ok(!none.includes('not declared'));
 });

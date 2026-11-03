@@ -48,6 +48,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFork } from '../perf-compare/scripts/build-arm.mjs';
 import { workDir } from '../perf-compare/scripts/materialize.mjs';
+import { forkContains } from './lib/fork-ancestry.mjs';
 import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
 import {
   ALL_BOUND_SINCE,
@@ -166,7 +167,7 @@ function publishWasm() {
   const delta = fork.sha === runtimeSrc ? undefined : forkDelta(fork, runtimeSrc);
   forkLines({ fork, runtimeSrc, target: FORK_TARGET, delta });
   const unbound = linkAgainstCommittedBindings(fork);
-  assertAllBound(unbound, { containsAllBoundSince: forkContains(fork.sha, ALL_BOUND_SINCE) });
+  assertAllBound(unbound, { containsAllBoundSince: forkContains(path.join(runtime, 'runtime-src'), fork.sha, ALL_BOUND_SINCE) });
 
   // verify-rust-core.mjs imports @embedpdf/engine-runtime, which resolves to dist/.
   sh('pnpm --filter @embedpdf/engine-runtime build');
@@ -234,14 +235,6 @@ function buildArmConstant(name) {
 
 function runtimeSrcCommit() {
   return run('git', ['ls-tree', 'HEAD', 'packages/engine/runtime/runtime-src']).split(/\s+/)[2];
-}
-
-// Whether the fork commit the library was built from contains `commit`.
-function forkContains(sha, commit) {
-  const src = path.join(runtime, 'runtime-src');
-  const { status } = spawnSync('git', ['-C', src, 'merge-base', '--is-ancestor', commit, sha]);
-  if (status !== 0 && status !== 1) throw new Error(`git merge-base failed in ${src}`);
-  return status === 0;
 }
 
 // How the pinned runtime-src differs from the fork commit the library was built from: the
