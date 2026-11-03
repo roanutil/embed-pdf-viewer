@@ -499,3 +499,146 @@ The engine build fails for want of the `wasm32` payload package. It fails the sa
 hash is `facdbea7f80d8cef`. Neither `embedpdf/runtime-payloads` nor `roanutil/embed-pdf-runtime`
 publishes one, and building it is Task 6. That gap is what keeps the other 20 `:check` scripts from
 running.
+
+## C5: follow-ups on plugins
+
+C5 ran on `research/catchup-2026-11-c5`, branched from plugins `e43b45dfa` and merged with plugins
+`c3d91acc8` (the .NET packaging) in `67c31594c`. Everything ran in the `embedpdf-c5` container
+against the `6dfc03697` `linux-arm64` library, except the Apple work, which ran on the Mac. Nothing
+was pushed or published.
+
+### Five page-view findings
+
+`83346568c` fixes the five round-2 Minor findings, each with a test.
+`inserted` in `crates/epdf-kernel/src/page_predict.rs` answers before it reads `pages` when the
+numbers are missing or the wrong count (`predict.ts:259`). A `null` position inserts at the end
+(`position ?? 'end'`, `:268`). A blank-insert spec that is `undefined` or `null` throws V8's
+destructuring message, "Cannot destructure property 'size' of 'op.spec' as it is undefined." (or
+"null."). Any other non-object spec throws "Cannot read properties of undefined (reading 'width')".
+Both messages were checked against node 24. `merge_settings` keeps the base value when a change is
+`same_value` to it, `whole` keys included (`settings.ts:169,186`). The kernel context had no
+`ctx.pageOf`, so C5 adds `ControllerContext::page_of`, over a ref or an index
+(`geometry::PageArg`), and `tests/page_view.rs` reads the first page through it.
+
+### The wasm payload
+
+The PDFium in the payload was built from fork `6dfc03697`, not from `8b1e69abd`. It is the
+`wasm32-eh` archive of the `6dfc03697` release build, `libembedpdf-runtime-wasm32-eh-6dfc03697.tar.gz`
+(sha256 `ac1d48a0ccb97b3c1b579be29755e73e0d490c47327758b97f74859d1d38ee4b`, emsdk 4.0.0). It was
+used as the human decided: no cold `8b1e69abd` build. `runtime-src` pins `8b1e69abd`, which adds four
+commits on top of `6dfc03697`, and they touch only `scripts/` and `docs/`: the emsdk pin, the
+package metadata, a comment in `target-args.sh`, and the gn-arg goldens. The source and the gn args
+are identical. Its `libembedpdf.a` hashes to
+`6be65dba348ac6d9732d395a15f63743ee9100d884d796f05c005e7cf90efcdd`.
+
+The payload hash is `cd135983bd35d8da`, so the release would be `runtime-payloads-cd135983bd35d8da`.
+The hash is the same at the branch tip. The packed archive's sha256 is
+`a556d5d7b35db25e3578cdc055043ce256ea49f923c9db646404722846eb9eec`, and `embedpdf.wasm`'s is
+`044e72b0d29b3782a2bf6532bd76e5678b80abe0249ee64f7d1678b9938b15d8`.
+`verify-rust-core.mjs` passes against it.
+
+`publish-engine-payload.mjs --dry-run --only wasm` exits 1 before it prints its notes. The postlink
+check in `compile.esm.sh` fails on the regenerated bindings (see the next section), so the steps
+after the link were run by hand, the way the script runs them. Two things have to change before a
+real publish. The notes line `Fork commit (runtime-src): <fork.sha>, built for wasm32-eh` would
+either name `6dfc03697` as `runtime-src`, or name `8b1e69abd` as the build. Neither is true. It
+should say the PDFium came from the `6dfc03697` `wasm32-eh` release archive, and that `runtime-src`
+is `8b1e69abd`, which adds four scripts/docs commits with identical source and gn args. The
+`--target` should stay `6dfc03697`. The script also needs to run the postlink check against the
+committed bindings.
+
+Against the committed bindings (`pdfFunctionSignatures` in
+`packages/engine/runtime/src/core/pdf-functions.generated.ts`, converted to `functions.json` form),
+the ABI check matches 1,053 of 1,054. The one left is `EPDFAnnot_GetStructurePosition: not
+exported`: the fork runtime doesn't have it, which is the known gap above.
+
+### Finding: the header generator writes `uint64_t` as `i32` on Linux
+
+`build/generate-functions.mjs` resolves typedefs through the host `clang`'s AST. On a Linux host,
+`uint64_t` resolves to `unsigned long`, and `classifyType` reads that as `i32`; on macOS it resolves
+to `unsigned long long`, which reads as `i64`. Run in the container, the generator rewrote the
+committed `pdf-functions.generated.ts` with `EPDFAttachment_ExtractFile` and
+`EPDFAttachment_ExtractFileToOwnedBuffer`'s `max_decoded_bytes` as `number`/`i32` instead of
+`bigint`/`i64`. It also dropped `EPDFAnnot_GetStructurePosition`, which the fork headers don't
+declare. The postlink check then failed: "the runtime passes 5 arguments, the export takes 6", for
+both. C5 restored the committed file and left the generator alone, since it is upstream build
+tooling. A fix would classify by the target's sizes (`--target=wasm32` on the `clang` call) rather
+than the host's.
+
+### Vectors
+
+`376363cea` regenerates `metadata/pages.json` with `labels`, and `pages_corpus.rs` drops
+`without_unrecorded_labels`. `pages/mutate.json` can't be regenerated: on this payload, the
+TypeScript oracle aborts with "Cannot call unknown function EPDFAnnot_GetStructurePosition".
+`pages_mutate.rs` keeps the shim until then.
+
+Twelve of the 34 `tooling/engine-conformance` `:check` scripts fail the same way, all on that
+export: `annotation-read`, `forms`, `save`, `annotation-create`, `annotation-delete`,
+`annotation-update`, `annotation-move`, `form-write`, `form-field`, `pages-mutate`, `redaction` and
+`form-apply`. `form-apply` still writes a file when run, but every case in it records `Unknown`, so
+C5 didn't commit it. The other 22 are current, `fonts:check` among them.
+
+Of the eight plugin suites, C5 regenerated `commands/functions` and `commands/plugin`.
+`67b45d349` ports what they record: upstream `60c0ac83d` (the `appState` setting, replaced whole;
+every command context carries it; every command is asked again after a run, whether it succeeded,
+failed or was cancelled), and the commands part of `4d4e9ed55` (a derivation that throws counts as
+false). The other six are left, with `without_unrecorded_page_view` naming them:
+
+| Suite | Waits on |
+|---|---|
+| `search-stage` | The stage's marquee zoom, `zoomDrag` (upstream `a1ee5683f`: `navigation/zoom-drag.ts` and `zoom-drag-handler.ts`, about 230 lines, plus settings, contract, reveal and scroll changes) |
+| `signature`, `stamp-api`, `stamp-placement` | The form's focus and cursor, `focused` (upstream `2998c9004`: `write/focus.ts`, `services/cursor.ts`, `read/tab-order.ts`, about 360 lines, plus the actions plugin's `setFocus` and acrojs) |
+| `interaction-functions`, `interaction` | The built-in zoom tool (`a1ee5683f`) |
+
+The zoom tool itself is small, and `575b0df1e` ported it. But it shows in the tool lists that
+`annotation-tools` and `form-design` record, and `form-design` also records the form's `focused`,
+so the workspace run failed with it. `1544594da` reverts it until the stage and form ports land.
+`annotation-tools` regenerated cleanly with the tool, `structurePosition` included.
+
+### The font kinds
+
+`bdf63e39d` adds `src/generate-font-vectors.ts` and `vectors/fonts/wire.json`. Each case is a
+request sequence through the TypeScript `WorkerHost`: results without their `tag`, bytes by length
+and SHA-256, errors by code. `crates/epdf-engine/tests/fonts_wire_corpus.rs` replays them through
+the Rust host, and every step matches. A mutated ascent fails it. The five rows in `operations.ts`
+are now `ported`.
+
+### Apple
+
+`APPLE_CRATES` and `RUST_CRATES` already match their link graphs, so neither list changed. The iOS
+fork build at `8b1e69abd` needed its dependencies synced. The sync failed fetching
+`third_party/clang-format/script` at `9f796802e` ("HTTP 500", and gitiles answers 404 for the
+commit). C5 copied that one checkout from the cached `926c126b2` fork, which has the same
+revision, and forced one sync and build of `ios-arm64` with `PDF_RUNTIME_SYNC=always`. After that,
+the publish script built both slices itself.
+
+`Render.swift` needed no change. `RenderTests.swift` didn't compile: `expectNoDifference` takes
+autoclosures, which can't hold `try await`. `4457cb2c6` fixes that. With
+`EMBEDPDF_PREBUILT_ENGINE=local` on simulator `5FA32A5D-6186-4C16-BE25-C87829DD1BFA`, all 327 tests
+in 27 suites pass, `RenderTests` among them.
+
+At `1544594da`, `check-apple-engine.sh` exits 1 (pinned `apple-engine-3cf9c87caaf5b2de`, current
+`apple-engine-713b1b6b066f8a3f`). `publish-engine-payload.mjs --only apple --dry-run` exits 0. It
+would create `apple-engine-713b1b6b066f8a3f`, built from `8b1e69abd` for `ios-arm64` (`libembedpdf.a`
+`fd545118…cd20`) and `ios-sim-arm64` (`f17f3795…1e19`), and pin `Package.swift` to checksum
+`3dcef630f98502b159f4d6c2618c283af87f19e76c9f062c82139f62fb6a4bea`. The pin isn't changed, since the
+release isn't published.
+
+Kotlin: `uniffi-bindgen generate --language kotlin` on the host `libepdf_viewer_host.so` succeeds,
+and the generated render API has `canRenderThumbnail`, `renderThumbnail` without `maxWidth`, a
+`thumbnail` argument on `renderSource` and `sourceKey`, and `RenderViewport.Thumbnail`.
+`epdf-uniffi`, which the Android AAR builds, doesn't link the render plugin. C5 didn't run a full
+Android build.
+
+### Checks at `1544594da`
+
+| Command | Exit | Result |
+|---|---|---|
+| `cargo test --workspace --no-fail-fast -- --test-threads=4`, `LD_LIBRARY_PATH=/opt/pdfium/linux-arm64/lib` | 0 | 3,132 passed, 0 failed, 1 ignored, 331 runs |
+| `cargo clippy --workspace --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-render -p epdf-plugin-page-edit --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-commands --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
+| `rustfmt --check --edition 2024` on the 17 Rust files changed since `e43b45dfa` | 0 | Formatted |
+| `EPDF_NATIVE_DIR=target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj` | 0 | 32 passed |
+| The 34 `tooling/engine-conformance` `:check` scripts | | 22 pass, 12 fail on `EPDFAnnot_GetStructurePosition` |
+| `xcodebuild test` (`EMBEDPDF_PREBUILT_ENGINE=local`) | 0 | 327 passed |
