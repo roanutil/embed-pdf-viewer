@@ -524,12 +524,14 @@ fn viewport_scale(
         None => Ok(1.0),
         Some(RenderViewport::Scale { scale }) => Ok(normalize_scale(scale)),
         // An appearance takes a screen viewport (`PageScreenViewport`). A
-        // `dpi` one reaches `viewportScale`'s width branch with no width,
-        // and is refused there.
-        Some(RenderViewport::Dpi { .. }) => Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "render viewport width must be positive",
-        )),
+        // `dpi` or `thumbnail` one reaches `viewportScale`'s width branch
+        // with no width, and is refused there.
+        Some(RenderViewport::Dpi { .. } | RenderViewport::Thumbnail) => {
+            Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "render viewport width must be positive",
+            ))
+        }
         Some(RenderViewport::Width { width }) => {
             let page_width =
                 if matches!(rotation, PdfRotation::Clockwise90 | PdfRotation::Clockwise270) {
