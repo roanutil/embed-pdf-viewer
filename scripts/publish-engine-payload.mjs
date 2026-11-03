@@ -542,7 +542,11 @@ function linkAgainstCommittedBindings(fork) {
   // Only a known gap may be missing; anything else stops before the link.
   assertKnownUnbound(unbound);
   assertAllBound(unbound, {
-    containsAllBoundSince: forkContains(path.join(runtime, 'runtime-src'), fork.sha, ALL_BOUND_SINCE),
+    containsAllBoundSince: forkContains(
+      path.join(runtime, 'runtime-src'),
+      fork.sha,
+      ALL_BOUND_SINCE,
+    ),
   });
   writeFileSync(functionsJson, JSON.stringify({ target: FORK_TARGET, functions }, null, 2) + '\n');
   if (unbound.length > 0) {
