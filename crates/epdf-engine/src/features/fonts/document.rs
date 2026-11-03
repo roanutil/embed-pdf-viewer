@@ -332,3 +332,64 @@ fn bytes_of_hex(hex: &str) -> Option<[u8; 32]> {
     }
     Some(out)
 }
+
+/// `FontsSeen`: what a tracked session's fonts were when last read.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FontsSeen {
+    /// The fork's fingerprint of the document's faces.
+    fingerprint: [u8; 32],
+    /// The document fonts a list shows.
+    document_fonts: Vec<super::list::ListedDocumentFont>,
+}
+
+/// `fontsFingerprintOf`.
+fn fonts_fingerprint(document: &pdfium::Document) -> Result<[u8; 32], EngineError> {
+    document.fonts_fingerprint().ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "EPDFDoc_GetFontsFingerprint failed")
+    })
+}
+
+/// `listedDocumentFontsOf`: the document fonts a list shows; the engine's
+/// fonts don't change with a write.
+fn listed_document_fonts_of(
+    document: &pdfium::Document,
+) -> Result<Vec<super::list::ListedDocumentFont>, EngineError> {
+    Ok(super::list::listed_document_fonts(&read_document_faces(document)?))
+}
+
+/// `trackFontChanges`: from now on, [`fonts_changed_since`] tells of every
+/// change to the session's fonts. A session already tracked stays as it is.
+pub fn track_font_changes(
+    session: &mut crate::session::document::DocumentSession,
+) -> Result<(), EngineError> {
+    if session.fonts_seen().is_some() {
+        return Ok(());
+    }
+    let document = session.document()?.document();
+    let seen = FontsSeen {
+        fingerprint: fonts_fingerprint(document)?,
+        document_fonts: listed_document_fonts_of(document)?,
+    };
+    session.set_fonts_seen(seen);
+    Ok(())
+}
+
+/// `fontsChangedSince`: whether the fonts the session's list shows changed
+/// since this was last asked (or since tracking began); false for a session
+/// not tracked. The fingerprint says whether anything about the faces moved;
+/// only then is the list compared, since a face the list doesn't show (a
+/// standard font's stand-in) moves it too.
+pub fn fonts_changed_since(
+    session: &mut crate::session::document::DocumentSession,
+) -> Result<bool, EngineError> {
+    let Some(before) = session.fonts_seen() else { return Ok(false) };
+    let document = session.document()?.document();
+    let fingerprint = fonts_fingerprint(document)?;
+    if fingerprint == before.fingerprint {
+        return Ok(false);
+    }
+    let document_fonts = listed_document_fonts_of(document)?;
+    let changed = document_fonts != before.document_fonts;
+    session.set_fonts_seen(FontsSeen { fingerprint, document_fonts });
+    Ok(changed)
+}

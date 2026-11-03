@@ -249,15 +249,113 @@ impl RegisteredProgram {
 
 /// `FontRegistrar.registerLastResort`: the font a character no other font
 /// has is drawn in, as a box. It has no key, so no list names it.
-fn register_last_resort() -> Result<(), EngineError> {
+fn register_last_resort() -> Result<FontId, EngineError> {
     let registered =
         pdfium::register_memory_font(&FontDescription::inferred(), LAST_RESORT_PROGRAM);
     match registered {
-        Ok(id) if pdfium::set_last_resort_font(Some(id)) => Ok(()),
+        Ok(id) if pdfium::set_last_resort_font(Some(id)) => Ok(id),
         _ => Err(EngineError::with_message(
             EngineErrorCode::RuntimeUnavailable,
             "the last-resort font did not register",
         )),
+    }
+}
+
+/// This thread's last resort, shared by everything that holds it.
+///
+/// `FontRegistrar` registers it when a `WorkerHost` is built, and a thread
+/// has one host there. Here a thread can hold several hosts, and a registry
+/// beside them, so the registration is counted: the first hold registers it,
+/// a later one finds it in place, and the last one to go unsets it. PDFium
+/// has no call that unregisters one font, so an unset last resort stays
+/// registered and the next hold sets it again, until something clears the
+/// thread's fonts.
+#[derive(Debug, Default)]
+struct LastResortState {
+    holders: usize,
+    /// The registered program, while PDFium still has it.
+    id: Option<FontId>,
+    /// Whether PDFium draws with it now.
+    active: bool,
+}
+
+thread_local! {
+    static LAST_RESORT: std::cell::RefCell<LastResortState> =
+        std::cell::RefCell::new(LastResortState::default());
+}
+
+/// Set the last resort for this thread's holders, registering it unless
+/// PDFium still has it.
+fn ensure_last_resort(state: &mut LastResortState) -> Result<(), EngineError> {
+    if state.holders == 0 || state.active {
+        return Ok(());
+    }
+    if let Some(id) = state.id
+        && pdfium::set_last_resort_font(Some(id))
+    {
+        state.active = true;
+        return Ok(());
+    }
+    state.id = Some(register_last_resort()?);
+    state.active = true;
+    Ok(())
+}
+
+/// Every registered font on the thread is gone (`EPDFFont_ClearRegisteredFonts`),
+/// the last resort with them: registered again at once while anything holds
+/// it, as `FontRegistrar.clear` registers it again.
+fn last_resort_cleared() -> Result<(), EngineError> {
+    LAST_RESORT.with(|state| {
+        let mut state = state.borrow_mut();
+        state.id = None;
+        state.active = false;
+        ensure_last_resort(&mut state)
+    })
+}
+
+/// A hold on this thread's last resort. A [`crate::host::Host`] takes one
+/// when it is built, as `WorkerHost` builds its `FontRegistrar`, and a
+/// [`FontRegistry`] takes one of its own.
+#[derive(Debug)]
+pub struct LastResortHold {
+    /// PDFium must be up on this thread for every `EPDFFont_*` call.
+    _library: Rc<Library>,
+}
+
+impl LastResortHold {
+    /// Hold the last resort, registering it on this thread unless something
+    /// already holds it. `RuntimeUnavailable` when it doesn't register.
+    pub fn acquire() -> Result<Self, EngineError> {
+        let library = Library::acquire();
+        LAST_RESORT.with(|state| {
+            let mut state = state.borrow_mut();
+            state.holders += 1;
+            let ensured = ensure_last_resort(&mut state);
+            if ensured.is_err() {
+                state.holders -= 1;
+            }
+            ensured
+        })?;
+        Ok(Self { _library: library })
+    }
+}
+
+impl Drop for LastResortHold {
+    fn drop(&mut self) {
+        // A thread tearing down has nothing left to draw with it.
+        let _ = LAST_RESORT.try_with(|state| {
+            let mut state = state.borrow_mut();
+            state.holders -= 1;
+            if state.holders == 0 {
+                if state.active {
+                    pdfium::set_last_resort_font(None);
+                }
+                state.active = false;
+            } else {
+                // A registry that went cleared it for the hosts still here.
+                let _ = ensure_last_resort(&mut state);
+            }
+        });
     }
 }
 
@@ -282,6 +380,10 @@ pub struct FontRegistry {
     /// Each key's program, in the order first registered (a `Map`'s order,
     /// which `programFor` searches in).
     programs: Vec<(String, RegisteredProgram)>,
+    /// The registry's own hold on the last resort (`FontRegistrar`'s
+    /// constructor registers it). Dropped after `Drop` cleared the fonts, so
+    /// a host still on the thread gets it back.
+    _last_resort: LastResortHold,
     /// Keeps PDFium initialized on this thread.
     ///
     /// Not optional and not the caller's job. Every `EPDFFont_*` call reads
@@ -377,17 +479,22 @@ impl FontRegistry {
             taken.set(true);
             Ok(())
         })?;
-        // Built before the last resort registers: PDFium must be up on this
-        // thread first, and a refusal drops it, which frees the thread.
-        let registry = Self {
+        let library = Library::acquire();
+        let last_resort = match LastResortHold::acquire() {
+            Ok(hold) => hold,
+            Err(refused) => {
+                REGISTRY_ON_THREAD.with(|taken| taken.set(false));
+                return Err(refused);
+            }
+        };
+        Ok(Self {
             ids: BTreeMap::new(),
             retained: Vec::new(),
             fallbacks: Vec::new(),
             programs: Vec::new(),
-            _library: Library::acquire(),
-        };
-        register_last_resort()?;
-        Ok(registry)
+            _last_resort: last_resort,
+            _library: library,
+        })
     }
 
     /// Record what `readProgram` reads for a key, keeping its first place.
@@ -544,7 +651,7 @@ impl FontRegistry {
     /// reading closed files.
     pub fn clear(&mut self) -> Result<(), EngineError> {
         pdfium::clear_registered_fonts();
-        register_last_resort()?;
+        last_resort_cleared()?;
         self.forget_all();
         Ok(())
     }
@@ -719,9 +826,16 @@ impl Drop for FontRegistry {
     /// This is safe to do on drop only because a thread has one registry;
     /// [`FontRegistry::new`] is what makes that true.
     fn drop(&mut self) {
-        // Not `clear`: the thread keeps no last resort past its registry.
+        // Not `clear`: the registry's fonts go, the last resort with them,
+        // and its own hold, dropped after this, gives the last resort back
+        // to any host still on the thread.
         pdfium::set_last_resort_font(None);
         pdfium::clear_registered_fonts();
+        let _ = LAST_RESORT.try_with(|state| {
+            let mut state = state.borrow_mut();
+            state.id = None;
+            state.active = false;
+        });
         self.forget_all();
         REGISTRY_ON_THREAD.with(|taken| taken.set(false));
     }

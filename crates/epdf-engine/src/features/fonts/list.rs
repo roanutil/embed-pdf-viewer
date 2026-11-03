@@ -264,6 +264,118 @@ pub fn document_program_for_name(
     })
 }
 
+/// `FontRestriction`: why a program can't be chosen or go to a browser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FontRestriction {
+    NotEmbedded,
+    UnsupportedFormat,
+    Subset,
+    NoUnicodeMap,
+    PreviewAndPrint,
+}
+
+/// `restrictionsOfProgram`: every reason a document program can't be
+/// chosen, or can't go to a browser.
+fn restrictions_of_program(program: &FontProgramFacts) -> Vec<FontRestriction> {
+    let mut restrictions = Vec::new();
+    if program.embedded == Embedded::None {
+        restrictions.push(if program.format == Some(FontFormat::Type3) {
+            FontRestriction::UnsupportedFormat
+        } else {
+            FontRestriction::NotEmbedded
+        });
+        return restrictions;
+    }
+    if program.embedded == Embedded::Subset {
+        restrictions.push(FontRestriction::Subset);
+    }
+    if !is_sfnt(program.format) {
+        restrictions.push(FontRestriction::UnsupportedFormat);
+    } else if !program.maps_unicode {
+        restrictions.push(FontRestriction::NoUnicodeMap);
+    }
+    if program.permission.is_some() && !allows_editing(program.permission) {
+        restrictions.push(FontRestriction::PreviewAndPrint);
+    }
+    restrictions
+}
+
+/// `FontProgram` as a document font's list entry names it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListedProgram {
+    pub display_hash: Option<String>,
+    pub source_hash: Option<String>,
+    pub embedded: Embedded,
+    pub format: Option<FontFormat>,
+    pub embedding_permission: Option<ProgramPermission>,
+    pub can_download: bool,
+}
+
+/// `documentProgramOf`.
+fn listed_program(program: &FontProgramFacts) -> ListedProgram {
+    let displayable = is_displayable(program);
+    let none = program.embedded == Embedded::None;
+    ListedProgram {
+        display_hash: if displayable { program.display_sha256.clone() } else { None },
+        source_hash: if none { None } else { program.sha256.clone() },
+        embedded: program.embedded,
+        format: if none { None } else { program.format },
+        embedding_permission: match program.permission {
+            Some(ProgramPermission::Restricted | ProgramPermission::BitmapOnly) => {
+                Some(ProgramPermission::PreviewAndPrint)
+            }
+            other => other,
+        },
+        can_download: displayable,
+    }
+}
+
+/// A `Font` of `source: 'document'`, as `documentFontOf` lists it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListedDocumentFont {
+    pub name: String,
+    pub family_name: String,
+    pub weight: i32,
+    pub italic: bool,
+    pub post_script_name: Option<String>,
+    pub can_choose: bool,
+    pub restrictions: Vec<FontRestriction>,
+    pub programs: Vec<ListedProgram>,
+}
+
+/// The document fonts `fontListOf` lists (`listedDocumentFontsOf` in
+/// `DocumentFontReader.ts`): every document font but a standard font's
+/// stand-in and the last resort a box drew with. What a write that changes
+/// the list changes.
+pub fn listed_document_fonts(faces: &[DocumentFaceFacts]) -> Vec<ListedDocumentFont> {
+    let is_last_resort = |font: &DocumentFontFacts| {
+        font.programs
+            .iter()
+            .any(|program| program.sha256.as_deref() == Some(super::LAST_RESORT_HASH))
+    };
+    document_fonts_of(faces)
+        .into_iter()
+        .filter(|font| !is_standard_stand_in(font) && !is_last_resort(font))
+        .map(|font| {
+            let first = font.programs.first();
+            ListedDocumentFont {
+                name: font.name.clone(),
+                family_name: font.face.family_name.clone(),
+                weight: font.face.weight,
+                italic: font.face.italic,
+                post_script_name: first.and_then(|p| p.post_script_name.clone()),
+                can_choose: first.is_some_and(can_choose_program),
+                restrictions: first
+                    .map_or_else(|| vec![FontRestriction::NotEmbedded], restrictions_of_program),
+                programs: font.programs.iter().map(listed_program).collect(),
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

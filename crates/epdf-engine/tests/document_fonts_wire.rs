@@ -382,3 +382,166 @@ fn every_document_font_kind_wants_an_open_document() {
         }
     });
 }
+
+// ── Writes: `missingCharacters` and `fontsChanged` (`finishMutation`) ────
+
+/// The first page's object number.
+fn first_page(host: &mut Host) -> u64 {
+    let pages = result(host, serde_json::json!({ "kind": "pages.list" }));
+    pages["pages"][0]["ref"]["objectNumber"]
+        .as_u64()
+        .or_else(|| pages["pages"][0]["objectNumber"].as_u64())
+        .expect("a page object number")
+}
+
+fn free_text(text: &str, font: &str) -> serde_json::Value {
+    serde_json::json!({ "subtype": "free-text", "intent": "free-text", "contents": text,
+        "fontFamily": font, "fontSize": 12,
+        "box": { "x": 20, "y": 20, "width": 200, "height": 60 } })
+}
+
+fn square() -> serde_json::Value {
+    serde_json::json!({ "subtype": "square",
+        "box": { "x": 10, "y": 10, "width": 90, "height": 90 } })
+}
+
+/// `annotations.create` of `draft` on the first page: the whole answer.
+fn create(host: &mut Host, draft: serde_json::Value) -> serde_json::Value {
+    let page = first_page(host);
+    result(
+        host,
+        serde_json::json!({ "kind": "annotations.create", "docId": DOC_ID,
+            "page": { "kind": "objectNumber", "objectNumber": page }, "draft": draft }),
+    )
+}
+
+fn draws_the_last_resort(host: &mut Host) -> bool {
+    let listed = result(host, serde_json::json!({ "kind": "document.fonts.list" }));
+    listed["facts"]["faces"].as_array().expect("faces").iter().any(|face| {
+        face["programs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|program| program["sha256"] == epdf_engine::features::fonts::LAST_RESORT_HASH)
+    })
+}
+
+#[test]
+fn a_write_answers_the_characters_it_drew_with_no_font() {
+    on_a_fresh_thread(|| {
+        let mut host = Host::new();
+        open(&mut host, NO_FONTS);
+        let answer = create(&mut host, free_text("Hi \u{10FFFD}", "helvetica"));
+        assert_eq!(
+            answer["result"]["meta"]["missingCharacters"],
+            serde_json::json!(["\u{10FFFD}"]),
+            "{answer}"
+        );
+        // The next write starts from none.
+        let answer = create(&mut host, free_text("Hi", "helvetica"));
+        assert!(answer["result"]["meta"].get("missingCharacters").is_none(), "{answer}");
+        assert!(answer.get("fontsChanged").is_none(), "not tracked: {answer}");
+    });
+}
+
+#[test]
+fn a_write_before_any_font_kind_draws_the_last_resort_box() {
+    on_a_fresh_thread(|| {
+        // No font kind before the write: the host registered the last resort
+        // when it was built, as `WorkerHost` builds its `FontRegistrar`.
+        let mut host = Host::new();
+        open(&mut host, NO_FONTS);
+        create(&mut host, free_text("Hi \u{10FFFD}", "helvetica"));
+        assert!(draws_the_last_resort(&mut host));
+    });
+}
+
+#[test]
+fn two_hosts_on_one_thread_share_the_last_resort() {
+    on_a_fresh_thread(|| {
+        let mut first = Host::new();
+        register(&mut first, "roboto");
+        // A second host's construction neither clobbers the first's fonts
+        // nor its last resort.
+        let second = Host::new();
+        let listed = result(&mut first, serde_json::json!({ "kind": "fonts.list" }));
+        assert_eq!(listed["engineFonts"][0]["key"], "roboto");
+        drop(second);
+        open(&mut first, NO_FONTS);
+        create(&mut first, free_text("Hi \u{10FFFD}", "helvetica"));
+        assert!(draws_the_last_resort(&mut first), "the second host took it with it");
+
+        // And the other way about: the host with the registry goes, and the
+        // one left still draws the box.
+        let mut left = Host::new();
+        drop(first);
+        open(&mut left, NO_FONTS);
+        create(&mut left, free_text("Hi \u{10FFFD}", "helvetica"));
+        assert!(draws_the_last_resort(&mut left), "the first host's registry took it");
+    });
+}
+
+#[test]
+fn listing_the_fonts_starts_telling_of_every_change() {
+    on_a_fresh_thread(|| {
+        let mut host = Host::new();
+        open(&mut host, NO_FONTS);
+        register(&mut host, "roboto");
+        // Not tracked yet: no write says.
+        let answer = create(&mut host, free_text("Hi", "helvetica"));
+        assert!(answer.get("fontsChanged").is_none(), "{answer}");
+
+        result(&mut host, serde_json::json!({ "kind": "document.fonts.list" }));
+        let answer = create(&mut host, square());
+        assert!(answer.get("fontsChanged").is_none(), "a square writes no font: {answer}");
+        let answer = create(&mut host, free_text("Hi", "roboto"));
+        assert_eq!(answer["fontsChanged"], true, "Roboto joined the list: {answer}");
+        let answer = create(&mut host, square());
+        assert!(answer.get("fontsChanged").is_none(), "asked again, nothing moved: {answer}");
+    });
+}
+
+#[test]
+fn reporting_every_font_change_tracks_from_the_first_write() {
+    for report in [true, false] {
+        let answer = on_a_fresh_thread(move || {
+            let mut host = Host::new().with_report_every_font_change(report);
+            open(&mut host, NO_FONTS);
+            register(&mut host, "roboto");
+            create(&mut host, free_text("Hi", "roboto"))
+        });
+        assert_eq!(answer.get("fontsChanged").is_some(), report, "{report}: {answer}");
+    }
+}
+
+#[test]
+fn a_changes_items_each_say_what_they_drew_with_no_font() {
+    on_a_fresh_thread(|| {
+        let mut host = Host::new();
+        open(&mut host, NO_FONTS);
+        let page =
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": first_page(&mut host) });
+        let op = |data: serde_json::Value| serde_json::json!({ "type": "annotations.create", "page": page, "data": data });
+        let answer = result(
+            &mut host,
+            serde_json::json!({ "kind": "document.apply", "docId": DOC_ID, "change": { "ops": [
+                op(free_text("A \u{10FFFD}", "helvetica")),
+                op(square()),
+                op(free_text("B \u{10FFFC} \u{10FFFD}", "helvetica")),
+            ] } }),
+        );
+        let items = answer["result"]["items"].as_array().expect("items");
+        assert_eq!(items[0]["meta"]["missingCharacters"], serde_json::json!(["\u{10FFFD}"]));
+        assert!(items[1]["meta"].get("missingCharacters").is_none(), "{}", items[1]);
+        assert_eq!(
+            items[2]["meta"]["missingCharacters"],
+            serde_json::json!(["\u{10FFFC}", "\u{10FFFD}"])
+        );
+        // The change's meta: every op's, first seen first.
+        assert_eq!(
+            answer["result"]["meta"]["missingCharacters"],
+            serde_json::json!(["\u{10FFFD}", "\u{10FFFC}"]),
+            "{answer}"
+        );
+    });
+}

@@ -302,7 +302,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: 'DocumentFontReader.facts (handleDocumentFontsList): the faces EPDFFontFaces_Load walks, the engine fonts and the fallbacks. Rust does not start trackFontChanges, so no write answers fontsChanged yet.',
+    note: 'DocumentFontReader.facts (handleDocumentFontsList): the faces EPDFFontFaces_Load walks, the engine fonts and the fallbacks. Starts trackFontChanges, so every later write to the session answers fontsChanged when the listed document fonts moved (finishMutation; Rust Written::respond).',
   },
   {
     kind: 'document.fonts.resolve',
