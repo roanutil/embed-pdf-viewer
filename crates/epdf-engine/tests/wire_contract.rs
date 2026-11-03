@@ -1,7 +1,7 @@
 //! Every wire kind reaches an implementation.
 //!
 //! Replays `vectors/wire/requests.json`, which the TypeScript compiler
-//! produced by reading the `WorkerRequest` union: eighty-nine kinds and the
+//! produced by reading the `WorkerRequest` union: ninety-four kinds and the
 //! arguments each one carries.
 //!
 //! # What a dispatcher can get wrong that a compiler cannot catch
@@ -224,7 +224,7 @@ fn payloads() -> Payloads {
 #[test]
 fn every_wire_kind_routes_to_an_implementation() {
     let cases = cases();
-    assert_eq!(cases.len(), 89, "the vector and the protocol disagree about how many kinds exist");
+    assert_eq!(cases.len(), 94, "the vector and the protocol disagree about how many kinds exist");
 
     let mut wrong = Vec::new();
     for case in &cases {
@@ -377,7 +377,7 @@ fn every_kind_states_the_effect_its_interface_does() {
     }
     controls.sort();
     assert_eq!(controls, ["abort", "pages.workingSet", "shutdown"]);
-    assert_eq!(stated.len(), 86, "the protocol states an effect for a kind the vector lacks");
+    assert_eq!(stated.len(), 91, "the protocol states an effect for a kind the vector lacks");
 }
 
 /// The text between `prefix` and the next `'` of `line`.

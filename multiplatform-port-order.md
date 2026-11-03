@@ -203,9 +203,10 @@ not silently change that profile’s behavior.
 `core/src/dto/{PageRender,FontSpec}.ts` (194)
 
 **Operations:** `pages.render`; `fonts.register`, `fonts.addFallback`,
-`fonts.clearFallbacks`, `fonts.clear`. Also an internal `render_page_bitmap`
-entry point, not a wire kind, which G15 consumes for its encoded-render wire
-operation.
+`fonts.clearFallbacks`, `fonts.clear`, `fonts.list`, `fonts.program`,
+`document.fonts.list`, `document.fonts.resolve`, `document.fonts.program`.
+Also an internal `render_page_bitmap` entry point, not a wire kind, which G15
+consumes for its encoded-render wire operation.
 
 **Depends on:** G0/G1 on web; G3 additionally on native. Fonts are engine-level,
 registered before first render and independent of a document session.
@@ -569,16 +570,18 @@ flowchart TB
 
 ## 6. Operation coverage check
 
-The `WorkerRequest` union (`worker-protocol.ts:1102`) has 82 members.
-`OpenWorkerRequest` is a union alias expanding to three `open.*` kinds, so there
-are 84 distinct request kinds. Four are control frames (`abort`, `close`,
-`layer.close`, `shutdown`), all in G3, leaving 80 non-control operations,
+The `WorkerRequest` union (`worker-protocol.ts:1573`) has 90 members.
+`OpenWorkerRequest` is a union alias expanding to three `open.*` kinds, and
+`WorkerControlMessage` one expanding to `abort`, `pages.workingSet` and
+`shutdown`, so there are 94 distinct request kinds. Four are control frames
+(`abort`, `close`, `layer.close`, `shutdown`), all in G3, leaving 90
+non-control operations,
 including engine-wide font operations. Every one appears in exactly one group
 above. G3w routes a subset of G3's kinds to a second backend and adds no row.
 
-Do not use 83: that is the `case` arm count in `WorkerHost.ts`, which is 84
-minus `abort` because `abort` is handled before the switch
-(`WorkerHost.ts:282`).
+Do not count the `case` arms in `WorkerHost.ts`: `abort` and
+`pages.workingSet` are taken in `receive` before the switch
+(`WorkerHost.ts:431-439`).
 
 The response/lifecycle kinds are `resolve`, `reject`, `ready` and `init-error`;
 their transport envelopes stay TypeScript-owned. `fresh`, `raw-delta`,

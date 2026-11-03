@@ -275,6 +275,54 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: 'Per-document session state on the handle (EPDFDoc_SetFontEmbeddingPolicy, EPDFDoc_SetTypographicFeatures, WorkerHost.ts:2285-2290), never written to the file: a session effect. Filed with the fonts it configures.',
   },
 
+  // New in the 2026-11 catch-up: the font surface DocumentFontReader.ts and
+  // FontRegistrar.ts read. No AbortSignal reaches any of the five handlers.
+  {
+    kind: 'fonts.list',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'FontRegistrar.engineFontFacts and fallbackKeys (WorkerHost.ts:790-796); Rust FontRegistry::engine_font_facts and fallback_order. The NaN-tier fallback order is the accepted Rust-only exception (stable insertion sort).',
+  },
+  {
+    kind: 'fonts.program',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'A served engine font\'s bytes by its program hash (handleFontsProgram); NotFound for a font not served. Rust answers {bytes: {payload: 0}}, the bytes payload 0.',
+  },
+  {
+    kind: 'document.fonts.list',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'DocumentFontReader.facts (handleDocumentFontsList): the faces EPDFFontFaces_Load walks, the engine fonts and the fallbacks. Starts trackFontChanges, so every later write to the session answers fontsChanged when the listed document fonts moved (finishMutation; Rust Written::respond).',
+  },
+  {
+    kind: 'document.fonts.resolve',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'DocumentFontReader.resolve over EPDFDoc_ResolveFonts (handleDocumentFontsResolve), the facts read first and answered beside the runs.',
+  },
+  {
+    kind: 'document.fonts.program',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'DocumentFontReader.program (handleDocumentFontsProgram): an engine font\'s program first, else a document program by display hash. Rust answers bytes as {payload: 0} for part data, null otherwise.',
+  },
+
   // --- G5. Text and search.
   {
     kind: 'pages.text',

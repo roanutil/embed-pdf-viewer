@@ -208,6 +208,9 @@ impl RequestEffect {
             "document.apply" => Write,
             "document.applyChanges" => Write,
             "document.checkPasswordPermissions" => Open,
+            "document.fonts.list" => Read,
+            "document.fonts.program" => Read,
+            "document.fonts.resolve" => Read,
             "document.probeSecurityFile" => Read,
             "document.renderPageFile" => Read,
             "document.renderPageFileEncoded" => Read,
@@ -220,6 +223,8 @@ impl RequestEffect {
             "fonts.authorizeEditing" => RuntimeWrite,
             "fonts.clear" => RuntimeWrite,
             "fonts.clearFallbacks" => RuntimeWrite,
+            "fonts.list" => Read,
+            "fonts.program" => Read,
             "fonts.register" => RuntimeWrite,
             "forms.addWidget" => Write,
             "forms.createField" => Write,
@@ -488,6 +493,16 @@ pub struct Host {
     /// font needs the registry; the second gets the registry's own refusal
     /// if it tries, which says what the conflict is.
     fonts: Option<crate::features::fonts::FontRegistry>,
+    /// This host's hold on the thread's last-resort font, taken at
+    /// construction as `WorkerHost` builds its `FontRegistrar`. Counted per
+    /// thread, so a second host on the thread shares it rather than
+    /// registering over the first's. `None` only when it didn't register;
+    /// the first font kind then reports the refusal.
+    _last_resort: Option<crate::features::fonts::LastResortHold>,
+    /// `WorkerHostOptions.reportEveryFontChange`: every write says whether
+    /// it changed the fonts the document's list shows (`fontsChanged`), from
+    /// a session's first write on, not only once its fonts were listed.
+    report_every_font_change: bool,
     clock: Box<dyn crate::clock::Clock>,
     ids: Box<dyn crate::ids::IdSource>,
     /// Set by a host that can turn a raster into a PNG or a JPEG.
@@ -529,6 +544,8 @@ impl Host {
         Self {
             sessions: SessionRegistry::new(),
             fonts: None,
+            _last_resort: crate::features::fonts::LastResortHold::acquire().ok(),
+            report_every_font_change: false,
             clock: Box::new(crate::clock::SystemClock),
             ids: Box::new(crate::ids::SystemIdSource),
             encoder: None,
@@ -546,6 +563,14 @@ impl Host {
             budget_bytes: bytes,
             ..policy
         });
+        self
+    }
+
+    /// Report on every write whether it changed the fonts the document's
+    /// list shows (`WorkerHostOptions.reportEveryFontChange`, which the
+    /// server sets).
+    pub fn with_report_every_font_change(mut self, report: bool) -> Self {
+        self.report_every_font_change = report;
         self
     }
 
@@ -740,7 +765,9 @@ impl Host {
         self.artifact_path = optional(&body, "artifactPath")?;
         let written = self.begin_write(header, &job);
         let routed = written.and_then(|transacted| {
-            let routed = self.route_wire(header, &body, payloads, cancel);
+            let routed = self
+                .before_write(header)
+                .and_then(|()| self.route_wire(header, &body, payloads, cancel));
             self.end_write(transacted.as_ref(), routed)
         });
         self.artifact_path = None;
@@ -810,6 +837,31 @@ impl Host {
             return Err(refused);
         }
         Ok(Some(key))
+    }
+
+    /// `WorkerHost.run`, once the transaction is open: with
+    /// `reportEveryFontChange`, the fonts before a session's first write are
+    /// what the next one compares to (`sessionWrittenBy`: any `write` or
+    /// `contentWrite` to an open session). Then a write to an open session
+    /// starts from no missing characters (`writingSession`).
+    fn before_write(&mut self, header: &RequestHeader) -> Result<(), EngineError> {
+        let Ok(key) = header.key() else { return Ok(()) };
+        let Ok(session) = self.sessions.session_mut(&key) else { return Ok(()) };
+        if !session.is_open() {
+            return Ok(());
+        }
+        if self.report_every_font_change
+            && matches!(
+                RequestEffect::of(&header.kind),
+                Some(RequestEffect::Write | RequestEffect::ContentWrite)
+            )
+        {
+            crate::features::fonts::document::track_font_changes(session)?;
+        }
+        if TRANSACTED_KINDS.contains(&header.kind.as_str()) {
+            crate::features::changes::applier::clear_missing_characters(session);
+        }
+        Ok(())
     }
 
     /// `WorkerHost.run`, after the arm: a write that is done but saved
@@ -921,8 +973,27 @@ impl Host {
                 serde_json::json!({ "identity": identity })
             }
             "fonts.clear" => {
-                self.fonts()?.clear();
+                self.fonts()?.clear()?;
                 serde_json::Value::Null
+            }
+            // `{ tag: 'fonts.list', engineFonts, fallbacks }`: the engine's
+            // fonts as a font list takes them, and the fallback order.
+            "fonts.list" => {
+                let fonts = self.fonts()?;
+                serde_json::json!({
+                    "engineFonts": value(&fonts.engine_font_facts())?,
+                    "fallbacks": fonts.fallback_order(),
+                })
+            }
+            // `WorkerHost.handleFontsProgram`: `{ tag, bytes }`, the bytes
+            // payload 0. `NotFound` for a font not served.
+            "fonts.program" => {
+                let sha256 = string_field(body, "sha256")?;
+                let bytes = self.fonts()?.served_program(&sha256)?;
+                return Ok(payload_response(
+                    serde_json::json!({ "bytes": { "payload": 0 } }),
+                    bytes,
+                ));
             }
             // Both take a path and no session: the point of a probe is to
             // decide whether opening is worth attempting at all.
@@ -1289,6 +1360,68 @@ impl Host {
                 let d = self.document(&key)?;
                 f::fonts::apply_document_font_settings(d, policy.as_deref(), features)?;
                 Ok(ok(serde_json::Value::Null))
+            }
+            // `WorkerHost.handleDocumentFontsList`: `{ tag, facts }`.
+            "document.fonts.list" => {
+                // Whoever listed them hears of every change from now on.
+                f::fonts::document::track_font_changes(self.sessions.session_mut(&key)?)?;
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let document = self.sessions.session(&key)?.document()?.document();
+                let facts = f::fonts::document::facts(document, fonts)?;
+                Ok(ok(serde_json::json!({ "facts": value(&facts)? })))
+            }
+            // `WorkerHost.handleDocumentFontsResolve`: `{ tag, runs,
+            // missingCharacters, facts }`, the facts read before the runs.
+            "document.fonts.resolve" => {
+                let annotation: Option<crate::identity::AnnotationRef> =
+                    optional(body, "annotation")?;
+                let runs = body
+                    .get("runs")
+                    .and_then(serde_json::Value::as_array)
+                    .ok_or_else(|| {
+                        EngineError::with_message(
+                            EngineErrorCode::WireFormat,
+                            "the 'document.fonts.resolve' request has no 'runs' array",
+                        )
+                    })?
+                    .iter()
+                    .map(f::fonts::document::FontResolveRun::from_wire)
+                    .collect::<Result<Vec<_>, _>>()?;
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let owned = self.sessions.session(&key)?.document()?;
+                let facts = f::fonts::document::facts(owned.document(), fonts)?;
+                let resolution =
+                    f::fonts::document::resolve(owned, fonts, annotation.as_ref(), &runs, &facts)?;
+                Ok(ok(serde_json::json!({
+                    "runs": value(&resolution.runs)?,
+                    "missingCharacters": resolution.missing_characters,
+                    "facts": value(&facts)?,
+                })))
+            }
+            // `WorkerHost.handleDocumentFontsProgram`: `{ tag, covers,
+            // ascent, descent, bytes }`, the bytes payload 0 for
+            // `part: 'data'` and `null` otherwise.
+            "document.fonts.program" => {
+                let display_hash = string_field(body, "displayHash")?;
+                let part = string_field(body, "part")?;
+                self.fonts()?;
+                let fonts = self.fonts.as_ref().expect("just claimed");
+                let document = self.sessions.session(&key)?.document()?.document();
+                let (info, bytes) =
+                    f::fonts::document::program(document, fonts, &display_hash, part == "data")?;
+                let mut answer = value(&info)?;
+                match bytes {
+                    Some(bytes) => {
+                        answer["bytes"] = serde_json::json!({ "payload": 0 });
+                        Ok(payload_response(answer, bytes))
+                    }
+                    None => {
+                        answer["bytes"] = serde_json::Value::Null;
+                        Ok(ok(answer))
+                    }
+                }
             }
 
             // ── Per-page reads ────────────────────────────────────────
@@ -2278,11 +2411,13 @@ impl Host {
         key: &SessionKey,
         family: crate::session::save::MutationFamily,
     ) -> Result<Written, EngineError> {
-        let finished = crate::session::save::finish_mutation(
-            self.sessions.session_mut(key)?,
-            family,
-            &CancelToken::never(),
-        )?;
+        let session = self.sessions.session_mut(key)?;
+        let finished =
+            crate::session::save::finish_mutation(session, family, &CancelToken::never())?;
+        // `finishMutation`: what the write drew with no font, and whether it
+        // changed the fonts the list shows, once the write is kept.
+        let missing_characters = crate::features::changes::applier::missing_characters(session)?;
+        let fonts_changed = crate::features::fonts::document::fonts_changed_since(session)?;
         let (artifact, payloads) = match (finished.artifact, self.artifact_path.take()) {
             (None, _) => (None, Vec::new()),
             (Some(bytes), Some(path)) => {
@@ -2307,7 +2442,13 @@ impl Host {
                 (Some(("artifact", artifact)), vec![bytes])
             }
         };
-        Ok(Written { sequence: finished.mutation_sequence, artifact, payloads })
+        Ok(Written {
+            sequence: finished.mutation_sequence,
+            artifact,
+            payloads,
+            missing_characters,
+            fonts_changed,
+        })
     }
 
     /// Finish a flatten or a redaction (`handlePagesFlatten`,
@@ -2917,12 +3058,31 @@ struct Written {
     sequence: u64,
     artifact: Option<(&'static str, serde_json::Value)>,
     payloads: Payloads,
+    /// The characters the write drew with no font (`session.missingCharacters()`).
+    missing_characters: Vec<String>,
+    /// Whether the fonts a tracked session's list shows changed.
+    fonts_changed: bool,
 }
 
 impl Written {
     /// `answer`, naming the artifact beside its own fields
     /// (`{ ...payload, ...saved.payload }`), its bytes the payloads.
     fn respond(self, mut answer: serde_json::Value) -> HostResponse {
+        // `withMissingCharacters`: in the result's meta, when there are any,
+        // it has a meta, and that meta doesn't already say (a change's
+        // result says per op, and for the whole change).
+        if !self.missing_characters.is_empty()
+            && let Some(meta) = answer
+                .get_mut("result")
+                .and_then(|result| result.get_mut("meta"))
+                .and_then(serde_json::Value::as_object_mut)
+            && !meta.contains_key("missingCharacters")
+        {
+            meta.insert("missingCharacters".into(), serde_json::json!(self.missing_characters));
+        }
+        if self.fonts_changed {
+            answer["fontsChanged"] = serde_json::Value::Bool(true);
+        }
         if let Some((name, artifact)) = self.artifact {
             answer[name] = artifact;
         }

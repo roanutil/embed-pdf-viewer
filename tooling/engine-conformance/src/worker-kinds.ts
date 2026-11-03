@@ -2,13 +2,13 @@
  * Every `kind` the worker protocol accepts, read out of the TypeScript type
  * rather than off a regular expression.
  *
- * `WorkerRequest` is a union of 63 members, one of which (`OpenWorkerRequest`)
- * is itself a union alias over three `open.*` kinds, so the flat set has 65
- * entries. Counting them by grepping for `kind: '` also picks up the four
- * `LayerOpenSource` variants nested inside the open requests and the four
- * response and lifecycle kinds, which is how the number 64 gets quoted: that
- * is the `case`-arm count in `WorkerHost.ts`, which handles `abort` before the
- * switch. Asking the compiler avoids the whole argument.
+ * `WorkerRequest` is a union of 90 members, two of which (`OpenWorkerRequest`
+ * and `WorkerControlMessage`) are themselves union aliases over three kinds
+ * each, so the flat set has 94 entries. Counting them by grepping for
+ * `kind: '` also picks up the four `LayerOpenSource` variants nested inside
+ * the open requests and the response and lifecycle kinds, and counting the
+ * `case` arms in `WorkerHost.ts` misses `abort` and `pages.workingSet`, which
+ * it takes before the switch. Asking the compiler avoids the whole argument.
  */
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

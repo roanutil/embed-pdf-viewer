@@ -219,6 +219,7 @@ mod tests {
                 cache_delta: None,
                 op_id: op_id.into(),
                 undoable: true,
+                missing_characters: None,
             },
         }
     }

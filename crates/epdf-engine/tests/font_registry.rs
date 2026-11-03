@@ -11,6 +11,7 @@
 //! threads, but that is a scheduling detail rather than a promise, so each
 //! test spawns its own and joins it.
 
+use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::fonts::{FontRegistry, StartupFont, fallback_tier};
 use pdfium::FontDescription;
 
@@ -143,7 +144,7 @@ fn clear_removes_every_font_and_re_registration_works_afterwards() {
             .expect("register");
         registry.add_fallback("roboto").expect("fallback");
 
-        registry.clear();
+        registry.clear().expect("clear");
         assert!(registry.is_empty());
         assert!(registry.fallback_order().is_empty());
         assert!(registry.id_for("roboto").is_err());
@@ -170,6 +171,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 description: FontDescription::inferred(),
                 fallback: true,
                 tier: fallback_tier::OWN,
+                serve: false,
             },
             StartupFont {
                 key: "display".to_string(),
@@ -179,6 +181,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 // flag exists for.
                 fallback: false,
                 tier: fallback_tier::OWN,
+                serve: false,
             },
         ];
         registry.register_startup(&fonts).expect("startup");
@@ -262,7 +265,7 @@ fn a_registered_face_maps_back_to_its_key_and_clear_forgets_it() {
         assert_eq!(found.as_deref(), Some("roboto"));
         assert_eq!(epdf_engine::features::fonts::key_for_face("Helvetica", 400, false), None);
 
-        registry.clear();
+        registry.clear().expect("clear");
         assert_eq!(epdf_engine::features::fonts::key_for_face("Roboto", 400, false), None);
     });
 }
@@ -317,6 +320,7 @@ fn startup_fonts_join_the_chain_in_their_tier() {
             description: FontDescription::inferred(),
             fallback: true,
             tier,
+            serve: false,
         };
         registry
             .register_startup(&[
@@ -364,5 +368,108 @@ fn a_nan_tier_compares_equal_and_never_panics() {
         registry.add_fallback_in_tier("one", 1.0).expect("one");
         registry.add_fallback_in_tier("zero", 0.0).expect("zero");
         assert_eq!(registry.fallback_order(), ["two", "nan", "zero", "one"]);
+    });
+}
+
+/// Whether a free text drawn on a fresh `annotation_kinds.pdf` with a
+/// character no font has embeds the last resort for it: a program the
+/// document's faces list under `LAST_RESORT_HASH`.
+fn a_missing_character_draws_in_the_last_resort() -> bool {
+    let document = pdfium::Document::from_bytes(
+        pdfium::Library::acquire(),
+        &test_support::fixture("tooling/engine-conformance/fixtures/annotation_kinds.pdf"),
+        None,
+    )
+    .expect("open");
+    {
+        let page = document.page(0).expect("page 0");
+        // `FPDF_ANNOT_FREETEXT`.
+        let annotation = page.create_annotation(3).expect("a free text box");
+        assert!(annotation.set_rect(pdfium::RectF {
+            left: 10.0,
+            bottom: 10.0,
+            right: 200.0,
+            top: 60.0
+        }));
+        assert!(annotation.set_default_appearance(0, 12.0, (0, 0, 0)), "Helvetica /DA");
+        assert!(annotation.set_string_value("Contents", "Hi \u{10FFFD}").expect("contents"));
+        assert!(annotation.generate_appearance(None));
+    }
+    epdf_engine::features::fonts::document::read_document_faces(&document)
+        .expect("faces")
+        .iter()
+        .flat_map(|face| &face.programs)
+        .any(|program| {
+            program.sha256.as_deref() == Some(epdf_engine::features::fonts::LAST_RESORT_HASH)
+        })
+}
+
+#[test]
+fn a_registry_registers_the_last_resort_and_registers_it_again_after_clear() {
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        assert!(a_missing_character_draws_in_the_last_resort());
+        registry.clear().expect("clear");
+        assert!(a_missing_character_draws_in_the_last_resort(), "gone after clear");
+        // It has no key: nothing lists it.
+        assert!(registry.is_empty());
+        assert!(registry.engine_font_facts().is_empty());
+    });
+}
+
+#[test]
+fn a_dropped_registry_takes_the_last_resort_with_it() {
+    on_a_fresh_thread(|| {
+        drop(FontRegistry::new().expect("registry"));
+        let _library = pdfium::Library::acquire();
+        assert!(!a_missing_character_draws_in_the_last_resort());
+    });
+}
+
+#[test]
+fn a_registered_fonts_program_is_found_by_its_hash() {
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        registry.register("bytes", &FontDescription::inferred(), &roboto_bytes()).expect("bytes");
+        registry
+            .register_file_served("kept", &FontDescription::inferred(), &roboto_path(), false)
+            .expect("file");
+        let facts = registry.engine_font_facts();
+        assert_eq!(facts.len(), 2);
+        assert_eq!((facts[0].key.as_str(), facts[0].served), ("bytes", true));
+        assert_eq!((facts[1].key.as_str(), facts[1].served), ("kept", false));
+        let sha256 = facts[0].sha256.clone();
+        assert_eq!(facts[1].sha256, sha256);
+
+        let info = registry.program_info(&sha256).expect("read").expect("a program");
+        assert_eq!((info.ascent, info.descent), (928.0, -244.0));
+        assert_eq!(registry.program_bytes(&sha256).expect("read"), Some(roboto_bytes()));
+        assert_eq!(registry.program_info("ab").expect("read"), None);
+        // Served: one key with the program goes to browsers.
+        assert_eq!(registry.served_program(&sha256).expect("served"), roboto_bytes());
+
+        let id = registry.id_for("kept").expect("id");
+        assert_eq!(registry.key_for_id(id).as_deref(), Some("kept"));
+    });
+}
+
+#[test]
+fn a_program_only_a_kept_font_has_is_not_served() {
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().expect("registry");
+        registry
+            .register_startup(&[StartupFont {
+                key: "server".into(),
+                path: roboto_path(),
+                description: FontDescription::inferred(),
+                fallback: false,
+                tier: fallback_tier::OWN,
+                serve: false,
+            }])
+            .expect("startup");
+        let sha256 = registry.engine_font_facts()[0].sha256.clone();
+        let refused = registry.served_program(&sha256).expect_err("not served");
+        assert_eq!(refused.code, EngineErrorCode::NotFound);
+        assert_eq!(refused.message, format!("no served font has the program {sha256}"));
     });
 }

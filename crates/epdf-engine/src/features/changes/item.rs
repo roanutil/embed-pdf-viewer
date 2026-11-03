@@ -681,6 +681,7 @@ fn form_reset_facts(
                     cache_delta: None,
                     op_id: meta.meta.op_id.clone(),
                     undoable: meta.meta.undoable,
+                    missing_characters: None,
                 },
                 changed_fields: vec![serde_json::from_value(field["ref"].clone()).map_err(
                     |e| {
