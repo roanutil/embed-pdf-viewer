@@ -861,3 +861,104 @@ fn the_command_table_counts_its_families_beside_its_definitions() {
     });
     assert_eq!(rig.commands.retained_commands(), 2, "one definition and one family");
 }
+
+// ── appState and the wake after a run (controller.test.ts:223-267) ──────────
+
+/// A listener on the kernel's store, counting its wakes.
+fn store_wakes(rig: &Rig) -> (Rc<Cell<usize>>, Unsubscribe) {
+    let wakes = Rc::new(Cell::new(0));
+    let count = wakes.clone();
+    let off = rig.kernel.subscribe(Rc::new(move || {
+        count.set(count.get() + 1);
+        Ok(())
+    }));
+    (wakes, off)
+}
+
+fn approve() -> CommandDef {
+    CommandDef {
+        enabled: Some(Rc::new(|c: &CommandCtx| {
+            Ok(c.app_state()["done"].as_array().is_some_and(|done| done.len() == 4))
+        })),
+        active: Some(Rc::new(|c: &CommandCtx| Ok(c.app_state()["status"] == "approved"))),
+        ..def("acme:approve")
+    }
+}
+
+#[test]
+fn every_command_gets_the_app_state_and_a_new_value_replaces_it_whole() {
+    let review = json!({ "done": [], "status": "review" });
+    let rig = rig(CommandsConfig { app_state: Some(review.clone()), ..config(vec![approve()]) });
+    let resolved = rig.resolve("acme:approve");
+    assert!(!resolved.enabled && !resolved.active);
+
+    let (wakes, _off) = store_wakes(&rig);
+    rig.commands.update_settings(&CommandsConfig {
+        app_state: Some(json!({ "done": ["a", "b", "c", "d"], "status": "review" })),
+        ..CommandsConfig::default()
+    });
+    assert!(wakes.get() > 0, "a new app state wakes the readers");
+    let resolved = rig.resolve("acme:approve");
+    assert!(resolved.enabled && !resolved.active);
+    // Replaced whole, never merged: what the new value leaves out is gone.
+    rig.commands.update_settings(&CommandsConfig {
+        app_state: Some(json!({ "done": [] })),
+        ..CommandsConfig::default()
+    });
+    assert_eq!(*rig.commands.get_settings().app_state, json!({ "done": [] }));
+}
+
+#[test]
+fn every_reader_wakes_once_a_command_ran() {
+    // The app changes its own state outside the viewer, without a new value.
+    let status = Rc::new(Cell::new(false));
+    let (read, write) = (status.clone(), status.clone());
+    let run: RunFn = Rc::new(move |_| {
+        write.set(true);
+        Ok(None)
+    });
+    let rig = rig(config(vec![CommandDef {
+        active: Some(Rc::new(move |_| Ok(read.get()))),
+        run: Some(run),
+        ..def("acme:approve")
+    }]));
+    assert!(!rig.resolve("acme:approve").active);
+    let (wakes, _off) = store_wakes(&rig);
+    let done = rig.commands.execute("acme:approve", ExecuteOptions::default());
+    rt::run_until_stalled();
+    assert!(matches!(done.peek(), Some(Ok(ExecuteResult::Executed))));
+    assert!(wakes.get() > 0, "the run woke the readers");
+    assert!(rig.resolve("acme:approve").active);
+}
+
+#[test]
+fn the_readers_wake_after_a_run_that_fails_too() {
+    let run: RunFn = Rc::new(|_| Err(Error::new("no")));
+    let rig = rig(config(vec![CommandDef { run: Some(run), ..def("acme:fail") }]));
+    let (wakes, _off) = store_wakes(&rig);
+    let done = rig.commands.execute("acme:fail", ExecuteOptions::default());
+    rt::run_until_stalled();
+    assert!(matches!(done.peek(), Some(Err(_))));
+    assert!(wakes.get() > 0, "a failed run woke the readers");
+}
+
+#[test]
+fn the_readers_wake_after_a_run_the_caller_cancelled() {
+    let later = Later::default();
+    let rig = rig_cancel(&later);
+    let (wakes, _off) = store_wakes(&rig);
+    let signal = AbortSignal::new();
+    let done = rig.commands.execute(
+        "slow",
+        ExecuteOptions { signal: Some(signal.clone()), ..ExecuteOptions::default() },
+    );
+    rt::run_until_stalled();
+    assert_eq!(wakes.get(), 0, "nothing wakes while the run is pending");
+    signal.abort(Error::new("stop"));
+    rt::run_until_stalled();
+    assert!(
+        matches!(done.peek(), Some(Err(e)) if e.is_plugin_error(Some("operation-cancelled"))),
+        "cancelled"
+    );
+    assert!(wakes.get() > 0, "a cancelled run woke the readers");
+}
