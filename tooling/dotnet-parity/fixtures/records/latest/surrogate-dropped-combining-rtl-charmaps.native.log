@@ -1,0 +1,24 @@
+native parity: create engine with pinned ordered fonts
+native parity: open corpus PDF
+{"id":"pages","operation":"pages","status":"running"}
+{"id":"text","operation":"text","status":"running"}
+{"id":"geometry","operation":"geometry","status":"running"}
+{"id":"empty-segments","operation":"segments","status":"running"}
+{"id":"first-segment","operation":"segments","status":"running"}
+{"id":"transparent-render","operation":"render","status":"running"}
+{"id":"charmap-identity-ascii","operation":"helperText","status":"running"}
+{"id":"charmap-identity-empty","operation":"helperText","status":"running"}
+{"id":"charmap-identity-bmp-non-ascii","operation":"helperText","status":"running"}
+{"id":"charmap-identity-combining","operation":"helperText","status":"running"}
+{"id":"charmap-identity-rtl","operation":"helperText","status":"running"}
+{"id":"charmap-one-dropped-character-at-the-start","operation":"helperText","status":"running"}
+{"id":"charmap-one-dropped-character-in-the-middle","operation":"helperText","status":"running"}
+{"id":"charmap-one-dropped-character-at-the-end","operation":"helperText","status":"running"}
+{"id":"charmap-several-consecutive-dropped-characters","operation":"helperText","status":"running"}
+{"id":"charmap-every-character-dropped","operation":"helperText","status":"running"}
+{"id":"charmap-one-supplementary-character","operation":"helperText","status":"running"}
+{"id":"charmap-supplementary-at-the-start","operation":"helperText","status":"running"}
+{"id":"charmap-supplementary-at-the-end","operation":"helperText","status":"running"}
+{"id":"charmap-consecutive-supplementary-characters","operation":"helperText","status":"running"}
+{"id":"charmap-dropped-and-supplementary-together","operation":"helperText","status":"running"}
+{"id":"charmap-astral-text-with-no-ascii","operation":"helperText","status":"running"}

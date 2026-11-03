@@ -1,0 +1,25 @@
+{
+  "diagnosticOnly": false,
+  "comparison": "exact",
+  "tolerance": null,
+  "viewer": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/reverse_and_gapped_text.viewer.json",
+    "sha256": "06adeb13ab1dc4c81a0f7ca92966af572ff61cb4f905ed3363cf0a361a3ba18e",
+    "bytes": 649631
+  },
+  "native": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/reverse_and_gapped_text.native.json",
+    "sha256": "0ba2cc6a1e28bdd31bd1bc127bc27044a527cf155c749ec98376b2d00ba3cf2f",
+    "bytes": 649631
+  },
+  "probes": [
+    {
+      "id": "transparent-render",
+      "bytes": 484704,
+      "nativeBytes": 484704,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    }
+  ]
+}

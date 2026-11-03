@@ -1,0 +1,115 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "id": "decimal-precision-loss",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/decimal-precision-loss.record.json"
+    },
+    {
+      "id": "positive-midpoint",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/positive-midpoint.record.json"
+    },
+    {
+      "id": "negative-midpoint",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/negative-midpoint.record.json"
+    },
+    {
+      "id": "midpoint-mismatch",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/midpoint-mismatch.record.json"
+    },
+    {
+      "id": "negative-midpoint-mismatch",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/negative-midpoint-mismatch.record.json"
+    },
+    {
+      "id": "round-once",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/round-once.record.json"
+    },
+    {
+      "id": "decimal-not-double",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/decimal-not-double.record.json"
+    },
+    {
+      "id": "exponent",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/exponent.record.json"
+    },
+    {
+      "id": "crop-rotation-boundary",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/crop-rotation-boundary.record.json"
+    },
+    {
+      "id": "rotation-mismatch",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/rotation-mismatch.record.json"
+    },
+    {
+      "id": "surrogate-dropped-combining",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/surrogate-dropped-combining.record.json"
+    },
+    {
+      "id": "text-mismatch",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/text-mismatch.record.json"
+    },
+    {
+      "id": "empty-array-not-null",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/empty-array-not-null.record.json"
+    },
+    {
+      "id": "dropped-map-mismatch",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/dropped-map-mismatch.record.json"
+    },
+    {
+      "id": "object-order",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/object-order.record.json"
+    },
+    {
+      "id": "array-order",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/array-order.record.json"
+    },
+    {
+      "id": "wasm-abi",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/wasm-abi.record.json"
+    },
+    {
+      "id": "crop-rotations-transparent-repeated-quotes-empty-cells",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/crop-rotations-transparent-repeated-quotes-empty-cells.record.json"
+    },
+    {
+      "id": "embedded_orientations",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/embedded_orientations.record.json"
+    },
+    {
+      "id": "non_identity_text",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/non_identity_text.record.json"
+    },
+    {
+      "id": "reverse_and_gapped_text",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/reverse_and_gapped_text.record.json"
+    },
+    {
+      "id": "surrogate-dropped-combining-rtl-charmaps",
+      "status": "passed",
+      "record": "tooling/dotnet-parity/fixtures/records/latest/surrogate-dropped-combining-rtl-charmaps.record.json"
+    }
+  ]
+}

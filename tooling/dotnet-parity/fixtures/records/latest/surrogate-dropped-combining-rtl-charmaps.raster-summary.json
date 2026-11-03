@@ -1,0 +1,25 @@
+{
+  "diagnosticOnly": false,
+  "comparison": "exact",
+  "tolerance": null,
+  "viewer": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/surrogate-dropped-combining-rtl-charmaps.viewer.json",
+    "sha256": "79c9dec3b5ecd822a62d4e92a3fd68021571421a3ccdfeb1a41ef74b20828f48",
+    "bytes": 88278
+  },
+  "native": {
+    "path": "tooling/dotnet-parity/fixtures/records/latest/surrogate-dropped-combining-rtl-charmaps.native.json",
+    "sha256": "47300410995e1440c03778104a73391ab63dc24af1bf63efd502cfbfcca52ede",
+    "bytes": 90477
+  },
+  "probes": [
+    {
+      "id": "transparent-render",
+      "bytes": 50400,
+      "nativeBytes": 50400,
+      "differingChannels": 0,
+      "differingPixels": 0,
+      "maximumChannelDelta": 0
+    }
+  ]
+}

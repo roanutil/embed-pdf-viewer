@@ -1,0 +1,4269 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "91fcaccc53f6a38420123fb6a9ede4be44aab8d6",
+  "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+  "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651",
+  "runtimeBuildFlags": {
+    "EMBEDPDF_RUST_CORE": "0"
+  },
+  "runtime": {
+    "wasm": {
+      "path": "packages/engine/runtime/npm/wasm32/lib/embedpdf.wasm",
+      "sha256": "b0899e0936ba39ccd07de1efe79b65ac8fda371c5c4fdbd7fb6afc305ef708cc"
+    },
+    "wasmBindings": {
+      "path": "tooling/dotnet-parity/fixtures/.local/functions.json",
+      "sha256": "3144155d49fbd1b621063a6036dbe96aa6d77157faf177c929eb60caf6a0a533"
+    },
+    "nativeMetadata": {
+      "path": "/opt/pdfium/linux-arm64/BUILD-METADATA.json",
+      "sha256": "301905fa9f44b4b0dc0913244743d11c1f632378c939e1395bcb3bafef6b2b42"
+    },
+    "native": {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0"
+    },
+    "bindingSource": {
+      "path": "packages/engine/runtime/src/core/pdf-functions.generated.ts",
+      "sha256": "5b3fd6dd351f3df6b63357cc37f20157ee87953c90fbd2b0979090f7833bf6d0",
+      "bytes": 503169
+    },
+    "bindingMap": {
+      "path": "/tmp/j6-restored-packed/vite-app/node_modules/@embedpdf/engine-runtime/dist/index.browser.js.map",
+      "sha256": "65acb1b3cecbe8e029f82bf7f0afe37a241be35a83a173f53ff7ddfa79a766d4",
+      "bytes": 1269564
+    }
+  },
+  "viewer": {
+    "package": "@embedpdf/viewer-react",
+    "backend": "typescript",
+    "flags": {
+      "rustReads": false,
+      "rustSession": false
+    },
+    "packageArtifacts": [
+      {
+        "package": "@embedpdf/core",
+        "integrity": "sha512-Lfp2A68nFlCdiIsDsgB50hZudzEMAOMJxYMQ/Hzt2L38FayCStr25BAqgP1n9CC9h+VS+H9eJDFDp9KFN+SI+g==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-3.0.0-next.15.tgz",
+        "sha256": "dedaade9f46f4b1060188cbb1dfa8d1a8aeba3f5437809b81f8dcf073becf6f8",
+        "bytes": 333719
+      },
+      {
+        "package": "@embedpdf/core-acrojs",
+        "integrity": "sha512-HT7UDJHOY3k7Muoix9RdgqKUYGpDKlE4XPIUylPr3YsJnmj89G45N7d2CW5d3y38QJXkphIpr7eMeKhohYJSgQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-acrojs-3.0.0-next.15.tgz",
+        "sha256": "3b37331e132f710b0f7345f8c379659fa941cc48f72b9cfd370fa620a19af069",
+        "bytes": 101711
+      },
+      {
+        "package": "@embedpdf/core-annotation",
+        "integrity": "sha512-3wfJCCY75qxzGeWbL1kkwkXX3ARXYBsIf+vilI9kBLbEc6y42R/961+pIJOQjqRRXAjI8ahMX+QfCSq+k3O9vg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-annotation-3.0.0-next.15.tgz",
+        "sha256": "f041225401a43a63d95d45ca6731f879b9de48dfdc5f0dd1830a6baf5228ea22",
+        "bytes": 577660
+      },
+      {
+        "package": "@embedpdf/core-fonts",
+        "integrity": "sha512-O9/02GLVhVbOXt8niemLWMLOHDD2Xe9vCDiAnzsaZJbvduSP6oBfnbQt5Jz8U/Ciwm5b4BIIXBDZBO9S9QRSoA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-fonts-3.0.0-next.15.tgz",
+        "sha256": "9761c84c61fb308b98b23a5470923099f7a6d3c665adc98d8415950205f45750",
+        "bytes": 967049
+      },
+      {
+        "package": "@embedpdf/core-form",
+        "integrity": "sha512-KupRLCtk6uWhx/1VLy/9FG1Ep6A6nuiIxmBRRt930EQxFoDfafhImynqKgTsZIKYzpZdpP/or78vJs53YoCvEw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-form-3.0.0-next.15.tgz",
+        "sha256": "ca9ad1af53e74b9710a3ff9f9baea3ef6a94db5351f726e929a9d8b9ca82c6d7",
+        "bytes": 79362
+      },
+      {
+        "package": "@embedpdf/core-geometry",
+        "integrity": "sha512-gm1RlcSdCbKEg8s+MVwPRCN+qxQX+0yeqFH7PnCe/rESp7iZBIlUMOj2mv+T4BaGozxwGQnLo3PzOlM5fwbQbg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-geometry-3.0.0-next.15.tgz",
+        "sha256": "66dc8ba4f07af8a455e23253a7361555221eb7af9c62dc27dc70a581b73d30c6",
+        "bytes": 38905
+      },
+      {
+        "package": "@embedpdf/core-js-sandbox",
+        "integrity": "sha512-Zhw54+3kdUN0MF9b4XnmxUdAnX9kPb1yN5oQbmkdLmD6RJx1eHHq3bROHv4U9/Jyt3qJfIxkgrg4MZKV9ah21w==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-js-sandbox-3.0.0-next.15.tgz",
+        "sha256": "07db2c35f5cdac7ad32d59c44888073400d0fea1a86fa9ce77e7cc5eed3e4cb2",
+        "bytes": 14893
+      },
+      {
+        "package": "@embedpdf/core-signature",
+        "integrity": "sha512-fJYHEYYdqS1/XMOlzk+8yk0ucGsTbJBA5RxoXXaKpmcgri0Ekgk8UJNpT5N2Q4p41m2kOU2+sxYCZDsYV8hUog==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-signature-3.0.0-next.15.tgz",
+        "sha256": "63bf3922ad0cfb3dd1888f942d0738e9c10edfc6d6845904f57c65a963c20efb",
+        "bytes": 75560
+      },
+      {
+        "package": "@embedpdf/core-stage",
+        "integrity": "sha512-+ZX/pbEFFbHefF73+CR80HG+3CopHaU8sgdnMITrfxhuThiBoekfwTL90TgcJ8pKlS0UjmajPiFvkpB/I+2otw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-stage-3.0.0-next.15.tgz",
+        "sha256": "fcc15903d84bf8d984d086cb61ec5117d158c0c05f67aaec722a7887ae910f82",
+        "bytes": 52043
+      },
+      {
+        "package": "@embedpdf/core-ui",
+        "integrity": "sha512-YAeiYme36I9ObDCxiY+sOplqtrZXgPsiKo1x4S/efuCTcehFiU49RJsipws846kFLcitk97f+zErtgrtM6B3DA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-ui-3.0.0-next.15.tgz",
+        "sha256": "165802f74204db100f5d56e90eb26ea397dfe156d3d8b109f6000745c5a65b16",
+        "bytes": 147108
+      },
+      {
+        "package": "@embedpdf/default-signature-fonts",
+        "integrity": "sha512-sfyWr7SXCrfL1oT6oRe3JG7FmqbEZ22KCSljAy0q548z4veNU+JIYTFP/6JgAHbR+9L1t0xm07rTyOYVRLZpkQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-default-signature-fonts-1.0.0-next.1.tgz",
+        "sha256": "6f20f13dd4916eb067720e9d2533dfb420dc9010900458aa763f241bd354f212",
+        "bytes": 435229
+      },
+      {
+        "package": "@embedpdf/default-stamps",
+        "integrity": "sha512-J1vIXY2oJvy8Y62+Ark2h0iOyKq4r3TGG4Bl79jDuGwTmx9My/k9yrsucPuQThNSVbLgQrdBKc8vdBcAwv7e+Q==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-default-stamps-1.0.0-next.1.tgz",
+        "sha256": "d71a36948aa064d04614c58173096ab1344a75c6369858495674009a068b1960",
+        "bytes": 793979
+      },
+      {
+        "package": "@embedpdf/engine",
+        "integrity": "sha512-iv+DYQrHhYSAsjPjzuQ1zJXjvzVLN0Qp9Cir+jkUgeA758XgSZgzki910uAy4LuuwCKDaxngb0QxK2aUgAfmhg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-3.0.0-next.15.tgz",
+        "sha256": "2d9d7215a9fef0237e34aa55e9845adda223e36e623197b24301930ba1f934b8",
+        "bytes": 1838887
+      },
+      {
+        "package": "@embedpdf/engine-core",
+        "integrity": "sha512-IFJzJVHdVExOaPrLyr8LRGT8SP84cHX9hZM9C0/f2K9wkfC/h87YsacmQsKs31y2UlcJUdu82vWb3LGs8eWoPQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-core-3.0.0-next.15.tgz",
+        "sha256": "6e35df303d96fa3148ebb01886a2e24f96d6d90adfdadd4032936835f296b26d",
+        "bytes": 2544202
+      },
+      {
+        "package": "@embedpdf/engine-runtime",
+        "integrity": "sha512-TwyMxerl/VjYwo+mSvbGXwC9U+O1/aTQXHpIgKJ1lI1PC4yYfX688B0QWonzXMbic7owC4sl2TTe8NapyGhQUQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-runtime-3.0.0-next.15.tgz",
+        "sha256": "b65df513bf52e25633aad9585a3149866be07c92e28d24d29492ed8b710de49f",
+        "bytes": 286848
+      },
+      {
+        "package": "@embedpdf/engine-runtime-wasm32",
+        "integrity": "sha512-gIATmEDzoxrQiZ/Gkcg/k1mOQjmW96R7n3/7Hvqpkhu10iPvin4IOtj/342ej34HFp3/n9tJ0S6GgRSd9GFMQQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-runtime-wasm32-3.0.0-next.15.tgz",
+        "sha256": "0b3fd36e47e5e98eaa42b574bc992c07481fabda0abacfe85d13d18cb97df5e5",
+        "bytes": 6474242
+      },
+      {
+        "package": "@embedpdf/engine-services",
+        "integrity": "sha512-o2WKyYB+eN3CQwvF9fgprAcgvhsChkpne30wPZKVJv+V2B5hEIOr4IUUcqQ9UJAlarXDvnIkkl5UgXN6kLQC6A==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-services-3.0.0-next.15.tgz",
+        "sha256": "959a4f5493c8b5b605bf8ab7abc7c44399f7afa8f13d113d52dc84ea1a5742ff",
+        "bytes": 1294864
+      },
+      {
+        "package": "@embedpdf/plugin-actions",
+        "integrity": "sha512-evBxVrrLBQn9JfwUs8tAWnxQlH8uRb5AA0p1T7iE32V6tgtdVjZVgFYAOoeaqrzoPgGIHicJxikXj2lY7Kduxw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-actions-3.0.0-next.15.tgz",
+        "sha256": "a1430f9adc21a2f1743990aa9a48e6a37a2e65aaa2337fd46642b6fe5b9597e2",
+        "bytes": 166445
+      },
+      {
+        "package": "@embedpdf/plugin-annotation",
+        "integrity": "sha512-qiuQQnjGRgl9YQ2qAYNSlZ2BOX2jGjYC6tDa/nDIYiis5R1UlhuOKb3z9lH3m2FkZsxn8kTB0VPWLk3P5tLPaA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-annotation-3.0.0-next.15.tgz",
+        "sha256": "a870fbe8f541912dd551b0d33d5386c33e96bd75c469d57ef027bfa5d30949b4",
+        "bytes": 444877
+      },
+      {
+        "package": "@embedpdf/plugin-attachment",
+        "integrity": "sha512-WLWZvF725LWq5ZLLt8LQN7QvbSI7C5ukA/pVU1aL3H73LQHWJoCO8sXpnSrzRtnDz6d6JOYsXHdUBn/7AzexiQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-attachment-3.0.0-next.15.tgz",
+        "sha256": "23b2e64b3cfdc59fdad95cbef870e8cbf932e0ce373c996fa1bdeea9f8a96e60",
+        "bytes": 21714
+      },
+      {
+        "package": "@embedpdf/plugin-commands",
+        "integrity": "sha512-tf54QJPb1WiS7PNMIO+Cg7Yw/zvlplBvi9Bzy5wh5avI70bC1RfKhIpIuTvwr7noKrW5YWuT1AkUcMdPd0Paxw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-commands-3.0.0-next.15.tgz",
+        "sha256": "ce0cfde967cacbf9ef511426b1846334ad29de74e46b2d43ca4362fd3ee8cd05",
+        "bytes": 63240
+      },
+      {
+        "package": "@embedpdf/plugin-form",
+        "integrity": "sha512-kpbA8bnIlfcU+vXtP6JqfEhEa2oQ3IU65FSIO9WH2g0zWu1dDPy7yZpdvaaRa1jYSMEW781ssODFn9WSEUZlpA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-form-3.0.0-next.15.tgz",
+        "sha256": "6a58247922dd8834e761e3e518970814a0e21d1d5d62bd3c8388870b27ed64c4",
+        "bytes": 241930
+      },
+      {
+        "package": "@embedpdf/plugin-history",
+        "integrity": "sha512-i20GBsUionY9EejRG1K/Mz/0PxcRtx892KpNWMJ0uwjr4EdYFpQ7yr1jrXK17pbqDd90hbRc/Tkn7jrJ62Wfog==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-history-3.0.0-next.15.tgz",
+        "sha256": "52158b97da1cd213ab4f7e8c39d3563abeafa3180f926de2b71dea6366263232",
+        "bytes": 19138
+      },
+      {
+        "package": "@embedpdf/plugin-i18n",
+        "integrity": "sha512-gLyT+DnUPD+zb8z+G1CmgDdoh23012gr3p8tkRc5WHB/6qHCbPkgz3nyUW/MhU2xvZphD8FikIsR0iDWKtSnCw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-i18n-3.0.0-next.15.tgz",
+        "sha256": "238dda62ac7936d6c48dbc944403d6001e6d0f58898c072a130f97c5dcad10a2",
+        "bytes": 60919
+      },
+      {
+        "package": "@embedpdf/plugin-interaction",
+        "integrity": "sha512-vdxo7vv2Fycou1lKxoyTCeiXri79iEtndfKbH4eA8W5sqjNcMOi0ROllseQJlNE8UQnBtcwEqW8fcwfXOp27Fg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-interaction-3.0.0-next.15.tgz",
+        "sha256": "9320e9f5d4b5e309ffce66340ec34f1f5c69fb61239a36f10658046538adbfdb",
+        "bytes": 36858
+      },
+      {
+        "package": "@embedpdf/plugin-link",
+        "integrity": "sha512-N3Re36P42zLPgmBzsJ0uhrA99gII9yGQWZmdJyndMre08/AOfe9cxOiWLDrKCkMjWJTLlLuZ5vQV1B5b3sNj6Q==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-link-3.0.0-next.15.tgz",
+        "sha256": "73966ea268cb40812f91dca9641b88000cd94214dff3f1ef6057b90cc49bae55",
+        "bytes": 19877
+      },
+      {
+        "package": "@embedpdf/plugin-measurement",
+        "integrity": "sha512-kZG+M+GUoHQPqbsLMhxJ8olRfd/j5VS1tWiDhpLdcDSTEgU7c4LNyiAocWGkbRfvfKqOOJ00OwOc3J4xQjgxCA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-measurement-3.0.0-next.15.tgz",
+        "sha256": "16cfac7662bd4b5a4c5e07b5742edde46bc6a6274d0dec65ac20bf02fe4831a1",
+        "bytes": 55263
+      },
+      {
+        "package": "@embedpdf/plugin-metadata",
+        "integrity": "sha512-Ze9Ccf1a5hvCFQpKs1VENw0lYuJcRb8BSFxNarfW2mChnNgJKWbwGUHrn9MEYdHDyaztcyij4DvHknUtg48+uQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-metadata-3.0.0-next.15.tgz",
+        "sha256": "b418c6319d3154f8170c04ffa568ee2b31b1e08b1739ef194f8de8487765db65",
+        "bytes": 11899
+      },
+      {
+        "package": "@embedpdf/plugin-outline",
+        "integrity": "sha512-pCbpGpnEYm0hA07sZj5SnpsjpWiP9AsTE2HFpkoDm7UfK1OLRn6OqdmK3rNNbE0B7Oz6g9cHLx8ANuv5E0YPWA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-outline-3.0.0-next.15.tgz",
+        "sha256": "6bcc49e5a14a4730ed203d46702db41de5cecc842fca1f65d1d03d98c45f376e",
+        "bytes": 55543
+      },
+      {
+        "package": "@embedpdf/plugin-page-edit",
+        "integrity": "sha512-UK+FueXMTozmEGwoczlGdCA46FX1WR1bTbO4uo0xIYRrawKek/uP79m79ZFJG1Y4J1IehSMVpN/yYKp+F0pNcQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-page-edit-3.0.0-next.15.tgz",
+        "sha256": "bb9eaeaab1f40902c7213278a20011dca6e939751445d59dcc21991b821b50da",
+        "bytes": 17911
+      },
+      {
+        "package": "@embedpdf/plugin-redaction",
+        "integrity": "sha512-vEJlcFFGpKNIRnz3Pd78dKLkDCH80kmZfXKlMdRcO38hQEgfvh87Vwh3571ORF113Iy8WTfHnZOCVh0Ff6nncg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-redaction-3.0.0-next.15.tgz",
+        "sha256": "1ef298a2501b8b3ccb0c9c0b582297f437ff40b43ab830306936a1ca4e279ac7",
+        "bytes": 46620
+      },
+      {
+        "package": "@embedpdf/plugin-render",
+        "integrity": "sha512-nGrkZynMbQPh1Isd3iNSHZBEmBW106Alsme5BxtMz3u06MDgB9YyIdOz3m2qON3n+CYRKvyo+suX1uXp3rAd3g==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-render-3.0.0-next.15.tgz",
+        "sha256": "69f8a1c8c639040af0d80a9d768303cc443f32f5c319e307767e7ad70909d64e",
+        "bytes": 131396
+      },
+      {
+        "package": "@embedpdf/plugin-search",
+        "integrity": "sha512-uXIGDpB4pbxgjvDYqxZxR97OCREFIbaM1bkaDrvp5hh5IAjg03Z9bccqxV7A8E6DOd/S9LTnNY8uT+ESnI56ew==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-search-3.0.0-next.15.tgz",
+        "sha256": "c5314e467fa4dcdc753ba7285af7ed9f18b03a0b3e0261a419c354013118da44",
+        "bytes": 34095
+      },
+      {
+        "package": "@embedpdf/plugin-selection",
+        "integrity": "sha512-cVdtAQKN930OcUczatpNOxoXbRx1w68URupprtcWnn+ZH61R3MO76WYoH7xy4tir7uF6dLVYWoB26RboxeUX5Q==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-selection-3.0.0-next.15.tgz",
+        "sha256": "f640a84d7269e6e2f28e71b71f54fbd5b4c613c87017fed4a73909f1bab02dca",
+        "bytes": 77147
+      },
+      {
+        "package": "@embedpdf/plugin-shell",
+        "integrity": "sha512-QWMrO31V00zVNQ/B6x6Ga2ClE3V8zd7b5ggcPWtz3WAw9WWsksswdpSMME3G530b5vL49QCWtJnwzpNNidw8dQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-shell-3.0.0-next.15.tgz",
+        "sha256": "f80d1f2cb8028180286420feb30aa3d564166702b7a8fa880aa8b1d909d18428",
+        "bytes": 13455
+      },
+      {
+        "package": "@embedpdf/plugin-signature",
+        "integrity": "sha512-8RCrsL02wdBbw1G2Ycw9/Kjl9RimQFWA3daV7b6Z6nWbNE7jhR2b59kuFy2oYSjkq0oIjFMCpShF3pC8gmGVyA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-signature-3.0.0-next.15.tgz",
+        "sha256": "c9a33bdf17f5fc47b8b8198bba432aadd99b6f8961ee6cb408d01772a108831a",
+        "bytes": 77461
+      },
+      {
+        "package": "@embedpdf/plugin-stage",
+        "integrity": "sha512-IPMirwANAcuV3rdoTTOb/4tn8WFqnE52Tcovn4wnlXs9cKsm+uTiTdd723gscSVyVvBE7VzRcRQ5yZDRpmhXqA==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-stage-3.0.0-next.15.tgz",
+        "sha256": "7f45ebcb9ce2d02404e96dbac2195bf8ce1c8b64fdada97ea0b0fbb482020047",
+        "bytes": 175342
+      },
+      {
+        "package": "@embedpdf/plugin-stamp",
+        "integrity": "sha512-ZHVO0ybq3zPJG2sxPIiftsmqSsu1DpSRQ8FG1gt7237nOlfdOqm7ZJdpgbxmcsleB0Bk0Gzd00pW324Ri2MBtQ==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-stamp-3.0.0-next.15.tgz",
+        "sha256": "cf29af9a5ddfb11d3c54b1d6ff3a994fadf30f7355345dc4680775a446c8becf",
+        "bytes": 115810
+      },
+      {
+        "package": "@embedpdf/plugin-view-manager",
+        "integrity": "sha512-YiCvL/ZOk+mMFTUeLQWnbFX3yFypcNtP0YKXjLxXK23phCobmL8gfaZAO3Nbcs1Oua6kSBEBvY2BoGjfmIOT2A==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-view-manager-3.0.0-next.15.tgz",
+        "sha256": "47f4845d3ce1169de00ac6144d62602bf44c2ee32af82304192c328f7bef4597",
+        "bytes": 16976
+      },
+      {
+        "package": "@embedpdf/react",
+        "integrity": "sha512-fLJMwBIeAhPyCiI++56p98pncAzsJaFyn2AZ5vfXzqToEzPYAOp3xz/9/N3hSzqqfbGUrcvg+wWD44Kjftkwvw==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-react-3.0.0-next.15.tgz",
+        "sha256": "3d6696fd46774866af227180713cad4fb848741ce2f55bc5bdd438a82971e6fb",
+        "bytes": 355039
+      },
+      {
+        "package": "@embedpdf/viewer",
+        "integrity": "sha512-EHoiQlvtf5f5JZ3yxmmdN7q8qZmlSicPn6SOAWBc9p223ZWZC8wJJymm1oaGvFVPGHvhbaMvuHRHSRJ2N8Iv6g==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-3.0.0-next.15.tgz",
+        "sha256": "b21a54c42dd4f93175893bc742a08557110bb9762c66bab305f61ffa3dd9aa20",
+        "bytes": 10361794
+      },
+      {
+        "package": "@embedpdf/viewer-chrome",
+        "integrity": "sha512-/avys2NIC+LQiLe/Ko8k4FAWf3AnbKJYIbRJ9Zd5Xjpx0bLR7GMDj4bq9oTivJlL8PBl1f3FXaHtb0VexnYJ3Q==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-chrome-3.0.0-next.15.tgz",
+        "sha256": "87a30c243a358445263e14d02b773feae6787c023b27e28e9a4026201e71fa54",
+        "bytes": 1205725
+      },
+      {
+        "package": "@embedpdf/viewer-react",
+        "integrity": "sha512-83RSDybsAXbtJZ17eBCciHxE35mG/rDh4WepChfWWmEozVgK23+b10FrxtuL3YLK1PBoHP0VebftMtPJLS+4zg==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-react-3.0.0-next.15.tgz",
+        "sha256": "1a5e3ec8a659fc330a028848cb8100e733f01db28ec09adc8490da5815e06264",
+        "bytes": 22190
+      },
+      {
+        "package": "@embedpdf/web",
+        "integrity": "sha512-0oNJbURgVkzUVWjPv7OicR93bIlGCIZ8MV0Nl+5oKtFmvsVweujkHHm0YfQMPG0oYiJ1zy7VMF49Q/3mi2ZO1w==",
+        "path": "/tmp/j6-restored-packed/tarballs/embedpdf-web-3.0.0-next.15.tgz",
+        "sha256": "1107a95c846350d6664f9cbfac28572d92739e783901f24cdb71d51d01cf98f8",
+        "bytes": 466923
+      }
+    ],
+    "packedFiles": [
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/package-lock.json",
+        "sha256": "f871444d39e01b0aeb70f792913c6d059232b19ffcb7e3f43e043351d3346278",
+        "bytes": 77022
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/allura-Dz-vd0jq.js",
+        "sha256": "9711288eb6f099669402e5ee9342fe95f95176e855916196c0edeabe54dd4516",
+        "bytes": 107917
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/annotation-style-CXF3X47Z-C5bxsdqU-C3JKXXSW.js",
+        "sha256": "0495ca9a820d31777263447cdbf62843622ef107903a4768bb9311e6c5584354",
+        "bytes": 14366
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ar-BLWFJoA_-D34W6zd3-D9dhGh38.js",
+        "sha256": "1e094e4f8c411dd6962583cab436e647ae943e2b06fa6c37ff04c74011459a13",
+        "bytes": 22277
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/attachments-panel-H1ucRbwo-B8R0TJua-uX6Tm_yH.js",
+        "sha256": "16baa51b2e0d20d6d1053346b8c88942b54fc684416637730aad8d32008b9318",
+        "bytes": 4141
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/caveat-CFnviKTj.js",
+        "sha256": "e3cbecbbfa21f9ac40a724093fb9705ee9854363a96608c44e7bde5c9a48048e",
+        "bytes": 166157
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/comments-panel-D7Eadws9-D5Cr2frv-CPkkFn8r.js",
+        "sha256": "c6815aa23e74ed95f75df9fc0e74830fade06f8d1403c1fc7928b01b43b9622b",
+        "bytes": 9180
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-bold-oblique.generated-C4JG-Sd4-BhDT37Ru.js",
+        "sha256": "92528be3b59cbc8179245b8d8edc6f4c38e6d8ac92a8ae416191383c8a9b07d6",
+        "bytes": 31063
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-bold.generated-x9MmbkbU-B68oO0fU.js",
+        "sha256": "f86fd8aa39851ce6c9bbe014b9b0d4aee84a6d65ad499966d8e98c0f84d85855",
+        "bytes": 29515
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-oblique.generated-jM2VV_8N-D_66BEgP.js",
+        "sha256": "119135a1442c2eefd4ea07d04eeb6758cc05ad61b1989abdf960c54f701e993e",
+        "bytes": 30463
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier.generated-Db-fW_ef-CpqePbPV.js",
+        "sha256": "29d2f29163887bb4b3f52e6fecc44675ca6954bfe174e40ba61c7a77d2a94c4c",
+        "bytes": 28871
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/de-BUhwc9-x-l08p70cK-Culg24AL.js",
+        "sha256": "5b60a559d0562e91909414dfba5d64d1739b84b7e59ff87bd4dacc89effa6bea",
+        "bytes": 19267
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/de-t5pxqrwk.js",
+        "sha256": "9370a0cf05d90cdf6bd9a399102f02eeb77c1e23878d94d5e8ead694ddc48959",
+        "bytes": 104881
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/e2e-COkiksn9.js",
+        "sha256": "3ad27f175cfeb2b6395b420c247c982ade49838f31dc1a899cc557f05dade10f",
+        "bytes": 1331484
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-I-GpQAGD.wasm",
+        "sha256": "b0899e0936ba39ccd07de1efe79b65ac8fda371c5c4fdbd7fb6afc305ef708cc",
+        "bytes": 7668996
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-worker-D-SRdhzx.js",
+        "sha256": "c515bc5b09204d5fd1e9d9b5c7378e15a657980991d322a742ffd539d415d2f2",
+        "bytes": 1108413
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-worker.source-Bn2Puh8z-Cq6STn2t.js",
+        "sha256": "289053beb997f099f2e0939f24fefdf12eb00642afbb6994cf1f4bce638b94d6",
+        "bytes": 1108937
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/emscripten-module-uFzwHH0Y.wasm",
+        "sha256": "105c3bed22d457e43e3d1c3c1c6959fda62a8fe06f0fc8a985303c3a2be72232",
+        "bytes": 503134
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/emscripten-module.browser-_xZ57Wn5.js",
+        "sha256": "8b5adee367568a7d9962478004f31f800f02c58f694c993990efef258970cec6",
+        "bytes": 9237
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/en-BN89r1Tg.js",
+        "sha256": "6d285e13ad705420111ed8bd11c2a380388dfb82b03f28b78ac1d01f12bb8626",
+        "bytes": 93829
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/encoder-worker-B_8I6lpR.js",
+        "sha256": "2e9fa5a2fd81b81755b57ee18479cce4f42d68a5ee41886b58e2914e3a48ad77",
+        "bytes": 964
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/es-DmWlKxHN.js",
+        "sha256": "2257672d0b9d00e506f3550d2dfb56a9e1996550b86742cf5276dc19086c6000",
+        "bytes": 97461
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/es-DoXTqFoO-Dy_C_-pZ-DMFTxTjN.js",
+        "sha256": "4e77c2e636f22fc7e7ec12629d8c51d4f2cf12a01c35c376def992bb5156d4c8",
+        "bytes": 18032
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ffi-B7mhNP0h-Boa1QuFa.js",
+        "sha256": "c1d5c030994fbaffcc4bb2ab86a1a42472d7166c8b28ebe98dfe2b21091ff56f",
+        "bytes": 6323
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/form-design-panel-CgV_5YWC-AYLptuOQ-CDSVV8BN.js",
+        "sha256": "fd6530d5b56a226218e97b031348f368eaf2b69d2dddaa60e355ddbff46a54fa",
+        "bytes": 7555
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/fr-B-8NDhBA-GahDvOZ9-CI6K1oM6.js",
+        "sha256": "5d244eb37d8af3a3ff65b7b0aaae838163c6bc8b9d6f16bf49826c1b9118c5f0",
+        "bytes": 19174
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/fr-DhJFG-gG.js",
+        "sha256": "e855cb5f23bb518d0461be77884f5d85e7981c6a9610ec9aa50fe3271eb80ce0",
+        "bytes": 82985
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/great-vibes-BgfUmUuN.js",
+        "sha256": "f5b853b7c20b96ec3fb6038fb6739ac7204ade3e0fb35cc28b6248898f3efaef",
+        "bytes": 211657
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/he-Dlh0fNXM-rYSyANkV-heOFzXq7.js",
+        "sha256": "146b8385f8454fe070b9646cb076533a80a9c5369ee83c426474f986b9dc9908",
+        "bytes": 20468
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-bold-oblique.generated-BFcwzvD1-CR3bj5Xx.js",
+        "sha256": "567bb3199453c4247096f363fe12409bca86d0aaf7652bbd0cfdbe9bdd728f30",
+        "bytes": 27339
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-bold.generated-nLwzHpuy-B2vt-PdT.js",
+        "sha256": "e67fda728c436f500ad051a62bceede6c963f384d26d425624e8f749c2efe02e",
+        "bytes": 27159
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-oblique.generated-BTKcYL9s-BiUUR3GW.js",
+        "sha256": "916853b2b643a619ed6f77d82463da9bc3d605b722651a5621c017ed3a08b0ee",
+        "bytes": 27179
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica.generated-DVz9iIk--DKPhaF7Q.js",
+        "sha256": "cbafc5d4ada82e252d05e3226b02ae6215d333f97fd42cbea70a15d2762ab26f",
+        "bytes": 25359
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/index-BB8L1jRi.js",
+        "sha256": "ce7705894fb30268029f0900f3656f9290fa04b8ba00f9202545c0d8b1083dac",
+        "bytes": 4664
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/index-BWnYLtEj.js",
+        "sha256": "25c84254ee8645c97dc5cfd40945ad4fe55a5e9a559907abc9fc9e53f95b16fa",
+        "bytes": 424327
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/inline-transport-CDAaiYkA.js",
+        "sha256": "b8c7d2ccee24fe184db9664a2f620510c969725aa1af2b51b8e5b7ee39189a56",
+        "bytes": 1102638
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/it-BkirG7ol-BTH6AhRV-0iXDg0r-.js",
+        "sha256": "b5ed85269a6e03db0a2f86cc7a843ab86929cb7f898329bbb6049b524e38cc47",
+        "bytes": 18394
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ja-CGEjCE-s-hkmFgQkV-BWdnUhTB.js",
+        "sha256": "7f0f0ee6489670d784aaf0e16dc8dbf7dd86cdc01dc9f2d63350d712b2dba0de",
+        "bytes": 20623
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ja-Tgh4PkKT.js",
+        "sha256": "802c0fd94a215647c22a0266f3b9b9d2aa3a19585e1dc99288f2a7d4f8a51bbf",
+        "bytes": 85917
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ko-CTkl5vMh-BT7hdVuH-C9FaMGns.js",
+        "sha256": "f8ee829109865b62c69d11745c5d050e6952c8d6b0dfd41b25c8dff8c900b36a",
+        "bytes": 18896
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/labels-C6_i87Oj-Du3aqkp8-Dn9TI8pg.js",
+        "sha256": "b74f70aa8e495a430654b81c708b4bbc7645b8d0ccec72bf32c0c7641b8ac61d",
+        "bytes": 122
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/link-editor-CkwtqRvb-D-xKtRqI-DfoE4EcY.js",
+        "sha256": "29506ff9ebe351b131eafe9ea1154861cc3be0ec3cc4798a212cee491a13ee64",
+        "bytes": 2181
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/measurement-CQdbnIrn-fHwREP4c-IDIyV9FE.js",
+        "sha256": "4f5893c03fe06324cc9b089b3487d72c0487395c067e36b790b5429c9394f709",
+        "bytes": 6796
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/module-ES6BEMUI-DtDrHF3o.js",
+        "sha256": "1a6e49c7b5625f92c631a65e586bb8966add788c169a230476a4b8fc6c01f754",
+        "bytes": 34386
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/nl-Dya4sR8_-dgdKEz5q-JtwhwHkp.js",
+        "sha256": "432281ecd69e6e026f72697b1599aa717d444d2b8611c52251c3abd7f669b608",
+        "bytes": 18486
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/nl-Kj82LmzQ.js",
+        "sha256": "8eca5b5dfe8445f20a2986469be338b0b0f81f99972c3355019a166acba2d8a5",
+        "bytes": 98117
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/outline-panel-DO5_REYw-DfA0WHJ4-CERQAyPG.js",
+        "sha256": "d4769b6643a0ece4252ef24678de796275a62c3355d7cbb4c1e95c1a3ac6a56d",
+        "bytes": 11835
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/outline-properties-BCa2cc0t-RUEYsRk0-C1n-mj-p.js",
+        "sha256": "b8df727f6a1f5069066927b1aa63a0620809cec724abb7e6bb34156090a50216",
+        "bytes": 6010
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/pl-DA9b5NVg-CJKhnO2b-BgKK0djW.js",
+        "sha256": "0f97890c03e36a164cb10f055594655b2045d3bf266aba40c2f21631022d1884",
+        "bytes": 18480
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/print-dialog-DvcI2m2_-jAVoDBIa-BfKsJXUm.js",
+        "sha256": "3fa593a6f0310c1da2b6e78fb37e2cfa5c1c78e9af1162fc88f5a461890346de",
+        "bytes": 5198
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/pt-Nm8yyjbX-DKjzLP9p-C_82SNeg.js",
+        "sha256": "0821b138b6a001ed7aaf05a859a163a60930e63253e05369e3d7296ce039a56e",
+        "bytes": 18450
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redact-confirm-CKuv9iN_-C_Rezpye-aQOrO29T.js",
+        "sha256": "567b7f46b937e08a8007dccba923e3bbe9eb9e4cb5b032a4f969081460e3e93b",
+        "bytes": 1432
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redaction-N8vzS_oj-BRa5k85R.js",
+        "sha256": "f2aa5ae436817cd805a429c6658f8ab5ceb6af1ee38a0c1e3214adfb273edf94",
+        "bytes": 251
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redaction-panel-CgNZ-pQk-CV1MAZjs-pbsC9D87.js",
+        "sha256": "90a0394ed4992e6edf9324774b1a36fa92da107e765c67d9969c0f23f0f36209",
+        "bytes": 2211
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/search-panel-BE4xzWlm-Cc3VyVfV-h4LlfhB6.js",
+        "sha256": "7f8e34fe02196b9bf10c40cfd1d9ca60419a59fc2ff35ffa702869fe4e733186",
+        "bytes": 4513
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/sign-dialog-DerNe8qT-z9DbI6om-D5Yh0O4Q.js",
+        "sha256": "042757e8b39708094e9ae6f7fcb2cb84f1b98c194651441ec95d67e49da367db",
+        "bytes": 2813
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signature-inspector-CsGr9EBk-y6tOrEoQ-CvMtw8Rv.js",
+        "sha256": "5c6f1cc31558b949da9685a11d803006fef369cf231d7da67b9a78e300b3bcb7",
+        "bytes": 3830
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signature-maker-Dnth4rV4-1VYf2nvQ-CAonYznW.js",
+        "sha256": "c16cf87da805aa14d3b7c113a91fa5514a8cc45abfb43a97c4e00e0b85335209",
+        "bytes": 7479
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signatures-panel-DZ9ywrjz-bi8sYY-l-CQyY-izW.js",
+        "sha256": "c9ad1d8de607b99dd2b62297437b9a9c795882875ca9dd44643ebfeef0e9afc7",
+        "bytes": 6712
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/stamps-panel-BrczStaz-F-xGMIph-CuvuydOl.js",
+        "sha256": "80b39c1316ff3491d72b027fdde587fc234b7f0d5cf299df41d05fa66afc5987",
+        "bytes": 4780
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/sv-CymDPKZC.js",
+        "sha256": "dd1f4fcc4e361f03b5a869e6862d520acad68332e6346cd85c74c4a0cb63a321",
+        "bytes": 97037
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/symbol.generated-DXSVzciM-qsk7X8lj.js",
+        "sha256": "7cf3439df2d2fe2322b05e8e27f9a756ba73219f6fcafa861d5264cfe00906df",
+        "bytes": 27163
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-bold-italic.generated-COsXo6Vq-CCgGlg5H.js",
+        "sha256": "a1558c057fa1e34f342725f0a6c3f7fc950f2c8234de8df4fe9a5f659b60c997",
+        "bytes": 33111
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-bold.generated--b7SxoPe-BqRTyWc9.js",
+        "sha256": "9fb85b2e491f649d20d46760a844001bb5267b63a0ea9806d67597884759f41e",
+        "bytes": 31239
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-italic.generated-BhPCUnVM-Bj_nY_EW.js",
+        "sha256": "30858f364e64a79fc67c5b6e01b6c30f182cb4fcb9403e930b0d70922bdc2222",
+        "bytes": 33707
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-roman.generated-CNRk8gGV-BvsEF3P3.js",
+        "sha256": "ad3fdc1957f7d42f5afd9f2168bed9f2c8c5c060b753fdc740af8b4845a6a9f5",
+        "bytes": 31303
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/wasm-url-CC8qc-pY.js",
+        "sha256": "6b2cd0ea052288539b758c00bc34d2eaf10c2e239e287d904c64e99ad552ba7b",
+        "bytes": 93
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zapf-dingbats.generated-DSHah6NK-DQDyeBwP.js",
+        "sha256": "57572a3241877c690126577648837f7c7c142caea0dd490e61bb1cd0f3a0491e",
+        "bytes": 44287
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zh-CN-Sqw4hrDf.js",
+        "sha256": "a0ba48ec841c4a53150f5ad06e8d5ca2e05681befe7e6ee044ee2412c31d35ff",
+        "bytes": 142357
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zh-cn-BMPPkLpL-C6O2CHso-BxazQ-xC.js",
+        "sha256": "66e1c55f63bad54b6cebd4157873c0074b96dc07f829fa409943a47185cb0fae",
+        "bytes": 16093
+      },
+      {
+        "path": "/tmp/j6-restored-packed/vite-app/dist/e2e.html",
+        "sha256": "495aad9cd3b7dc7140fce32415db57c620ee1aa7193e9d3bbcd8cd3277ee9c66",
+        "bytes": 276
+      }
+    ],
+    "packedDirectory": "/tmp/j6-restored-packed/vite-app",
+    "unusedNativeRuntimePackages": [
+      {
+        "package": "@embedpdf/engine-runtime-darwin-arm64",
+        "integrity": "sha512-HmyDitxp/QlODVO3XbtDpAL/klDsObvMt440nGKNv3+ob7MKFH8c4NLM97hmUrva8mzeUMT1qLc6jX+gwDR9CQ==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-darwin-x64",
+        "integrity": "sha512-zq6f687usFI/iIBhoKdI80bsQy5Yqu2a95AUdVgAPoJ7cmYYYoy4KC+z4O5XBdaj2OOV/2/FIeMu+eroGhaTiw==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-linux-arm64",
+        "integrity": "sha512-OkkeYl0tjBl8KDM7aK7kZrExd7oe03P3wJy3PdgeLGjQHQR8MO5zok59ps+DMRCyVHqxUKbtRnGJ3NLI+7I5ag==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-linux-x64",
+        "integrity": "sha512-NRYE2n3K7ZzjGc5VkFVjcUiIHp1+SMouYpH8y4dnztIHheRww+t5WkF0bMihSHOG1QA1483EVfTr9CzrHDS/0A==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-linuxmusl-arm64",
+        "integrity": "sha512-CbrBWPA6/aV2Yr27M8FkXvO2oxvqFm+QuELfrTDXDMEBLtB8cAa2fZIT5x2XF89RTXnYs+G3ksG2jR/EPYYD/A==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-linuxmusl-x64",
+        "integrity": "sha512-k1+lSM+Ahmds1NIQ1P850ADqKNwz/xsVkHpQ7ipFgjRc9AhoYO5iQjACwMvplqTwb8xmAh+ZNtJZZEzsL2REDQ==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-win32-arm64",
+        "integrity": "sha512-6zKHi5RGkUrlRqQwH5DH/I9HX+MFYvU0t9ajlQkcbGfUbJTSQny5/eiT571GVl5BLTmLFJ0sccSjwoYhK0Zzng==",
+        "reason": "native sidecar outside the browser artifact graph"
+      },
+      {
+        "package": "@embedpdf/engine-runtime-win32-x64",
+        "integrity": "sha512-yv1qFZeZ0KWhDl5QosUMAW21kK7fSBI0ceWHDlRtofApX4Dr2VeyWXNR0M4ajAfDSN2FvndvjOUjwlUzQPzLfQ==",
+        "reason": "native sidecar outside the browser artifact graph"
+      }
+    ],
+    "bindingSourceProof": {
+      "status": "passed",
+      "map": "/tmp/j6-restored-packed/vite-app/node_modules/@embedpdf/engine-runtime/dist/index.browser.js.map",
+      "source": "/repo/.claude/worktrees/dotnet-parity/packages/engine/runtime/src/core/pdf-functions.generated.ts",
+      "bindingSourceSha256": "5b3fd6dd351f3df6b63357cc37f20157ee87953c90fbd2b0979090f7833bf6d0"
+    }
+  },
+  "coordinateContract": {
+    "pageIndexBase": 0,
+    "unit": "PDF points",
+    "frame": "top-left of unrotated visible CropBox",
+    "yDirection": "down",
+    "rounding": {
+      "places": 4,
+      "mode": "AwayFromZero",
+      "source": "serialized decimal number tokens"
+    }
+  },
+  "raster": {
+    "comparison": "exact",
+    "tolerance": null,
+    "approval": null
+  },
+  "fonts": [
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+      "key": "parity-dejavu",
+      "license": {
+        "path": "/usr/share/doc/fonts-dejavu-core/copyright",
+        "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9"
+      },
+      "familyName": "DejaVu Sans",
+      "weight": 400,
+      "italic": false,
+      "fallback": true
+    }
+  ],
+  "deploymentFontBundle": {
+    "status": "not-supplied",
+    "compatibility": "unvalidated"
+  },
+  "corpusInputs": [
+    {
+      "path": "tooling/engine-conformance/vectors/text/charmap.json",
+      "sha256": "2a4f7cb6169ea29175b231d34d3377555cf13cfe5640f3b3d51e7d99cf9dc54d"
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/layout.json",
+      "sha256": "e101e3cbda5789ff46e6745e0ae547ab993d07d8be14c698c17e65bcad53ae67"
+    }
+  ],
+  "cases": [
+    {
+      "id": "crop-rotations-transparent-repeated-quotes-empty-cells",
+      "pdf": "tooling/dotnet-parity/fixtures/crop-rotations.pdf",
+      "probes": [
+        {
+          "id": "pages",
+          "operation": "pages"
+        },
+        {
+          "id": "p0-text",
+          "operation": "text",
+          "page": 0
+        },
+        {
+          "id": "p0-geometry",
+          "operation": "geometry",
+          "page": 0
+        },
+        {
+          "id": "p0-segments-0-0",
+          "operation": "segments",
+          "page": 0,
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "p0-segments-0-3",
+          "operation": "segments",
+          "page": 0,
+          "start": 0,
+          "count": 3
+        },
+        {
+          "id": "p0-segments-2-5",
+          "operation": "segments",
+          "page": 0,
+          "start": 2,
+          "count": 5
+        },
+        {
+          "id": "p0-segments-0-12",
+          "operation": "segments",
+          "page": 0,
+          "start": 0,
+          "count": 12
+        },
+        {
+          "id": "p0-render-r0",
+          "operation": "render",
+          "page": 0,
+          "rotation": 0,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p0-transform-r0",
+          "operation": "transform",
+          "page": 0,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 0,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p0-render-r90",
+          "operation": "render",
+          "page": 0,
+          "rotation": 90,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p0-transform-r90",
+          "operation": "transform",
+          "page": 0,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 90,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p0-render-r180",
+          "operation": "render",
+          "page": 0,
+          "rotation": 180,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p0-transform-r180",
+          "operation": "transform",
+          "page": 0,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 180,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p0-render-r270",
+          "operation": "render",
+          "page": 0,
+          "rotation": 270,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p0-transform-r270",
+          "operation": "transform",
+          "page": 0,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 270,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p1-text",
+          "operation": "text",
+          "page": 1
+        },
+        {
+          "id": "p1-geometry",
+          "operation": "geometry",
+          "page": 1
+        },
+        {
+          "id": "p1-segments-0-0",
+          "operation": "segments",
+          "page": 1,
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "p1-segments-0-3",
+          "operation": "segments",
+          "page": 1,
+          "start": 0,
+          "count": 3
+        },
+        {
+          "id": "p1-segments-2-5",
+          "operation": "segments",
+          "page": 1,
+          "start": 2,
+          "count": 5
+        },
+        {
+          "id": "p1-segments-0-12",
+          "operation": "segments",
+          "page": 1,
+          "start": 0,
+          "count": 12
+        },
+        {
+          "id": "p1-render-r0",
+          "operation": "render",
+          "page": 1,
+          "rotation": 0,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p1-transform-r0",
+          "operation": "transform",
+          "page": 1,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 0,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p1-render-r90",
+          "operation": "render",
+          "page": 1,
+          "rotation": 90,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p1-transform-r90",
+          "operation": "transform",
+          "page": 1,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 90,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p1-render-r180",
+          "operation": "render",
+          "page": 1,
+          "rotation": 180,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p1-transform-r180",
+          "operation": "transform",
+          "page": 1,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 180,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p1-render-r270",
+          "operation": "render",
+          "page": 1,
+          "rotation": 270,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p1-transform-r270",
+          "operation": "transform",
+          "page": 1,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 270,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p2-text",
+          "operation": "text",
+          "page": 2
+        },
+        {
+          "id": "p2-geometry",
+          "operation": "geometry",
+          "page": 2
+        },
+        {
+          "id": "p2-segments-0-0",
+          "operation": "segments",
+          "page": 2,
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "p2-segments-0-3",
+          "operation": "segments",
+          "page": 2,
+          "start": 0,
+          "count": 3
+        },
+        {
+          "id": "p2-segments-2-5",
+          "operation": "segments",
+          "page": 2,
+          "start": 2,
+          "count": 5
+        },
+        {
+          "id": "p2-segments-0-12",
+          "operation": "segments",
+          "page": 2,
+          "start": 0,
+          "count": 12
+        },
+        {
+          "id": "p2-render-r0",
+          "operation": "render",
+          "page": 2,
+          "rotation": 0,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p2-transform-r0",
+          "operation": "transform",
+          "page": 2,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 0,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p2-render-r90",
+          "operation": "render",
+          "page": 2,
+          "rotation": 90,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p2-transform-r90",
+          "operation": "transform",
+          "page": 2,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 90,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p2-render-r180",
+          "operation": "render",
+          "page": 2,
+          "rotation": 180,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p2-transform-r180",
+          "operation": "transform",
+          "page": 2,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 180,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p2-render-r270",
+          "operation": "render",
+          "page": 2,
+          "rotation": 270,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p2-transform-r270",
+          "operation": "transform",
+          "page": 2,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 270,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p3-text",
+          "operation": "text",
+          "page": 3
+        },
+        {
+          "id": "p3-geometry",
+          "operation": "geometry",
+          "page": 3
+        },
+        {
+          "id": "p3-segments-0-0",
+          "operation": "segments",
+          "page": 3,
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "p3-segments-0-3",
+          "operation": "segments",
+          "page": 3,
+          "start": 0,
+          "count": 3
+        },
+        {
+          "id": "p3-segments-2-5",
+          "operation": "segments",
+          "page": 3,
+          "start": 2,
+          "count": 5
+        },
+        {
+          "id": "p3-segments-0-12",
+          "operation": "segments",
+          "page": 3,
+          "start": 0,
+          "count": 12
+        },
+        {
+          "id": "p3-render-r0",
+          "operation": "render",
+          "page": 3,
+          "rotation": 0,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p3-transform-r0",
+          "operation": "transform",
+          "page": 3,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 0,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p3-render-r90",
+          "operation": "render",
+          "page": 3,
+          "rotation": 90,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p3-transform-r90",
+          "operation": "transform",
+          "page": 3,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 90,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p3-render-r180",
+          "operation": "render",
+          "page": 3,
+          "rotation": 180,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p3-transform-r180",
+          "operation": "transform",
+          "page": 3,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 180,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "id": "p3-render-r270",
+          "operation": "render",
+          "page": 3,
+          "rotation": 270,
+          "scale": 0.5,
+          "region": {
+            "x": 0.00005,
+            "y": 0,
+            "width": 50,
+            "height": 40
+          }
+        },
+        {
+          "id": "p3-transform-r270",
+          "operation": "transform",
+          "page": 3,
+          "input": {
+            "pageSize": {
+              "width": 280,
+              "height": 180
+            },
+            "rotation": 270,
+            "scale": 1.333333333333,
+            "dpr": 1.25,
+            "baseScale": 1.666666666666
+          },
+          "pagePoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0.00005,
+              "y": -0.00005
+            },
+            {
+              "x": 280,
+              "y": 180
+            }
+          ],
+          "pageRects": [
+            {
+              "x": -0.00005,
+              "y": 0.00005,
+              "width": 280,
+              "height": 180
+            }
+          ],
+          "viewPoints": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 373,
+              "y": 240
+            }
+          ],
+          "viewRects": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 20
+            }
+          ]
+        }
+      ],
+      "sha256": "08cb618f7a11d7300d2353dbd83debc10a55a4da07b1aeda1cfb9a5149763f90"
+    },
+    {
+      "id": "embedded_orientations",
+      "pdf": "tooling/engine-conformance/fixtures/embedded_orientations.pdf",
+      "probes": [
+        {
+          "id": "pages",
+          "operation": "pages"
+        },
+        {
+          "id": "text",
+          "operation": "text",
+          "page": 0
+        },
+        {
+          "id": "geometry",
+          "operation": "geometry",
+          "page": 0
+        },
+        {
+          "id": "empty-segments",
+          "operation": "segments",
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "first-segment",
+          "operation": "segments",
+          "start": 0,
+          "count": 1
+        },
+        {
+          "id": "transparent-render",
+          "operation": "render",
+          "rotation": 0,
+          "scale": 0.5
+        }
+      ],
+      "sha256": "caaf21d3093e6b8e6bac0323945c9db602c2cfd89f57ac77e024edf45e005728"
+    },
+    {
+      "id": "non_identity_text",
+      "pdf": "tooling/engine-conformance/fixtures/non_identity_text.pdf",
+      "probes": [
+        {
+          "id": "pages",
+          "operation": "pages"
+        },
+        {
+          "id": "text",
+          "operation": "text",
+          "page": 0
+        },
+        {
+          "id": "geometry",
+          "operation": "geometry",
+          "page": 0
+        },
+        {
+          "id": "empty-segments",
+          "operation": "segments",
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "first-segment",
+          "operation": "segments",
+          "start": 0,
+          "count": 1
+        },
+        {
+          "id": "transparent-render",
+          "operation": "render",
+          "rotation": 0,
+          "scale": 0.5
+        }
+      ],
+      "sha256": "631eca89df7662dfb0f743c61d32d6a7fc294038f8634a01266a2c1b170c3c98"
+    },
+    {
+      "id": "reverse_and_gapped_text",
+      "pdf": "tooling/engine-conformance/fixtures/reverse_and_gapped_text.pdf",
+      "probes": [
+        {
+          "id": "pages",
+          "operation": "pages"
+        },
+        {
+          "id": "text",
+          "operation": "text",
+          "page": 0
+        },
+        {
+          "id": "geometry",
+          "operation": "geometry",
+          "page": 0
+        },
+        {
+          "id": "empty-segments",
+          "operation": "segments",
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "first-segment",
+          "operation": "segments",
+          "start": 0,
+          "count": 1
+        },
+        {
+          "id": "transparent-render",
+          "operation": "render",
+          "rotation": 0,
+          "scale": 0.5
+        }
+      ],
+      "sha256": "0a09cb70cf57206c453789c93273623237897b54ca2607bf0f976b06ae753064"
+    },
+    {
+      "id": "surrogate-dropped-combining-rtl-charmaps",
+      "pdf": "tooling/dotnet-parity/fixtures/crop-rotations.pdf",
+      "probes": [
+        {
+          "id": "pages",
+          "operation": "pages"
+        },
+        {
+          "id": "text",
+          "operation": "text",
+          "page": 0
+        },
+        {
+          "id": "geometry",
+          "operation": "geometry",
+          "page": 0
+        },
+        {
+          "id": "empty-segments",
+          "operation": "segments",
+          "start": 0,
+          "count": 0
+        },
+        {
+          "id": "first-segment",
+          "operation": "segments",
+          "start": 0,
+          "count": 1
+        },
+        {
+          "id": "transparent-render",
+          "operation": "render",
+          "rotation": 0,
+          "scale": 0.5
+        },
+        {
+          "id": "charmap-identity-ascii",
+          "operation": "helperText",
+          "text": {
+            "text": "Hello, world.",
+            "charCount": 13
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 0,
+              "count": 6
+            },
+            {
+              "start": 0,
+              "count": 7
+            },
+            {
+              "start": 0,
+              "count": 8
+            },
+            {
+              "start": 0,
+              "count": 9
+            },
+            {
+              "start": 0,
+              "count": 10
+            },
+            {
+              "start": 0,
+              "count": 11
+            },
+            {
+              "start": 0,
+              "count": 12
+            },
+            {
+              "start": 0,
+              "count": 13
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 5
+            },
+            {
+              "start": 1,
+              "count": 6
+            },
+            {
+              "start": 1,
+              "count": 7
+            },
+            {
+              "start": 1,
+              "count": 8
+            },
+            {
+              "start": 1,
+              "count": 9
+            },
+            {
+              "start": 1,
+              "count": 10
+            },
+            {
+              "start": 1,
+              "count": 11
+            },
+            {
+              "start": 1,
+              "count": 12
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 4
+            },
+            {
+              "start": 2,
+              "count": 5
+            },
+            {
+              "start": 2,
+              "count": 6
+            },
+            {
+              "start": 2,
+              "count": 7
+            },
+            {
+              "start": 2,
+              "count": 8
+            },
+            {
+              "start": 2,
+              "count": 9
+            },
+            {
+              "start": 2,
+              "count": 10
+            },
+            {
+              "start": 2,
+              "count": 11
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 3
+            },
+            {
+              "start": 3,
+              "count": 4
+            },
+            {
+              "start": 3,
+              "count": 5
+            },
+            {
+              "start": 3,
+              "count": 6
+            },
+            {
+              "start": 3,
+              "count": 7
+            },
+            {
+              "start": 3,
+              "count": 8
+            },
+            {
+              "start": 3,
+              "count": 9
+            },
+            {
+              "start": 3,
+              "count": 10
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 2
+            },
+            {
+              "start": 4,
+              "count": 3
+            },
+            {
+              "start": 4,
+              "count": 4
+            },
+            {
+              "start": 4,
+              "count": 5
+            },
+            {
+              "start": 4,
+              "count": 6
+            },
+            {
+              "start": 4,
+              "count": 7
+            },
+            {
+              "start": 4,
+              "count": 8
+            },
+            {
+              "start": 4,
+              "count": 9
+            },
+            {
+              "start": 5,
+              "count": 0
+            },
+            {
+              "start": 5,
+              "count": 1
+            },
+            {
+              "start": 5,
+              "count": 2
+            },
+            {
+              "start": 5,
+              "count": 3
+            },
+            {
+              "start": 5,
+              "count": 4
+            },
+            {
+              "start": 5,
+              "count": 5
+            },
+            {
+              "start": 5,
+              "count": 6
+            },
+            {
+              "start": 5,
+              "count": 7
+            },
+            {
+              "start": 5,
+              "count": 8
+            },
+            {
+              "start": 6,
+              "count": 0
+            },
+            {
+              "start": 6,
+              "count": 1
+            },
+            {
+              "start": 6,
+              "count": 2
+            },
+            {
+              "start": 6,
+              "count": 3
+            },
+            {
+              "start": 6,
+              "count": 4
+            },
+            {
+              "start": 6,
+              "count": 5
+            },
+            {
+              "start": 6,
+              "count": 6
+            },
+            {
+              "start": 6,
+              "count": 7
+            },
+            {
+              "start": 7,
+              "count": 0
+            },
+            {
+              "start": 7,
+              "count": 1
+            },
+            {
+              "start": 7,
+              "count": 2
+            },
+            {
+              "start": 7,
+              "count": 3
+            },
+            {
+              "start": 7,
+              "count": 4
+            },
+            {
+              "start": 7,
+              "count": 5
+            },
+            {
+              "start": 7,
+              "count": 6
+            },
+            {
+              "start": 8,
+              "count": 0
+            },
+            {
+              "start": 8,
+              "count": 1
+            },
+            {
+              "start": 8,
+              "count": 2
+            },
+            {
+              "start": 8,
+              "count": 3
+            },
+            {
+              "start": 8,
+              "count": 4
+            },
+            {
+              "start": 8,
+              "count": 5
+            },
+            {
+              "start": 9,
+              "count": 0
+            },
+            {
+              "start": 9,
+              "count": 1
+            },
+            {
+              "start": 9,
+              "count": 2
+            },
+            {
+              "start": 9,
+              "count": 3
+            },
+            {
+              "start": 9,
+              "count": 4
+            },
+            {
+              "start": 10,
+              "count": 0
+            },
+            {
+              "start": 10,
+              "count": 1
+            },
+            {
+              "start": 10,
+              "count": 2
+            },
+            {
+              "start": 10,
+              "count": 3
+            },
+            {
+              "start": 11,
+              "count": 0
+            },
+            {
+              "start": 11,
+              "count": 1
+            },
+            {
+              "start": 11,
+              "count": 2
+            },
+            {
+              "start": 12,
+              "count": 0
+            },
+            {
+              "start": 12,
+              "count": 1
+            },
+            {
+              "start": 13,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-identity-empty",
+          "operation": "helperText",
+          "text": {
+            "text": "",
+            "charCount": 0
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-identity-bmp-non-ascii",
+          "operation": "helperText",
+          "text": {
+            "text": "café 中文 ÀÉÎ",
+            "charCount": 11
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 0,
+              "count": 6
+            },
+            {
+              "start": 0,
+              "count": 7
+            },
+            {
+              "start": 0,
+              "count": 8
+            },
+            {
+              "start": 0,
+              "count": 9
+            },
+            {
+              "start": 0,
+              "count": 10
+            },
+            {
+              "start": 0,
+              "count": 11
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 5
+            },
+            {
+              "start": 1,
+              "count": 6
+            },
+            {
+              "start": 1,
+              "count": 7
+            },
+            {
+              "start": 1,
+              "count": 8
+            },
+            {
+              "start": 1,
+              "count": 9
+            },
+            {
+              "start": 1,
+              "count": 10
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 4
+            },
+            {
+              "start": 2,
+              "count": 5
+            },
+            {
+              "start": 2,
+              "count": 6
+            },
+            {
+              "start": 2,
+              "count": 7
+            },
+            {
+              "start": 2,
+              "count": 8
+            },
+            {
+              "start": 2,
+              "count": 9
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 3
+            },
+            {
+              "start": 3,
+              "count": 4
+            },
+            {
+              "start": 3,
+              "count": 5
+            },
+            {
+              "start": 3,
+              "count": 6
+            },
+            {
+              "start": 3,
+              "count": 7
+            },
+            {
+              "start": 3,
+              "count": 8
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 2
+            },
+            {
+              "start": 4,
+              "count": 3
+            },
+            {
+              "start": 4,
+              "count": 4
+            },
+            {
+              "start": 4,
+              "count": 5
+            },
+            {
+              "start": 4,
+              "count": 6
+            },
+            {
+              "start": 4,
+              "count": 7
+            },
+            {
+              "start": 5,
+              "count": 0
+            },
+            {
+              "start": 5,
+              "count": 1
+            },
+            {
+              "start": 5,
+              "count": 2
+            },
+            {
+              "start": 5,
+              "count": 3
+            },
+            {
+              "start": 5,
+              "count": 4
+            },
+            {
+              "start": 5,
+              "count": 5
+            },
+            {
+              "start": 5,
+              "count": 6
+            },
+            {
+              "start": 6,
+              "count": 0
+            },
+            {
+              "start": 6,
+              "count": 1
+            },
+            {
+              "start": 6,
+              "count": 2
+            },
+            {
+              "start": 6,
+              "count": 3
+            },
+            {
+              "start": 6,
+              "count": 4
+            },
+            {
+              "start": 6,
+              "count": 5
+            },
+            {
+              "start": 7,
+              "count": 0
+            },
+            {
+              "start": 7,
+              "count": 1
+            },
+            {
+              "start": 7,
+              "count": 2
+            },
+            {
+              "start": 7,
+              "count": 3
+            },
+            {
+              "start": 7,
+              "count": 4
+            },
+            {
+              "start": 8,
+              "count": 0
+            },
+            {
+              "start": 8,
+              "count": 1
+            },
+            {
+              "start": 8,
+              "count": 2
+            },
+            {
+              "start": 8,
+              "count": 3
+            },
+            {
+              "start": 9,
+              "count": 0
+            },
+            {
+              "start": 9,
+              "count": 1
+            },
+            {
+              "start": 9,
+              "count": 2
+            },
+            {
+              "start": 10,
+              "count": 0
+            },
+            {
+              "start": 10,
+              "count": 1
+            },
+            {
+              "start": 11,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-identity-combining",
+          "operation": "helperText",
+          "text": {
+            "text": "école",
+            "charCount": 6
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 0,
+              "count": 6
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 5
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 4
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 3
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 2
+            },
+            {
+              "start": 5,
+              "count": 0
+            },
+            {
+              "start": 5,
+              "count": 1
+            },
+            {
+              "start": 6,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-identity-rtl",
+          "operation": "helperText",
+          "text": {
+            "text": "أهلا بالعالم",
+            "charCount": 12
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 0,
+              "count": 6
+            },
+            {
+              "start": 0,
+              "count": 7
+            },
+            {
+              "start": 0,
+              "count": 8
+            },
+            {
+              "start": 0,
+              "count": 9
+            },
+            {
+              "start": 0,
+              "count": 10
+            },
+            {
+              "start": 0,
+              "count": 11
+            },
+            {
+              "start": 0,
+              "count": 12
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 5
+            },
+            {
+              "start": 1,
+              "count": 6
+            },
+            {
+              "start": 1,
+              "count": 7
+            },
+            {
+              "start": 1,
+              "count": 8
+            },
+            {
+              "start": 1,
+              "count": 9
+            },
+            {
+              "start": 1,
+              "count": 10
+            },
+            {
+              "start": 1,
+              "count": 11
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 4
+            },
+            {
+              "start": 2,
+              "count": 5
+            },
+            {
+              "start": 2,
+              "count": 6
+            },
+            {
+              "start": 2,
+              "count": 7
+            },
+            {
+              "start": 2,
+              "count": 8
+            },
+            {
+              "start": 2,
+              "count": 9
+            },
+            {
+              "start": 2,
+              "count": 10
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 3
+            },
+            {
+              "start": 3,
+              "count": 4
+            },
+            {
+              "start": 3,
+              "count": 5
+            },
+            {
+              "start": 3,
+              "count": 6
+            },
+            {
+              "start": 3,
+              "count": 7
+            },
+            {
+              "start": 3,
+              "count": 8
+            },
+            {
+              "start": 3,
+              "count": 9
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 2
+            },
+            {
+              "start": 4,
+              "count": 3
+            },
+            {
+              "start": 4,
+              "count": 4
+            },
+            {
+              "start": 4,
+              "count": 5
+            },
+            {
+              "start": 4,
+              "count": 6
+            },
+            {
+              "start": 4,
+              "count": 7
+            },
+            {
+              "start": 4,
+              "count": 8
+            },
+            {
+              "start": 5,
+              "count": 0
+            },
+            {
+              "start": 5,
+              "count": 1
+            },
+            {
+              "start": 5,
+              "count": 2
+            },
+            {
+              "start": 5,
+              "count": 3
+            },
+            {
+              "start": 5,
+              "count": 4
+            },
+            {
+              "start": 5,
+              "count": 5
+            },
+            {
+              "start": 5,
+              "count": 6
+            },
+            {
+              "start": 5,
+              "count": 7
+            },
+            {
+              "start": 6,
+              "count": 0
+            },
+            {
+              "start": 6,
+              "count": 1
+            },
+            {
+              "start": 6,
+              "count": 2
+            },
+            {
+              "start": 6,
+              "count": 3
+            },
+            {
+              "start": 6,
+              "count": 4
+            },
+            {
+              "start": 6,
+              "count": 5
+            },
+            {
+              "start": 6,
+              "count": 6
+            },
+            {
+              "start": 7,
+              "count": 0
+            },
+            {
+              "start": 7,
+              "count": 1
+            },
+            {
+              "start": 7,
+              "count": 2
+            },
+            {
+              "start": 7,
+              "count": 3
+            },
+            {
+              "start": 7,
+              "count": 4
+            },
+            {
+              "start": 7,
+              "count": 5
+            },
+            {
+              "start": 8,
+              "count": 0
+            },
+            {
+              "start": 8,
+              "count": 1
+            },
+            {
+              "start": 8,
+              "count": 2
+            },
+            {
+              "start": 8,
+              "count": 3
+            },
+            {
+              "start": 8,
+              "count": 4
+            },
+            {
+              "start": 9,
+              "count": 0
+            },
+            {
+              "start": 9,
+              "count": 1
+            },
+            {
+              "start": 9,
+              "count": 2
+            },
+            {
+              "start": 9,
+              "count": 3
+            },
+            {
+              "start": 10,
+              "count": 0
+            },
+            {
+              "start": 10,
+              "count": 1
+            },
+            {
+              "start": 10,
+              "count": 2
+            },
+            {
+              "start": 11,
+              "count": 0
+            },
+            {
+              "start": 11,
+              "count": 1
+            },
+            {
+              "start": 12,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-one-dropped-character-at-the-start",
+          "operation": "helperText",
+          "text": {
+            "text": "abc",
+            "charCount": 4,
+            "charMap": [
+              {
+                "char": 1,
+                "text": 0
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-one-dropped-character-in-the-middle",
+          "operation": "helperText",
+          "text": {
+            "text": "abc",
+            "charCount": 4,
+            "charMap": [
+              {
+                "char": 2,
+                "text": 1
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-one-dropped-character-at-the-end",
+          "operation": "helperText",
+          "text": {
+            "text": "abc",
+            "charCount": 4,
+            "charMap": [
+              {
+                "char": 4,
+                "text": 3
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 4,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-several-consecutive-dropped-characters",
+          "operation": "helperText",
+          "text": {
+            "text": "ab",
+            "charCount": 5,
+            "charMap": [
+              {
+                "char": 2,
+                "text": 1
+              },
+              {
+                "char": 3,
+                "text": 1
+              },
+              {
+                "char": 4,
+                "text": 1
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 5,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-every-character-dropped",
+          "operation": "helperText",
+          "text": {
+            "text": "",
+            "charCount": 3,
+            "charMap": [
+              {
+                "char": 1,
+                "text": 0
+              },
+              {
+                "char": 2,
+                "text": 0
+              },
+              {
+                "char": 3,
+                "text": 0
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-one-supplementary-character",
+          "operation": "helperText",
+          "text": {
+            "text": "a😀b",
+            "charCount": 3,
+            "charMap": [
+              {
+                "char": 2,
+                "text": 3
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-supplementary-at-the-start",
+          "operation": "helperText",
+          "text": {
+            "text": "😀ab",
+            "charCount": 3,
+            "charMap": [
+              {
+                "char": 1,
+                "text": 2
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-supplementary-at-the-end",
+          "operation": "helperText",
+          "text": {
+            "text": "ab😀",
+            "charCount": 3,
+            "charMap": [
+              {
+                "char": 3,
+                "text": 4
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-consecutive-supplementary-characters",
+          "operation": "helperText",
+          "text": {
+            "text": "😀𝐀",
+            "charCount": 2,
+            "charMap": [
+              {
+                "char": 1,
+                "text": 2
+              },
+              {
+                "char": 2,
+                "text": 4
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-dropped-and-supplementary-together",
+          "operation": "helperText",
+          "text": {
+            "text": "a😀b",
+            "charCount": 5,
+            "charMap": [
+              {
+                "char": 2,
+                "text": 1
+              },
+              {
+                "char": 3,
+                "text": 3
+              },
+              {
+                "char": 5,
+                "text": 4
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 0,
+              "count": 4
+            },
+            {
+              "start": 0,
+              "count": 5
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 1,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 4
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 2,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 3
+            },
+            {
+              "start": 3,
+              "count": 0
+            },
+            {
+              "start": 3,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 2
+            },
+            {
+              "start": 4,
+              "count": 0
+            },
+            {
+              "start": 4,
+              "count": 1
+            },
+            {
+              "start": 5,
+              "count": 0
+            }
+          ]
+        },
+        {
+          "id": "charmap-astral-text-with-no-ascii",
+          "operation": "helperText",
+          "text": {
+            "text": "😀😀😀",
+            "charCount": 3,
+            "charMap": [
+              {
+                "char": 1,
+                "text": 2
+              },
+              {
+                "char": 2,
+                "text": 4
+              },
+              {
+                "char": 3,
+                "text": 6
+              }
+            ]
+          },
+          "ranges": [
+            {
+              "start": 0,
+              "count": 0
+            },
+            {
+              "start": 0,
+              "count": 1
+            },
+            {
+              "start": 0,
+              "count": 2
+            },
+            {
+              "start": 0,
+              "count": 3
+            },
+            {
+              "start": 1,
+              "count": 0
+            },
+            {
+              "start": 1,
+              "count": 1
+            },
+            {
+              "start": 1,
+              "count": 2
+            },
+            {
+              "start": 2,
+              "count": 0
+            },
+            {
+              "start": 2,
+              "count": 1
+            },
+            {
+              "start": 3,
+              "count": 0
+            }
+          ]
+        }
+      ],
+      "sha256": "08cb618f7a11d7300d2353dbd83debc10a55a4da07b1aeda1cfb9a5149763f90"
+    }
+  ],
+  "environment": {
+    "os": "linux",
+    "arch": "arm64",
+    "node": "v24.20.0",
+    "dotnet": "10.0.403",
+    "libc": "glibc 2.41",
+    "playwright": "1.63.0"
+  }
+}

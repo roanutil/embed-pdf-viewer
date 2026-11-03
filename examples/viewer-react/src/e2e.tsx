@@ -11,8 +11,19 @@ import {
   AnnotationToken,
   FormToken,
 } from '@embedpdf/viewer-react';
-import type { ViewerHandle } from '@embedpdf/viewer-react';
+import type { Viewer as ViewerHandle } from '@embedpdf/viewer-react';
 
+import { localEngine } from '@embedpdf/engine';
+import {
+  boundaryTextOffset,
+  sliceText,
+  type LocalDocumentHandle,
+  type PageTextSnapshot,
+} from '@embedpdf/engine-core/runtime';
+import { pageTransform } from '@embedpdf/core-geometry';
+
+const parityEnabled = new URLSearchParams(location.search).get('parity') === '1';
+let parityDocument: LocalDocumentHandle | undefined;
 const backend = new URLSearchParams(location.search).get('backend');
 if (backend !== 'typescript' && backend !== 'rust') {
   throw new Error(`Unsupported viewer test backend: ${backend}`);
@@ -29,7 +40,30 @@ if (backend !== 'typescript' && backend !== 'rust') {
  * `rustSession` stays off. G3w routes no reads, so a viewer on it could not
  * paint a page; it moves here when G10 does.
  */
-const engine = backend === 'rust' ? { rustRouting: { rustReads: true } } : undefined;
+const engine = parityEnabled
+  ? () => {
+      if (backend !== 'typescript')
+        throw new Error('Parity requires the explicitly configured TypeScript reader');
+      const local = localEngine({
+        rustRouting: { rustReads: false, rustSession: false },
+        ...window.parityFontConfiguration,
+      });
+      const open = local.open.bind(local);
+      local.open = (...args) => {
+        const operation = open(...args);
+        void operation.then(
+          (document) => {
+            parityDocument = document;
+          },
+          () => {},
+        );
+        return operation;
+      };
+      return local;
+    }
+  : backend === 'rust'
+    ? { rustRouting: { rustReads: true } }
+    : undefined;
 
 /**
  * Which fixture to open.
@@ -58,6 +92,7 @@ const src = documents[requested as keyof typeof documents];
 
 function ready(viewer: ViewerHandle) {
   window.viewerBaseline = {
+    paritySnapshot,
     snapshot: () => {
       const stage = viewer.tryGet(StageToken);
       const search = viewer.tryGet(SearchToken);
@@ -68,10 +103,10 @@ function ready(viewer: ViewerHandle) {
         // what makes that safe to rely on.
         backend,
         documents: viewer.documents.list().map(({ status }) => status),
-        currentPage: stage?.currentPage(),
-        zoom: stage?.zoomLevel(),
+        currentPage: stage?.getCurrentPageIndex(),
+        zoom: stage?.getZoomLevel(),
         pages:
-          stage?.visiblePages().map((p) => ({
+          stage?.listVisiblePages().map((p) => ({
             index: p.pageIndex,
             x: p.screenX,
             y: p.screenY,
@@ -79,9 +114,9 @@ function ready(viewer: ViewerHandle) {
             height: p.transform.contentHeight,
           })) ?? [],
         search: search && {
-          status: search.status(),
-          count: search.hitCount(),
-          active: search.activeIndex(),
+          status: search.getStatus(),
+          count: search.getHitCount(),
+          active: search.getActiveHitIndex(),
         },
       };
     },
@@ -102,12 +137,12 @@ function ready(viewer: ViewerHandle) {
       const annotation = viewer.tryGet(AnnotationToken);
       if (!annotation) return null;
       return annotation
-        .list(pon)
+        .list({ pages: [pon] })
         .filter((item) => String((item as { subtype?: unknown }).subtype ?? '') === 'link')
         .map((item) => ({
           nm: item.nm ?? null,
           rect: item.rect,
-          target: annotation.links.of(item.ref),
+          target: annotation.links.get(item.ref),
         }));
     },
 
@@ -118,7 +153,7 @@ function ready(viewer: ViewerHandle) {
     annotations: (pon: number) => {
       const annotation = viewer.tryGet(AnnotationToken);
       if (!annotation) return null;
-      return annotation.list(pon).map((item) => ({
+      return annotation.list({ pages: [pon] }).map((item) => ({
         nm: item.nm ?? null,
         subtype: String((item as { subtype?: unknown }).subtype ?? ''),
         rect: item.rect,
@@ -126,7 +161,11 @@ function ready(viewer: ViewerHandle) {
     },
 
     /** The ids the annotation plane currently has selected. */
-    annotationSelection: () => viewer.tryGet(AnnotationToken)?.selection() ?? null,
+    annotationSelection: () =>
+      viewer
+        .tryGet(AnnotationToken)
+        ?.selection.list()
+        .map((item) => item.nm ?? JSON.stringify(item.ref)) ?? null,
 
     // Every field the form model holds, reduced to the parts a reader can
     // state from the file: the name, the family, and the value.
@@ -134,11 +173,11 @@ function ready(viewer: ViewerHandle) {
     pages: () => {
       const stage = viewer.tryGet(StageToken);
       if (!stage) return null;
-      return stage.pages().map((entry) => {
-        const rect = stage.pageRect(entry.pon);
+      return Array.from({ length: stage.getPageCount() }, (_, index) => {
+        const rect = stage.getPageFrame(index);
         return {
-          index: entry.index,
-          pon: entry.pon,
+          index,
+          pon: rect?.ref.objectNumber ?? null,
           // The rendered size, which is how a rotation shows up without
           // asking the registry for a number: a quarter turn swaps these.
           width: rect?.transform.contentWidth ?? null,
@@ -163,8 +202,7 @@ function ready(viewer: ViewerHandle) {
     },
 
     /** Every open document, with the status the viewer is showing for it. */
-    documentStatuses: () =>
-      viewer.documents.list().map(({ id, status }) => ({ id, status })),
+    documentStatuses: () => viewer.documents.list().map(({ id, status }) => ({ id, status })),
 
     /**
      * Try a password on a locked document.
@@ -185,7 +223,7 @@ function ready(viewer: ViewerHandle) {
     },
 
     formFields: () => {
-      const snapshot = viewer.tryGet(FormToken)?.snapshot();
+      const snapshot = viewer.tryGet(FormToken)?.getSnapshot();
       if (!snapshot) return null;
       return snapshot.fields.map((field) => ({
         name: field.name,
@@ -200,7 +238,12 @@ function ready(viewer: ViewerHandle) {
 
 declare global {
   interface Window {
+    parityFontConfiguration?: Pick<
+      NonNullable<Parameters<typeof localEngine>[0]>,
+      'fonts' | 'fallbackFonts'
+    >;
     viewerBaseline: {
+      paritySnapshot: typeof paritySnapshot;
       snapshot: () => {
         backend: string | null;
         documents: string[];
@@ -212,15 +255,11 @@ declare global {
       selectionText: () => Promise<string>;
       links: (
         pon: number,
-      ) =>
-        | { nm: string | null; rect: unknown; target: Record<string, unknown> | null }[]
-        | null;
-      annotations: (
-        pon: number,
-      ) => { nm: string | null; subtype: string; rect: unknown }[] | null;
+      ) => { nm: string | null; rect: unknown; target: Record<string, unknown> | null }[] | null;
+      annotations: (pon: number) => { nm: string | null; subtype: string; rect: unknown }[] | null;
       annotationSelection: () => string[] | null;
       pages: () =>
-        | { index: number; pon: number; width: number | null; height: number | null }[]
+        | { index: number; pon: number | null; width: number | null; height: number | null }[]
         | null;
       search: (needle: string) => boolean | null;
       documentStatuses: () => { id: string; status: string }[];
@@ -248,3 +287,154 @@ createRoot(document.getElementById('root')!).render(
     style={{ height: '100vh', display: 'block' }}
   />,
 );
+
+type ParityProbe = {
+  id: string;
+  operation: string;
+  page?: number;
+  start?: number;
+  count?: number;
+  rotation?: 0 | 90 | 180 | 270;
+  scale?: number;
+  region?: { x: number; y: number; width: number; height: number };
+  input?: Parameters<typeof pageTransform>[0];
+  pagePoints?: { x: number; y: number }[];
+  pageRects?: { x: number; y: number; width: number; height: number }[];
+  viewPoints?: { x: number; y: number }[];
+  viewRects?: { x: number; y: number; width: number; height: number }[];
+  text?: Omit<PageTextSnapshot, 'charMap'> & { charMap?: { char: number; text: number }[] };
+  ranges?: { start: number; count: number }[];
+};
+
+async function paritySnapshot(probes: ParityProbe[]) {
+  if (!parityEnabled || backend !== 'typescript' || !parityDocument)
+    throw new Error('No observed TypeScript viewer document');
+  const pages = (await parityDocument.pages.list()).pages;
+  const results = [];
+  for (const probe of probes) {
+    const layout = pages[probe.page ?? 0];
+    if (!layout) throw new Error('Parity page index outside document');
+    const page = parityDocument.page(layout.ref);
+    const range = { start: probe.start ?? 0, count: probe.count ?? 0 };
+    let value: unknown;
+    switch (probe.operation) {
+      case 'pages':
+        value = pages.map((p) => ({ ...p, actions: p.actions ?? null }));
+        break;
+      case 'text': {
+        const snapshot = await page.text.get();
+        value = {
+          ...snapshot,
+          ...(snapshot.charMap
+            ? { charMap: snapshot.charMap.map(([char, text]) => ({ char, text })) }
+            : {}),
+        };
+        break;
+      }
+      case 'geometry':
+        value = {
+          runs: (await page.text.layout()).runs.map((run) => ({
+            rect: run.rect,
+            start: run.start,
+            fontSize: run.fontSize ?? null,
+            ...('rotation' in run
+              ? { rotation: run.rotation, ascentFlip: Boolean(run.ascentFlip) }
+              : {}),
+            glyphs: run.glyphs.map((g) => ({
+              loose: g.loose,
+              tight: g.tight ?? null,
+              space: Boolean(g.space),
+              empty: Boolean(g.empty),
+            })),
+          })),
+        };
+        break;
+      case 'segments':
+        value = (await page.text.layout()).segments(range);
+        break;
+      case 'slice':
+        value = await page.text.slice(range);
+        break;
+      case 'transform': {
+        if (!probe.input) throw new Error('Missing transform input');
+        const t = pageTransform(probe.input);
+        value = {
+          transform: Object.fromEntries(
+            [
+              'viewWidth',
+              'viewHeight',
+              'contentWidth',
+              'contentHeight',
+              'deviceWidth',
+              'deviceHeight',
+              'renderScale',
+              'viewScale',
+              'baseScale',
+              'zoom',
+              'rotation',
+              'cssMatrix',
+            ].map((k) => [k, t[k as keyof typeof t]]),
+          ),
+          pageToView: (probe.pagePoints ?? []).map(t.pageToView),
+          pageRectsToView: (probe.pageRects ?? []).map(t.pageToViewRect),
+          viewToPage: (probe.viewPoints ?? []).map(t.viewToPage),
+          viewRectsToPage: (probe.viewRects ?? []).map(t.viewToPageRect),
+        };
+        break;
+      }
+      case 'render': {
+        const image = await page.render.raw({
+          target: probe.region ? { kind: 'rect', rect: probe.region } : { kind: 'page' },
+          viewport: { kind: 'scale', scale: probe.scale },
+          rotation: probe.rotation,
+          background: 'transparent',
+          includeAnnotations: false,
+          includeFormFields: false,
+        });
+        const digest = await crypto.subtle.digest('SHA-256', image.data);
+        const bytes = new Uint8Array(image.data);
+        const chunks: string[] = [];
+        for (let index = 0; index < bytes.length; index += 32768)
+          chunks.push(String.fromCharCode(...bytes.subarray(index, index + 32768)));
+        value = {
+          width: image.width,
+          height: image.height,
+          stride: image.stride,
+          area: image.transform.pixelsToPage({
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height,
+          }),
+          color: image.color,
+          premultipliedAlpha: image.premultipliedAlpha,
+          pixels: btoa(chunks.join('')),
+          sha256: Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, '0')).join(
+            '',
+          ),
+        };
+        break;
+      }
+      case 'helperText': {
+        if (!probe.text) throw new Error('Missing text snapshot');
+        const text: PageTextSnapshot = {
+          ...probe.text,
+          charMap: probe.text.charMap?.map(({ char, text }) => [char, text] as const),
+        };
+        value = {
+          offsets: Array.from({ length: text.charCount + 1 }, (_, i) =>
+            boundaryTextOffset(text, i),
+          ),
+          slices: (probe.ranges ?? []).map((r) =>
+            sliceText(text, { start: r.start, count: r.count }),
+          ),
+        };
+        break;
+      }
+      default:
+        throw new Error(`Unknown parity operation ${probe.operation}`);
+    }
+    results.push({ id: probe.id, operation: probe.operation, value });
+  }
+  return JSON.stringify(results);
+}

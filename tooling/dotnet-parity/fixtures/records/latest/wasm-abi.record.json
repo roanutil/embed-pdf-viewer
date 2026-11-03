@@ -1,0 +1,692 @@
+{
+  "schemaVersion": 1,
+  "slice": 5,
+  "rid": "linux-arm64",
+  "source": {
+    "commit": "44169b853d3d7006185dcf4ab3780f147fdd2ae9",
+    "dirty": false,
+    "runtimeFork": "1461b0c5105137954b77dea0a6e2c15668518651"
+  },
+  "environment": {
+    "kind": "container",
+    "os": "linux 7.0.14-linuxkit",
+    "arch": "arm64",
+    "emulated": false,
+    "imageId": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "tools": {
+      "node": "v24.20.0",
+      "dotnet": "10.0.403",
+      "libc": "glibc 2.41",
+      "playwright": "1.63.0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "tooling/dotnet-parity/fixtures/records/latest/manifest.input.json",
+      "sha256": "14a34648594181ab47538af4dde05b7b917c4891d4974a4b3bb27fc1f7f6b1fe",
+      "bytes": 111048
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+      "bytes": 759720
+    },
+    {
+      "path": "/usr/share/doc/fonts-dejavu-core/copyright",
+      "sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+      "bytes": 3859
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/charmap.json",
+      "sha256": "2a4f7cb6169ea29175b231d34d3377555cf13cfe5640f3b3d51e7d99cf9dc54d",
+      "bytes": 195920
+    },
+    {
+      "path": "tooling/engine-conformance/vectors/text/layout.json",
+      "sha256": "e101e3cbda5789ff46e6745e0ae547ab993d07d8be14c698c17e65bcad53ae67",
+      "bytes": 354085
+    },
+    {
+      "path": "packages/engine/runtime/npm/wasm32/lib/embedpdf.wasm",
+      "sha256": "b0899e0936ba39ccd07de1efe79b65ac8fda371c5c4fdbd7fb6afc305ef708cc",
+      "bytes": 7668996
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/BUILD-METADATA.json",
+      "sha256": "301905fa9f44b4b0dc0913244743d11c1f632378c939e1395bcb3bafef6b2b42",
+      "bytes": 152
+    },
+    {
+      "path": "/opt/pdfium/linux-arm64/lib/libembedpdf.so",
+      "sha256": "3d347492e519a522947a3d56ed3ea8fe4e1eed3d9e0f916349d564176e2e53d0",
+      "bytes": 11070088
+    },
+    {
+      "path": "packages/engine/runtime/src/core/pdf-functions.generated.ts",
+      "sha256": "5b3fd6dd351f3df6b63357cc37f20157ee87953c90fbd2b0979090f7833bf6d0",
+      "bytes": 503169
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/node_modules/@embedpdf/engine-runtime/dist/index.browser.js.map",
+      "sha256": "65acb1b3cecbe8e029f82bf7f0afe37a241be35a83a173f53ff7ddfa79a766d4",
+      "bytes": 1269564
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-3.0.0-next.15.tgz",
+      "sha256": "dedaade9f46f4b1060188cbb1dfa8d1a8aeba3f5437809b81f8dcf073becf6f8",
+      "bytes": 333719
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-acrojs-3.0.0-next.15.tgz",
+      "sha256": "3b37331e132f710b0f7345f8c379659fa941cc48f72b9cfd370fa620a19af069",
+      "bytes": 101711
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-annotation-3.0.0-next.15.tgz",
+      "sha256": "f041225401a43a63d95d45ca6731f879b9de48dfdc5f0dd1830a6baf5228ea22",
+      "bytes": 577660
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-fonts-3.0.0-next.15.tgz",
+      "sha256": "9761c84c61fb308b98b23a5470923099f7a6d3c665adc98d8415950205f45750",
+      "bytes": 967049
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-form-3.0.0-next.15.tgz",
+      "sha256": "ca9ad1af53e74b9710a3ff9f9baea3ef6a94db5351f726e929a9d8b9ca82c6d7",
+      "bytes": 79362
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-geometry-3.0.0-next.15.tgz",
+      "sha256": "66dc8ba4f07af8a455e23253a7361555221eb7af9c62dc27dc70a581b73d30c6",
+      "bytes": 38905
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-js-sandbox-3.0.0-next.15.tgz",
+      "sha256": "07db2c35f5cdac7ad32d59c44888073400d0fea1a86fa9ce77e7cc5eed3e4cb2",
+      "bytes": 14893
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-signature-3.0.0-next.15.tgz",
+      "sha256": "63bf3922ad0cfb3dd1888f942d0738e9c10edfc6d6845904f57c65a963c20efb",
+      "bytes": 75560
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-stage-3.0.0-next.15.tgz",
+      "sha256": "fcc15903d84bf8d984d086cb61ec5117d158c0c05f67aaec722a7887ae910f82",
+      "bytes": 52043
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-core-ui-3.0.0-next.15.tgz",
+      "sha256": "165802f74204db100f5d56e90eb26ea397dfe156d3d8b109f6000745c5a65b16",
+      "bytes": 147108
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-default-signature-fonts-1.0.0-next.1.tgz",
+      "sha256": "6f20f13dd4916eb067720e9d2533dfb420dc9010900458aa763f241bd354f212",
+      "bytes": 435229
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-default-stamps-1.0.0-next.1.tgz",
+      "sha256": "d71a36948aa064d04614c58173096ab1344a75c6369858495674009a068b1960",
+      "bytes": 793979
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-3.0.0-next.15.tgz",
+      "sha256": "2d9d7215a9fef0237e34aa55e9845adda223e36e623197b24301930ba1f934b8",
+      "bytes": 1838887
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-core-3.0.0-next.15.tgz",
+      "sha256": "6e35df303d96fa3148ebb01886a2e24f96d6d90adfdadd4032936835f296b26d",
+      "bytes": 2544202
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-runtime-3.0.0-next.15.tgz",
+      "sha256": "b65df513bf52e25633aad9585a3149866be07c92e28d24d29492ed8b710de49f",
+      "bytes": 286848
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-runtime-wasm32-3.0.0-next.15.tgz",
+      "sha256": "0b3fd36e47e5e98eaa42b574bc992c07481fabda0abacfe85d13d18cb97df5e5",
+      "bytes": 6474242
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-engine-services-3.0.0-next.15.tgz",
+      "sha256": "959a4f5493c8b5b605bf8ab7abc7c44399f7afa8f13d113d52dc84ea1a5742ff",
+      "bytes": 1294864
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-actions-3.0.0-next.15.tgz",
+      "sha256": "a1430f9adc21a2f1743990aa9a48e6a37a2e65aaa2337fd46642b6fe5b9597e2",
+      "bytes": 166445
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-annotation-3.0.0-next.15.tgz",
+      "sha256": "a870fbe8f541912dd551b0d33d5386c33e96bd75c469d57ef027bfa5d30949b4",
+      "bytes": 444877
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-attachment-3.0.0-next.15.tgz",
+      "sha256": "23b2e64b3cfdc59fdad95cbef870e8cbf932e0ce373c996fa1bdeea9f8a96e60",
+      "bytes": 21714
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-commands-3.0.0-next.15.tgz",
+      "sha256": "ce0cfde967cacbf9ef511426b1846334ad29de74e46b2d43ca4362fd3ee8cd05",
+      "bytes": 63240
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-form-3.0.0-next.15.tgz",
+      "sha256": "6a58247922dd8834e761e3e518970814a0e21d1d5d62bd3c8388870b27ed64c4",
+      "bytes": 241930
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-history-3.0.0-next.15.tgz",
+      "sha256": "52158b97da1cd213ab4f7e8c39d3563abeafa3180f926de2b71dea6366263232",
+      "bytes": 19138
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-i18n-3.0.0-next.15.tgz",
+      "sha256": "238dda62ac7936d6c48dbc944403d6001e6d0f58898c072a130f97c5dcad10a2",
+      "bytes": 60919
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-interaction-3.0.0-next.15.tgz",
+      "sha256": "9320e9f5d4b5e309ffce66340ec34f1f5c69fb61239a36f10658046538adbfdb",
+      "bytes": 36858
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-link-3.0.0-next.15.tgz",
+      "sha256": "73966ea268cb40812f91dca9641b88000cd94214dff3f1ef6057b90cc49bae55",
+      "bytes": 19877
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-measurement-3.0.0-next.15.tgz",
+      "sha256": "16cfac7662bd4b5a4c5e07b5742edde46bc6a6274d0dec65ac20bf02fe4831a1",
+      "bytes": 55263
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-metadata-3.0.0-next.15.tgz",
+      "sha256": "b418c6319d3154f8170c04ffa568ee2b31b1e08b1739ef194f8de8487765db65",
+      "bytes": 11899
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-outline-3.0.0-next.15.tgz",
+      "sha256": "6bcc49e5a14a4730ed203d46702db41de5cecc842fca1f65d1d03d98c45f376e",
+      "bytes": 55543
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-page-edit-3.0.0-next.15.tgz",
+      "sha256": "bb9eaeaab1f40902c7213278a20011dca6e939751445d59dcc21991b821b50da",
+      "bytes": 17911
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-redaction-3.0.0-next.15.tgz",
+      "sha256": "1ef298a2501b8b3ccb0c9c0b582297f437ff40b43ab830306936a1ca4e279ac7",
+      "bytes": 46620
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-render-3.0.0-next.15.tgz",
+      "sha256": "69f8a1c8c639040af0d80a9d768303cc443f32f5c319e307767e7ad70909d64e",
+      "bytes": 131396
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-search-3.0.0-next.15.tgz",
+      "sha256": "c5314e467fa4dcdc753ba7285af7ed9f18b03a0b3e0261a419c354013118da44",
+      "bytes": 34095
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-selection-3.0.0-next.15.tgz",
+      "sha256": "f640a84d7269e6e2f28e71b71f54fbd5b4c613c87017fed4a73909f1bab02dca",
+      "bytes": 77147
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-shell-3.0.0-next.15.tgz",
+      "sha256": "f80d1f2cb8028180286420feb30aa3d564166702b7a8fa880aa8b1d909d18428",
+      "bytes": 13455
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-signature-3.0.0-next.15.tgz",
+      "sha256": "c9a33bdf17f5fc47b8b8198bba432aadd99b6f8961ee6cb408d01772a108831a",
+      "bytes": 77461
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-stage-3.0.0-next.15.tgz",
+      "sha256": "7f45ebcb9ce2d02404e96dbac2195bf8ce1c8b64fdada97ea0b0fbb482020047",
+      "bytes": 175342
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-stamp-3.0.0-next.15.tgz",
+      "sha256": "cf29af9a5ddfb11d3c54b1d6ff3a994fadf30f7355345dc4680775a446c8becf",
+      "bytes": 115810
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-plugin-view-manager-3.0.0-next.15.tgz",
+      "sha256": "47f4845d3ce1169de00ac6144d62602bf44c2ee32af82304192c328f7bef4597",
+      "bytes": 16976
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-react-3.0.0-next.15.tgz",
+      "sha256": "3d6696fd46774866af227180713cad4fb848741ce2f55bc5bdd438a82971e6fb",
+      "bytes": 355039
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-3.0.0-next.15.tgz",
+      "sha256": "b21a54c42dd4f93175893bc742a08557110bb9762c66bab305f61ffa3dd9aa20",
+      "bytes": 10361794
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-chrome-3.0.0-next.15.tgz",
+      "sha256": "87a30c243a358445263e14d02b773feae6787c023b27e28e9a4026201e71fa54",
+      "bytes": 1205725
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-viewer-react-3.0.0-next.15.tgz",
+      "sha256": "1a5e3ec8a659fc330a028848cb8100e733f01db28ec09adc8490da5815e06264",
+      "bytes": 22190
+    },
+    {
+      "path": "/tmp/j6-restored-packed/tarballs/embedpdf-web-3.0.0-next.15.tgz",
+      "sha256": "1107a95c846350d6664f9cbfac28572d92739e783901f24cdb71d51d01cf98f8",
+      "bytes": 466923
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/package-lock.json",
+      "sha256": "f871444d39e01b0aeb70f792913c6d059232b19ffcb7e3f43e043351d3346278",
+      "bytes": 77022
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/allura-Dz-vd0jq.js",
+      "sha256": "9711288eb6f099669402e5ee9342fe95f95176e855916196c0edeabe54dd4516",
+      "bytes": 107917
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/annotation-style-CXF3X47Z-C5bxsdqU-C3JKXXSW.js",
+      "sha256": "0495ca9a820d31777263447cdbf62843622ef107903a4768bb9311e6c5584354",
+      "bytes": 14366
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ar-BLWFJoA_-D34W6zd3-D9dhGh38.js",
+      "sha256": "1e094e4f8c411dd6962583cab436e647ae943e2b06fa6c37ff04c74011459a13",
+      "bytes": 22277
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/attachments-panel-H1ucRbwo-B8R0TJua-uX6Tm_yH.js",
+      "sha256": "16baa51b2e0d20d6d1053346b8c88942b54fc684416637730aad8d32008b9318",
+      "bytes": 4141
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/caveat-CFnviKTj.js",
+      "sha256": "e3cbecbbfa21f9ac40a724093fb9705ee9854363a96608c44e7bde5c9a48048e",
+      "bytes": 166157
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/comments-panel-D7Eadws9-D5Cr2frv-CPkkFn8r.js",
+      "sha256": "c6815aa23e74ed95f75df9fc0e74830fade06f8d1403c1fc7928b01b43b9622b",
+      "bytes": 9180
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-bold-oblique.generated-C4JG-Sd4-BhDT37Ru.js",
+      "sha256": "92528be3b59cbc8179245b8d8edc6f4c38e6d8ac92a8ae416191383c8a9b07d6",
+      "bytes": 31063
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-bold.generated-x9MmbkbU-B68oO0fU.js",
+      "sha256": "f86fd8aa39851ce6c9bbe014b9b0d4aee84a6d65ad499966d8e98c0f84d85855",
+      "bytes": 29515
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier-oblique.generated-jM2VV_8N-D_66BEgP.js",
+      "sha256": "119135a1442c2eefd4ea07d04eeb6758cc05ad61b1989abdf960c54f701e993e",
+      "bytes": 30463
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/courier.generated-Db-fW_ef-CpqePbPV.js",
+      "sha256": "29d2f29163887bb4b3f52e6fecc44675ca6954bfe174e40ba61c7a77d2a94c4c",
+      "bytes": 28871
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/de-BUhwc9-x-l08p70cK-Culg24AL.js",
+      "sha256": "5b60a559d0562e91909414dfba5d64d1739b84b7e59ff87bd4dacc89effa6bea",
+      "bytes": 19267
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/de-t5pxqrwk.js",
+      "sha256": "9370a0cf05d90cdf6bd9a399102f02eeb77c1e23878d94d5e8ead694ddc48959",
+      "bytes": 104881
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/e2e-COkiksn9.js",
+      "sha256": "3ad27f175cfeb2b6395b420c247c982ade49838f31dc1a899cc557f05dade10f",
+      "bytes": 1331484
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-I-GpQAGD.wasm",
+      "sha256": "b0899e0936ba39ccd07de1efe79b65ac8fda371c5c4fdbd7fb6afc305ef708cc",
+      "bytes": 7668996
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-worker-D-SRdhzx.js",
+      "sha256": "c515bc5b09204d5fd1e9d9b5c7378e15a657980991d322a742ffd539d415d2f2",
+      "bytes": 1108413
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/embedpdf-worker.source-Bn2Puh8z-Cq6STn2t.js",
+      "sha256": "289053beb997f099f2e0939f24fefdf12eb00642afbb6994cf1f4bce638b94d6",
+      "bytes": 1108937
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/emscripten-module-uFzwHH0Y.wasm",
+      "sha256": "105c3bed22d457e43e3d1c3c1c6959fda62a8fe06f0fc8a985303c3a2be72232",
+      "bytes": 503134
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/emscripten-module.browser-_xZ57Wn5.js",
+      "sha256": "8b5adee367568a7d9962478004f31f800f02c58f694c993990efef258970cec6",
+      "bytes": 9237
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/en-BN89r1Tg.js",
+      "sha256": "6d285e13ad705420111ed8bd11c2a380388dfb82b03f28b78ac1d01f12bb8626",
+      "bytes": 93829
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/encoder-worker-B_8I6lpR.js",
+      "sha256": "2e9fa5a2fd81b81755b57ee18479cce4f42d68a5ee41886b58e2914e3a48ad77",
+      "bytes": 964
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/es-DmWlKxHN.js",
+      "sha256": "2257672d0b9d00e506f3550d2dfb56a9e1996550b86742cf5276dc19086c6000",
+      "bytes": 97461
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/es-DoXTqFoO-Dy_C_-pZ-DMFTxTjN.js",
+      "sha256": "4e77c2e636f22fc7e7ec12629d8c51d4f2cf12a01c35c376def992bb5156d4c8",
+      "bytes": 18032
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ffi-B7mhNP0h-Boa1QuFa.js",
+      "sha256": "c1d5c030994fbaffcc4bb2ab86a1a42472d7166c8b28ebe98dfe2b21091ff56f",
+      "bytes": 6323
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/form-design-panel-CgV_5YWC-AYLptuOQ-CDSVV8BN.js",
+      "sha256": "fd6530d5b56a226218e97b031348f368eaf2b69d2dddaa60e355ddbff46a54fa",
+      "bytes": 7555
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/fr-B-8NDhBA-GahDvOZ9-CI6K1oM6.js",
+      "sha256": "5d244eb37d8af3a3ff65b7b0aaae838163c6bc8b9d6f16bf49826c1b9118c5f0",
+      "bytes": 19174
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/fr-DhJFG-gG.js",
+      "sha256": "e855cb5f23bb518d0461be77884f5d85e7981c6a9610ec9aa50fe3271eb80ce0",
+      "bytes": 82985
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/great-vibes-BgfUmUuN.js",
+      "sha256": "f5b853b7c20b96ec3fb6038fb6739ac7204ade3e0fb35cc28b6248898f3efaef",
+      "bytes": 211657
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/he-Dlh0fNXM-rYSyANkV-heOFzXq7.js",
+      "sha256": "146b8385f8454fe070b9646cb076533a80a9c5369ee83c426474f986b9dc9908",
+      "bytes": 20468
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-bold-oblique.generated-BFcwzvD1-CR3bj5Xx.js",
+      "sha256": "567bb3199453c4247096f363fe12409bca86d0aaf7652bbd0cfdbe9bdd728f30",
+      "bytes": 27339
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-bold.generated-nLwzHpuy-B2vt-PdT.js",
+      "sha256": "e67fda728c436f500ad051a62bceede6c963f384d26d425624e8f749c2efe02e",
+      "bytes": 27159
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica-oblique.generated-BTKcYL9s-BiUUR3GW.js",
+      "sha256": "916853b2b643a619ed6f77d82463da9bc3d605b722651a5621c017ed3a08b0ee",
+      "bytes": 27179
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/helvetica.generated-DVz9iIk--DKPhaF7Q.js",
+      "sha256": "cbafc5d4ada82e252d05e3226b02ae6215d333f97fd42cbea70a15d2762ab26f",
+      "bytes": 25359
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/index-BB8L1jRi.js",
+      "sha256": "ce7705894fb30268029f0900f3656f9290fa04b8ba00f9202545c0d8b1083dac",
+      "bytes": 4664
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/index-BWnYLtEj.js",
+      "sha256": "25c84254ee8645c97dc5cfd40945ad4fe55a5e9a559907abc9fc9e53f95b16fa",
+      "bytes": 424327
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/inline-transport-CDAaiYkA.js",
+      "sha256": "b8c7d2ccee24fe184db9664a2f620510c969725aa1af2b51b8e5b7ee39189a56",
+      "bytes": 1102638
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/it-BkirG7ol-BTH6AhRV-0iXDg0r-.js",
+      "sha256": "b5ed85269a6e03db0a2f86cc7a843ab86929cb7f898329bbb6049b524e38cc47",
+      "bytes": 18394
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ja-CGEjCE-s-hkmFgQkV-BWdnUhTB.js",
+      "sha256": "7f0f0ee6489670d784aaf0e16dc8dbf7dd86cdc01dc9f2d63350d712b2dba0de",
+      "bytes": 20623
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ja-Tgh4PkKT.js",
+      "sha256": "802c0fd94a215647c22a0266f3b9b9d2aa3a19585e1dc99288f2a7d4f8a51bbf",
+      "bytes": 85917
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/ko-CTkl5vMh-BT7hdVuH-C9FaMGns.js",
+      "sha256": "f8ee829109865b62c69d11745c5d050e6952c8d6b0dfd41b25c8dff8c900b36a",
+      "bytes": 18896
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/labels-C6_i87Oj-Du3aqkp8-Dn9TI8pg.js",
+      "sha256": "b74f70aa8e495a430654b81c708b4bbc7645b8d0ccec72bf32c0c7641b8ac61d",
+      "bytes": 122
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/link-editor-CkwtqRvb-D-xKtRqI-DfoE4EcY.js",
+      "sha256": "29506ff9ebe351b131eafe9ea1154861cc3be0ec3cc4798a212cee491a13ee64",
+      "bytes": 2181
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/measurement-CQdbnIrn-fHwREP4c-IDIyV9FE.js",
+      "sha256": "4f5893c03fe06324cc9b089b3487d72c0487395c067e36b790b5429c9394f709",
+      "bytes": 6796
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/module-ES6BEMUI-DtDrHF3o.js",
+      "sha256": "1a6e49c7b5625f92c631a65e586bb8966add788c169a230476a4b8fc6c01f754",
+      "bytes": 34386
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/nl-Dya4sR8_-dgdKEz5q-JtwhwHkp.js",
+      "sha256": "432281ecd69e6e026f72697b1599aa717d444d2b8611c52251c3abd7f669b608",
+      "bytes": 18486
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/nl-Kj82LmzQ.js",
+      "sha256": "8eca5b5dfe8445f20a2986469be338b0b0f81f99972c3355019a166acba2d8a5",
+      "bytes": 98117
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/outline-panel-DO5_REYw-DfA0WHJ4-CERQAyPG.js",
+      "sha256": "d4769b6643a0ece4252ef24678de796275a62c3355d7cbb4c1e95c1a3ac6a56d",
+      "bytes": 11835
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/outline-properties-BCa2cc0t-RUEYsRk0-C1n-mj-p.js",
+      "sha256": "b8df727f6a1f5069066927b1aa63a0620809cec724abb7e6bb34156090a50216",
+      "bytes": 6010
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/pl-DA9b5NVg-CJKhnO2b-BgKK0djW.js",
+      "sha256": "0f97890c03e36a164cb10f055594655b2045d3bf266aba40c2f21631022d1884",
+      "bytes": 18480
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/print-dialog-DvcI2m2_-jAVoDBIa-BfKsJXUm.js",
+      "sha256": "3fa593a6f0310c1da2b6e78fb37e2cfa5c1c78e9af1162fc88f5a461890346de",
+      "bytes": 5198
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/pt-Nm8yyjbX-DKjzLP9p-C_82SNeg.js",
+      "sha256": "0821b138b6a001ed7aaf05a859a163a60930e63253e05369e3d7296ce039a56e",
+      "bytes": 18450
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redact-confirm-CKuv9iN_-C_Rezpye-aQOrO29T.js",
+      "sha256": "567b7f46b937e08a8007dccba923e3bbe9eb9e4cb5b032a4f969081460e3e93b",
+      "bytes": 1432
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redaction-N8vzS_oj-BRa5k85R.js",
+      "sha256": "f2aa5ae436817cd805a429c6658f8ab5ceb6af1ee38a0c1e3214adfb273edf94",
+      "bytes": 251
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/redaction-panel-CgNZ-pQk-CV1MAZjs-pbsC9D87.js",
+      "sha256": "90a0394ed4992e6edf9324774b1a36fa92da107e765c67d9969c0f23f0f36209",
+      "bytes": 2211
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/search-panel-BE4xzWlm-Cc3VyVfV-h4LlfhB6.js",
+      "sha256": "7f8e34fe02196b9bf10c40cfd1d9ca60419a59fc2ff35ffa702869fe4e733186",
+      "bytes": 4513
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/sign-dialog-DerNe8qT-z9DbI6om-D5Yh0O4Q.js",
+      "sha256": "042757e8b39708094e9ae6f7fcb2cb84f1b98c194651441ec95d67e49da367db",
+      "bytes": 2813
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signature-inspector-CsGr9EBk-y6tOrEoQ-CvMtw8Rv.js",
+      "sha256": "5c6f1cc31558b949da9685a11d803006fef369cf231d7da67b9a78e300b3bcb7",
+      "bytes": 3830
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signature-maker-Dnth4rV4-1VYf2nvQ-CAonYznW.js",
+      "sha256": "c16cf87da805aa14d3b7c113a91fa5514a8cc45abfb43a97c4e00e0b85335209",
+      "bytes": 7479
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/signatures-panel-DZ9ywrjz-bi8sYY-l-CQyY-izW.js",
+      "sha256": "c9ad1d8de607b99dd2b62297437b9a9c795882875ca9dd44643ebfeef0e9afc7",
+      "bytes": 6712
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/stamps-panel-BrczStaz-F-xGMIph-CuvuydOl.js",
+      "sha256": "80b39c1316ff3491d72b027fdde587fc234b7f0d5cf299df41d05fa66afc5987",
+      "bytes": 4780
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/sv-CymDPKZC.js",
+      "sha256": "dd1f4fcc4e361f03b5a869e6862d520acad68332e6346cd85c74c4a0cb63a321",
+      "bytes": 97037
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/symbol.generated-DXSVzciM-qsk7X8lj.js",
+      "sha256": "7cf3439df2d2fe2322b05e8e27f9a756ba73219f6fcafa861d5264cfe00906df",
+      "bytes": 27163
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-bold-italic.generated-COsXo6Vq-CCgGlg5H.js",
+      "sha256": "a1558c057fa1e34f342725f0a6c3f7fc950f2c8234de8df4fe9a5f659b60c997",
+      "bytes": 33111
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-bold.generated--b7SxoPe-BqRTyWc9.js",
+      "sha256": "9fb85b2e491f649d20d46760a844001bb5267b63a0ea9806d67597884759f41e",
+      "bytes": 31239
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-italic.generated-BhPCUnVM-Bj_nY_EW.js",
+      "sha256": "30858f364e64a79fc67c5b6e01b6c30f182cb4fcb9403e930b0d70922bdc2222",
+      "bytes": 33707
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/times-roman.generated-CNRk8gGV-BvsEF3P3.js",
+      "sha256": "ad3fdc1957f7d42f5afd9f2168bed9f2c8c5c060b753fdc740af8b4845a6a9f5",
+      "bytes": 31303
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/wasm-url-CC8qc-pY.js",
+      "sha256": "6b2cd0ea052288539b758c00bc34d2eaf10c2e239e287d904c64e99ad552ba7b",
+      "bytes": 93
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zapf-dingbats.generated-DSHah6NK-DQDyeBwP.js",
+      "sha256": "57572a3241877c690126577648837f7c7c142caea0dd490e61bb1cd0f3a0491e",
+      "bytes": 44287
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zh-CN-Sqw4hrDf.js",
+      "sha256": "a0ba48ec841c4a53150f5ad06e8d5ca2e05681befe7e6ee044ee2412c31d35ff",
+      "bytes": 142357
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/assets/zh-cn-BMPPkLpL-C6O2CHso-BxazQ-xC.js",
+      "sha256": "66e1c55f63bad54b6cebd4157873c0074b96dc07f829fa409943a47185cb0fae",
+      "bytes": 16093
+    },
+    {
+      "path": "/tmp/j6-restored-packed/vite-app/dist/e2e.html",
+      "sha256": "495aad9cd3b7dc7140fce32415db57c620ee1aa7193e9d3bbcd8cd3277ee9c66",
+      "bytes": 276
+    },
+    {
+      "path": "tooling/dotnet-parity/fixtures/.local/functions.json",
+      "sha256": "3144155d49fbd1b621063a6036dbe96aa6d77157faf177c929eb60caf6a0a533",
+      "bytes": 942168
+    }
+  ],
+  "commands": [
+    {
+      "command": "/usr/local/bin/node tooling/dotnet-parity/fixtures/check-binding-source.mjs /tmp/j6-restored-packed/vite-app/node_modules/@embedpdf/engine-runtime/dist/index.browser.js.map /repo/.claude/worktrees/dotnet-parity/packages/engine/runtime/src/core/pdf-functions.generated.ts",
+      "cwd": "/repo/.claude/worktrees/dotnet-parity",
+      "exitCode": 0,
+      "log": {
+        "path": "tooling/dotnet-parity/fixtures/records/latest/packed-binding-source.log",
+        "sha256": "49ed0aa050ff753e839b178d91d0251a1f8e8e0530b22d316edf8453fb3f595f",
+        "bytes": 323
+      },
+      "results": "passed"
+    },
+    {
+      "command": "/usr/local/bin/node tooling/dotnet-parity/fixtures/write-abi-input.mjs /repo/.claude/worktrees/dotnet-parity/tooling/dotnet-parity/fixtures/.local/functions.json",
+      "cwd": "/repo/.claude/worktrees/dotnet-parity",
+      "exitCode": 0,
+      "log": {
+        "path": "tooling/dotnet-parity/fixtures/records/latest/wasm-abi-input.log",
+        "sha256": "ed7d429ddf8829fbfb264d8d9b019db8757af2302ad0e8c7d1b16789ba01931e",
+        "bytes": 276
+      },
+      "results": "passed"
+    },
+    {
+      "command": "/usr/local/bin/node packages/engine/runtime/build/verify-wasm-abi.mjs /repo/.claude/worktrees/dotnet-parity/packages/engine/runtime/npm/wasm32/lib/embedpdf.wasm /repo/.claude/worktrees/dotnet-parity/tooling/dotnet-parity/fixtures/.local/functions.json",
+      "cwd": "/repo/.claude/worktrees/dotnet-parity",
+      "exitCode": 0,
+      "log": {
+        "path": "tooling/dotnet-parity/fixtures/records/latest/wasm-abi.log",
+        "sha256": "07ee63dd419c272bc5ec969b9792655520504fe377943bce02d8779ee986e6ac",
+        "bytes": 137
+      },
+      "results": "passed"
+    }
+  ],
+  "artifacts": [],
+  "limitations": []
+}
