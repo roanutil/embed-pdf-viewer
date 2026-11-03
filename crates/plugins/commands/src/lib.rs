@@ -67,7 +67,9 @@ pub(crate) fn plugin_parts(config: Option<CommandsConfig>) -> (AnyPlugin, Rc<Com
         .settings(SettingsDeclaration {
             defaults: settings::defaults_json(),
             registered,
-            whole: Vec::new(),
+            // Your app's state is replaced whole, never merged: a new value is
+            // the whole new state.
+            whole: vec!["appState".to_string()],
         })
         .create(&COMMANDS, {
             let table = table.clone();

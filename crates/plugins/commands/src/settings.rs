@@ -133,6 +133,9 @@ impl CommandTable {
         if let Some(mode) = config.not_allowed {
             out.insert("notAllowed".into(), not_allowed_json(mode));
         }
+        if let Some(app_state) = &config.app_state {
+            out.insert("appState".into(), app_state.clone());
+        }
         Value::Object(out)
     }
 
@@ -199,7 +202,18 @@ impl CommandTable {
                 NotAllowedMode::Hide
             }
         };
-        CommandsSettings { commands, disabled_categories, disabled_commands, not_allowed }
+        // Any value at all: the app's own state, read as it is.
+        let app_state = match unchanged("appState") {
+            Some(settings) => settings.app_state.clone(),
+            None => Rc::new(value.get("appState").cloned().unwrap_or_else(epdf_kernel::undefined)),
+        };
+        CommandsSettings {
+            commands,
+            disabled_categories,
+            disabled_commands,
+            not_allowed,
+            app_state,
+        }
     }
 }
 

@@ -62,11 +62,13 @@ fn truthy(value: &Option<String>) -> Option<&str> {
     value.as_deref().filter(|v| !v.is_empty())
 }
 
-/// `derive`: a derivation that throws falls back to the safe default.
-fn derive(f: Option<&Derivation>, c: &CommandCtx, fallback: bool) -> bool {
+/// `derive`: without a derivation the command is what `absent` says; one
+/// that throws (it needs a document and none is open, say) says no, so the
+/// button renders disabled, not pressed or hidden instead of breaking.
+fn derive(f: Option<&Derivation>, c: &CommandCtx, absent: bool) -> bool {
     match f {
-        None => fallback,
-        Some(f) => f(c).unwrap_or(fallback),
+        None => absent,
+        Some(f) => f(c).unwrap_or(false),
     }
 }
 
@@ -341,7 +343,8 @@ impl CommandsCapability {
             Some(id) => Some(id.to_string()),
             None => ctx.get(&DOCUMENTS)?.get_active_id(),
         };
-        Ok(CommandCtx { document_id: target, args, signal, ctx: ctx.clone() })
+        let app_state = self.current_settings().app_state.clone();
+        Ok(CommandCtx { document_id: target, app_state, args, signal, ctx: ctx.clone() })
     }
 
     /// `registeredChanged`.
@@ -802,11 +805,16 @@ impl CommandsCapability {
             let context =
                 this.command_context(document_id.as_deref(), args.clone(), signal.clone())?;
             let task = Self::run_command(entry.def.clone(), context.clone());
-            if let Err(error) = cancellable("commands", signal.clone(), task).await {
+            // A run may change what the commands read outside the viewer
+            // (your app's state): every button asks its command again, so the
+            // one just pressed shows what it did, whether it ran or failed.
+            let ran = cancellable("commands", signal.clone(), task).await;
+            if let Err(error) = ran {
                 // The caller cancelling isn't the command failing.
                 if signal.as_ref().is_some_and(AbortSignal::aborted)
                     && error.is_plugin_error(Some(code::OPERATION_CANCELLED))
                 {
+                    this.inner.cx.notify();
                     return Err(error);
                 }
                 let failure = to_plugin_error("commands", &error);
@@ -815,8 +823,10 @@ impl CommandsCapability {
                     document_id: context.document_id.clone(),
                     error: failure.plugin_error_info(),
                 });
+                this.inner.cx.notify();
                 return Err(failure);
             }
+            this.inner.cx.notify();
             this.inner.executed.emit(&CommandExecutedEvent {
                 command_id: id,
                 document_id: context.document_id.clone(),

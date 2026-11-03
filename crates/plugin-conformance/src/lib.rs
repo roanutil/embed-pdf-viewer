@@ -68,9 +68,11 @@ pub fn load(file: &str) -> Value {
 /// before comparing; a non-empty one still differs. The suites that record
 /// a document meta and were not regenerated in the 2026-11 catch-up (C4),
 /// because regenerating them brings in upstream changes their crates don't
-/// port yet, are `commands/functions`, `commands/plugin`,
-/// `interaction-functions`, `interaction`, `search-stage`, `signature`,
-/// `stamp-api` and `stamp-placement`. Remove this once they are.
+/// port yet, were eight. C5 regenerated `commands/functions`,
+/// `commands/plugin`, `interaction-functions` and `interaction`. Four are
+/// left: `search-stage` (the stage's `zoomDrag`, upstream `a1ee5683f`), and
+/// `signature`, `stamp-api` and `stamp-placement` (the form's `focused`,
+/// upstream `2998c9004`). Remove this once they are regenerated.
 fn without_unrecorded_page_view(want: &Value, got: &mut Value) {
     match (want, got) {
         (Value::Object(want), Value::Object(got)) => {

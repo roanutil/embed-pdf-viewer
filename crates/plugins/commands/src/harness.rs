@@ -219,6 +219,9 @@ fn print_settings(settings: &CommandsSettings) -> Value {
 fn ctx_json(c: &CommandCtx, live: bool) -> Value {
     let mut out = Map::new();
     out.insert("documentId".into(), json!(c.document_id()));
+    if !is_undefined(c.app_state()) {
+        out.insert("appState".into(), c.app_state().clone());
+    }
     if let Some(args) = c.args() {
         out.insert("args".into(), args.clone());
     }
@@ -260,6 +263,7 @@ fn run_use(spec: &Value, c: &CommandCtx, h: &Harness) -> Value {
         let returned = match member {
             "documentId" => json!(c.document_id()),
             "args" => c.args().cloned().unwrap_or_else(undefined),
+            "appState" => c.app_state().clone(),
             _ => undefined(),
         };
         return json!({ "returned": returned });
@@ -428,6 +432,7 @@ fn decode_config(raw: &Value, h: Option<&Harness>) -> Result<Option<CommandsConf
         disabled_categories: member("disabledCategories").map(|v| strings(Some(v))),
         disabled_commands: member("disabledCommands").map(|v| strings(Some(v))),
         not_allowed: member("notAllowed").map(not_allowed_of).transpose()?,
+        app_state: member("appState").cloned(),
     }))
 }
 
@@ -714,6 +719,9 @@ fn f_plugin(args: &[Value]) -> Result<Value, Error> {
             *commands = Value::Array(items.iter().map(print_item).collect());
         }
         settings.insert("registered".into(), Value::Object(shown));
+    }
+    if !declaration.whole.is_empty() {
+        settings.insert("whole".into(), json!(declaration.whole));
     }
     let state = (plugin.initial_state)();
     Ok(json!({

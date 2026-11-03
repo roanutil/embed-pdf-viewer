@@ -232,13 +232,14 @@ fn a_disabled_command_is_rejected_without_running() {
 }
 
 #[test]
-fn a_throwing_derivation_falls_back() {
+fn a_throwing_derivation_says_no() {
     let (_thread, commands) = handle();
     let runner = Runner::new(Run::Finish, Err(()));
     block_on(commands.register_command(definition("doc:save", Some(runner), run_hooks()), false))
         .unwrap();
     let resolved = block_on(commands.resolve_command("doc:save".into(), None)).unwrap().unwrap();
-    assert!(resolved.enabled);
+    // `enabled` throws and counts as false; `visible` is absent and true.
+    assert!(!resolved.enabled);
     assert!(resolved.visible);
     assert_eq!(resolved.icon_accent.and_then(|a| a.primary).as_deref(), Some("#f00"));
 }

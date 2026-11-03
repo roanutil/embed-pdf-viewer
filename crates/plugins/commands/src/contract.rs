@@ -25,6 +25,7 @@ pub type CommandId = String;
 #[derive(Clone)]
 pub struct CommandCtx {
     pub(crate) document_id: Option<String>,
+    pub(crate) app_state: Rc<Value>,
     pub(crate) args: Option<Value>,
     pub(crate) signal: Option<AbortSignal>,
     pub(crate) ctx: PluginContext,
@@ -35,6 +36,12 @@ impl CommandCtx {
     /// empty id is kept, as `documentId ?? activeId` keeps it.
     pub fn document_id(&self) -> Option<&str> {
         self.document_id.as_deref()
+    }
+
+    /// Your app's state, as the `appState` setting has it now: the
+    /// `undefined` marker until the app gives one.
+    pub fn app_state(&self) -> &Value {
+        &self.app_state
     }
 
     /// What the caller passed: `execute(id, {args})`. Absent when it passed
@@ -387,6 +394,11 @@ pub struct CommandsSettings {
     /// Commands turned off one by one, by id.
     pub disabled_commands: Rc<Vec<String>>,
     pub not_allowed: NotAllowedMode,
+    /// Your app's state, which every command's functions get as
+    /// `app_state`. A new value replaces the old one whole (`whole:
+    /// ['appState']`), and every command is asked again. The `undefined`
+    /// marker when the app gives none.
+    pub app_state: Rc<Value>,
 }
 
 /// `CommandsConfig` (`DeepPartial<CommandsSettings>`): what
@@ -398,6 +410,8 @@ pub struct CommandsConfig {
     pub disabled_categories: Option<Vec<String>>,
     pub disabled_commands: Option<Vec<String>>,
     pub not_allowed: Option<NotAllowedMode>,
+    /// The `appState` setting: replaces the one there whole.
+    pub app_state: Option<Value>,
 }
 
 /// `SettingsChangedEvent<CommandsSettings>`.
