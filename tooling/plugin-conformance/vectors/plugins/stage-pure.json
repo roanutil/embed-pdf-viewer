@@ -43,10 +43,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -85,10 +91,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -136,10 +148,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -178,10 +196,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -229,10 +253,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -271,10 +301,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -322,10 +358,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -364,10 +406,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -415,10 +463,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -459,10 +513,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -512,10 +572,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -554,10 +620,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -607,10 +679,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -651,10 +729,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -702,10 +786,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -744,10 +834,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         }
       ],
@@ -795,10 +891,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -837,10 +939,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       ],
@@ -890,10 +998,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "DEFAULT_RESPONSIVE": [
@@ -924,10 +1038,13 @@
             "anchorAlign": "none",
             "viewRotation": "scene",
             "zoom": "refit",
+            "minZoom": "refit",
+            "maxZoom": "refit",
             "scrollBehavior": "none",
             "interaction": "none",
             "panFallback": "none",
             "zoomGestures": "none",
+            "zoomBox": "none",
             "viewUnitsPerPoint": "scene"
           },
           "SETTING_KEYS": [
@@ -947,10 +1064,13 @@
             "anchorAlign",
             "viewRotation",
             "zoom",
+            "minZoom",
+            "maxZoom",
             "scrollBehavior",
             "interaction",
             "panFallback",
             "zoomGestures",
+            "zoomBox",
             "viewUnitsPerPoint"
           ],
           "RUBBER": 0.55,
@@ -1667,10 +1787,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -1719,10 +1845,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -1767,10 +1899,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {
@@ -1814,10 +1952,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -1862,10 +2006,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         {}
@@ -1907,10 +2057,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -2063,10 +2219,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [
@@ -2124,10 +2286,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": [
@@ -2176,10 +2344,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [
@@ -2237,10 +2411,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": []
@@ -2287,10 +2467,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [],
@@ -2338,10 +2524,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": []
@@ -2388,10 +2580,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [
@@ -2481,10 +2679,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": [
@@ -2535,10 +2739,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [
@@ -2622,10 +2832,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": [
@@ -2675,10 +2891,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         },
         [
@@ -2732,10 +2954,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1.3333333333333333
           },
           "active": [
@@ -2767,6 +2995,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -2802,10 +3032,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -2843,6 +3079,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "grid",
           "spread": "none",
@@ -2880,10 +3118,16 @@
           "zoom": {
             "level": 0.2
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -2914,6 +3158,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "paged",
           "layout": "vertical",
           "spread": "none",
@@ -2949,10 +3195,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1.3333333333333333
         }
       }
@@ -2977,6 +3229,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3012,10 +3266,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         {
@@ -3042,6 +3302,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3077,10 +3339,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3107,6 +3375,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3142,10 +3412,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         false
@@ -3168,6 +3444,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3203,10 +3481,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3233,6 +3517,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3268,10 +3554,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         true
@@ -3294,6 +3586,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3329,10 +3623,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": true
@@ -3359,6 +3659,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3394,10 +3696,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         }
       ],
@@ -3419,6 +3727,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3454,10 +3764,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3484,6 +3800,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3519,10 +3837,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         }
       ],
@@ -3544,6 +3868,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3579,10 +3905,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": true
@@ -3609,6 +3941,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3644,10 +3978,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         {
@@ -3673,6 +4013,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3708,10 +4050,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3738,6 +4086,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3773,10 +4123,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         2
@@ -3799,6 +4155,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3834,10 +4192,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3864,6 +4228,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -3899,10 +4265,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         4
@@ -3925,6 +4297,8 @@
             "cursor": 4,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -3960,10 +4334,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -3990,6 +4370,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -4025,10 +4407,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         "programmatic"
@@ -4051,6 +4439,8 @@
             "cursor": 0,
             "motionCause": "programmatic",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -4086,10 +4476,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -4116,6 +4512,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -4151,10 +4549,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         {
@@ -4182,6 +4586,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "horizontal",
             "spread": "none",
@@ -4217,10 +4623,16 @@
             "zoom": {
               "level": 2
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
@@ -4247,6 +4659,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -4282,10 +4696,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         {}
@@ -4308,6 +4728,8 @@
             "cursor": 0,
             "motionCause": "user",
             "activeRules": [],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -4343,10 +4765,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": true
@@ -4373,6 +4801,8 @@
           "cursor": 0,
           "motionCause": "user",
           "activeRules": [],
+          "zoomDrag": null,
+          "locks": {},
           "flow": "continuous",
           "layout": "vertical",
           "spread": "none",
@@ -4408,10 +4838,16 @@
           "zoom": {
             "mode": "automatic"
           },
+          "minZoom": 0.05,
+          "maxZoom": 64,
           "scrollBehavior": "smooth",
           "interaction": true,
           "panFallback": true,
           "zoomGestures": true,
+          "zoomBox": {
+            "fill": null,
+            "stroke": null
+          },
           "viewUnitsPerPoint": 1
         },
         [
@@ -4438,6 +4874,8 @@
             "activeRules": [
               "compact"
             ],
+            "zoomDrag": null,
+            "locks": {},
             "flow": "continuous",
             "layout": "vertical",
             "spread": "none",
@@ -4473,10 +4911,16 @@
             "zoom": {
               "mode": "automatic"
             },
+            "minZoom": 0.05,
+            "maxZoom": 64,
             "scrollBehavior": "smooth",
             "interaction": true,
             "panFallback": true,
             "zoomGestures": true,
+            "zoomBox": {
+              "fill": null,
+              "stroke": null
+            },
             "viewUnitsPerPoint": 1
           },
           "same": false
