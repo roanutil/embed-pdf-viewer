@@ -28,6 +28,20 @@
 // the commits between them change only scripts/ and docs/ and the gn args are
 // the same; the notes then say so.
 //
+// Such a stamp is written by hand, at
+// <PERF_WORK_DIR>/fork/<runtime-src commit>/wasm32-eh.json, beside the
+// archive's contents unpacked into `staging`:
+//
+//   { "recipe": <build-arm.mjs's FORK_RECIPE>, "sha": "<the archive's fork commit>",
+//     "seeded": false, "staging": "<the unpacked archive>",
+//     "libSha256": "<sha256 of staging/lib/libembedpdf.a>",
+//     "source": { "archive": "<its file name>", "archivePath": "<the .tar.gz>",
+//                 "archiveSha256": "<its sha256>", "emsdk": "<the emsdk it was built with>" } }
+//
+// The publish trusts none of it: it hashes libembedpdf.a and the archive
+// again, reads the fork commit from the archive's own BUILD-METADATA.json, and
+// refuses on any mismatch.
+//
 // The Apple half rewrites engineRelease and engineChecksum in Package.swift
 // after it publishes, and leaves that edit for you to commit: the release names
 // the commit it was built from, which can't also contain its checksum.
@@ -51,6 +65,8 @@ import { workDir } from '../perf-compare/scripts/materialize.mjs';
 import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
 import {
   abiCheckFunctions,
+  assertKnownUnbound,
+  assertStampMatches,
   committedSignatures,
   forkLines,
   payloadNotes,
@@ -159,6 +175,7 @@ function publishWasm() {
   console.log(`building payload ${hash} at ${head.slice(0, 9)}`);
   rmSync(libDir, { recursive: true, force: true });
   const fork = buildFork(repo);
+  assertStampMatches(fork, stampFacts(fork));
   const runtimeSrc = runtimeSrcCommit();
   // Before anything links: a library that doesn't match the pin stops here.
   const delta = fork.sha === runtimeSrc ? undefined : forkDelta(fork, runtimeSrc);
@@ -240,6 +257,10 @@ function runtimeSrcCommit() {
 function forkDelta(fork, runtimeSrc) {
   const src = path.join(runtime, 'runtime-src');
   const git = (args) => run('git', ['-C', src, ...args]);
+  // Counting fork..pin only means something when the fork commit is an ancestor.
+  const ancestor =
+    spawnSync('git', ['-C', src, 'merge-base', '--is-ancestor', fork.sha, runtimeSrc]).status === 0;
+  if (!ancestor) return { ancestor, commits: 0, paths: [], argsMatch: false };
   const commits = Number(git(['rev-list', '--count', `${fork.sha}..${runtimeSrc}`]));
   const paths = git(['diff', '--name-only', fork.sha, runtimeSrc]).split('\n').filter(Boolean);
   const lines = (text) =>
@@ -253,7 +274,19 @@ function forkDelta(fork, runtimeSrc) {
   ]);
   const built = readFileSync(path.join(fork.staging, 'args.gn'), 'utf8');
   const argsMatch = lines(pinned).join('\n') === lines(built).join('\n');
-  return { commits, paths, argsMatch };
+  return { ancestor, commits, paths, argsMatch };
+}
+
+// What the fork stamp's files really are, for assertStampMatches: the library's
+// hash, and for a library from a release archive, the archive's hash and the fork
+// commit its own BUILD-METADATA.json names.
+function stampFacts(fork) {
+  const facts = { libSha256: sha256(path.join(fork.staging, 'lib/libembedpdf.a')) };
+  const archive = fork.source?.archivePath;
+  if (!fork.source || !archive) return facts;
+  if (!existsSync(archive)) return { ...facts, archiveSha256: null, archiveSha: null };
+  const metadata = JSON.parse(run('tar', ['-xzOf', archive, './BUILD-METADATA.json']));
+  return { ...facts, archiveSha256: sha256(archive), archiveSha: metadata.sha };
 }
 
 // The viewer half of `build:target wasm32`, as build-arm.mjs's linkRustCore runs it, with
@@ -292,6 +325,8 @@ function linkAgainstCommittedBindings(fork) {
   const functionsJson = path.join(runtime, 'build/generated/functions.json');
   const declared = JSON.parse(readFileSync(functionsJson, 'utf8')).functions.map((fn) => fn.name);
   const { functions, unbound } = abiCheckFunctions(committedSignatures(committed), declared);
+  // Only a known gap may be missing; anything else stops before the link.
+  assertKnownUnbound(unbound);
   writeFileSync(functionsJson, JSON.stringify({ target: FORK_TARGET, functions }, null, 2) + '\n');
   if (unbound.length > 0) {
     console.warn(
