@@ -28,7 +28,8 @@
 // the archive's commit is an ancestor of runtime-src and the commits between
 // them change only docs/, the fork's tests (scripts/embedpdf-runtime/tests/),
 // the BUILD_NEUTRAL_SCRIPTS, and the PINNED_SCRIPT_BLOBS, each only as its
-// recorded blob (scripts/lib/payload-notes.mjs). The emsdk-version.sh pin for
+// recorded pair of blobs at the archive's commit and at the pin
+// (scripts/lib/payload-notes.mjs). The emsdk-version.sh pin for
 // the target and the target-args.sh gn args, both read at runtime-src, must
 // match the archive's emsdk and args.gn. The notes then say so.
 //
@@ -43,10 +44,12 @@
 //                 "archiveSha256": "<its sha256>", "emsdk": "<the emsdk it was built with>" } }
 //
 // The publish checks it against its files: it hashes libembedpdf.a and the
-// archive again, reads the fork commit, and the emsdk when the archive records
-// one (emsdkVersion), from the archive's own BUILD-METADATA.json, and refuses on
-// any mismatch. An archive without emsdkVersion (the 6dfc03697 one) leaves
-// source.emsdk the one stamp field taken on trust.
+// archive again, requires the staging libembedpdf.a and args.gn to be the
+// archive's own (read with tar -xzOf), reads the fork commit, and the emsdk
+// when the archive records one (emsdkVersion), from the archive's own
+// BUILD-METADATA.json, and refuses on any mismatch. An archive without
+// emsdkVersion (the 6dfc03697 one) leaves source.emsdk the one stamp field
+// taken on trust.
 //
 // The Apple half rewrites engineRelease and engineChecksum in Package.swift
 // after it publishes, and leaves that edit for you to commit: the release names
@@ -68,6 +71,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -189,68 +193,89 @@ function publishWasm() {
 
   console.log(`building payload ${hash} at ${head.slice(0, 9)}`);
   // Every check that can refuse runs before the tree changes: the stamp, the
-  // archive, the delta to the pin. The payload in npm/wasm32/lib is replaced
-  // only once a new one has linked and passed the postlink check.
+  // archive, the delta to the pin, the known unbound bindings. The new payload
+  // links into a directory of its own and replaces npm/wasm32/lib only once it
+  // has passed the postlink check. The old one is moved aside first, and put
+  // back if anything after the swap throws (the package build, verify-rust-core,
+  // the pack, the release), so a failed run leaves the payload it found.
   const fork = buildFork(repo);
   assertStampMatches(fork, stampFacts(fork));
   const runtimeSrc = runtimeSrcCommit();
   // Before anything links: a library that doesn't match the pin stops here.
   const delta = fork.sha === runtimeSrc ? undefined : forkDelta(fork, runtimeSrc);
   forkLines({ fork, runtimeSrc, target: FORK_TARGET, delta });
-  const unbound = linkAgainstCommittedBindings(fork);
-
-  // verify-rust-core.mjs imports @embedpdf/engine-runtime, which resolves to dist/.
-  sh('pnpm --filter @embedpdf/engine-runtime build');
-  sh('node packages/engine/runtime/scripts/verify-rust-core.mjs');
-
-  const out = mkdtempSync(path.join(tmpdir(), 'engine-payload-'));
-  const archive = path.join(out, ASSET);
-  sh(
-    `tar -czf ${JSON.stringify(archive)} --exclude .payload-source -C ${JSON.stringify(libDir)} .`,
-  );
-  const digest = sha256(archive);
-  writeFileSync(`${archive}.sha256`, `${digest}  ${ASSET}\n`);
-
-  const notes = payloadNotes({
-    hash,
-    head,
-    fork,
-    runtimeSrc,
-    target: FORK_TARGET,
-    delta,
-    rustc,
-    asset: ASSET,
-    digest,
-    unbound,
-  });
-  if (dryRun) console.log(`\n--dry-run: the release notes would read:\n${notes}\n`);
-
-  const args = [
-    'release',
-    'create',
-    tag,
-    archive,
-    `${archive}.sha256`,
-    '--repo',
-    RELEASE_REPO,
-    // The fork commit the payload's PDFium came from, which the fork has.
-    '--target',
-    fork.sha,
-    '--title',
-    tag,
-    '--notes',
-    notes,
-    '--prerelease',
-  ];
-  if (dryRun) {
-    console.log(`\n--dry-run: would run gh ${args.map((a) => JSON.stringify(a)).join(' ')}`);
-    console.log(`payload left at ${out}`);
-  } else {
-    execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
-    rmSync(out, { recursive: true, force: true });
+  const { unbound, staged } = linkAgainstCommittedBindings(fork);
+  const backup = path.join(path.dirname(libDir), `.lib-backup-${process.pid}`);
+  try {
+    rmSync(backup, { recursive: true, force: true });
+    if (existsSync(libDir)) renameSync(libDir, backup);
+    try {
+      cpSync(staged, libDir, { recursive: true });
+      publishLinked();
+    } catch (error) {
+      rmSync(libDir, { recursive: true, force: true });
+      if (existsSync(backup)) renameSync(backup, libDir);
+      throw error;
+    }
+    rmSync(backup, { recursive: true, force: true });
+  } finally {
+    rmSync(staged, { recursive: true, force: true });
   }
-  // The local payload now matches the release, so fetch-payload.sh keeps it.
-  writeFileSync(path.join(libDir, '.payload-source'), hash);
+
+  function publishLinked() {
+    // verify-rust-core.mjs imports @embedpdf/engine-runtime, which resolves to dist/.
+    sh('pnpm --filter @embedpdf/engine-runtime build');
+    sh('node packages/engine/runtime/scripts/verify-rust-core.mjs');
+
+    const out = mkdtempSync(path.join(tmpdir(), 'engine-payload-'));
+    const archive = path.join(out, ASSET);
+    sh(
+      `tar -czf ${JSON.stringify(archive)} --exclude .payload-source -C ${JSON.stringify(libDir)} .`,
+    );
+    const digest = sha256(archive);
+    writeFileSync(`${archive}.sha256`, `${digest}  ${ASSET}\n`);
+
+    const notes = payloadNotes({
+      hash,
+      head,
+      fork,
+      runtimeSrc,
+      target: FORK_TARGET,
+      delta,
+      rustc,
+      asset: ASSET,
+      digest,
+      unbound,
+    });
+    if (dryRun) console.log(`\n--dry-run: the release notes would read:\n${notes}\n`);
+
+    const args = [
+      'release',
+      'create',
+      tag,
+      archive,
+      `${archive}.sha256`,
+      '--repo',
+      RELEASE_REPO,
+      // The fork commit the payload's PDFium came from, which the fork has.
+      '--target',
+      fork.sha,
+      '--title',
+      tag,
+      '--notes',
+      notes,
+      '--prerelease',
+    ];
+    if (dryRun) {
+      console.log(`\n--dry-run: would run gh ${args.map((a) => JSON.stringify(a)).join(' ')}`);
+      console.log(`payload left at ${out}`);
+    } else {
+      execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
+      rmSync(out, { recursive: true, force: true });
+    }
+    // The local payload now matches the release, so fetch-payload.sh keeps it.
+    writeFileSync(path.join(libDir, '.payload-source'), hash);
+  }
   console.log(`${dryRun ? 'built' : 'published'} ${tag}`);
 }
 
@@ -300,10 +325,16 @@ function forkDelta(fork, runtimeSrc) {
   // Nothing for a pin from before emsdk-version.sh, which then can't match.
   const pinScript = 'scripts/embedpdf-runtime/emsdk-version.sh';
   const emsdkPin = atPin(pinScript) ? runAtPin(pinScript, FORK_TARGET) : null;
+  // Each pinned script's blob at both ends: the archive's commit and the pin.
+  const blobAt = (commit, file) =>
+    spawnSync('git', ['-C', src, 'rev-parse', '--verify', '-q', `${commit}:${file}`], {
+      encoding: 'utf8',
+    }).stdout.trim() || null;
   const blobs = Object.fromEntries(
-    Object.keys(PINNED_SCRIPT_BLOBS)
-      .filter(atPin)
-      .map((file) => [file, git(['rev-parse', `${runtimeSrc}:${file}`])]),
+    Object.keys(PINNED_SCRIPT_BLOBS).map((file) => [
+      file,
+      { from: blobAt(fork.sha, file), to: blobAt(runtimeSrc, file) },
+    ]),
   );
   return { ancestor, commits, paths, emsdkPin, argsMatch, blobs };
 }
@@ -318,12 +349,18 @@ function stampFacts(fork) {
   if (!existsSync(archive)) {
     return { ...facts, archiveSha256: null, archiveSha: null, archiveEmsdk: null };
   }
-  const metadata = JSON.parse(run('tar', ['-xzOf', archive, './BUILD-METADATA.json']));
+  const member = (name, encoding) =>
+    execFileSync('tar', ['-xzOf', archive, name], { maxBuffer: 1 << 30, encoding });
+  const metadata = JSON.parse(member('./BUILD-METADATA.json', 'utf8'));
   return {
     ...facts,
     archiveSha256: sha256(archive),
     archiveSha: metadata.sha,
     archiveEmsdk: metadata.emsdkVersion ?? null,
+    // The staging files must be the archive's own, not just named by it.
+    archiveLibSha256: createHash('sha256').update(member('./lib/libembedpdf.a')).digest('hex'),
+    archiveArgs: member('./args.gn', 'utf8'),
+    stagingArgs: readFileSync(path.join(fork.staging, 'args.gn'), 'utf8'),
   };
 }
 
@@ -372,8 +409,7 @@ function linkAgainstCommittedBindings(fork) {
     );
   }
 
-  // Linked and checked in a directory of its own, then swapped in whole, so a
-  // failed link or check leaves the payload that was there.
+  // Linked and checked in a directory of its own; publishWasm swaps it in.
   const staged = mkdtempSync(path.join(tmpdir(), 'engine-payload-lib-'));
   try {
     sh(
@@ -385,13 +421,11 @@ function linkAgainstCommittedBindings(fork) {
         PDF_RUNTIME_WASM_OUT_DIR: staged,
       },
     );
-    rmSync(libDir, { recursive: true, force: true });
-    mkdirSync(path.dirname(libDir), { recursive: true });
-    cpSync(staged, libDir, { recursive: true });
-  } finally {
+  } catch (error) {
     rmSync(staged, { recursive: true, force: true });
+    throw error;
   }
-  return unbound;
+  return { unbound, staged };
 }
 
 function publishApple() {

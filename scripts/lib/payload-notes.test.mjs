@@ -25,7 +25,12 @@ const BUILD_TARGET = 'scripts/embedpdf-runtime/build-target.sh';
 const delta = {
   ancestor: true,
   emsdkPin: '4.0.0',
-  blobs: { [BUILD_TARGET]: '88272b4ee0b326199d4a5668fc16475072ca14db' },
+  blobs: {
+    [BUILD_TARGET]: {
+      from: 'e5380cab4705750ba3a42773ebc135831db5bea2',
+      to: '88272b4ee0b326199d4a5668fc16475072ca14db',
+    },
+  },
   commits: 4,
   paths: ['scripts/embedpdf-runtime/target-args.sh', 'docs/embedpdf/fork-ledger.md'],
   argsMatch: true,
@@ -196,7 +201,14 @@ test('only the known gaps may be bound but not exported', () => {
 
 test('a stamp whose files do not match it is refused', () => {
   const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
-  const good = { libSha256: 'lib', archiveSha256: 'tar', archiveSha: ARCHIVED };
+  const good = {
+    libSha256: 'lib',
+    archiveSha256: 'tar',
+    archiveSha: ARCHIVED,
+    archiveLibSha256: 'lib',
+    archiveArgs: 'a=1\n',
+    stagingArgs: 'a=1\n',
+  };
   assert.doesNotThrow(() => assertStampMatches(stamp, good));
   assert.throws(() => assertStampMatches(stamp, { ...good, libSha256: 'x' }), /libembedpdf.a/);
   assert.throws(() => assertStampMatches(stamp, { ...good, archiveSha256: 'x' }), /archive hashes/);
@@ -222,7 +234,7 @@ test('the pin must build with the emsdk the archive was built with', () => {
   );
 });
 
-test('build-target.sh passes only as the blob it was read at', () => {
+test('build-target.sh passes only as the pair of blobs it was read at', () => {
   const at = (blobs) => () =>
     forkLines({
       fork: archived,
@@ -231,14 +243,52 @@ test('build-target.sh passes only as the blob it was read at', () => {
       delta: { ...delta, paths: [BUILD_TARGET], blobs },
     });
   assert.doesNotThrow(at(delta.blobs));
-  assert.throws(at({ [BUILD_TARGET]: 'f'.repeat(40) }), /build-target.sh/);
+  assert.throws(
+    at({
+      [BUILD_TARGET]: { from: 'e5380cab4705750ba3a42773ebc135831db5bea2', to: 'f'.repeat(40) },
+    }),
+    /build-target.sh/,
+  );
+  // The archive's side must be the recorded one too.
+  assert.throws(
+    at({
+      [BUILD_TARGET]: { from: 'f'.repeat(40), to: '88272b4ee0b326199d4a5668fc16475072ca14db' },
+    }),
+    /build-target.sh/,
+  );
   assert.throws(at({}), /build-target.sh/);
 });
 
 test('an archive that records its emsdk must record the stamp one', () => {
   const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
-  const facts = { libSha256: 'lib', archiveSha256: 'tar', archiveSha: ARCHIVED };
+  const facts = {
+    libSha256: 'lib',
+    archiveSha256: 'tar',
+    archiveSha: ARCHIVED,
+    archiveLibSha256: 'lib',
+    archiveArgs: 'a=1\n',
+    stagingArgs: 'a=1\n',
+  };
   assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: null }));
   assert.doesNotThrow(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '4.0.0' }));
   assert.throws(() => assertStampMatches(stamp, { ...facts, archiveEmsdk: '3.1.72' }), /emsdk/);
+});
+
+test('the staging library and args.gn must be the archive ones', () => {
+  const stamp = { ...archived, source: { ...archived.source, archivePath: '/a.tar.gz' } };
+  const facts = {
+    libSha256: 'lib',
+    archiveSha256: 'tar',
+    archiveSha: ARCHIVED,
+    archiveEmsdk: null,
+    archiveLibSha256: 'lib',
+    archiveArgs: 'a=1\n',
+    stagingArgs: 'a=1\n',
+  };
+  assert.doesNotThrow(() => assertStampMatches(stamp, facts));
+  assert.throws(
+    () => assertStampMatches(stamp, { ...facts, archiveLibSha256: 'other' }),
+    /archive's libembedpdf.a/,
+  );
+  assert.throws(() => assertStampMatches(stamp, { ...facts, stagingArgs: 'a=2\n' }), /args.gn/);
 });

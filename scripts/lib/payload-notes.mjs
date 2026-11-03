@@ -79,28 +79,35 @@ export const BUILD_NEUTRAL_SCRIPTS = Object.freeze([
 ]);
 
 /**
- * Build scripts that may change only as one known blob each: `build-target.sh`
- * is the build driver, so a path alone can't vouch for it. The blob is the one
- * at `8b1e69abd`, whose change from `6dfc03697` checks the active emsdk against
- * `emsdk-version.sh` and records it, and compiles nothing.
+ * Build scripts that may change only as one known change each, a pair of
+ * blobs: `from` at the archive's commit, `to` at the pin. `build-target.sh` is
+ * the build driver, so a path alone can't vouch for it. The pair is its
+ * change from `6dfc03697` to `8b1e69abd`, which checks the active emsdk
+ * against `emsdk-version.sh` and records it, and compiles nothing.
  *
  * The cost of keeping it: every fork merge that touches one of these files
- * needs its new blob (`git rev-parse <commit>:<path>`) read and recorded here,
- * or the publish refuses.
+ * needs its new pair (`git rev-parse <commit>:<path>` at both ends) read and
+ * recorded here, or the publish refuses.
  */
 export const PINNED_SCRIPT_BLOBS = Object.freeze({
-  'scripts/embedpdf-runtime/build-target.sh': '88272b4ee0b326199d4a5668fc16475072ca14db',
+  'scripts/embedpdf-runtime/build-target.sh': Object.freeze({
+    from: 'e5380cab4705750ba3a42773ebc135831db5bea2',
+    to: '88272b4ee0b326199d4a5668fc16475072ca14db',
+  }),
 });
 
 /**
  * Whether a path changed between two fork commits leaves the built library
- * alone. `blobs` is each pinned script's blob at the pin.
+ * alone. `blobs` is each pinned script's `{ from, to }` blobs, read at the
+ * archive's commit and at the pin.
  */
 const outsideTheBuild = (file, blobs = {}) =>
   file.startsWith('docs/') ||
   file.startsWith('scripts/embedpdf-runtime/tests/') ||
   BUILD_NEUTRAL_SCRIPTS.includes(file) ||
-  (file in PINNED_SCRIPT_BLOBS && blobs[file] === PINNED_SCRIPT_BLOBS[file]);
+  (file in PINNED_SCRIPT_BLOBS &&
+    blobs[file]?.from === PINNED_SCRIPT_BLOBS[file].from &&
+    blobs[file]?.to === PINNED_SCRIPT_BLOBS[file].to);
 
 /**
  * Refuses a fork stamp whose files don't match it. `facts` is what the
@@ -109,7 +116,9 @@ const outsideTheBuild = (file, blobs = {}) =>
  * `source.archivePath` (`null` when there is no such file) and `archiveSha`
  * and `archiveEmsdk`, the `sha` and `emsdkVersion` in the archive's own
  * `BUILD-METADATA.json` (`archiveEmsdk` is `null` for an archive that predates
- * the field, and the stamp's `source.emsdk` is then taken on trust).
+ * the field, and the stamp's `source.emsdk` is then taken on trust), and
+ * `archiveLibSha256` and `archiveArgs`, its `lib/libembedpdf.a` hash and
+ * `args.gn`, which must be the staging ones (`libSha256`, `stagingArgs`).
  */
 export function assertStampMatches(fork, facts) {
   const problems = [];
@@ -130,6 +139,14 @@ export function assertStampMatches(fork, facts) {
         problems.push(
           `the archive was built with emsdk ${facts.archiveEmsdk}, the stamp says ${fork.source.emsdk}`,
         );
+      }
+      if (facts.archiveLibSha256 !== facts.libSha256) {
+        problems.push(
+          `the archive's libembedpdf.a hashes to ${facts.archiveLibSha256}, the staging one to ${facts.libSha256}`,
+        );
+      }
+      if (facts.archiveArgs !== facts.stagingArgs) {
+        problems.push("the staging args.gn isn't the archive's");
       }
       if (facts.archiveSha !== fork.sha) {
         problems.push(
