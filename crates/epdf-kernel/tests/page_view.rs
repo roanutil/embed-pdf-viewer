@@ -320,6 +320,11 @@ fn shows_a_page_change_at_once_and_an_answer_that_matches_it_changes_nothing() {
     assert_eq!(h.ctx.page_of(PageRef::new(3)).unwrap()["index"], json!(0));
     let missing = h.ctx.page_of(3).unwrap_err();
     assert_eq!(missing.message, "there is no page 3 in this document");
+    // `getPage(PageRef | number)`: a read answers no page instead of refusing.
+    assert_eq!(h.ctx.get_page(0).unwrap()["ref"], r(3));
+    assert_eq!(h.ctx.get_page(PageRef::new(3)).unwrap()["index"], json!(0));
+    assert!(h.ctx.get_page(3).is_none());
+    assert!(h.ctx.get_page(0.5).is_none());
 
     let shown = h.pages();
     let pages = shown.as_array().unwrap().clone();

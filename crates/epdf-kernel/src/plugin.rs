@@ -1029,9 +1029,11 @@ impl ControllerContext {
         }
     }
 
-    /// `ctx.getPage(ref)`: the registry entry, or `None`.
-    pub fn get_page(&self, page: PageRef) -> Option<Value> {
-        self.page_by_ref(page)
+    /// `ctx.getPage(page)`: the page a `PageRef` or a zero-based index
+    /// names, or `None` when it names no page of this document. What reads
+    /// use: a page deleted mid-render reads as no page.
+    pub fn get_page(&self, page: impl Into<PageArg>) -> Option<Value> {
+        self.find_page(page.into())
     }
 
     /// `ctx.cleanup(fn)` on the instance scope.
