@@ -169,6 +169,27 @@ export function assertStampMatches(fork, facts, target) {
 }
 
 /**
+ * The upstream runtime commit that adds `EPDFAnnot_GetStructurePosition`, the
+ * last committed binding a fork runtime lacked. A runtime that contains it
+ * declares every committed binding in its headers.
+ */
+export const ALL_BOUND_SINCE = '28b8b808f52d544b17a973199410cda0cc43530f';
+
+/**
+ * Refuses a runtime that contains {@link ALL_BOUND_SINCE} and still leaves a
+ * committed binding `unbound`, not declared by its headers: from there on, a
+ * binding the runtime lacks is a regression, not a known gap for the notes to
+ * name.
+ */
+export function assertAllBound(unbound, { containsAllBoundSince }) {
+  if (containsAllBoundSince && unbound.length > 0) {
+    throw new Error(
+      `a runtime that contains ${ALL_BOUND_SINCE.slice(0, 9)} must declare every committed binding in its headers; they don't declare ${unbound.join(', ')}`,
+    );
+  }
+}
+
+/**
  * The notes' lines on where the payload's PDFium came from.
  *
  * `fork` is the build-arm.mjs stamp: `sha` the fork commit the library was
@@ -245,7 +266,7 @@ export function payloadNotes({
     `- ${asset} sha256: \`${digest}\``,
     ...(unbound.length > 0
       ? [
-          `- Bound in the TypeScript but not exported by this runtime: ${unbound.map((name) => `\`${name}\``).join(', ')}`,
+          `- Bound in the TypeScript but not declared by the runtime's headers: ${unbound.map((name) => `\`${name}\``).join(', ')}`,
         ]
       : []),
   ].join('\n');

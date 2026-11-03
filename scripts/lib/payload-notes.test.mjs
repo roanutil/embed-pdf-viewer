@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ALL_BOUND_SINCE,
   KNOWN_UNBOUND,
   abiCheckFunctions,
+  assertAllBound,
   assertKnownUnbound,
   assertStampMatches,
   releaseVerdict,
@@ -78,6 +80,18 @@ test('abiCheckFunctions checks what the runtime declares and names the rest', ()
   assert.deepEqual(unbound, ['B']);
 });
 
+test('a runtime from the structure-position merge on must declare every committed binding in its headers', () => {
+  assert.equal(ALL_BOUND_SINCE, '28b8b808f52d544b17a973199410cda0cc43530f');
+  const unbound = ['EPDFAnnot_GetStructurePosition'];
+  assert.throws(
+    () => assertAllBound(unbound, { containsAllBoundSince: true }),
+    /must declare every committed binding.*EPDFAnnot_GetStructurePosition/,
+  );
+  assert.doesNotThrow(() => assertAllBound([], { containsAllBoundSince: true }));
+  // An older runtime may still lack one; the notes name it.
+  assert.doesNotThrow(() => assertAllBound(unbound, { containsAllBoundSince: false }));
+});
+
 test('a library built at the pinned commit names it', () => {
   const lines = forkLines({
     fork: { sha: PINNED, libSha256: 'lib' },
@@ -141,7 +155,7 @@ test('payloadNotes keeps the release fields and names unbound functions', () => 
   assert.equal(lines.at(-2), '- engine-runtime-payload-wasm32.tar.gz sha256: `digest`');
   assert.equal(
     lines.at(-1),
-    '- Bound in the TypeScript but not exported by this runtime: `EPDFAnnot_GetStructurePosition`',
+    "- Bound in the TypeScript but not declared by the runtime's headers: `EPDFAnnot_GetStructurePosition`",
   );
   const none = payloadNotes({
     hash: 'h',
@@ -154,7 +168,7 @@ test('payloadNotes keeps the release fields and names unbound functions', () => 
     digest: 'd',
     unbound: [],
   });
-  assert.ok(!none.includes('not exported'));
+  assert.ok(!none.includes('not declared'));
 });
 
 test('a fork commit that is not an ancestor of the pin is refused', () => {

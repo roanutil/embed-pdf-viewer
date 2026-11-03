@@ -80,9 +80,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFork } from '../perf-compare/scripts/build-arm.mjs';
 import { workDir } from '../perf-compare/scripts/materialize.mjs';
+import { forkContains } from './lib/fork-ancestry.mjs';
 import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
 import {
+  ALL_BOUND_SINCE,
   abiCheckFunctions,
+  assertAllBound,
   assertKnownUnbound,
   assertStampMatches,
   committedSignatures,
@@ -538,6 +541,9 @@ function linkAgainstCommittedBindings(fork) {
   const { functions, unbound } = abiCheckFunctions(committedSignatures(committed), declared);
   // Only a known gap may be missing; anything else stops before the link.
   assertKnownUnbound(unbound);
+  assertAllBound(unbound, {
+    containsAllBoundSince: forkContains(path.join(runtime, 'runtime-src'), fork.sha, ALL_BOUND_SINCE),
+  });
   writeFileSync(functionsJson, JSON.stringify({ target: FORK_TARGET, functions }, null, 2) + '\n');
   if (unbound.length > 0) {
     console.warn(

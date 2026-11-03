@@ -67,6 +67,12 @@ const CASES: readonly ReadCase[] = [
       'A document with no /Annots at all. The empty listing is a different answer from a failed one and nothing else here would catch a reader that confused them.',
   },
   {
+    name: 'structure',
+    fixture: 'tooling/engine-conformance/fixtures/structure_tree.pdf',
+    covers:
+      "structurePosition on a tagged page: two annotations whose places in the tags run against their /Annots order, one behind marked content in its element, beside one with no /StructParent, one whose /StructParent the parent tree does not list, and a tagged text field's widget.",
+  },
+  {
     name: 'report',
     fixture: 'pdfium-multiplatform-prototype/fixtures/report.pdf',
     covers: 'A real multi-page document, whose annotations are whatever its producer wrote.',

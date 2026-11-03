@@ -64,6 +64,7 @@ const BASE_FIELDS: &[(&str, FieldOwner)] = &[
     ("page", E),
     ("hasAppearance", E),
     ("appearanceState", E),
+    ("structurePosition", E),
     ("nm", D),
     ("contents", D),
     ("subject", D),

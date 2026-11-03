@@ -738,3 +738,198 @@ startup refuses it and says how to restore them. Each of these has a scripted ch
 | `EPDF_NATIVE_DIR=target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj` | 0 | 32 passed |
 | The 34 `tooling/engine-conformance` `:check` scripts | | 22 pass, 12 fail on `EPDFAnnot_GetStructurePosition` |
 | `xcodebuild test` (`EMBEDPDF_PREBUILT_ENGINE=local`) | 0 | 327 passed |
+
+## C5a: the fork takes upstream `28b8b808f`
+
+C5a closes the `EPDFAnnot_GetStructurePosition` gap. It ran on `research/catchup-2026-11-c5a`,
+branched from C5's `509d2df20`, in the `embedpdf-c5a` container. The PDFium builds ran in a
+throwaway `linux/amd64` container, `embedpdf-c5a-build`, the way the `6dfc03697` release was built.
+Nothing was pushed or published.
+
+### The fork merge
+
+Fork branch `c5a/merge-28b8b808f` (local, in the fork clone) is `3c55b7a1c`, a merge of upstream
+runtime `28b8b808f` into `8b1e69abd`. It brings upstream's `13e012bc7`, which adds
+`EPDFAnnot_GetStructurePosition`, and `e90678020`, which runs the in-memory embedder tests as layers
+in layer mode. There were no conflicts. `docs/embedpdf/fork-ledger.md` merged cleanly: upstream's two
+edits touch lines the fork's own entries don't. `DEPS` is unchanged, so the dependency sync is the
+one `8b1e69abd` uses.
+
+`6529e8824` pins `runtime-src` to `3c55b7a1c`. The committed bindings needed no edit. Upstream
+already binds the function (`ef8ae52d7`), as `(Ptr, Ptr, number) => number` with `i32` throughout.
+Its `buflen` and result are `unsigned long`. The `wasm` slot's `i32` matches the target, where
+`unsigned long` is 32 bits. The `native` slot's `i32` is the header generator's convention, not a
+property of any target: `classifyType` in `packages/engine/runtime/build/generate-functions.mjs:128-134` reads every
+`long` that isn't `long long` as `i32`, and on a 64-bit native target `unsigned long` is 64 bits.
+
+### The libraries
+
+Both were built from `3c55b7a1c` with the fork's own scripts (`build-target.sh` and
+`package-target.sh`), `wasm32-eh` with emsdk 4.0.0 and `linux-arm64` cross-compiled on the
+`linux-x64` host. The dependency sync failed only on `third_party/clang-format/script` at
+`9f796802e` ("HTTP 500"), as it did for C5's iOS build, and C5a copied that one checkout from the
+cached `8b1e69abd` fork in the same way.
+
+| Target | `libembedpdf` sha256 | Archive sha256 |
+|---|---|---|
+| `wasm32-eh` (`libembedpdf.a`) | `04267d52e4b1a1ea94515bdad7c948113988bfad4f681cea0ccc7dfc25e6391c` | `88c22ff186bf2b77a7eb2afe01891ca51ecdc2af8b73f89a8fb47d40c5cc2151` |
+| `linux-arm64` (`libembedpdf.so`) | `7745fb6c13123984ca9824a7198b5a8ddfa7b1c5fb4245f98ec983832c6792d8` | `bbfe8d3cc367eac481c02f111a85fbfb5af06208c122ad4d83fff488df954180` |
+
+The Rust tests need the `linux-arm64` library too: `crates/pdfium-sys` binds the headers it ships,
+and the Rust now calls the new function. Its `args.gn` is the `6dfc03697` library's, and its
+exports are the same plus `EPDFAnnot_GetStructurePosition`.
+
+The payload went through `publish-engine-payload.mjs --dry-run --only wasm`, with `PERF_WORK_DIR`
+set to a private directory in the container's volume and a `wasm32-eh.json` stamp naming the library
+above. It exits 0. The postlink check holds the engine to the committed bindings: "all 1054 bound
+functions match their bindings". The list of functions bound in the TypeScript but not declared by
+the runtime's headers is empty, so the release notes would carry no such line, and they name `3c55b7a1c` as both the build
+and `runtime-src`. The payload hash is `8b90259d5d279d4a`, so the release would be
+`runtime-payloads-8b90259d5d279d4a`. The packed archive's sha256 is
+`7863e62e5e71f20dc28558b24b97a55a429cdd2a0499e05dd4e18bd87dee311d`, and `embedpdf.wasm`'s is
+`6608defac4900374389e3a43cc61b7c64a2fbc526d7e5a0d72868850011a0c9d`. The dry run ran at `b6b2acfe9`;
+the commits after it change only tests and vectors, and the hash at the branch tip is the same, but
+the notes name the viewer commit, so a real publish runs again at the tip.
+
+### The gate
+
+`97c6f7086` makes that list a failure from here on. `assertAllBound` in
+`scripts/lib/payload-notes.mjs` throws when the fork commit the library was built from contains
+`28b8b808f` and the runtime's headers don't declare a committed binding; an older runtime still
+passes, and the notes name what it lacks. The list is the header generator's, so it says what the
+headers declare, not what the link exports; `5cdf215da` words the notes line and the error that
+way. The test went in first and failed ("does not provide an export named
+'ALL_BOUND_SINCE'"), then passed, 7 of 7 in `payload-notes.test.mjs`. On real headers, the
+`6dfc03697` ones paired with a runtime at the merge fail the gate on
+`EPDFAnnot_GetStructurePosition`, and the `3c55b7a1c` ones pass it. The cost is one more `git
+merge-base` call per publish, and a hard stop if a later upstream binding lands in the TS before
+the fork merges its runtime.
+
+`5cdf215da` also moves the ancestry check to `forkContains` in `scripts/lib/fork-ancestry.mjs`, which
+takes the `runtime-src` path. When `git merge-base` can't answer because `runtime-src` doesn't have
+`28b8b808f`, it says to fetch the commit into `runtime-src`, instead of failing bare. Its test,
+`fork-ancestry.test.mjs`, runs against a throwaway repository and failed first on the missing
+module; 9 of 9 pass across the two test files.
+
+### The Rust
+
+`b6b2acfe9` reads `structurePosition` on every annotation, as upstream's `readStructurePosition`
+does: `Annotation::structure_position` in `crates/pdfium/src/annot.rs`, a field after
+`appearanceState` in `AnnotationRecordBase`, carried through the page-space widget copy. It is the
+engine's field on every kind, so `BASE_FIELDS` in `write/prepare.rs` lists it, and `kind_facts.rs` is
+regenerated from engine-core's tables (20 lines, one per kind).
+
+### Vectors
+
+On the new payload the TypeScript oracle no longer aborts. `9f73fe03a` regenerates the suites that
+change: `annotation/create.json`, `annotation/update.json`, `forms/apply.json` and
+`forms/snapshot.json` gain `structurePosition: null` on every annotation and nothing else, and
+`pages/mutate.json` records each layout's `labels`. `without_unrecorded_labels` and its one use in
+`pages_mutate.rs` go. The other six of the twelve (`save`, `form-write`, `form-field`,
+`annotation-delete`, `annotation-move`, `redaction`) regenerate unchanged: they failed only because
+the oracle aborted.
+
+Every recorded position was `null`, because no fixture is tagged. `2bf08c58d` adds
+`fixtures/structure_tree.pdf`, written by `fixtures/generate.mjs`, and a `structure` case in
+`annotation/read.json`. A note and a square sit in the tags against their `/Annots` order, the note
+behind marked content in its element. The oracle reads `[1,0,1]` for the note and `[1,1,0]` for the
+square, and `null` for an annotation with no `/StructParent` and for one whose `/StructParent` the
+parent tree doesn't list. The Rust reads the same.
+
+`d4086d937` adds a tagged text field to the same fixture, its widget in a `/Form` element that is
+the structure root's third kid, and a `tagged-widget` case in `forms/snapshot.json` whose widget
+row records `[2,0]`. That case holds `page_space/forms.rs`, where the widget is copied into page
+space, to carrying the field. The Rust replay passes. With `structure_position: None` at `page_space/forms.rs:71`,
+`cargo test -p epdf-engine --test form_reader` fails on `tagged-widget` (15 passed, 1 failed), and
+it passes again with the line restored.
+
+`f63a2263f` does the plugin side. `core/annotation-update.json`, `plugins/annotation-crud.json`
+and `plugins/annotation-reconciliation.json` gain `structurePosition: null` and nothing else.
+`annotation_transfer.rs` takes the two export hashes upstream records in
+`runAnnotationExportConformance.ts:133-134` (`c63bf33e…` and `4c7591de…`), which `ef8ae52d7`
+changed, and the Rust export now matches both.
+
+`70068a005` does the same for eighteen more suites that replay annotation records:
+`core/annotation-anchor`, `-flags`, `-groups`, `-hit`, `-props`, `-snap` and `-view`, and
+`plugins/actions-dispatcher`, `-hover`, `-lifecycle` and `-triggers`, `annotation-grouping`,
+`-hydration`, `-markup` and `-repository`, `redaction`, `redaction-functions` and `stamp-assets`. Each
+differs from the recorded file only by `structurePosition: null`. Their Rust replays all pass, with no Rust change.
+
+Those eighteen aren't all of it. Sixteen more plugin suites get `structurePosition: null` from the
+oracle, and their recorded files lack it, but regenerating any of them would also bring in an older
+upstream change the Rust doesn't port, so none is regenerated here. Eight wait on the form's focus
+(upstream `2998c9004`): regenerating would add `focused` to `form-fill`, `form-core`,
+`form-scripting`, `form-actions`, `form-core-lifecycle`, `signature`, `stamp-api` and
+`stamp-placement`. None of the eight recordings has the page view's `pageLabels` or
+`pendingPages` either; regenerating would add them to `signature`, `stamp-api` and
+`stamp-placement`, while the five form suites record no document meta. `actions-script` waits on
+the actions plugin's half of the focus port (`registerFormFocus`). For `form-design`, regenerating
+would add `focused` and the built-in zoom tool (upstream `a1ee5683f`) to its tool lists, and for
+`annotation-tools` the zoom tool. For `link` and `attachment` it would add the stage's `zoomDrag`
+and `zoomBox` settings (also `a1ee5683f`). In `annotation-hover`, both the recording and the
+oracle call `exec.named` six times, but the oracle makes eleven more calls to each lender callback
+(`records`, `version`, `authority`, `painter`, `pending`) and returns changed annotation lists. In
+`annotation-api`, two calls the recording answers with a font family (`"Helvetica, Arial,
+sans-serif"` and `"\"Fancy\", sans-serif"`) now throw "TypeError: Cannot read properties of
+undefined (reading 'toLowerCase')" in the oracle. In `annotation-comments`, a thread delete the
+recording refused ("delete not permitted") now succeeds. Each gets `structurePosition` when it is
+regenerated for its own blocker. `link` and `attachment` are also regenerated on the C5b branch, so
+the merge of the two branches settles those.
+
+Two findings came out of the plugin side. First, `tooling/plugin-conformance/src/generate.ts`
+doesn't load on this branch, because two suite modules import files upstream removed:
+`suites/annotation-pure.ts:34` imports `packages/core/annotation/src/font-css` (gone in
+`595fa2bd5`), and `suites/form-painter.ts:40` imports `packages/core/form/src/layout/breaks` (gone
+in `e40c9c236`). Both commits are in C5's base. Every suite above was written by `emit()` over its
+own suite modules, from a scratch driver.
+
+Second, two vectors are only partly regenerated. Rendering `core/annotation-measurement-model.json`
+and `core/annotation-measurement.json` also moves scene labels' `fontFamily` to a font program's
+family (`"epdf-93fe419ed14bac24", Helvetica, Arial, sans-serif`) and adds a `program` object (hash,
+family, weight, style and loader), both from `595fa2bd5`, and the Rust scene resolves neither. Both
+files take only the oracle's `structurePosition` lines. Their labels, six in
+`annotation-measurement-model.json` and 25 in `annotation-measurement.json`, keep their old
+`fontFamily` and have no `program`. The cost: until the font-program port lands, those two vectors
+are partly older than the oracle. `70068a005` says so; `f63a2263f` names `fontFamily` only.
+
+### Apple
+
+The fork commit and the Rust both change, so the Apple engine is stale. `apple-engine-hash.sh`
+gives `bcf5e493d4226b73` at the branch tip, against the pinned `apple-engine-3cf9c87caaf5b2de`.
+Nothing was built for Apple. A rebuild needs `ios-arm64` and `ios-sim-arm64` fork builds at
+`3c55b7a1c` on the Mac. `DEPS` is `8b1e69abd`'s, so the dependencies synced for C5's iOS build
+serve, and the same `clang-format` copy applies. Then `publish-engine-payload.mjs --only apple`
+would create `apple-engine-bcf5e493d4226b73` and pin `Package.swift` to it. `APPLE_CRATES` needs no
+change: no crate joined the link graph.
+
+### Checks at `f63a2263f`
+
+Run in `embedpdf-c5a` against the `3c55b7a1c` `linux-arm64` library
+(`PDF_RUNTIME_LIB_DIR` and `LD_LIBRARY_PATH` pointing at it), except the engine checks, which run
+on the payload above.
+
+| Command | Exit | Result |
+|---|---|---|
+| `cargo test --workspace --no-fail-fast -- --test-threads=4` | 0 | 3,132 passed, 0 failed, 1 ignored, 331 runs |
+| `cargo clippy --workspace --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-render -p epdf-plugin-page-edit --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
+| `cargo clippy -p epdf-plugin-commands --features uniffi --all-targets -- -D warnings` | 0 | No warnings |
+| `rustfmt --check --edition 2024` on the 8 Rust files changed since `509d2df20` | 0 | Formatted |
+| `node --test scripts/lib/payload-notes.test.mjs` | 0 | 7 passed |
+| `EPDF_NATIVE_DIR=<abs>/target/debug dotnet test platforms/dotnet/EmbedPDF.Tests/EmbedPDF.Tests.csproj` | 0 | 32 passed |
+| The 34 `tooling/engine-conformance` `:check` scripts | 0 | 34 pass |
+
+The table is at `f63a2263f`. After the review round's commits (`5cdf215da`, `d4086d937`,
+`70068a005`), at `6e1c98ead`: `cargo test --workspace --no-fail-fast -- --test-threads=4` exits 0
+with 3,132 passed, 0 failed, 1 ignored over 331 runs; the 34 engine `:check` scripts pass; and
+`node --test scripts/lib/fork-ancestry.test.mjs scripts/lib/payload-notes.test.mjs` passes 9 of 9.
+Those commits change no Rust, so clippy, rustfmt and `dotnet test` stand as above.
+
+`dotnet test` needs an absolute `EPDF_NATIVE_DIR` and a `cargo build -p epdf-capi` first:
+`cargo test --workspace` doesn't build `libepdf_capi.so`, and with a relative directory all but six
+of the 32 tests fail with `DllNotFoundException`.
+
+Two things are left as they were. `cargo fmt -p pdfium` rewrites `crates/pdfium/tests/documents.rs`,
+which predates C5a. And the engine build (`pnpm --filter "@embedpdf/engine..." build`) rewrites
+`crates/plugins/acrojs/prelude.js` with upstream's `Field.setFocus`, which belongs to the form-focus
+port, so C5a put it back.

@@ -45,6 +45,12 @@ const CASES: readonly FormCase[] = [
       'A single merged field and widget, which is the shape the widget-to-field join reads.',
   },
   {
+    name: 'tagged-widget',
+    fixture: 'tooling/engine-conformance/fixtures/structure_tree.pdf',
+    covers:
+      "A text field whose widget sits in the document's tags, so the widget row carries a structurePosition that is not null.",
+  },
+  {
     name: 'no-form',
     fixture: 'tooling/engine-conformance/fixtures/rich_metadata.pdf',
     covers:

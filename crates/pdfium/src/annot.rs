@@ -610,6 +610,25 @@ impl Annotation<'_> {
         Ok(Some(text.unwrap_or_default()))
     }
 
+    /// Where the annotation sits in its document's structure tree
+    /// (`EPDFAnnot_GetStructurePosition`): the index of each step from the
+    /// root down. `None` when the tags don't reach it.
+    pub fn structure_position(&self) -> Option<Vec<u32>> {
+        // SAFETY: a null buffer with zero length is the measure call.
+        let count = unsafe {
+            pdfium_sys::EPDFAnnot_GetStructurePosition(self.handle, std::ptr::null_mut(), 0)
+        };
+        if count == 0 {
+            return None;
+        }
+        let mut indexes = vec![0u32; usize::try_from(count).ok()?];
+        // SAFETY: the handle is live and `count` is `indexes`'s length.
+        unsafe {
+            pdfium_sys::EPDFAnnot_GetStructurePosition(self.handle, indexes.as_mut_ptr(), count);
+        }
+        Some(indexes)
+    }
+
     /// The states `mode` stores, in the file's key order
     /// (`EPDFAnnot_GetAppearanceStateCount`, `EPDFAnnot_GetAppearanceStateName`):
     /// none when the mode is a single stream or missing. Each is the name
