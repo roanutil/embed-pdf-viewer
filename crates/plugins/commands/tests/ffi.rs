@@ -518,7 +518,7 @@ fn invalid_app_state_keeps_the_previous_state_and_other_settings() {
 #[test]
 fn current_app_state_controls_native_lock_availability_and_shortcut_refusal() {
     use epdf_plugin_commands::ffi::{CommandKeyStroke, CommandRefusalReason};
-    let (_, commands) = handle();
+    let (_thread, commands) = handle();
     let runner = Runner::new(Run::Finish, Ok(true));
     let mut def =
         definition("app:locked", Some(runner.clone()), vec![CommandHook::Run, CommandHook::Locked]);
