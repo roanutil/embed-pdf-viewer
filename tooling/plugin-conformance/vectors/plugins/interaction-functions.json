@@ -303,6 +303,17 @@
                 "link-nav"
               ]
             }
+          },
+          {
+            "id": "zoom",
+            "cursor": "zoom-in",
+            "gapCursor": "zoom-in",
+            "touch": "draw",
+            "enables": {
+              "$set": [
+                "zoom-box"
+              ]
+            }
           }
         ]
       }

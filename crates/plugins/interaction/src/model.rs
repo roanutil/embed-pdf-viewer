@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::contract::{Cursor, Tool, ToolId};
+use crate::contract::{Cursor, Tool, ToolId, ToolTouch};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,7 +73,7 @@ pub fn set_cursor(state: &Rc<InteractionState>, cursor: &str) -> Rc<InteractionS
     Rc::new(InteractionState { cursor: cursor.to_string(), ..(**state).clone() })
 }
 
-/// `builtinTools()`: the two built-in tools. Features add tools with
+/// `builtinTools()`: the three built-in tools. Features add tools with
 /// `register_tool`. `enables` is the composition seam: `pointer` turns on
 /// text selection, annotation editing and marquee selection, `pan`
 /// scrolling and annotation editing, with no text select. Both carry
@@ -89,6 +89,11 @@ pub fn builtin_tools() -> Vec<Rc<Tool>> {
         Rc::new(
             Tool::new("pan", "grab", ["scroll", "annotation-edit", "form-fill", "link-nav"])
                 .with_gap_cursor("grab"),
+        ),
+        Rc::new(
+            Tool::new("zoom", "zoom-in", ["zoom-box"])
+                .with_gap_cursor("zoom-in")
+                .with_touch(ToolTouch::Draw),
         ),
     ]
 }

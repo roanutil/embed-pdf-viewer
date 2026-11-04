@@ -13695,6 +13695,17 @@
                 }
               },
               {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
+                  ]
+                }
+              },
+              {
                 "id": "square",
                 "cursor": "crosshair",
                 "enables": {
@@ -21265,6 +21276,17 @@
                 }
               },
               {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
+                  ]
+                }
+              },
+              {
                 "id": "square",
                 "cursor": "crosshair",
                 "enables": {
@@ -23195,6 +23217,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -23257,6 +23280,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -23333,6 +23357,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 125,
@@ -23441,6 +23466,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 125,
@@ -33648,6 +33674,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 125,
@@ -35618,6 +35645,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 125,
@@ -35680,6 +35708,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -36710,6 +36739,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -36786,6 +36816,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 110,
@@ -36894,6 +36925,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 110,
@@ -45428,6 +45460,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -47307,6 +47340,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 110,
@@ -47534,6 +47568,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 110,
@@ -48408,6 +48443,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -48470,6 +48506,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -56790,6 +56827,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -56852,6 +56890,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 50,
@@ -57087,6 +57126,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -57961,6 +58001,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -58055,6 +58096,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -63489,6 +63531,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -65306,6 +65349,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -65400,6 +65444,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -66430,6 +66475,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -66492,6 +66538,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -73927,6 +73974,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -75607,6 +75655,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -75669,6 +75718,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -78287,6 +78337,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -78349,6 +78400,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -79392,6 +79444,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 100,
@@ -79496,6 +79549,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -79605,6 +79659,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 260,
@@ -79709,6 +79764,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 260,
@@ -79818,6 +79874,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 200,
@@ -79950,6 +80007,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 200,
@@ -80087,6 +80145,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 10,
@@ -80204,6 +80263,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -88388,6 +88448,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 100,
@@ -90443,6 +90504,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 260,
@@ -92698,6 +92760,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 200,
@@ -95789,6 +95852,7 @@
                     },
                     "hasAppearance": true,
                     "appearanceState": null,
+                    "structurePosition": null,
                     "nm": null,
                     "rect": {
                       "x": 10,
@@ -98263,6 +98327,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -98325,6 +98390,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 260,
@@ -98387,6 +98453,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 200,
@@ -98477,6 +98544,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 10,
@@ -98722,6 +98790,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -98784,6 +98853,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 260,
@@ -98846,6 +98916,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 200,
@@ -98936,6 +99007,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 10,
@@ -106505,6 +106577,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 7,
@@ -106624,6 +106697,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 7,
@@ -106748,6 +106822,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 197,
@@ -106857,6 +106932,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 197,
@@ -106971,6 +107047,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 2,
@@ -107080,6 +107157,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 2,
@@ -107194,6 +107272,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 293,
@@ -107303,6 +107382,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 293,
@@ -127818,6 +127898,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 7,
@@ -127895,6 +127976,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 197,
@@ -127962,6 +128044,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 2,
@@ -128029,6 +128112,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 293,
@@ -128266,6 +128350,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 7,
@@ -128343,6 +128428,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 197,
@@ -128410,6 +128496,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 2,
@@ -128477,6 +128564,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 293,
@@ -129540,6 +129628,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -136114,6 +136203,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -136341,6 +136431,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -137215,6 +137306,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 110,
@@ -137277,6 +137369,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 110,
@@ -137339,6 +137432,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 360,
@@ -137415,6 +137509,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 380,
@@ -137511,6 +137606,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 380,
@@ -146158,6 +146254,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 110,
@@ -146220,6 +146317,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 110,
@@ -146282,6 +146380,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 360,
@@ -146344,6 +146443,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 380,
@@ -146565,6 +146665,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 380,
@@ -147437,6 +147538,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -147499,6 +147601,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 300,
@@ -156150,6 +156253,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -156212,6 +156316,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 300,
@@ -156431,6 +156536,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -157318,6 +157424,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -157414,6 +157521,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -157515,6 +157623,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 300,
@@ -157619,6 +157728,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 300,
@@ -169283,6 +169393,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 90,
@@ -169337,6 +169448,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 300,
@@ -177809,6 +177921,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -184199,6 +184312,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -194381,6 +194495,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 7,
@@ -194490,6 +194605,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 7,
@@ -194604,6 +194720,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 197,
@@ -194713,6 +194830,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 197,
@@ -206585,6 +206703,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 7,
@@ -206652,6 +206771,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 197,
@@ -206892,6 +207012,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 197,
@@ -228838,6 +228959,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 3.938388452499341,
@@ -228954,6 +229076,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 3.938388452499341,
@@ -229075,6 +229198,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 295.2,
@@ -229220,6 +229344,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 295.2,
@@ -248222,6 +248347,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 3.938388452499341,
@@ -248296,6 +248422,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 295.2,
@@ -248567,6 +248694,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 295.2,
@@ -249004,6 +249132,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 295.2,
@@ -249606,6 +249735,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -249702,6 +249832,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -261564,6 +261695,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 90,
@@ -276369,6 +276501,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 50,
@@ -276469,6 +276602,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -276574,6 +276708,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 485,
@@ -276674,6 +276809,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 485,
@@ -288466,6 +288602,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 50,
@@ -288524,6 +288661,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 485,
@@ -288750,6 +288888,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 485,
@@ -297037,6 +297176,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 40,
@@ -297139,6 +297279,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 40,
@@ -306902,6 +307043,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 40,
@@ -307955,6 +308097,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 50,
@@ -308055,6 +308198,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -308160,6 +308304,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 249.99999999999997,
@@ -308260,6 +308405,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 249.99999999999997,
@@ -308365,6 +308511,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 10,
@@ -308465,6 +308612,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -324606,6 +324754,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 50,
@@ -324664,6 +324813,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 249.99999999999997,
@@ -324722,6 +324872,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 10,
@@ -324949,6 +325100,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 10,
@@ -325855,6 +326007,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 275,
@@ -325955,6 +326108,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 275,
@@ -326060,6 +326214,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 350,
@@ -326160,6 +326315,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 350,
@@ -326265,6 +326421,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 250,
@@ -326365,6 +326522,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 250,
@@ -326470,6 +326628,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 250,
@@ -326570,6 +326729,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 250,
@@ -326675,6 +326835,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 150,
@@ -326775,6 +326936,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 150,
@@ -326880,6 +327042,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 260,
@@ -326980,6 +327143,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 260,
@@ -327085,6 +327249,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 260,
@@ -327185,6 +327350,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 260,
@@ -348639,6 +348805,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 275,
@@ -348697,6 +348864,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 350,
@@ -348755,6 +348923,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 250,
@@ -348813,6 +348982,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 250,
@@ -348871,6 +349041,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 150,
@@ -348929,6 +349100,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 260,
@@ -348987,6 +349159,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 260,
@@ -349218,6 +349391,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 260,
@@ -350125,6 +350299,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 50,
@@ -350225,6 +350400,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -350330,6 +350506,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 150,
@@ -350430,6 +350607,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 150,
@@ -350535,6 +350713,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 290,
@@ -350631,6 +350810,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 290,
@@ -350732,6 +350912,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 390,
@@ -350828,6 +351009,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 390,
@@ -362921,6 +363103,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 50,
@@ -362979,6 +363162,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 150,
@@ -363037,6 +363221,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 290,
@@ -363091,6 +363276,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 390,
@@ -363319,6 +363505,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 390,
@@ -364225,6 +364412,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 74.99999999999999,
@@ -364325,6 +364513,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 74.99999999999999,
@@ -364430,6 +364619,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 225,
@@ -364530,6 +364720,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 225,
@@ -375234,6 +375425,17 @@
                 }
               },
               {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
+                  ]
+                }
+              },
+              {
                 "id": "square",
                 "cursor": "crosshair",
                 "enables": {
@@ -376545,6 +376747,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 74.99999999999999,
@@ -376603,6 +376806,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 225,
@@ -376834,6 +377038,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 225,
@@ -377728,6 +377933,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -377790,6 +377996,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -377852,6 +378059,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -378056,6 +378264,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -378177,6 +378386,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -378273,6 +378483,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -384100,6 +384311,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -384167,6 +384379,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -384234,6 +384447,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 400,
@@ -384467,6 +384681,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -384534,6 +384749,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 400,
@@ -384767,6 +384983,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -385027,6 +385244,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -385094,6 +385312,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 400,
@@ -385335,6 +385554,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -385397,6 +385617,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -385646,6 +385867,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -385713,6 +385935,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 400,
@@ -385948,6 +386171,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -386181,6 +386405,7 @@
                   },
                   "hasAppearance": true,
                   "appearanceState": null,
+                  "structurePosition": null,
                   "nm": null,
                   "rect": {
                     "x": 100,
@@ -386917,6 +387142,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -386979,6 +387205,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,
@@ -387041,6 +387268,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -387269,6 +387497,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 100,
@@ -387331,6 +387560,7 @@
                 },
                 "hasAppearance": true,
                 "appearanceState": null,
+                "structurePosition": null,
                 "nm": null,
                 "rect": {
                   "x": 400,

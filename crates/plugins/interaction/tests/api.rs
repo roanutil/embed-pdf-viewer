@@ -260,7 +260,7 @@ fn replacing_a_registration_moves_it_last_and_retires_the_old_remover() {
         )
         .unwrap();
     let ids: Vec<String> = hub.list_tools().iter().map(|t| t.id.clone()).collect();
-    assert_eq!(ids, ["pan", "ink", "pointer"]);
+    assert_eq!(ids, ["pan", "zoom", "ink", "pointer"]);
     assert!(!Rc::ptr_eq(&listed, &hub.list_tools()));
 
     let replacement = hub
@@ -517,4 +517,14 @@ fn a_plain_tool_reads_its_data_members() {
     assert!(!tool.handles_pointer());
     assert_eq!(plain_tool(&json!({ "id": "x", "enables": ["a"] })).unwrap().enables, ["a"]);
     assert!(plain_tool(&json!({ "cursor": "x" })).is_none());
+}
+
+#[test]
+fn zoom_is_a_builtin_drawing_tool_including_page_gaps() {
+    let tools = builtin_tools();
+    let zoom = tools.iter().find(|tool| tool.id == "zoom").expect("built-in zoom");
+    assert_eq!(zoom.cursor, "zoom-in");
+    assert_eq!(zoom.gap_cursor.as_deref(), Some("zoom-in"));
+    assert_eq!(zoom.touch, Some(ToolTouch::Draw));
+    assert_eq!(zoom.enables, ["zoom-box"]);
 }

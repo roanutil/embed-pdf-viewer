@@ -120,7 +120,7 @@ fn the_built_in_tools_are_listed_and_pointer_is_active() {
     let (_thread, interaction, _) = handle();
     let ids: Vec<String> =
         block_on(interaction.tools()).unwrap().into_iter().map(|t| t.id).collect();
-    assert_eq!(ids, ["pointer", "pan"]);
+    assert_eq!(ids, ["pointer", "pan", "zoom"]);
     assert_eq!(block_on(interaction.active_tool_id()).unwrap(), "pointer");
     assert_eq!(block_on(interaction.default_tool_id()).unwrap(), "pointer");
     assert!(block_on(interaction.active_tool_enables("text-select".into())).unwrap());

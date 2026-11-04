@@ -249,3 +249,6 @@ pub type SubmitResolver = Rc<
         Rc<dyn Fn(ActionDiagnostic)>,
     ) -> Result<Promise<ActionSubmitRequest>, Error>,
 >;
+
+/// Put the cursor in the form field named by a script. False means no reachable field.
+pub type FormFocus = Rc<dyn Fn(&str) -> bool>;

@@ -21,3 +21,16 @@ fn prelude_is_the_generated_file() {
     assert_eq!(epdf_acrojs::PRELUDE_SOURCE, on_disk);
     assert!(epdf_acrojs::PRELUDE_SOURCE.starts_with("(function installAcroJs(globalObject)"));
 }
+
+#[test]
+fn a_script_can_request_a_field_cursor() {
+    let effect: epdf_acrojs::ScriptUiEffect = serde_json::from_value(serde_json::json!({
+        "kind": "focusField", "field": "email"
+    }))
+    .expect("the field focus effect");
+    assert_eq!(effect.kind(), "focusField");
+    assert_eq!(
+        serde_json::to_value(effect).unwrap(),
+        serde_json::json!({ "kind": "focusField", "field": "email" })
+    );
+}

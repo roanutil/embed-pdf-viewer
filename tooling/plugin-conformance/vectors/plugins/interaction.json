@@ -255,6 +255,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -415,6 +419,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -502,6 +510,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -577,6 +589,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -652,6 +668,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -714,6 +734,17 @@
                     "link-nav"
                   ]
                 }
+              },
+              {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
+                  ]
+                }
               }
             ]
           },
@@ -754,6 +785,10 @@
                       }
                     }
                   ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
                   "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
@@ -14327,6 +14362,17 @@
                 }
               },
               {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
+                  ]
+                }
+              },
+              {
                 "id": "ink",
                 "cursor": "crosshair",
                 "enables": {
@@ -14403,6 +14449,17 @@
                     "annotation-edit",
                     "form-fill",
                     "link-nav"
+                  ]
+                }
+              },
+              {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
                   ]
                 }
               },
@@ -14703,6 +14760,17 @@
                     "annotation-edit",
                     "form-fill",
                     "link-nav"
+                  ]
+                }
+              },
+              {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
                   ]
                 }
               },
@@ -15076,6 +15144,17 @@
                     "annotation-edit",
                     "form-fill",
                     "link-nav"
+                  ]
+                }
+              },
+              {
+                "id": "zoom",
+                "cursor": "zoom-in",
+                "gapCursor": "zoom-in",
+                "touch": "draw",
+                "enables": {
+                  "$set": [
+                    "zoom-box"
                   ]
                 }
               },

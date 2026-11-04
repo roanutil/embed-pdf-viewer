@@ -7,7 +7,7 @@
 //! spelling (`objectNumber`).
 //!
 //! Not exported: the actions plugin's seams (`resetFormAction`,
-//! `resolveSubmitDataset`, `commitScriptFormEffects`, `notifyWidgetEvent`),
+//! `resolveSubmitDataset`, `commitScriptFormEffects`),
 //! which the plugin wires itself, and the painter reads (`getWidgetPainting`,
 //! `getTextEditorLayout`, `listShownWidgets`), which a native layer reaches
 //! once a host types the scene. Removed with the TypeScript: `setText`,
@@ -15,11 +15,12 @@
 //! `detachWidget` (now `remove_widget`), `exportData` and `importData` (now
 //! `export` and `import`, with bundles), `getFillItem`, and `flags.raw`.
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use epdf_ffi::{
     AnnotationRef, CancelToken, FormFieldFamily, FormFieldRef, KernelBound, KernelPost, PageRef,
-    PluginErrorInfo, Rect, ResourceStatus, Subscription, ViewerError,
+    PluginErrorInfo, Rect, RegistrationHandle, ResourceStatus, Subscription, ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
@@ -874,10 +875,61 @@ pub enum FormActivationResult {
     Dispatched,
 }
 
+/// Options for moving the cursor to one field.
+#[derive(Clone, Debug, Default, uniffi::Record)]
+pub struct FormFocusOptions {
+    #[uniffi(default = false)]
+    pub select: bool,
+    #[uniffi(default = None)]
+    pub widget: Option<AnnotationRef>,
+}
+/// Options for moving as Tab does.
+#[derive(Clone, Debug, Default, uniffi::Record)]
+pub struct FormFocusNextOptions {
+    #[uniffi(default = false)]
+    pub backward: bool,
+    #[uniffi(default = false)]
+    pub empty: bool,
+    #[uniffi(default = false)]
+    pub wrap: bool,
+    #[uniffi(default = None)]
+    pub from: Option<FormFieldRef>,
+}
+/// A control lends a target while mounted. Called on the kernel thread; never wait on it.
+#[uniffi::export(with_foreign)]
+pub trait FormFocusTarget: Send + Sync {
+    fn focus(&self, select: bool);
+}
+#[derive(Clone, Copy, Debug, uniffi::Enum)]
+pub enum FormWidgetEvent {
+    CursorEnter,
+    CursorExit,
+    MouseDown,
+    MouseUp,
+    Focus,
+    Blur,
+}
+impl From<FormWidgetEvent> for epdf_plugin_actions::PdfAnnotationEventKind {
+    fn from(event: FormWidgetEvent) -> Self {
+        match event {
+            FormWidgetEvent::CursorEnter => Self::CursorEnter,
+            FormWidgetEvent::CursorExit => Self::CursorExit,
+            FormWidgetEvent::MouseDown => Self::MouseDown,
+            FormWidgetEvent::MouseUp => Self::MouseUp,
+            FormWidgetEvent::Focus => Self::Focus,
+            FormWidgetEvent::Blur => Self::Blur,
+        }
+    }
+}
+
 // ── events ───────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum FormEvent {
+    FocusChanged {
+        field: Option<FormField>,
+        widget: Option<AnnotationRef>,
+    },
     ValueChanged {
         field: FormField,
         origin_json: String,
@@ -930,6 +982,80 @@ fn field_result(value: &Value) -> Result<FormField, ViewerError> {
 
 #[uniffi::export]
 impl FormHandle {
+    pub async fn focus(
+        &self,
+        field: FormFieldRef,
+        options: Option<FormFocusOptions>,
+    ) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| {
+            let options=options.map(|o|json!({"select":o.select,"widget":o.widget.map(|w|annotation_ref_json(&w))}));
+            Ok(open(c)?.focus(&field_ref_json(&field),options.as_ref()))
+        }).await
+    }
+    pub async fn focus_next(
+        &self,
+        options: Option<FormFocusNextOptions>,
+    ) -> Result<bool, ViewerError> {
+        self.cap
+            .call(move |c| {
+                let options = options.map(|o| {
+                    let mut options = json!({"backward":o.backward,"empty":o.empty,"wrap":o.wrap});
+                    if let Some(from) = o.from {
+                        options["from"] = field_ref_json(&from);
+                    }
+                    options
+                });
+                Ok(open(c)?.focus_next(options.as_ref()))
+            })
+            .await
+    }
+    pub async fn focused_field(&self) -> Result<Option<FormField>, ViewerError> {
+        self.cap
+            .call(|c| open(c)?.get_focused_field().map(|f| FormField::from_json(&f)).transpose())
+            .await
+    }
+    pub async fn move_in_group(
+        &self,
+        widget: AnnotationRef,
+        backward: bool,
+    ) -> Result<bool, ViewerError> {
+        self.cap
+            .call(move |c| Ok(open(c)?.move_in_group(&annotation_ref_json(&widget), backward)))
+            .await
+    }
+    pub async fn attach_focus_target(
+        &self,
+        widget: AnnotationRef,
+        target: Arc<dyn FormFocusTarget>,
+    ) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.cap
+            .call(move |c| {
+                let off = open(c)?.attach_focus_target(
+                    &annotation_ref_json(&widget),
+                    Rc::new(move |select| target.focus(select)),
+                );
+                Ok(RegistrationHandle::new(post, move || off.call()))
+            })
+            .await
+    }
+    pub async fn notify_widget_event(
+        &self,
+        field: FormFieldRef,
+        widget: AnnotationRef,
+        event: FormWidgetEvent,
+    ) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                open(c)?.notify_widget_event(
+                    &field_ref_json(&field),
+                    &annotation_ref_json(&widget),
+                    event.into(),
+                )
+            })
+            .await
+    }
+
     /// `None` until the form is read, or while reading is forbidden.
     pub async fn snapshot(&self) -> Result<Option<FormSnapshot>, ViewerError> {
         self.cap
@@ -1432,7 +1558,19 @@ impl FormHandle {
                         l.on_event(FormEvent::Resynced);
                         Ok(())
                     });
-                    let offs = [value, created, updated, deleted, rejected, resynced];
+                    let l = listener.clone();
+                    let focused = c.on_focus_changed(move |event| {
+                        let field = event
+                            .get("field")
+                            .filter(|f| !f.is_null())
+                            .map(FormField::from_json)
+                            .transpose()?;
+                        let widget =
+                            annotation_ref_of(event.get("widget").unwrap_or(&Value::Null))?;
+                        l.on_event(FormEvent::FocusChanged { field, widget });
+                        Ok(())
+                    });
+                    let offs = [value, created, updated, deleted, rejected, resynced, focused];
                     Unsubscribe::new(move || offs.iter().for_each(Unsubscribe::call))
                 },
                 move || ending.on_end(),

@@ -222,19 +222,7 @@ pub struct ZoomBoxLook {
     pub stroke: Option<String>,
 }
 
-/// `SettingLock` (core): who holds a locked setting, and why. A command
-/// that changes the setting shows disabled with the sentence under
-/// `reason_key` while it holds.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SettingLock {
-    /// Who holds it: a plugin's id, or `"app"`.
-    pub by: String,
-    /// The translation key of the sentence its controls show; without
-    /// one, `commands.locked.default`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reason_key: Option<String>,
-}
+pub use epdf_kernel::settings::SettingLock;
 
 /// Settings held at a value for one document: they keep it over every
 /// other writer (`update_settings`, the responsive rules, a restored view

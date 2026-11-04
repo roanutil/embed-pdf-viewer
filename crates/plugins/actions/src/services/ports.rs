@@ -12,7 +12,9 @@ use crate::contract::{
     ActionDiagnostic, ActionDiagnosticCode, ActionExecutor, ActionSubmitHandler, ActionUiAdapter,
     Disposer,
 };
-use crate::host_contract::{AnnotCommitSink, FormCommitSink, FormReader, SubmitResolver};
+use crate::host_contract::{
+    AnnotCommitSink, FormCommitSink, FormFocus, FormReader, SubmitResolver,
+};
 use crate::services::DiagnosticPlace;
 
 pub(crate) enum ExecutorKind {
@@ -34,6 +36,7 @@ pub(crate) struct Ports {
     pub(crate) form_commit_sink: RefCell<Option<FormCommitSink>>,
     /// The form plugin's form, as the user sees it.
     pub(crate) form_reader: RefCell<Option<FormReader>>,
+    pub(crate) form_focus: RefCell<Option<FormFocus>>,
     pub(crate) ui_adapter: RefCell<Option<Rc<ActionUiAdapter>>>,
     /// Sink 1 of the submit chain (consent is installation).
     pub(crate) submit_handler: RefCell<Option<ActionSubmitHandler>>,
@@ -136,5 +139,13 @@ impl ActionsCapability {
     pub fn register_submit_resolver(&self, resolver: SubmitResolver) -> Disposer {
         *self.0.ports.submit_resolver.borrow_mut() = Some(resolver.clone());
         slot_disposer(self, resolver, |p| &p.submit_resolver)
+    }
+}
+
+impl ActionsCapability {
+    /// Lend the form cursor. A replaced registration cannot clear its replacement.
+    pub fn register_form_focus(&self, focus: FormFocus) -> Disposer {
+        *self.0.ports.form_focus.borrow_mut() = Some(focus.clone());
+        slot_disposer(self, focus, |ports| &ports.form_focus)
     }
 }

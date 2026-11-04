@@ -109,7 +109,7 @@ pub fn write_of_plain_value(field: &Value, value: &Value) -> Option<Value> {
 }
 
 /// `isEmpty(field)`: whether a field holds nothing a required check would accept.
-fn is_empty(field: &Value) -> bool {
+pub(crate) fn is_empty(field: &Value) -> bool {
     let member = |key: &str| get(field, key);
     match str_of(field, "family") {
         Some("text" | "combobox") => member("value") == Some(&json!("")),

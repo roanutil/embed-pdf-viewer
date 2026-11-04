@@ -3,6 +3,7 @@ import Foundation
 
 public typealias CommandDefinition = EmbedPDFBindings.CommandDefinition
 public typealias CommandHook = EmbedPDFBindings.CommandHook
+public typealias CommandSettingLock = EmbedPDFBindings.CommandSettingLock
 public typealias CommandPanel = EmbedPDFBindings.CommandPanel
 public typealias CommandContext = EmbedPDFBindings.CommandContext
 public typealias CommandRunner = EmbedPDFBindings.CommandRunner
@@ -36,19 +37,22 @@ public final class CommandHandler: CommandRunner, Sendable {
   let active: (@Sendable (CommandContext) -> Bool)?
   let visible: (@Sendable (CommandContext) -> Bool)?
   let accent: (@Sendable (CommandContext) -> IconAccent?)?
+  let lock: (@Sendable (CommandContext) -> CommandSettingLock?)?
 
   public init(
     run: (@Sendable (CommandContext) async throws -> Void)? = nil,
     enabled: (@Sendable (CommandContext) -> Bool)? = nil,
     active: (@Sendable (CommandContext) -> Bool)? = nil,
     visible: (@Sendable (CommandContext) -> Bool)? = nil,
-    iconAccent: (@Sendable (CommandContext) -> IconAccent?)? = nil
+    iconAccent: (@Sendable (CommandContext) -> IconAccent?)? = nil,
+    locked: (@Sendable (CommandContext) -> CommandSettingLock?)? = nil
   ) {
     self.runBody = run
     self.enabled = enabled
     self.active = active
     self.visible = visible
     self.accent = iconAccent
+    self.lock = locked
   }
 
   /// The hooks this handler implements, for `CommandDefinition.hooks`.
@@ -59,6 +63,7 @@ public final class CommandHandler: CommandRunner, Sendable {
     if active != nil { hooks.append(.active) }
     if visible != nil { hooks.append(.visible) }
     if accent != nil { hooks.append(.iconAccent) }
+    if lock != nil { hooks.append(.locked) }
     return hooks
   }
 
@@ -82,8 +87,12 @@ public final class CommandHandler: CommandRunner, Sendable {
     case .enabled: enabled?(context) ?? true
     case .active: active?(context) ?? false
     case .visible: visible?(context) ?? true
-    case .run, .iconAccent: true
+    case .run, .iconAccent, .locked: true
     }
+  }
+
+  public func locked(context: CommandContext) throws -> CommandSettingLock? {
+    lock?(context)
   }
 
   public func iconAccent(context: CommandContext) throws -> IconAccent? {

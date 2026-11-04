@@ -522,3 +522,46 @@ fn a_function_over_fields_replaces_them() {
         _ => panic!("the function did not replace the fields"),
     }
 }
+
+#[test]
+fn script_focus_routes_to_the_form_before_the_ui_adapter_and_old_release_is_safe() {
+    let viewer =
+        Viewer::new(ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() });
+    let actions = viewer.open("a");
+    let heard = Rc::new(RefCell::new(Vec::new()));
+    let old = actions.register_form_focus(Rc::new(|_| panic!("replaced target")));
+    let log = heard.clone();
+    let current = actions.register_form_focus(Rc::new(move |name| {
+        log.borrow_mut().push(name.to_string());
+        true
+    }));
+    old();
+    let surface = ScriptSurfaceResult {
+        ui_effects: vec![ScriptUiEffect::FocusField { field: "email".into() }],
+        diagnostics: vec![],
+        error: None,
+        origin: epdf_plugin_actions::ActionOrigin::User,
+        phase: ScriptPhase::User,
+        realm: ScriptRealmKind::Document,
+        source: None,
+    };
+    let reports = Rc::new(RefCell::new(Vec::new()));
+    let log = reports.clone();
+    let _off = actions.on_script_diagnostic_reported(move |d| {
+        log.borrow_mut().push(d.clone());
+        Ok(())
+    });
+    actions.surface_script_result(&surface).unwrap();
+    assert_eq!(*heard.borrow(), vec!["email"]);
+    assert!(reports.borrow().is_empty());
+    current();
+    actions.surface_script_result(&surface).unwrap();
+    assert_eq!(
+        reports.borrow().last().unwrap().code,
+        epdf_acrojs::ScriptDiagnosticCode::UiEffectSuppressed
+    );
+    let mut detached = surface;
+    detached.realm = ScriptRealmKind::Detached;
+    actions.surface_script_result(&detached).unwrap();
+    assert_eq!(heard.borrow().len(), 1);
+}

@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 
 use crate::model::{Box, FieldIndex, WidgetHit, page_widgets_of, widget_at};
 use crate::read::fill_items::fill_items;
-use crate::value::{get, number_key, str_of};
+use crate::value::{get, number_key};
 
 /// One page's `listWidgets` answer and what it was made from.
 pub(crate) struct WidgetItems {
@@ -18,15 +18,6 @@ pub(crate) struct WidgetItems {
     rights: String,
     fillable: Value,
     items: Rc<Vec<Value>>,
-}
-
-/// `isFillableByHand(fillable, family)`.
-fn is_fillable_by_hand(fillable: Option<&Value>, family: &Value) -> bool {
-    match fillable {
-        Some(Value::Bool(all)) => *all,
-        Some(Value::Array(families)) => families.contains(family),
-        _ => false,
-    }
 }
 
 impl crate::controller::Core {
@@ -50,18 +41,6 @@ impl crate::controller::Core {
         widget_at(&index, Some(&widgets), x, y)
     }
 
-    /// `mayWrite(field)`: the `fillable` setting lets people fill it in by
-    /// hand, and the session may fill it in (sign it, for a signature).
-    fn may_write(&self, field: &Value) -> bool {
-        let settings = self.settings_now();
-        is_fillable_by_hand(settings.get("fillable"), get(field, "family").unwrap_or(&Value::Null))
-            && if str_of(field, "family") == Some("signature") {
-                self.may_sign(field)
-            } else {
-                self.may_fill(field)
-            }
-    }
-
     /// `listWidgets(page)`: each widget on a page, as a fill control draws
     /// it. The same list while the form, the session's rights and the
     /// `fillable` setting stay the same (`memoByKey` in the TypeScript).
@@ -79,8 +58,9 @@ impl crate::controller::Core {
             return kept.items.clone();
         }
         let widgets = page_widgets_of(&index, number);
-        let items =
-            Rc::new(fill_items(&index, number, Some(&widgets), &|field| self.may_write(field)));
+        let items = Rc::new(fill_items(&index, number, Some(&widgets), &|field| {
+            self.may_fill_by_hand(field)
+        }));
         self.widget_items
             .borrow_mut()
             .insert(key, WidgetItems { index, rights, fillable, items: items.clone() });

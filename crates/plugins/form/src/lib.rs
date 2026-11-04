@@ -55,6 +55,7 @@ use epdf_plugin_actions::ACTIONS;
 use epdf_plugin_annotation::ANNOTATION;
 use epdf_plugin_interaction::INTERACTION;
 use epdf_plugin_render::RENDER;
+use epdf_plugin_stage::STAGE;
 use serde_json::Value;
 
 pub use contract::*;
@@ -80,6 +81,7 @@ pub fn form_plugin(config: Option<Value>) -> AnyPlugin {
         .optional(ANNOTATION.any())
         .optional(ACTIONS.any())
         .optional(RENDER.any())
+        .optional(STAGE.any())
         .initial_state(model::initial_form_state)
         .settings(SettingsDeclaration {
             defaults: form_defaults(),

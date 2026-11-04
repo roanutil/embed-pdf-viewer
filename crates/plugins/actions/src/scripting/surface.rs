@@ -65,6 +65,16 @@ impl ActionsCapability {
                 });
                 continue;
             }
+            if let ScriptUiEffect::FocusField { field } = effect {
+                let focus = self.0.ports.form_focus.borrow().clone();
+                if !focus.is_some_and(|focus| focus(field)) {
+                    self.suppress(format!(
+                        "script setFocus on \"{}\" withheld: no such field to fill in on screen",
+                        field
+                    ));
+                }
+                continue;
+            }
             let is_print = matches!(effect, ScriptUiEffect::Print);
             // Permission, not preference.
             if is_print && !self.allows_print() {

@@ -20,6 +20,7 @@ harness = [
   "epdf-plugin-actions/harness",
   "epdf-plugin-annotation/harness",
   "epdf-plugin-render/harness",
+  "epdf-plugin-stage/harness",
 ]
 # The uniffi exports (`ffi` module), for `epdf-viewer-host`.
 uniffi = ["dep:uniffi", "dep:epdf-ffi"]
@@ -34,6 +35,7 @@ epdf-plugin-interaction = { path = "../interaction", default-features = false }
 epdf-plugin-actions = { path = "../actions", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
 epdf-plugin-render = { path = "../render", default-features = false }
+epdf-plugin-stage = { path = "../stage", default-features = false }
 indexmap = { version = "2", features = ["serde"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }

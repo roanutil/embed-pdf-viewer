@@ -63,6 +63,13 @@ impl CommandRunner for Runner {
         }
     }
 
+    fn locked(
+        &self,
+        _context: CommandContext,
+    ) -> Result<Option<epdf_plugin_commands::ffi::CommandSettingLock>, HostError> {
+        Ok(None)
+    }
+
     fn icon_accent(&self, _context: CommandContext) -> Result<Option<IconAccent>, HostError> {
         Ok(Some(IconAccent { primary: Some("#f00".into()), secondary: None }))
     }
@@ -339,4 +346,47 @@ fn unregistering_a_replaced_command_keeps_the_replacement() {
     drop(block_on(commands.register_command(definition("zoom:out", None, vec![]), false)).unwrap());
     block_on(thread.call(|_| ())).unwrap();
     assert!(block_on(commands.has_command("zoom:out".into())).unwrap());
+}
+
+struct LockRunner(std::sync::atomic::AtomicBool);
+impl CommandRunner for LockRunner {
+    fn run(&self, _: CommandContext, completion: Arc<CommandCompletion>) {
+        completion.finish();
+    }
+    fn derive(&self, _: CommandContext, _: CommandHook) -> Result<bool, HostError> {
+        Ok(true)
+    }
+    fn icon_accent(&self, _: CommandContext) -> Result<Option<IconAccent>, HostError> {
+        Ok(None)
+    }
+    fn locked(
+        &self,
+        _: CommandContext,
+    ) -> Result<Option<epdf_plugin_commands::ffi::CommandSettingLock>, HostError> {
+        Ok(self.0.load(std::sync::atomic::Ordering::SeqCst).then(|| {
+            epdf_plugin_commands::ffi::CommandSettingLock {
+                by: "native-kiosk".into(),
+                reason_key: None,
+            }
+        }))
+    }
+}
+#[test]
+fn a_native_command_lock_disables_resolution_and_releases() {
+    let (_thread, commands) = handle();
+    let runner = Arc::new(LockRunner(std::sync::atomic::AtomicBool::new(true)));
+    let mut def = definition("view:single", None, vec![CommandHook::Locked]);
+    def.runner = Some(runner.clone());
+    block_on(commands.register_command(def, false)).unwrap();
+    assert!(
+        !block_on(commands.resolve_command("view:single".into(), None)).unwrap().unwrap().enabled
+    );
+    assert_eq!(
+        block_on(commands.execute("view:single".into(), None, None)).unwrap(),
+        CommandExecuteResult::Rejected { reason: CommandRejectReason::Disabled }
+    );
+    runner.0.store(false, std::sync::atomic::Ordering::SeqCst);
+    assert!(
+        block_on(commands.resolve_command("view:single".into(), None)).unwrap().unwrap().enabled
+    );
 }
