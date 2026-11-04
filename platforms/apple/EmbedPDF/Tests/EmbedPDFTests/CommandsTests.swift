@@ -11,6 +11,120 @@ extension BaseSuite {
       return (viewer, try await viewer.commands())
     }
 
+    @Test func everyHookReceivesTheDefaultAppStateJSON() async throws {
+      let (_, commands) = try await started()
+      let seen = LockIsolated<[String]>([])
+      let record: @Sendable (CommandContext) -> Void = { context in
+        seen.withValue { $0.append(context.appStateJson) }
+      }
+      let handler = CommandHandler(
+        run: { record($0) },
+        enabled: { record($0); return true },
+        active: { record($0); return false },
+        visible: { record($0); return true },
+        iconAccent: { record($0); return nil }
+      )
+      _ = try await commands.register(CommandDefinition(id: "app:inspect", labelKey: "Inspect", handler: handler))
+      _ = try await commands.resolve("app:inspect")
+      _ = try await commands.execute("app:inspect")
+      #expect(!seen.value.isEmpty)
+      for value in seen.value {
+        expectNoDifference(value, #"{"$undefined":true}"#)
+      }
+    }
+
+    @Test func everyHookReceivesTheWholeReplacementAppState() async throws {
+      let (viewer, commands) = try await started()
+      let seen = LockIsolated<[String]>([])
+      let runs = LockIsolated<[CommandContext]>([])
+      let record: @Sendable (CommandContext) -> Void = { context in
+        seen.withValue { $0.append(context.appStateJson) }
+      }
+      let approved: @Sendable (CommandContext) -> Bool = { context in
+        context.appStateJson == #"{"status":"approved"}"#
+      }
+      let handler = CommandHandler(
+        run: { context in record(context); runs.withValue { $0.append(context) } },
+        enabled: { record($0); return true },
+        active: { record($0); return approved($0) },
+        visible: { record($0); return true },
+        iconAccent: { context in
+          record(context)
+          return IconAccent(primary: approved(context) ? "#0f0" : "#f00", secondary: nil)
+        }
+      )
+      let registration = try await commands.register(CommandDefinition(id: "app:inspect", labelKey: "Inspect", handler: handler))
+      defer { registration.unregister() }
+      try await commands.disableCategory("hidden")
+      for json in [#"{"omitted":true,"status":"review"}"#, #"{"status":"approved"}"#, "null"] {
+        try await commands.setAppState(Data(json.utf8))
+        seen.withValue { $0 = [] }
+        let resolved = try await commands.resolve("app:inspect")
+        let result = try await commands.execute("app:inspect", args: Data(#"{"copy":true}"#.utf8))
+        expectNoDifference(result, .executed)
+        expectNoDifference(resolved?.active, json == #"{"status":"approved"}"#)
+        expectNoDifference(resolved?.iconAccent?.primary, json == #"{"status":"approved"}"# ? "#0f0" : "#f00")
+        #expect(seen.value.count >= 9)
+        for value in seen.value { expectNoDifference(value, json) }
+        expectNoDifference(runs.value.last?.argsJson, #"{"copy":true}"#)
+        let disabled = try await commands.disabledCategories()
+        expectNoDifference(disabled, ["hidden"])
+      }
+      try await viewer.destroy()
+    }
+
+    @Test(arguments: [false, true]) func appStateUpdatedDuringRunIsCurrentAfterCompletion(fails: Bool) async throws {
+      let (viewer, commands) = try await started()
+      struct Full: Error {}
+      let ran = LockIsolated<[String]>([])
+      try await commands.setAppState(Data(#"{"status":"review"}"#.utf8))
+      let handler = CommandHandler(
+        run: { context in
+          ran.withValue { $0.append(context.appStateJson) }
+          try await commands.setAppState(Data(#"{"status":"approved"}"#.utf8))
+          if fails { throw Full() }
+        },
+        active: { $0.appStateJson == #"{"status":"approved"}"# }
+      )
+      let registration = try await commands.register(CommandDefinition(id: "app:update", labelKey: "Update", handler: handler))
+      defer { registration.unregister() }
+      let before = try await commands.resolve("app:update")
+      expectNoDifference(before?.active, false)
+      if fails {
+        await #expect { _ = try await commands.execute("app:update") } throws: { error in
+          (error as? PDFError)?.code == "operation-failed"
+        }
+      } else {
+        let result = try await commands.execute("app:update")
+        expectNoDifference(result, .executed)
+      }
+      expectNoDifference(ran.value, [#"{"status":"review"}"#])
+      let after = try await commands.resolve("app:update")
+      expectNoDifference(after?.active, true)
+      try await viewer.destroy()
+    }
+
+    @Test func invalidAppStatePreservesThePreviousValue() async throws {
+      let (viewer, commands) = try await started()
+      let seen = LockIsolated<[String]>([])
+      let handler = CommandHandler(enabled: { context in
+        seen.withValue { $0.append(context.appStateJson) }
+        return true
+      })
+      let registration = try await commands.register(CommandDefinition(id: "app:inspect", labelKey: "Inspect", handler: handler))
+      defer { registration.unregister() }
+      try await commands.setAppState(Data(#"{"kept":true}"#.utf8))
+      for invalid in [Data("{broken".utf8), Data([0x80])] {
+        await #expect { try await commands.setAppState(invalid) } throws: { error in
+          (error as? PDFError)?.code == "invalid-input"
+        }
+        seen.withValue { $0 = [] }
+        _ = try await commands.resolve("app:inspect")
+        expectNoDifference(seen.value, [#"{"kept":true}"#])
+      }
+      try await viewer.destroy()
+    }
+
     @Test func aSwiftCommandRunsAsync() async throws {
       let (_, commands) = try await started()
       let ran = LockIsolated<[String]>([])

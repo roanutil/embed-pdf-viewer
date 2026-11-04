@@ -143,6 +143,16 @@ public struct CommandsCapability: Sendable {
     Registration(handle: try await bridged { try await handle.registerCommands(definitions: definitions, replace: replace) })
   }
 
+  /// Replace the app's JSON state whole. Every command hook receives the
+  /// current value in `CommandContext.appStateJson`. Invalid UTF-8 or JSON
+  /// throws `invalid-input` without changing the previous state.
+  public func setAppState(_ appState: Data) async throws(PDFError) {
+    guard let json = String(bytes: appState, encoding: .utf8) else {
+      throw PDFError(name: "EncodingError", code: "invalid-input", detail: "appState is not valid UTF-8")
+    }
+    try await bridged { try await handle.setAppStateJson(appStateJson: json) }
+  }
+
   public func hasCommand(_ id: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.hasCommand(id: id) }
   }

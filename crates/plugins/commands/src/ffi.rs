@@ -8,7 +8,7 @@
 //! Task 13.33: reads that throw in the TypeScript answer
 //! `Result`, reads hand out `Rc`s (copied here), `panel` carries `focus`,
 //! and `match_stroke` answers the command with its refusal. Not exposed
-//! yet: the settings calls, `get_refusal`, the per-command
+//! yet: the full settings calls, `get_refusal`, the per-command
 //! turning-off calls, families, `requires`/`allowed`, a signal on
 //! `execute`, and the scoped view.
 
@@ -28,9 +28,9 @@ use serde_json::Value;
 
 use crate::contract::{
     CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent, CommandRefusal,
-    Derivation, ExecuteOptions, ExecuteResult, IconAccent, MatchStrokeOptions, MenuTarget, Panel,
-    RefusalReason, RegisterCommandOptions, RejectReason, ResolvedCommand, Shortcut,
-    ShortcutBinding, ShortcutMatch,
+    CommandsConfig, Derivation, ExecuteOptions, ExecuteResult, IconAccent, MatchStrokeOptions,
+    MenuTarget, Panel, RefusalReason, RegisterCommandOptions, RejectReason, ResolvedCommand,
+    Shortcut, ShortcutBinding, ShortcutMatch,
 };
 use crate::controller::CommandsCapability;
 
@@ -69,6 +69,8 @@ pub struct CommandContext {
     pub document_id: Option<String>,
     /// The caller's arguments as JSON, when it gave any.
     pub args_json: Option<String>,
+    /// The current appState setting as JSON, including the undefined marker by default.
+    pub app_state_json: String,
 }
 
 fn context(command_id: &str, ctx: &CommandCtx) -> CommandContext {
@@ -76,6 +78,7 @@ fn context(command_id: &str, ctx: &CommandCtx) -> CommandContext {
         command_id: command_id.to_string(),
         document_id: ctx.document_id().map(str::to_string),
         args_json: ctx.args().map(Value::to_string),
+        app_state_json: ctx.app_state().to_string(),
     }
 }
 
@@ -478,6 +481,22 @@ impl CommandsHandle {
 
 #[uniffi::export]
 impl CommandsHandle {
+    /// Replace the appState setting whole, preserving all other settings.
+    /// Invalid JSON leaves the state and its notifications unchanged.
+    pub async fn set_app_state_json(&self, app_state_json: String) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                let app_state = serde_json::from_str(&app_state_json)
+                    .map_err(|error| invalid(format!("appState is not JSON: {error}")))?;
+                c.update_settings(&CommandsConfig {
+                    app_state: Some(app_state),
+                    ..Default::default()
+                });
+                Ok(())
+            })
+            .await
+    }
+
     /// A duplicate id throws `conflict` unless `replace`; an unparsable
     /// shortcut throws too.
     pub async fn register_command(
