@@ -1,5 +1,6 @@
 #![cfg(feature = "uniffi")]
 
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{HostError, HostFailure, KernelThread, ViewerError};
@@ -31,11 +32,12 @@ struct Runner {
     run: Run,
     enabled: Result<bool, ()>,
     ran: Mutex<Vec<CommandContext>>,
+    derived: Mutex<Vec<CommandContext>>,
 }
 
 impl Runner {
     fn new(run: Run, enabled: Result<bool, ()>) -> Arc<Self> {
-        Arc::new(Runner { run, enabled, ran: Mutex::default() })
+        Arc::new(Runner { run, enabled, ran: Mutex::default(), derived: Mutex::default() })
     }
 }
 
@@ -54,7 +56,8 @@ impl CommandRunner for Runner {
         }
     }
 
-    fn derive(&self, _context: CommandContext, hook: CommandHook) -> Result<bool, HostError> {
+    fn derive(&self, context: CommandContext, hook: CommandHook) -> Result<bool, HostError> {
+        self.derived.lock().unwrap().push(context);
         match hook {
             CommandHook::Enabled => {
                 self.enabled.map_err(|()| HostError::Failed { detail: "derive threw".into() })
@@ -70,7 +73,8 @@ impl CommandRunner for Runner {
         Ok(None)
     }
 
-    fn icon_accent(&self, _context: CommandContext) -> Result<Option<IconAccent>, HostError> {
+    fn icon_accent(&self, context: CommandContext) -> Result<Option<IconAccent>, HostError> {
+        self.derived.lock().unwrap().push(context);
         Ok(Some(IconAccent { primary: Some("#f00".into()), secondary: None }))
     }
 }
@@ -389,4 +393,118 @@ fn a_native_command_lock_disables_resolution_and_releases() {
     assert!(
         block_on(commands.resolve_command("view:single".into(), None)).unwrap().unwrap().enabled
     );
+}
+
+#[test]
+fn every_hook_receives_current_app_state_after_whole_replacement_and_failed_runs() {
+    for run in [Run::Finish, Run::Fail] {
+        let (thread, commands) = handle();
+        let wakes = Arc::new(AtomicUsize::new(0));
+        let count = wakes.clone();
+        block_on(thread.call(move |kernel| {
+            kernel.kernel.subscribe(std::rc::Rc::new(move || {
+                count.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }));
+        }))
+        .unwrap();
+        let runner = Runner::new(run, Ok(true));
+        block_on(commands.register_command(
+            definition(
+                "app:inspect",
+                Some(runner.clone()),
+                vec![
+                    CommandHook::Run,
+                    CommandHook::Enabled,
+                    CommandHook::Active,
+                    CommandHook::Visible,
+                    CommandHook::IconAccent,
+                ],
+            ),
+            true,
+        ))
+        .unwrap();
+        for state in [
+            epdf_kernel::undefined(),
+            serde_json::json!({"done": [], "status": "review"}),
+            serde_json::json!({"done": ["a"]}),
+            serde_json::Value::Null,
+        ] {
+            // The settings merge treats the undefined marker as no change.
+            // Read the initial value before applying JSON replacements.
+            if !epdf_kernel::is_undefined(&state) {
+                block_on(commands.set_app_state_json(state.to_string())).unwrap();
+            }
+            runner.derived.lock().unwrap().clear();
+            let before = wakes.load(Ordering::SeqCst);
+            let result = block_on(commands.execute("app:inspect".into(), None, None));
+            assert!(wakes.load(Ordering::SeqCst) > before, "finished and failed runs wake readers");
+            match run {
+                Run::Finish => assert_eq!(result.unwrap(), CommandExecuteResult::Executed),
+                Run::Fail => assert_eq!(code(&result.unwrap_err()), Some("operation-failed")),
+                _ => unreachable!(),
+            }
+            let ran = runner.ran.lock().unwrap();
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&ran.last().unwrap().app_state_json)
+                    .unwrap(),
+                state
+            );
+            drop(ran);
+            block_on(commands.resolve_command("app:inspect".into(), None)).unwrap().unwrap();
+            let derived = runner.derived.lock().unwrap();
+            assert!(derived.len() >= 4);
+            for context in derived.iter() {
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(&context.app_state_json).unwrap(),
+                    state
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn invalid_app_state_keeps_the_previous_state_and_other_settings() {
+    let (thread, commands) = handle();
+    let runner = Runner::new(Run::Finish, Ok(true));
+    block_on(
+        commands
+            .register_command(definition("app:inspect", Some(runner.clone()), run_hooks()), false),
+    )
+    .unwrap();
+    block_on(thread.call(|kernel| {
+        kernel.capability(&COMMANDS).unwrap().update_settings(&CommandsConfig {
+            commands: Some(vec![
+                epdf_plugin_commands::CommandDef::new("configured:keep", "Keep").into(),
+            ]),
+            ..CommandsConfig::default()
+        });
+    }))
+    .unwrap();
+    block_on(commands.disable_category("hidden".into())).unwrap();
+    block_on(commands.set_app_state_json(r#"{"kept":true}"#.into())).unwrap();
+    let wakes = Arc::new(AtomicUsize::new(0));
+    let count = wakes.clone();
+    block_on(thread.call(move |kernel| {
+        kernel.kernel.subscribe(std::rc::Rc::new(move || {
+            count.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }));
+    }))
+    .unwrap();
+    let error = block_on(commands.set_app_state_json("{broken".into())).unwrap_err();
+    assert_eq!(wakes.load(Ordering::SeqCst), 0, "invalid input changes nothing");
+    assert_eq!(code(&error), Some("invalid-input"));
+    assert!(block_on(commands.has_command("app:inspect".into())).unwrap());
+    assert!(block_on(commands.has_command("configured:keep".into())).unwrap());
+    assert_eq!(block_on(commands.disabled_categories()).unwrap(), ["hidden"]);
+    block_on(commands.execute("app:inspect".into(), None, None)).unwrap();
+    assert_eq!(runner.ran.lock().unwrap().last().unwrap().app_state_json, r#"{"kept":true}"#);
+    let state =
+        block_on(thread.call(|kernel| {
+            (*kernel.capability(&COMMANDS).unwrap().get_settings().app_state).clone()
+        }))
+        .unwrap();
+    assert_eq!(state, serde_json::json!({"kept":true}));
 }

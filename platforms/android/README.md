@@ -88,3 +88,38 @@ whether or not anyone calls it.
 The cost of the second rename is that `shutdown` is not the word either platform
 expects for this, and a facade will want to present it as `close`. That is the
 facade's job and a reason it exists.
+
+
+## Full viewer command callbacks on Linux
+
+The AAR smoke test builds `epdf-uniffi`, which does not link every viewer
+plugin. Command callbacks are tested separately against `epdf-viewer-host`:
+
+```bash
+KOTLINC=/path/to/kotlinc \
+JNA_JAR=/path/to/jna-5.14.0.jar \
+COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm-1.10.2.jar \
+bash platforms/android/test-command-context.sh
+```
+
+Set `PDF_RUNTIME_LIB_DIR` and `LD_LIBRARY_PATH` for the native Linux PDFium
+runtime as for other native viewer tests. This test uses JDK 21 and Kotlin
+2.2.21. It builds the full host, generates every Kotlin component with the
+production `uniffi-bindgen`, compiles them together, and executes real command
+callbacks. It covers default JSON state, whole replacement including null,
+invalid-input preservation, state updates during successful and failing runs,
+and errors thrown by Kotlin callbacks across the native boundary. It also
+changes one expected checksum in a separate test module and requires native
+initialization to reject it. An optional
+first argument selects an already-built full-host `.so`.
+
+Kotlin exposes the viewer's asynchronous `destroy` as `destroyViewer()`;
+`shutdown()` still stops its kernel thread, and generated `close()` releases
+its handle. `FormSubmissionValue.List` is named `Values` in Kotlin so it does
+not shadow Kotlin's collection type. These supported binding renames leave the
+Rust and Swift names intact.
+
+The production generator also adapts imported callback-error buffer wrappers
+without copying their Rust allocation. Its checksum declarations use the
+native unsigned 16-bit return width and compare unsigned values while retaining
+UniFFI's checksum constants, mismatch exceptions, and contract-version checks.
