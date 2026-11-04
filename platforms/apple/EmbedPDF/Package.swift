@@ -6,8 +6,8 @@ import PackageDescription
 // release tag on embed-pdf-runtime and the SHA-256 of its
 // EmbedPDFBindings.xcframework.zip. Both are "unpublished" until the first
 // publish.
-let engineRelease = "apple-engine-552d4e174b64d0a5"
-let engineChecksum = "55228e78cc5e418a3d248eca1b981815456266042b764c96bdced12954b3b0a0"
+let engineRelease = "apple-engine-3816be131b65bdee"
+let engineChecksum = "88cfb206b6d3fd74e017062411bbd6a5133616882e52df299754aa9487c0a116"
 
 let package = Package(
   name: "EmbedPDF",
