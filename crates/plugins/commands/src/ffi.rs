@@ -510,6 +510,7 @@ impl CommandsHandle {
 #[uniffi::export]
 impl CommandsHandle {
     /// Replace the appState setting whole, preserving all other settings.
+    /// The reserved {"$undefined":true} marker leaves it unchanged; null replaces it.
     /// Invalid JSON leaves the state and its notifications unchanged.
     pub async fn set_app_state_json(&self, app_state_json: String) -> Result<(), ViewerError> {
         self.cap

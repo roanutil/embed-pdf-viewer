@@ -17,6 +17,9 @@ import uniffi.epdf_plugin_commands.CommandContext
 import uniffi.epdf_plugin_commands.CommandDefinition
 import uniffi.epdf_plugin_commands.CommandHook
 import uniffi.epdf_plugin_commands.CommandRunner
+import uniffi.epdf_plugin_commands.CommandSettingLock
+import uniffi.epdf_plugin_commands.CommandRefusalReason
+import uniffi.epdf_plugin_commands.CommandKeyStroke
 import uniffi.epdf_plugin_commands.IconAccent
 
 /** Runs against the full native viewer host, including the commands plugin. */
@@ -44,15 +47,19 @@ suspend fun main() {
                 record(context)
                 return hook != CommandHook.ACTIVE || context.appStateJson == "{\"status\":\"approved\"}"
             }
+            override fun locked(context: CommandContext): CommandSettingLock? {
+                record(context)
+                return if (context.appStateJson == "{\"locked\":true}") CommandSettingLock(by = "app-state", reasonKey = null) else null
+            }
             override fun iconAccent(context: CommandContext): IconAccent? {
                 record(context)
                 return IconAccent(primary = if (context.appStateJson == "{\"status\":\"approved\"}") "#0f0" else "#f00", secondary = null)
             }
         }
         commands.registerCommand(CommandDefinition(
-            id = "app:inspect", labelKey = "Inspect", runner = runner,
+            id = "app:inspect", labelKey = "Inspect", shortcuts = listOf("Ctrl+L"), runner = runner,
             hooks = listOf(CommandHook.RUN, CommandHook.ENABLED, CommandHook.ACTIVE,
-                CommandHook.VISIBLE, CommandHook.ICON_ACCENT)
+                CommandHook.VISIBLE, CommandHook.ICON_ACCENT, CommandHook.LOCKED)
         ), replace = false)
         commands.resolveCommand("app:inspect", null)
         commands.execute("app:inspect", null, null)
@@ -61,6 +68,7 @@ suspend fun main() {
             override fun run(context: CommandContext, completion: CommandCompletion) {
                 error("A refused command must not run")
             }
+            override fun locked(context: CommandContext): CommandSettingLock? = null
             override fun derive(context: CommandContext, hook: CommandHook): Boolean {
                 failures.incrementAndGet()
                 throw HostException.Failed("derive failed in Kotlin")
@@ -97,6 +105,15 @@ suspend fun main() {
             check(seen.size >= 9 && seen.all { it == state }) { "All hooks must see the whole replacement: $seen" }
             check(commands.disabledCategories() == listOf("hidden"))
         }
+        commands.setAppStateJson("{\"locked\":true}")
+        seen.clear()
+        check(!commands.resolveCommand("app:inspect", null)!!.enabled)
+        val match = commands.matchStroke(CommandKeyStroke(key = "l", ctrl = true), false, false)!!
+        check(match.refusal?.reason == CommandRefusalReason.LOCKED)
+        check(seen.isNotEmpty() && seen.all { it == "{\"locked\":true}" })
+        commands.setAppStateJson("null")
+        check(commands.resolveCommand("app:inspect", null)!!.enabled)
+        println("CommandContextTest: appState controls lock availability and shortcut refusal")
         commands.setAppStateJson("{\"kept\":true}")
         val beforeInvalid = revisions.get()
         try {
@@ -128,6 +145,7 @@ suspend fun main() {
                 }
                 override fun derive(context: CommandContext, hook: CommandHook): Boolean =
                     context.appStateJson == "{\"status\":\"approved\"}"
+                override fun locked(context: CommandContext): CommandSettingLock? = null
                 override fun iconAccent(context: CommandContext): IconAccent? = null
             }
             val registration = commands.registerCommand(CommandDefinition(

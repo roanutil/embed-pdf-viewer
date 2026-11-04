@@ -68,9 +68,14 @@ impl CommandRunner for Runner {
 
     fn locked(
         &self,
-        _context: CommandContext,
+        context: CommandContext,
     ) -> Result<Option<epdf_plugin_commands::ffi::CommandSettingLock>, HostError> {
-        Ok(None)
+        let locked = context.app_state_json == r#"{"locked":true}"#;
+        self.derived.lock().unwrap().push(context);
+        Ok(locked.then(|| epdf_plugin_commands::ffi::CommandSettingLock {
+            by: "app-state".into(),
+            reason_key: None,
+        }))
     }
 
     fn icon_accent(&self, context: CommandContext) -> Result<Option<IconAccent>, HostError> {
@@ -419,6 +424,7 @@ fn every_hook_receives_current_app_state_after_whole_replacement_and_failed_runs
                     CommandHook::Active,
                     CommandHook::Visible,
                     CommandHook::IconAccent,
+                    CommandHook::Locked,
                 ],
             ),
             true,
@@ -453,7 +459,7 @@ fn every_hook_receives_current_app_state_after_whole_replacement_and_failed_runs
             drop(ran);
             block_on(commands.resolve_command("app:inspect".into(), None)).unwrap().unwrap();
             let derived = runner.derived.lock().unwrap();
-            assert!(derived.len() >= 4);
+            assert!(derived.len() >= 5);
             for context in derived.iter() {
                 assert_eq!(
                     serde_json::from_str::<serde_json::Value>(&context.app_state_json).unwrap(),
@@ -507,4 +513,51 @@ fn invalid_app_state_keeps_the_previous_state_and_other_settings() {
         }))
         .unwrap();
     assert_eq!(state, serde_json::json!({"kept":true}));
+}
+
+#[test]
+fn current_app_state_controls_native_lock_availability_and_shortcut_refusal() {
+    use epdf_plugin_commands::ffi::{CommandKeyStroke, CommandRefusalReason};
+    let (_, commands) = handle();
+    let runner = Runner::new(Run::Finish, Ok(true));
+    let mut def =
+        definition("app:locked", Some(runner.clone()), vec![CommandHook::Run, CommandHook::Locked]);
+    def.shortcuts = vec!["Ctrl+L".into()];
+    block_on(commands.register_command(def, false)).unwrap();
+    block_on(commands.set_app_state_json(r#"{"locked":true}"#.into())).unwrap();
+    assert!(
+        !block_on(commands.resolve_command("app:locked".into(), None)).unwrap().unwrap().enabled
+    );
+    let matched = block_on(commands.match_stroke(
+        CommandKeyStroke {
+            key: "l".into(),
+            code: None,
+            ctrl: true,
+            meta: false,
+            alt: false,
+            shift: false,
+        },
+        false,
+        false,
+    ))
+    .unwrap()
+    .unwrap();
+    assert_eq!(matched.refusal.unwrap().reason, CommandRefusalReason::Locked);
+    assert_eq!(
+        block_on(commands.execute("app:locked".into(), None, None)).unwrap(),
+        CommandExecuteResult::Rejected { reason: CommandRejectReason::Disabled }
+    );
+    assert!(runner.ran.lock().unwrap().is_empty());
+    assert!(
+        runner.derived.lock().unwrap().iter().all(|c| c.app_state_json == r#"{"locked":true}"#)
+    );
+    block_on(commands.set_app_state_json("null".into())).unwrap();
+    assert!(
+        block_on(commands.resolve_command("app:locked".into(), None)).unwrap().unwrap().enabled
+    );
+    assert_eq!(
+        block_on(commands.execute("app:locked".into(), None, None)).unwrap(),
+        CommandExecuteResult::Executed
+    );
+    assert_eq!(runner.ran.lock().unwrap().last().unwrap().app_state_json, "null");
 }

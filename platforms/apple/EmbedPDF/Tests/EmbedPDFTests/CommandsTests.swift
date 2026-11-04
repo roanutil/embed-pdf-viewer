@@ -46,7 +46,8 @@ extension BaseSuite {
         enabled: { record($0); return true },
         active: { record($0); return false },
         visible: { record($0); return true },
-        iconAccent: { record($0); return nil }
+        iconAccent: { record($0); return nil },
+        locked: { record($0); return nil }
       )
       _ = try await commands.register(CommandDefinition(id: "app:inspect", labelKey: "Inspect", handler: handler))
       _ = try await commands.resolve("app:inspect")
@@ -108,12 +109,16 @@ extension BaseSuite {
           try await commands.setAppState(Data(#"{"status":"approved"}"#.utf8))
           if fails { throw Full() }
         },
-        active: { $0.appStateJson == #"{"status":"approved"}"# }
+        active: { $0.appStateJson == #"{"status":"approved"}"# },
+        locked: { context in
+          context.appStateJson == #"{"status":"approved"}"# ? CommandSettingLock(by: "app-state", reasonKey: nil) : nil
+        }
       )
-      let registration = try await commands.register(CommandDefinition(id: "app:update", labelKey: "Update", handler: handler))
+      let registration = try await commands.register(CommandDefinition(id: "app:update", labelKey: "Update", shortcuts: ["Ctrl+L"], handler: handler))
       defer { registration.unregister() }
       let before = try await commands.resolve("app:update")
       expectNoDifference(before?.active, false)
+      expectNoDifference(before?.enabled, true)
       if fails {
         await #expect { _ = try await commands.execute("app:update") } throws: { error in
           (error as? PDFError)?.code == "operation-failed"
@@ -125,6 +130,9 @@ extension BaseSuite {
       expectNoDifference(ran.value, [#"{"status":"review"}"#])
       let after = try await commands.resolve("app:update")
       expectNoDifference(after?.active, true)
+      expectNoDifference(after?.enabled, false)
+      let match = try await commands.matchStroke(CommandKeyStroke(key: "l", ctrl: true), isMac: false)
+      expectNoDifference(match?.refusal?.reason, .locked)
       try await viewer.destroy()
     }
 

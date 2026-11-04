@@ -155,6 +155,7 @@ public struct CommandsCapability: Sendable {
   /// Replace the app's JSON state whole. Every command hook receives the
   /// current value in `CommandContext.appStateJson`. Invalid UTF-8 or JSON
   /// throws `invalid-input` without changing the previous state.
+  /// The reserved `{"$undefined":true}` marker leaves state unchanged; `null` replaces it.
   public func setAppState(_ appState: Data) async throws(PDFError) {
     guard let json = String(bytes: appState, encoding: .utf8) else {
       throw PDFError(name: "EncodingError", code: "invalid-input", detail: "appState is not valid UTF-8")
