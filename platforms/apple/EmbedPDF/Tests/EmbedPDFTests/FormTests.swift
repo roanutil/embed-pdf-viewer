@@ -38,7 +38,8 @@ extension BaseSuite {
       #expect(try await form.focus(field.fieldRef, options: FormFocusOptions(select: true)))
       expectNoDifference(target.selections.value, [true])
       try await form.notifyWidgetEvent(field.fieldRef, widget: widget, event: .focus)
-      expectNoDifference(try await form.focusedField()?.fieldRef, field.fieldRef)
+      let focused = try await form.focusedField()
+      expectNoDifference(focused?.fieldRef, field.fieldRef)
       for await event in events {
         guard case let .focusChanged(changed, current) = event else { continue }
         expectNoDifference(changed?.fieldRef, field.fieldRef)

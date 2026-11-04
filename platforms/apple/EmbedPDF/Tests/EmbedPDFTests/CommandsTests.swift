@@ -26,10 +26,12 @@ extension BaseSuite {
       #expect(locked.visible && locked.active && !locked.enabled)
       let match = try await commands.matchStroke(CommandKeyStroke(key: "l", ctrl: true), isMac: false)
       expectNoDifference(match?.refusal?.reason, .locked)
-      expectNoDifference(try await commands.execute("view:single"), .rejected(reason: .disabled))
+      let blocked = try await commands.execute("view:single")
+      expectNoDifference(blocked, .rejected(reason: .disabled))
       expectNoDifference(ran.value, 0)
       held.withValue { $0 = false }
-      expectNoDifference(try await commands.execute("view:single"), .executed)
+      let released = try await commands.execute("view:single")
+      expectNoDifference(released, .executed)
       expectNoDifference(ran.value, 1)
     }
 
