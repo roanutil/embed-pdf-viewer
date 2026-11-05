@@ -12,7 +12,7 @@ let engineChecksum = "88cfb206b6d3fd74e017062411bbd6a5133616882e52df299754aa9487
 let package = Package(
   name: "EmbedPDF",
   platforms: [
-    .iOS(.v17),
+    .iOS(.v17), .macOS(.v14),
   ],
   products: [
     .library(name: "EmbedPDF", targets: ["EmbedPDF"]),
@@ -35,6 +35,8 @@ let package = Package(
         .linkedLibrary("c++"),
         .linkedFramework("CoreFoundation"),
         .linkedFramework("CoreGraphics"),
+        .linkedFramework("Foundation"),
+        .linkedFramework("AppKit", .when(platforms: [.macOS])),
       ]
     ),
     .target(
@@ -116,6 +118,8 @@ if !usesLocalEngine {
       .linkedLibrary("c++"),
       .linkedFramework("CoreFoundation"),
       .linkedFramework("CoreGraphics"),
+      .linkedFramework("Foundation"),
+      .linkedFramework("AppKit", .when(platforms: [.macOS])),
     ]
   }
 }
