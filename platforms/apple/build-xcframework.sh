@@ -116,14 +116,15 @@ for slice in "${SLICES[@]}"; do
 
   echo "building $rust"
   case "$fork" in
-    ios-arm64) sdk=iphoneos ;;
-    ios-sim-arm64) sdk=iphonesimulator ;;
-    darwin-static-*) sdk=macosx ;;
+    ios-arm64) sdk=iphoneos; clang_target=arm64-apple-ios17.0 ;;
+    ios-sim-arm64) sdk=iphonesimulator; clang_target=arm64-apple-ios17.0-simulator ;;
+    darwin-static-arm64) sdk=macosx; clang_target=arm64-apple-macosx14.0 ;;
+    darwin-static-x64) sdk=macosx; clang_target=x86_64-apple-macosx14.0 ;;
   esac
   sdk_root="$(xcrun --sdk "$sdk" --show-sdk-path)"
   (cd "$ROOT" && EMBEDPDF_FORK_TARGET="$fork" SDKROOT="$sdk_root" \
     MACOSX_DEPLOYMENT_TARGET=14.0 IPHONEOS_DEPLOYMENT_TARGET=17.0 \
-    BINDGEN_EXTRA_CLANG_ARGS="${BINDGEN_EXTRA_CLANG_ARGS:+$BINDGEN_EXTRA_CLANG_ARGS }--target=$rust -isysroot $sdk_root" \
+    BINDGEN_EXTRA_CLANG_ARGS="${BINDGEN_EXTRA_CLANG_ARGS:+$BINDGEN_EXTRA_CLANG_ARGS }--target=$clang_target -isysroot $sdk_root" \
     RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
     cargo build --manifest-path "$ROOT/Cargo.toml" --offline --locked \
       -j "${CARGO_BUILD_JOBS:-2}" -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
