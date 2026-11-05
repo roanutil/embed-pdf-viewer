@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       runtime_build_file:
-        description: "URL of an engine-runtime-build JSON that pins ios-arm64 and ios-sim-arm64"
+        description: "URL pinning matching iOS and darwin-static arm64/x64 runtime archives"
         required: true
 
 permissions:
@@ -25,6 +25,8 @@ jobs:
   test:
     runs-on: macos-15
     timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: 2
     steps:
       - uses: actions/checkout@v4
 
@@ -47,10 +49,27 @@ jobs:
           RUNTIME_BUILD_FILE: ${{ inputs.runtime_build_file }}
         run: |
           curl -fsSL "$RUNTIME_BUILD_FILE" -o engine-runtime-build.ci.json
-          for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
+          for t in ios-arm64 ios-sim-arm64 darwin-static-arm64 darwin-static-x64; do
             PDF_RUNTIME_BUILD_FILE=$PWD/engine-runtime-build.ci.json bash packages/engine/runtime/scripts/fetch-libpdfium.sh $t
           done
-      - run: cargo test -p epdf-ffi -p epdf-viewer-host
+      - name: Verify input source identities
+        run: |
+          python3 - <<'PYTHON'
+          import json, pathlib, subprocess
+          source = subprocess.check_output(["git", "ls-tree", "HEAD", "packages/engine/runtime/runtime-src"], text=True).split()[2]
+          root = pathlib.Path("packages/engine/runtime/build/libpdfium")
+          for target in ["ios-arm64", "ios-sim-arm64", "darwin-static-arm64", "darwin-static-x64"]:
+              metadata = json.loads((root / target / "BUILD-METADATA.json").read_text())
+              assert metadata["sha"] == source and metadata["target"] == target, (target, metadata, source)
+          PYTHON
+      - name: Preserve canonical Rust native checks with static host input
+        run: |
+          case "$(uname -m)" in
+            arm64) export EMBEDPDF_FORK_TARGET=darwin-static-arm64 ;;
+            x86_64) export EMBEDPDF_FORK_TARGET=darwin-static-x64 ;;
+            *) exit 1 ;;
+          esac
+          cargo test --locked -p epdf-ffi -p epdf-viewer-host -- --test-threads=2
       - run: bash platforms/apple/build-xcframework.sh
       # The simulator is looked up after Xcode is selected, so the job names
       # whichever iPhone that Xcode ships rather than a model that may be gone.
@@ -60,5 +79,30 @@ jobs:
             | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
           test -n "$id" && test "$id" != null
           echo "SIM_ID=$id" >> "$GITHUB_ENV"
-      - working-directory: platforms/apple/EmbedPDF
-        run: xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID"
+      - name: Test source iOS engine
+        working-directory: platforms/apple/EmbedPDF
+        env:
+          EMBEDPDF_LOCAL_ENGINE: '1'
+        run: xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID" -jobs 2
+      - name: Test source Mac engine through a private manifest
+        run: |
+          node platforms/apple/macos-consumer.mjs platforms/apple/EmbedPDF "$RUNNER_TEMP/embedpdf-source-mac"
+          cd "$RUNNER_TEMP/embedpdf-source-mac"
+          EMBEDPDF_LOCAL_ENGINE=1 swift test --jobs 2 --scratch-path "$RUNNER_TEMP/embedpdf-source-mac-cache"
+      - run: bash platforms/apple/package-engine-framework.sh
+      - name: Verify raw and packaged platform/architecture layouts
+        run: |
+          python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFFFI.xcframework
+          python3 platforms/apple/tests/xcframework-layout.test.py platforms/apple/EmbedPDF/EmbedPDFBindings.xcframework
+      - name: Test packaged Mac engine through a fresh private manifest
+        run: |
+          node platforms/apple/macos-consumer.mjs platforms/apple/EmbedPDF "$RUNNER_TEMP/embedpdf-packaged-mac"
+          cd "$RUNNER_TEMP/embedpdf-packaged-mac"
+          EMBEDPDF_PREBUILT_ENGINE=local swift test --jobs 2 --scratch-path "$RUNNER_TEMP/embedpdf-packaged-mac-cache"
+      - name: Test packaged iOS engine
+        working-directory: platforms/apple/EmbedPDF
+        env:
+          EMBEDPDF_PREBUILT_ENGINE: local
+        run: |
+          xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID" -jobs 2
+          xcodebuild build -scheme EmbedPDF-Package -destination 'generic/platform=iOS' -jobs 2 CODE_SIGNING_ALLOWED=NO

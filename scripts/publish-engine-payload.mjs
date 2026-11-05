@@ -106,6 +106,8 @@ import {
   releaseVerdict,
 } from './lib/payload-notes.mjs';
 
+import { stageMacConsumer } from '../platforms/apple/macos-consumer.mjs';
+
 const RELEASE_REPO = 'roanutil/embed-pdf-runtime';
 const TARGET = 'wasm32';
 const ASSET = `engine-runtime-payload-${TARGET}.tar.gz`;
@@ -874,6 +876,11 @@ function publishApple() {
   console.log(`building ${tag} at ${head.slice(0, 9)}`);
   const device = buildFork(repo, 'ios-arm64');
   const simulator = buildFork(repo, 'ios-sim-arm64');
+  const macArm64 = buildFork(repo, 'darwin-static-arm64');
+  const macX64 = buildFork(repo, 'darwin-static-x64');
+  if (new Set([device.sha, simulator.sha, macArm64.sha, macX64.sha]).size !== 1) {
+    throw new Error('Apple slices do not share one runtime source commit');
+  }
   // Both targets stage under the same root, as <target>/lib/libembedpdf.a.
   sh(
     `LIB_ROOT=${JSON.stringify(path.dirname(device.staging))} bash platforms/apple/build-xcframework.sh`,
@@ -909,15 +916,38 @@ function publishApple() {
   );
   rmSync(derived, { recursive: true, force: true });
 
+  // Test exact packaged bytes on Mac through a private manifest. The
+  // distributed platform declaration and pin change only after acceptance.
+  const macRoot = mkdtempSync(path.join(tmpdir(), 'apple-engine-mac-'));
+  const macPackage = path.join(macRoot, 'EmbedPDF');
+  try {
+    stageMacConsumer(path.join(apple, 'EmbedPDF'), macPackage);
+    for (const arch of ['arm64', 'x86_64']) {
+      sh(
+        `env -u EMBEDPDF_LOCAL_ENGINE -u EMBEDPDF_EXPERIMENTAL_BRIDGE ` +
+          `-u PDF_RUNTIME_LIB_DIR -u EMBEDPDF_FORK_TARGET -u LIB_ROOT ` +
+          `-u DYLD_LIBRARY_PATH -u DYLD_FALLBACK_LIBRARY_PATH ` +
+          `EMBEDPDF_PREBUILT_ENGINE=local xcodebuild test -scheme EmbedPDF-Package ` +
+          `-destination ${JSON.stringify(`platform=macOS,arch=${arch}`)} -jobs 2 ` +
+          `-derivedDataPath ${JSON.stringify(path.join(macRoot, `derived-${arch}`))}`,
+        macPackage,
+      );
+    }
+  } finally {
+    rmSync(macRoot, { recursive: true, force: true });
+  }
+
   const xcode = run('xcodebuild', ['-version']).split('\n')[0];
   const notes = [
-    `iOS engine for platforms/apple/EmbedPDF/Package.swift: the uniffi Swift, Rust core and PDFium in one static framework.`,
+    `iOS and universal macOS engine for platforms/apple/EmbedPDF/Package.swift: UniFFI Swift, Rust core and PDFium in static frameworks.`,
     '',
     `- Engine hash: \`${hash}\``,
     `- Viewer commit: \`${head}\``,
-    `- Fork commit (runtime-src): \`${device.sha}\`, built for ios-arm64 and ios-sim-arm64`,
+    `- Fork commit (runtime-src): \`${device.sha}\`, built for ios-arm64, ios-sim-arm64, darwin-static-arm64 and darwin-static-x64`,
     `- ios-arm64 libembedpdf.a sha256: \`${device.libSha256}\``,
     `- ios-sim-arm64 libembedpdf.a sha256: \`${simulator.libSha256}\``,
+    `- darwin-static-arm64 libembedpdf.a sha256: \`${macArm64.libSha256}\``,
+    `- darwin-static-x64 libembedpdf.a sha256: \`${macX64.libSha256}\``,
     `- ${rustc}`,
     `- ${xcode}`,
     `- SwiftPM checksum (${ZIP} sha256): \`${checksum}\``,

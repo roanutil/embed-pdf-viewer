@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The canonical identity of the prebuilt iOS engine XCFramework: a hash over
+# The canonical identity of the prebuilt iOS/macOS engine XCFramework: a hash over
 # every input that determines its contents. Prints 16 hex chars.
 #
 # scripts/publish-engine-payload.mjs names the `apple-engine-<hash>` release
@@ -14,6 +14,13 @@
 # the framework and are left out. A listed crate with no files is a path that
 # doesn't exist, and fails rather than hashing nothing.
 set -euo pipefail
+
+HASH_LENGTH=16
+case "$#:${1:-}" in
+  0:) ;;
+  1:--full) HASH_LENGTH=64 ;;
+  *) echo "usage: $0 [--full]" >&2; exit 2 ;;
+esac
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
@@ -32,6 +39,8 @@ INPUTS=(
   "rust-toolchain.toml"
   "platforms/apple/build-xcframework.sh"
   "platforms/apple/package-engine-framework.sh"
+  "platforms/apple/check-native-graph.py"
+  "platforms/apple/macos-consumer.mjs"
   # FORK_RECIPE and the iOS sync policy decide how the PDFium slices build.
   "perf-compare/scripts/build-arm.mjs"
 )
@@ -68,7 +77,7 @@ done
 ACC+="runtime-src:$(git -C "$REPO_ROOT" ls-files -s packages/engine/runtime/runtime-src | awk '{print $2}')\n"
 
 if command -v sha256sum >/dev/null 2>&1; then
-  printf '%b' "$ACC" | sha256sum | awk '{print substr($1, 1, 16)}'
+  printf '%b' "$ACC" | sha256sum | awk -v hash_length="$HASH_LENGTH" '{print substr($1, 1, hash_length)}'
 else
-  printf '%b' "$ACC" | shasum -a 256 | awk '{print substr($1, 1, 16)}'
+  printf '%b' "$ACC" | shasum -a 256 | awk -v hash_length="$HASH_LENGTH" '{print substr($1, 1, hash_length)}'
 fi

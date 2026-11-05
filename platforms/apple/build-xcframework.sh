@@ -46,7 +46,7 @@ export PDF_RUNTIME_LIB_DIR="$LIB_ROOT"
 PROFILE="${PROFILE:-release}"
 # Where cargo puts what it builds: CARGO_TARGET_DIR, a config's
 # build.target-dir, or $ROOT/target. `cargo metadata` resolves all three.
-TARGET_DIR="$(cd "$ROOT" && cargo metadata --format-version 1 --no-deps \
+TARGET_DIR="$(cd "$ROOT" && cargo metadata --manifest-path "$ROOT/Cargo.toml" --offline --locked --format-version 1 --no-deps \
   | sed -E 's/.*"target_directory":"([^"]*)".*/\1/')"
 
 # The manual bridge links into epdf-viewer-host's own staticlib (one copy of
@@ -61,6 +61,8 @@ fi
 SLICES=(
   "aarch64-apple-ios:ios-arm64"
   "aarch64-apple-ios-sim:ios-sim-arm64"
+  "aarch64-apple-darwin:darwin-static-arm64"
+  "x86_64-apple-darwin:darwin-static-x64"
 )
 
 # Panic messages and debug info embed the source path of every crate, which
@@ -76,11 +78,27 @@ REMAP="--remap-path-prefix=$HOME=~ --remap-path-prefix=$ROOT=/embedpdf-viewer"
 rm -rf "$BUILD"
 mkdir -p "$BUILD"
 
-# The external symbols an archive defines, sorted. nm can't read every
-# member (the device slice's Rust objects carry bitcode from a newer LLVM
-# than Xcode's) and exits 1 for those; what it does list is enough here.
+# Refuse partial symbol inventories: a skipped bitcode member can hide a
+# second PDFium definition. A compatible owned tool may override Xcode's nm.
+NM="${EMBEDPDF_NM:-nm}"
 defined_symbols() {
-  { nm -gUj "$1" 2>/dev/null || true; } | grep -v -e ':$' -e '^$' | sort -u
+  local symbols
+  if ! symbols="$("$NM" -gUj "$1")"; then
+    echo "symbol inspection failed for $1; set EMBEDPDF_NM to a compatible reviewed tool" >&2
+    return 1
+  fi
+  # Public PDFium/EmbedPDF exports must have exactly one strong definition.
+  # Rust/Swift weak or coalesced symbols are outside this export namespace.
+  if ! printf '%s\n' "$symbols" | awk '
+    /^_?(FPDF[A-Za-z0-9_]*|FORM_[A-Za-z0-9_]*|FSDK_[A-Za-z0-9_]*|EPDF_[A-Za-z0-9_]*)$/ {
+      if (++seen[$0] > 1) duplicate = 1
+    }
+    END { exit duplicate ? 1 : 0 }
+  '; then
+    echo "duplicate PDFium definitions in $1" >&2
+    return 1
+  fi
+  printf '%s\n' "$symbols" | grep -v -e ':$' -e '^$' | sort -u
 }
 
 for slice in "${SLICES[@]}"; do
@@ -97,9 +115,19 @@ for slice in "${SLICES[@]}"; do
   fi
 
   echo "building $rust"
-  (cd "$ROOT" && RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
-    cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
-    ${FEATURES[@]+"${FEATURES[@]}"})
+  case "$fork" in
+    ios-arm64) sdk=iphoneos ;;
+    ios-sim-arm64) sdk=iphonesimulator ;;
+    darwin-static-*) sdk=macosx ;;
+  esac
+  sdk_root="$(xcrun --sdk "$sdk" --show-sdk-path)"
+  (cd "$ROOT" && EMBEDPDF_FORK_TARGET="$fork" SDKROOT="$sdk_root" \
+    MACOSX_DEPLOYMENT_TARGET=14.0 IPHONEOS_DEPLOYMENT_TARGET=17.0 \
+    BINDGEN_EXTRA_CLANG_ARGS="${BINDGEN_EXTRA_CLANG_ARGS:+$BINDGEN_EXTRA_CLANG_ARGS }--target=$rust -isysroot $sdk_root" \
+    RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
+    cargo build --manifest-path "$ROOT/Cargo.toml" --offline --locked \
+      -j "${CARGO_BUILD_JOBS:-2}" -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
+      ${FEATURES[@]+"${FEATURES[@]}"})
 
   # One archive per slice, because `xcodebuild -create-xcframework` takes one
   # `-library` per platform. pdfium-sys links libembedpdf as
@@ -111,12 +139,14 @@ for slice in "${SLICES[@]}"; do
   host="$TARGET_DIR/$rust/$PROFILE/libepdf_viewer_host.a"
   inputs=("$host")
   # grep reads to the end (no -q), so nm never dies of SIGPIPE under pipefail.
-  if ! defined_symbols "$host" | grep -x '_FPDF_InitLibraryWithConfig' >/dev/null; then
+  host_symbols="$(defined_symbols "$host")"
+  if ! printf '%s\n' "$host_symbols" | grep -x '_FPDF_InitLibraryWithConfig' >/dev/null; then
     inputs+=("$LIB_ROOT/$fork/lib/libembedpdf.a")
     # libtool -static keeps a symbol two inputs both define without a word,
     # and the app's linker then takes whichever member it reaches first.
     # Refuse that here rather than ship two definitions.
-    dupes="$(comm -12 <(defined_symbols "${inputs[0]}") <(defined_symbols "${inputs[1]}"))"
+    runtime_symbols="$(defined_symbols "${inputs[1]}")"
+    dupes="$(comm -12 <(printf '%s\n' "$host_symbols") <(printf '%s\n' "$runtime_symbols"))"
     if [[ -n "$dupes" ]]; then
       echo "symbols defined in both $rust archives:" >&2
       echo "$dupes" | head -20 >&2
@@ -134,12 +164,31 @@ done
 # Swift for every crate in the archive that has scaffolding: epdf_uniffi,
 # epdf_ffi, epdf_viewer_host and the plugins' ffi modules.
 echo "generating bindings"
-(cd "$ROOT" && cargo build -p uniffi-bindgen)
+case "$(uname -m)" in
+  arm64 | aarch64) host_fork=darwin-static-arm64 ;;
+  x86_64) host_fork=darwin-static-x64 ;;
+  *) echo "unsupported Apple build host" >&2; exit 1 ;;
+esac
+(cd "$ROOT" && EMBEDPDF_FORK_TARGET="$host_fork" \
+  SDKROOT="$(xcrun --sdk macosx --show-sdk-path)" MACOSX_DEPLOYMENT_TARGET=14.0 \
+  cargo build --manifest-path "$ROOT/Cargo.toml" --offline --locked \
+    -j "${CARGO_BUILD_JOBS:-2}" -p uniffi-bindgen)
 rm -rf "$BUILD/generated" "$BUILD/headers"
-mkdir -p "$BUILD/generated" "$BUILD/headers"
-"$TARGET_DIR/debug/uniffi-bindgen" generate \
-  --library "$TARGET_DIR/aarch64-apple-ios-sim/$PROFILE/libepdf_viewer_host.a" \
-  --language swift --out-dir "$BUILD/generated"
+mkdir -p "$BUILD/headers"
+generated_roots=()
+for slice in "${SLICES[@]}"; do
+  rust="${slice%%:*}"
+  fork="${slice##*:}"
+  generated="$BUILD/generated-$fork"
+  mkdir -p "$generated"
+  "$TARGET_DIR/debug/uniffi-bindgen" generate \
+    --library "$TARGET_DIR/$rust/$PROFILE/libepdf_viewer_host.a" \
+    --language swift --out-dir "$generated"
+  generated_roots+=("$generated")
+done
+python3 "$ROOT/platforms/apple/check-native-graph.py" \
+  --compare-generated "${generated_roots[@]}"
+cp -R "$BUILD/generated-ios-sim-arm64" "$BUILD/generated"
 
 # One *FFI.h and one *FFI.modulemap per crate. xcframework wants a single
 # module.modulemap inside the headers directory, so the per-crate maps are
@@ -163,9 +212,14 @@ fi
 
 echo "creating the xcframework"
 rm -rf "$OUT/EmbedPDFFFI.xcframework"
+mkdir -p "$BUILD/macos-universal"
+lipo -create "$BUILD/darwin-static-arm64/libEmbedPDFFFI.a" \
+  "$BUILD/darwin-static-x64/libEmbedPDFFFI.a" \
+  -output "$BUILD/macos-universal/libEmbedPDFFFI.a"
 xcodebuild -create-xcframework \
   -library "$BUILD/ios-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -library "$BUILD/ios-sim-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
+  -library "$BUILD/macos-universal/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -output "$OUT/EmbedPDFFFI.xcframework" > /dev/null
 
 mkdir -p "$OUT/Sources/EmbedPDFBindings"
@@ -209,5 +263,5 @@ done
 
 echo
 echo "  $OUT/EmbedPDFFFI.xcframework"
-xcodebuild -version | head -1
+xcodebuild -version | sed -n '1p'
 lipo -info "$OUT/EmbedPDFFFI.xcframework"/*/libEmbedPDFFFI.a 2>/dev/null | sed 's/^/  /'
