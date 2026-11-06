@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "kind": "destinations.xyz",
+  "cases": [
+    {
+      "name": "none",
+      "covers": "No XYZ parameters retains every current component.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_none.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": null,
+        "y": null
+      }
+    },
+    {
+      "name": "left",
+      "covers": "A short array retains its available left coordinate.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_left.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": 50,
+        "y": null
+      }
+    },
+    {
+      "name": "axes",
+      "covers": "A short array retains both available axes.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_axes.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": 50,
+        "y": 32
+      }
+    },
+    {
+      "name": "null",
+      "covers": "Null parameters retain all current components.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_null.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": null,
+        "y": null
+      }
+    },
+    {
+      "name": "zero-zoom",
+      "covers": "Literal zero zoom reads as null.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_zero-zoom.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": 50,
+        "y": 32
+      }
+    },
+    {
+      "name": "positive-zoom",
+      "covers": "Positive zoom and zero left keep their values.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_positive-zoom.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": 1.5,
+        "x": -50,
+        "y": -60
+      }
+    },
+    {
+      "name": "null-left",
+      "covers": "A null left does not hide available top or zoom.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_null-left.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": 1.5,
+        "x": null,
+        "y": 32
+      }
+    },
+    {
+      "name": "zero-axes",
+      "covers": "Zero axes are coordinates while zero zoom retains the current zoom.",
+      "fixture": "tooling/engine-conformance/fixtures/destination_xyz_zero-axes.pdf",
+      "destination": {
+        "kind": "xyz",
+        "page": {
+          "kind": "objectNumber",
+          "objectNumber": 3
+        },
+        "zoom": null,
+        "x": -50,
+        "y": 732
+      }
+    }
+  ]
+}

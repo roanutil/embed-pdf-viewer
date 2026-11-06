@@ -1,9 +1,10 @@
 /**
  * Emits the document-level reads: `vectors/metadata/read.json` and
- * `vectors/metadata/pages.json`.
+ * `vectors/metadata/pages.json`, catalog actions and XYZ destinations.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run metadata
  *   pnpm --filter @embedpdf/tooling-engine-conformance run metadata:check
+ *   pnpm --filter @embedpdf/tooling-engine-conformance run metadata --xyz-only --runtime=native
  *
  * G6's gate. `crates/epdf-engine/tests/{metadata_corpus,pages_corpus}.rs`
  * replay them.
@@ -22,6 +23,11 @@ import { createLocalEngine } from '../../../packages/engine/main/src/index';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'metadata');
+const runtimeArgument = process.argv.find((argument) => argument.startsWith('--runtime='));
+const runtimePreference = runtimeArgument?.slice('--runtime='.length) ?? 'wasm';
+if (runtimePreference !== 'wasm' && runtimePreference !== 'native') {
+  throw new Error(`unsupported runtime ${runtimePreference}: use wasm or native`);
+}
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
 const SCHEMA_VERSION = 1;
@@ -82,11 +88,32 @@ const CASES: readonly MetadataCase[] = [
   },
 ];
 
-async function readCase(entry: MetadataCase): Promise<Record<string, unknown>> {
+const XYZ_CASES: readonly MetadataCase[] = [
+  { name: 'none', covers: 'No XYZ parameters retains every current component.' },
+  { name: 'left', covers: 'A short array retains its available left coordinate.' },
+  { name: 'axes', covers: 'A short array retains both available axes.' },
+  { name: 'null', covers: 'Null parameters retain all current components.' },
+  { name: 'zero-zoom', covers: 'Literal zero zoom reads as null.' },
+  { name: 'positive-zoom', covers: 'Positive zoom and zero left keep their values.' },
+  { name: 'null-left', covers: 'A null left does not hide available top or zoom.' },
+  {
+    name: 'zero-axes',
+    covers: 'Zero axes are coordinates while zero zoom retains the current zoom.',
+  },
+].map(({ name, covers }) => ({
+  name,
+  covers,
+  fixture: `tooling/engine-conformance/fixtures/destination_xyz_${name}.pdf`,
+}));
+
+async function readCase(
+  entry: MetadataCase,
+  destinationOnly = false,
+): Promise<Record<string, unknown>> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, entry.fixture)));
-  const engine = createLocalEngine({
+  const engine = await createLocalEngine({
     runtime: {
-      prefer: 'wasm',
+      prefer: runtimePreference,
       wasm: {
         print: (message: string) => process.stderr.write(`${message}\n`),
         printErr: (message: string) => process.stderr.write(`${message}\n`),
@@ -106,6 +133,9 @@ async function readCase(entry: MetadataCase): Promise<Record<string, unknown>> {
       // for `metadata.custom.get()` in a4b8259f7 ("Custom metadata keys are an
       // object of their own"); they go back under `custom`, where the vector
       // has always carried them.
+      if (destinationOnly) {
+        return { ...entry, destination: (await doc.actions.get()).openDestination };
+      }
       return {
         ...entry,
         metadata: { ...(await doc.metadata.get()), custom: await doc.metadata.custom.get() },
@@ -144,8 +174,22 @@ async function emit(relative: string, text: string, check: boolean): Promise<boo
   return true;
 }
 
+async function emitXyz(check: boolean): Promise<boolean> {
+  const cases: Record<string, unknown>[] = [];
+  for (const entry of XYZ_CASES) cases.push(await readCase(entry, true));
+  return emit(
+    'destinations-xyz.json',
+    `${JSON.stringify({ schemaVersion: SCHEMA_VERSION, kind: 'destinations.xyz', cases }, null, 2)}\n`,
+    check,
+  );
+}
+
 async function main(): Promise<void> {
   const check = process.argv.includes('--check');
+  if (process.argv.includes('--xyz-only')) {
+    if ((await emitXyz(check)) && check) process.exitCode = 1;
+    return;
+  }
 
   const cases: Record<string, unknown>[] = [];
   for (const entry of CASES) {
@@ -167,9 +211,9 @@ async function main(): Promise<void> {
     kind: 'actions.read',
     cases: cases.map(({ metadata: _metadata, pages: _pages, ...rest }) => rest),
   };
-  let differed = await emit('read.json', `${JSON.stringify(metadata, null, 2)}\n`, check);
-  differed =
-    (await emit('pages.json', `${JSON.stringify(pages, null, 2)}\n`, check)) || differed;
+  let differed = await emitXyz(check);
+  differed = (await emit('read.json', `${JSON.stringify(metadata, null, 2)}\n`, check)) || differed;
+  differed = (await emit('pages.json', `${JSON.stringify(pages, null, 2)}\n`, check)) || differed;
   differed =
     (await emit('actions.json', `${JSON.stringify(actions, null, 2)}\n`, check)) || differed;
   if (check && differed) {

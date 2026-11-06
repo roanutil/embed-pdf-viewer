@@ -124,15 +124,13 @@ pub fn read_destination(raw: &RawDestination<'_>) -> Option<PdfDestination> {
     };
 
     Some(match view.code {
-        view::XYZ => {
-            let location = raw.location();
-            PdfDestination::Xyz {
-                page_object_number,
-                left: location.left.map(f64::from),
-                top: location.top.map(f64::from),
-                zoom: location.zoom.map(f64::from),
-            }
-        }
+        view::XYZ => PdfDestination::Xyz {
+            page_object_number,
+            left: at(0),
+            top: at(1),
+            // ISO 32000-1 §12.3.2.2: zero zoom retains the current magnification.
+            zoom: at(2).filter(|zoom| *zoom != 0.0),
+        },
         view::FIT => PdfDestination::Fit { page_object_number },
         view::FIT_H => PdfDestination::FitH { page_object_number, top: at(0) },
         view::FIT_V => PdfDestination::FitV { page_object_number, left: at(0) },

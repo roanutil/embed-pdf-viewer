@@ -616,6 +616,30 @@ function pageLabels() {
   ]);
 }
 
+/** One destination reached through catalog, GoTo, link and outline readers. */
+function xyzDestination(params) {
+  const destination = `[3 0 R /XYZ ${params}]`;
+  return buildPdf([
+    Buffer.from(
+      `<< /Type /Catalog /Pages 2 0 R /OpenAction ${destination} ` +
+        `/AA << /WC << /S /GoTo /D ${destination} >> >> /Outlines 4 0 R >>`,
+      'latin1',
+    ),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ' +
+        '/CropBox [50 60 562 732] /Annots [6 0 R] >>',
+      'latin1',
+    ),
+    Buffer.from('<< /Type /Outlines /First 5 0 R /Last 5 0 R /Count 1 >>', 'latin1'),
+    Buffer.from(`<< /Title (Destination) /Parent 4 0 R /Dest ${destination} >>`, 'latin1'),
+    Buffer.from(
+      `<< /Type /Annot /Subtype /Link /Rect [50 60 100 100] /Dest ${destination} >>`,
+      'latin1',
+    ),
+  ]);
+}
+
 function pageActions() {
   const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
 
@@ -1581,6 +1605,14 @@ const outputs = [
   ['non_identity_text.pdf', nonIdentityText(font)],
   ['rich_metadata.pdf', richMetadata()],
   ['page_actions.pdf', pageActions()],
+  ['destination_xyz_none.pdf', xyzDestination('')],
+  ['destination_xyz_left.pdf', xyzDestination('100')],
+  ['destination_xyz_axes.pdf', xyzDestination('100 700')],
+  ['destination_xyz_null.pdf', xyzDestination('null null null')],
+  ['destination_xyz_zero-zoom.pdf', xyzDestination('100 700 0')],
+  ['destination_xyz_positive-zoom.pdf', xyzDestination('0 792 1.5')],
+  ['destination_xyz_null-left.pdf', xyzDestination('null 700 1.5')],
+  ['destination_xyz_zero-axes.pdf', xyzDestination('0 0 0')],
   ['annotation_base.pdf', annotationBase()],
   ['annotation_kinds.pdf', annotationKinds()],
   ['annotation_appearances.pdf', annotationAppearances()],

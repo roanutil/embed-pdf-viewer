@@ -429,3 +429,104 @@ fn a_cancelled_catalog_read_reports_aborted() {
         EngineErrorCode::Aborted,
     );
 }
+
+#[test]
+fn xyz_destinations_keep_short_axes_and_normalize_zoom_across_readers() {
+    use epdf_engine::features::actions::destination::read_destination;
+    use epdf_engine::features::pages::visible_box_reader;
+    use epdf_engine::page_space::destinations::page_destination_of;
+    use pdfium::DocumentActionEvent;
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct File {
+        schema_version: u32,
+        kind: String,
+        cases: Vec<Case>,
+    }
+    #[derive(Deserialize)]
+    struct Case {
+        name: String,
+        fixture: String,
+        destination: serde_json::Value,
+    }
+    let path = test_support::corpus::vectors_dir("metadata").join("destinations-xyz.json");
+    let file: File = serde_json::from_str(&std::fs::read_to_string(path).expect("XYZ vectors"))
+        .expect("XYZ vector envelope");
+    assert_eq!(file.schema_version, 1);
+    assert_eq!(file.kind, "destinations.xyz");
+    assert!(file.cases.len() >= 8, "the XYZ boundary cases must all replay");
+    for case in file.cases {
+        let bytes =
+            std::fs::read(test_support::workspace_root().join(&case.fixture)).expect("XYZ fixture");
+        let document = Document::from_bytes(Library::acquire(), &bytes, None).expect("XYZ PDF");
+        let compare = |entry: &str, raw: pdfium::RawDestination<'_>| {
+            let read = read_destination(&raw).expect("read XYZ");
+            let page = page_destination_of(read, &mut visible_box_reader(&document))
+                .expect("XYZ page coordinates");
+            assert_eq!(
+                test_support::corpus::quantized(
+                    &serde_json::to_value(page).expect("serialize XYZ")
+                ),
+                test_support::corpus::quantized(&case.destination),
+                "{} through {entry}",
+                case.name,
+            );
+        };
+        compare("open destination", document.open_action_destination().expect("OpenAction"));
+        let outline = document.outline_first().expect("outline");
+        compare("outline", outline.destination().expect("outline destination"));
+        let page = document.page(0).expect("page");
+        let link = page.annotation(0).expect("link");
+        compare("link", document.link_destination(&link).expect("link destination"));
+        let model =
+            document.document_action_model(DocumentActionEvent::WillClose).expect("GoTo action");
+        let tree =
+            read_action_model(&model, &mut ActionReadBudgetTracker::default()).expect("read GoTo");
+        let ActionNodeKind::Goto { destination } = tree.root.expect("GoTo root").kind else {
+            panic!("expected GoTo");
+        };
+        let page = page_destination_of(destination, &mut visible_box_reader(&document))
+            .expect("GoTo page coordinates");
+        assert_eq!(
+            test_support::corpus::quantized(&serde_json::to_value(page).unwrap()),
+            test_support::corpus::quantized(&case.destination),
+            "{} through GoTo",
+            case.name
+        );
+    }
+}
+
+#[test]
+fn xyz_raw_arrays_keep_available_axes_and_treat_zero_zoom_as_current() {
+    use epdf_engine::features::actions::destination::read_destination;
+    use epdf_engine::identity::PageObjectNumber;
+
+    let cases = [
+        ("none", None, None, None),
+        ("left", Some(100.0), None, None),
+        ("axes", Some(100.0), Some(700.0), None),
+        ("null", None, None, None),
+        ("zero-zoom", Some(100.0), Some(700.0), None),
+        ("positive-zoom", Some(0.0), Some(792.0), Some(1.5)),
+        ("null-left", None, Some(700.0), Some(1.5)),
+        ("zero-axes", Some(0.0), Some(0.0), None),
+    ];
+    for (name, left, top, zoom) in cases {
+        let path = test_support::workspace_root()
+            .join(format!("tooling/engine-conformance/fixtures/destination_xyz_{name}.pdf"));
+        let bytes = std::fs::read(path).expect("XYZ fixture");
+        let document = Document::from_bytes(Library::acquire(), &bytes, None).expect("XYZ PDF");
+        let raw = document.open_action_destination().expect("OpenAction destination");
+        assert_eq!(
+            read_destination(&raw),
+            Some(PdfDestination::Xyz {
+                page_object_number: PageObjectNumber::new(3).unwrap(),
+                left,
+                top,
+                zoom,
+            }),
+            "{name}",
+        );
+    }
+}
