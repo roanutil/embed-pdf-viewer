@@ -91,9 +91,16 @@ const BASE_FIELDS: &[(&str, FieldOwner)] = &[
     ("importedBy", E),
 ];
 
-const MARKUP: &[(&str, FieldOwner)] =
-    &[("rect", E), ("actions", P), ("color", D), ("opacity", D), ("quadPoints", D)];
+const MARKUP: &[(&str, FieldOwner)] = &[
+    ("rect", E),
+    ("actions", P),
+    ("color", D),
+    ("opacity", D),
+    ("quadPoints", D),
+    ("richText", D),
+];
 const SHAPE: &[(&str, FieldOwner)] = &[
+    ("richText", D),
     ("rect", E),
     ("actions", P),
     ("color", D),
@@ -114,6 +121,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
     match subtype {
         S::Highlight | S::Underline | S::Squiggly => MARKUP,
         S::Strikeout => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -123,6 +131,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         ],
         S::Square | S::Circle => SHAPE,
         S::Polygon => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -140,6 +149,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("cloudyIntensity", D),
         ],
         S::Polyline => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -157,6 +167,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("lineEndings", D),
         ],
         S::Line => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -177,6 +188,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         ],
         S::Link => &[("rect", D), ("actions", P), ("target", D)],
         S::Ink => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -211,6 +223,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("lineEnding", D),
         ],
         S::Caret => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("color", D),
@@ -220,6 +233,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("intent", D),
         ],
         S::Text => &[
+            ("richText", D),
             ("rect", D),
             ("actions", P),
             ("color", D),
@@ -230,6 +244,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("stateModel", D),
         ],
         S::Stamp => &[
+            ("richText", D),
             ("rect", E),
             ("actions", P),
             ("box", D),
@@ -238,9 +253,15 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("fit", D),
             ("opacity", D),
         ],
-        S::FileAttachment => {
-            &[("rect", D), ("actions", P), ("color", D), ("opacity", D), ("icon", D), ("file", D)]
-        }
+        S::FileAttachment => &[
+            ("rect", D),
+            ("actions", P),
+            ("color", D),
+            ("opacity", D),
+            ("icon", D),
+            ("file", D),
+            ("richText", D),
+        ],
         S::Widget => &[
             ("rect", E),
             ("actions", D),
@@ -261,6 +282,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("fieldFamily", E),
         ],
         S::Redact => &[
+            ("richText", D),
             ("rect", D),
             ("actions", P),
             ("color", D),
@@ -463,7 +485,7 @@ pub struct DraftFields {
     /// A free text's alignment includes `justify` (`RichTextAlignSchema`).
     pub text_align: Option<String>,
     pub vertical_align: Option<String>,
-    pub rich_text: Option<RichTextDocumentInput>,
+    pub rich_text: Nullable<RichTextDocumentInput>,
     pub font_color: Option<Rgb>,
     pub callout_line: Nullable<CalloutLine>,
     pub line_ending: Nullable<LineEnding>,
@@ -844,7 +866,7 @@ pub(crate) fn read_field(
         "verticalAlign" => {
             fields.vertical_align = Some(one_of(kind, name, value, &["top", "middle", "bottom"])?);
         }
-        "richText" => fields.rich_text = Some(read(kind, name, value)?),
+        "richText" => fields.rich_text = Some(read_nullable(kind, name, value)?),
         "calloutLine" => fields.callout_line = Some(read_nullable(kind, name, value)?),
         "lineEnding" => fields.line_ending = Some(read_nullable(kind, name, value)?),
         "name" => fields.name = Some(read_nullable(kind, name, value)?),
@@ -1253,7 +1275,7 @@ pub fn derive_draft(
     if draft.subtype == S::FreeText {
         assert_agreement(
             fields.contents.as_ref().and_then(Option::as_deref),
-            fields.rich_text.as_ref(),
+            fields.rich_text.as_ref().and_then(Option::as_ref),
         )?;
     }
     match draft.subtype {
@@ -1288,7 +1310,7 @@ pub fn derive_draft(
                 .with_details(serde_json::json!({ "field": "intent" })));
             }
             fields.intent = Some(Some(intent));
-            let given = fields.rich_text.take();
+            let given = fields.rich_text.take().flatten();
             let base = given.as_ref().and_then(|rich| rich.body.clone()).unwrap_or_default();
             let paragraphs: Vec<RichTextParagraph> = match given {
                 Some(rich) => rich.paragraphs,
@@ -1300,7 +1322,7 @@ pub fn derive_draft(
             let rich = RichTextDocumentInput { body: Some(body), paragraphs };
             // Public text uses LF; the string writer converts PDF contents to CR.
             fields.contents = Some(Some(plain_text(&rich.paragraphs)));
-            fields.rich_text = Some(rich);
+            fields.rich_text = Some(Some(rich));
         }
         // `resolveMeasurementDraft`.
         S::Line | S::Polygon | S::Polyline => resolve_measurement_draft(draft.subtype, fields)?,
@@ -1546,7 +1568,7 @@ mod tests {
         .unwrap();
         assert_eq!(derived.fields.intent, Some(Some("free-text".to_owned())));
         assert_eq!(derived.fields.contents, Some(Some("a\nb".to_owned())));
-        let body = derived.fields.rich_text.unwrap().body.unwrap();
+        let body = derived.fields.rich_text.unwrap().unwrap().body.unwrap();
         assert_eq!(body["family"], "Times");
         assert_eq!(body["weight"], 700);
         assert_eq!(body["size"], 18.0);

@@ -99,3 +99,15 @@ Rust replay status after this checkpoint (`cargo test --test <name>` in `crates/
 The Rust production code is not changed in this checkpoint. Only `crates/epdf-engine/tests/annotation_create.rs` changed, to read `changedRefs`. The failures above are the exact remaining Job 3 work. Do not repair them by restoring the old vector keys.
 
 Remaining in this checkpoint: the Rust migrations above, the other Job 3 contract rows, and the full replay of every regenerated group. Vector checksums in SHA256SUMS are not refreshed here.
+
+## Job 3 checkpoint: markup comment rich text (2026-11-06)
+
+`annotation_create` replay: 22 passed, 0 failed (was 20 passed, 2 failed).
+
+1. Every markup read (`highlight` through `file-attachment`, including `square`, `circle`, `polygon` and `polyline`) now carries `richText`, `null` when the comment has no `/RC`. Reads follow `readCommentRichText`: only an `/RC` source counts, and an absent body family reads as `Helvetica`.
+2. Create and patch write a markup comment as `/RC` after the kind's fields (`applyComment`). A body in the default family is written without a family. A `null` on patch removes `/RC`. Free text keeps its own rich text.
+3. A `line` reads `captionEnabled: false` when `/Cap` is absent (`readLine`). The replay expectation that required `null` now matches the oracle. Polygon and polyline keep `null`.
+4. The action tree no longer serializes `warningFlags`, because `ActionModelReader` returns `{ root, incomplete, warnings }`. The Rust field stays internal for warning conversion.
+5. An empty `nm` counts as given, so it is neither stamped nor written. The truthiness check in `writeAnnotationBase` decides this. Before this change the create stamped a UUIDv7 over it.
+
+Full `epdf-engine` library tests: 509 passed. Replays still open: annotation_update 8 passed / 25 failed, scope_conformance 2 / 3, security_state 0 / 8, form_write 3 / 4. security_scope and form_apply pass.

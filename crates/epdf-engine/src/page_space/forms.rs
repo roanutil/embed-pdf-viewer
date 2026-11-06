@@ -317,7 +317,7 @@ mod tests {
     }
 
     fn calculate(destination: Value) -> Value {
-        json!({ "calculate": { "incomplete": false, "warningFlags": 0, "warnings": [],
+        json!({ "calculate": { "incomplete": false, "warnings": [],
             "root": { "subtype": "GoTo", "type": "goto", "destination": destination,
                 "next": [] } } })
     }

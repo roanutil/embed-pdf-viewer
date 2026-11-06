@@ -630,6 +630,14 @@ fn apply_patch(
             ));
         }
     }
+    if resolved.subtype != S::FreeText && f.rich_text.is_some() {
+        let describe = |key: &str| services.context.describe_font(key);
+        crate::features::annotation::rich_text::write_comment_rich_text(
+            annotation,
+            f.rich_text.as_ref(),
+            Some(&describe),
+        )?;
+    }
     Ok(())
 }
 
@@ -819,7 +827,7 @@ fn apply_free_text_patch(
             None => set_default_appearance(annotation, "helvetica", 12.0, Rgb(r, g, b), context)?,
         }
     }
-    if let Some(rich) = &f.rich_text {
+    if let Some(Some(rich)) = &f.rich_text {
         // Everything regenerated: `/RC`, `/DS`, `/DA`, `/Contents` and the
         // appearance.
         let describe = |key: &str| context.describe_font(key);

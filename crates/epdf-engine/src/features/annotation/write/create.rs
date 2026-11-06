@@ -168,8 +168,9 @@ pub fn create_annotation(
     let mut prepared = prepare_create(draft, &resources, services.context, document)?;
     claim_name(document, page_index, page, prepared.nm())?;
     // A stamped create is a new annotation: without a name of its own it
-    // gets a fresh one. A fresh name is never taken.
-    if prepared.nm().is_none() {
+    // gets a fresh one. A fresh name is never taken. An empty name is given,
+    // so it is neither stamped nor written (`writeAnnotationBase`'s truthy NM).
+    if prepared.fields.nm.as_ref().and_then(Option::as_deref).is_none() {
         let fresh = uuid_v7(services.clock.now().epoch_millis, services.ids);
         prepared.fields.nm = Some(Some(fresh));
     }
@@ -655,6 +656,14 @@ fn apply_draft(
             ));
         }
     }
+    if draft.subtype != S::FreeText {
+        let describe = |key: &str| services.context.describe_font(key);
+        crate::features::annotation::rich_text::write_comment_rich_text(
+            annotation,
+            f.rich_text.as_ref(),
+            Some(&describe),
+        )?;
+    }
     Ok(())
 }
 
@@ -798,7 +807,11 @@ fn apply_free_text(
         f.color.flatten().unwrap_or(Rgb::BLACK),
         context,
     )?;
-    let rich = f.rich_text.clone().ok_or_else(|| unknown("a free text without its rich text"))?;
+    let rich = f
+        .rich_text
+        .clone()
+        .flatten()
+        .ok_or_else(|| unknown("a free text without its rich text"))?;
     let align = rich
         .body
         .as_ref()

@@ -191,7 +191,8 @@ pub struct ActionTree<D = PdfDestination> {
     /// A consumer must never execute a tree whose `incomplete` is true.
     pub incomplete: bool,
     /// The raw native bits, so a newer runtime's warnings survive an older
-    /// SDK.
+    /// SDK. Not on the wire: the DTO carries `warnings` only (`ActionModelReader`).
+    #[serde(skip, default)]
     pub warning_flags: ActionWarningFlags,
     pub warnings: Vec<ActionWarning>,
 }

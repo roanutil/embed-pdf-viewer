@@ -1012,7 +1012,8 @@ fn a_line_read_sent_back_as_a_create_is_accepted() {
     let copy = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
         .outcome
         .expect("the read creates");
-    assert_eq!(copy["annotation"]["captionEnabled"], Value::Null);
+    // The read reports `captionEnabled: false` for an absent `/Cap` (`readLine`).
+    assert_eq!(copy["annotation"]["captionEnabled"], Value::Bool(false));
     assert_eq!(copy["annotation"]["captionPosition"], "inline");
     assert_eq!(
         test_support::canonical_numbers(&copy["annotation"]["linePoints"]),

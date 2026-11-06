@@ -352,6 +352,23 @@ fn lowercase_color(style: &mut Map<String, Value>) {
     }
 }
 
+/// The family a comment body defaults to (`DEFAULT_RICH_TEXT_BODY`).
+const DEFAULT_RICH_TEXT_FAMILY: &str = "Helvetica";
+
+/// `readCommentRichText`: the comment's `/RC` rich text. `None` unless the engine read it from `/RC`.
+pub fn read_comment_rich_text(annotation: &pdfium::Annotation<'_>) -> Option<RichTextDocument> {
+    let json = annotation.rich_text_json().ok().flatten()?;
+    let raw: Map<String, Value> = serde_json::from_str(&json).ok()?;
+    if raw.get("source").and_then(Value::as_str) != Some("rc") {
+        return None;
+    }
+    let mut document = parse_engine_rich_text(&json)?;
+    if document.body.family.is_empty() {
+        document.body.family = "Helvetica".to_owned();
+    }
+    Some(document)
+}
+
 /// `readEngineRichText`.
 pub fn read_rich_text(annotation: &pdfium::Annotation<'_>) -> Option<RichTextDocument> {
     annotation.rich_text_json().ok().flatten().as_deref().and_then(parse_engine_rich_text)
@@ -375,6 +392,29 @@ pub fn write_rich_text(
         ));
     }
     Ok(())
+}
+
+/// `applyComment`: a markup annotation's comment as `/RC`, written after its kind's fields.
+/// `None` leaves `/RC` alone and `Some(None)` removes it. A body in the default family is written
+/// as one naming none, so another tool's comment keeps its reader's face.
+pub fn write_comment_rich_text(
+    annotation: &pdfium::Annotation<'_>,
+    input: Option<&Option<RichTextDocumentInput>>,
+    describe: Option<DescribeFont<'_>>,
+) -> Result<(), EngineError> {
+    match input {
+        None => Ok(()),
+        Some(None) => crate::features::annotation::write::primitives::remove_key(annotation, "RC"),
+        Some(Some(rich)) => {
+            let mut rich = rich.clone();
+            if let Some(body) = rich.body.as_mut()
+                && body.get("family").and_then(Value::as_str) == Some(DEFAULT_RICH_TEXT_FAMILY)
+            {
+                body.remove("family");
+            }
+            write_rich_text(annotation, &rich, describe)
+        }
+    }
 }
 
 /// `assertRichTextAgreement`: a draft or patch carrying both `contents` and

@@ -38,7 +38,7 @@ use crate::features::annotation::intent::{
 };
 use crate::features::annotation::rich_text::{
     RichTextBody, RichTextDocument, RichTextParagraph, RichTextRun, free_text_font_for_face,
-    read_rich_text,
+    read_comment_rich_text, read_rich_text,
 };
 use crate::features::annotation::state::{state_from_pdf, state_model_from_pdf};
 use crate::features::annotation::subtype::{AnnotationSubtype, code};
@@ -178,6 +178,8 @@ pub struct FilledStyleRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextMarkupRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub color: HexColor,
     pub opacity: f64,
     pub quad_points: Vec<NamedPdfQuad>,
@@ -187,6 +189,8 @@ pub struct TextMarkupRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShapeRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     #[serde(flatten)]
     pub style: FilledStyleRecord,
     #[serde(rename = "box")]
@@ -199,6 +203,8 @@ pub struct ShapeRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VertexRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub measure: Option<Value>,
     pub caption_enabled: Option<bool>,
     pub caption_center: Option<PdfPoint>,
@@ -235,9 +241,11 @@ pub enum CaptionPosition {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LineRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub measure: Option<Value>,
     pub intent: Option<LineIntent>,
-    pub caption_enabled: Option<bool>,
+    pub caption_enabled: bool,
     pub caption_position: CaptionPosition,
     pub caption_offset: Option<CaptionOffset>,
     pub leader: Option<LineLeader>,
@@ -252,6 +260,8 @@ pub struct LineRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InkRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     #[serde(flatten)]
     pub style: GeometryStyleRecord,
     pub intent: Option<InkIntent>,
@@ -263,6 +273,8 @@ pub struct InkRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub icon: NoteIcon,
     /// `/Open`, else its popup's.
     pub open: bool,
@@ -341,6 +353,8 @@ const KEY_APPEARANCE_FIT: &str = "AppearanceFit";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StampRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     /// `/Name`, verbatim: a standard label or a custom identifier.
     pub name: Option<String>,
     pub fit: Option<StampFit>,
@@ -354,6 +368,8 @@ pub struct StampRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaretRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub intent: Option<CaretIntent>,
     pub color: HexColor,
     pub opacity: f64,
@@ -366,6 +382,8 @@ pub struct CaretRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RedactRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub quad_points: Vec<NamedPdfQuad>,
     pub color: HexColor,
     pub opacity: f64,
@@ -383,6 +401,8 @@ pub struct RedactRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileAttachmentRecord {
+    /// `readCommentRichText`: the comment's `/RC` rich text, `None` when there is none.
+    pub rich_text: Option<RichTextDocument>,
     pub icon: FileAttachmentIcon,
     /// `None` when there is no readable `/FS`.
     pub file: Option<AttachmentFileInfo>,
@@ -518,6 +538,7 @@ fn read_text_markup(
     fallback: (u8, u8, u8),
 ) -> Result<TextMarkupRecord, EngineError> {
     Ok(TextMarkupRecord {
+        rich_text: read_comment_rich_text(annotation),
         color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(fallback)),
         opacity: opacity(annotation),
         quad_points: quad_points(annotation)?,
@@ -527,6 +548,7 @@ fn read_text_markup(
 fn read_shape(annotation: &Annotation<'_>) -> Result<ShapeRecord, EngineError> {
     let shape = read_annotation_box(annotation);
     Ok(ShapeRecord {
+        rich_text: read_comment_rich_text(annotation),
         style: filled_style(annotation)?,
         content_box: shape.content_box,
         rotation: shape.rotation,
@@ -539,6 +561,7 @@ fn read_vertex(annotation: &Annotation<'_>) -> Result<VertexRecord, EngineError>
     let turn = read_points_turn(annotation, std::slice::from_ref(&drawn));
     let caption = shape_caption(annotation);
     Ok(VertexRecord {
+        rich_text: read_comment_rich_text(annotation),
         measure: measure(annotation)?,
         caption_enabled: caption.map(|(enabled, _)| enabled),
         caption_center: caption.and_then(|(_, center)| center).map(|c| upright_point(c, turn)),
@@ -564,12 +587,12 @@ fn read_line(annotation: &Annotation<'_>) -> Result<LineRecord, EngineError> {
         .then(|| annotation.line_leader())
         .flatten();
     Ok(LineRecord {
+        rich_text: read_comment_rich_text(annotation),
         measure: measure(annotation)?,
         intent: LineIntent::from_name(intent(annotation)?.as_deref()),
-        // An absent `/Cap` reads `null`, as on polygons and polylines; `/CP`
-        // reads its ISO default.
-        caption_enabled: has_key(annotation, "Cap")
-            .then(|| caption.is_some_and(|caption| caption.enabled)),
+        // An absent `/Cap` reads its ISO default, `false` (`readLine`'s
+        // `captionEnabled: caption?.enabled ?? false`).
+        caption_enabled: caption.is_some_and(|caption| caption.enabled),
         caption_position: match caption {
             Some(caption) if caption.position_code == 1 => CaptionPosition::Top,
             _ => CaptionPosition::Inline,
@@ -603,6 +626,7 @@ fn read_ink(annotation: &Annotation<'_>) -> Result<InkRecord, EngineError> {
         .collect();
     let turn = read_points_turn(annotation, &drawn);
     Ok(InkRecord {
+        rich_text: read_comment_rich_text(annotation),
         style: geometry_style(annotation)?,
         intent: InkIntent::from_name(intent(annotation)?.as_deref()),
         ink_list: drawn
@@ -619,6 +643,7 @@ fn read_text(annotation: &Annotation<'_>) -> Result<TextRecord, EngineError> {
         None => popup_open(annotation)?,
     };
     Ok(TextRecord {
+        rich_text: read_comment_rich_text(annotation),
         icon: dictionary_read("Name", annotation.name())?
             .and_then(|name| NoteIcon::from_pdf_name(&name))
             .unwrap_or(DEFAULT_NOTE_ICON),
@@ -732,6 +757,7 @@ fn read_stamp(annotation: &Annotation<'_>) -> Result<StampRecord, EngineError> {
     };
     let shape = read_annotation_box(annotation);
     Ok(StampRecord {
+        rich_text: read_comment_rich_text(annotation),
         name: dictionary_read("Name", annotation.name())?,
         fit: match fit.as_deref() {
             Some("contain") => Some(StampFit::Contain),
@@ -748,6 +774,7 @@ fn read_stamp(annotation: &Annotation<'_>) -> Result<StampRecord, EngineError> {
 fn read_caret(annotation: &Annotation<'_>) -> Result<CaretRecord, EngineError> {
     let shape = read_annotation_box(annotation);
     Ok(CaretRecord {
+        rich_text: read_comment_rich_text(annotation),
         intent: CaretIntent::from_name(intent(annotation)?.as_deref()),
         color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(RED)),
         opacity: opacity(annotation),
@@ -768,6 +795,7 @@ fn read_redact(annotation: &Annotation<'_>) -> Result<RedactRecord, EngineError>
         (_, None) => DEFAULT_STANDARD_FONT.as_str().to_owned(),
     };
     Ok(RedactRecord {
+        rich_text: read_comment_rich_text(annotation),
         quad_points: quad_points(annotation)?,
         color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(RED)),
         opacity: opacity(annotation),
@@ -803,6 +831,7 @@ fn read_file_attachment(annotation: &Annotation<'_>) -> Result<FileAttachmentRec
         None => None,
     };
     Ok(FileAttachmentRecord {
+        rich_text: read_comment_rich_text(annotation),
         icon: dictionary_read("Name", annotation.name())?
             .and_then(|name| FileAttachmentIcon::from_pdf_name(&name))
             .unwrap_or(DEFAULT_FILE_ATTACHMENT_ICON),
