@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "text.charmap",
   "cases": [
     {
@@ -10981,6 +10981,4868 @@
         }
       ],
       "violation": null
+    }
+  ],
+  "pageTextCases": [
+    {
+      "name": "unchanged-text",
+      "covers": "Ordinary text retains the identity map.",
+      "extracted": {
+        "text": "café",
+        "charCount": 4
+      },
+      "cleaned": {
+        "name": "unchanged-text",
+        "covers": "Ordinary text retains the identity map.",
+        "text": "café",
+        "charCount": 4,
+        "textLength": 4,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "startBiasBoundaries": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 3
+            }
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "range": {
+              "start": 1,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "range": {
+              "start": 2,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "c"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "ca"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "caf"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "café"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "a"
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "af"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "afé"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": "f"
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "fé"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": "é"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "crlf",
+      "covers": "CR in CRLF loses its text but keeps its character slot.",
+      "extracted": {
+        "text": "A\r\nB",
+        "charCount": 4
+      },
+      "cleaned": {
+        "name": "crlf",
+        "covers": "CR in CRLF loses its text but keeps its character slot.",
+        "text": "A\nB",
+        "charCount": 4,
+        "charMap": [
+          [
+            2,
+            1
+          ]
+        ],
+        "textLength": 3,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          1,
+          2,
+          3
+        ],
+        "startBiasBoundaries": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "A\n"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "A\nB"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "\n"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "\nB"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": "\n"
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "\nB"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": "B"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "lone-cr",
+      "covers": "A lone CR becomes LF without changing index spaces.",
+      "extracted": {
+        "text": "A\rB",
+        "charCount": 3
+      },
+      "cleaned": {
+        "name": "lone-cr",
+        "covers": "A lone CR becomes LF without changing index spaces.",
+        "text": "A\nB",
+        "charCount": 3,
+        "textLength": 3,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "startBiasBoundaries": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "A\n"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "A\nB"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "\n"
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "\nB"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": "B"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "joined-hyphen-marker",
+      "covers": "A PDFium line-end hyphen marker contributes no text.",
+      "extracted": {
+        "text": "co￾operate",
+        "charCount": 10
+      },
+      "cleaned": {
+        "name": "joined-hyphen-marker",
+        "covers": "A PDFium line-end hyphen marker contributes no text.",
+        "text": "cooperate",
+        "charCount": 10,
+        "charMap": [
+          [
+            3,
+            2
+          ]
+        ],
+        "textLength": 9,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          2,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "startBiasBoundaries": [
+          0,
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 5
+            }
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "range": {
+              "start": 0,
+              "end": 6
+            }
+          },
+          {
+            "start": 0,
+            "end": 6,
+            "range": {
+              "start": 0,
+              "end": 7
+            }
+          },
+          {
+            "start": 0,
+            "end": 7,
+            "range": {
+              "start": 0,
+              "end": 8
+            }
+          },
+          {
+            "start": 0,
+            "end": 8,
+            "range": {
+              "start": 0,
+              "end": 9
+            }
+          },
+          {
+            "start": 0,
+            "end": 9,
+            "range": {
+              "start": 0,
+              "end": 10
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "range": {
+              "start": 1,
+              "end": 5
+            }
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "range": {
+              "start": 1,
+              "end": 6
+            }
+          },
+          {
+            "start": 1,
+            "end": 6,
+            "range": {
+              "start": 1,
+              "end": 7
+            }
+          },
+          {
+            "start": 1,
+            "end": 7,
+            "range": {
+              "start": 1,
+              "end": 8
+            }
+          },
+          {
+            "start": 1,
+            "end": 8,
+            "range": {
+              "start": 1,
+              "end": 9
+            }
+          },
+          {
+            "start": 1,
+            "end": 9,
+            "range": {
+              "start": 1,
+              "end": 10
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "range": {
+              "start": 3,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "range": {
+              "start": 3,
+              "end": 6
+            }
+          },
+          {
+            "start": 2,
+            "end": 6,
+            "range": {
+              "start": 3,
+              "end": 7
+            }
+          },
+          {
+            "start": 2,
+            "end": 7,
+            "range": {
+              "start": 3,
+              "end": 8
+            }
+          },
+          {
+            "start": 2,
+            "end": 8,
+            "range": {
+              "start": 3,
+              "end": 9
+            }
+          },
+          {
+            "start": 2,
+            "end": 9,
+            "range": {
+              "start": 3,
+              "end": 10
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "range": {
+              "start": 4,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "range": {
+              "start": 4,
+              "end": 6
+            }
+          },
+          {
+            "start": 3,
+            "end": 6,
+            "range": {
+              "start": 4,
+              "end": 7
+            }
+          },
+          {
+            "start": 3,
+            "end": 7,
+            "range": {
+              "start": 4,
+              "end": 8
+            }
+          },
+          {
+            "start": 3,
+            "end": 8,
+            "range": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          {
+            "start": 3,
+            "end": 9,
+            "range": {
+              "start": 4,
+              "end": 10
+            }
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "range": {
+              "start": 5,
+              "end": 6
+            }
+          },
+          {
+            "start": 4,
+            "end": 6,
+            "range": {
+              "start": 5,
+              "end": 7
+            }
+          },
+          {
+            "start": 4,
+            "end": 7,
+            "range": {
+              "start": 5,
+              "end": 8
+            }
+          },
+          {
+            "start": 4,
+            "end": 8,
+            "range": {
+              "start": 5,
+              "end": 9
+            }
+          },
+          {
+            "start": 4,
+            "end": 9,
+            "range": {
+              "start": 5,
+              "end": 10
+            }
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 5,
+            "end": 6,
+            "range": {
+              "start": 6,
+              "end": 7
+            }
+          },
+          {
+            "start": 5,
+            "end": 7,
+            "range": {
+              "start": 6,
+              "end": 8
+            }
+          },
+          {
+            "start": 5,
+            "end": 8,
+            "range": {
+              "start": 6,
+              "end": 9
+            }
+          },
+          {
+            "start": 5,
+            "end": 9,
+            "range": {
+              "start": 6,
+              "end": 10
+            }
+          },
+          {
+            "start": 6,
+            "end": 0,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 1,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 2,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 3,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 4,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 5,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 6,
+            "range": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          {
+            "start": 6,
+            "end": 7,
+            "range": {
+              "start": 7,
+              "end": 8
+            }
+          },
+          {
+            "start": 6,
+            "end": 8,
+            "range": {
+              "start": 7,
+              "end": 9
+            }
+          },
+          {
+            "start": 6,
+            "end": 9,
+            "range": {
+              "start": 7,
+              "end": 10
+            }
+          },
+          {
+            "start": 7,
+            "end": 0,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 1,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 2,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 3,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 4,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 5,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 6,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 7,
+            "range": {
+              "start": 8,
+              "end": 8
+            }
+          },
+          {
+            "start": 7,
+            "end": 8,
+            "range": {
+              "start": 8,
+              "end": 9
+            }
+          },
+          {
+            "start": 7,
+            "end": 9,
+            "range": {
+              "start": 8,
+              "end": 10
+            }
+          },
+          {
+            "start": 8,
+            "end": 0,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 1,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 2,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 3,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 4,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 5,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 6,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 7,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 8,
+            "range": {
+              "start": 9,
+              "end": 9
+            }
+          },
+          {
+            "start": 8,
+            "end": 9,
+            "range": {
+              "start": 9,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 0,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 1,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 2,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 3,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 4,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 5,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 6,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 7,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 8,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          },
+          {
+            "start": 9,
+            "end": 9,
+            "range": {
+              "start": 10,
+              "end": 10
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "c"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "co"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "co"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "coo"
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "text": "coop"
+          },
+          {
+            "start": 0,
+            "end": 6,
+            "text": "coope"
+          },
+          {
+            "start": 0,
+            "end": 7,
+            "text": "cooper"
+          },
+          {
+            "start": 0,
+            "end": 8,
+            "text": "coopera"
+          },
+          {
+            "start": 0,
+            "end": 9,
+            "text": "cooperat"
+          },
+          {
+            "start": 0,
+            "end": 10,
+            "text": "cooperate"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "o"
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "o"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "oo"
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "text": "oop"
+          },
+          {
+            "start": 1,
+            "end": 6,
+            "text": "oope"
+          },
+          {
+            "start": 1,
+            "end": 7,
+            "text": "ooper"
+          },
+          {
+            "start": 1,
+            "end": 8,
+            "text": "oopera"
+          },
+          {
+            "start": 1,
+            "end": 9,
+            "text": "ooperat"
+          },
+          {
+            "start": 1,
+            "end": 10,
+            "text": "ooperate"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "o"
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "text": "op"
+          },
+          {
+            "start": 2,
+            "end": 6,
+            "text": "ope"
+          },
+          {
+            "start": 2,
+            "end": 7,
+            "text": "oper"
+          },
+          {
+            "start": 2,
+            "end": 8,
+            "text": "opera"
+          },
+          {
+            "start": 2,
+            "end": 9,
+            "text": "operat"
+          },
+          {
+            "start": 2,
+            "end": 10,
+            "text": "operate"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": "o"
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "text": "op"
+          },
+          {
+            "start": 3,
+            "end": 6,
+            "text": "ope"
+          },
+          {
+            "start": 3,
+            "end": 7,
+            "text": "oper"
+          },
+          {
+            "start": 3,
+            "end": 8,
+            "text": "opera"
+          },
+          {
+            "start": 3,
+            "end": 9,
+            "text": "operat"
+          },
+          {
+            "start": 3,
+            "end": 10,
+            "text": "operate"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "text": "p"
+          },
+          {
+            "start": 4,
+            "end": 6,
+            "text": "pe"
+          },
+          {
+            "start": 4,
+            "end": 7,
+            "text": "per"
+          },
+          {
+            "start": 4,
+            "end": 8,
+            "text": "pera"
+          },
+          {
+            "start": 4,
+            "end": 9,
+            "text": "perat"
+          },
+          {
+            "start": 4,
+            "end": 10,
+            "text": "perate"
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 6,
+            "text": "e"
+          },
+          {
+            "start": 5,
+            "end": 7,
+            "text": "er"
+          },
+          {
+            "start": 5,
+            "end": 8,
+            "text": "era"
+          },
+          {
+            "start": 5,
+            "end": 9,
+            "text": "erat"
+          },
+          {
+            "start": 5,
+            "end": 10,
+            "text": "erate"
+          },
+          {
+            "start": 6,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 6,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 7,
+            "text": "r"
+          },
+          {
+            "start": 6,
+            "end": 8,
+            "text": "ra"
+          },
+          {
+            "start": 6,
+            "end": 9,
+            "text": "rat"
+          },
+          {
+            "start": 6,
+            "end": 10,
+            "text": "rate"
+          },
+          {
+            "start": 7,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 6,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 7,
+            "text": ""
+          },
+          {
+            "start": 7,
+            "end": 8,
+            "text": "a"
+          },
+          {
+            "start": 7,
+            "end": 9,
+            "text": "at"
+          },
+          {
+            "start": 7,
+            "end": 10,
+            "text": "ate"
+          },
+          {
+            "start": 8,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 6,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 7,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 8,
+            "text": ""
+          },
+          {
+            "start": 8,
+            "end": 9,
+            "text": "t"
+          },
+          {
+            "start": 8,
+            "end": 10,
+            "text": "te"
+          },
+          {
+            "start": 9,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 6,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 7,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 8,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 9,
+            "text": ""
+          },
+          {
+            "start": 9,
+            "end": 10,
+            "text": "e"
+          },
+          {
+            "start": 10,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 6,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 7,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 8,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 9,
+            "text": ""
+          },
+          {
+            "start": 10,
+            "end": 10,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "bmp-noncharacters",
+      "covers": "The reserved BMP range and plane-ending markers are removed.",
+      "extracted": {
+        "text": "﷐A﷯￾￿",
+        "charCount": 5
+      },
+      "cleaned": {
+        "name": "bmp-noncharacters",
+        "covers": "The reserved BMP range and plane-ending markers are removed.",
+        "text": "A",
+        "charCount": 5,
+        "charMap": [
+          [
+            1,
+            0
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            5,
+            1
+          ]
+        ],
+        "textLength": 1,
+        "boundaryTextOffsets": [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        "startBiasBoundaries": [
+          1,
+          5
+        ],
+        "endBiasBoundaries": [
+          0,
+          2
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "text": "A"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "astral-noncharacters",
+      "covers": "Plane-ending noncharacters beyond the BMP lose both UTF-16 units.",
+      "extracted": {
+        "text": "A🿾B􏿿C",
+        "charCount": 5,
+        "charMap": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            6
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "astral-noncharacters",
+        "covers": "Plane-ending noncharacters beyond the BMP lose both UTF-16 units.",
+        "text": "ABC",
+        "charCount": 5,
+        "charMap": [
+          [
+            2,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "textLength": 3,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          1,
+          2,
+          2,
+          3
+        ],
+        "startBiasBoundaries": [
+          0,
+          2,
+          4,
+          5
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          3,
+          5
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 5
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "AB"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "AB"
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "text": "ABC"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "B"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "B"
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "text": "BC"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": "B"
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "B"
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "text": "BC"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "text": "C"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "text": "C"
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "existing-drops-with-crlf",
+      "covers": "Existing zero-width slots survive cleanup beside a CRLF.",
+      "extracted": {
+        "text": "A\r\nB",
+        "charCount": 6,
+        "charMap": [
+          [
+            1,
+            0
+          ],
+          [
+            4,
+            2
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "existing-drops-with-crlf",
+        "covers": "Existing zero-width slots survive cleanup beside a CRLF.",
+        "text": "A\nB",
+        "charCount": 6,
+        "charMap": [
+          [
+            1,
+            0
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            4,
+            1
+          ]
+        ],
+        "textLength": 3,
+        "boundaryTextOffsets": [
+          0,
+          0,
+          1,
+          1,
+          1,
+          2,
+          3
+        ],
+        "startBiasBoundaries": [
+          1,
+          4,
+          5,
+          6
+        ],
+        "endBiasBoundaries": [
+          0,
+          2,
+          5,
+          6
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 5
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 6
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 5
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 6
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 5,
+              "end": 6
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 6,
+              "end": 6
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "A"
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "text": "A\n"
+          },
+          {
+            "start": 0,
+            "end": 6,
+            "text": "A\nB"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "A"
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "text": "A\n"
+          },
+          {
+            "start": 1,
+            "end": 6,
+            "text": "A\nB"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "text": "\n"
+          },
+          {
+            "start": 2,
+            "end": 6,
+            "text": "\nB"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "text": "\n"
+          },
+          {
+            "start": 3,
+            "end": 6,
+            "text": "\nB"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "text": "\n"
+          },
+          {
+            "start": 4,
+            "end": 6,
+            "text": "\nB"
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 6,
+            "text": "B"
+          },
+          {
+            "start": 6,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 5,
+            "text": ""
+          },
+          {
+            "start": 6,
+            "end": 6,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "astral-crlf-and-marker",
+      "covers": "Supplementary text keeps its two-unit anchor while CR and markers drop.",
+      "extracted": {
+        "text": "😀\r\n￾Z",
+        "charCount": 5,
+        "charMap": [
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "astral-crlf-and-marker",
+        "covers": "Supplementary text keeps its two-unit anchor while CR and markers drop.",
+        "text": "😀\nZ",
+        "charCount": 5,
+        "charMap": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "textLength": 4,
+        "boundaryTextOffsets": [
+          0,
+          2,
+          2,
+          3,
+          3,
+          4
+        ],
+        "startBiasBoundaries": [
+          0,
+          0,
+          2,
+          4,
+          5
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          1,
+          3,
+          5
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 5
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 3
+            }
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 5
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "range": {
+              "start": 2,
+              "end": 5
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 3
+            }
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "range": {
+              "start": 4,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "range": {
+              "start": 5,
+              "end": 5
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "😀"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "😀"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "😀\n"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "😀\n"
+          },
+          {
+            "start": 0,
+            "end": 5,
+            "text": "😀\nZ"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": "\n"
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "\n"
+          },
+          {
+            "start": 1,
+            "end": 5,
+            "text": "\nZ"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": "\n"
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "\n"
+          },
+          {
+            "start": 2,
+            "end": 5,
+            "text": "\nZ"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 5,
+            "text": "Z"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 5,
+            "text": "Z"
+          },
+          {
+            "start": 5,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 4,
+            "text": ""
+          },
+          {
+            "start": 5,
+            "end": 5,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "bmp-range-boundaries",
+      "covers": "Reserved range boundaries drop, while their neighboring scalar values stay.",
+      "extracted": {
+        "text": "﷏﷐﷯ﷰ",
+        "charCount": 4
+      },
+      "cleaned": {
+        "name": "bmp-range-boundaries",
+        "covers": "Reserved range boundaries drop, while their neighboring scalar values stay.",
+        "text": "﷏ﷰ",
+        "charCount": 4,
+        "charMap": [
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            1
+          ]
+        ],
+        "textLength": 2,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          1,
+          1,
+          2
+        ],
+        "startBiasBoundaries": [
+          0,
+          3,
+          4
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          4
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "﷏"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "﷏"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "﷏"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "﷏ﷰ"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "ﷰ"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "ﷰ"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": "ﷰ"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "astral-range-boundaries",
+      "covers": "A plane-ending marker drops without losing adjacent supplementary text.",
+      "extracted": {
+        "text": "🿽🿾🿿𠀀",
+        "charCount": 4,
+        "charMap": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            4,
+            8
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "astral-range-boundaries",
+        "covers": "A plane-ending marker drops without losing adjacent supplementary text.",
+        "text": "🿽𠀀",
+        "charCount": 4,
+        "charMap": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            4,
+            4
+          ]
+        ],
+        "textLength": 4,
+        "boundaryTextOffsets": [
+          0,
+          2,
+          2,
+          2,
+          4
+        ],
+        "startBiasBoundaries": [
+          0,
+          0,
+          3,
+          3,
+          4
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          1,
+          4,
+          4
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "range": {
+              "start": 0,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "range": {
+              "start": 3,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "range": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "🿽"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "🿽"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "text": "🿽"
+          },
+          {
+            "start": 0,
+            "end": 4,
+            "text": "🿽𠀀"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 4,
+            "text": "𠀀"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 4,
+            "text": "𠀀"
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 3,
+            "end": 4,
+            "text": "𠀀"
+          },
+          {
+            "start": 4,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 3,
+            "text": ""
+          },
+          {
+            "start": 4,
+            "end": 4,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "all-noncharacters",
+      "covers": "Cleaning a page to empty text retains every character slot.",
+      "extracted": {
+        "text": "￾􏿿",
+        "charCount": 2,
+        "charMap": [
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "all-noncharacters",
+        "covers": "Cleaning a page to empty text retains every character slot.",
+        "text": "",
+        "charCount": 2,
+        "charMap": [
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "textLength": 0,
+        "boundaryTextOffsets": [
+          0,
+          0,
+          0
+        ],
+        "startBiasBoundaries": [
+          2
+        ],
+        "endBiasBoundaries": [
+          0
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
+    },
+    {
+      "name": "cr-before-astral",
+      "covers": "A CR before a surrogate pair becomes LF and preserves the pair.",
+      "extracted": {
+        "text": "\r😀",
+        "charCount": 2,
+        "charMap": [
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      "cleaned": {
+        "name": "cr-before-astral",
+        "covers": "A CR before a surrogate pair becomes LF and preserves the pair.",
+        "text": "\n😀",
+        "charCount": 2,
+        "charMap": [
+          [
+            2,
+            3
+          ]
+        ],
+        "textLength": 3,
+        "boundaryTextOffsets": [
+          0,
+          1,
+          3
+        ],
+        "startBiasBoundaries": [
+          0,
+          1,
+          1,
+          2
+        ],
+        "endBiasBoundaries": [
+          0,
+          1,
+          2,
+          2
+        ],
+        "charRanges": [
+          {
+            "start": 0,
+            "end": 0,
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "range": {
+              "start": 1,
+              "end": 1
+            }
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 1,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 2,
+            "end": 3,
+            "range": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          {
+            "start": 3,
+            "end": 0,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 3,
+            "end": 1,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 3,
+            "end": 2,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          },
+          {
+            "start": 3,
+            "end": 3,
+            "range": {
+              "start": 2,
+              "end": 2
+            }
+          }
+        ],
+        "slices": [
+          {
+            "start": 0,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 0,
+            "end": 1,
+            "text": "\n"
+          },
+          {
+            "start": 0,
+            "end": 2,
+            "text": "\n😀"
+          },
+          {
+            "start": 1,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 1,
+            "end": 2,
+            "text": "😀"
+          },
+          {
+            "start": 2,
+            "end": 0,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 1,
+            "text": ""
+          },
+          {
+            "start": 2,
+            "end": 2,
+            "text": ""
+          }
+        ],
+        "violation": null
+      }
     }
   ],
   "violations": [

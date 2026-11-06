@@ -20,7 +20,7 @@ use epdf_engine::features::text::charmap::{
 };
 use serde::Deserialize;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,6 +29,7 @@ struct VectorFile {
     kind: String,
     cases: Vec<Case>,
     violations: Vec<ViolationCase>,
+    page_text_cases: Vec<PageTextCase>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,6 +48,24 @@ struct Case {
     char_ranges: Vec<RangeProbe>,
     slices: Vec<SliceProbe>,
     violation: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PageTextCase {
+    name: String,
+    covers: String,
+    extracted: ExtractedSnapshot,
+    cleaned: Case,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtractedSnapshot {
+    text: String,
+    char_count: u32,
+    #[serde(default)]
+    char_map: Vec<(u32, u32)>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -491,5 +510,61 @@ fn a_tail_projection_beyond_u32_is_a_violation_without_wrapping() {
             message,
             format!("map projects charCount to 4294967296, but text length is {text_length}")
         );
+    }
+}
+
+#[test]
+fn cleaned_page_text_and_its_index_spaces_agree_with_typescript() {
+    use epdf_engine::features::text::charmap::to_page_text;
+    let file = load();
+    assert!(!file.page_text_cases.is_empty(), "normalization coverage is missing");
+    for case in file.page_text_cases {
+        let extracted = PageTextSnapshot {
+            text: case.extracted.text,
+            char_count: case.extracted.char_count,
+            char_map: case
+                .extracted
+                .char_map
+                .into_iter()
+                .map(|(c, t)| CharMapAnchor::new(c, t))
+                .collect(),
+        };
+        let actual = to_page_text(extracted);
+        assert_eq!(actual, case.cleaned.snapshot(), "{}: {}", case.name, case.covers);
+        assert_eq!(
+            char_map_violation(actual.char_count, actual.text_len_utf16(), &actual.char_map),
+            None,
+            "{}",
+            case.name
+        );
+        for (boundary, expected) in case.cleaned.boundary_text_offsets.iter().enumerate() {
+            assert_eq!(
+                boundary_text_offset(&actual, boundary as u32),
+                *expected,
+                "{} boundary {boundary}",
+                case.name
+            );
+        }
+        for probe in &case.cleaned.char_ranges {
+            let range = char_range_for_text_offsets(&actual, probe.start, probe.end);
+            assert_eq!(
+                Range { start: range.start, end: range.end },
+                probe.range,
+                "{} text range [{}, {})",
+                case.name,
+                probe.start,
+                probe.end
+            );
+        }
+        for probe in &case.cleaned.slices {
+            assert_eq!(
+                slice_text_by_chars(&actual, probe.start, probe.end),
+                probe.text,
+                "{} character slice [{}, {})",
+                case.name,
+                probe.start,
+                probe.end
+            );
+        }
     }
 }

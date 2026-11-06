@@ -1,7 +1,7 @@
 /**
  * Emits `vectors/text/charmap.json`: what `boundaryTextOffset`,
  * `charBoundaryAtTextOffset`, `charRangeForTextOffsets`, `sliceText`
- * and `charMapViolation` produce.
+ * `charMapViolation`, and `toPageText` produce.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run charmap
  *   pnpm --filter @embedpdf/tooling-engine-conformance run charmap:check
@@ -25,20 +25,17 @@ import {
   charMapViolation,
   charRangeForTextOffsets,
   sliceText,
+  toPageText,
 } from '../../../packages/engine/core/src/text/charmap';
 import type { PageTextSnapshot } from '../../../packages/engine/core/src/dto/PageTextSnapshot';
 
-import {
-  CHARMAP_CASES,
-  CHARMAP_VIOLATION_CASES,
-  type CharMapCase,
-} from './charmap-cases';
+import { CHARMAP_CASES, CHARMAP_VIOLATION_CASES, type CharMapCase } from './charmap-cases';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'text');
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 function snapshotOf(entry: CharMapCase): PageTextSnapshot {
   return entry.charMap && entry.charMap.length > 0
@@ -87,6 +84,112 @@ function runCase(entry: CharMapCase) {
   };
 }
 
+/** Raw extraction cases exercise the cleanup before selection and search consume it. */
+const PAGE_TEXT_CASES: readonly CharMapCase[] = [
+  {
+    name: 'unchanged-text',
+    covers: 'Ordinary text retains the identity map.',
+    text: 'café',
+    charCount: 4,
+  },
+  {
+    name: 'crlf',
+    covers: 'CR in CRLF loses its text but keeps its character slot.',
+    text: 'A\r\nB',
+    charCount: 4,
+  },
+  {
+    name: 'lone-cr',
+    covers: 'A lone CR becomes LF without changing index spaces.',
+    text: 'A\rB',
+    charCount: 3,
+  },
+  {
+    name: 'joined-hyphen-marker',
+    covers: 'A PDFium line-end hyphen marker contributes no text.',
+    text: 'co\uFFFEoperate',
+    charCount: 10,
+  },
+  {
+    name: 'bmp-noncharacters',
+    covers: 'The reserved BMP range and plane-ending markers are removed.',
+    text: '\uFDD0A\uFDEF\uFFFE\uFFFF',
+    charCount: 5,
+  },
+  {
+    name: 'astral-noncharacters',
+    covers: 'Plane-ending noncharacters beyond the BMP lose both UTF-16 units.',
+    text: 'A\u{1FFFE}B\u{10FFFF}C',
+    charCount: 5,
+    charMap: [
+      [2, 3],
+      [4, 6],
+    ],
+  },
+  {
+    name: 'existing-drops-with-crlf',
+    covers: 'Existing zero-width slots survive cleanup beside a CRLF.',
+    text: 'A\r\nB',
+    charCount: 6,
+    charMap: [
+      [1, 0],
+      [4, 2],
+    ],
+  },
+  {
+    name: 'astral-crlf-and-marker',
+    covers: 'Supplementary text keeps its two-unit anchor while CR and markers drop.',
+    text: '\u{1F600}\r\n\uFFFEZ',
+    charCount: 5,
+    charMap: [[1, 2]],
+  },
+  {
+    name: 'bmp-range-boundaries',
+    covers: 'Reserved range boundaries drop, while their neighboring scalar values stay.',
+    text: '\uFDCF\uFDD0\uFDEF\uFDF0',
+    charCount: 4,
+  },
+  {
+    name: 'astral-range-boundaries',
+    covers: 'A plane-ending marker drops without losing adjacent supplementary text.',
+    text: '\u{1FFFD}\u{1FFFE}\u{1FFFF}\u{20000}',
+    charCount: 4,
+    charMap: [
+      [1, 2],
+      [2, 4],
+      [3, 6],
+      [4, 8],
+    ],
+  },
+  {
+    name: 'all-noncharacters',
+    covers: 'Cleaning a page to empty text retains every character slot.',
+    text: '\uFFFE\u{10FFFF}',
+    charCount: 2,
+    charMap: [[2, 3]],
+  },
+  {
+    name: 'cr-before-astral',
+    covers: 'A CR before a surrogate pair becomes LF and preserves the pair.',
+    text: '\r\u{1F600}',
+    charCount: 2,
+    charMap: [[2, 3]],
+  },
+];
+
+function runPageTextCase(entry: CharMapCase) {
+  const extracted = snapshotOf(entry);
+  const violation = charMapViolation(extracted.charCount, extracted.text.length, extracted.charMap);
+  if (violation !== null) throw new Error(`raw case ${entry.name}: ${violation}`);
+  const cleaned = toPageText(extracted);
+  return {
+    name: entry.name,
+    covers: entry.covers,
+    extracted,
+    cleaned: runCase({ ...entry, ...cleaned }),
+  };
+}
+
 function serialize(payload: unknown): string {
   return `${JSON.stringify(payload, null, 2)}\n`;
 }
@@ -104,7 +207,9 @@ async function emit(relative: string, text: string, check: boolean): Promise<boo
     return false;
   }
   if (check) {
-    process.stdout.write(`  DIFFERS text/${relative}${current === undefined ? ' (missing)' : ''}\n`);
+    process.stdout.write(
+      `  DIFFERS text/${relative}${current === undefined ? ' (missing)' : ''}\n`,
+    );
     return true;
   }
   await mkdir(dirname(absolute), { recursive: true });
@@ -126,6 +231,7 @@ async function main(): Promise<void> {
     schemaVersion: SCHEMA_VERSION,
     kind: 'text.charmap',
     cases: CHARMAP_CASES.map(runCase),
+    pageTextCases: PAGE_TEXT_CASES.map(runPageTextCase),
     violations: CHARMAP_VIOLATION_CASES.map((entry) => ({
       ...entry,
       violation: charMapViolation(entry.charCount, entry.textLength, entry.charMap),

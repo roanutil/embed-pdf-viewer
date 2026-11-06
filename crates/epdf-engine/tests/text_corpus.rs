@@ -8,7 +8,7 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run vectors
 
-use epdf_engine::access::{DocumentAccess, OwnedDocument};
+use epdf_engine::access::{DocumentAccess, OwnedDocument, PageAccess};
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::text::charmap::{
     CharMapAnchor, PageTextSnapshot, char_map_violation, slice_text_by_chars,
@@ -145,4 +145,31 @@ fn a_cancelled_text_read_reports_aborted() {
         read_page_text(&page, &cancel).expect_err("cancelled").code,
         EngineErrorCode::Aborted,
     );
+}
+
+#[test]
+fn text_reads_normalize_line_breaks_without_moving_character_slots() {
+    for case in test_support::corpus::load("pages.text") {
+        let document = document(&case);
+        for page_vector in &case.pages {
+            let number = PageObjectNumber::new(page_vector.page_object_number).expect("number");
+            let page = document.page(number).expect("page");
+            let raw_page = page.view().text().expect("raw text page");
+            let raw_text = raw_page.text_full().expect("raw text");
+            if !raw_text.contains("\r\n") {
+                continue;
+            }
+            let raw_char_count = raw_page.char_count();
+            let actual = read_page_text(&page, &CancelToken::never()).expect("read");
+            assert!(!actual.text.contains('\r'), "the public reader exposed PDFium CRLF");
+            assert!(actual.text.contains('\n'), "the line break disappeared");
+            assert_eq!(actual.char_count, raw_char_count, "geometry character slots moved");
+            assert_eq!(
+                char_map_violation(actual.char_count, actual.text_len_utf16(), &actual.char_map),
+                None
+            );
+            return;
+        }
+    }
+    panic!("the corpus has no extracted CRLF page for the reader regression");
 }

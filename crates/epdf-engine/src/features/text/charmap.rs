@@ -273,3 +273,63 @@ pub fn char_map_violation(
     (tail != u64::from(text_len_utf16))
         .then(|| format!("map projects charCount to {tail}, but text length is {text_len_utf16}"))
 }
+
+/// The page text exposed to search and copy, with PDFium markers removed.
+///
+/// Character slots never move: only their UTF-16 projection changes. The
+/// extraction map must have passed [`char_map_violation`] before this runs.
+pub fn to_page_text(extracted: PageTextSnapshot) -> PageTextSnapshot {
+    if !extracted.text.chars().any(|ch| ch == '\r' || is_noncharacter(ch as u32)) {
+        return extracted;
+    }
+
+    let units: Vec<u16> = extracted.text.encode_utf16().collect();
+    let mut cleaned = Vec::with_capacity(units.len());
+    let mut char_map = Vec::new();
+    let mut anchor_index = 0;
+    let mut start = 0;
+    for char in 0..extracted.char_count {
+        let mut end = start + 1;
+        if let Some(anchor) = extracted.char_map.get(anchor_index) {
+            if anchor.char == char + 1 {
+                end = anchor.text as usize;
+                anchor_index += 1;
+            }
+        }
+        let piece = &units[start..end];
+        let before = cleaned.len();
+        if piece == [u16::from(b'\r')] {
+            if units.get(end) != Some(&u16::from(b'\n')) {
+                cleaned.push(u16::from(b'\n'));
+            }
+        } else if !piece.first().is_some_and(|first| {
+            let point = match piece.get(1) {
+                Some(second)
+                    if (0xd800..=0xdbff).contains(first) && (0xdc00..=0xdfff).contains(second) =>
+                {
+                    0x10000 + ((u32::from(*first) - 0xd800) << 10) + u32::from(*second) - 0xdc00
+                }
+                _ => u32::from(*first),
+            };
+            is_noncharacter(point)
+        }) {
+            cleaned.extend_from_slice(piece);
+        }
+        if cleaned.len() - before != 1 {
+            char_map.push(CharMapAnchor::new(char + 1, cleaned.len() as u32));
+        }
+        start = end;
+    }
+
+    PageTextSnapshot {
+        // Removing whole noncharacters and translating CR cannot split a
+        // valid UTF-16 string, even if the extraction map splits a pair.
+        text: String::from_utf16(&cleaned).expect("page text remains valid UTF-16"),
+        char_count: extracted.char_count,
+        char_map,
+    }
+}
+
+fn is_noncharacter(code_point: u32) -> bool {
+    (0xfdd0..=0xfdef).contains(&code_point) || (code_point & 0xfffe) == 0xfffe
+}

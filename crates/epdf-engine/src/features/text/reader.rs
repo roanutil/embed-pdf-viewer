@@ -11,7 +11,7 @@
 
 use pdfium::PdfiumError;
 
-use super::charmap::{CharMapAnchor, PageTextSnapshot, char_map_violation};
+use super::charmap::{CharMapAnchor, PageTextSnapshot, char_map_violation, to_page_text};
 use crate::access::PageAccess;
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
@@ -58,7 +58,7 @@ pub fn read_page_text(
         ));
     }
 
-    Ok(snapshot)
+    Ok(to_page_text(snapshot))
 }
 
 fn text_failure(error: PdfiumError) -> EngineError {
