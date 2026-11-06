@@ -22,6 +22,8 @@
     "charmap:check": "tsx --conditions=development src/generate-charmap-vectors.ts --check",
     "metadata": "tsx --conditions=development src/generate-metadata-vectors.ts",
     "metadata:check": "tsx --conditions=development src/generate-metadata-vectors.ts --check",
+    "annotation-line-breaks": "tsx --conditions=development src/generate-annotation-line-break-vectors.ts",
+    "annotation-line-breaks:check": "tsx --conditions=development src/generate-annotation-line-break-vectors.ts --check",
     "annotation": "tsx --conditions=development src/generate-annotation-vectors.ts",
     "annotation:check": "tsx --conditions=development src/generate-annotation-vectors.ts --check",
     "annotation-read": "tsx --conditions=development src/generate-annotation-read-vectors.ts",
@@ -73,7 +75,8 @@
     "form-apply": "tsx --conditions=development src/generate-form-apply-vectors.ts",
     "form-apply:check": "tsx --conditions=development src/generate-form-apply-vectors.ts --check",
     "fonts": "tsx --conditions=development src/generate-font-vectors.ts",
-    "fonts:check": "tsx --conditions=development src/generate-font-vectors.ts --check"
+    "fonts:check": "tsx --conditions=development src/generate-font-vectors.ts --check",
+    "test": "node --import=tsx --conditions=development --test test/*.test.ts"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",
