@@ -1885,119 +1885,238 @@
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "list",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "files"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "files"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "get",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "file"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "file"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "get_selected",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "selected_files"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "selectedFiles"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "select",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "select"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "select"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "is_pending",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "is_pending"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "isPending"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "get_status",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "status"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "status"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "ensure_loaded",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "ensure_loaded"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "ensureLoaded"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "refresh",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "refresh"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "refresh"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "can_download",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "can_download"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "canDownload"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "can_add",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "can_add"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "canAdd"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "can_remove",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "can_remove"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "canRemove"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "add",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "add"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "add"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "remove",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "remove"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "remove"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "download",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "download"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "download"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "reveal",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "reveal"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "reveal"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "on_changed",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "attachment",
       "path": "crates/plugins/attachment/src/controller.rs",
       "owner": "AttachmentCapability",
       "symbol": "on_resynced",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/attachment/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Attachment.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "commands",

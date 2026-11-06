@@ -280,6 +280,11 @@ fn content_of(file: &Value, bytes: Value) -> Result<AttachmentContent, Error> {
 }
 
 impl AttachmentCapability {
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// Every file the document carries: its attachments, in the order the
     /// document keeps them (by name), then the files of its file attachment
     /// annotations, in the annotation plugin's order. This session's pending

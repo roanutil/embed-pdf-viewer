@@ -13,6 +13,8 @@ mod sync;
 
 pub mod contract;
 pub mod controller;
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 pub mod model;
 pub mod names;
 pub mod state;
@@ -53,3 +55,6 @@ pub fn attachment_plugin() -> AnyPlugin {
         .create(&ATTACHMENT, create_attachment_controller)
         .build()
 }
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();

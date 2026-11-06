@@ -580,6 +580,20 @@ impl ViewerHost {
         .await
     }
 
+    /// Document files and file-attachment annotations, addressed by stable identities.
+    pub async fn attachments(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<epdf_plugin_attachment::ffi::AttachmentHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                capability(&s.kernel, &epdf_plugin_attachment::ATTACHMENT, Some(&document_id))?;
+            Ok(epdf_plugin_attachment::ffi::AttachmentHandle::new(cap, post))
+        })
+        .await
+    }
+
     /// The document's lazy outline mirror and editing commands.
     pub async fn outline(
         &self,

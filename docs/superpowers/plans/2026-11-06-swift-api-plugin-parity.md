@@ -172,11 +172,11 @@ UniFFI byte buffers. `events: AsyncStream<AttachmentEvent>` preserves the
 controller's changed/resynced events. Page annotation changes remain annotation
 events; UI refresh also uses viewer revisions.
 
-- [ ] Add failing codecs and real-host tests for lazy list, add/download/remove, zero bytes, duplicate Unicode names, selecting both homes, pending status, optional annotation/stage absence, and permissions. Assert byte-for-byte download equality and stable IDs distinct from display names.
-- [ ] Implement typed handle, host accessor, Swift wrapper and relay. Adapt kernel byte JSON internally using existing `Bytes` helpers; do not route binary data through Swift JSON strings. Preserve all optional metadata and the controller's file-name behavior.
-- [ ] Add cancellation/close tests while download and add are held pending, checking host byte-table cleanup; add saved-document reopen coverage and page-attachment download/reveal tests. Ensure failed writes leave confirmed records intact.
-- [ ] Run `cargo test -p epdf-plugin-attachment -p epdf-viewer-host`, regenerate bindings, and run `EmbedPDFTests/AttachmentTests`; update coverage entries.
-- [ ] Commit as `feat(apple): expose document and page attachments`.
+- [x] Add failing codecs and real-host tests for lazy list, add/download/remove, zero bytes, duplicate Unicode names, selecting both homes, pending status, optional annotation/stage absence, and permissions. Assert byte-for-byte download equality and stable IDs distinct from display names.
+- [x] Implement typed handle, host accessor, Swift wrapper and relay. Adapt kernel byte JSON internally using existing `Bytes` helpers; do not route binary data through Swift JSON strings. Preserve all optional metadata and the controller's file-name behavior.
+- [x] Add cancellation/close tests while download and add are held pending, checking host byte-table cleanup; add saved-document reopen coverage and page-attachment download/reveal tests. Ensure failed writes leave confirmed records intact.
+- [x] Run `cargo test -p epdf-plugin-attachment -p epdf-viewer-host`, regenerate bindings, and run `EmbedPDFTests/AttachmentTests`; update coverage entries.
+- [x] Commit as `feat(apple): expose document and page attachments`.
 
 ## Task 5: Independent revision observation for UI models
 
