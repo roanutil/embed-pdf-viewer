@@ -94,6 +94,25 @@ impl RichTextBody {
     }
 }
 
+/// Line breaks at the annotation boundary: LF in public text, CR in PDF strings.
+pub(crate) fn to_line_breaks(text: &str, line_break: char) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\r' {
+            if chars.peek() == Some(&'\n') {
+                chars.next();
+            }
+            out.push(line_break);
+        } else if ch == '\n' {
+            out.push(line_break);
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
 /// `richTextPlainText`: paragraphs joined by `\r`, runs concatenated. What the
 /// fork writes to `/Contents`.
 pub fn plain_text(paragraphs: &[RichTextParagraph]) -> String {

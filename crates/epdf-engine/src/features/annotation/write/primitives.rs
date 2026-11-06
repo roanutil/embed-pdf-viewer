@@ -96,6 +96,10 @@ pub fn set_string_or_clear(
     value: Option<&str>,
 ) -> Result<(), EngineError> {
     match value {
+        Some(value) if key == "Contents" => {
+            let contents = crate::features::annotation::rich_text::to_line_breaks(value, '\r');
+            set_string(annotation, key, &contents)
+        }
         Some(value) => set_string(annotation, key, value),
         None => {
             annotation.remove_key(key).map_err(|e| {
