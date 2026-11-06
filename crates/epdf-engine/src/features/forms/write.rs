@@ -332,7 +332,7 @@ impl FormMutator<'_> {
         let model = load_model(self.document)?;
         let resolved = resolve(&model, reference)?;
         self.assert_writable(&model, &resolved)?;
-        let family = read_at(&model, resolved.index)?.base.family;
+        let family = read_at(&model, resolved.index)?.family();
         drop(model);
         if !matches!(family, FormFieldFamily::Text | FormFieldFamily::Combobox) {
             return Err(EngineError::with_message(
@@ -379,8 +379,8 @@ impl FormMutator<'_> {
         let before = read_at(&model, resolved.index)?;
         drop(model);
         let name = &before.base.name;
-        if before.base.family != FormFieldFamily::Signature {
-            let family = serde_json::to_value(before.base.family).unwrap_or_default();
+        if before.family() != FormFieldFamily::Signature {
+            let family = serde_json::to_value(before.family()).unwrap_or_default();
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!(
@@ -472,7 +472,7 @@ impl FormMutator<'_> {
                 .copied()
                 .map(MetaWidget::Plain)
                 .collect();
-            redrawn_widgets.extend(redrawn_by_value(after.base.family, &own));
+            redrawn_widgets.extend(redrawn_by_value(after.family(), &own));
             changed_widgets.extend(own);
             fields.push(after);
         }
@@ -495,7 +495,7 @@ impl FormMutator<'_> {
         let mut targets = Vec::new();
         for index in 0..model.field_count() {
             let field = read_at(model, index)?;
-            if !holds_value(field.base.family) || field.base.field_object_number() == 0 {
+            if !holds_value(field.family()) || field.base.field_object_number() == 0 {
                 continue;
             }
             if locks.as_ref().is_some_and(|locks| locks.lock_for(&field.base.name).is_some()) {
@@ -518,7 +518,7 @@ impl FormMutator<'_> {
         for reference in refs {
             let resolved = resolve(model, reference)?;
             let field = read_at(model, resolved.index)?;
-            if !holds_value(field.base.family) || seen.contains(&resolved.object_number) {
+            if !holds_value(field.family()) || seen.contains(&resolved.object_number) {
                 continue;
             }
             self.assert_writable(model, &resolved)?;
@@ -666,7 +666,7 @@ impl FormMutator<'_> {
             .map(MetaWidget::Plain)
             .collect();
         let redrawn = match redraws {
-            None => redrawn_by_value(field.base.family, &changed_widgets),
+            None => redrawn_by_value(field.family(), &changed_widgets),
             Some(true) => changed_widgets.clone(),
             Some(false) => Vec::new(),
         };

@@ -76,7 +76,7 @@ struct Case {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: Value,
+    changed_refs: Value,
 }
 
 fn load() -> VectorFile {
@@ -305,8 +305,8 @@ fn an_update_is_not_structural() {
         let result = updated.outcome.unwrap_or_else(|e| panic!("{}: {e}", case.name));
         let meta = &result["meta"];
         assert_eq!(
-            test_support::canonical_numbers(&meta["changed"]),
-            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed),
+            test_support::canonical_numbers(&meta["changedRefs"]),
+            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed_refs),
             "{}: the changed list",
             case.name,
         );
@@ -1341,14 +1341,14 @@ fn a_note_and_its_popup_share_open_and_the_change_names_both() {
         .outcome
         .expect("a closed note");
     assert_eq!(closed["annotation"]["open"], false);
-    assert_eq!(closed["meta"]["changed"], json!([note["ref"], popup["ref"]]), "{closed}");
+    assert_eq!(closed["meta"]["changedRefs"], json!([note["ref"], popup["ref"]]), "{closed}");
     let shown = listed(&mut replay).into_iter().find(|a| a["ref"] == popup["ref"]).unwrap();
     assert_eq!(shown["open"], false, "the popup's /Open follows its note's");
     // Opened from the popup, the note opens too.
     let opened = update(&mut replay, &popup["ref"], &json!({ "open": true }), &BTreeMap::new())
         .outcome
         .expect("an opened popup");
-    assert_eq!(opened["meta"]["changed"], json!([popup["ref"], note["ref"]]), "{opened}");
+    assert_eq!(opened["meta"]["changedRefs"], json!([popup["ref"], note["ref"]]), "{opened}");
     let shown = listed(&mut replay).into_iter().find(|a| a["ref"] == note["ref"]).unwrap();
     assert_eq!(shown["open"], true);
 }

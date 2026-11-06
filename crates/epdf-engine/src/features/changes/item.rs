@@ -476,7 +476,7 @@ impl ChangeItem {
             // `deletedAnnotationsOf`: the refs in `meta.changed`.
             Self::AnnotationsDelete { page, meta } => (
                 "annotations.deleted",
-                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                serde_json::json!({ "deleted": to_value(&meta.changed_refs)?,
                     "page": crate::identity::PageRef::new(*page), "meta": to_value(meta)? }),
             ),
             Self::AnnotationsReorder { page, order, meta } => (

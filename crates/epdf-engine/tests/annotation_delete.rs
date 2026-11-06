@@ -55,7 +55,8 @@ struct Case {
 
 #[derive(Debug, Deserialize)]
 struct ExpectedMeta {
-    changed: Vec<Value>,
+    #[serde(rename = "changedRefs")]
+    changed_refs: Vec<Value>,
 }
 
 fn load() -> VectorFile {
@@ -110,26 +111,26 @@ fn a_delete_removes_the_annotation_the_typescript_engine_removed() {
             case.name
         );
         assert_eq!(
-            result["meta"]["changed"].as_array().cloned().unwrap_or_default(),
-            case.meta.changed,
+            result["meta"]["changedRefs"].as_array().cloned().unwrap_or_default(),
+            case.meta.changed_refs,
             "{}: what went: {}",
             case.name,
             case.covers,
         );
         assert_eq!(
-            result["meta"]["changed"][0], case.annotation_ref,
+            result["meta"]["changedRefs"][0], case.annotation_ref,
             "{}: the target first",
             case.name
         );
         assert_eq!(result["meta"]["affectedPages"], json!([page_ref(case.page_object_number)]));
-        if case.meta.changed.len() > 1 {
+        if case.meta.changed_refs.len() > 1 {
             threads += 1;
         }
 
         // The event names what went, for listeners that didn't delete it.
         let event = &answer["event"];
         assert_eq!(event["type"], "annotations.deleted", "{}: {event}", case.name);
-        assert_eq!(event["deleted"], result["meta"]["changed"], "{}", case.name);
+        assert_eq!(event["deleted"], result["meta"]["changedRefs"], "{}", case.name);
         assert_eq!(event["page"], page_ref(case.page_object_number), "{}", case.name);
 
         // The part a name comparison cannot see.
@@ -246,14 +247,14 @@ fn a_delete_takes_its_thread_and_its_undo_brings_it_back_where_it_was() {
     .expect("applied");
     let item = &applied["result"]["items"][0];
     assert_eq!(item["type"], "annotations.delete", "{item}");
-    assert_eq!(item["meta"]["changed"].as_array().unwrap(), &case.meta.changed);
+    assert_eq!(item["meta"]["changedRefs"].as_array().unwrap(), &case.meta.changed_refs);
     assert_eq!(applied["result"]["meta"]["undoable"], true, "{applied}");
     assert_eq!(names(&listed(&mut replay, pon)), case.remaining);
 
     let undone = apply(&mut replay, "undo-1", json!({ "undoOf": "delete-1" })).expect("undone");
     let restored = &undone["result"]["items"][0];
     assert_eq!(restored["type"], "annotations.restore", "{undone}");
-    assert_eq!(restored["meta"]["changed"].as_array().unwrap(), &case.meta.changed);
+    assert_eq!(restored["meta"]["changedRefs"].as_array().unwrap(), &case.meta.changed_refs);
     assert_eq!(undone["events"][0]["type"], "annotations.restored", "{undone}");
     let after = listed(&mut replay, pon);
     assert_eq!(refs(&after), refs(&before), "the names and their order");
@@ -388,7 +389,7 @@ fn a_popup_deleted_alone_unlinks_its_note_and_its_undo_links_it_again() {
         json!({ "ops": [{ "type": "annotations.delete", "ref": popup }] }),
     )
     .expect("deleted");
-    assert_eq!(deleted["result"]["items"][0]["meta"]["changed"], json!([popup]));
+    assert_eq!(deleted["result"]["items"][0]["meta"]["changedRefs"], json!([popup]));
     assert_eq!(read(&mut replay, &note).expect("the note stays")["popup"], Value::Null);
 
     apply(&mut replay, "undo-1", json!({ "undoOf": "delete-1" })).expect("undone");
@@ -401,7 +402,7 @@ fn a_popup_deleted_alone_unlinks_its_note_and_its_undo_links_it_again() {
         json!({ "ops": [{ "type": "annotations.delete", "ref": note }] }),
     )
     .expect("deleted");
-    assert_eq!(deleted["result"]["items"][0]["meta"]["changed"], json!([note, popup]));
+    assert_eq!(deleted["result"]["items"][0]["meta"]["changedRefs"], json!([note, popup]));
     assert!(read(&mut replay, &popup).is_none());
 }
 
@@ -475,7 +476,7 @@ fn a_created_annotation_deleted_by_its_number_is_named_and_gone() {
     let meta = &deleted["result"]["meta"];
     assert_eq!(meta["affectedPages"], json!([page_ref(pon)]));
     assert!(meta.get("cacheDelta").is_some(), "{meta}");
-    assert_eq!(meta["changed"], json!([reference]));
+    assert_eq!(meta["changedRefs"], json!([reference]));
     assert_eq!(listed(&mut replay, pon).len(), before.len() - 1);
 }
 
@@ -492,7 +493,7 @@ fn an_inline_annotation_deleted_is_named_by_its_birth_and_the_others_keep_theirs
         .replay(&json!({ "kind": "annotations.delete", "jobId": "<job>", "opId": "<op>",
             "docId": DOC, "ref": inline["ref"] }))
         .expect("deleted");
-    let changed = deleted["result"]["meta"]["changed"].as_array().cloned().unwrap_or_default();
+    let changed = deleted["result"]["meta"]["changedRefs"].as_array().cloned().unwrap_or_default();
     assert_eq!(changed[0], inline["ref"]);
     let after = refs(&listed(&mut replay, pon));
     let expected: Vec<Value> = refs(&before).into_iter().filter(|r| !changed.contains(r)).collect();
@@ -565,14 +566,14 @@ fn a_delete_refused_after_its_promotion_leaves_the_page_as_it_was() {
     let bytes_before = saved(&mut replay);
     let inline = refs(&before).into_iter().find(|r| r["kind"] == "baseIndex").expect("inline");
     // May delete only its own annotations; the inline one is no one's.
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let refused = replay
         .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
             "opId": "refused", "change": { "ops": [{ "type": "annotations.delete", "ref": inline }] },
             "authority": { "identity": { "userId": "someone" },
                 "grants": { "scope": ["doc.open", "doc.annotate.modify", "annotations:delete:self"],
-                    "pdfBits": bits } } }))
+                    "permissionFlags": bits } } }))
         .expect_err("not the caller's to delete");
     assert_eq!(refused["code"], "Forbidden", "{refused}");
     assert_eq!(listed(&mut replay, pon), before, "the refused delete changed the listing");

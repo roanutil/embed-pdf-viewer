@@ -308,7 +308,7 @@ fn group_lock_fields(
     for index in 0..model.field_count() {
         let field = read_at(&model, index)?;
         if field.base.group_id.as_deref() != Some(group_id)
-            || field.base.family == FormFieldFamily::Signature
+            || field.family() == FormFieldFamily::Signature
         {
             continue;
         }

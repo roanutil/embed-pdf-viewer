@@ -1547,7 +1547,6 @@
                   ]
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               },
               "close": {
@@ -1567,7 +1566,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }

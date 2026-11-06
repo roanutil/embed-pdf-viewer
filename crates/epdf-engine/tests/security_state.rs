@@ -11,10 +11,9 @@
 
 use epdf_engine::auth::scope::{DocCapability, ParsedScope, check_capability, decode_pdf_bits};
 use epdf_engine::features::security::state::{
-    ALL_STANDARD_SECURITY_PERMISSIONS, OpenedAs, PermissionAdvisory, SecurityProbeInfo,
-    SecurityState, StateOptions, advisory_from_pdf_bits, build_security_info,
-    has_all_standard_security_permissions, normalize_u32, password_blocked,
-    security_state_from_probe, unknown_security, unsupported_security,
+    ALL_STANDARD_SECURITY_PERMISSIONS, OpenedAs, SecurityProbeInfo, SecurityState, StateOptions,
+    build_security_info, has_all_standard_security_permissions, normalize_u32, password_blocked,
+    permission_flags_of, security_state_from_probe, unknown_security, unsupported_security,
 };
 use serde::Deserialize;
 
@@ -30,7 +29,6 @@ struct VectorFile {
     build: Vec<BuildCase>,
     all_allowed: Vec<AllAllowedCase>,
     opened_as_from_code: Vec<OpenedAsCase>,
-    advisory: Vec<AdvisoryCase>,
     state: Vec<StateCase>,
 }
 
@@ -62,15 +60,6 @@ struct OpenedAsCase {
     name: String,
     code: i32,
     opened_as: OpenedAs,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct AdvisoryCase {
-    name: String,
-    covers: String,
-    raw: Option<i64>,
-    advisory: PermissionAdvisory,
 }
 
 #[derive(Debug, Deserialize)]
@@ -192,48 +181,30 @@ fn opened_as_from_code_agrees_with_typescript() {
 }
 
 #[test]
-fn the_advisory_agrees_with_typescript() {
-    let file = load();
-    for case in &file.advisory {
-        let bits = decode_pdf_bits(case.raw);
-        assert_eq!(advisory_from_pdf_bits(bits), case.advisory, "{}: {}", case.name, case.covers,);
-    }
-}
-
-#[test]
-fn the_advisory_and_the_scope_resolver_tell_the_same_story() {
-    // `document-security-state.ts` says the advisory "MUST mirror the bit
-    // combinations the scope resolver uses for pdf.permissions expansion". A
-    // comment cannot enforce that, and the two live in different packages on
-    // both sides, so the pairing is checked here: an advisory that says "you
-    // can print in high quality" where the resolver denies `doc.print.high`
-    // is a UI that lies about the document.
-    //
-    // Only the capabilities that have a bit behind them are paired. The
-    // advisory has no field for the cloud-only ones, which is correct: there
-    // is nothing about them for a badge to advise.
-    let file = load();
+fn the_permission_flags_and_the_scope_resolver_tell_the_same_story() {
+    // The flags a badge shows must match what `pdf.permissions` grants. Only the
+    // capabilities with a bit behind them are paired. Assembly is left out: the
+    // resolver also grants it through bit 4, so the flag alone does not decide it.
     let virtual_scope = [ParsedScope::Virtual];
-    for case in &file.advisory {
-        let bits = decode_pdf_bits(case.raw);
-        let advisory = advisory_from_pdf_bits(bits);
+    for word in [0_i64, 0xFFFF_FFFC, 0xFFFF_F0C0, 0xFFFF_F3FC] {
+        let bits = decode_pdf_bits(Some(word));
+        let flags = permission_flags_of(bits);
         let granted = |c: DocCapability| check_capability(c, &virtual_scope, bits);
-
         let pairs = [
-            ("canPrint", advisory.can_print, granted(DocCapability::DocPrint)),
-            ("canPrintHigh", advisory.can_print_high, granted(DocCapability::DocPrintHigh)),
-            ("canCopy", advisory.can_copy, granted(DocCapability::DocTextCopy)),
-            ("canAnnotate", advisory.can_annotate, granted(DocCapability::DocAnnotateModify)),
-            ("canFillForms", advisory.can_fill_forms, granted(DocCapability::DocFormsFill)),
-            ("canModifyForms", advisory.can_modify_forms, granted(DocCapability::DocFormsModify)),
-            ("canModifyPages", advisory.can_modify_pages, granted(DocCapability::DocPagesModify)),
-            ("canAssemble", advisory.can_assemble, granted(DocCapability::DocPagesAssemble)),
+            ("print", flags.print, granted(DocCapability::DocPrint)),
+            ("printHighQuality", flags.print_high_quality, granted(DocCapability::DocPrintHigh)),
+            ("copy", flags.copy, granted(DocCapability::DocTextCopy)),
+            (
+                "modifyAnnotations",
+                flags.modify_annotations,
+                granted(DocCapability::DocAnnotateModify),
+            ),
+            ("fillForms", flags.fill_forms, granted(DocCapability::DocFormsFill)),
         ];
-        for (field, advised, resolved) in pairs {
+        for (field, shown, resolved) in pairs {
             assert_eq!(
-                advised, resolved,
-                "{}: advisory {field} says {advised}, the resolver says {resolved} ({})",
-                case.name, case.covers,
+                shown, resolved,
+                "word {word:#x}: flag {field} says {shown}, the resolver says {resolved}"
             );
         }
     }

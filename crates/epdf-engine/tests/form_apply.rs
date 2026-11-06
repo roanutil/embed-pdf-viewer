@@ -200,10 +200,10 @@ fn a_field_the_caller_may_not_fill_refuses_the_change() {
     // refusal names it (`authorizeFieldWrite`).
     let file = load();
     let mut replay = Replay::open(&file.fixture, "rights");
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let refused = replay.replay(&json!({ "kind": "document.apply",
-        "authority": { "identity": {}, "grants": { "scope": ["doc.forms.read"], "pdfBits": bits },
+        "authority": { "identity": {}, "grants": { "scope": ["doc.forms.read"], "permissionFlags": bits },
                        "protection": null },
         "change": { "ops": [{ "type": "forms.setValue",
             "field": { "kind": "objectNumber", "objectNumber": 4 }, "value": { "value": "x" } }] } }));

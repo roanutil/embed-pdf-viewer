@@ -436,8 +436,8 @@ pub fn read_structure(doc: &Document) -> Result<RevisionStructure, EngineError> 
         for (index, f) in (0u32..).zip(snapshot.fields) {
             fields.push(RevisionField {
                 object_number: f.base.field_object_number(),
+                family: f.family(),
                 name: f.base.name,
-                family: f.base.family,
                 widgets: widget_refs(&f.kind).into_iter().map(|(annot, _)| annot).collect(),
                 flags: model.field(index).map(|field| field.flags()),
             });

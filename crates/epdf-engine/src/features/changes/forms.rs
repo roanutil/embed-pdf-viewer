@@ -144,7 +144,7 @@ pub fn reset(
         }
         None => all_fields(ctx)?
             .into_iter()
-            .filter(|target| holds_value(target.field.base.family))
+            .filter(|target| holds_value(target.field.family()))
             .collect::<Vec<_>>(),
     };
     // A reset fills in every field it puts back: each must be the caller's
@@ -535,7 +535,7 @@ fn reset_result(
 fn redrawn_by(reports: &str, field: &FormFieldDto, widgets: &[MetaWidget]) -> Vec<MetaWidget> {
     match reports {
         "forms.setDisplay" => Vec::new(),
-        "forms.setValue" | "forms.reset" => redrawn_by_value(field.base.family, widgets),
+        "forms.setValue" | "forms.reset" => redrawn_by_value(field.family(), widgets),
         _ => widgets.to_vec(),
     }
 }

@@ -178,11 +178,11 @@ pub fn field_value_write_of<C: Coordinates>(
         _ => {
             return Err(invalid_value(format!(
                 "{} fields hold no value you can set",
-                family_name(field.base.family)
+                family_name(field.family())
             )));
         }
     }
-    let takes = match field.base.family {
+    let takes = match field.family() {
         FormFieldFamily::Text => "{ value }",
         FormFieldFamily::Checkbox => "{ checked } or { value }",
         FormFieldFamily::Listbox => "{ selectedValues }",
@@ -190,7 +190,7 @@ pub fn field_value_write_of<C: Coordinates>(
     };
     Err(invalid_value(format!(
         "a {} field takes {takes}, not {}",
-        family_name(field.base.family),
+        family_name(field.family()),
         value.shape()
     )))
 }

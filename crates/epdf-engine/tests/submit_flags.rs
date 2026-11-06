@@ -34,7 +34,6 @@ struct Case {
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct WireFlags {
-    raw: u32,
     exclude: bool,
     include_no_value_fields: bool,
     format: String,
@@ -67,7 +66,6 @@ fn the_decode_agrees_with_typescript() {
     for case in &file.cases {
         let decoded = decode_submit_form_flags(case.raw);
         let actual = WireFlags {
-            raw: decoded.raw,
             exclude: decoded.exclude,
             include_no_value_fields: decoded.include_no_value_fields,
             format: match decoded.format {

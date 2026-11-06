@@ -27,6 +27,7 @@ use epdf_engine::auth::scope::{
     expanded_capabilities, field_rights_of, parse_all, parse_scope, plugin_permissions_of,
     scope_not_covered,
 };
+use epdf_engine::features::security::state::{PdfPermissionFlags, permission_flags_of};
 use serde::Deserialize;
 
 const SCHEMA_VERSION: u32 = 1;
@@ -219,32 +220,8 @@ struct BitsEntry {
     bits: BitsShape,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-struct BitsShape {
-    bit3: bool,
-    bit4: bool,
-    bit5: bool,
-    bit6: bool,
-    bit9: bool,
-    bit10: bool,
-    bit11: bool,
-    bit12: bool,
-}
-
-impl From<PdfBits> for BitsShape {
-    fn from(b: PdfBits) -> Self {
-        Self {
-            bit3: b.bit3,
-            bit4: b.bit4,
-            bit5: b.bit5,
-            bit6: b.bit6,
-            bit9: b.bit9,
-            bit10: b.bit10,
-            bit11: b.bit11,
-            bit12: b.bit12,
-        }
-    }
-}
+/// The named permission flags a decoded word reads as (`permissionFlagsOf`).
+type BitsShape = PdfPermissionFlags;
 
 #[derive(Debug, Deserialize)]
 struct ResolveCase {
@@ -302,7 +279,7 @@ fn the_bit_decoder_agrees_with_typescript() {
     // assertions would not name.
     let file: ResolveFile = serde_json::from_str(&read("resolve.json")).expect("resolve.json");
     for entry in &file.bits {
-        let actual: BitsShape = decode_pdf_bits(entry.raw).into();
+        let actual: BitsShape = permission_flags_of(decode_pdf_bits(entry.raw));
         assert_eq!(
             actual, entry.bits,
             "permission word {:?} ({:?}) decoded differently",

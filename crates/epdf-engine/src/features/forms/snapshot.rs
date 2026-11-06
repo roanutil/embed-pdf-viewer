@@ -284,7 +284,6 @@ pub struct FormFieldBase<C: Coordinates = PdfCoordinates> {
     pub field_ref: FormFieldRef,
     /// The fully qualified name, such as `billing.name`.
     pub name: String,
-    pub family: FormFieldFamily,
     pub origin: FormFieldOrigin,
     /// The USER must not change the value. Programmatic writes are still
     /// accepted, because a calculated field is read-only and script-written;
@@ -336,7 +335,7 @@ pub struct FieldAttribution {
 
 /// The family-specific half.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "family", rename_all = "camelCase")]
+#[serde(tag = "kind", rename_all = "camelCase")]
 #[serde(rename_all_fields = "camelCase")]
 pub enum FormFieldKind {
     Text {
@@ -500,7 +499,6 @@ pub fn read_field(
             FormFieldRef::Fqn { name: name.clone() }
         },
         name,
-        family,
         origin: if field.origin_code() == 1 {
             FormFieldOrigin::Recovered
         } else {
@@ -739,7 +737,28 @@ pub(crate) fn text(
     })
 }
 
+impl FormFieldKind {
+    /// The control family this kind is (the tag the wire carries as `kind`).
+    pub fn family(&self) -> FormFieldFamily {
+        match self {
+            Self::Text { .. } => FormFieldFamily::Text,
+            Self::Checkbox { .. } => FormFieldFamily::Checkbox,
+            Self::Radio { .. } => FormFieldFamily::Radio,
+            Self::Combobox { .. } => FormFieldFamily::Combobox,
+            Self::Listbox { .. } => FormFieldFamily::Listbox,
+            Self::Pushbutton { .. } => FormFieldFamily::Pushbutton,
+            Self::Signature { .. } => FormFieldFamily::Signature,
+            Self::Unknown { .. } => FormFieldFamily::Unknown,
+        }
+    }
+}
+
 impl<C: Coordinates> FormFieldDto<C> {
+    /// The control family, read off the kind.
+    pub fn family(&self) -> FormFieldFamily {
+        self.kind.family()
+    }
+
     /// Every widget the field has, whatever its family.
     ///
     /// The families store them in two shapes: a toggle's widgets carry an

@@ -30,7 +30,6 @@ pub fn page_form_field_of(
         base: FormFieldBase::<PageCoordinates> {
             field_ref: base.field_ref,
             name: base.name,
-            family: base.family,
             origin: base.origin,
             read_only: base.read_only,
             required: base.required,
@@ -304,7 +303,7 @@ mod tests {
     fn pushbutton(name: &str, actions: Option<Value>) -> Value {
         let mut field = json!({
             "ref": { "kind": "objectNumber", "objectNumber": 9 }, "name": name,
-            "family": "pushbutton", "origin": "acroform", "readOnly": false,
+            "kind": "pushbutton", "origin": "acroform", "readOnly": false,
             "required": false, "noExport": false, "alternateName": null, "mappingName": null,
             "valueEntry": { "kind": "none" }, "defaultValueEntry": { "kind": "none" },
             "groupId": null, "createdBy": null, "createdAt": null, "filledBy": null,

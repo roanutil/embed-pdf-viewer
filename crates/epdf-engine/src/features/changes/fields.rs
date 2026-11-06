@@ -193,7 +193,7 @@ fn write_update(
     before: &ReadField,
     patch: &Map<String, Value>,
 ) -> Result<Done, EngineError> {
-    let typed = FormFieldPatch::of_wire(patch, before.field.base.family)?;
+    let typed = FormFieldPatch::of_wire(patch, before.field.family())?;
     let reference = FormFieldRef::ObjectNumber { field: before.object_number };
     let document = ctx.session.document()?.document();
     let pending = capture_before(document, &objects_of(before));
@@ -203,7 +203,7 @@ fn write_update(
     let is = properties_of(&written.field);
     let keys: Vec<&String> = patch
         .keys()
-        .filter(|key| *key != "family" && !values_equal(was.get(*key), is.get(*key)))
+        .filter(|key| *key != "kind" && !values_equal(was.get(*key), is.get(*key)))
         .collect();
     let pick = |from: &Map<String, Value>| -> Map<String, Value> {
         keys.iter()

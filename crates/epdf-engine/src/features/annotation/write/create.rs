@@ -63,13 +63,13 @@ use crate::session::document::WriteStamp;
 pub struct AnnotationMutationMeta {
     #[serde(flatten)]
     pub meta: MutationMeta,
-    pub changed: Vec<AnnotationRef>,
+    pub changed_refs: Vec<AnnotationRef>,
 }
 
 impl AnnotationMutationMeta {
     /// `annotationMutationMeta`: one page touched, these annotations changed.
     pub fn of(stamp: &WriteStamp, page: PageObjectNumber, changed: Vec<AnnotationRef>) -> Self {
-        Self { meta: MutationMeta::local(vec![PageRef::new(page)], stamp), changed }
+        Self { meta: MutationMeta::local(vec![PageRef::new(page)], stamp), changed_refs: changed }
     }
 }
 
@@ -1091,7 +1091,7 @@ pub fn create_batch(
             created: Vec::new(),
             meta: AnnotationMutationMeta {
                 meta: MutationMeta::local(Vec::new(), stamp),
-                changed: Vec::new(),
+                changed_refs: Vec::new(),
             },
         });
     }
@@ -1178,7 +1178,10 @@ pub fn create_batch(
         .collect();
     Ok(BatchCreateResult {
         created,
-        meta: AnnotationMutationMeta { meta: MutationMeta::local(pages, stamp), changed },
+        meta: AnnotationMutationMeta {
+            meta: MutationMeta::local(pages, stamp),
+            changed_refs: changed,
+        },
     })
 }
 

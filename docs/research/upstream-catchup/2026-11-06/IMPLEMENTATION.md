@@ -111,3 +111,20 @@ Remaining in this checkpoint: the Rust migrations above, the other Job 3 contrac
 5. An empty `nm` counts as given, so it is neither stamped nor written. The truthiness check in `writeAnnotationBase` decides this. Before this change the create stamped a UUIDv7 over it.
 
 Full `epdf-engine` library tests: 509 passed. Replays still open: annotation_update 8 passed / 25 failed, scope_conformance 2 / 3, security_state 0 / 8, form_write 3 / 4. security_scope and form_apply pass.
+
+## Job 3 checkpoint: forms kind rename and vector review (2026-11-06)
+
+Full `epdf-engine` suite: 1483 passed, 16 failed. The starting commit `2b86156d3` had 13 failing tests, so 9 failures are new in this tree. Five tests that failed at the start now pass. The library suite passes 509/509.
+
+Vector decisions (user approved items 1, 3; item 2 investigated):
+
+1. `forms/snapshot.json` and `forms/apply.json` move `family` to `kind`. This follows the TypeScript draft, patch and field DTOs (`kind` tag, `FormFieldDraftBase`).
+2. The widget `fieldKind`, `fieldFamily` and `hasMark` fields are legitimate. They come from `c4b286a69` ("Tag form fields by kind", API consistency item 10), which is already in the starting commit. The committed snapshot vector predates that change and was never regenerated. The Rust widget rows do not yet emit these fields, so `the_snapshot_agrees_with_the_typescript_engine` stays red until they do.
+3. `annotation/appearances.json`, `annotation/read.json`, `fonts/wire.json` and `actions/submit-flags.json` are regenerated, as approved.
+4. `forms/field.json` was red because the generator still sent `family:` drafts and patches. The TypeScript create path reads `draft.kind`; a missing kind gives `FAMILY_CODE[undefined]`, so native creation fails with `cannot create field ... (name conflict or invalid)`. The generator now sends `kind`. The TypeScript behavior was already correct.
+5. The submit-flags replay no longer reads `flags.raw`. The TypeScript output dropped it; the case-level input `raw` remains.
+
+Still open:
+- `files/write.json` and `wire/requests.json` are reverted and have not been decided.
+- Rust widget DTO port for `fieldKind`, `fieldFamily`, `hasMark`.
+- The remaining failures listed above (signature, write transactions, annotation transfer, document events, fonts corpus, outline, protection).

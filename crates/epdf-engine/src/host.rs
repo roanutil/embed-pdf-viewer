@@ -339,38 +339,40 @@ pub struct WireAuthorityIdentity {
     pub group_id: Option<String>,
 }
 
-/// An authority's `grants`: the caller's scope and the PDF permission bits.
+/// An authority's `grants`: the caller's scope and the PDF permission flags.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WireGrants {
     pub scope: Vec<String>,
-    pub pdf_bits: WirePdfBits,
+    /// `PdfPermissionFlags`, one named flag per `/P` bit.
+    pub permission_flags: WirePermissionFlags,
 }
 
-/// `PdfBits`, as the wire spells it.
+/// `PdfPermissionFlags`, as the wire spells it (pdf.js names).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct WirePdfBits {
-    pub bit3: bool,
-    pub bit4: bool,
-    pub bit5: bool,
-    pub bit6: bool,
-    pub bit9: bool,
-    pub bit10: bool,
-    pub bit11: bool,
-    pub bit12: bool,
+#[serde(rename_all = "camelCase")]
+pub struct WirePermissionFlags {
+    pub print: bool,
+    pub modify_contents: bool,
+    pub copy: bool,
+    pub modify_annotations: bool,
+    pub fill_forms: bool,
+    pub copy_for_accessibility: bool,
+    pub assemble: bool,
+    pub print_high_quality: bool,
 }
 
-impl From<WirePdfBits> for crate::auth::scope::types::PdfBits {
-    fn from(w: WirePdfBits) -> Self {
+impl From<WirePermissionFlags> for crate::auth::scope::types::PdfBits {
+    fn from(w: WirePermissionFlags) -> Self {
         Self {
-            bit3: w.bit3,
-            bit4: w.bit4,
-            bit5: w.bit5,
-            bit6: w.bit6,
-            bit9: w.bit9,
-            bit10: w.bit10,
-            bit11: w.bit11,
-            bit12: w.bit12,
+            bit3: w.print,
+            bit4: w.modify_contents,
+            bit5: w.copy,
+            bit6: w.modify_annotations,
+            bit9: w.fill_forms,
+            bit10: w.copy_for_accessibility,
+            bit11: w.assemble,
+            bit12: w.print_high_quality,
         }
     }
 }
@@ -3377,14 +3379,13 @@ fn change_authority(
                 display_name: wire.identity.display_name.clone(),
             };
             let mut authority =
-                SessionAuthority::new(&grants.scope, identity, grants.pdf_bits.into()).map_err(
-                    |e| {
+                SessionAuthority::new(&grants.scope, identity, grants.permission_flags.into())
+                    .map_err(|e| {
                         EngineError::with_message(
                             EngineErrorCode::InvalidArg,
                             format!("the authority's scope is not valid: {e}"),
                         )
-                    },
-                )?;
+                    })?;
             authority.set_protection(wire.protection.clone());
             Some(authority)
         }
