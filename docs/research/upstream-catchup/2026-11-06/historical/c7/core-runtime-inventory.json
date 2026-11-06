@@ -1,0 +1,383 @@
+{
+  "createdUTC": "2026-11-04T13:35:13.789308+00:00",
+  "state": "PLANNING_ONLY_COMPLETE core/runtime scope; integrate separate plugin/binding inventory before final user plan",
+  "pins": {
+    "scope": "C7 planning only, pinned canonical targets; original-target C5h remains complete",
+    "observedUTC": "2026-11-04T13:25:23.357139+00:00",
+    "viewer": {
+      "canonicalRepo": "https://github.com/embedpdf/embed-pdf-viewer.git",
+      "defaultBranch": "main",
+      "sha": "4ad8986099314b9587df423c802db103a21d665d",
+      "commitTime": "2026-11-04T15:23:43+02:00",
+      "runtimeGitlink": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+      "bareMetadataInsideContainer": "/tmp/embedpdf-c7-viewer-metadata.git"
+    },
+    "runtime": {
+      "canonicalRepo": "https://github.com/embedpdf/runtime.git",
+      "defaultBranch": "embedpdf/main",
+      "sha": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e",
+      "commitTime": "2026-11-04T14:16:48+02:00",
+      "viewerSelectedTarget": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+      "decision": "Compare viewer gitlink and runtime HEAD; do not automatically substitute HEAD",
+      "bareMetadataInsideContainer": "/tmp/embedpdf-c7-runtime-metadata.git"
+    },
+    "baseline": {
+      "repo": "https://github.com/roanutil/embed-pdf-viewer-private.git",
+      "branches": [
+        "research/multi-platform-rust-core-impl",
+        "research/multi-platform-rust-core-impl-plugins"
+      ],
+      "bothFreshSHA": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+      "verifiedUTC": "2026-11-04T13:26:32.889915+00:00",
+      "runtime": "3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+    },
+    "approvedImage": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+    "container": "embedpdf-c5-combined",
+    "proofs": {
+      "/private/tmp/kkt-peach-lemur/c7/initial-canonical-refs.json": "3a9e9139f0c5fb1e62d64a7479f06ed8a84dbfa3dc96e58c5b73ddc9ed7ca183",
+      "/private/tmp/kkt-peach-lemur/c7/runtime-upstream-heads.log": "802de66adcbb99fd3b8b52a214214b0239f5215909bc745b9210df9a64193ba5",
+      "/private/tmp/kkt-peach-lemur/c7/fetch-metadata-result.json": "690e5536c2c3b29dfba2f5c51e625b7a53e0bc8f8c9128bdb499063cfb243339",
+      "/private/tmp/kkt-peach-lemur/c7/api-pins.json": "f1db668b16ddfb335b482834521e8efdfbe70361a094cccf240b16a61e5d5079"
+    }
+  },
+  "history": {
+    "viewerMergeBase": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+    "viewerLocalOnly": 1890,
+    "viewerUpstreamOnly": 82,
+    "viewerUpstreamNonmerge": 51,
+    "upstreamChangedPaths": 794,
+    "upstreamCoreEnginePaths": 151,
+    "runtimeMergeBase": "28b8b808f52d544b17a973199410cda0cc43530f",
+    "runtimeForkOnly": 11,
+    "runtimeViewerPinUpstreamOnly": 38,
+    "runtimeViewerPinNonmerge": 25,
+    "runtimeHeadBeyondViewerPin": {
+      "historyCommits": 2,
+      "nonmergeCommits": 1,
+      "fix": "8bdd5c097be2c29f72a70dd13e0a1e98ce28f65c",
+      "files": [
+        "core/fpdfdoc/cpdf_richtextparser.cpp",
+        "core/fpdfdoc/cpdf_richtextparser.h",
+        "fpdfsdk/epdf_annot_embeddertest.cpp",
+        "public/epdf_annot.h",
+        "testing/embedpdf_layer_mode_writers.txt"
+      ]
+    },
+    "patchEquivalentToCurrentBranch": {
+      "viewer": 0,
+      "runtime": 0,
+      "method": "git cherry against baseline, nonmerge patches; cross-language semantic equivalence must be examined separately"
+    }
+  },
+  "exports": {
+    "3c55b7a1c0bf956231392a573e87f28dd6d6667d": {
+      "count": 1066,
+      "added": {},
+      "removed": [],
+      "signatureChanged": {}
+    },
+    "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185": {
+      "count": 1068,
+      "added": {
+        "EPDFAnnot_SetSubtype": "FPDF_BOOL FPDF_CALLCONV EPDFAnnot_SetSubtype(FPDF_ANNOTATION annot, FPDF_ANNOTATION_SUBTYPE subtype)",
+        "EPDFAnnot_SetNoColor": "FPDF_BOOL FPDF_CALLCONV EPDFAnnot_SetNoColor(FPDF_ANNOTATION annot, FPDFANNOT_COLORTYPE type)"
+      },
+      "removed": [],
+      "signatureChanged": {}
+    },
+    "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e": {
+      "count": 1068,
+      "added": {
+        "EPDFAnnot_SetSubtype": "FPDF_BOOL FPDF_CALLCONV EPDFAnnot_SetSubtype(FPDF_ANNOTATION annot, FPDF_ANNOTATION_SUBTYPE subtype)",
+        "EPDFAnnot_SetNoColor": "FPDF_BOOL FPDF_CALLCONV EPDFAnnot_SetNoColor(FPDF_ANNOTATION annot, FPDFANNOT_COLORTYPE type)"
+      },
+      "removed": [],
+      "signatureChanged": {}
+    }
+  },
+  "functionalInventory": [
+    {
+      "name": "Kind changes retain annotation identity",
+      "category": "NEW_FUNCTIONAL / CONFIRMED_MISSING",
+      "behavior": "Allow only text-markup siblings and square/circle; reject held fields the new kind cannot hold; preserve ref/nm, write subtype before kind fields, regenerate appearance. Current patch.rs:81 refuses every subtype change.",
+      "commits": [
+        {
+          "sha": "932618fcebf01a6ba04db9992e31364ad693d914",
+          "time": "2026-11-03T21:33:27+02:00",
+          "subject": "Let an update change an annotation's kind to a sibling"
+        },
+        {
+          "sha": "77e57ac6a181e55a06bc500c1467f19681e23e05",
+          "time": "2026-11-04T01:03:04+02:00",
+          "subject": "Write an annotation's new kind, and pin the runtime to f2dd40897"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/engine/core/src/annotation/siblings.ts",
+        "packages/engine/core/src/annotation/resolve/resolveAnnotationPatch.ts",
+        "packages/engine/services/src/features/annotations/AnnotationMutator.ts"
+      ],
+      "owningRustFiles": [
+        "crates/pdfium/src/annot_write.rs",
+        "crates/epdf-engine/src/features/annotation/write/patch.rs",
+        "crates/epdf-engine/src/features/annotation/write/update.rs",
+        "crates/epdf-engine/src/features/annotation/write/prepare.rs"
+      ],
+      "eventualAcceptance": [
+        "Sibling conversion keeps ref/nm; non-sibling/unrepresentable-field refusal before write; ownership/error/batch rollback stable",
+        "Existing annotation_update/write_transactions tests plus target siblings.test.ts oracle vectors"
+      ]
+    },
+    {
+      "name": "Null stroke and ISO dash semantics",
+      "category": "NEW_FUNCTIONAL / CONFIRMED_MISSING",
+      "behavior": "Current DraftFields.color Option<Rgb> rejects null, create defaults red; target differentiates omitted/default from explicit null/no-stroke via EPDFAnnot_SetNoColor. Current dashArray accepts [] and clears it; target refuses [], accepts nonnegative nonempty patterns including [0] and null=no pattern, omitted dashed pattern writes [3,3]. Runtime reads empty imported dash as solid.",
+      "commits": [
+        {
+          "sha": "70481dc09f2c840ea92c29e56af97eaf4774ab09",
+          "time": "2026-11-04T00:54:19+02:00",
+          "subject": "Let shapes, lines and ink have no stroke: color null"
+        },
+        {
+          "sha": "f6dc15f8f4d05d34bbed2f0695cb028520b832f8",
+          "time": "2026-11-04T00:59:44+02:00",
+          "subject": "Write a dashed border's default pattern out; an empty pattern reads solid"
+        },
+        {
+          "sha": "fe2941a27b4226a06a9d68636917f2ce34117856",
+          "time": "2026-11-04T02:07:13+02:00",
+          "subject": "Let null mean no dash pattern; refuse an empty one"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/engine/core/src/annotation/base.schema.ts",
+        "packages/engine/core/src/annotation/resolve/dash.ts",
+        "packages/engine/services/src/features/annotations/internal/write/writeStyle.ts"
+      ],
+      "owningRustFiles": [
+        "crates/epdf-engine/src/features/annotation/write/prepare.rs",
+        "crates/epdf-engine/src/features/annotation/write/create.rs",
+        "crates/epdf-engine/src/features/annotation/write/update.rs",
+        "crates/epdf-engine/src/features/annotation/read/style.rs",
+        "crates/pdfium/src/annot_write.rs"
+      ],
+      "eventualAcceptance": [
+        "Omitted/null/[]/[0]/positive-pattern cases through schema,prediction,raw dictionary,roundtrip and raster",
+        "No stroke differs from missing /C/default; keep interior-color and widget semantics separately tested"
+      ]
+    },
+    {
+      "name": "Acrobat-fit ink curves",
+      "category": "NEW_FUNCTIONAL / NOT_PORTED",
+      "behavior": "New shared bezier/ink-curves algorithm and matching runtime appearance fitter; repeated points, two-point strokes, reversals and split tolerance alter scene bounds/paint. Existing cloudy bezier helper is not equivalent ink-curve port.",
+      "commits": [
+        {
+          "sha": "c70e3ddf434b64cbf48cd71717650b95bf853a75",
+          "time": "2026-11-04T00:54:19+02:00",
+          "subject": "Draw ink with the curves Acrobat fits to its points"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/core/annotation/src/bezier.ts",
+        "packages/core/annotation/src/ink-curves.ts",
+        "packages/core/annotation/src/shapes/points.ts",
+        "packages/core/annotation/test/ink-curves.test.ts"
+      ],
+      "owningRustFiles": [
+        "crates/plugins/annotation-core/src",
+        "crates/pdfium/src/annot.rs"
+      ],
+      "eventualAcceptance": [
+        "Port exact target algorithm/oracle vectors, not a new smoothing policy",
+        "Compare owned geometry and TS/native raster at same runtime/font/corpus; runtime epdf_ink_appearance_embeddertest gate"
+      ]
+    },
+    {
+      "name": "Markup rich-text comments",
+      "category": "NEW_FUNCTIONAL / PARTIAL_FOUNDATION_EXISTS",
+      "behavior": "Existing Rust free-text rich-text DTO/parser/native calls reusable, but markup comment fields/read source rc-only/default family/plain projection and agreement rules are new. Plain contents updates to rich comment rebuild paragraphs; null semantics preserve or clear correctly; comment edits do not redraw annotation appearance.",
+      "commits": [
+        {
+          "sha": "7b91e04a900cf1ca3672435d6dd47f5d02b2bf68",
+          "time": "2026-11-04T13:44:40+02:00",
+          "subject": "Read and write a markup annotation's comment as rich text"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/engine/core/src/annotation/resolve/comment.ts",
+        "packages/engine/core/src/dto/RichText.schema.ts",
+        "packages/engine/services/src/features/annotations/internal/richTextWire.ts",
+        "packages/engine/services/src/features/annotations/internal/write/annotationWriterRegistry.ts"
+      ],
+      "owningRustFiles": [
+        "crates/epdf-engine/src/features/annotation/rich_text.rs",
+        "crates/epdf-engine/src/features/annotation/read/kinds.rs",
+        "crates/epdf-engine/src/features/annotation/write/prepare.rs",
+        "crates/epdf-engine/src/features/annotation/write/patch.rs",
+        "crates/epdf-engine/src/features/annotation/write/create.rs"
+      ],
+      "eventualAcceptance": [
+        "Mismatch contents/richText refuses; newline spelling normalized; rc-versus-contents source; richText=null/plain patch behavior; all supported markup kinds",
+        "Runtime-head option8bdd must ignore drawing /DA for markup comments while preserving FreeText/widget behavior"
+      ]
+    },
+    {
+      "name": "Final /XYZ destination behavior supersedes transient zero-preserving change",
+      "category": "CHANGED_SEMANTICS / CONFIRMED_MISSING_FINAL_TARGET",
+      "behavior": "Current Rust read_destination uses raw.location()/FPDFDest_GetLocationInPage and preserves literal0. Final target01f97 uses raw params/null bits, keeps truncated axes, normalizes zero zoom to null. Intermediate3fd intent is superseded; do not label already ported based on its subject.",
+      "commits": [
+        {
+          "sha": "3fd0074024a29d7211aa9a913d9cf156c9d7be4a",
+          "time": "2026-11-02T15:29:27+02:00",
+          "subject": "Read a literal 0 zoom in an /XYZ destination as 0, not null"
+        },
+        {
+          "sha": "01f97b459a90e7ae6d2a42fe00ff87dace17c74a",
+          "time": "2026-11-03T11:59:41+02:00",
+          "subject": "Read a 0 /XYZ zoom as null; keep a short array's params"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/engine/services/src/features/destinations/readDestination.ts",
+        "packages/engine/main/test/destination-xyz.test.ts"
+      ],
+      "owningRustFiles": [
+        "crates/epdf-engine/src/features/actions/destination.rs",
+        "crates/pdfium/src/action.rs"
+      ],
+      "eventualAcceptance": [
+        "Zero,negative zero,null,positive zoom; short0/1/2/3 parameter arrays; independent x/y nulls; outline/link/open-action same semantics",
+        "Target snapshot vectors plus existing action corpus; unchanged fit/fitH/fitV/fitR cases"
+      ]
+    },
+    {
+      "name": "Standard-font Latin fallback and font identity",
+      "category": "NEW_FUNCTIONAL / RUNTIME_PLUS_CONSUMER_MAPPING",
+      "behavior": "Runtime draws missing Latin in standard stand-in and names registered BaseFont by PostScript name. TS fontResolutionOf appends standard display hash after registered fallbacks unless same as main program. Existing Rust raw facts reader reusable; no corresponding final DTO mapper found in crates, so trace consumer adapter before adding duplicate algorithm.",
+      "commits": [
+        {
+          "sha": "9b5dacbad68154fcacab6c15bd319adf0609b78b",
+          "time": "2026-11-04T02:28:38+02:00",
+          "subject": "Draw Latin a font lacks in the standard font that stands in for it"
+        }
+      ],
+      "upstreamFiles": [
+        "packages/engine/core/src/fonts/fontList.ts",
+        "packages/engine/core/src/annotation/fontFaces.ts",
+        "packages/engine/core/test/fonts/standard-fallback.test.ts",
+        "packages/core/fonts/src/standard/css.ts"
+      ],
+      "owningRustFiles": [
+        "crates/epdf-engine/src/features/fonts/document.rs",
+        "crates/epdf-engine/src/features/fonts/list.rs",
+        "crates/pdfium/src/document_fonts.rs"
+      ],
+      "eventualAcceptance": [
+        "Missing Latin mixed-script cases; standard family/weight/italic selection; fallback hash order/no duplicate; chosen registered/document program identity",
+        "Existing fonts_wire_corpus/document_fonts_wire/font_registry and target standard-fallback TS oracle; native and UI face cache ownership coordinated with plugin worker"
+      ]
+    }
+  ],
+  "scopeClassification": {
+    "alreadyPorted": "All original-target Task3/C4/C5 work remains baselinef28ed; reuse rich-text DTOs, raw font facts, current transactions/confinement and native C ABI ABI1 foundations. Prior340pass/2skip is baseline evidence only.",
+    "sameFunctionDifferentHistory": "No exact patch-equivalent upstream nonmerge commits found. IntermediateXYZ3fd and followup01f97 address same function but final semantics differ, so count one final behavior, not two ports. Generic existing bezier/free-text richText foundations are not new-feature completion.",
+    "inheritedTypeScript": "CloudPDF tenant features/module manifests/day usage/licensing/Postgres idle errors, migrations/mocks, docs/version updates come with main merge; no new Rust CloudPDF implementation. Their upstream tests should run according to changed boundary.",
+    "newMissing": "Six core feature groups above; plugin/native binding specifics delegated to other worker."
+  },
+  "conflictRisks": {
+    "overlappingViewerPaths": [
+      ".github/workflows/release.yml",
+      "packages/engine/runtime/runtime-src",
+      "pnpm-lock.yaml"
+    ],
+    "runtimeOverlappingPaths": [],
+    "method": "Intersection of paths changed on both sides since mergebase; no trial merge performed; zero overlap is not a merge/semantic compatibility guarantee.",
+    "privateAdditions": "Use ancestry-preserving merge, never replace tracked TS paths with canonical endpoint files; retain private print-policy tests/gate, gesture removal regression and active-search-hit identity tests.",
+    "submodule": "Select new runtime FORK MERGE commit, not raw upstream runtime SHA; preserve11 fork-history commits, target-args/emsdk/goldens/layer ownership."
+  },
+  "runtimeOptions": [
+    {
+      "option": "Exact viewer runtime pin",
+      "target": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+      "tradeoff": "Exact viewer oracle association but excludes known markup-comment reader-default fix."
+    },
+    {
+      "option": "Pinned runtime HEAD supplemental fix",
+      "target": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e",
+      "recommendation": true,
+      "tradeoff": "Includes viewer pin plus one narrowly identified functional fix and its merge; no extra exports. Explicitly approve as supplemental runtime target, test free-text/widget/markup defaults. Never repin moving latest during execution."
+    }
+  ],
+  "branchStrategy": {
+    "recommended": "One integration workstream from now-identical f28ed tips; runtime fork first; merge pinned viewer4ad once preserving local additions; port/core+plugins/bindings; validate; advance BOTH branch refs to same reviewed closure commit (unless user explicitly chooses renewed layering).",
+    "alternative": "Reestablish engine-only impl then plugins layer. Adds deliberate new divergence after user just united them; requires a written layer rule plus second integration/acceptance, not justified by current identical tips.",
+    "rejected": "Replace files/endpoints or cherry-pick feature subjects only: can discard private policy/tests or lose latest main ancestry; not latest-main branch catch-up."
+  },
+  "planFile": "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.md",
+  "metadataExports": {
+    "viewer": "/private/tmp/kkt-peach-lemur/c7/viewer-metadata.git",
+    "runtime": "/private/tmp/kkt-peach-lemur/c7/runtime-metadata.git",
+    "manifest": "/private/tmp/kkt-peach-lemur/c7/metadata-export-manifest.json",
+    "dependsOnRetainedSourceObjectDB": true
+  },
+  "proofFiles": {
+    "/private/tmp/kkt-peach-lemur/c7/acceptance-owner-read.json": "c8aa896b66f08d29bca0c7b8b54d956cc02b839001aa7c3889ef0dfc8343269d",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-detail-proof.log": "69753b0b211c947b47ad48394dc632df86bc72f8205ea88cee842b8cf773cdf7",
+    "/private/tmp/kkt-peach-lemur/c7/export-and-rust-result.json": "7490c749f90b256f71fc2fa1598dafbaa6474250b3ee6fbfaa8eb7d00de0692e",
+    "/private/tmp/kkt-peach-lemur/c7/font-resolution-location.log": "f5ccf58d54aa61a5535ad272e4eeac03990cacaeab43bad34e184676de098313",
+    "/private/tmp/kkt-peach-lemur/c7/fork-preservation-and-final-guard.json": "d3e9099f850e5602fafed5948f27610d5e595fba1211735c952bbaa870924c6c",
+    "/private/tmp/kkt-peach-lemur/c7/coverage-read-result.json": "9f29abfc2a09e2c3428ec42da9bd5bcb398082c8d23655c683bcb6c4cadeadde",
+    "/private/tmp/kkt-peach-lemur/c7/font-mapper-owner.json": "d8b385de8fe7e5cea29a09fff0ca5dcb095a5db095ba99b46107730bfcec1439",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-package-proof.log": "fc37be5b488063ed36ac43201ac99927e9ebc66586c5f4b1fd5bd1262bf780ab",
+    "/private/tmp/kkt-peach-lemur/c7/api-pins.json": "f1db668b16ddfb335b482834521e8efdfbe70361a094cccf240b16a61e5d5079",
+    "/private/tmp/kkt-peach-lemur/c7/scope.json": "f6ef0b0aeea46969d33c2ee6ca3cabe6f11fd49270341dbefcc21b145ace1744",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-exact-commits.log": "c2fbc853bf36bf800b293f878f406daeceac6f1008a9392ecf49670b97bedb7a",
+    "/private/tmp/kkt-peach-lemur/c7/core-detail-read-result.json": "42610005a325ca995536f0e733f9eb3a24a939aa1c62216706e6a4bb49a5f78a",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-first-delta.log": "df04c494f55acda8fea66efa071585be0867d5f4bf9bf6f9facdcfd17e2f1856",
+    "/private/tmp/kkt-peach-lemur/c7/runtime-upstream-heads.log": "802de66adcbb99fd3b8b52a214214b0239f5215909bc745b9210df9a64193ba5",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-contracts.log": "bd38ce3d8fdde847150e7e8c8f0eb72c3b16fbe26dba4ea5b08363a9a72fe2b4",
+    "/private/tmp/kkt-peach-lemur/c7/metadata-export-manifest.json": "f5a6015a27e96fbf6b4336aa2f1fb1dd1261f0fe85d770c65113919260b50a0a",
+    "/private/tmp/kkt-peach-lemur/c7/font-fallback-detail.json": "d26a994a50a6d4248b4fb03b7e85c6038e5e8b4606872ea99fa6d1d93097b81f",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-preservation-proof.log": "9978bb2d90e0bad4721a9cd1927f50a6a7cd95778b968e0f3004128054afbf7b",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.json": "b3377d1e9e2226bd066ffd228556baea202abba81659b477167f455f68a1946e",
+    "/private/tmp/kkt-peach-lemur/c7/conventions-read.log": "17e345c9ec3f746badfbbec49c3f0c978ccbc08a486d6f57f34450ec0a4e49ec",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-summary.log": "17cdde05ba00d3e26de7b98ee10003818dfd6f321285e543e9a0572e52b31118",
+    "/private/tmp/kkt-peach-lemur/c7/initial-canonical-refs.json": "3a9e9139f0c5fb1e62d64a7479f06ed8a84dbfa3dc96e58c5b73ddc9ed7ca183",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-payload-proof.log": "cf2147731b899229d4e18399b250ff05e5fd73c2e8c5be249e1e9a0ea38cd306",
+    "/private/tmp/kkt-peach-lemur/c7/fetch-metadata-result.json": "690e5536c2c3b29dfba2f5c51e625b7a53e0bc8f8c9128bdb499063cfb243339",
+    "/private/tmp/kkt-peach-lemur/c7/pinned-targets.json": "4fa4d186cbb2cb794e9b7fabcd689084d799f711391e74f844d287fc49e59c51",
+    "/private/tmp/kkt-peach-lemur/c7/inventory-read-result.json": "80302f202673f92d3e77e5b14ae6511e10ccc11c141c1be3d48c0d687acc4d0d",
+    "/private/tmp/kkt-peach-lemur/c7/dash-schema-proof.json": "fc9a93f9542d690934610176f5131d41e650f8f37fbfd846f5939a9bdfb6d817",
+    "/private/tmp/kkt-peach-lemur/c7/rust-owning-snippets.json": "655d36b18c4ee44c2afefd4b1d8d63397420f6b338ad9f5545e7f08a262565ac",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-native-contract-proof.log": "a747f785b253821e956edb00cea9f6c7e62f897064a8934bbd6a980708bd97f9",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-baseline-surfaces.log": "fbadbc010ed075098f6ec95e098d8e9b7f1528c49e91e2e06517966f283fc8b3"
+  },
+  "actions": "Read-only metadata/API/object fetch to own bare stores; new own planning files only. No source/ref/checkout updates, merge/probe, builds/tests/releases/pins or pushes.",
+  "pluginBindingInventory": {
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.md": "cd45a0fd030c3136f8f3242f8f3afb5006f08458fef13e21291f849306ffaa4f",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.json": "b3377d1e9e2226bd066ffd228556baea202abba81659b477167f455f68a1946e"
+  },
+  "estimateHours": {
+    "coreRuntimeMerge": [
+      8,
+      17
+    ],
+    "pluginNativePackage": [
+      29,
+      52
+    ],
+    "distinctReleaseClose": [
+      1,
+      3
+    ],
+    "combinedRoundedEngineering": [
+      40,
+      75
+    ],
+    "machine": [
+      6,
+      18
+    ],
+    "assumptions": "Shared graph builds/P1 geometry/P5 consumer acceptance counted once; native host queues additional."
+  }
+}

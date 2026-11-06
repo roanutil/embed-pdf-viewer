@@ -1,0 +1,174 @@
+3fd0074024a29d7211aa9a913d9cf156c9d7be4a	2026-11-02T15:29:27+02:00	Read a literal 0 zoom in an /XYZ destination as 0, not null
+eec84f1120c765cf72b0d0133f033de04d8f9b00	2026-11-02T20:42:40Z	chore: version packages (next) (next)
+622018abaf6e4578d1f4d8377982c48b92c9ced3	2026-11-02T22:47:27+02:00	Merge pull request #929 from embedpdf/changeset-release/main
+b56c7e5e1151ace43dfaa93ceedb13e6e9a66735	2026-11-02T23:34:17+02:00	Turn the page loading spinner in place
+ca8e63f1ee7a445fd8787629e442ee517fbe96f6	2026-11-02T23:55:39+02:00	Merge pull request #952 from embedpdf/fix/page-loading-spinner
+48c1b01c963acf3f23c0bd25f6156495122fa8ab	2026-11-03T00:35:49+02:00	Tell the platform repository when a release's server image is out
+0154bff5798a8b8e529a662b0355ede3ef98e5d4	2026-11-03T01:21:20+02:00	Merge pull request #954 from embedpdf/feature/notify-platform-release
+7613814873cbb26ad8a70a0f2ae2d82c541c20fd	2026-11-03T02:03:52+02:00	Test server modules in a real server from published packages
+247c972a65105d5e984ee787e2e81e99b112290e	2026-11-03T02:09:58+02:00	Turn server modules on per tenant with tenant features
+f45ac2990b8b9455209aedf79a5f628d78f59a52	2026-11-03T02:19:03+02:00	Page arrows around the page number, a pager that rests out of sight, and spreads that step as one
+2432ffcde9aa7d7ecc610579980c2dd45729b8b5	2026-11-03T02:36:08+02:00	Reach the pager from the keyboard along the bar in its test, not through Tab
+bc3054078c0ef338b74f8780afa5c16c945a85a1	2026-11-03T02:43:51+02:00	License buildApp only with the runtime createLicenseRuntime made
+cc464abff2d0633229f24828f85960f9fd55d2d5	2026-11-03T03:00:08+02:00	Turn the echo module on for the module channel test's tenant
+1ed34c6fea6b3d9a6aeef8159b62a6cacb2c2cd6	2026-11-03T03:00:58+02:00	Turn pages past the edge in paged flow, and add Page by page to the View menu
+a255f0142f83a63a8ca97173b07a6af7ab3a1fc4	2026-11-03T03:06:52+02:00	Merge pull request #957 from embedpdf/feature/pager-arrows
+d5ec9a21242748f98ca8122750b292e919cd42e2	2026-11-03T03:17:55+02:00	Merge pull request #956 from embedpdf/feature/tenant-features
+8c346d654e31a965c4c5693235474da55e0f8b06	2026-11-03T03:18:15+02:00	Merge remote-tracking branch 'origin/main' into feature/page-turns
+1d26f0ddd580e97181353493a9078e908eb2f388	2026-11-03T03:18:16+02:00	Merge pull request #955 from embedpdf/feature/server-modules-test-host
+68ee19607e5e17bdae244ab4deb4b6f526138d55	2026-11-03T06:34:48+02:00	Make the API snapshot script work on Windows
+d41027c5dfc499138092411ef1bfaa9c6246eb90	2026-11-03T11:39:04+02:00	Merge remote-tracking branch 'origin/main' into feature/page-turns
+a2fa53ce73aca78c25ab26ea9f92eacc6c6691ec	2026-11-03T11:42:33+02:00	Sync the page-turn docs into both websites
+79eb5e3dd1e510ebb143294601b802265678831b	2026-11-03T11:49:29+02:00	Merge pull request #960 from KleiKodesh/fix/api-snapshot-windows
+01f97b459a90e7ae6d2a42fe00ff87dace17c74a	2026-11-03T11:59:41+02:00	Read a 0 /XYZ zoom as null; keep a short array's params
+213277b17ee4cf02e902558ba8abf62866523cf1	2026-11-03T12:04:18+02:00	Merge pull request #950 from KleiKodesh/fix/xyz-literal-zoom
+6d5124a549420ffb3bd106ddeb7c46a4a90a99ba	2026-11-03T12:13:53+02:00	Merge pull request #958 from embedpdf/feature/page-turns
+041b4224bf168ca672a317daa02df9594d20128b	2026-11-03T12:30:30+02:00	Open panels without scrolling the page around the viewer
+e2377b05e79d3b6314973944eb06fbe386b59a19	2026-11-03T12:37:24+02:00	Update the @embedpdf/web API snapshot for the surface focus change
+d16bf9843d0b44e7740f9774fe4d1c54f3d6486e	2026-11-03T12:37:27+02:00	Put the text strip below the selection and drop the style panel's flags
+934945fc614893a9ad1c80e7beaf722ef62e9ca7	2026-11-03T12:42:03+02:00	Merge pull request #963 from embedpdf/feature/selection-strip-below
+b898ddd139ad9b5b0a1e229178247cbfb292a78b	2026-11-03T12:42:23+02:00	Merge pull request #962 from embedpdf/fix/panel-focus-scroll
+0abe23abb5798364f7092d8366aae41fce551d94	2026-11-03T12:48:44+02:00	Serve the GCS test's fake SDK from __mocks__
+a9a6517e7c1a353dbe57807a5b276f6482fcce60	2026-11-03T12:48:44+02:00	Handle idle Postgres connection errors on the pool
+a43878ab1213545d865696cb73bb0a23e74bd8f0	2026-11-03T12:55:00+02:00	Drop the all-caps severity from the Postgres driver test comment
+ab92079b67e011bbe06ea560cb3564aecf631d29	2026-11-03T12:57:00+02:00	Keep the server test comments in the present tense
+01079b7e5ce1247ab9a52eece3fd3415a01976f7	2026-11-03T13:03:41+02:00	Serve every cloud-SDK test fake from __mocks__
+ca9d1d404f14c9ed25943c3a0c819e9728a1142e	2026-11-03T13:04:12+02:00	Merge pull request #964 from embedpdf/fix/server-test-flakes
+9e5b32ef1128c1a9e661ad64e78744ab128cb7f9	2026-11-03T13:05:31+02:00	Merge remote-tracking branch 'origin/main' into fix/sdk-fakes-race-free
+2e79409b0517284ae63f5850ee983f76af00fa72	2026-11-03T13:10:44+02:00	Merge pull request #965 from embedpdf/fix/sdk-fakes-race-free
+d24ab2f21d4e6da026bc9a48fa4b623f8a77afa8	2026-11-03T11:28:54Z	chore: version packages (next) (next)
+3283147ded32fc15c426768f75557a4d95943d84	2026-11-03T13:29:26+02:00	Merge pull request #953 from embedpdf/changeset-release/main
+397cdde3129073cb50c8904eed2d9f5d46831e94	2026-11-03T17:41:21+02:00	Hide the examples gallery from both docs sidebars
+b49d2da96f02282f8c746234ab8b043364d04643	2026-11-03T17:45:37+02:00	Merge pull request #966 from embedpdf/fix/examples-sidebar
+57022078bba213b48b83d3c0e7b713c927ab3beb	2026-11-03T18:08:59+02:00	Let modules describe themselves and count their usage per day
+0a8dac1804871f57a70cc46c256225eb88eaca1e	2026-11-03T18:25:35+02:00	Merge pull request #967 from embedpdf/feature/module-manifests
+28577b9eef29ef31c720b2917c1cd37a8a4eaa90	2026-11-03T20:09:52+02:00	Document changing an annotation's kind in place
+25dcf0b5507fa284e567dd81961815a7bf2a9dc1	2026-11-03T21:26:40+02:00	Keep the reader example's bar on screen
+ac5c2931edd839b8a1bbb8112c6571d4f536dd61	2026-11-03T21:27:46+02:00	Merge pull request #969 from embedpdf/fix/reader-pager-stays
+932618fcebf01a6ba04db9992e31364ad693d914	2026-11-03T21:33:27+02:00	Let an update change an annotation's kind to a sibling
+7ec04d1f31da637b555231eeae071ee7b13ef4ee	2026-11-04T00:39:04+02:00	Pin the runtime to f2dd40897
+70481dc09f2c840ea92c29e56af97eaf4774ab09	2026-11-04T00:54:19+02:00	Let shapes, lines and ink have no stroke: color null
+c70e3ddf434b64cbf48cd71717650b95bf853a75	2026-11-04T00:54:19+02:00	Draw ink with the curves Acrobat fits to its points
+f6dc15f8f4d05d34bbed2f0695cb028520b832f8	2026-11-04T00:59:44+02:00	Write a dashed border's default pattern out; an empty pattern reads solid
+77e57ac6a181e55a06bc500c1467f19681e23e05	2026-11-04T01:03:04+02:00	Write an annotation's new kind, and pin the runtime to f2dd40897
+f99a7beaceaab0effee8ea66371694447e3bdfa7	2026-11-04T01:04:42+02:00	Offer only the fonts new text can be written in
+14bc15f8d0955873f4c1017561402e6e481697e0	2026-11-04T01:10:43+02:00	Merge pull request #970 from embedpdf/fix/font-picker-choosable
+5eda225f1d716f4add5e1fca7c7a0c449a72b826	2026-11-04T01:29:45+02:00	Let the viewer change an annotation's kind
+29d71aea3dbe8df64071f8801d073def1b667bcf	2026-11-04T01:54:11+02:00	Change a mark's kind from the style panel
+fe2941a27b4226a06a9d68636917f2ce34117856	2026-11-04T02:07:13+02:00	Let null mean no dash pattern; refuse an empty one
+d9dded85d559f1b13194985e484a938f950e7c51	2026-11-04T02:27:01+02:00	Merge pull request #971 from embedpdf/feature/ink-curves
+19daa6186c00ac940daff044dd017c282a3585e3	2026-11-04T02:27:20+02:00	Merge pull request #972 from embedpdf/fix/iso-dashes
+9b5dacbad68154fcacab6c15bd319adf0609b78b	2026-11-04T02:28:38+02:00	Draw Latin a font lacks in the standard font that stands in for it
+8737c9507e6eb5f9ebf45ca6be06c9d4435c4502	2026-11-04T02:28:39+02:00	Draw a restyled text box in its new font, not an answer for its old one
+8743b8d1569ef68e358b109ae25949321ae089f1	2026-11-04T02:40:09+02:00	Merge remote-tracking branch 'origin/main' into feature/annotation-kind-change
+6ffa024fb63c2c2900c401e0f94f5a35968d0687	2026-11-04T02:54:35+02:00	Merge pull request #973 from embedpdf/feature/annotation-kind-change
+ad7894c022f71663afeb5e0a6992814a0de94c43	2026-11-04T02:55:33+02:00	Merge remote-tracking branch 'origin/main' into fix/latin-fallback-floor
+d059129d8ad945b62703a44587ae53d006a29805	2026-11-04T03:15:02+02:00	Update the API snapshots for the standard face a font falls back to
+8cc1513e830fff4560ca515407864b0d0e1ddd1e	2026-11-04T03:15:02+02:00	Read a text box's faces only when there is a fonts plugin to ask
+3363106086886c9c30030b8c41447f69766735d8	2026-11-04T03:25:39+02:00	Merge pull request #974 from embedpdf/fix/latin-fallback-floor
+f1042adb87e2d7ad6ab40097f378f4d3217bf649	2026-11-04T11:08:07+02:00	Format the text typed next at a caret, and a selected box's whole text
+4765ff6d4d096edbd12e7307a3fd88a4e85c8131	2026-11-04T11:25:47+02:00	Merge pull request #975 from embedpdf/feature/caret-typing-style
+9db1f4a603fab7c576180bc954f30435f51a1d57	2026-11-04T13:05:01+02:00	Pin the runtime to f1ba46f0d
+29e539b59c3d7cb397db59c3a30394a09029d9d8	2026-11-04T13:12:32+02:00	Send the 2.x site's URLs on, and keep the files 2.x code links to
+7b91e04a900cf1ca3672435d6dd47f5d02b2bf68	2026-11-04T13:44:40+02:00	Read and write a markup annotation's comment as rich text
+cec64c80c9904b9f024dad98a322f2f28c70b1ad	2026-11-04T14:16:50+02:00	Give the site its favicon set, and README logos the current icon
+391302dd0fb9721a513ce4af2e71a9dca260f017	2026-11-04T14:18:13+02:00	Document the snapshot tool
+94fbac3f4e048fa0ab929650cb61b6c7c1bac94f	2026-11-04T14:18:21+02:00	Take part of a page as a picture with the snapshot tool
+8077dcf44df8fd01452817f3e07f9326f9ecf9bc	2026-11-04T14:18:26+02:00	Take a Snapshot from the viewer's document menu
+208583eba95568d1292dcd2305e0fe2d64bf861b	2026-11-04T14:33:36+02:00	Merge pull request #978 from embedpdf/feature/markup-rich-text
+3d53afe975a2caa9332a59fb8994a3c495b374f4	2026-11-04T14:34:26+02:00	Merge pull request #977 from embedpdf/fix/v2-site-handover
+7944039ebdc2a9328f1bec88b31ef9d0bc187cb5	2026-11-04T14:46:00+02:00	Sync the snapshot docs into both sites
+53607c5a97ce1dbd3b3b899ce9a2ebcf1e8167c6	2026-11-04T14:46:00+02:00	Expect Take a Snapshot in the document menu's browser tests
+4ad8986099314b9587df423c802db103a21d665d	2026-11-04T15:23:43+02:00	Merge pull request #980 from embedpdf/feature/snapshot-tool
+7031a79e98eed644bed8c5816f9e25d05f59a482	2026-11-04T13:32:43Z	chore: version packages (next) (next)
+ce65e1390549db1272ac3720a5ddfcea55be2c07	2026-11-04T15:43:13+02:00	Merge pull request #968 from embedpdf/changeset-release/main
+14fbaf0933b0ca4793631fd66ab3c358df8263c2	2026-11-04T16:49:08+02:00	Draw a signature field's box, and keep a mark once it's in
+a89862ea0603690624f691d0ee986db705d6c2e2	2026-11-04T18:26:13+02:00	Record the API snapshots for the signature field box
+9dc4c2aa5a2c5849c2d0e1307f989445da3c66ab	2026-11-04T19:02:39+02:00	Ask for search snippets only when the session may copy text
+ab781dedf0183b8b80f1d052726d74c15134b0ac	2026-11-04T19:07:37+02:00	Merge pull request #983 from embedpdf/fix/search-snippets-permission
+ac625667e4c063e8b1211f1c64ec541d15ec9d89	2026-11-04T19:31:17+02:00	End every line the engine returns in \n, and read text without PDFium's markers
+5bfba5a367bdcd64bce7b2b9fd2adcdcc6712b8b	2026-11-04T20:09:26+02:00	Select "Documents" on each site's own welcome cover
+b554bbe5b38a36c1b8f3a2d03a106212f5abf052	2026-11-04T20:14:24+02:00	Write down how the HTTP API changes within a major, and what cached URLs name
+82b006d0aa8cd514b4bfe44a9f959a5a730bdc16	2026-11-04T22:16:52+02:00	Show how engine values look, how the server derives them, and when one changes
+39170f6e14b3c85f57f6a1d7adbb758fcc18a1a3	2026-11-04T22:26:27+02:00	Merge pull request #985 from embedpdf/feature/clean-page-text
+28bec8fa1958eb7d00e49385464cb01ea9888ccd	2026-11-04T22:43:32+02:00	Take the review round: one URL, one response; reads at their pins; engine mismatches answered uncached
+e94c9383aa1fbe9203f97da8828eb0cb3461cade	2026-11-04T22:43:56+02:00	Merge remote-tracking branch 'origin/main' into feature/signature-field-box
+1df86b43a0b303071c943d701ed3cf9ba8e787b5	2026-11-04T22:53:28+02:00	Pin the runtime to 4346c5131
+f981f743eaf8c74e6c7ee33bdf60242fce8c08d3	2026-11-04T23:17:47+02:00	Read every versioned response at its pins
+1bd94c86afac87adaee8c2cb5115ba7f85cd12a0	2026-11-04T23:28:07+02:00	Merge pull request #988 from embedpdf/fix/pinned-reads
+55a1f26c5687e733e4e9dc69f996c18f38b691d9	2026-11-04T23:29:39+02:00	Merge pull request #982 from embedpdf/feature/signature-field-box
+a368bca061d26a292a8baf19f38efe54a573c5f3	2026-11-04T23:30:04+02:00	Merge pull request #987 from embedpdf/docs/api-evolution
+f480cf6cf1230f03ffa50d9adae7251824e2f9f2	2026-11-05T00:23:16+02:00	Name each cached read's engine value and shape in its URL
+420d5a72aca83d6ae03929a7a6b62afabb6e8ef2	2026-11-05T00:37:57+02:00	Read every response tolerantly
+5b7fed8942c319370f57087fa2f390ccca0fa675	2026-11-05T00:54:47+02:00	Pin search to a stored contentsVersion and the layout
+e412c912dfa0ec4ffefa638c6057b65c8fbb1a2a	2026-11-05T00:59:09+02:00	Update the engine-core API snapshot
+0963f702e88b2559e10b11df411eaa0b33b83db2	2026-11-05T07:37:26+02:00	Refresh the wire API snapshot after formatting
+14c624881bd66198d01536b54c59a6e30a5040b5	2026-11-05T07:38:57+02:00	Merge branch 'feature/engine-values' into feature/contents-version
+7b20b7aded06dc5c22415550f2aa41e7ef130e46	2026-11-05T08:03:40+02:00	Send the API version on every request and response
+00de485a5ab2d4980ba11dca1a540ac5ec072374	2026-11-05T11:54:12+02:00	Merge pull request #989 from embedpdf/feature/engine-values
+4b9051ea81e186622eb58adef29523848730dd00	2026-11-05T11:56:39+02:00	Merge pull request #991 from embedpdf/feature/contents-version
+e98715385266c441d20770572a240a55258b06da	2026-11-05T12:01:26+02:00	Merge pull request #992 from embedpdf/feature/version-headers
+1a254a6e596f5a00910439ea88ac0cd7b1ed29d9	2026-11-05T12:10:47+02:00	Merge remote-tracking branch 'origin/main' into sync/tolerant-reading
+58ec72910232ce1ea368e4b6404ced17c20d3add	2026-11-05T13:42:07+02:00	Read every open union's unknown kinds in every SDK
+33e62f5748a71800a70bada467875f54565316f3	2026-11-05T14:11:14+02:00	Read null dates in the PHP SDK
+30a935f01dbf9595169d94dbb3ea75e6ee8b66c1	2026-11-05T14:11:36+02:00	Format the SDK check runner
+778503ba293901aef2a173c8a6d7e8512f48f040	2026-11-05T16:06:39+02:00	Merge pull request #990 from embedpdf/feature/tolerant-reading
+a9a8c977aca6b62d1be6c394c59ebc908ad16f76	2026-11-05T16:11:49+02:00	Merge pull request #993 from embedpdf/feature/open-unions
+ff3030aaf830d3eb82383e2fa5386c8aaf4abc65	2026-11-05T16:39:23+02:00	One error body, whole numbers as integers, response fields always there
+b6044584e1c90dd661b118cebe43b36d21cec382	2026-11-05T17:57:30+02:00	Check nullable fields through refs, and name the signature lock models
+7be9d9c71d2625aca80eef10d5d505a45bd41db8	2026-11-05T19:28:28+02:00	Emit whole-number literal unions as integer enums
+8bbed33af45462b30fa4f8488a4d1d8770c5fbc1	2026-11-05T20:03:15+02:00	One spelling for nothing: destinations, groups, rich text bodies, grants
+72dd61b2e0a718ea2f0e95e8e697cd6e7e89b141	2026-11-05T21:09:57+02:00	Annotation names, widget fonts and line captions follow the nothing rules
+db88e08cdfcf233b1b650f902c001751be0b0abc	2026-11-05T21:11:39+02:00	Merge pull request #994 from embedpdf/fix/api-consistency-errors
+e6d8045a9a4327ee8f897ec49bcafc5422d20cdd	2026-11-05T21:26:27+02:00	Merge pull request #995 from embedpdf/fix/nothing-rules
+e9ef4f2d5479228ac5717e845ba9826ae3f0b9c6	2026-11-05T21:55:44+02:00	Every point in time is an ISO 8601 string
+04449c2f76391a4317a659c0510df3ac38ba66d9	2026-11-05T22:46:01+02:00	Keep a reused schema from taking another field's null
+26a68650294f31c471948f1d5b83d87c130eecb6	2026-11-05T23:56:39+02:00	Name units, hashes and flags in the API (items 5-9)
+7e38f7fb5bf5251d98125257ad9f4b757055108b	2026-11-06T00:17:31+02:00	Handle a remote fonts.changed on the cloud engine
+93aae3f60100cf9cd874753e1f11498461420349	2026-11-06T00:41:08+02:00	Give module meters their own map in the usage report
+00844a5a74746bc4daf0f25e37b0c3f0bd16a7e7	2026-11-06T00:57:20+02:00	Read an attachment's sizeBytes in the free attachments tool and the docs samples
+cf8a7b9641f33aebdadbf595897f998dc70049e1	2026-11-06T01:01:07+02:00	Merge pull request #998 from embedpdf/fix/cloud-remote-fonts-changed
+b88bfc10480c877e611dfe493b021e09067d0e56	2026-11-06T01:02:58+02:00	Merge pull request #996 from embedpdf/feature/iso-points-in-time
+75d64e27388db0dce5e91804c74f039a9bd51818	2026-11-06T01:05:46+02:00	Merge pull request #997 from embedpdf/feature/names-units-flags
+7ebd4b1b0aac0ff24d4829408cebec43ab977c5e	2026-11-06T01:36:01+02:00	Apply the rules for nothing to the viewer's API (item 13, viewer half)
+cadf23405dac60159fe47e2f73219366c7347968	2026-11-06T10:38:57+02:00	Merge pull request #999 from embedpdf/fix/nothing-rules-viewer
+2ce3f7bc57bf98998735c87e6393ee3d52d4be3f	2026-11-06T12:18:26+02:00	Name the viewer's API by naming.md (API consistency item 14, PR F)
+2c001990bc309be2825c0c087111ac420048f0a1	2026-11-06T12:30:07+02:00	Rename the comment-thread and stamp-library event fields in the doc snippets
+bd1c41861692eb4394bf9eccbd2c8f0b33eb90c0	2026-11-06T13:23:35+02:00	Keep the menu under a phone submenu from showing through it
+fbebe725cc10627ea8bf9eea91538956c286adf1	2026-11-06T13:25:04+02:00	Merge pull request #1001 from embedpdf/fix/sheet-submenu-paint
+c4b286a69fe76b49b5526ccd46303e79dbf62874	2026-11-06T13:27:49+02:00	Tag form fields by kind and call outcomes by status (API consistency item 10, PR D)
+dca5f84cb52c34e48cd002260cdfa9764bf61f8a	2026-11-06T13:29:17+02:00	Expect page-edit's pending pages tagged kind
+27581c06df6a1c2935fef4434dfc58e8d15f0b90	2026-11-06T13:29:19+02:00	Merge branch 'fix/viewer-api-names' into fix/union-tags
+fbbb417a6a4a8498e24e9dc734fc389812b55387	2026-11-06T14:18:00+02:00	Name the viewer's types by naming.md (API consistency item 14, PR G)
+58435c49a0e096319b8b3df6260f03bab082089c	2026-11-06T14:42:07+02:00	Load a fallback language and a language's words when they're needed
+005e1f455c38e3b2eb110e8ba4a4ddfbdfbfa218	2026-11-06T15:50:28+02:00	Show real testimonials on the homepage
+166d28988494736bdb2a0c1aec7b194397098434	2026-11-06T15:55:58+02:00	Merge pull request #981 from embedpdf/feature/align-testimonial
+a780243ba2c7039d7001ad6a061c7fc4741435cb	2026-11-06T15:58:21+02:00	Name a PDF's permission flags (API consistency, the permission bits)
+ccc4bf7fe0a602138376aa348fa16440e0fcbddc	2026-11-06T16:01:55+02:00	Give a command's label values from live state with labelParams
+54dead383ea0f6ae0487caef520c600b6644b835	2026-11-06T16:05:42+02:00	Merge pull request #1000 from embedpdf/fix/viewer-api-names
+6dcc2376f9045d6dbbdf0867aa3c678c3a7e5b9c	2026-11-06T16:11:19+02:00	Give the viewer's counts their language's plural forms
+f8840a658afe29cf3b938df15152c36b58a16d9b	2026-11-06T16:11:56+02:00	Document the attachment plugin's create, delete and canDelete
+0a833d2b02af555b626fc199bc589bb9d4ecfb2e	2026-11-06T16:11:59+02:00	Merge branch 'fix/viewer-api-names' into fix/union-tags
+26609edbc89861107f5b188d88e7feff2e3f4a66	2026-11-06T16:12:01+02:00	Merge branch 'fix/union-tags' into fix/type-names
+9c1315f36fd8d2e445e8e1b50d2e79b2e2db5b96	2026-11-06T16:12:03+02:00	Merge branch 'fix/type-names' into fix/permission-flags
+c4191b57708495f1517aa92722e3fa4b4ccd93bf	2026-11-06T16:32:41+02:00	Show Grella's whole mark on its testimonial badge
+520b0b44bb1d6ea70684a66ee32fa9f7403c8433	2026-11-06T16:33:00+02:00	Merge pull request #1002 from embedpdf/fix/union-tags
+1ef369fa545d04a890402d0f33affba2ca46c4d1	2026-11-06T16:35:05+02:00	Merge pull request #1003 from embedpdf/fix/type-names
+ce81db2e94c2db56b69b09bd63e5dd1a229c0976	2026-11-06T16:37:34+02:00	Merge pull request #1005 from embedpdf/fix/permission-flags
+0ada50b3e2c10311ca8b5caeb89980521cb7b5c1	2026-11-06T16:45:11+02:00	Show Grella's whole mark on its testimonial badge
+11ffa347c867c7456c4918fce10e4fa9f15bc12f	2026-11-06T16:45:44+02:00	Merge pull request #1008 from embedpdf/fix/grella-testimonial-mark
+df6279652126693cfaa44194297ba0b36fb39a8d	2026-11-06T16:49:36+02:00	Merge origin/main into feature/viewer-strings-fallback
+31159dd305fcf9c25fa69a62128378e868ce6d23	2026-11-06T16:57:52+02:00	Merge origin/main into feature/command-label-params
+48eabde6f96bee319890ac5a471f0d3aa09fca2d	2026-11-06T17:06:22+02:00	Show a comment without an author as Guest, as v2 did
+494745b744df224801d40044dc6a919ed70596a1	2026-11-06T17:07:48+02:00	Merge pull request #1009 from embedpdf/fix/comments-guest-author
+60b6aa9597226219891c1d751689c2c853f66a4a	2026-11-06T17:08:32+02:00	Merge pull request #1004 from embedpdf/feature/viewer-strings-fallback
+f74409326c6f56edb06d3176509dde86b02990e5	2026-11-06T17:08:57+02:00	Merge pull request #1006 from embedpdf/feature/command-label-params
+f846fff072f132b6cb7c0748b37599ebc472f6b0	2026-11-06T17:09:20+02:00	Merge pull request #1007 from embedpdf/fix/viewer-plural-counts
+ae1097069fe1b58cedadb65bd22b63e966470590	2026-11-06T17:09:53+02:00	Merge pull request #1010 from embedpdf/feature/align-testimonial
+c5a801f457615e18b585e0d89d6bbf1f24df0a1c	2026-11-06T17:12:44+02:00	Merge pull request #986 from embedpdf/fix/docs-welcome-first-word
+2b476b188bdfa6cb3db85a70244642ee1abbe18f	2026-11-06T17:47:07+02:00	Apply selected redaction marks from the annotation bar
+0d2e1ceedfd86403a8aacd7c9b42796534c9bc6f	2026-11-06T17:50:20+02:00	Merge pull request #1011 from embedpdf/feature/strip-apply-redaction
+8f6700110609d2809fc59950cb59f5df02e77a90	2026-11-06T16:01:29Z	chore: version packages (next) (next)
+3f7f3c650bb91d9c5a4277c920bbd6fab7142f98	2026-11-06T18:17:29+02:00	Merge pull request #984 from embedpdf/changeset-release/main
+6c2841eb78f517ea50428c4eff6d1174374f3d8f	2026-11-06T21:16:47+02:00	Show CloudPDF as EmbedPDF's maker in the footer
+8297bad8d388eb9c70324c22cb001c59248f95f4	2026-11-06T21:18:06+02:00	Merge pull request #1015 from embedpdf/fix/footer-copyright

@@ -1,0 +1,346 @@
+{
+  "files": [
+    {
+      "path": "viewer-metadata.git/FETCH_HEAD",
+      "bytes": 133,
+      "sha256": "e042afa1be97dcfb525506e3254e83c26160db0fca76bf573c092d902f8f6f73"
+    },
+    {
+      "path": "viewer-metadata.git/HEAD",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "viewer-metadata.git/config",
+      "bytes": 66,
+      "sha256": "dd548269913b6adbdfa7049170ea86850050cb762ea3b9c510a0b2986d2113e3"
+    },
+    {
+      "path": "viewer-metadata.git/description",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/applypatch-msg.sample",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/commit-msg.sample",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/fsmonitor-watchman.sample",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/post-update.sample",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-applypatch.sample",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-commit.sample",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-merge-commit.sample",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-push.sample",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-rebase.sample",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/pre-receive.sample",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/prepare-commit-msg.sample",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/push-to-checkout.sample",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/sendemail-validate.sample",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "viewer-metadata.git/hooks/update.sample",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "viewer-metadata.git/info/exclude",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "viewer-metadata.git/objects/07/2cce12aeed9c1e8939c8feb657630ec01f58a6",
+      "bytes": 552,
+      "sha256": "822825a9bc1c97e1045af4371dfac00a76b936d52c4de271bc2453fcb96cef3f"
+    },
+    {
+      "path": "viewer-metadata.git/objects/12/6dd729aeb88e2ffb6ffddcc37b7ace5f8a1c9f",
+      "bytes": 1583,
+      "sha256": "ce5df11a7355564745c1d8cf59f0da6919fa9321f8ad83dcef25f8c7a5d4e29b"
+    },
+    {
+      "path": "viewer-metadata.git/objects/26/8f668e73ca7035fcf9061bfd5bd6e1ed462bf2",
+      "bytes": 292,
+      "sha256": "57308193e8a9da52f6db15f9ddeeb671ec5092c8e7f687dd042694c32f2d666c"
+    },
+    {
+      "path": "viewer-metadata.git/objects/30/f7ce33b4a4c373117c399a014dc17fe5e6bf18",
+      "bytes": 1018,
+      "sha256": "0223f778ba2b31bf891eb5e46e672a20d272ae62aa33238b1dc35ab657d275e9"
+    },
+    {
+      "path": "viewer-metadata.git/objects/48/1ab4bdf16c0502a5b2ce24ac60873368c240f7",
+      "bytes": 274,
+      "sha256": "b3744b3e436df0bf31891e92544c779e1b18336305511c517832780ed4d8a000"
+    },
+    {
+      "path": "viewer-metadata.git/objects/48/2b793134081bce21a11582a56680b91c67ea81",
+      "bytes": 710,
+      "sha256": "2030f3788f1c03d1f3729884ebd081bfa05b8216edceb557673f0b5ae41d0852"
+    },
+    {
+      "path": "viewer-metadata.git/objects/4a/d8986099314b9587df423c802db103a21d665d",
+      "bytes": 913,
+      "sha256": "74a45e7d53fcfeb335caa8ecbd60d10739d1423fbdd0bad8d643631a44b1c6fc"
+    },
+    {
+      "path": "viewer-metadata.git/objects/60/7310ba28a499334e4d82ca33a7d0b600749c4b",
+      "bytes": 183,
+      "sha256": "56ce20fed1416c5da67e98d6105022d00aeee5f41503d30e035f5e3696224cf5"
+    },
+    {
+      "path": "viewer-metadata.git/objects/70/393e6e6fff0154c76afa6763d333f551bcd87a",
+      "bytes": 333,
+      "sha256": "6b3c937c90918d3883e8a24ebdff176530802553f082457d4847a506d5b91773"
+    },
+    {
+      "path": "viewer-metadata.git/objects/7b/2f0e7a98a5b4cfe1e179a98b94c735dad1c90f",
+      "bytes": 242,
+      "sha256": "06e71aaa88094b5cab04bcea76746a74af8a5710a2d76e968b39a2375dfab096"
+    },
+    {
+      "path": "viewer-metadata.git/objects/83/14c3273e294e500b2a8dcf0c0113447acfb8c2",
+      "bytes": 598,
+      "sha256": "b39edd1a0c9a4ee044cf464679eb84aee167a414ac23c52da23a01e0f73210be"
+    },
+    {
+      "path": "viewer-metadata.git/objects/88/0300593667436e23d67c1fe9d8af75141f4a11",
+      "bytes": 347,
+      "sha256": "ede587a46c1d1f2dd520b50a663c29c1a89f0ec41f03557f6e46b6e76d2ae9ba"
+    },
+    {
+      "path": "viewer-metadata.git/objects/96/9a4e6a6a4118ca3396b9369329a420852ed63f",
+      "bytes": 108,
+      "sha256": "aac64126d7037fc97a9bdd7bd2c83ccc30a15fcd19a4f52fc1c310524fb7b389"
+    },
+    {
+      "path": "viewer-metadata.git/objects/9b/b1dbbcf8f7a291d0d64282ff9ee8e481823aae",
+      "bytes": 385,
+      "sha256": "8553072a1d9f24d5ad1cc291181cdf368917d4a1623e9f8a331386936139ab72"
+    },
+    {
+      "path": "viewer-metadata.git/objects/9e/47d6c50c9dbf9948e039446ce0af59d52805c5",
+      "bytes": 312,
+      "sha256": "b1d8c88f99b61e0b839be277a3e41fc79404b6ac26428bf1e3bbf6292cfd49ce"
+    },
+    {
+      "path": "viewer-metadata.git/objects/aa/d690f778fe131a193732ee1ed86de6af90df86",
+      "bytes": 279,
+      "sha256": "74d842cbce659131460da5f2e85c30d342ba541ccf464a5d4897c1159c2fe7e4"
+    },
+    {
+      "path": "viewer-metadata.git/objects/ad/adbf74f3b3ea902cf115a655dd37df1303fdfd",
+      "bytes": 83,
+      "sha256": "395f47f5eee615082c12ee96f15aa7e7c9ac6c5e16faac9d36b054df71193b81"
+    },
+    {
+      "path": "viewer-metadata.git/objects/c3/41f5b39c031936d9ff20c09ff866b21ef4db13",
+      "bytes": 83,
+      "sha256": "5392f9830a5274189bdffc1cb2ec8b748df6e7696261e1b928676265fe2ed3c8"
+    },
+    {
+      "path": "viewer-metadata.git/objects/c8/c45e761818221e2c62e79878936a3b23875652",
+      "bytes": 42734,
+      "sha256": "5ad7ea4f709abdd2ec61336967e354f9ecd7f51319ac256da082a3ad263af088"
+    },
+    {
+      "path": "viewer-metadata.git/objects/ea/330bfea957a334b34be6a4b39c0d03c7f8a189",
+      "bytes": 533,
+      "sha256": "2d6005d8afd1b05956a4700b0ac15b98a78c28c870fbbf90f1bba6471a496624"
+    },
+    {
+      "path": "viewer-metadata.git/objects/f9/2343b121f01592e49f3f1d03382afe9c5cbb54",
+      "bytes": 348,
+      "sha256": "993da0196788bd911c907ba31a27d4953f04471b8c797c7dae7eb863ee28815a"
+    },
+    {
+      "path": "viewer-metadata.git/objects/info/alternates",
+      "bytes": 50,
+      "sha256": "6c15bcacd73babdeebd393ca237b58a2db884d63dc69b77ca311fe930bf60b66"
+    },
+    {
+      "path": "viewer-metadata.git/refs/c7/reviewed",
+      "bytes": 41,
+      "sha256": "c51ce6faa1ae720783f61324cee1765d24f02504f898dd2cfcc7de8b1366d33d"
+    },
+    {
+      "path": "viewer-metadata.git/refs/c7/upstream",
+      "bytes": 41,
+      "sha256": "a2f96669e398b635b91b26881320f0c6261d5ad0d1fb48d2e416293ed8cf62f4"
+    },
+    {
+      "path": "runtime-metadata.git/FETCH_HEAD",
+      "bytes": 124,
+      "sha256": "e9ea4d8dd68bdc488d52af1d33ae63663aae7c3c6a5437997aedbe8bb6c883ae"
+    },
+    {
+      "path": "runtime-metadata.git/HEAD",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "runtime-metadata.git/config",
+      "bytes": 66,
+      "sha256": "dd548269913b6adbdfa7049170ea86850050cb762ea3b9c510a0b2986d2113e3"
+    },
+    {
+      "path": "runtime-metadata.git/description",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/applypatch-msg.sample",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/commit-msg.sample",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/fsmonitor-watchman.sample",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/post-update.sample",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-applypatch.sample",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-commit.sample",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-merge-commit.sample",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-push.sample",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-rebase.sample",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/pre-receive.sample",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/prepare-commit-msg.sample",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/push-to-checkout.sample",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/sendemail-validate.sample",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "runtime-metadata.git/hooks/update.sample",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "runtime-metadata.git/info/exclude",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "runtime-metadata.git/objects/info/alternates",
+      "bytes": 51,
+      "sha256": "32eae0319b2f40919e28fdf34f89ac2e2b072064351f61e8df911d81206a22b7"
+    },
+    {
+      "path": "runtime-metadata.git/objects/pack/pack-162807257b4cb43afc40b1b83471d615365ffe92.idx",
+      "bytes": 11012,
+      "sha256": "98cc85dbb8c1caadf81ff87cdf80d70f2abbebeb3afadaa70bb440ed2368dba1"
+    },
+    {
+      "path": "runtime-metadata.git/objects/pack/pack-162807257b4cb43afc40b1b83471d615365ffe92.pack",
+      "bytes": 734280,
+      "sha256": "3cc58489cc8ce99f4c9649e5647e4967a1d0f6f8c24a2833e16cb69ed231fc00"
+    },
+    {
+      "path": "runtime-metadata.git/objects/pack/pack-162807257b4cb43afc40b1b83471d615365ffe92.rev",
+      "bytes": 1472,
+      "sha256": "941bbc46dd647d409b7bd293e5af2c421a7a360fdf7b93fafc400edff366e342"
+    },
+    {
+      "path": "runtime-metadata.git/refs/c7/reviewed",
+      "bytes": 41,
+      "sha256": "fae0cf2ad95f5d7aac4826a342cd9f1dfbfa7cda76fd75fb6edd8f990363e6ab"
+    },
+    {
+      "path": "runtime-metadata.git/refs/c7/upstream",
+      "bytes": 41,
+      "sha256": "1541154c28d5d0c1d90bc031e3d0ad9ad2ecf1b61fd0a2ad51e35b296185bf3a"
+    }
+  ],
+  "standalone": false,
+  "alternates": "Retained HOST source .git/objects at existing absolute paths; preserve these sources. Container copies and HOST metadata dirs have same own refs/new objects."
+}

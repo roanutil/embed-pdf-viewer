@@ -1,0 +1,1671 @@
+4ad898609 Merge pull request #980 from embedpdf/feature/snapshot-tool
+53607c5a9 Expect Take a Snapshot in the document menu's browser tests
+7944039eb Sync the snapshot docs into both sites
+3d53afe97 Merge pull request #977 from embedpdf/fix/v2-site-handover
+208583eba Merge pull request #978 from embedpdf/feature/markup-rich-text
+8077dcf44 Take a Snapshot from the viewer's document menu
+94fbac3f4 Take part of a page as a picture with the snapshot tool
+391302dd0 Document the snapshot tool
+cec64c80c Give the site its favicon set, and README logos the current icon
+7b91e04a9 Read and write a markup annotation's comment as rich text
+29e539b59 Send the 2.x site's URLs on, and keep the files 2.x code links to
+9db1f4a60 Pin the runtime to f1ba46f0d
+4765ff6d4 Merge pull request #975 from embedpdf/feature/caret-typing-style
+f1042adb8 Format the text typed next at a caret, and a selected box's whole text
+336310608 Merge pull request #974 from embedpdf/fix/latin-fallback-floor
+8cc1513e8 Read a text box's faces only when there is a fonts plugin to ask
+d059129d8 Update the API snapshots for the standard face a font falls back to
+ad7894c02 Merge remote-tracking branch 'origin/main' into fix/latin-fallback-floor
+6ffa024fb Merge pull request #973 from embedpdf/feature/annotation-kind-change
+8743b8d15 Merge remote-tracking branch 'origin/main' into feature/annotation-kind-change
+8737c9507 Draw a restyled text box in its new font, not an answer for its old one
+9b5dacbad Draw Latin a font lacks in the standard font that stands in for it
+19daa6186 Merge pull request #972 from embedpdf/fix/iso-dashes
+d9dded85d Merge pull request #971 from embedpdf/feature/ink-curves
+fe2941a27 Let null mean no dash pattern; refuse an empty one
+29d71aea3 Change a mark's kind from the style panel
+5eda225f1 Let the viewer change an annotation's kind
+14bc15f8d Merge pull request #970 from embedpdf/fix/font-picker-choosable
+f99a7beac Offer only the fonts new text can be written in
+77e57ac6a Write an annotation's new kind, and pin the runtime to f2dd40897
+f6dc15f8f Write a dashed border's default pattern out; an empty pattern reads solid
+c70e3ddf4 Draw ink with the curves Acrobat fits to its points
+70481dc09 Let shapes, lines and ink have no stroke: color null
+7ec04d1f3 Pin the runtime to f2dd40897
+932618fce Let an update change an annotation's kind to a sibling
+ac5c2931e Merge pull request #969 from embedpdf/fix/reader-pager-stays
+25dcf0b55 Keep the reader example's bar on screen
+28577b9ee Document changing an annotation's kind in place
+0a8dac180 Merge pull request #967 from embedpdf/feature/module-manifests
+57022078b Let modules describe themselves and count their usage per day
+b49d2da96 Merge pull request #966 from embedpdf/fix/examples-sidebar
+397cdde31 Hide the examples gallery from both docs sidebars
+3283147de Merge pull request #953 from embedpdf/changeset-release/main
+d24ab2f21 chore: version packages (next) (next)
+2e79409b0 Merge pull request #965 from embedpdf/fix/sdk-fakes-race-free
+9e5b32ef1 Merge remote-tracking branch 'origin/main' into fix/sdk-fakes-race-free
+ca9d1d404 Merge pull request #964 from embedpdf/fix/server-test-flakes
+01079b7e5 Serve every cloud-SDK test fake from __mocks__
+ab92079b6 Keep the server test comments in the present tense
+a43878ab1 Drop the all-caps severity from the Postgres driver test comment
+a9a6517e7 Handle idle Postgres connection errors on the pool
+0abe23abb Serve the GCS test's fake SDK from __mocks__
+b898ddd13 Merge pull request #962 from embedpdf/fix/panel-focus-scroll
+934945fc6 Merge pull request #963 from embedpdf/feature/selection-strip-below
+d16bf9843 Put the text strip below the selection and drop the style panel's flags
+e2377b05e Update the @embedpdf/web API snapshot for the surface focus change
+041b4224b Open panels without scrolling the page around the viewer
+6d5124a54 Merge pull request #958 from embedpdf/feature/page-turns
+213277b17 Merge pull request #950 from KleiKodesh/fix/xyz-literal-zoom
+01f97b459 Read a 0 /XYZ zoom as null; keep a short array's params
+79eb5e3dd Merge pull request #960 from KleiKodesh/fix/api-snapshot-windows
+a2fa53ce7 Sync the page-turn docs into both websites
+d41027c5d Merge remote-tracking branch 'origin/main' into feature/page-turns
+68ee19607 Make the API snapshot script work on Windows
+1d26f0ddd Merge pull request #955 from embedpdf/feature/server-modules-test-host
+8c346d654 Merge remote-tracking branch 'origin/main' into feature/page-turns
+d5ec9a212 Merge pull request #956 from embedpdf/feature/tenant-features
+a255f0142 Merge pull request #957 from embedpdf/feature/pager-arrows
+1ed34c6fe Turn pages past the edge in paged flow, and add Page by page to the View menu
+cc464abff Turn the echo module on for the module channel test's tenant
+bc3054078 License buildApp only with the runtime createLicenseRuntime made
+2432ffcde Reach the pager from the keyboard along the bar in its test, not through Tab
+f45ac2990 Page arrows around the page number, a pager that rests out of sight, and spreads that step as one
+247c972a6 Turn server modules on per tenant with tenant features
+761381487 Test server modules in a real server from published packages
+0154bff57 Merge pull request #954 from embedpdf/feature/notify-platform-release
+48c1b01c9 Tell the platform repository when a release's server image is out
+ca8e63f1e Merge pull request #952 from embedpdf/fix/page-loading-spinner
+b56c7e5e1 Turn the page loading spinner in place
+622018aba Merge pull request #929 from embedpdf/changeset-release/main
+eec84f112 chore: version packages (next) (next)
+3fd007402 Read a literal 0 zoom in an /XYZ destination as 0, not null
+ .../annotation-kind-change-core-annotation.md      |    5 +
+ .changeset/annotation-kind-change-engine-core.md   |    7 +
+ .../annotation-kind-change-engine-runtime.md       |    5 +
+ .../annotation-kind-change-engine-services.md      |    5 +
+ .changeset/annotation-kind-change-engine.md        |    5 +
+ .../annotation-kind-change-plugin-annotation.md    |    5 +
+ .changeset/annotation-kind-change-viewer-chrome.md |    5 +
+ .changeset/caret-typing-style-core-annotation.md   |    5 +
+ .changeset/caret-typing-style-plugin-annotation.md |    5 +
+ .changeset/caret-typing-style-web.md               |    5 +
+ .changeset/font-picker-choosable-viewer-chrome.md  |    5 +
+ .changeset/ink-curves-core-annotation.md           |    5 +
+ .changeset/ink-curves-engine-runtime.md            |    5 +
+ .changeset/iso-dashes-cloudpdf-contract.md         |    5 +
+ .changeset/iso-dashes-engine-core.md               |    5 +
+ .changeset/iso-dashes-engine-runtime.md            |    5 +
+ .changeset/latin-fallback-core-fonts.md            |    5 +
+ .changeset/latin-fallback-engine-core.md           |    5 +
+ .changeset/latin-fallback-engine-runtime.md        |    5 +
+ .changeset/latin-fallback-plugin-fonts.md          |    5 +
+ .changeset/markup-rich-text-cloudpdf-contract.md   |    7 +
+ .changeset/markup-rich-text-cloudpdf-sdk.md        |    7 +
+ .changeset/markup-rich-text-engine-core.md         |    5 +
+ .changeset/markup-rich-text-engine-services.md     |    5 +
+ .changeset/module-manifests-cloudpdf-contract.md   |    5 +
+ .changeset/module-manifests-cloudpdf-sdk.md        |    5 +
+ .../module-manifests-cloudpdf-server-modules.md    |    5 +
+ .changeset/module-manifests-cloudpdf-server.md     |    5 +
+ .changeset/no-stroke-cloudpdf-contract.md          |    5 +
+ .changeset/no-stroke-cloudpdf-sdk.md               |    5 +
+ .changeset/no-stroke-core-annotation.md            |    7 +
+ .changeset/no-stroke-engine-core.md                |    5 +
+ .changeset/no-stroke-engine-runtime.md             |    5 +
+ .changeset/no-stroke-engine-services.md            |    5 +
+ .changeset/no-stroke-plugin-annotation.md          |    5 +
+ .changeset/no-stroke-viewer-chrome.md              |    5 +
+ .changeset/no-stroke-web.md                        |    5 +
+ .changeset/page-loading-spinner-viewer-chrome.md   |    5 +
+ .changeset/page-turns-plugin-stage.md              |    5 +
+ .changeset/page-turns-viewer-chrome.md             |    5 +
+ .changeset/pager-arrows-angular.md                 |    5 +
+ .changeset/pager-arrows-core-ui.md                 |    5 +
+ .changeset/pager-arrows-plugin-stage.md            |    5 +
+ .changeset/pager-arrows-viewer-chrome.md           |   10 +
+ .changeset/pager-arrows-viewer.md                  |    5 +
+ ...tgres-idle-connection-errors-cloudpdf-server.md |    5 +
+ .changeset/pre.json                                |  182 +-
+ .changeset/selection-strip-below-viewer-chrome.md  |    5 +
+ .changeset/server-license-runtime-only.md          |    5 +
+ .changeset/server-modules-test-server.md           |    5 +
+ .changeset/snapshot-tool-angular.md                |    5 +
+ .changeset/snapshot-tool-core-ui.md                |    5 +
+ .changeset/snapshot-tool-plugin-commands.md        |    5 +
+ .changeset/snapshot-tool-plugin-i18n.md            |    5 +
+ .changeset/snapshot-tool-plugin-render.md          |    5 +
+ .changeset/snapshot-tool-react.md                  |    5 +
+ .changeset/snapshot-tool-svelte.md                 |    5 +
+ .changeset/snapshot-tool-viewer-chrome.md          |    5 +
+ .changeset/snapshot-tool-vue.md                    |    5 +
+ .changeset/snapshot-tool-web.md                    |    5 +
+ .changeset/stale-font-answer-plugin-annotation.md  |    5 +
+ .changeset/strips-and-style-viewer.md              |    5 +
+ .changeset/style-panel-no-flags-viewer-chrome.md   |    5 +
+ .changeset/surface-focus-no-scroll.md              |    5 +
+ .changeset/tenant-features-cloudpdf-contract.md    |    5 +
+ .changeset/tenant-features-cloudpdf-sdk.md         |    5 +
+ .changeset/tenant-features-cloudpdf-server.md      |    5 +
+ .changeset/xyz-short-destination.md                |    5 +
+ .github/workflows/license-security.yml             |    9 +-
+ .github/workflows/release.yml                      |   40 +
+ api/cloudpdf__viewer-angular/index.api.txt         |    6 +-
+ api/cloudpdf__viewer-react/index.api.txt           |    6 +-
+ api/cloudpdf__viewer-svelte/index.api.txt          |    6 +-
+ api/cloudpdf__viewer-vue/index.api.txt             |    6 +-
+ api/cloudpdf__viewer/index.api.txt                 |    6 +-
+ api/cloudpdf__viewer/snippet.api.txt               |    6 +-
+ api/embedpdf__angular/annotation.api.txt           |    6 +-
+ api/embedpdf__angular/index.api.txt                |   37 +-
+ api/embedpdf__angular/render.api.txt               |   22 +-
+ api/embedpdf__angular/runtime.api.txt              |    1 +
+ api/embedpdf__angular/stage.api.txt                |    8 +-
+ api/embedpdf__core-annotation/index.api.txt        |   16 +-
+ api/embedpdf__core-fonts/index.api.txt             |    1 -
+ api/embedpdf__core-ui/index.api.txt                |    6 +-
+ api/embedpdf__engine-core/conformance.api.txt      |   17 +-
+ api/embedpdf__engine-core/index.api.txt            |   10 +-
+ api/embedpdf__engine-core/runtime.api.txt          |   12 +-
+ api/embedpdf__engine-core/validation.api.txt       |    2 +-
+ api/embedpdf__engine-core/wire.api.txt             |    2 +-
+ api/embedpdf__engine-services/index.api.txt        |    2 +-
+ api/embedpdf__plugin-annotation/contract.api.txt   |    4 +-
+ .../contract__host.api.txt                         |    8 +-
+ api/embedpdf__plugin-annotation/index.api.txt      |    4 +-
+ api/embedpdf__plugin-commands/standard.api.txt     |    4 +-
+ api/embedpdf__plugin-render/contract.api.txt       |   16 +-
+ api/embedpdf__plugin-render/contract__host.api.txt |   18 +-
+ api/embedpdf__plugin-render/index.api.txt          |   18 +-
+ api/embedpdf__plugin-stage/contract.api.txt        |    4 +-
+ api/embedpdf__plugin-stage/contract__host.api.txt  |    4 +-
+ api/embedpdf__plugin-stage/index.api.txt           |    6 +-
+ api/embedpdf__react/annotation.api.txt             |    6 +-
+ api/embedpdf__react/index.api.txt                  |   35 +-
+ api/embedpdf__react/render.api.txt                 |   22 +-
+ api/embedpdf__react/runtime.api.txt                |    1 +
+ api/embedpdf__react/stage.api.txt                  |    6 +-
+ api/embedpdf__svelte/annotation.api.txt            |    6 +-
+ api/embedpdf__svelte/index.api.txt                 |   35 +-
+ api/embedpdf__svelte/render.api.txt                |   22 +-
+ api/embedpdf__svelte/runtime.api.txt               |    1 +
+ api/embedpdf__svelte/stage.api.txt                 |    6 +-
+ api/embedpdf__viewer-angular/core.api.txt          |    6 +-
+ api/embedpdf__viewer-angular/index.api.txt         |    6 +-
+ api/embedpdf__viewer-chrome/chrome.api.txt         |    2 +-
+ api/embedpdf__viewer-chrome/commands.api.txt       |    2 +-
+ api/embedpdf__viewer-chrome/index.api.txt          |    6 +-
+ api/embedpdf__viewer-react/core.api.txt            |    6 +-
+ api/embedpdf__viewer-react/index.api.txt           |    6 +-
+ api/embedpdf__viewer-svelte/core.api.txt           |    6 +-
+ api/embedpdf__viewer-svelte/index.api.txt          |    6 +-
+ api/embedpdf__viewer-vue/core.api.txt              |    6 +-
+ api/embedpdf__viewer-vue/index.api.txt             |    6 +-
+ api/embedpdf__viewer/core.api.txt                  |    6 +-
+ api/embedpdf__viewer/index.api.txt                 |    6 +-
+ api/embedpdf__viewer/portable.api.txt              |    6 +-
+ api/embedpdf__viewer/snippet.api.txt               |    6 +-
+ api/embedpdf__vue/annotation.api.txt               |    6 +-
+ api/embedpdf__vue/index.api.txt                    |   34 +-
+ api/embedpdf__vue/render.api.txt                   |   21 +-
+ api/embedpdf__vue/runtime.api.txt                  |    1 +
+ api/embedpdf__vue/stage.api.txt                    |    6 +-
+ api/embedpdf__web/index.api.txt                    |   23 +-
+ cloudpdf/contract/CHANGELOG.md                     |   24 +
+ cloudpdf/contract/openapi.json                     | 1938 +++++++++++++-------
+ cloudpdf/contract/package.json                     |    2 +-
+ cloudpdf/contract/src/index.ts                     |  171 +-
+ cloudpdf/contract/src/openapi.ts                   |   13 +-
+ cloudpdf/engine/CHANGELOG.md                       |   22 +
+ cloudpdf/engine/package.json                       |    2 +-
+ cloudpdf/engine/test/module-channel.test.ts        |    7 +
+ cloudpdf/engine/test/no-stroke.test.ts             |   56 +
+ cloudpdf/framework/web/CHANGELOG.md                |    9 +
+ cloudpdf/framework/web/package.json                |    2 +-
+ cloudpdf/plugin/protected-display/CHANGELOG.md     |   11 +
+ cloudpdf/plugin/protected-display/package.json     |    2 +-
+ cloudpdf/sdk/.fern/metadata.json                   |    4 +-
+ cloudpdf/sdk/CHANGELOG.md                          |   24 +
+ cloudpdf/sdk/cloudpdf-generation.json              |    6 +-
+ cloudpdf/sdk/package.json                          |    2 +-
+ cloudpdf/sdk/reference.md                          |  123 ++
+ cloudpdf/sdk/src/BaseClient.ts                     |    4 +-
+ .../src/api/resources/deployment/client/Client.ts  |   57 +
+ .../sdk/src/api/resources/tenants/client/Client.ts |   82 +-
+ .../client/requests/TenantsUpdateRequest.ts        |   17 +
+ .../tenants/client/requests/UsageTenantsRequest.ts |    2 +
+ .../api/resources/tenants/client/requests/index.ts |    1 +
+ cloudpdf/sdk/src/api/types/Annotation.ts           |  174 +-
+ cloudpdf/sdk/src/api/types/AnnotationDraft.ts      |  174 +-
+ cloudpdf/sdk/src/api/types/AnnotationPatch.ts      |  174 +-
+ .../sdk/src/api/types/DeploymentModulesResponse.ts |    7 +
+ cloudpdf/sdk/src/api/types/ModuleManifest.ts       |   18 +
+ cloudpdf/sdk/src/api/types/ModuleMeter.ts          |    8 +
+ cloudpdf/sdk/src/api/types/ModulePermission.ts     |   18 +
+ cloudpdf/sdk/src/api/types/RichTextDocument.ts     |  145 ++
+ .../sdk/src/api/types/RichTextDocumentInput.ts     |  145 ++
+ cloudpdf/sdk/src/api/types/TenantFeature.ts        |   13 +
+ .../sdk/src/api/types/TenantsCreate200Response.ts  |    3 +
+ .../sdk/src/api/types/TenantsGet200Response.ts     |    3 +
+ .../sdk/src/api/types/TenantsList200Response.ts    |    3 +
+ .../sdk/src/api/types/TenantsUpdate200Response.ts  |   26 +
+ .../sdk/src/api/types/TenantsUpdate400Response.ts  |    5 +
+ .../sdk/src/api/types/TenantsUpdate404Response.ts  |    5 +
+ cloudpdf/sdk/src/api/types/index.ts                |   10 +
+ cloudpdf/sdk/src/version.ts                        |    2 +-
+ cloudpdf/sdk/tests/wire/deployment.test.ts         |   29 +
+ cloudpdf/sdk/tests/wire/doc/annotations.test.ts    |   64 +
+ cloudpdf/sdk/tests/wire/tenants.test.ts            |  124 +-
+ cloudpdf/server-modules/CHANGELOG.md               |   13 +
+ cloudpdf/server-modules/README.md                  |   27 +
+ cloudpdf/server-modules/package.json               |   12 +-
+ cloudpdf/server-modules/src/index.ts               |   22 +
+ cloudpdf/server-modules/src/test-server.ts         |  215 +++
+ cloudpdf/server-modules/src/testing.ts             |   38 +
+ cloudpdf/server-modules/test/declarations.test.ts  |  106 ++
+ .../server-modules/test/server-modules.test.ts     |   35 +-
+ cloudpdf/server-modules/test/testing.test.ts       |  208 +++
+ cloudpdf/server/CHANGELOG.md                       |   32 +
+ cloudpdf/server/__mocks__/@aws-sdk/client-kms.ts   |   30 +
+ .../__mocks__/@aws-sdk/client-secrets-manager.ts   |   27 +
+ cloudpdf/server/__mocks__/@azure/identity.ts       |   15 +
+ cloudpdf/server/__mocks__/@azure/keyvault-keys.ts  |   37 +
+ .../server/__mocks__/@azure/keyvault-secrets.ts    |   25 +
+ cloudpdf/server/__mocks__/@azure/storage-blob.ts   |  181 ++
+ cloudpdf/server/__mocks__/@google-cloud/kms.ts     |   21 +
+ .../__mocks__/@google-cloud/secret-manager.ts      |   17 +
+ cloudpdf/server/__mocks__/@google-cloud/storage.ts |  166 ++
+ cloudpdf/server/package.json                       |    2 +-
+ cloudpdf/server/src/app/buildApp.ts                |   67 +-
+ cloudpdf/server/src/auth/TenantFeaturesGuard.ts    |  111 ++
+ cloudpdf/server/src/auth/permission-registry.ts    |   54 +-
+ cloudpdf/server/src/bin/cloudpdf-server.ts         |   18 +-
+ cloudpdf/server/src/db/drivers/postgres.ts         |   13 +
+ .../postgres/050_tenant_features.down.sql          |    3 +
+ .../db/migrations/postgres/050_tenant_features.sql |    8 +
+ .../postgres/051_tenant_usage_days.down.sql        |   24 +
+ .../migrations/postgres/051_tenant_usage_days.sql  |   24 +
+ .../server/src/db/migrations/postgres/index.ts     |   16 +
+ .../migrations/sqlite/050_tenant_features.down.sql |    3 +
+ .../db/migrations/sqlite/050_tenant_features.sql   |    8 +
+ .../sqlite/051_tenant_usage_days.down.sql          |   23 +
+ .../db/migrations/sqlite/051_tenant_usage_days.sql |   36 +
+ cloudpdf/server/src/db/migrations/sqlite/index.ts  |   16 +
+ cloudpdf/server/src/db/repos/tenant_usage.repo.ts  |  121 +-
+ cloudpdf/server/src/db/repos/tenants.repo.ts       |   20 +-
+ cloudpdf/server/src/db/schema.ts                   |   28 +-
+ cloudpdf/server/src/licensing/LicenseRuntime.ts    |    2 -
+ cloudpdf/server/src/licensing/public.ts            |   50 +-
+ .../server/src/licensing/trusted-license-gates.ts  |   20 -
+ cloudpdf/server/src/modules/host.ts                |  116 +-
+ cloudpdf/server/src/modules/index.ts               |    2 +
+ cloudpdf/server/src/modules/protocol.ts            |   35 +-
+ cloudpdf/server/src/routes/admin/tenants.ts        |   96 +-
+ cloudpdf/server/src/routes/annotations.ts          |    5 +-
+ cloudpdf/server/test/_helpers/db-conformance.ts    |   44 +
+ .../server/test/_helpers/usage-days-migration.ts   |   74 +
+ cloudpdf/server/test/db-postgres.test.ts           |   31 +-
+ cloudpdf/server/test/engine-shards.test.ts         |   14 +-
+ cloudpdf/server/test/import-azure-source.test.ts   |  128 +-
+ cloudpdf/server/test/import-gcs-source.test.ts     |  132 +-
+ cloudpdf/server/test/licensing.test.ts             |  152 +-
+ cloudpdf/server/test/migrator-down.test.ts         |   19 +
+ .../server/test/protected-session-refusal.test.ts  |    1 +
+ cloudpdf/server/test/security-aws-adapters.test.ts |  100 +-
+ .../test/security-google-azure-adapters.test.ts    |  205 +--
+ cloudpdf/server/test/server-modules.test.ts        |  274 ++-
+ cloudpdf/server/test/storage-azure.test.ts         |  216 +--
+ cloudpdf/server/test/storage-gcs.test.ts           |  173 +-
+ cloudpdf/viewer/angular/CHANGELOG.md               |    8 +
+ cloudpdf/viewer/angular/package.json               |    2 +-
+ cloudpdf/viewer/main/CHANGELOG.md                  |   10 +
+ cloudpdf/viewer/main/package.json                  |    2 +-
+ cloudpdf/viewer/react/CHANGELOG.md                 |    4 +
+ cloudpdf/viewer/react/package.json                 |    2 +-
+ cloudpdf/viewer/svelte/CHANGELOG.md                |    4 +
+ cloudpdf/viewer/svelte/package.json                |    2 +-
+ cloudpdf/viewer/vue/CHANGELOG.md                   |    4 +
+ cloudpdf/viewer/vue/package.json                   |    2 +-
+ .../src/components/site/example-page-view.tsx      |    4 +-
+ cloudpdf/website/src/content/_meta.ts              |    8 +-
+ .../content/docs/api-reference/deployment/_meta.ts |    1 +
+ .../docs/api-reference/deployment/modules.mdx      |   12 +
+ .../content/docs/api-reference/tenants/_meta.ts    |    1 +
+ .../content/docs/api-reference/tenants/update.mdx  |   12 +
+ .../src/content/docs/engine/annotations/index.mdx  |   71 +-
+ .../docs/engine/annotations/notes-and-replies.mdx  |   39 +-
+ .../src/content/docs/engine/annotations/shapes.mdx |   51 +-
+ .../docs/engine/annotations/text-markup.mdx        |   15 +-
+ .../content/docs/engine/concepts/permissions.mdx   |    6 +
+ .../src/content/docs/engine/documents/fonts.mdx    |    8 +-
+ .../docs/headless/annotations/selecting.mdx        |   15 +-
+ .../docs/headless/annotations/with-code.mdx        |   11 +
+ .../content/docs/headless/concepts/rich-text.mdx   |   26 +-
+ .../src/content/docs/headless/documents/fonts.mdx  |    3 +-
+ .../src/content/docs/headless/ui/commands.mdx      |    6 +-
+ .../src/content/docs/headless/ui/theming.mdx       |    7 +
+ .../website/src/content/docs/headless/ui/tools.mdx |    3 +-
+ .../src/content/docs/headless/viewing/render.mdx   |   79 +-
+ .../src/content/docs/headless/viewing/stage.mdx    |   38 +-
+ .../content/docs/server/configuration/fonts.mdx    |    4 +-
+ .../docs/server/configuration/licensing.mdx        |   24 +
+ .../content/docs/server/configuration/modules.mdx  |  285 ++-
+ .../src/content/docs/viewer/customize/commands.mdx |   10 +-
+ .../src/content/docs/viewer/customize/layout.mdx   |   37 +-
+ .../src/content/docs/viewer/customize/menus.mdx    |    7 +-
+ .../docs/viewer/customize/small-screens.mdx        |    2 +-
+ .../src/content/docs/viewer/customize/theming.mdx  |    2 +-
+ .../content/docs/viewer/customize/translations.mdx |   14 +-
+ .../website/src/content/docs/viewer/documents.mdx  |   27 +
+ .../src/content/docs/viewer/examples/reader.mdx    |    4 +-
+ .../content/docs/viewer/features/annotations.mdx   |   10 +-
+ .../src/content/docs/viewer/features/fonts.mdx     |   14 +-
+ .../src/content/docs/viewer/features/index.mdx     |    1 +
+ .../content/docs/viewer/features/turning-off.mdx   |    1 +
+ cloudpdf/website/src/generated/sdk-snippets.json   |   78 +-
+ .../src/samples/annotation/cursor.react.tsx        |    4 +-
+ .../src/samples/annotation/style-panel.angular.ts  |    2 +-
+ .../src/samples/annotation/style-panel.react.tsx   |    2 +-
+ .../annotation/style-panel.svelte/Control.svelte   |    2 +-
+ .../samples/annotation/style-panel.vue/Control.vue |    7 +-
+ .../website/src/samples/render/snapshot.angular.ts |  117 ++
+ cloudpdf/website/src/samples/render/snapshot.css   |  115 ++
+ .../website/src/samples/render/snapshot.react.tsx  |   92 +
+ .../src/samples/render/snapshot.svelte/App.svelte  |   28 +
+ .../render/snapshot.svelte/SnapshotToolbar.svelte  |   57 +
+ .../src/samples/render/snapshot.vue/App.vue        |   31 +
+ .../render/snapshot.vue/SnapshotToolbar.vue        |   57 +
+ .../snippets/annotations/tools/ink-color.react.tsx |    2 +-
+ .../snippets/viewing/snapshot-actions.angular.ts   |   28 +
+ .../snippets/viewing/snapshot-actions.react.tsx    |   16 +
+ .../viewing/snapshot-actions.svelte.svelte         |   20 +
+ .../snippets/viewing/snapshot-actions.vue.vue      |   19 +
+ .../src/samples/viewer/examples/reader.angular.ts  |    4 +-
+ .../src/samples/viewer/examples/reader.react.tsx   |    4 +-
+ .../samples/viewer/examples/reader.svelte.svelte   |    4 +-
+ .../samples/viewer/examples/reader.vanilla.html    |    4 +-
+ .../src/samples/viewer/examples/reader.vue.vue     |    4 +-
+ docs/content/engine/annotations/index.mdx          |   71 +-
+ .../engine/annotations/notes-and-replies.mdx       |   39 +-
+ docs/content/engine/annotations/shapes.mdx         |   51 +-
+ docs/content/engine/annotations/text-markup.mdx    |   15 +-
+ docs/content/engine/concepts/permissions.mdx       |    6 +
+ docs/content/engine/documents/fonts.mdx            |    8 +-
+ docs/content/headless/annotations/selecting.mdx    |   15 +-
+ docs/content/headless/annotations/with-code.mdx    |   11 +
+ docs/content/headless/concepts/rich-text.mdx       |   26 +-
+ docs/content/headless/documents/fonts.mdx          |    3 +-
+ docs/content/headless/ui/commands.mdx              |    6 +-
+ docs/content/headless/ui/theming.mdx               |    7 +
+ docs/content/headless/ui/tools.mdx                 |    3 +-
+ docs/content/headless/viewing/render.mdx           |   79 +-
+ docs/content/headless/viewing/stage.mdx            |   38 +-
+ docs/content/samples/annotation/cursor.react.tsx   |    4 +-
+ .../samples/annotation/style-panel.angular.ts      |    2 +-
+ .../samples/annotation/style-panel.react.tsx       |    2 +-
+ .../annotation/style-panel.svelte/Control.svelte   |    2 +-
+ .../samples/annotation/style-panel.vue/Control.vue |    7 +-
+ docs/content/samples/render/snapshot.angular.ts    |  122 ++
+ docs/content/samples/render/snapshot.css           |  115 ++
+ docs/content/samples/render/snapshot.react.tsx     |   97 +
+ .../samples/render/snapshot.svelte/App.svelte      |   33 +
+ .../render/snapshot.svelte/SnapshotToolbar.svelte  |   57 +
+ docs/content/samples/render/snapshot.vue/App.vue   |   36 +
+ .../render/snapshot.vue/SnapshotToolbar.vue        |   57 +
+ .../samples/viewer/examples/reader.angular.ts      |    4 +-
+ .../samples/viewer/examples/reader.react.tsx       |    4 +-
+ .../samples/viewer/examples/reader.svelte.svelte   |    4 +-
+ .../samples/viewer/examples/reader.vanilla.html    |    4 +-
+ .../content/samples/viewer/examples/reader.vue.vue |    4 +-
+ .../snippets/annotations/tools/ink-color.react.tsx |    2 +-
+ .../snippets/viewing/snapshot-actions.angular.ts   |   28 +
+ .../snippets/viewing/snapshot-actions.react.tsx    |   16 +
+ .../viewing/snapshot-actions.svelte.svelte         |   20 +
+ .../snippets/viewing/snapshot-actions.vue.vue      |   19 +
+ docs/content/viewer/customize/commands.mdx         |   10 +-
+ docs/content/viewer/customize/layout.mdx           |   37 +-
+ docs/content/viewer/customize/menus.mdx            |    7 +-
+ docs/content/viewer/customize/small-screens.mdx    |    2 +-
+ docs/content/viewer/customize/theming.mdx          |    2 +-
+ docs/content/viewer/customize/translations.mdx     |   14 +-
+ docs/content/viewer/documents.mdx                  |   27 +
+ docs/content/viewer/examples/reader.mdx            |    4 +-
+ docs/content/viewer/features/annotations.mdx       |   10 +-
+ docs/content/viewer/features/fonts.mdx             |   14 +-
+ docs/content/viewer/features/index.mdx             |    1 +
+ docs/content/viewer/features/turning-off.mdx       |    1 +
+ docs/content/viewer/migrate.mdx                    |    9 +-
+ docs/conventions/server-adapters.md                |   19 +-
+ packages/core/acrojs/CHANGELOG.md                  |    8 +
+ packages/core/acrojs/package.json                  |    2 +-
+ packages/core/annotation/CHANGELOG.md              |   14 +
+ packages/core/annotation/package.json              |    2 +-
+ packages/core/annotation/src/bezier.ts             |   61 +
+ packages/core/annotation/src/cloudy.ts             |   41 +-
+ packages/core/annotation/src/index.ts              |   11 +-
+ packages/core/annotation/src/ink-curves.ts         |  259 +++
+ packages/core/annotation/src/kinds/define.ts       |    7 +-
+ packages/core/annotation/src/kinds/fields.ts       |   28 +
+ packages/core/annotation/src/kinds/free-text.ts    |    1 +
+ packages/core/annotation/src/kinds/widget.ts       |    2 +
+ packages/core/annotation/src/measurement.ts        |    2 +-
+ packages/core/annotation/src/props.ts              |   50 +-
+ packages/core/annotation/src/record/values.ts      |   31 +-
+ packages/core/annotation/src/richtext.ts           |   74 +
+ packages/core/annotation/src/scene.ts              |   37 +-
+ packages/core/annotation/src/shapes/points.ts      |  165 +-
+ packages/core/annotation/src/types.ts              |   13 +-
+ packages/core/annotation/src/update/index.ts       |    3 +-
+ .../core/annotation/src/update/selection-edits.ts  |   78 +-
+ .../core/annotation/test/annotation-core.test.ts   |   95 +-
+ packages/core/annotation/test/ink-curves.test.ts   |  189 ++
+ packages/core/annotation/test/kinds/none.test.ts   |   42 +
+ packages/core/annotation/test/record.test.ts       |    1 +
+ packages/core/annotation/test/richtext.test.ts     |   71 +
+ .../core/annotation/test/shapes/points.test.ts     |   58 +-
+ packages/core/annotation/test/update.test.ts       |  176 ++
+ packages/core/fonts/CHANGELOG.md                   |   18 +
+ packages/core/fonts/package.json                   |    2 +-
+ packages/core/fonts/src/index.ts                   |    1 -
+ packages/core/fonts/src/standard/css.ts            |   17 -
+ packages/core/fonts/test/standard-fonts.test.ts    |    4 -
+ packages/core/form/CHANGELOG.md                    |   18 +
+ packages/core/form/package.json                    |    2 +-
+ packages/core/geometry/CHANGELOG.md                |    4 +
+ packages/core/geometry/package.json                |    2 +-
+ packages/core/js-sandbox/CHANGELOG.md              |    4 +
+ packages/core/js-sandbox/package.json              |    2 +-
+ packages/core/main/CHANGELOG.md                    |   20 +
+ packages/core/main/package.json                    |    2 +-
+ packages/core/signature/CHANGELOG.md               |    4 +
+ packages/core/signature/package.json               |    2 +-
+ packages/core/stage/CHANGELOG.md                   |    8 +
+ packages/core/stage/package.json                   |    2 +-
+ packages/core/text/CHANGELOG.md                    |   13 +
+ packages/core/text/package.json                    |    2 +-
+ packages/core/ui/CHANGELOG.md                      |   17 +
+ packages/core/ui/package.json                      |    2 +-
+ packages/core/ui/src/index.ts                      |    2 +-
+ packages/core/ui/src/layout-compile.ts             |   10 +-
+ packages/core/ui/src/layout-validate.ts            |    8 +-
+ packages/core/ui/src/layout.ts                     |   13 +-
+ packages/core/ui/test/layout-compile.test.ts       |   22 +-
+ packages/core/ui/test/layout-validate.test.ts      |   10 +-
+ packages/default-fallback-fonts/CHANGELOG.md       |    7 +
+ packages/default-fallback-fonts/package.json       |    2 +-
+ packages/engine/core/CHANGELOG.md                  |   44 +
+ packages/engine/core/package.json                  |    2 +-
+ packages/engine/core/src/annotation/base.schema.ts |    7 +
+ packages/engine/core/src/annotation/checkWrite.ts  |   20 +-
+ packages/engine/core/src/annotation/fontFaces.ts   |   15 +
+ .../core/src/annotation/kind-facts.generated.ts    |   34 +-
+ .../core/src/annotation/kinds/caret/declaration.ts |    4 +-
+ .../kinds/file-attachment/declaration.ts           |    4 +-
+ .../src/annotation/kinds/free-text/declaration.ts  |   17 +-
+ .../core/src/annotation/kinds/free-text/index.ts   |    5 +-
+ .../core/src/annotation/kinds/ink/declaration.ts   |    4 +-
+ .../core/src/annotation/kinds/line/declaration.ts  |    4 +-
+ .../src/annotation/kinds/redact/declaration.ts     |    4 +-
+ .../core/src/annotation/kinds/shared-fields.ts     |   36 +-
+ .../core/src/annotation/kinds/stamp/declaration.ts |    4 +-
+ .../core/src/annotation/kinds/text/declaration.ts  |    4 +-
+ .../src/annotation/kinds/widget/declaration.ts     |    7 +-
+ .../src/annotation/resolve/applyAnnotationPatch.ts |   33 +-
+ .../engine/core/src/annotation/resolve/comment.ts  |   87 +
+ .../engine/core/src/annotation/resolve/dash.ts     |   63 +
+ .../engine/core/src/annotation/resolve/index.ts    |    2 +-
+ .../core/src/annotation/resolve/patchBetween.ts    |   19 +-
+ .../annotation/resolve/resolveAnnotationDraft.ts   |   11 +-
+ .../annotation/resolve/resolveAnnotationPatch.ts   |   82 +-
+ .../engine/core/src/annotation/resolve/text.ts     |   21 -
+ packages/engine/core/src/annotation/siblings.ts    |   49 +
+ packages/engine/core/src/conformance.ts            |    5 +
+ packages/engine/core/src/conformance/drawnText.ts  |   47 +-
+ .../conformance/runAnnotationExportConformance.ts  |    4 +-
+ .../runAnnotationMutationConformance.ts            |  297 ++-
+ .../runAnnotationPredictionConformance.ts          |   30 +
+ .../core/src/conformance/runColorConformance.ts    |    2 +-
+ .../conformance/runDrawingDetailsConformance.ts    |   58 +-
+ .../src/conformance/runMixedScriptConformance.ts   |   47 +-
+ .../core/src/conformance/runNoStrokeConformance.ts |  252 +++
+ packages/engine/core/src/dto/DocumentFonts.ts      |    7 +-
+ .../free-text/values.ts => dto/RichText.schema.ts} |    4 +-
+ packages/engine/core/src/fonts/fontList.ts         |   24 +-
+ packages/engine/core/src/forms/placement.ts        |   13 +-
+ packages/engine/core/src/pageSpace/helpers.ts      |    8 +-
+ packages/engine/core/src/shared.ts                 |    2 +
+ packages/engine/core/src/wire/schemas.ts           |  130 +-
+ .../core/test/annotation/annotationOfDraft.test.ts |   39 +
+ .../test/annotation/applyAnnotationPatch.test.ts   |  154 +-
+ .../engine/core/test/annotation/comment.test.ts    |  101 +
+ .../core/test/annotation/patchBetween.test.ts      |   13 +
+ .../engine/core/test/annotation/siblings.test.ts   |   67 +
+ .../core/test/fonts/standard-fallback.test.ts      |   91 +
+ packages/engine/core/test/forms/schema.test.ts     |   12 +
+ packages/engine/main/CHANGELOG.md                  |   22 +
+ packages/engine/main/package.json                  |    2 +-
+ packages/engine/main/test/destination-xyz.test.ts  |   78 +
+ packages/engine/main/test/no-stroke.test.ts        |   26 +
+ packages/engine/runtime/CHANGELOG.md               |   40 +
+ packages/engine/runtime/engine-runtime-build.json  |   42 +-
+ .../engine/runtime/npm/darwin-arm64/CHANGELOG.md   |    4 +
+ .../engine/runtime/npm/darwin-arm64/package.json   |    2 +-
+ .../engine/runtime/npm/darwin-x64/CHANGELOG.md     |    4 +
+ .../engine/runtime/npm/darwin-x64/package.json     |    2 +-
+ .../engine/runtime/npm/linux-arm64/CHANGELOG.md    |    4 +
+ .../engine/runtime/npm/linux-arm64/package.json    |    2 +-
+ packages/engine/runtime/npm/linux-x64/CHANGELOG.md |    4 +
+ packages/engine/runtime/npm/linux-x64/package.json |    2 +-
+ .../runtime/npm/linuxmusl-arm64/CHANGELOG.md       |    4 +
+ .../runtime/npm/linuxmusl-arm64/package.json       |    2 +-
+ .../engine/runtime/npm/linuxmusl-x64/CHANGELOG.md  |    4 +
+ .../engine/runtime/npm/linuxmusl-x64/package.json  |    2 +-
+ packages/engine/runtime/npm/wasm32/CHANGELOG.md    |    4 +
+ packages/engine/runtime/npm/wasm32/package.json    |    2 +-
+ .../engine/runtime/npm/win32-arm64/CHANGELOG.md    |    4 +
+ .../engine/runtime/npm/win32-arm64/package.json    |    2 +-
+ packages/engine/runtime/npm/win32-x64/CHANGELOG.md |    4 +
+ packages/engine/runtime/npm/win32-x64/package.json |    2 +-
+ packages/engine/runtime/package.json               |    2 +-
+ packages/engine/runtime/runtime-src                |    2 +-
+ .../runtime/src/core/pdf-functions.generated.ts    |    4 +
+ packages/engine/services/CHANGELOG.md              |   34 +
+ packages/engine/services/package.json              |    2 +-
+ .../src/features/annotations/AnnotationMutator.ts  |    9 +
+ .../internal/read/readCaretAnnotation.ts           |    2 +
+ .../internal/read/readFileAttachmentAnnotation.ts  |    2 +
+ .../annotations/internal/read/readInkAnnotation.ts |    2 +
+ .../internal/read/readLineAnnotation.ts            |    2 +
+ .../internal/read/readRedactAnnotation.ts          |    9 +-
+ .../internal/read/readShapeAnnotation.ts           |    6 +-
+ .../internal/read/readStampAnnotation.ts           |    2 +
+ .../annotations/internal/read/readStyle.ts         |   10 +-
+ .../internal/read/readTextAnnotation.ts            |    2 +
+ .../internal/read/readTextMarkupAnnotation.ts      |    7 +-
+ .../internal/read/readVertexAnnotation.ts          |    3 +
+ .../features/annotations/internal/richTextWire.ts  |   28 +-
+ .../internal/write/annotationWritePrimitives.ts    |   15 +
+ .../internal/write/annotationWriterRegistry.ts     |   75 +-
+ .../annotations/internal/write/writeStyle.ts       |   15 +-
+ .../features/changes/internal/annotationChanges.ts |    6 +-
+ .../src/features/destinations/readDestination.ts   |   34 +-
+ packages/framework/angular/CHANGELOG.md            |   32 +
+ packages/framework/angular/package.json            |    2 +-
+ .../framework/angular/render/src/public_api.ts     |    4 +
+ packages/framework/angular/render/src/render.ts    |    8 +-
+ .../framework/angular/render/src/snapshot-layer.ts |   71 +
+ .../framework/angular/render/src/snapshot-menu.ts  |   53 +
+ .../framework/angular/runtime/src/public_api.ts    |    4 +-
+ packages/framework/angular/stage/src/stage-ref.ts  |    1 +
+ packages/framework/react/CHANGELOG.md              |   28 +
+ packages/framework/react/package.json              |    2 +-
+ packages/framework/react/src/render.tsx            |   76 +
+ packages/framework/react/src/runtime.tsx           |    4 +-
+ packages/framework/svelte/CHANGELOG.md             |   28 +
+ packages/framework/svelte/package.json             |    2 +-
+ packages/framework/svelte/src/render.ts            |   12 +-
+ .../svelte/src/render/SnapshotLayer.svelte         |   45 +
+ .../svelte/src/render/SnapshotMenu.svelte          |   24 +
+ packages/framework/svelte/src/render/props.ts      |   13 +
+ .../framework/svelte/src/render/readers.svelte.ts  |   10 +-
+ packages/framework/svelte/src/runtime.ts           |    4 +-
+ packages/framework/vue/CHANGELOG.md                |   28 +
+ packages/framework/vue/package.json                |    2 +-
+ packages/framework/vue/src/render.ts               |   21 +-
+ .../framework/vue/src/render/SnapshotLayer.vue     |   57 +
+ packages/framework/vue/src/render/SnapshotMenu.vue |   40 +
+ packages/framework/vue/src/runtime.ts              |    4 +-
+ packages/framework/web/CHANGELOG.md                |   37 +
+ packages/framework/web/package.json                |    2 +-
+ packages/framework/web/src/annotation-scene.ts     |    8 +-
+ packages/framework/web/src/clipboard.ts            |   21 +-
+ packages/framework/web/src/index.ts                |   10 +-
+ packages/framework/web/src/rich-text-editor.ts     |   44 +-
+ packages/framework/web/src/snapshot-box.ts         |   28 +
+ .../web/src/standard-commands-platform.ts          |   16 +-
+ packages/framework/web/src/surface-focus.ts        |    4 +-
+ packages/framework/web/src/text-box-editor.ts      |    7 +-
+ packages/framework/web/src/theme.ts                |   13 +
+ .../framework/web/test/annotation-scene.test.ts    |   18 +
+ packages/framework/web/test/clipboard.test.ts      |   29 +-
+ .../framework/web/test/rich-text-editor.test.ts    |  125 +-
+ packages/framework/web/test/snapshot-box.test.ts   |   19 +
+ .../web/test/standard-commands-platform.test.ts    |   13 +-
+ packages/framework/web/test/surface-focus.test.ts  |   10 +-
+ .../framework/web/test/text-box-editor.test.ts     |    4 +-
+ packages/plugin/actions/CHANGELOG.md               |    8 +
+ packages/plugin/actions/package.json               |    2 +-
+ packages/plugin/annotation/CHANGELOG.md            |   10 +
+ packages/plugin/annotation/package.json            |    2 +-
+ packages/plugin/annotation/src/contract.ts         |   18 +-
+ packages/plugin/annotation/src/host-contract.ts    |    6 +-
+ packages/plugin/annotation/src/model.ts            |    9 +-
+ packages/plugin/annotation/src/read/properties.ts  |  100 +-
+ packages/plugin/annotation/src/read/text-fonts.ts  |  110 +-
+ packages/plugin/annotation/src/rich-text.ts        |   50 +-
+ packages/plugin/annotation/src/write/selection.ts  |   36 +-
+ .../plugin/annotation/src/write/text-editing.ts    |   54 +-
+ packages/plugin/annotation/test/capability.test.ts |   21 +
+ packages/plugin/annotation/test/controller.test.ts |   11 +
+ .../plugin/annotation/test/read/text-fonts.test.ts |   99 +-
+ .../annotation/test/rich-text-editing.test.ts      |  196 +-
+ packages/plugin/attachment/CHANGELOG.md            |    4 +
+ packages/plugin/attachment/package.json            |    2 +-
+ packages/plugin/commands/CHANGELOG.md              |   12 +
+ packages/plugin/commands/package.json              |    3 +-
+ packages/plugin/commands/src/controller.ts         |   16 +-
+ packages/plugin/commands/src/host-contract.ts      |    7 +-
+ packages/plugin/commands/src/standard.ts           |   83 +-
+ packages/plugin/commands/test/controller.test.ts   |   17 +-
+ packages/plugin/commands/test/standard.test.ts     |   54 +-
+ packages/plugin/fonts/CHANGELOG.md                 |   17 +
+ packages/plugin/fonts/package.json                 |    2 +-
+ packages/plugin/fonts/src/controller.ts            |   32 +-
+ packages/plugin/fonts/src/paint.ts                 |   14 +-
+ packages/plugin/fonts/test/fonts.test.ts           |   36 +-
+ packages/plugin/form/CHANGELOG.md                  |   16 +
+ packages/plugin/form/package.json                  |    2 +-
+ packages/plugin/history/CHANGELOG.md               |    4 +
+ packages/plugin/history/package.json               |    2 +-
+ packages/plugin/i18n/CHANGELOG.md                  |    4 +
+ packages/plugin/i18n/package.json                  |    2 +-
+ packages/plugin/i18n/src/strings/de.ts             |    2 +
+ packages/plugin/i18n/src/strings/en.ts             |    2 +
+ packages/plugin/i18n/src/strings/es.ts             |    2 +
+ packages/plugin/i18n/src/strings/fr.ts             |    2 +
+ packages/plugin/i18n/src/strings/ja.ts             |    2 +
+ packages/plugin/i18n/src/strings/nl.ts             |    2 +
+ packages/plugin/i18n/src/strings/sv.ts             |    2 +
+ packages/plugin/i18n/src/strings/zh-cn.ts          |    2 +
+ packages/plugin/interaction/CHANGELOG.md           |    4 +
+ packages/plugin/interaction/package.json           |    2 +-
+ packages/plugin/link/CHANGELOG.md                  |    4 +
+ packages/plugin/link/package.json                  |    2 +-
+ packages/plugin/measurement/CHANGELOG.md           |    4 +
+ packages/plugin/measurement/package.json           |    2 +-
+ packages/plugin/metadata/CHANGELOG.md              |    4 +
+ packages/plugin/metadata/package.json              |    2 +-
+ packages/plugin/outline/CHANGELOG.md               |    4 +
+ packages/plugin/outline/package.json               |    2 +-
+ packages/plugin/page-edit/CHANGELOG.md             |   10 +
+ packages/plugin/page-edit/package.json             |    2 +-
+ packages/plugin/redaction/CHANGELOG.md             |    4 +
+ packages/plugin/redaction/package.json             |    2 +-
+ packages/plugin/render/CHANGELOG.md                |   18 +
+ packages/plugin/render/package.json                |    5 +-
+ packages/plugin/render/src/contract.ts             |   89 +-
+ packages/plugin/render/src/controller.ts           |   65 +-
+ packages/plugin/render/src/host-contract.ts        |    8 +
+ packages/plugin/render/src/model.ts                |   34 +-
+ packages/plugin/render/src/render.plugin.ts        |    6 +-
+ packages/plugin/render/src/snapshot.ts             |  246 +++
+ packages/plugin/render/test/controller.test.ts     |  255 +--
+ packages/plugin/render/test/harness.ts             |  204 +++
+ packages/plugin/render/test/snapshot.test.ts       |  227 +++
+ packages/plugin/search/CHANGELOG.md                |    4 +
+ packages/plugin/search/package.json                |    2 +-
+ packages/plugin/selection/CHANGELOG.md             |    4 +
+ packages/plugin/selection/package.json             |    2 +-
+ packages/plugin/shell/CHANGELOG.md                 |    4 +
+ packages/plugin/shell/package.json                 |    2 +-
+ packages/plugin/signature/CHANGELOG.md             |    4 +
+ packages/plugin/signature/package.json             |    2 +-
+ packages/plugin/stage/CHANGELOG.md                 |   16 +
+ packages/plugin/stage/package.json                 |    2 +-
+ packages/plugin/stage/src/camera/animation.ts      |    1 -
+ packages/plugin/stage/src/camera/gestures.ts       |   38 +-
+ packages/plugin/stage/src/contract.ts              |   22 +-
+ packages/plugin/stage/src/controller.ts            |   10 +-
+ packages/plugin/stage/src/navigation/arrive.ts     |   41 +-
+ packages/plugin/stage/src/navigation/turn.ts       |  165 ++
+ packages/plugin/stage/src/read/pages.ts            |    7 +
+ packages/plugin/stage/src/services/scene.ts        |   46 +-
+ packages/plugin/stage/src/settings.ts              |    3 +
+ packages/plugin/stage/test/navigation/turn.test.ts |  143 ++
+ .../plugin/stage/test/stage.capability.test.ts     |   65 +
+ packages/plugin/stamp/CHANGELOG.md                 |    8 +
+ packages/plugin/stamp/package.json                 |    2 +-
+ packages/plugin/view-manager/CHANGELOG.md          |    4 +
+ packages/plugin/view-manager/package.json          |    2 +-
+ packages/viewer/angular/CHANGELOG.md               |   14 +
+ packages/viewer/angular/package.json               |    2 +-
+ packages/viewer/angular/test/live-props.test.ts    |    7 +-
+ packages/viewer/chrome/CHANGELOG.md                |   59 +
+ packages/viewer/chrome/package.json                |    2 +-
+ packages/viewer/chrome/src/Shell.tsx               |    7 +-
+ packages/viewer/chrome/src/config/chrome.ts        |   21 +-
+ packages/viewer/chrome/src/config/commands.ts      |  132 +-
+ packages/viewer/chrome/src/features.ts             |    1 +
+ packages/viewer/chrome/src/layout-root.tsx         |    1 +
+ packages/viewer/chrome/src/locales/ar.ts           |   28 +-
+ packages/viewer/chrome/src/locales/de.ts           |   28 +-
+ packages/viewer/chrome/src/locales/en.ts           |   34 +-
+ packages/viewer/chrome/src/locales/es.ts           |   28 +-
+ packages/viewer/chrome/src/locales/fr.ts           |   28 +-
+ packages/viewer/chrome/src/locales/he.ts           |   28 +-
+ packages/viewer/chrome/src/locales/it.ts           |   28 +-
+ packages/viewer/chrome/src/locales/ja.ts           |   28 +-
+ packages/viewer/chrome/src/locales/ko.ts           |   28 +-
+ packages/viewer/chrome/src/locales/nl.ts           |   28 +-
+ packages/viewer/chrome/src/locales/pl.ts           |   28 +-
+ packages/viewer/chrome/src/locales/pt.ts           |   28 +-
+ packages/viewer/chrome/src/locales/sv.ts           |   28 +-
+ packages/viewer/chrome/src/locales/zh-cn.ts        |   28 +-
+ packages/viewer/chrome/src/locales/zh-tw.ts        |   28 +-
+ packages/viewer/chrome/src/places.tsx              |   26 +-
+ packages/viewer/chrome/src/styles.css              |   24 +-
+ packages/viewer/chrome/src/ui/annotation-flags.tsx |  106 --
+ packages/viewer/chrome/src/ui/annotation-style.tsx |   61 +-
+ packages/viewer/chrome/src/ui/compact.ts           |   83 +-
+ packages/viewer/chrome/src/ui/icons.tsx            |   16 +
+ packages/viewer/chrome/src/ui/idle-hiding.ts       |   33 +
+ packages/viewer/chrome/src/ui/menu-placement.ts    |    4 +-
+ packages/viewer/chrome/src/ui/menu.tsx             |    6 +-
+ packages/viewer/chrome/src/ui/page-loading.tsx     |   17 +-
+ packages/viewer/chrome/src/ui/page-number.tsx      |   78 +-
+ packages/viewer/chrome/src/ui/scroll-hiding.ts     |   50 -
+ packages/viewer/chrome/src/ui/selection-strip.tsx  |    6 +-
+ packages/viewer/chrome/src/ui/shortcuts-sheet.tsx  |   13 +-
+ packages/viewer/chrome/src/ui/snapshot-strip.tsx   |   33 +
+ packages/viewer/chrome/src/ui/strip-bar.tsx        |   18 +-
+ packages/viewer/chrome/src/ui/toolbar.tsx          |   23 +-
+ packages/viewer/main/CHANGELOG.md                  |   30 +
+ packages/viewer/main/package.json                  |    2 +-
+ packages/viewer/main/test/chrome/commands.test.ts  |   40 +-
+ .../viewer/main/test/chrome/idle-hiding.test.ts    |   34 +
+ .../viewer/main/test/chrome/open-files.test.ts     |    1 +
+ .../viewer/main/test/chrome/scroll-hiding.test.ts  |   52 -
+ packages/viewer/main/test/commands.test.ts         |    4 +-
+ packages/viewer/main/test/copy.test.ts             |    2 +-
+ packages/viewer/main/test/fullscreen.test.ts       |    5 +-
+ packages/viewer/main/test/helpers/viewer-host.ts   |   24 +-
+ packages/viewer/main/test/languages.test.ts        |   11 +-
+ packages/viewer/main/test/lazy-features.test.ts    |    2 +-
+ packages/viewer/main/test/live-config.test.ts      |   28 +-
+ packages/viewer/main/test/menus.test.ts            |   35 +-
+ packages/viewer/main/test/page-number.test.ts      |  256 +--
+ packages/viewer/main/test/page-turns.test.ts       |  156 ++
+ packages/viewer/main/test/panel-frames.test.ts     |    3 +-
+ packages/viewer/main/test/places.test.ts           |  185 +-
+ packages/viewer/main/test/shortcuts.test.ts        |    2 +-
+ packages/viewer/main/test/small-screens.test.ts    |   36 +-
+ .../viewer/main/test/snippet-cross-origin.test.ts  |    4 +-
+ packages/viewer/main/test/strict-csp.test.ts       |    2 +-
+ packages/viewer/main/test/translations.test.ts     |   27 +-
+ packages/viewer/main/test/untranslated.test.ts     |    6 +-
+ packages/viewer/react/CHANGELOG.md                 |   10 +
+ packages/viewer/react/package.json                 |    2 +-
+ packages/viewer/react/test/live-props.test.ts      |    7 +-
+ packages/viewer/svelte/CHANGELOG.md                |   16 +
+ packages/viewer/svelte/package.json                |    2 +-
+ packages/viewer/svelte/test/live-props.test.ts     |    7 +-
+ packages/viewer/vue/CHANGELOG.md                   |   14 +
+ packages/viewer/vue/package.json                   |    2 +-
+ packages/viewer/vue/test/live-props.test.ts        |    7 +-
+ pnpm-lock.yaml                                     |    9 +
+ tooling/build/src/api-snapshot.mjs                 |   16 +-
+ website/next.config.ts                             |    6 +-
+ website/public/apple-touch-icon.png                |  Bin 0 -> 1001 bytes
+ website/public/demo_protected.pdf                  |  Bin 0 -> 1015803 bytes
+ website/public/ebook.pdf                           |  Bin 0 -> 919769 bytes
+ website/public/favicon-96x96.png                   |  Bin 0 -> 437 bytes
+ website/public/favicon.ico                         |  Bin 0 -> 15086 bytes
+ website/public/favicon.svg                         |   17 +
+ website/public/form.pdf                            |  Bin 0 -> 242819 bytes
+ website/public/logo-192.png                        |  Bin 0 -> 795 bytes
+ website/public/site.webmanifest                    |   21 +
+ website/public/web-app-manifest-192x192.png        |  Bin 0 -> 1011 bytes
+ website/public/web-app-manifest-512x512.png        |  Bin 0 -> 4016 bytes
+ website/src/app/layout.tsx                         |   13 +-
+ website/src/components/docs/sidebar.tsx            |    8 +
+ website/src/components/site/example-page-view.tsx  |    4 +-
+ website/src/components/site/footer.tsx             |    1 +
+ website/src/content/_meta.ts                       |    3 +
+ .../src/content/docs/engine/annotations/index.mdx  |   71 +-
+ .../docs/engine/annotations/notes-and-replies.mdx  |   39 +-
+ .../src/content/docs/engine/annotations/shapes.mdx |   51 +-
+ .../docs/engine/annotations/text-markup.mdx        |   15 +-
+ .../content/docs/engine/concepts/permissions.mdx   |    6 +
+ .../src/content/docs/engine/documents/fonts.mdx    |    8 +-
+ .../docs/headless/annotations/selecting.mdx        |   15 +-
+ .../docs/headless/annotations/with-code.mdx        |   11 +
+ .../content/docs/headless/concepts/rich-text.mdx   |   26 +-
+ .../src/content/docs/headless/documents/fonts.mdx  |    3 +-
+ website/src/content/docs/headless/ui/commands.mdx  |    6 +-
+ website/src/content/docs/headless/ui/theming.mdx   |    7 +
+ website/src/content/docs/headless/ui/tools.mdx     |    3 +-
+ .../src/content/docs/headless/viewing/render.mdx   |   79 +-
+ .../src/content/docs/headless/viewing/stage.mdx    |   38 +-
+ .../src/content/docs/viewer/customize/commands.mdx |   10 +-
+ .../src/content/docs/viewer/customize/layout.mdx   |   37 +-
+ .../src/content/docs/viewer/customize/menus.mdx    |    7 +-
+ .../docs/viewer/customize/small-screens.mdx        |    2 +-
+ .../src/content/docs/viewer/customize/theming.mdx  |    2 +-
+ .../content/docs/viewer/customize/translations.mdx |   14 +-
+ website/src/content/docs/viewer/documents.mdx      |   27 +
+ .../src/content/docs/viewer/examples/reader.mdx    |    4 +-
+ .../content/docs/viewer/features/annotations.mdx   |   10 +-
+ website/src/content/docs/viewer/features/fonts.mdx |   14 +-
+ website/src/content/docs/viewer/features/index.mdx |    1 +
+ .../content/docs/viewer/features/turning-off.mdx   |    1 +
+ website/src/content/docs/viewer/migrate.mdx        |    9 +-
+ website/src/lib/v2-redirects.test.ts               |   95 +
+ website/src/lib/v2-redirects.ts                    |  155 ++
+ website/src/lib/v2-site-urls.txt                   |  223 +++
+ website/src/samples/annotation/cursor.react.tsx    |    4 +-
+ .../src/samples/annotation/style-panel.angular.ts  |    2 +-
+ .../src/samples/annotation/style-panel.react.tsx   |    2 +-
+ .../annotation/style-panel.svelte/Control.svelte   |    2 +-
+ .../samples/annotation/style-panel.vue/Control.vue |    7 +-
+ website/src/samples/render/snapshot.angular.ts     |  120 ++
+ website/src/samples/render/snapshot.css            |  115 ++
+ website/src/samples/render/snapshot.react.tsx      |   95 +
+ .../src/samples/render/snapshot.svelte/App.svelte  |   31 +
+ .../render/snapshot.svelte/SnapshotToolbar.svelte  |   57 +
+ website/src/samples/render/snapshot.vue/App.vue    |   34 +
+ .../render/snapshot.vue/SnapshotToolbar.vue        |   57 +
+ .../snippets/annotations/tools/ink-color.react.tsx |    2 +-
+ .../snippets/viewing/snapshot-actions.angular.ts   |   28 +
+ .../snippets/viewing/snapshot-actions.react.tsx    |   16 +
+ .../viewing/snapshot-actions.svelte.svelte         |   20 +
+ .../snippets/viewing/snapshot-actions.vue.vue      |   19 +
+ .../src/samples/viewer/examples/reader.angular.ts  |    4 +-
+ .../src/samples/viewer/examples/reader.react.tsx   |    4 +-
+ .../samples/viewer/examples/reader.svelte.svelte   |    4 +-
+ .../samples/viewer/examples/reader.vanilla.html    |    4 +-
+ website/src/samples/viewer/examples/reader.vue.vue |    4 +-
+ 794 files changed, 19214 insertions(+), 4285 deletions(-)
+A	.changeset/annotation-kind-change-core-annotation.md
+A	.changeset/annotation-kind-change-engine-core.md
+A	.changeset/annotation-kind-change-engine-runtime.md
+A	.changeset/annotation-kind-change-engine-services.md
+A	.changeset/annotation-kind-change-engine.md
+A	.changeset/annotation-kind-change-plugin-annotation.md
+A	.changeset/annotation-kind-change-viewer-chrome.md
+A	.changeset/caret-typing-style-core-annotation.md
+A	.changeset/caret-typing-style-plugin-annotation.md
+A	.changeset/caret-typing-style-web.md
+A	.changeset/font-picker-choosable-viewer-chrome.md
+A	.changeset/ink-curves-core-annotation.md
+A	.changeset/ink-curves-engine-runtime.md
+A	.changeset/iso-dashes-cloudpdf-contract.md
+A	.changeset/iso-dashes-engine-core.md
+A	.changeset/iso-dashes-engine-runtime.md
+A	.changeset/latin-fallback-core-fonts.md
+A	.changeset/latin-fallback-engine-core.md
+A	.changeset/latin-fallback-engine-runtime.md
+A	.changeset/latin-fallback-plugin-fonts.md
+A	.changeset/markup-rich-text-cloudpdf-contract.md
+A	.changeset/markup-rich-text-cloudpdf-sdk.md
+A	.changeset/markup-rich-text-engine-core.md
+A	.changeset/markup-rich-text-engine-services.md
+A	.changeset/module-manifests-cloudpdf-contract.md
+A	.changeset/module-manifests-cloudpdf-sdk.md
+A	.changeset/module-manifests-cloudpdf-server-modules.md
+A	.changeset/module-manifests-cloudpdf-server.md
+A	.changeset/no-stroke-cloudpdf-contract.md
+A	.changeset/no-stroke-cloudpdf-sdk.md
+A	.changeset/no-stroke-core-annotation.md
+A	.changeset/no-stroke-engine-core.md
+A	.changeset/no-stroke-engine-runtime.md
+A	.changeset/no-stroke-engine-services.md
+A	.changeset/no-stroke-plugin-annotation.md
+A	.changeset/no-stroke-viewer-chrome.md
+A	.changeset/no-stroke-web.md
+A	.changeset/page-loading-spinner-viewer-chrome.md
+A	.changeset/page-turns-plugin-stage.md
+A	.changeset/page-turns-viewer-chrome.md
+A	.changeset/pager-arrows-angular.md
+A	.changeset/pager-arrows-core-ui.md
+A	.changeset/pager-arrows-plugin-stage.md
+A	.changeset/pager-arrows-viewer-chrome.md
+A	.changeset/pager-arrows-viewer.md
+A	.changeset/postgres-idle-connection-errors-cloudpdf-server.md
+M	.changeset/pre.json
+A	.changeset/selection-strip-below-viewer-chrome.md
+A	.changeset/server-license-runtime-only.md
+A	.changeset/server-modules-test-server.md
+A	.changeset/snapshot-tool-angular.md
+A	.changeset/snapshot-tool-core-ui.md
+A	.changeset/snapshot-tool-plugin-commands.md
+A	.changeset/snapshot-tool-plugin-i18n.md
+A	.changeset/snapshot-tool-plugin-render.md
+A	.changeset/snapshot-tool-react.md
+A	.changeset/snapshot-tool-svelte.md
+A	.changeset/snapshot-tool-viewer-chrome.md
+A	.changeset/snapshot-tool-vue.md
+A	.changeset/snapshot-tool-web.md
+A	.changeset/stale-font-answer-plugin-annotation.md
+A	.changeset/strips-and-style-viewer.md
+A	.changeset/style-panel-no-flags-viewer-chrome.md
+A	.changeset/surface-focus-no-scroll.md
+A	.changeset/tenant-features-cloudpdf-contract.md
+A	.changeset/tenant-features-cloudpdf-sdk.md
+A	.changeset/tenant-features-cloudpdf-server.md
+A	.changeset/xyz-short-destination.md
+M	.github/workflows/license-security.yml
+M	.github/workflows/release.yml
+M	api/cloudpdf__viewer-angular/index.api.txt
+M	api/cloudpdf__viewer-react/index.api.txt
+M	api/cloudpdf__viewer-svelte/index.api.txt
+M	api/cloudpdf__viewer-vue/index.api.txt
+M	api/cloudpdf__viewer/index.api.txt
+M	api/cloudpdf__viewer/snippet.api.txt
+M	api/embedpdf__angular/annotation.api.txt
+M	api/embedpdf__angular/index.api.txt
+M	api/embedpdf__angular/render.api.txt
+M	api/embedpdf__angular/runtime.api.txt
+M	api/embedpdf__angular/stage.api.txt
+M	api/embedpdf__core-annotation/index.api.txt
+M	api/embedpdf__core-fonts/index.api.txt
+M	api/embedpdf__core-ui/index.api.txt
+M	api/embedpdf__engine-core/conformance.api.txt
+M	api/embedpdf__engine-core/index.api.txt
+M	api/embedpdf__engine-core/runtime.api.txt
+M	api/embedpdf__engine-core/validation.api.txt
+M	api/embedpdf__engine-core/wire.api.txt
+M	api/embedpdf__engine-services/index.api.txt
+M	api/embedpdf__plugin-annotation/contract.api.txt
+M	api/embedpdf__plugin-annotation/contract__host.api.txt
+M	api/embedpdf__plugin-annotation/index.api.txt
+M	api/embedpdf__plugin-commands/standard.api.txt
+M	api/embedpdf__plugin-render/contract.api.txt
+M	api/embedpdf__plugin-render/contract__host.api.txt
+M	api/embedpdf__plugin-render/index.api.txt
+M	api/embedpdf__plugin-stage/contract.api.txt
+M	api/embedpdf__plugin-stage/contract__host.api.txt
+M	api/embedpdf__plugin-stage/index.api.txt
+M	api/embedpdf__react/annotation.api.txt
+M	api/embedpdf__react/index.api.txt
+M	api/embedpdf__react/render.api.txt
+M	api/embedpdf__react/runtime.api.txt
+M	api/embedpdf__react/stage.api.txt
+M	api/embedpdf__svelte/annotation.api.txt
+M	api/embedpdf__svelte/index.api.txt
+M	api/embedpdf__svelte/render.api.txt
+M	api/embedpdf__svelte/runtime.api.txt
+M	api/embedpdf__svelte/stage.api.txt
+M	api/embedpdf__viewer-angular/core.api.txt
+M	api/embedpdf__viewer-angular/index.api.txt
+M	api/embedpdf__viewer-chrome/chrome.api.txt
+M	api/embedpdf__viewer-chrome/commands.api.txt
+M	api/embedpdf__viewer-chrome/index.api.txt
+M	api/embedpdf__viewer-react/core.api.txt
+M	api/embedpdf__viewer-react/index.api.txt
+M	api/embedpdf__viewer-svelte/core.api.txt
+M	api/embedpdf__viewer-svelte/index.api.txt
+M	api/embedpdf__viewer-vue/core.api.txt
+M	api/embedpdf__viewer-vue/index.api.txt
+M	api/embedpdf__viewer/core.api.txt
+M	api/embedpdf__viewer/index.api.txt
+M	api/embedpdf__viewer/portable.api.txt
+M	api/embedpdf__viewer/snippet.api.txt
+M	api/embedpdf__vue/annotation.api.txt
+M	api/embedpdf__vue/index.api.txt
+M	api/embedpdf__vue/render.api.txt
+M	api/embedpdf__vue/runtime.api.txt
+M	api/embedpdf__vue/stage.api.txt
+M	api/embedpdf__web/index.api.txt
+M	cloudpdf/contract/CHANGELOG.md
+M	cloudpdf/contract/openapi.json
+M	cloudpdf/contract/package.json
+M	cloudpdf/contract/src/index.ts
+M	cloudpdf/contract/src/openapi.ts
+M	cloudpdf/engine/CHANGELOG.md
+M	cloudpdf/engine/package.json
+M	cloudpdf/engine/test/module-channel.test.ts
+A	cloudpdf/engine/test/no-stroke.test.ts
+A	cloudpdf/framework/web/CHANGELOG.md
+M	cloudpdf/framework/web/package.json
+A	cloudpdf/plugin/protected-display/CHANGELOG.md
+M	cloudpdf/plugin/protected-display/package.json
+M	cloudpdf/sdk/.fern/metadata.json
+M	cloudpdf/sdk/CHANGELOG.md
+M	cloudpdf/sdk/cloudpdf-generation.json
+M	cloudpdf/sdk/package.json
+M	cloudpdf/sdk/reference.md
+M	cloudpdf/sdk/src/BaseClient.ts
+M	cloudpdf/sdk/src/api/resources/deployment/client/Client.ts
+M	cloudpdf/sdk/src/api/resources/tenants/client/Client.ts
+A	cloudpdf/sdk/src/api/resources/tenants/client/requests/TenantsUpdateRequest.ts
+M	cloudpdf/sdk/src/api/resources/tenants/client/requests/UsageTenantsRequest.ts
+M	cloudpdf/sdk/src/api/resources/tenants/client/requests/index.ts
+M	cloudpdf/sdk/src/api/types/Annotation.ts
+M	cloudpdf/sdk/src/api/types/AnnotationDraft.ts
+M	cloudpdf/sdk/src/api/types/AnnotationPatch.ts
+A	cloudpdf/sdk/src/api/types/DeploymentModulesResponse.ts
+A	cloudpdf/sdk/src/api/types/ModuleManifest.ts
+A	cloudpdf/sdk/src/api/types/ModuleMeter.ts
+A	cloudpdf/sdk/src/api/types/ModulePermission.ts
+A	cloudpdf/sdk/src/api/types/RichTextDocument.ts
+A	cloudpdf/sdk/src/api/types/RichTextDocumentInput.ts
+A	cloudpdf/sdk/src/api/types/TenantFeature.ts
+M	cloudpdf/sdk/src/api/types/TenantsCreate200Response.ts
+M	cloudpdf/sdk/src/api/types/TenantsGet200Response.ts
+M	cloudpdf/sdk/src/api/types/TenantsList200Response.ts
+A	cloudpdf/sdk/src/api/types/TenantsUpdate200Response.ts
+A	cloudpdf/sdk/src/api/types/TenantsUpdate400Response.ts
+A	cloudpdf/sdk/src/api/types/TenantsUpdate404Response.ts
+M	cloudpdf/sdk/src/api/types/index.ts
+M	cloudpdf/sdk/src/version.ts
+M	cloudpdf/sdk/tests/wire/deployment.test.ts
+M	cloudpdf/sdk/tests/wire/doc/annotations.test.ts
+M	cloudpdf/sdk/tests/wire/tenants.test.ts
+A	cloudpdf/server-modules/CHANGELOG.md
+M	cloudpdf/server-modules/README.md
+M	cloudpdf/server-modules/package.json
+M	cloudpdf/server-modules/src/index.ts
+A	cloudpdf/server-modules/src/test-server.ts
+A	cloudpdf/server-modules/src/testing.ts
+A	cloudpdf/server-modules/test/declarations.test.ts
+M	cloudpdf/server-modules/test/server-modules.test.ts
+A	cloudpdf/server-modules/test/testing.test.ts
+M	cloudpdf/server/CHANGELOG.md
+A	cloudpdf/server/__mocks__/@aws-sdk/client-kms.ts
+A	cloudpdf/server/__mocks__/@aws-sdk/client-secrets-manager.ts
+A	cloudpdf/server/__mocks__/@azure/identity.ts
+A	cloudpdf/server/__mocks__/@azure/keyvault-keys.ts
+A	cloudpdf/server/__mocks__/@azure/keyvault-secrets.ts
+A	cloudpdf/server/__mocks__/@azure/storage-blob.ts
+A	cloudpdf/server/__mocks__/@google-cloud/kms.ts
+A	cloudpdf/server/__mocks__/@google-cloud/secret-manager.ts
+A	cloudpdf/server/__mocks__/@google-cloud/storage.ts
+M	cloudpdf/server/package.json
+M	cloudpdf/server/src/app/buildApp.ts
+A	cloudpdf/server/src/auth/TenantFeaturesGuard.ts
+M	cloudpdf/server/src/auth/permission-registry.ts
+M	cloudpdf/server/src/bin/cloudpdf-server.ts
+M	cloudpdf/server/src/db/drivers/postgres.ts
+A	cloudpdf/server/src/db/migrations/postgres/050_tenant_features.down.sql
+A	cloudpdf/server/src/db/migrations/postgres/050_tenant_features.sql
+A	cloudpdf/server/src/db/migrations/postgres/051_tenant_usage_days.down.sql
+A	cloudpdf/server/src/db/migrations/postgres/051_tenant_usage_days.sql
+M	cloudpdf/server/src/db/migrations/postgres/index.ts
+A	cloudpdf/server/src/db/migrations/sqlite/050_tenant_features.down.sql
+A	cloudpdf/server/src/db/migrations/sqlite/050_tenant_features.sql
+A	cloudpdf/server/src/db/migrations/sqlite/051_tenant_usage_days.down.sql
+A	cloudpdf/server/src/db/migrations/sqlite/051_tenant_usage_days.sql
+M	cloudpdf/server/src/db/migrations/sqlite/index.ts
+M	cloudpdf/server/src/db/repos/tenant_usage.repo.ts
+M	cloudpdf/server/src/db/repos/tenants.repo.ts
+M	cloudpdf/server/src/db/schema.ts
+M	cloudpdf/server/src/licensing/LicenseRuntime.ts
+M	cloudpdf/server/src/licensing/public.ts
+D	cloudpdf/server/src/licensing/trusted-license-gates.ts
+M	cloudpdf/server/src/modules/host.ts
+M	cloudpdf/server/src/modules/index.ts
+M	cloudpdf/server/src/modules/protocol.ts
+M	cloudpdf/server/src/routes/admin/tenants.ts
+M	cloudpdf/server/src/routes/annotations.ts
+M	cloudpdf/server/test/_helpers/db-conformance.ts
+A	cloudpdf/server/test/_helpers/usage-days-migration.ts
+M	cloudpdf/server/test/db-postgres.test.ts
+M	cloudpdf/server/test/engine-shards.test.ts
+M	cloudpdf/server/test/import-azure-source.test.ts
+M	cloudpdf/server/test/import-gcs-source.test.ts
+M	cloudpdf/server/test/licensing.test.ts
+M	cloudpdf/server/test/migrator-down.test.ts
+M	cloudpdf/server/test/protected-session-refusal.test.ts
+M	cloudpdf/server/test/security-aws-adapters.test.ts
+M	cloudpdf/server/test/security-google-azure-adapters.test.ts
+M	cloudpdf/server/test/server-modules.test.ts
+M	cloudpdf/server/test/storage-azure.test.ts
+M	cloudpdf/server/test/storage-gcs.test.ts
+M	cloudpdf/viewer/angular/CHANGELOG.md
+M	cloudpdf/viewer/angular/package.json
+M	cloudpdf/viewer/main/CHANGELOG.md
+M	cloudpdf/viewer/main/package.json
+M	cloudpdf/viewer/react/CHANGELOG.md
+M	cloudpdf/viewer/react/package.json
+M	cloudpdf/viewer/svelte/CHANGELOG.md
+M	cloudpdf/viewer/svelte/package.json
+M	cloudpdf/viewer/vue/CHANGELOG.md
+M	cloudpdf/viewer/vue/package.json
+M	cloudpdf/website/src/components/site/example-page-view.tsx
+M	cloudpdf/website/src/content/_meta.ts
+M	cloudpdf/website/src/content/docs/api-reference/deployment/_meta.ts
+A	cloudpdf/website/src/content/docs/api-reference/deployment/modules.mdx
+M	cloudpdf/website/src/content/docs/api-reference/tenants/_meta.ts
+A	cloudpdf/website/src/content/docs/api-reference/tenants/update.mdx
+M	cloudpdf/website/src/content/docs/engine/annotations/index.mdx
+M	cloudpdf/website/src/content/docs/engine/annotations/notes-and-replies.mdx
+M	cloudpdf/website/src/content/docs/engine/annotations/shapes.mdx
+M	cloudpdf/website/src/content/docs/engine/annotations/text-markup.mdx
+M	cloudpdf/website/src/content/docs/engine/concepts/permissions.mdx
+M	cloudpdf/website/src/content/docs/engine/documents/fonts.mdx
+M	cloudpdf/website/src/content/docs/headless/annotations/selecting.mdx
+M	cloudpdf/website/src/content/docs/headless/annotations/with-code.mdx
+M	cloudpdf/website/src/content/docs/headless/concepts/rich-text.mdx
+M	cloudpdf/website/src/content/docs/headless/documents/fonts.mdx
+M	cloudpdf/website/src/content/docs/headless/ui/commands.mdx
+M	cloudpdf/website/src/content/docs/headless/ui/theming.mdx
+M	cloudpdf/website/src/content/docs/headless/ui/tools.mdx
+M	cloudpdf/website/src/content/docs/headless/viewing/render.mdx
+M	cloudpdf/website/src/content/docs/headless/viewing/stage.mdx
+M	cloudpdf/website/src/content/docs/server/configuration/fonts.mdx
+M	cloudpdf/website/src/content/docs/server/configuration/licensing.mdx
+M	cloudpdf/website/src/content/docs/server/configuration/modules.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/commands.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/layout.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/menus.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/small-screens.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/theming.mdx
+M	cloudpdf/website/src/content/docs/viewer/customize/translations.mdx
+M	cloudpdf/website/src/content/docs/viewer/documents.mdx
+M	cloudpdf/website/src/content/docs/viewer/examples/reader.mdx
+M	cloudpdf/website/src/content/docs/viewer/features/annotations.mdx
+M	cloudpdf/website/src/content/docs/viewer/features/fonts.mdx
+M	cloudpdf/website/src/content/docs/viewer/features/index.mdx
+M	cloudpdf/website/src/content/docs/viewer/features/turning-off.mdx
+M	cloudpdf/website/src/generated/sdk-snippets.json
+M	cloudpdf/website/src/samples/annotation/cursor.react.tsx
+M	cloudpdf/website/src/samples/annotation/style-panel.angular.ts
+M	cloudpdf/website/src/samples/annotation/style-panel.react.tsx
+M	cloudpdf/website/src/samples/annotation/style-panel.svelte/Control.svelte
+M	cloudpdf/website/src/samples/annotation/style-panel.vue/Control.vue
+A	cloudpdf/website/src/samples/render/snapshot.angular.ts
+A	cloudpdf/website/src/samples/render/snapshot.css
+A	cloudpdf/website/src/samples/render/snapshot.react.tsx
+A	cloudpdf/website/src/samples/render/snapshot.svelte/App.svelte
+A	cloudpdf/website/src/samples/render/snapshot.svelte/SnapshotToolbar.svelte
+A	cloudpdf/website/src/samples/render/snapshot.vue/App.vue
+A	cloudpdf/website/src/samples/render/snapshot.vue/SnapshotToolbar.vue
+M	cloudpdf/website/src/samples/snippets/annotations/tools/ink-color.react.tsx
+A	cloudpdf/website/src/samples/snippets/viewing/snapshot-actions.angular.ts
+A	cloudpdf/website/src/samples/snippets/viewing/snapshot-actions.react.tsx
+A	cloudpdf/website/src/samples/snippets/viewing/snapshot-actions.svelte.svelte
+A	cloudpdf/website/src/samples/snippets/viewing/snapshot-actions.vue.vue
+M	cloudpdf/website/src/samples/viewer/examples/reader.angular.ts
+M	cloudpdf/website/src/samples/viewer/examples/reader.react.tsx
+M	cloudpdf/website/src/samples/viewer/examples/reader.svelte.svelte
+M	cloudpdf/website/src/samples/viewer/examples/reader.vanilla.html
+M	cloudpdf/website/src/samples/viewer/examples/reader.vue.vue
+M	docs/content/engine/annotations/index.mdx
+M	docs/content/engine/annotations/notes-and-replies.mdx
+M	docs/content/engine/annotations/shapes.mdx
+M	docs/content/engine/annotations/text-markup.mdx
+M	docs/content/engine/concepts/permissions.mdx
+M	docs/content/engine/documents/fonts.mdx
+M	docs/content/headless/annotations/selecting.mdx
+M	docs/content/headless/annotations/with-code.mdx
+M	docs/content/headless/concepts/rich-text.mdx
+M	docs/content/headless/documents/fonts.mdx
+M	docs/content/headless/ui/commands.mdx
+M	docs/content/headless/ui/theming.mdx
+M	docs/content/headless/ui/tools.mdx
+M	docs/content/headless/viewing/render.mdx
+M	docs/content/headless/viewing/stage.mdx
+M	docs/content/samples/annotation/cursor.react.tsx
+M	docs/content/samples/annotation/style-panel.angular.ts
+M	docs/content/samples/annotation/style-panel.react.tsx
+M	docs/content/samples/annotation/style-panel.svelte/Control.svelte
+M	docs/content/samples/annotation/style-panel.vue/Control.vue
+A	docs/content/samples/render/snapshot.angular.ts
+A	docs/content/samples/render/snapshot.css
+A	docs/content/samples/render/snapshot.react.tsx
+A	docs/content/samples/render/snapshot.svelte/App.svelte
+A	docs/content/samples/render/snapshot.svelte/SnapshotToolbar.svelte
+A	docs/content/samples/render/snapshot.vue/App.vue
+A	docs/content/samples/render/snapshot.vue/SnapshotToolbar.vue
+M	docs/content/samples/viewer/examples/reader.angular.ts
+M	docs/content/samples/viewer/examples/reader.react.tsx
+M	docs/content/samples/viewer/examples/reader.svelte.svelte
+M	docs/content/samples/viewer/examples/reader.vanilla.html
+M	docs/content/samples/viewer/examples/reader.vue.vue
+M	docs/content/snippets/annotations/tools/ink-color.react.tsx
+A	docs/content/snippets/viewing/snapshot-actions.angular.ts
+A	docs/content/snippets/viewing/snapshot-actions.react.tsx
+A	docs/content/snippets/viewing/snapshot-actions.svelte.svelte
+A	docs/content/snippets/viewing/snapshot-actions.vue.vue
+M	docs/content/viewer/customize/commands.mdx
+M	docs/content/viewer/customize/layout.mdx
+M	docs/content/viewer/customize/menus.mdx
+M	docs/content/viewer/customize/small-screens.mdx
+M	docs/content/viewer/customize/theming.mdx
+M	docs/content/viewer/customize/translations.mdx
+M	docs/content/viewer/documents.mdx
+M	docs/content/viewer/examples/reader.mdx
+M	docs/content/viewer/features/annotations.mdx
+M	docs/content/viewer/features/fonts.mdx
+M	docs/content/viewer/features/index.mdx
+M	docs/content/viewer/features/turning-off.mdx
+M	docs/content/viewer/migrate.mdx
+M	docs/conventions/server-adapters.md
+M	packages/core/acrojs/CHANGELOG.md
+M	packages/core/acrojs/package.json
+M	packages/core/annotation/CHANGELOG.md
+M	packages/core/annotation/package.json
+A	packages/core/annotation/src/bezier.ts
+M	packages/core/annotation/src/cloudy.ts
+M	packages/core/annotation/src/index.ts
+A	packages/core/annotation/src/ink-curves.ts
+M	packages/core/annotation/src/kinds/define.ts
+M	packages/core/annotation/src/kinds/fields.ts
+M	packages/core/annotation/src/kinds/free-text.ts
+M	packages/core/annotation/src/kinds/widget.ts
+M	packages/core/annotation/src/measurement.ts
+M	packages/core/annotation/src/props.ts
+M	packages/core/annotation/src/record/values.ts
+M	packages/core/annotation/src/richtext.ts
+M	packages/core/annotation/src/scene.ts
+M	packages/core/annotation/src/shapes/points.ts
+M	packages/core/annotation/src/types.ts
+M	packages/core/annotation/src/update/index.ts
+M	packages/core/annotation/src/update/selection-edits.ts
+M	packages/core/annotation/test/annotation-core.test.ts
+A	packages/core/annotation/test/ink-curves.test.ts
+A	packages/core/annotation/test/kinds/none.test.ts
+M	packages/core/annotation/test/record.test.ts
+M	packages/core/annotation/test/richtext.test.ts
+M	packages/core/annotation/test/shapes/points.test.ts
+M	packages/core/annotation/test/update.test.ts
+M	packages/core/fonts/CHANGELOG.md
+M	packages/core/fonts/package.json
+M	packages/core/fonts/src/index.ts
+M	packages/core/fonts/src/standard/css.ts
+M	packages/core/fonts/test/standard-fonts.test.ts
+M	packages/core/form/CHANGELOG.md
+M	packages/core/form/package.json
+M	packages/core/geometry/CHANGELOG.md
+M	packages/core/geometry/package.json
+M	packages/core/js-sandbox/CHANGELOG.md
+M	packages/core/js-sandbox/package.json
+M	packages/core/main/CHANGELOG.md
+M	packages/core/main/package.json
+M	packages/core/signature/CHANGELOG.md
+M	packages/core/signature/package.json
+M	packages/core/stage/CHANGELOG.md
+M	packages/core/stage/package.json
+A	packages/core/text/CHANGELOG.md
+M	packages/core/text/package.json
+M	packages/core/ui/CHANGELOG.md
+M	packages/core/ui/package.json
+M	packages/core/ui/src/index.ts
+M	packages/core/ui/src/layout-compile.ts
+M	packages/core/ui/src/layout-validate.ts
+M	packages/core/ui/src/layout.ts
+M	packages/core/ui/test/layout-compile.test.ts
+M	packages/core/ui/test/layout-validate.test.ts
+A	packages/default-fallback-fonts/CHANGELOG.md
+M	packages/default-fallback-fonts/package.json
+M	packages/engine/core/CHANGELOG.md
+M	packages/engine/core/package.json
+M	packages/engine/core/src/annotation/base.schema.ts
+M	packages/engine/core/src/annotation/checkWrite.ts
+M	packages/engine/core/src/annotation/fontFaces.ts
+M	packages/engine/core/src/annotation/kind-facts.generated.ts
+M	packages/engine/core/src/annotation/kinds/caret/declaration.ts
+M	packages/engine/core/src/annotation/kinds/file-attachment/declaration.ts
+M	packages/engine/core/src/annotation/kinds/free-text/declaration.ts
+M	packages/engine/core/src/annotation/kinds/free-text/index.ts
+M	packages/engine/core/src/annotation/kinds/ink/declaration.ts
+M	packages/engine/core/src/annotation/kinds/line/declaration.ts
+M	packages/engine/core/src/annotation/kinds/redact/declaration.ts
+M	packages/engine/core/src/annotation/kinds/shared-fields.ts
+M	packages/engine/core/src/annotation/kinds/stamp/declaration.ts
+M	packages/engine/core/src/annotation/kinds/text/declaration.ts
+M	packages/engine/core/src/annotation/kinds/widget/declaration.ts
+M	packages/engine/core/src/annotation/resolve/applyAnnotationPatch.ts
+A	packages/engine/core/src/annotation/resolve/comment.ts
+A	packages/engine/core/src/annotation/resolve/dash.ts
+M	packages/engine/core/src/annotation/resolve/index.ts
+M	packages/engine/core/src/annotation/resolve/patchBetween.ts
+M	packages/engine/core/src/annotation/resolve/resolveAnnotationDraft.ts
+M	packages/engine/core/src/annotation/resolve/resolveAnnotationPatch.ts
+M	packages/engine/core/src/annotation/resolve/text.ts
+A	packages/engine/core/src/annotation/siblings.ts
+M	packages/engine/core/src/conformance.ts
+M	packages/engine/core/src/conformance/drawnText.ts
+M	packages/engine/core/src/conformance/runAnnotationExportConformance.ts
+M	packages/engine/core/src/conformance/runAnnotationMutationConformance.ts
+M	packages/engine/core/src/conformance/runAnnotationPredictionConformance.ts
+M	packages/engine/core/src/conformance/runColorConformance.ts
+M	packages/engine/core/src/conformance/runDrawingDetailsConformance.ts
+M	packages/engine/core/src/conformance/runMixedScriptConformance.ts
+A	packages/engine/core/src/conformance/runNoStrokeConformance.ts
+M	packages/engine/core/src/dto/DocumentFonts.ts
+R096	packages/engine/core/src/annotation/kinds/free-text/values.ts	packages/engine/core/src/dto/RichText.schema.ts
+M	packages/engine/core/src/fonts/fontList.ts
+M	packages/engine/core/src/forms/placement.ts
+M	packages/engine/core/src/pageSpace/helpers.ts
+M	packages/engine/core/src/shared.ts
+M	packages/engine/core/src/wire/schemas.ts
+M	packages/engine/core/test/annotation/annotationOfDraft.test.ts
+M	packages/engine/core/test/annotation/applyAnnotationPatch.test.ts
+A	packages/engine/core/test/annotation/comment.test.ts
+M	packages/engine/core/test/annotation/patchBetween.test.ts
+A	packages/engine/core/test/annotation/siblings.test.ts
+A	packages/engine/core/test/fonts/standard-fallback.test.ts
+M	packages/engine/core/test/forms/schema.test.ts
+M	packages/engine/main/CHANGELOG.md
+M	packages/engine/main/package.json
+A	packages/engine/main/test/destination-xyz.test.ts
+A	packages/engine/main/test/no-stroke.test.ts
+M	packages/engine/runtime/CHANGELOG.md
+M	packages/engine/runtime/engine-runtime-build.json
+M	packages/engine/runtime/npm/darwin-arm64/CHANGELOG.md
+M	packages/engine/runtime/npm/darwin-arm64/package.json
+M	packages/engine/runtime/npm/darwin-x64/CHANGELOG.md
+M	packages/engine/runtime/npm/darwin-x64/package.json
+M	packages/engine/runtime/npm/linux-arm64/CHANGELOG.md
+M	packages/engine/runtime/npm/linux-arm64/package.json
+M	packages/engine/runtime/npm/linux-x64/CHANGELOG.md
+M	packages/engine/runtime/npm/linux-x64/package.json
+M	packages/engine/runtime/npm/linuxmusl-arm64/CHANGELOG.md
+M	packages/engine/runtime/npm/linuxmusl-arm64/package.json
+M	packages/engine/runtime/npm/linuxmusl-x64/CHANGELOG.md
+M	packages/engine/runtime/npm/linuxmusl-x64/package.json
+M	packages/engine/runtime/npm/wasm32/CHANGELOG.md
+M	packages/engine/runtime/npm/wasm32/package.json
+M	packages/engine/runtime/npm/win32-arm64/CHANGELOG.md
+M	packages/engine/runtime/npm/win32-arm64/package.json
+M	packages/engine/runtime/npm/win32-x64/CHANGELOG.md
+M	packages/engine/runtime/npm/win32-x64/package.json
+M	packages/engine/runtime/package.json
+M	packages/engine/runtime/runtime-src
+M	packages/engine/runtime/src/core/pdf-functions.generated.ts
+M	packages/engine/services/CHANGELOG.md
+M	packages/engine/services/package.json
+M	packages/engine/services/src/features/annotations/AnnotationMutator.ts
+M	packages/engine/services/src/features/annotations/internal/read/readCaretAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readFileAttachmentAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readInkAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readLineAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readRedactAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readShapeAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readStampAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readStyle.ts
+M	packages/engine/services/src/features/annotations/internal/read/readTextAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readTextMarkupAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/read/readVertexAnnotation.ts
+M	packages/engine/services/src/features/annotations/internal/richTextWire.ts
+M	packages/engine/services/src/features/annotations/internal/write/annotationWritePrimitives.ts
+M	packages/engine/services/src/features/annotations/internal/write/annotationWriterRegistry.ts
+M	packages/engine/services/src/features/annotations/internal/write/writeStyle.ts
+M	packages/engine/services/src/features/changes/internal/annotationChanges.ts
+M	packages/engine/services/src/features/destinations/readDestination.ts
+M	packages/framework/angular/CHANGELOG.md
+M	packages/framework/angular/package.json
+M	packages/framework/angular/render/src/public_api.ts
+M	packages/framework/angular/render/src/render.ts
+A	packages/framework/angular/render/src/snapshot-layer.ts
+A	packages/framework/angular/render/src/snapshot-menu.ts
+M	packages/framework/angular/runtime/src/public_api.ts
+M	packages/framework/angular/stage/src/stage-ref.ts
+M	packages/framework/react/CHANGELOG.md
+M	packages/framework/react/package.json
+M	packages/framework/react/src/render.tsx
+M	packages/framework/react/src/runtime.tsx
+M	packages/framework/svelte/CHANGELOG.md
+M	packages/framework/svelte/package.json
+M	packages/framework/svelte/src/render.ts
+A	packages/framework/svelte/src/render/SnapshotLayer.svelte
+A	packages/framework/svelte/src/render/SnapshotMenu.svelte
+M	packages/framework/svelte/src/render/props.ts
+M	packages/framework/svelte/src/render/readers.svelte.ts
+M	packages/framework/svelte/src/runtime.ts
+M	packages/framework/vue/CHANGELOG.md
+M	packages/framework/vue/package.json
+M	packages/framework/vue/src/render.ts
+A	packages/framework/vue/src/render/SnapshotLayer.vue
+A	packages/framework/vue/src/render/SnapshotMenu.vue
+M	packages/framework/vue/src/runtime.ts
+M	packages/framework/web/CHANGELOG.md
+M	packages/framework/web/package.json
+M	packages/framework/web/src/annotation-scene.ts
+M	packages/framework/web/src/clipboard.ts
+M	packages/framework/web/src/index.ts
+M	packages/framework/web/src/rich-text-editor.ts
+A	packages/framework/web/src/snapshot-box.ts
+M	packages/framework/web/src/standard-commands-platform.ts
+M	packages/framework/web/src/surface-focus.ts
+M	packages/framework/web/src/text-box-editor.ts
+M	packages/framework/web/src/theme.ts
+M	packages/framework/web/test/annotation-scene.test.ts
+M	packages/framework/web/test/clipboard.test.ts
+M	packages/framework/web/test/rich-text-editor.test.ts
+A	packages/framework/web/test/snapshot-box.test.ts
+M	packages/framework/web/test/standard-commands-platform.test.ts
+M	packages/framework/web/test/surface-focus.test.ts
+M	packages/framework/web/test/text-box-editor.test.ts
+M	packages/plugin/actions/CHANGELOG.md
+M	packages/plugin/actions/package.json
+M	packages/plugin/annotation/CHANGELOG.md
+M	packages/plugin/annotation/package.json
+M	packages/plugin/annotation/src/contract.ts
+M	packages/plugin/annotation/src/host-contract.ts
+M	packages/plugin/annotation/src/model.ts
+M	packages/plugin/annotation/src/read/properties.ts
+M	packages/plugin/annotation/src/read/text-fonts.ts
+M	packages/plugin/annotation/src/rich-text.ts
+M	packages/plugin/annotation/src/write/selection.ts
+M	packages/plugin/annotation/src/write/text-editing.ts
+M	packages/plugin/annotation/test/capability.test.ts
+M	packages/plugin/annotation/test/controller.test.ts
+M	packages/plugin/annotation/test/read/text-fonts.test.ts
+M	packages/plugin/annotation/test/rich-text-editing.test.ts
+M	packages/plugin/attachment/CHANGELOG.md
+M	packages/plugin/attachment/package.json
+M	packages/plugin/commands/CHANGELOG.md
+M	packages/plugin/commands/package.json
+M	packages/plugin/commands/src/controller.ts
+M	packages/plugin/commands/src/host-contract.ts
+M	packages/plugin/commands/src/standard.ts
+M	packages/plugin/commands/test/controller.test.ts
+M	packages/plugin/commands/test/standard.test.ts
+A	packages/plugin/fonts/CHANGELOG.md
+M	packages/plugin/fonts/package.json
+M	packages/plugin/fonts/src/controller.ts
+M	packages/plugin/fonts/src/paint.ts
+M	packages/plugin/fonts/test/fonts.test.ts
+M	packages/plugin/form/CHANGELOG.md
+M	packages/plugin/form/package.json
+M	packages/plugin/history/CHANGELOG.md
+M	packages/plugin/history/package.json
+M	packages/plugin/i18n/CHANGELOG.md
+M	packages/plugin/i18n/package.json
+M	packages/plugin/i18n/src/strings/de.ts
+M	packages/plugin/i18n/src/strings/en.ts
+M	packages/plugin/i18n/src/strings/es.ts
+M	packages/plugin/i18n/src/strings/fr.ts
+M	packages/plugin/i18n/src/strings/ja.ts
+M	packages/plugin/i18n/src/strings/nl.ts
+M	packages/plugin/i18n/src/strings/sv.ts
+M	packages/plugin/i18n/src/strings/zh-cn.ts
+M	packages/plugin/interaction/CHANGELOG.md
+M	packages/plugin/interaction/package.json
+M	packages/plugin/link/CHANGELOG.md
+M	packages/plugin/link/package.json
+M	packages/plugin/measurement/CHANGELOG.md
+M	packages/plugin/measurement/package.json
+M	packages/plugin/metadata/CHANGELOG.md
+M	packages/plugin/metadata/package.json
+M	packages/plugin/outline/CHANGELOG.md
+M	packages/plugin/outline/package.json
+M	packages/plugin/page-edit/CHANGELOG.md
+M	packages/plugin/page-edit/package.json
+M	packages/plugin/redaction/CHANGELOG.md
+M	packages/plugin/redaction/package.json
+M	packages/plugin/render/CHANGELOG.md
+M	packages/plugin/render/package.json
+M	packages/plugin/render/src/contract.ts
+M	packages/plugin/render/src/controller.ts
+M	packages/plugin/render/src/host-contract.ts
+M	packages/plugin/render/src/model.ts
+M	packages/plugin/render/src/render.plugin.ts
+A	packages/plugin/render/src/snapshot.ts
+M	packages/plugin/render/test/controller.test.ts
+A	packages/plugin/render/test/harness.ts
+A	packages/plugin/render/test/snapshot.test.ts
+M	packages/plugin/search/CHANGELOG.md
+M	packages/plugin/search/package.json
+M	packages/plugin/selection/CHANGELOG.md
+M	packages/plugin/selection/package.json
+M	packages/plugin/shell/CHANGELOG.md
+M	packages/plugin/shell/package.json
+M	packages/plugin/signature/CHANGELOG.md
+M	packages/plugin/signature/package.json
+M	packages/plugin/stage/CHANGELOG.md
+M	packages/plugin/stage/package.json
+M	packages/plugin/stage/src/camera/animation.ts
+M	packages/plugin/stage/src/camera/gestures.ts
+M	packages/plugin/stage/src/contract.ts
+M	packages/plugin/stage/src/controller.ts
+M	packages/plugin/stage/src/navigation/arrive.ts
+A	packages/plugin/stage/src/navigation/turn.ts
+M	packages/plugin/stage/src/read/pages.ts
+M	packages/plugin/stage/src/services/scene.ts
+M	packages/plugin/stage/src/settings.ts
+A	packages/plugin/stage/test/navigation/turn.test.ts
+M	packages/plugin/stage/test/stage.capability.test.ts
+M	packages/plugin/stamp/CHANGELOG.md
+M	packages/plugin/stamp/package.json
+M	packages/plugin/view-manager/CHANGELOG.md
+M	packages/plugin/view-manager/package.json
+M	packages/viewer/angular/CHANGELOG.md
+M	packages/viewer/angular/package.json
+M	packages/viewer/angular/test/live-props.test.ts
+M	packages/viewer/chrome/CHANGELOG.md
+M	packages/viewer/chrome/package.json
+M	packages/viewer/chrome/src/Shell.tsx
+M	packages/viewer/chrome/src/config/chrome.ts
+M	packages/viewer/chrome/src/config/commands.ts
+M	packages/viewer/chrome/src/features.ts
+M	packages/viewer/chrome/src/layout-root.tsx
+M	packages/viewer/chrome/src/locales/ar.ts
+M	packages/viewer/chrome/src/locales/de.ts
+M	packages/viewer/chrome/src/locales/en.ts
+M	packages/viewer/chrome/src/locales/es.ts
+M	packages/viewer/chrome/src/locales/fr.ts
+M	packages/viewer/chrome/src/locales/he.ts
+M	packages/viewer/chrome/src/locales/it.ts
+M	packages/viewer/chrome/src/locales/ja.ts
+M	packages/viewer/chrome/src/locales/ko.ts
+M	packages/viewer/chrome/src/locales/nl.ts
+M	packages/viewer/chrome/src/locales/pl.ts
+M	packages/viewer/chrome/src/locales/pt.ts
+M	packages/viewer/chrome/src/locales/sv.ts
+M	packages/viewer/chrome/src/locales/zh-cn.ts
+M	packages/viewer/chrome/src/locales/zh-tw.ts
+M	packages/viewer/chrome/src/places.tsx
+M	packages/viewer/chrome/src/styles.css
+D	packages/viewer/chrome/src/ui/annotation-flags.tsx
+M	packages/viewer/chrome/src/ui/annotation-style.tsx
+M	packages/viewer/chrome/src/ui/compact.ts
+M	packages/viewer/chrome/src/ui/icons.tsx
+A	packages/viewer/chrome/src/ui/idle-hiding.ts
+M	packages/viewer/chrome/src/ui/menu-placement.ts
+M	packages/viewer/chrome/src/ui/menu.tsx
+M	packages/viewer/chrome/src/ui/page-loading.tsx
+M	packages/viewer/chrome/src/ui/page-number.tsx
+D	packages/viewer/chrome/src/ui/scroll-hiding.ts
+M	packages/viewer/chrome/src/ui/selection-strip.tsx
+M	packages/viewer/chrome/src/ui/shortcuts-sheet.tsx
+A	packages/viewer/chrome/src/ui/snapshot-strip.tsx
+M	packages/viewer/chrome/src/ui/strip-bar.tsx
+M	packages/viewer/chrome/src/ui/toolbar.tsx
+M	packages/viewer/main/CHANGELOG.md
+M	packages/viewer/main/package.json
+M	packages/viewer/main/test/chrome/commands.test.ts
+A	packages/viewer/main/test/chrome/idle-hiding.test.ts
+M	packages/viewer/main/test/chrome/open-files.test.ts
+D	packages/viewer/main/test/chrome/scroll-hiding.test.ts
+M	packages/viewer/main/test/commands.test.ts
+M	packages/viewer/main/test/copy.test.ts
+M	packages/viewer/main/test/fullscreen.test.ts
+M	packages/viewer/main/test/helpers/viewer-host.ts
+M	packages/viewer/main/test/languages.test.ts
+M	packages/viewer/main/test/lazy-features.test.ts
+M	packages/viewer/main/test/live-config.test.ts
+M	packages/viewer/main/test/menus.test.ts
+M	packages/viewer/main/test/page-number.test.ts
+A	packages/viewer/main/test/page-turns.test.ts
+M	packages/viewer/main/test/panel-frames.test.ts
+M	packages/viewer/main/test/places.test.ts
+M	packages/viewer/main/test/shortcuts.test.ts
+M	packages/viewer/main/test/small-screens.test.ts
+M	packages/viewer/main/test/snippet-cross-origin.test.ts
+M	packages/viewer/main/test/strict-csp.test.ts
+M	packages/viewer/main/test/translations.test.ts
+M	packages/viewer/main/test/untranslated.test.ts
+M	packages/viewer/react/CHANGELOG.md
+M	packages/viewer/react/package.json
+M	packages/viewer/react/test/live-props.test.ts
+M	packages/viewer/svelte/CHANGELOG.md
+M	packages/viewer/svelte/package.json
+M	packages/viewer/svelte/test/live-props.test.ts
+M	packages/viewer/vue/CHANGELOG.md
+M	packages/viewer/vue/package.json
+M	packages/viewer/vue/test/live-props.test.ts
+M	pnpm-lock.yaml
+M	tooling/build/src/api-snapshot.mjs
+M	website/next.config.ts
+A	website/public/apple-touch-icon.png
+A	website/public/demo_protected.pdf
+A	website/public/ebook.pdf
+A	website/public/favicon-96x96.png
+A	website/public/favicon.ico
+A	website/public/favicon.svg
+A	website/public/form.pdf
+A	website/public/logo-192.png
+A	website/public/site.webmanifest
+A	website/public/web-app-manifest-192x192.png
+A	website/public/web-app-manifest-512x512.png
+M	website/src/app/layout.tsx
+M	website/src/components/docs/sidebar.tsx
+M	website/src/components/site/example-page-view.tsx
+M	website/src/components/site/footer.tsx
+M	website/src/content/_meta.ts
+M	website/src/content/docs/engine/annotations/index.mdx
+M	website/src/content/docs/engine/annotations/notes-and-replies.mdx
+M	website/src/content/docs/engine/annotations/shapes.mdx
+M	website/src/content/docs/engine/annotations/text-markup.mdx
+M	website/src/content/docs/engine/concepts/permissions.mdx
+M	website/src/content/docs/engine/documents/fonts.mdx
+M	website/src/content/docs/headless/annotations/selecting.mdx
+M	website/src/content/docs/headless/annotations/with-code.mdx
+M	website/src/content/docs/headless/concepts/rich-text.mdx
+M	website/src/content/docs/headless/documents/fonts.mdx
+M	website/src/content/docs/headless/ui/commands.mdx
+M	website/src/content/docs/headless/ui/theming.mdx
+M	website/src/content/docs/headless/ui/tools.mdx
+M	website/src/content/docs/headless/viewing/render.mdx
+M	website/src/content/docs/headless/viewing/stage.mdx
+M	website/src/content/docs/viewer/customize/commands.mdx
+M	website/src/content/docs/viewer/customize/layout.mdx
+M	website/src/content/docs/viewer/customize/menus.mdx
+M	website/src/content/docs/viewer/customize/small-screens.mdx
+M	website/src/content/docs/viewer/customize/theming.mdx
+M	website/src/content/docs/viewer/customize/translations.mdx
+M	website/src/content/docs/viewer/documents.mdx
+M	website/src/content/docs/viewer/examples/reader.mdx
+M	website/src/content/docs/viewer/features/annotations.mdx
+M	website/src/content/docs/viewer/features/fonts.mdx
+M	website/src/content/docs/viewer/features/index.mdx
+M	website/src/content/docs/viewer/features/turning-off.mdx
+M	website/src/content/docs/viewer/migrate.mdx
+A	website/src/lib/v2-redirects.test.ts
+A	website/src/lib/v2-redirects.ts
+A	website/src/lib/v2-site-urls.txt
+M	website/src/samples/annotation/cursor.react.tsx
+M	website/src/samples/annotation/style-panel.angular.ts
+M	website/src/samples/annotation/style-panel.react.tsx
+M	website/src/samples/annotation/style-panel.svelte/Control.svelte
+M	website/src/samples/annotation/style-panel.vue/Control.vue
+A	website/src/samples/render/snapshot.angular.ts
+A	website/src/samples/render/snapshot.css
+A	website/src/samples/render/snapshot.react.tsx
+A	website/src/samples/render/snapshot.svelte/App.svelte
+A	website/src/samples/render/snapshot.svelte/SnapshotToolbar.svelte
+A	website/src/samples/render/snapshot.vue/App.vue
+A	website/src/samples/render/snapshot.vue/SnapshotToolbar.vue
+M	website/src/samples/snippets/annotations/tools/ink-color.react.tsx
+A	website/src/samples/snippets/viewing/snapshot-actions.angular.ts
+A	website/src/samples/snippets/viewing/snapshot-actions.react.tsx
+A	website/src/samples/snippets/viewing/snapshot-actions.svelte.svelte
+A	website/src/samples/snippets/viewing/snapshot-actions.vue.vue
+M	website/src/samples/viewer/examples/reader.angular.ts
+M	website/src/samples/viewer/examples/reader.react.tsx
+M	website/src/samples/viewer/examples/reader.svelte.svelte
+M	website/src/samples/viewer/examples/reader.vanilla.html
+M	website/src/samples/viewer/examples/reader.vue.vue

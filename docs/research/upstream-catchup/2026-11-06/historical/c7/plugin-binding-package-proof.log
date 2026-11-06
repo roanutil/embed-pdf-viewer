@@ -1,0 +1,599 @@
+{
+  "name": "@embedpdf/tooling-plugin-conformance",
+  "private": true,
+  "type": "module",
+  "description": "Generates the frozen cross-language conformance vectors for the kernel and plugin layer. The shipping TypeScript is the oracle; the Rust crates replay the vectors.",
+  "scripts": {
+    "vectors": "tsx --conditions=development src/generate.ts",
+    "vectors:check": "tsx --conditions=development src/generate.ts --check",
+    "coverage": "tsx --conditions=development src/coverage.ts",
+    "coverage:check": "tsx --conditions=development src/coverage.ts --check",
+    "typecheck": "tsc --noEmit",
+    "member-order:allow": "tsx src/member-order-allow.ts",
+    "test:harness": "node --import=tsx --conditions=development --test test/harness.test.ts",
+    "audit:kernel": "node --import=tsx --conditions=development test/audit-kernel.ts"
+  },
+  "devDependencies": {
+    "@embedpdf/core": "workspace:*",
+    "@embedpdf/engine-core": "workspace:*",
+    "@sinonjs/fake-timers": "^15.4.0",
+    "@types/node": "^22.19.0",
+    "@types/sinonjs__fake-timers": "^15.0.1",
+    "c8": "^10.1.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}
+The committed manifest and `fixtures/records/latest` are a historical baseline
+for runtime `1461b0c5105137954b77dea0a6e2c15668518651`, not evidence for the
+runtime currently selected by `packages/engine/runtime/engine-runtime-build.json`.
+The baseline records identify their actual source commit
+`44169b853d3d7006185dcf4ab3780f147fdd2ae9`; preserve those identities and input
+hashes. They contain 22 passing entries: 16 decimal probes, the authoritative
+997-function WASM ABI check, and five real packed viewer/native cases. The
+raster summaries cover 20 renders with zero differing channels and no tolerance.
+
+The newer runtime pin and generated bindings require a fresh gate run. The
+baseline manifest intentionally retains the old binding-source and artifact
+hashes: the current-source guard must reject a mismatched graph. A managed
+build, comparator self-test, or package smoke test does not update this baseline
+or establish compatibility with the newer runtime. Rebuild and pin a matching
+native/WASM and packed viewer graph before capturing new acceptance records;
+keep the historical records available separately before replacing `latest`.
+
+Run the gate inside the approved development container:
+
+```sh
+node tooling/dotnet-parity/run.mjs --manifest tooling/dotnet-parity/manifest.json
+```
+
+The gate compares the **real packed React viewer**, opened at `e2e.html`, with
+`platforms/dotnet/EmbedPDF.Parity`. It reuses the existing viewer Playwright
+configuration and its isolated preview on port 5241. Only headless Chromium
+and explicitly disabled Rust routing are accepted. The bridge observes the
+same local engine document the viewer opened, then reads public text/layout
+and raw render services. Worker initialization and geometry replies are
+recorded independently; the existing requested-backend label is never proof.
+
+1. Install with the lockfile; build the viewer and its dependencies using the
+   repository build tooling. Fetch only the checksum-verified runtime pinned
+   by `packages/engine/runtime/engine-runtime-build.json`. Update the gate
+   manifest's runtime identity, native/WASM inputs and binding-input hashes
+   to that matching graph; preserve the existing baseline evidence first.
+   Review the actual font bundle and environment pins for the new capture.
+2. Run `node tooling/dotnet-parity/fixtures/prepare-packed.mjs` after those
+   builds. This installs local packed tarballs into
+   `/tmp/embedpdf-dotnet-parity/vite-app` and builds the real e2e entry.
+3. Run `node tooling/dotnet-parity/run.mjs --pin-packed /tmp/embedpdf-dotnet-parity/vite-app`.
+   Review the resulting package integrity, production-file SHA256s and pins.
+   Keep generated tarballs/builds local. A missing or changed artifact fails.
+4. Build `epdf-capi` with `CARGO_BUILD_JOBS=2 cargo build -p epdf-capi`.
+   Export absolute `EPDF_NATIVE_DIR` and the matching PDFium loader path
+   (`LD_LIBRARY_PATH` on Linux). Install Chromium through the existing
+   Playwright tooling. Run the default command above.
+5. Review `fixtures/records/latest/summary.json` and every per-case
+   `*.record.json`. Each uses the Slice1 manual validation-record schema,
+   with actual input/artifact/log hashes, exact inner commands, image/SDK/libc
+   identity and failures. Commit evidence and review it before a compatibility
+   claim. The host heavy-build lock is orchestration, not recorded as a test.
+
+The managed comparator reads actual serialized JSON number tokens as decimal,
+verifies parsing preserved every digit, and rounds **once** to four places
+with `MidpointRounding.AwayFromZero`. It compares text, map entries, array
+order, property presence and strings exactly. Duplicate keys, decimal overflow
+and precision loss are refusals. There is no binary-double epsilon. The
+`self-test` subcommand includes intentionally different positive/negative
+`.00005` and crop/rotation boundaries, plus a repeated-rounding trap.
+
+The corpus includes supplementary/dropped/combining/RTL text maps from the
+committed canonical vectors; live embedded-orientation and reverse/gapped
+PDFs; arbitrary character selections; empty ranges; repeated quotes and
+spaces; shifted CropBox beyond MediaBox; all quarter turns; UserUnit-aware
+transform probes and transparent region renders. `fixtures/generate.mjs`
+authors the small PDF independently and pins the corpus. Regeneration resets
+local packed pins, so review them again.
+
+Page indices are zero-based. Geometry uses PDF points measured from the
+top-left of the unrotated visible crop box, with y down. The manifest pins
+the tested font bytes **and order**. The initial controlled DejaVu font comes
+from the approved image, under its installed licence notice. The controlled bundle is eligible for the corpus gate. The recorded limitation is:
+consumer deployment font bundle: compatibility not yet verified; re-run the gate with the supplied bundle before relying on it.
+
+Raster descriptors, alpha convention and every pixel's SHA256 must match
+exactly. This runner rejects all tolerance settings. Propose any raster
+tolerance separately with mismatch evidence and obtain human approval before
+implementing it. Runtime/font/viewer pin bumps require a new manual run.
+
+A failed prerequisite or native crash is a failed case, never a skip or a
+replacement snapshot. The existing PDFium1461 held-layer crash is an upstream
+limitation until the real font ABI/runtime work lands; switching runtime
+libraries without pinning and rerunning the gate does not establish parity.
+
+WASM ABI checks derive their input from the exact pinned
+`pdfFunctionSignatures` source through `fixtures/write-abi-input.mjs` and then
+run the existing authoritative verifier. Header regeneration is a separate
+build input: its output must not silently replace the binding source the
+packed runtime actually uses. The records distinguish diagnostic artifacts
+using System.Collections.Immutable;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+namespace EmbedPDF.Engine;
+
+[JsonConverter(typeof(IndexConverter<PageIndex>))]
+public readonly record struct PageIndex(uint Value);
+[JsonConverter(typeof(IndexConverter<PdfCharIndex>))]
+public readonly record struct PdfCharIndex(uint Value);
+[JsonConverter(typeof(IndexConverter<Utf16Offset>))]
+public readonly record struct Utf16Offset(uint Value);
+public readonly record struct PdfCharRange(PdfCharIndex Start, uint Count);
+public readonly record struct PagePoint(double X, double Y);
+public readonly record struct PageSize(double Width, double Height);
+public readonly record struct PageRect(double X, double Y, double Width, double Height);
+public readonly record struct PdfBox(double Left, double Bottom, double Right, double Top);
+public readonly record struct PageQuad(PagePoint UpperLeft, PagePoint UpperRight, PagePoint LowerLeft, PagePoint LowerRight);
+[JsonConverter(typeof(RotationConverter))]
+public enum PageRotation { None = 0, Clockwise90 = 90, Clockwise180 = 180, Clockwise270 = 270 }
+public sealed record PageReference(string Kind, uint ObjectNumber);
+public sealed record PageBoxes(PageRect Media, PageRect Crop, PageRect? Bleed, PageRect? Trim, PageRect? Art);
+public sealed record PageInfo(PageIndex Index, [property: JsonPropertyName("ref")] PageReference Reference, string? Label, PageSize Size, PageRotation Rotation, double UserUnit, PageBoxes Boxes, PdfBox PdfCropBox, string? TabOrder, JsonElement? Actions);
+public sealed record CharMapAnchor([property: JsonPropertyName("char")] PdfCharIndex Character, [property: JsonPropertyName("text")] Utf16Offset Text);
+public sealed record PageTextSnapshot
+{
+    public required string Text { get; init; }
+    public required uint CharCount { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public ImmutableArray<CharMapAnchor>? CharMap { get; init; }
+}
+public sealed record UprightGlyph(PageRect Loose, PageRect? Tight, bool Space, bool Empty);
+public sealed record OrientedGlyph(PageQuad Loose, PageQuad? Tight, bool Space, bool Empty);
+[JsonConverter(typeof(GeometryRunConverter))]
+public abstract record GeometryRun([property: JsonRequired] PageRect Rect, [property: JsonRequired] PdfCharIndex Start, double? FontSize);
+public sealed record UprightRun(PageRect Rect, PdfCharIndex Start, double? FontSize, [property: JsonRequired] ImmutableArray<UprightGlyph> Glyphs) : GeometryRun(Rect, Start, FontSize);
+public sealed record OrientedRun(PageRect Rect, PdfCharIndex Start, double? FontSize, [property: JsonRequired] ImmutableArray<OrientedGlyph> Glyphs, [property: JsonRequired] double Rotation, [property: JsonRequired] bool AscentFlip) : GeometryRun(Rect, Start, FontSize);
+public sealed record PageGeometrySnapshot([property: JsonRequired] ImmutableArray<GeometryRun> Runs);
+public sealed record TextSegment(PageQuad Quad, PageRect Rect, sbyte Advance);
+public sealed record SearchSnippet(string Before, [property: JsonPropertyName("match")] string Match, string After);
+public sealed record SearchMatch(PageReference Page, PdfCharIndex Start, uint Count, ImmutableArray<TextSegment> Segments, SearchSnippet? Snippet);
+public sealed record SearchSlice(ImmutableArray<SearchMatch> Matches, string? NextCursor, uint PagesSearched, uint PageCount);
+public sealed record SearchOptions(string Text)
+{
+    public bool MatchCase { get; init; }
+    public bool WholeWord { get; init; }
+    public bool MatchDiacritics { get; init; }
+    public bool IgnoreWhitespace { get; init; }
+    public bool Snippets { get; init; }
+    public PageIndex? StartingPage { get; init; }
+    public string? Cursor { get; init; }
+    public uint MaxPages { get; init; } = 64;
+    public uint MaxMatches { get; init; } = 256;
+}
+public enum RenderBackground { White, Transparent }
+public sealed record RenderOptions
+{
+    public PageRect? Region { get; init; }
+    public double Scale { get; init; } = 1;
+    public PageRotation Rotation { get; init; }
+    public RenderBackground Background { get; init; }
+    public bool? IncludeAnnotations { get; init; }
+    public bool? IncludeFormFields { get; init; }
+    public ulong MaxOutputPixels { get; init; } = 16_777_216;
+}
+public sealed class RgbaImage
+{
+    internal RgbaImage(byte[] bytes, int width, int height, int stride, PageRect area) { Bytes = bytes; Width = width; Height = height; Stride = stride; Area = area; }
+    public ReadOnlyMemory<byte> Bytes { get; }
+    public int Width { get; }
+    public int Height { get; }
+    public int Stride { get; }
+    public PageRect Area { get; }
+}
+public sealed record StartupFont(string Key, ReadOnlyMemory<byte> Bytes)
+{
+    public string FamilyName { get; init; } = "";
+    public int Weight { get; init; }
+    public bool? Italic { get; init; }
+    public bool Fallback { get; init; }
+}
+public sealed record NativeLimits
+{
+    public uint MaxPendingJobs { get; init; } = 16;
+    public ulong MaxJsonBytes { get; init; } = 8 * 1024 * 1024;
+    public ulong MaxPayloadBytes { get; init; } = 256 * 1024 * 1024;
+    public ulong MaxQueuedInputBytes { get; init; } = 256 * 1024 * 1024;
+    public ulong MaxRetainedInputBytes { get; init; } = 1024 * 1024 * 1024;
+    public ulong MaxResultBytes { get; init; } = 256 * 1024 * 1024;
+    public ulong MaxRetainedResultBytes { get; init; } = 512 * 1024 * 1024;
+    public ulong MaxOutputPixels { get; init; } = 16_777_216;
+}
+public sealed record PdfEngineOptions
+{
+    public int MaxPendingRequests { get; init; } = 16;
+    public long MaxQueuedBytes { get; init; } = 256 * 1024 * 1024;
+    public NativeLimits Limits { get; init; } = new();
+    public ImmutableArray<StartupFont> StartupFonts { get; init; } = [];
+}
+public sealed record PageTransformInput(PageSize PageSize, PageRotation Rotation, double Scale, double Dpr, double? BaseScale = null);
+public sealed record TransformMetrics(double ViewWidth, double ViewHeight, double ContentWidth, double ContentHeight, double DeviceWidth, double DeviceHeight, double RenderScale, double ViewScale, double BaseScale, double Zoom, PageRotation Rotation, string CssMatrix);
+public sealed record PageTransformResult(TransformMetrics Transform, ImmutableArray<PagePoint> PageToView, ImmutableArray<PageRect> PageRectsToView, ImmutableArray<PagePoint> ViewToPage, ImmutableArray<PageRect> ViewRectsToPage);
+public sealed class PdfException : Exception
+{
+    public string Code { get; }
+    public uint? NativeStatus { get; }
+    internal PdfException(string code, string message, uint? status = null) : base(message) { Code = code; NativeStatus = status; }
+}
+
+internal sealed class IndexConverter<T> : JsonConverter<T> where T : struct
+{
+    public override T Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options) => (T)(object)(typeof(T) == typeof(PageIndex) ? (object)new PageIndex(reader.GetUInt32()) : typeof(T) == typeof(PdfCharIndex) ? new PdfCharIndex(reader.GetUInt32()) : new Utf16Offset(reader.GetUInt32()));
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => writer.WriteNumberValue(value switch { PageIndex i => i.Value, PdfCharIndex i => i.Value, Utf16Offset i => i.Value, _ => throw new JsonException("Unknown index unit") });
+}
+internal sealed class GeometryRunConverter : JsonConverter<GeometryRun>
+{
+    public override GeometryRun Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+    {
+        using var doc = JsonDocument.ParseValue(ref reader); var json = doc.RootElement;
+        if (json.TryGetProperty("kind", out _)) throw new JsonException("Unknown required geometry run variant");
+        if (json.TryGetProperty("rotation", out _)) return json.Deserialize<OrientedRun>(options) ?? throw new JsonException("Missing oriented run");
+        return json.Deserialize<UprightRun>(options) ?? throw new JsonException("Missing upright run");
+    }
+    public override void Write(Utf8JsonWriter writer, GeometryRun value, JsonSerializerOptions options)
+    {
+        if (value is OrientedRun oriented) JsonSerializer.Serialize(writer, oriented, options);
+        else if (value is UprightRun upright) JsonSerializer.Serialize(writer, upright, options);
+use std::sync::Arc;
+
+use epdf_ffi::{AnnotationRef, CancelToken, KernelBound, PageRef, Point, ViewerError};
+use epdf_kernel::bytes::Bytes;
+use serde_json::{Map, Value, json};
+
+use super::{
+    AnnotationCreationDraft, draft_out, geometry_point, open, page_json, point_json, ref_json,
+    ref_out, refs_out,
+};
+use crate::AnnotationCapability;
+use crate::read::chrome::HitView;
+use crate::write::stamps::StampInput;
+
+/// Work in progress: creation drafts, text editing, markup from text,
+/// stamps and click placement.
+#[derive(uniffi::Object)]
+pub struct AnnotationDraftsHandle {
+    pub(crate) cap: KernelBound<AnnotationCapability>,
+}
+
+/// An image or single-page PDF to stamp. The engine sniffs the format from
+/// the bytes; `mime_type` is advisory.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AnnotationStampSource {
+    pub bytes: Vec<u8>,
+    #[uniffi(default = None)]
+    pub mime_type: Option<String>,
+    #[uniffi(default = None)]
+    pub name: Option<String>,
+    #[uniffi(default = None)]
+    pub subject: Option<String>,
+}
+
+impl AnnotationStampSource {
+    /// `StampInput` as JSON: `{ source: {data, mimeType?}, targetWidth?, name?, subject? }`.
+    fn input(&self, target_width: Option<f64>) -> StampInput {
+        let mut source = json!({ "data": Bytes(self.bytes.clone()).to_json() });
+        if let Some(mime) = &self.mime_type {
+            source["mimeType"] = mime.clone().into();
+        }
+        let mut input = Map::new();
+        input.insert("source".into(), source);
+        if let Some(width) = target_width {
+            input.insert("targetWidth".into(), json!(width));
+        }
+        if let Some(name) = &self.name {
+            input.insert("name".into(), json!(name));
+        }
+        if let Some(subject) = &self.subject {
+            input.insert("subject".into(), json!(subject));
+        }
+        StampInput::read(&Value::Object(input))
+    }
+}
+
+/// Where a stamp lands: its center, in page space (`StampPlacement`).
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AnnotationStampPlacement {
+    pub page: PageRef,
+    pub center: Point,
+    #[uniffi(default = None)]
+    pub rotation: Option<f64>,
+}
+
+impl AnnotationStampPlacement {
+    fn json(&self) -> Value {
+        let mut placement =
+            json!({ "page": page_json(self.page), "center": point_json(self.center) });
+        if let Some(rotation) = self.rotation {
+            placement["rotation"] = json!(rotation);
+        }
+        placement
+    }
+}
+
+/// A file to attach: bytes plus the name the PDF stores (`/UF`).
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AnnotationAttachmentFile {
+    pub bytes: Vec<u8>,
+    pub name: String,
+    #[uniffi(default = None)]
+    pub mime_type: Option<String>,
+    #[uniffi(default = None)]
+    pub description: Option<String>,
+}
+
+/// The end of a run of selected text, as the selection plugin reads it
+/// (`TextEndAnchor`), as JSON: the last glyph's quad and which way the text
+/// runs from it. A caret goes there.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AnnotationTextEndAnchor {
+    pub anchor_json: String,
+}
+
+/// One page's text quads (`Quad[]` as JSON) for a markup preview.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AnnotationPageQuads {
+    pub page: PageRef,
+    pub quads_json: String,
+public import EmbedPDFBindings
+public import Foundation
+
+// `AnnotationRef`, `PdfLinkTarget` and `PdfDestination` are declared in
+// Link.swift.
+//
+// The plugin speaks the engine's records: a record carries its ref, page,
+// subtype, rect, text members and authority typed, and the rest as JSON
+// (`AnnotationRecord.fieldsJson`). Create fields, patches, tool defaults and
+// selection values are the engine's field bags, passed as JSON objects.
+public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
+public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
+public typealias AnnotationCreationDraft = EmbedPDFBindings.AnnotationCreationDraft
+public typealias AnnotationProperty = EmbedPDFBindings.AnnotationProperty
+/// The pre-rename name of `AnnotationRecord`, kept for one release. It
+/// collides with MapKit's SwiftUI `Annotation` (iOS 17) in any file that
+/// imports EmbedPDF, SwiftUI and MapKit.
+@available(*, deprecated, renamed: "AnnotationRecord")
+public typealias Annotation = AnnotationRecord
+public typealias AnnotationFilter = EmbedPDFBindings.AnnotationFilter
+public typealias AnnotationBatchResult = EmbedPDFBindings.AnnotationBatchResult
+public typealias AnnotationBatchFailure = EmbedPDFBindings.AnnotationBatchFailure
+public typealias AnnotationEvent = EmbedPDFBindings.AnnotationEvent
+public typealias AnnotationChangedEvent = EmbedPDFBindings.AnnotationChangedEvent
+public typealias AnnotationDeletedEvent = EmbedPDFBindings.AnnotationDeletedEvent
+public typealias AnnotationResyncedPages = EmbedPDFBindings.AnnotationResyncedPages
+public typealias AnnotationThreadChange = EmbedPDFBindings.AnnotationThreadChange
+public typealias AnnotationSelectionProps = EmbedPDFBindings.AnnotationSelectionProps
+public typealias AnnotationTextFormat = EmbedPDFBindings.AnnotationTextFormat
+public typealias AnnotationTool = EmbedPDFBindings.AnnotationTool
+public typealias AnnotationStampSource = EmbedPDFBindings.AnnotationStampSource
+public typealias AnnotationStampPlacement = EmbedPDFBindings.AnnotationStampPlacement
+public typealias AnnotationAttachmentFile = EmbedPDFBindings.AnnotationAttachmentFile
+public typealias AnnotationTextEndAnchor = EmbedPDFBindings.AnnotationTextEndAnchor
+public typealias AnnotationPageQuads = EmbedPDFBindings.AnnotationPageQuads
+public typealias AnnotationComment = EmbedPDFBindings.AnnotationComment
+public typealias AnnotationCommentThread = EmbedPDFBindings.AnnotationCommentThread
+public typealias AnnotationCommentPermissions = EmbedPDFBindings.AnnotationCommentPermissions
+public typealias AnnotationThreadStatus = EmbedPDFBindings.AnnotationThreadStatus
+public typealias AnnotationThreadDeleteResult = EmbedPDFBindings.AnnotationThreadDeleteResult
+public typealias AnnotationThreadDeleteFailure = EmbedPDFBindings.AnnotationThreadDeleteFailure
+public typealias AnnotationFilePromptRequest = EmbedPDFBindings.AnnotationFilePromptRequest
+public typealias AnnotationPickedFile = EmbedPDFBindings.AnnotationPickedFile
+public typealias AnnotationFilePicker = EmbedPDFBindings.AnnotationFilePicker
+
+/// A document's annotations. Get one with `PDFViewer.annotations(for:)`;
+/// the viewer needs `ViewerConfig(interaction: true, annotation: "")`
+/// (the settings JSON over the defaults; `""` for the defaults). It keeps the viewer alive. After its document
+/// closes, every call throws `instance-closed`.
+///
+/// Pointer editing goes through the interaction hub: forward samples with
+/// `InteractionCapability.dispatchPointer` and the plugin's own handlers
+/// draw, select and move annotations under the active tool.
+public struct AnnotationCapability: Sendable {
+  let handle: AnnotationHandle
+  let viewer: PDFViewer
+
+  // Each sub-capability keeps the viewer alive, as this one does, so one
+  // held on its own still answers. Nothing the viewer owns holds a
+  // capability, so this makes no cycle; a handler the kernel keeps (a file
+  // picker) that captures one does, as it would capturing this one.
+
+  /// Select, group, rotate and restyle the selected annotations.
+  public var selection: AnnotationSelectionCapability {
+    AnnotationSelectionCapability(handle: handle.selection(), viewer: viewer)
+  }
+
+  /// The authoring tools, their defaults and the snap settings.
+  public var tools: AnnotationToolsCapability {
+    AnnotationToolsCapability(handle: handle.tools(), viewer: viewer)
+  }
+
+  /// Creation drafts, text editing, markup from text, stamps and placement.
+  public var drafts: AnnotationDraftsCapability {
+    AnnotationDraftsCapability(handle: handle.drafts(), viewer: viewer)
+  }
+
+  /// Comment threads and the links attached to annotations.
+  public var threads: AnnotationThreadsCapability {
+    AnnotationThreadsCapability(handle: handle.threads(), viewer: viewer)
+  }
+
+  public func get(_ ref: AnnotationRef) async throws(PDFError) -> AnnotationRecord? {
+    try await bridged { try await handle.get(annotationRef: ref) }
+  }
+
+  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [AnnotationRecord] {
+    try await bridged { try await handle.list(filter: filter) }
+  }
+
+access.rs
+auth
+buffer.rs
+cancel.rs
+clock.rs
+dispatch.rs
+dto.rs
+error.rs
+features
+geom.rs
+host.rs
+identity.rs
+ids.rs
+js_number.rs
+lib.rs
+mutation
+mutation.rs
+page_space
+revision.rs
+session
+spike
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 6f2059b34..4e798b061 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -437,6 +437,7 @@ jobs:
+     if: ${{ !cancelled() && needs.publish-image.result == 'success' }}
+     outputs:
+       source_sha: ${{ needs.publish-image.outputs.source_sha }}
++      version: ${{ steps.ver.outputs.version }}
+     runs-on: ubuntu-latest
+     permissions:
+       contents: read
+@@ -540,3 +541,42 @@ jobs:
+     secrets:
+       SDK_RELEASE_APP_ID: ${{ secrets.SDK_RELEASE_APP_ID }}
+       SDK_RELEASE_APP_PRIVATE_KEY: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
++
++  # The commercial engine image (the open image above plus ffmpeg and
++  # CloudPDF's own server modules, such as protected display) is built in the
++  # private platform repository, which holds the modules' source. This job
++  # only tells it a version is out, once the exact image is verified: the
++  # platform moves its modules' pins, tests them, and builds the commercial
++  # image FROM this version's image. No private code runs here. The App's
++  # token is limited to starting workflows in that one repository.
++  # One-time setup: an App installed on embedpdf/cloudpdf-platform with
++  # Actions: write, its id and key as the two secrets below, and the variable
++  # PLATFORM_RELEASE_NOTIFY_ENABLED=true.
++  notify-platform:
++    needs: merge-image
++    if: ${{ !cancelled() && needs.merge-image.result == 'success' && vars.PLATFORM_RELEASE_NOTIFY_ENABLED == 'true' }}
++    runs-on: ubuntu-latest
++    permissions: {}
++    steps:
++      - name: Create platform repository token
++        id: platform-token
++        uses: actions/create-github-app-token@v2
++        with:
++          app-id: ${{ secrets.PLATFORM_RELEASE_APP_ID }}
++          private-key: ${{ secrets.PLATFORM_RELEASE_APP_PRIVATE_KEY }}
++          owner: embedpdf
++          repositories: cloudpdf-platform
++          permission-actions: write
++
++      - name: Start the platform's release workflow
++        env:
++          GH_TOKEN: ${{ steps.platform-token.outputs.token }}
++          VERSION: ${{ needs.merge-image.outputs.version }}
++          SOURCE_SHA: ${{ needs.merge-image.outputs.source_sha }}
++        run: |
++          gh workflow run oss-release.yml \
++            --repo embedpdf/cloudpdf-platform \
++            --ref main \
++            -f version="$VERSION" \
++            -f source_sha="$SOURCE_SHA"
++          echo "Asked embedpdf/cloudpdf-platform to move to $VERSION." >> "$GITHUB_STEP_SUMMARY"
+diff --git a/packages/engine/runtime/engine-runtime-build.json b/packages/engine/runtime/engine-runtime-build.json
+index 96569da23..53fc9b090 100644
+--- a/packages/engine/runtime/engine-runtime-build.json
++++ b/packages/engine/runtime/engine-runtime-build.json
+@@ -1,46 +1,46 @@
+ {
+   "fork": "embedpdf/runtime",
+-  "sha": "28b8b808f52d544b17a973199410cda0cc43530f",
++  "sha": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+   "upstream": {
+-    "sha": "5f092b52993bfd98f94f04deff391918fe0fdcfd",
+-    "date": "2026-10-30T13:34:34-07:00"
++    "sha": "2b52a82ab8170966f08beec1c1bf1aa3d67b6b55",
++    "date": "2026-11-02T19:33:02-08:00"
+   },
+   "artifacts": {
+     "darwin-arm64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-darwin-arm64-28b8b808f.tar.gz",
+-      "sha256": "c1f547fda6896acdc9cad511d019010d10b18e6a1a67b167769d0c8d6dfc101e"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-darwin-arm64-f1ba46f0d.tar.gz",
++      "sha256": "837d652869b511e9c3c072d5e8f216a0361a3f9ceb86808a8b8a45f6755adeeb"
+     },
+     "darwin-x64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-darwin-x64-28b8b808f.tar.gz",
+-      "sha256": "660a0acdf3814965e433386db444f1f113643b83730c435d8a7ab6746d5d3aca"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-darwin-x64-f1ba46f0d.tar.gz",
++      "sha256": "62058d7a58912746e1acd05df0d86737e75a1fe329b0819559ecaebce34fabe6"
+     },
+     "linux-arm64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-linux-arm64-28b8b808f.tar.gz",
+-      "sha256": "360f9b98164cbedef64e829e9c973178547a2a115d5ca35e922733c7623fccd7"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-linux-arm64-f1ba46f0d.tar.gz",
++      "sha256": "77babb4f512a0bed8769c837da4219d7a9867a2f4211f96c1dd1bda1bd61f1c9"
+     },
+     "linux-x64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-linux-x64-28b8b808f.tar.gz",
+-      "sha256": "40d09c7be2415465ba2ef9e825f595f36d09365af27e7775da95478289802086"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-linux-x64-f1ba46f0d.tar.gz",
++      "sha256": "523fdb3b2ed21973354fa48d93118ea11e451fff2471ffc6275d2c9511a486a8"
+     },
+     "linuxmusl-arm64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-linuxmusl-arm64-28b8b808f.tar.gz",
+-      "sha256": "0e7b6fe49437009f3c6dec55bc457c204b453413215966f14c837f10eea50fef"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-linuxmusl-arm64-f1ba46f0d.tar.gz",
++      "sha256": "aa410fbdcfb45665fd4919985d708b776c9115af1a550b95fb183836f8531c39"
+     },
+     "linuxmusl-x64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-linuxmusl-x64-28b8b808f.tar.gz",
+-      "sha256": "0960e6f641fef5e9e7e285a47b6a3d8934d082b06aae4407c01fb4e6ff6e500b"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-linuxmusl-x64-f1ba46f0d.tar.gz",
++      "sha256": "d59b8714fa0f8ebb716854fd733c8a0b2023b030ff8a59b5cd0a8eaceee9fc39"
+     },
+     "wasm32": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-wasm32-28b8b808f.tar.gz",
+-      "sha256": "d5a9cd8cc3b512ec5e5b5dfe3678cd23d3e77a6eafe6cf1b4f8dd8e75e20b37f"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-wasm32-f1ba46f0d.tar.gz",
++      "sha256": "fff8b0586d884b8efbabce3112c7558ad73998861e7bb72d034307025708ca71"
+     },
+     "win32-arm64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-win32-arm64-28b8b808f.tar.gz",
+-      "sha256": "503016019e308805dc1f2d4331447782cf621f986df05fa24e80e6202c9d1672"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-win32-arm64-f1ba46f0d.tar.gz",
++      "sha256": "7d33a90f20dc9d425b4c69e069135caf0d6110e3b910b3306abc428db5a0a7cb"
+     },
+     "win32-x64": {
+-      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-28b8b808f52d544b17a973199410cda0cc43530f/libembedpdf-runtime-win32-x64-28b8b808f.tar.gz",
+-      "sha256": "132c4ebd44d563b96c71f78db4bdab8df655c4c41ed98a83f8967960cfcc65b4"
++      "url": "https://github.com/embedpdf/runtime/releases/download/runtime-f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185/libembedpdf-runtime-win32-x64-f1ba46f0d.tar.gz",
++      "sha256": "b7b0f2c5dc5557b0456e7433e2d12b471bb2b661854f8d4c8418da4b64e22d84"
+     }
+   }
+ }
+diff --git a/packages/plugin/commands/package.json b/packages/plugin/commands/package.json
+index ba6bb7f7a..7cd4b7b35 100644
+--- a/packages/plugin/commands/package.json
++++ b/packages/plugin/commands/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@embedpdf/plugin-commands",
+-  "version": "3.0.0-next.19",
++  "version": "3.0.0-next.21",
+   "private": false,
+   "description": "The commands: one name per action of the viewer, with its label, icon, state and shortcut, which toolbars, menus, a command palette and the keyboard all show and run. A command's state is read from live state, so every reader follows the kernel's one change stream. `/standard` has the commands every viewer has.",
+   "type": "module",
+@@ -53,6 +53,7 @@
+     "@embedpdf/plugin-annotation": "workspace:*",
+     "@embedpdf/plugin-i18n": "workspace:*",
+     "@embedpdf/plugin-interaction": "workspace:*",
++    "@embedpdf/plugin-render": "workspace:*",
+     "@embedpdf/plugin-selection": "workspace:*",
+     "@embedpdf/plugin-shell": "workspace:*",
+     "@embedpdf/plugin-stage": "workspace:*"

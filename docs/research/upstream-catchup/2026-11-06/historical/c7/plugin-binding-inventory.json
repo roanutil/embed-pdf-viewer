@@ -1,0 +1,225 @@
+{
+  "mode": "planning only; no tests/build/source/ref/pin mutations executed",
+  "baseline": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+  "baseline_runtime": "3c55b7a1c0bf956231392a573e87f28dd6d6667d",
+  "viewer_target": "4ad8986099314b9587df423c802db103a21d665d",
+  "viewer_runtime_gitlink": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+  "runtime_default_head_option": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e",
+  "common_base": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+  "counts": {
+    "upstream_changed_paths": 794,
+    "upstream_native_paths": 0,
+    "plugin_source_paths": 36,
+    "plugin_source_packages": 6
+  },
+  "jobs": [
+    {
+      "id": "P1",
+      "area": "Annotation kind / stroke / dash / ink / markup payload",
+      "status": "new missing functional work; engine prerequisite owned by lead",
+      "commits": [
+        "5eda225f1",
+        "70481dc09",
+        "c70e3ddf4",
+        "7b91e04a9",
+        "fe2941a27",
+        "77e57ac6a",
+        "932618fce",
+        "f6dc15f8f"
+      ],
+      "upstream_paths": [
+        "packages/core/annotation/src/{props,record,scene,ink-curves,bezier}.ts",
+        "packages/plugin/annotation/src/{contract,read/properties}.ts",
+        "packages/engine/core/src/annotation/{siblings,kinds/shared-fields}.ts"
+      ],
+      "port_paths": [
+        "crates/plugins/annotation-core/src/{props,record,scene,ink,richtext}.rs",
+        "crates/plugins/annotation/src/{contract,read,write,ffi}",
+        "crates/plugins/annotation/src/harness",
+        "crates/epdf-engine/src/features/annotation (lead)"
+      ],
+      "interfaces": [
+        "subtype sibling conversions preserve reference and valid family fields",
+        "color null means no stroke; omitted versus null retained; strokeWidth still sizes endings/clouds",
+        "dashArray null allowed; empty write refused; empty read solid; default dashed pattern written",
+        "markup richText comments with plain contents projection; free-text richText appearance distinct",
+        "curved ink fitting, dots, appearance bounds and hit testing match"
+      ],
+      "estimate_hours": [
+        6,
+        10
+      ]
+    },
+    {
+      "id": "P2",
+      "area": "Caret style / whole-box restyling / stale font answers",
+      "status": "new missing functional work; some font CSS pieces are browser-only",
+      "commits": [
+        "f1042adb8",
+        "8737c9507",
+        "8cc1513e8",
+        "9b5dacbad"
+      ],
+      "upstream_paths": [
+        "packages/core/annotation/src/richtext",
+        "packages/plugin/annotation/src/{model,rich-text,read/properties,read/text-fonts,write/selection,write/text-editing}.ts",
+        "packages/plugin/fonts/src/{controller,paint}.ts"
+      ],
+      "port_paths": [
+        "crates/plugins/annotation-core/src/richtext.rs",
+        "crates/plugins/annotation/src/{model,rich_text,read,write/text_editing,write/selection}.rs",
+        "crates/plugins/annotation/src/ffi/drafts.rs",
+        "crates/plugins/annotation/src/harness/mod.rs",
+        "crates/plugins/fonts/src",
+        "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift"
+      ],
+      "interfaces": [
+        "draftRichText returns kept paragraphs (reviewed Rust returns Result<(), Error>)",
+        "caret styles affect next insertion without writing existing text; range affects selection; selected boxes affect all runs",
+        "toggle mixed format on unless all on",
+        "font fallback ordering ends with standard face; standard encoding used",
+        "per-record/per-face stale resolve answers ignored; no-font-plugin avoids pointless questions"
+      ],
+      "estimate_hours": [
+        5,
+        9
+      ]
+    },
+    {
+      "id": "P3",
+      "area": "Paged navigation / current spread / turn gestures",
+      "status": "new missing functional work",
+      "commits": [
+        "f45ac2990",
+        "1ed34c6fe"
+      ],
+      "upstream_paths": [
+        "packages/plugin/stage/src/{contract,settings,navigation/turn,navigation/arrive,read/pages,services/scene,camera/gestures}.ts"
+      ],
+      "port_paths": [
+        "crates/plugins/stage/src/{contract,ffi,settings,navigation,read,services,camera}",
+        "crates/plugins/stage/src/harness.rs",
+        "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "platforms/android/tests"
+      ],
+      "interfaces": [
+        "turnGestures default and paged overscroll/swipe/flick behavior",
+        "listCurrentPages separate from listCurrentItemPages",
+        "next/previous/canGo step past current spread or page using fit-across semantics",
+        "cancel old motion; edges and gesture lock preserved"
+      ],
+      "estimate_hours": [
+        4,
+        7
+      ]
+    },
+    {
+      "id": "P4",
+      "area": "Snapshot / crop rotation / image command ports",
+      "status": "new missing functional work; C# low-level region/rotation rendering already present",
+      "commits": [
+        "94fbac3f4",
+        "8077dcf44"
+      ],
+      "upstream_paths": [
+        "packages/plugin/render/src/{contract,host-contract,controller,model,render.plugin,snapshot}.ts",
+        "packages/plugin/commands/src/{standard,controller,host-contract}.ts",
+        "packages/plugin/i18n/src/strings",
+        "packages/framework/{web,react,vue,svelte,angular}",
+        "packages/viewer/chrome/src/ui/snapshot-strip.tsx"
+      ],
+      "port_paths": [
+        "crates/plugins/render/src/{contract,ffi,controller,model,host_contract,js,harness}.rs",
+        "crates/plugins/commands/src",
+        "crates/epdf-web",
+        "crates/epdf-viewer-host",
+        "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "platforms/android/embedpdf",
+        "tooling/plugin-conformance/src/suites"
+      ],
+      "interfaces": [
+        "RenderPageOptions.rect and rotation; clamp region; invalid-input if no intersection; crop/rotation bypass shared raster cache",
+        "RenderPagesOptions explicitly omits rect (Rust currently embeds RenderPageOptions)",
+        "snapshot scale2, SNAPSHOT_MAX_PIXELS16000000 plus deployment budget",
+        "canSnapshot requires doc.render and doc.content.copy; get/clear/onSnapshotChanged; host getSnapshotBox",
+        "snapshot promise and raster ownership cancelled/released on clear, tool switch, close",
+        "standard command platform copyImage(Promise<PageImage>), saveFile(bytes|Blob,name,contentType); user-activation clipboard timing"
+      ],
+      "estimate_hours": [
+        8,
+        14
+      ]
+    },
+    {
+      "id": "P5",
+      "area": "Binding regeneration / parity / package graph evidence",
+      "status": "required follow-through, no publish or pin edits authorized now",
+      "commits": [
+        "9db1f4a60",
+        "d24ab2f21",
+        "eec84f112"
+      ],
+      "upstream_paths": [
+        "packages/engine/runtime/{runtime-src,engine-runtime-build.json,src/core/pdf-functions.generated.ts}",
+        "api",
+        "package.json",
+        "pnpm-lock.yaml",
+        ".changeset",
+        ".github/workflows/release.yml"
+      ],
+      "port_paths": [
+        "crates/{epdf-ffi,epdf-uniffi,epdf-capi,epdf-wasm,epdf-web,epdf-viewer-host}",
+        "crates/plugins/*/src/ffi",
+        "platforms/apple/{EmbedPDF,build-xcframework.sh}",
+        "platforms/android/{build-aar.sh,embedpdf}",
+        "platforms/dotnet/{EmbedPDF,EmbedPDF.Tests,EmbedPDF.Parity,packaging}",
+        "tooling/{plugin-conformance,dotnet-parity}"
+      ],
+      "interfaces": [
+        "new C functions EPDFAnnot_SetNoColor and EPDFAnnot_SetSubtype (lead owns runtime/engine)",
+        "worker request union unchanged; JSON schemas evolve",
+        "UniFFI records/checksums and Swift/Kotlin generated code regenerated together",
+        "C# engine facade existing Region/Rotation API reused; no assumed C# plugin product",
+        "native/WASM source/artifact/font/input hashes match final exact graph"
+      ],
+      "estimate_hours": [
+        6,
+        12
+      ]
+    }
+  ],
+  "exact_commit_index": {
+    "4ad898609": "4ad8986099314b9587df423c802db103a21d665d Merge pull request #980 from embedpdf/feature/snapshot-tool",
+    "8077dcf44": "8077dcf44df8fd01452817f3e07f9326f9ecf9bc Take a Snapshot from the viewer's document menu",
+    "94fbac3f4": "94fbac3f4e048fa0ab929650cb61b6c7c1bac94f Take part of a page as a picture with the snapshot tool",
+    "7b91e04a9": "7b91e04a900cf1ca3672435d6dd47f5d02b2bf68 Read and write a markup annotation's comment as rich text",
+    "f1042adb8": "f1042adb87e2d7ad6ab40097f378f4d3217bf649 Format the text typed next at a caret, and a selected box's whole text",
+    "8cc1513e8": "8cc1513e830fff4560ca515407864b0d0e1ddd1e Read a text box's faces only when there is a fonts plugin to ask",
+    "ad7894c02": "ad7894c022f71663afeb5e0a6992814a0de94c43 Merge remote-tracking branch 'origin/main' into fix/latin-fallback-floor",
+    "8743b8d15": "8743b8d1569ef68e358b109ae25949321ae089f1 Merge remote-tracking branch 'origin/main' into feature/annotation-kind-change",
+    "8737c9507": "8737c9507e6eb5f9ebf45ca6be06c9d4435c4502 Draw a restyled text box in its new font, not an answer for its old one",
+    "9b5dacbad": "9b5dacbad68154fcacab6c15bd319adf0609b78b Draw Latin a font lacks in the standard font that stands in for it",
+    "5eda225f1": "5eda225f1d716f4add5e1fca7c7a0c449a72b826 Let the viewer change an annotation's kind",
+    "c70e3ddf4": "c70e3ddf434b64cbf48cd71717650b95bf853a75 Draw ink with the curves Acrobat fits to its points",
+    "70481dc09": "70481dc09f2c840ea92c29e56af97eaf4774ab09 Let shapes, lines and ink have no stroke: color null",
+    "d24ab2f21": "d24ab2f21d4e6da026bc9a48fa4b623f8a77afa8 chore: version packages (next) (next)",
+    "8c346d654": "8c346d654e31a965c4c5693235474da55e0f8b06 Merge remote-tracking branch 'origin/main' into feature/page-turns",
+    "1ed34c6fe": "1ed34c6fea6b3d9a6aeef8159b62a6cacb2c2cd6 Turn pages past the edge in paged flow, and add Page by page to the View menu",
+    "f45ac2990": "f45ac2990b8b9455209aedf79a5f628d78f59a52 Page arrows around the page number, a pager that rests out of sight, and spreads that step as one",
+    "eec84f112": "eec84f1120c765cf72b0d0133f033de04d8f9b00 chore: version packages (next) (next)"
+  },
+  "evidence_sha256": {
+    "plugin-binding-baseline-surfaces.log": "fbadbc010ed075098f6ec95e098d8e9b7f1528c49e91e2e06517966f283fc8b3",
+    "plugin-binding-contracts.log": "bd38ce3d8fdde847150e7e8c8f0eb72c3b16fbe26dba4ea5b08363a9a72fe2b4",
+    "plugin-binding-detail-proof.log": "69753b0b211c947b47ad48394dc632df86bc72f8205ea88cee842b8cf773cdf7",
+    "plugin-binding-exact-commits.log": "c2fbc853bf36bf800b293f878f406daeceac6f1008a9392ecf49670b97bedb7a",
+    "plugin-binding-first-delta.log": "df04c494f55acda8fea66efa071585be0867d5f4bf9bf6f9facdcfd17e2f1856",
+    "plugin-binding-native-contract-proof.log": "a747f785b253821e956edb00cea9f6c7e62f897064a8934bbd6a980708bd97f9",
+    "plugin-binding-package-proof.log": "fc37be5b488063ed36ac43201ac99927e9ebc66586c5f4b1fd5bd1262bf780ab",
+    "plugin-binding-payload-proof.log": "cf2147731b899229d4e18399b250ff05e5fd73c2e8c5be249e1e9a0ea38cd306",
+    "plugin-binding-preservation-proof.log": "9978bb2d90e0bad4721a9cd1927f50a6a7cd95778b968e0f3004128054afbf7b",
+    "plugin-binding-summary.log": "17cdde05ba00d3e26de7b98ee10003818dfd6f321285e543e9a0572e52b31118"
+  },
+  "historical_only": "C5f 340 pass,2 opt-in skip,0 fail; no new tests run. J8 C# package frozen at6a740, local only, LinuxARM64 net10/glibc2.41 validated only.",
+  "planning_document_sha256": "cd45a0fd030c3136f8f3242f8f3afb5006f08458fef13e21291f849306ffaa4f"
+}

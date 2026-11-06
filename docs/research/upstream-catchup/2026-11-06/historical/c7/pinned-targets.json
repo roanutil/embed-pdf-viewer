@@ -1,0 +1,39 @@
+{
+  "scope": "C7 planning only, pinned canonical targets; original-target C5h remains complete",
+  "observedUTC": "2026-11-04T13:25:23.357139+00:00",
+  "viewer": {
+    "canonicalRepo": "https://github.com/embedpdf/embed-pdf-viewer.git",
+    "defaultBranch": "main",
+    "sha": "4ad8986099314b9587df423c802db103a21d665d",
+    "commitTime": "2026-11-04T15:23:43+02:00",
+    "runtimeGitlink": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+    "bareMetadataInsideContainer": "/tmp/embedpdf-c7-viewer-metadata.git"
+  },
+  "runtime": {
+    "canonicalRepo": "https://github.com/embedpdf/runtime.git",
+    "defaultBranch": "embedpdf/main",
+    "sha": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e",
+    "commitTime": "2026-11-04T14:16:48+02:00",
+    "viewerSelectedTarget": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+    "decision": "Compare viewer gitlink and runtime HEAD; do not automatically substitute HEAD",
+    "bareMetadataInsideContainer": "/tmp/embedpdf-c7-runtime-metadata.git"
+  },
+  "baseline": {
+    "repo": "https://github.com/roanutil/embed-pdf-viewer-private.git",
+    "branches": [
+      "research/multi-platform-rust-core-impl",
+      "research/multi-platform-rust-core-impl-plugins"
+    ],
+    "bothFreshSHA": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+    "verifiedUTC": "2026-11-04T13:26:32.889915+00:00",
+    "runtime": "3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+  },
+  "approvedImage": "sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703",
+  "container": "embedpdf-c5-combined",
+  "proofs": {
+    "/private/tmp/kkt-peach-lemur/c7/initial-canonical-refs.json": "3a9e9139f0c5fb1e62d64a7479f06ed8a84dbfa3dc96e58c5b73ddc9ed7ca183",
+    "/private/tmp/kkt-peach-lemur/c7/runtime-upstream-heads.log": "802de66adcbb99fd3b8b52a214214b0239f5215909bc745b9210df9a64193ba5",
+    "/private/tmp/kkt-peach-lemur/c7/fetch-metadata-result.json": "690e5536c2c3b29dfba2f5c51e625b7a53e0bc8f8c9128bdb499063cfb243339",
+    "/private/tmp/kkt-peach-lemur/c7/api-pins.json": "f1db668b16ddfb335b482834521e8efdfbe70361a094cccf240b16a61e5d5079"
+  }
+}

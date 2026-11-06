@@ -1,0 +1,49 @@
+{
+  "utc": "2026-11-04T13:26:32.889915+00:00",
+  "commands": [
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/embedpdf/embed-pdf-viewer",
+        "--jq",
+        "{full_name,html_url,default_branch,fork}"
+      ],
+      "exit": 0,
+      "stdout": "{\"default_branch\":\"main\",\"fork\":false,\"full_name\":\"embedpdf/embed-pdf-viewer\",\"html_url\":\"https://github.com/embedpdf/embed-pdf-viewer\"}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/embedpdf/runtime",
+        "--jq",
+        "{full_name,html_url,default_branch,fork}"
+      ],
+      "exit": 0,
+      "stdout": "{\"default_branch\":\"embedpdf/main\",\"fork\":false,\"full_name\":\"embedpdf/runtime\",\"html_url\":\"https://github.com/embedpdf/runtime\"}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/roanutil/embed-pdf-viewer-private/git/ref/heads/research/multi-platform-rust-core-impl"
+      ],
+      "exit": 0,
+      "stdout": "{\"ref\":\"refs/heads/research/multi-platform-rust-core-impl\",\"node_id\":\"REF_kwDOUq6um9oAMXJlZnMvaGVhZHMvcmVzZWFyY2gvbXVsdGktcGxhdGZvcm0tcnVzdC1jb3JlLWltcGw\",\"url\":\"https://api.github.com/repos/roanutil/embed-pdf-viewer-private/git/refs/heads/research/multi-platform-rust-core-impl\",\"object\":{\"sha\":\"f28ed4ea4aa46c8e69676558993b103d68b19e08\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/roanutil/embed-pdf-viewer-private/git/commits/f28ed4ea4aa46c8e69676558993b103d68b19e08\"}}",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/roanutil/embed-pdf-viewer-private/git/ref/heads/research/multi-platform-rust-core-impl-plugins"
+      ],
+      "exit": 0,
+      "stdout": "{\"ref\":\"refs/heads/research/multi-platform-rust-core-impl-plugins\",\"node_id\":\"REF_kwDOUq6um9oAOXJlZnMvaGVhZHMvcmVzZWFyY2gvbXVsdGktcGxhdGZvcm0tcnVzdC1jb3JlLWltcGwtcGx1Z2lucw\",\"url\":\"https://api.github.com/repos/roanutil/embed-pdf-viewer-private/git/refs/heads/research/multi-platform-rust-core-impl-plugins\",\"object\":{\"sha\":\"f28ed4ea4aa46c8e69676558993b103d68b19e08\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/roanutil/embed-pdf-viewer-private/git/commits/f28ed4ea4aa46c8e69676558993b103d68b19e08\"}}",
+      "stderr": ""
+    }
+  ]
+}

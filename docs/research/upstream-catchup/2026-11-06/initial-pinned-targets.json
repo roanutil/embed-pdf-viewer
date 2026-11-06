@@ -1,0 +1,67 @@
+{
+  "scope": "Planning only; no viewer/runtime merge or implementation authorized",
+  "observedUTC": "2026-11-06T19:32:36.521582+00:00",
+  "workingRepository": "https://github.com/roanutil/embed-pdf-viewer.git",
+  "viewer": {
+    "canonicalRepo": "https://github.com/embedpdf/embed-pdf-viewer.git",
+    "branch": "main",
+    "sha": "8297bad8d388eb9c70324c22cb001c59248f95f4",
+    "commit": "2026-11-06T21:18:06+02:00 Merge pull request #1015 from embedpdf/fix/footer-copyright",
+    "runtimeGitlink": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0"
+  },
+  "runtime": {
+    "canonicalRepo": "https://github.com/embedpdf/runtime.git",
+    "branch": "embedpdf/main",
+    "observedHead": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
+    "decision": "See scope-and-plan.md; viewer-selected gitlink is fixed option A; any supplemental option must be separately recorded"
+  },
+  "branches": {
+    "research/multi-platform-rust-core-impl": {
+      "sha": "dda1cfcd868d2d7fee0c51b90831947ac752e398",
+      "commit": "2026-11-06T13:06:24-06:00 Use a container-managed development checkout",
+      "mergeBase": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+      "leftRightCounts": "360\t174",
+      "runtimeGitlink": "8b1e69abdef4cb7c5d6c669c96a162533b2350ef",
+      "overlappingPaths": [
+        ".agents/skills/embedpdf-conventions/SKILL.md",
+        ".github/workflows/release.yml",
+        "packages/engine/main/src/index.ts",
+        "packages/engine/runtime/runtime-src",
+        "packages/engine/services/src/worker-host/WorkerHost.ts",
+        "pnpm-lock.yaml"
+      ],
+      "upstreamChangedPaths": 3062
+    },
+    "research/multi-platform-rust-core-impl-plugins": {
+      "sha": "57a125dd7b94f1190cd6ebca5853cdcbc6ee61a6",
+      "commit": "2026-11-05T17:20:48Z Expose canonical iOS and macOS Swift package with matching engine",
+      "mergeBase": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+      "leftRightCounts": "1921\t174",
+      "runtimeGitlink": "82f2dfabe2542208c783d49e210ed87f214ac0c3",
+      "overlappingPaths": [
+        ".agents/skills/embedpdf-conventions/SKILL.md",
+        ".github/workflows/release.yml",
+        "packages/engine/main/src/index.ts",
+        "packages/engine/runtime/runtime-src",
+        "packages/engine/services/src/worker-host/WorkerHost.ts",
+        "packages/plugin/actions/src/lifecycle/document-events.ts",
+        "packages/plugin/search/test/search.test.ts",
+        "pnpm-lock.yaml"
+      ],
+      "upstreamChangedPaths": 3062
+    }
+  },
+  "previousC7Target": "4ad8986099314b9587df423c802db103a21d665d",
+  "sinceC7": {
+    "commits": "92",
+    "nonMergeCommits": "50",
+    "changedPaths": 2664
+  },
+  "container": {
+    "name": "embed-pdf",
+    "checkout": "/workspaces/embed-pdf-viewer",
+    "volume": "embedpdf-workspace",
+    "image": "sha256:30b97dec3bd8d007b9197ab8fc0027f3b62ea3bd25390a5f516b4cbab085df84"
+  },
+  "branchDivergence": "1\t1562"
+}

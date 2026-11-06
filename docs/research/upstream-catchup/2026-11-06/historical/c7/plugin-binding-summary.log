@@ -1,0 +1,113 @@
+a40d63a199f2d483fd27c9ad439f0d5efbc195aa
+8	0	packages/plugin/actions/CHANGELOG.md
+1	1	packages/plugin/actions/package.json
+10	0	packages/plugin/annotation/CHANGELOG.md
+1	1	packages/plugin/annotation/package.json
+12	6	packages/plugin/annotation/src/contract.ts
+5	1	packages/plugin/annotation/src/host-contract.ts
+5	4	packages/plugin/annotation/src/model.ts
+73	27	packages/plugin/annotation/src/read/properties.ts
+80	30	packages/plugin/annotation/src/read/text-fonts.ts
+44	6	packages/plugin/annotation/src/rich-text.ts
+21	15	packages/plugin/annotation/src/write/selection.ts
+48	6	packages/plugin/annotation/src/write/text-editing.ts
+21	0	packages/plugin/annotation/test/capability.test.ts
+11	0	packages/plugin/annotation/test/controller.test.ts
+87	12	packages/plugin/annotation/test/read/text-fonts.test.ts
+190	6	packages/plugin/annotation/test/rich-text-editing.test.ts
+4	0	packages/plugin/attachment/CHANGELOG.md
+1	1	packages/plugin/attachment/package.json
+12	0	packages/plugin/commands/CHANGELOG.md
+2	1	packages/plugin/commands/package.json
+13	3	packages/plugin/commands/src/controller.ts
+4	3	packages/plugin/commands/src/host-contract.ts
+74	9	packages/plugin/commands/src/standard.ts
+16	1	packages/plugin/commands/test/controller.test.ts
+53	1	packages/plugin/commands/test/standard.test.ts
+17	0	packages/plugin/fonts/CHANGELOG.md
+1	1	packages/plugin/fonts/package.json
+24	8	packages/plugin/fonts/src/controller.ts
+12	2	packages/plugin/fonts/src/paint.ts
+34	2	packages/plugin/fonts/test/fonts.test.ts
+16	0	packages/plugin/form/CHANGELOG.md
+1	1	packages/plugin/form/package.json
+4	0	packages/plugin/history/CHANGELOG.md
+1	1	packages/plugin/history/package.json
+4	0	packages/plugin/i18n/CHANGELOG.md
+1	1	packages/plugin/i18n/package.json
+2	0	packages/plugin/i18n/src/strings/de.ts
+2	0	packages/plugin/i18n/src/strings/en.ts
+2	0	packages/plugin/i18n/src/strings/es.ts
+2	0	packages/plugin/i18n/src/strings/fr.ts
+2	0	packages/plugin/i18n/src/strings/ja.ts
+2	0	packages/plugin/i18n/src/strings/nl.ts
+2	0	packages/plugin/i18n/src/strings/sv.ts
+2	0	packages/plugin/i18n/src/strings/zh-cn.ts
+4	0	packages/plugin/interaction/CHANGELOG.md
+1	1	packages/plugin/interaction/package.json
+4	0	packages/plugin/link/CHANGELOG.md
+1	1	packages/plugin/link/package.json
+4	0	packages/plugin/measurement/CHANGELOG.md
+1	1	packages/plugin/measurement/package.json
+4	0	packages/plugin/metadata/CHANGELOG.md
+1	1	packages/plugin/metadata/package.json
+4	0	packages/plugin/outline/CHANGELOG.md
+1	1	packages/plugin/outline/package.json
+10	0	packages/plugin/page-edit/CHANGELOG.md
+1	1	packages/plugin/page-edit/package.json
+4	0	packages/plugin/redaction/CHANGELOG.md
+1	1	packages/plugin/redaction/package.json
+18	0	packages/plugin/render/CHANGELOG.md
+3	2	packages/plugin/render/package.json
+84	5	packages/plugin/render/src/contract.ts
+63	2	packages/plugin/render/src/controller.ts
+8	0	packages/plugin/render/src/host-contract.ts
+30	4	packages/plugin/render/src/model.ts
+5	1	packages/plugin/render/src/render.plugin.ts
+246	0	packages/plugin/render/src/snapshot.ts
+58	197	packages/plugin/render/test/controller.test.ts
+204	0	packages/plugin/render/test/harness.ts
+227	0	packages/plugin/render/test/snapshot.test.ts
+4	0	packages/plugin/search/CHANGELOG.md
+1	1	packages/plugin/search/package.json
+4	0	packages/plugin/selection/CHANGELOG.md
+1	1	packages/plugin/selection/package.json
+4	0	packages/plugin/shell/CHANGELOG.md
+1	1	packages/plugin/shell/package.json
+4	0	packages/plugin/signature/CHANGELOG.md
+1	1	packages/plugin/signature/package.json
+16	0	packages/plugin/stage/CHANGELOG.md
+1	1	packages/plugin/stage/package.json
+0	1	packages/plugin/stage/src/camera/animation.ts
+33	5	packages/plugin/stage/src/camera/gestures.ts
+19	3	packages/plugin/stage/src/contract.ts
+7	3	packages/plugin/stage/src/controller.ts
+24	17	packages/plugin/stage/src/navigation/arrive.ts
+165	0	packages/plugin/stage/src/navigation/turn.ts
+7	0	packages/plugin/stage/src/read/pages.ts
+37	9	packages/plugin/stage/src/services/scene.ts
+3	0	packages/plugin/stage/src/settings.ts
+143	0	packages/plugin/stage/test/navigation/turn.test.ts
+65	0	packages/plugin/stage/test/stage.capability.test.ts
+8	0	packages/plugin/stamp/CHANGELOG.md
+1	1	packages/plugin/stamp/package.json
+4	0	packages/plugin/view-manager/CHANGELOG.md
+1	1	packages/plugin/view-manager/package.json
+4ad898609 Merge pull request #980 from embedpdf/feature/snapshot-tool
+8077dcf44 Take a Snapshot from the viewer's document menu
+94fbac3f4 Take part of a page as a picture with the snapshot tool
+7b91e04a9 Read and write a markup annotation's comment as rich text
+f1042adb8 Format the text typed next at a caret, and a selected box's whole text
+8cc1513e8 Read a text box's faces only when there is a fonts plugin to ask
+ad7894c02 Merge remote-tracking branch 'origin/main' into fix/latin-fallback-floor
+8743b8d15 Merge remote-tracking branch 'origin/main' into feature/annotation-kind-change
+8737c9507 Draw a restyled text box in its new font, not an answer for its old one
+9b5dacbad Draw Latin a font lacks in the standard font that stands in for it
+5eda225f1 Let the viewer change an annotation's kind
+c70e3ddf4 Draw ink with the curves Acrobat fits to its points
+70481dc09 Let shapes, lines and ink have no stroke: color null
+d24ab2f21 chore: version packages (next) (next)
+8c346d654 Merge remote-tracking branch 'origin/main' into feature/page-turns
+1ed34c6fe Turn pages past the edge in paged flow, and add Page by page to the View menu
+f45ac2990 Page arrows around the page number, a pager that rests out of sight, and spreads that step as one
+eec84f112 chore: version packages (next) (next)

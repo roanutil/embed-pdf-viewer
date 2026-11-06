@@ -1,0 +1,161 @@
+multiplatform-upstream-catchup-2026-11.md
+# Catching the Rust port up to upstream, November 2026
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to run this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** bring `research/multi-platform-rust-core-impl` ("impl") and `research/multi-platform-rust-core-impl-plugins` ("plugins") up to upstream `main`, runtime included, with every engine and plugin vector regenerated from the new TypeScript and replayed by Rust, and with fresh wasm and Apple engine releases pinned.
+
+**Route:** the same as October (`multiplatform-upstream-catchup.md`): runtime fork first, then `main` into impl, impl into plugins, then payloads and pins. The textual merge is small this time. The work is in the runtime merge, the font surface upstream added, and in keeping two copies of plugins and three in-flight branches in step.
+
+**Decisions:** the "Decisions for the human" section at the end lists every open choice with a recommendation. Tasks that depend on one say which.
+
+## Global constraints
+
+- All git, build and test work runs inside a dev container from image `sha256:edfb3af3c66b0c9fa51322b39e524d3996d30da7e25d61edab8e9a13508e4703`, with the repo `.git` mounted at its host path and a worktree per purpose. The container has no credentials for `private-fork`; fetch that remote from wherever credentials live, or give the container a token (see decision D8).
+- Rust matches the TypeScript reference. The kept divergences in `docs/research/rust-plugins-branch-review.md`, "Status", stay divergent.
+- No TypeScript behavior changes under `packages/**` beyond what upstream brings. H3 and M14 stay as decided in October.
+- No `.github/**` changes of our own. A merge that carries upstream's `.github/**` edits is following upstream, which is allowed.
+- Merges through the submodule pointer use `git -c core.commitGraph=false`.
+- One worktree per purpose, no `git stash`, commits with explicit paths, no push or merge to a shared branch without the owner's confirmation.
+
+---
+
+## Where it starts
+
+Measured on 2026-11-02 against upstream `main` at `74afd5575` (2026-11-02 16:52 +0200). Impl and plugins share their merge base with `main`, `b456ee4fd` (the October catch-up's target).
+
+| Branch | Tip | Behind `main` | Ahead of `main` | Pins runtime |
+|---|---|---|---|---|
+| upstream `main` | `74afd5575` | | | `cff0077cf` |
+| `private-fork` impl | `52f10e027` | 194 | 340 | `1d23fe9e9` |
+| `private-fork` plugins | `3dec6b60b` | 194 | 1734 | `926c126b2` |
+| `fork` plugins | `1454eb541` | 194 | 1738 | `926c126b2` |
+| `align/visibility-render-resolution` | `5620f4ab3` | | 24 ahead of plugins, 18 behind | `5cc1d8019` |
+
+Upstream has 133 non-merge commits since `b456ee4fd`. Under `packages/` they change 966 files (43,625 insertions, 5,904 deletions): 121 in `packages/core`, 274 in `packages/plugin`, 177 in `packages/engine/{core,main,services}` (12,463 insertions), 172 in `packages/framework`. That is about half of October's TypeScript volume. Two packages are new and have no port: `packages/core/text` and `packages/plugin/fonts`. The dotted request kinds in `packages/engine/core/src/wire/worker-protocol.ts` grew from 86 to 91 literals, all five font kinds: `document.fonts.list`, `document.fonts.program`, `document.fonts.resolve`, `fonts.list`, `fonts.program`. (This is a literal count, not the `WorkerRequest` union count that `generate-wire-vectors.ts` checks against `EXPECTED_KINDS = 89`; Task 5 gets the real number.) The engine function table, `packages/engine/runtime/src/core/pdf-functions.generated.ts`, grew from 997 to 1054 entries.
+
+Outside `packages/`, upstream changed 1,029 files under `docs/`, 1,007 under `website/`, 175 under `api/`, 305 under `.changeset/`, and added a new top-level application directory of 1,621 files. None of it overlaps our changes.
+
+### The three viewer probes
+
+Each probe ran as a real merge in its own worktree, and the counts come from `git status --porcelain` and a script that intersects `git diff --name-only` from the merge base on both sides. The scratch branches stay local: `scratch/catchup-2026-11-impl` (`e35924682`) and `scratch/catchup-2026-11-plugins` (`1a38a1a99`).
+
+| Probe | Conflicts | Rust | TS code under `packages/**` | Lockfile | Runtime pointer | Docs | Other | Changed on both sides |
+|---|---|---|---|---|---|---|---|---|
+| `main` into impl | 3 | 0 | 0 | 0 | 1 | 0 | 2 | 8 |
+| impl probe into `private-fork` plugins | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 4 |
+| impl probe into `fork` plugins | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 4 |
+
+The "other" conflicts are `.prettierignore` (both sides added generated-file entries; keep both) and `packages/engine/runtime/engine-runtime-build.local.json` (upstream moved its `wasm32` and `darwin-arm64` artifact entries, impl and plugins carry their own target entries). Neither is behavior. The first probe resolved them as union and as upstream's entries plus impl's extra targets; the second kept plugins' side.
+
+Files both sides changed that merged cleanly, which Task 3 reads by hand anyway: `packages/engine/services/src/worker-host/WorkerHost.ts`, `packages/engine/runtime/src/wasm/wasm-runtime.ts`, `packages/engine/main/src/index.ts`, `pnpm-lock.yaml`, `.github/workflows/build-engine-runtime.yml` (first probe), and `packages/plugin/search/test/search.test.ts` (second probe).
+
+`fork` plugins is 4 commits ahead of `private-fork` plugins and 0 behind. The 4 commits add two documents only, `docs/superpowers/plans/2026-10-30-dotnet-native-binding.md` and `docs/superpowers/specs/2026-10-30-dotnet-native-binding-design.md` (698 lines), so probing from the fork copy gives the same single conflict.
+
+A clean textual merge says nothing about whether the Rust still matches. The October lesson holds: the cost is in the vectors and the re-port.
+
+### The runtime
+
+Upstream `main` moved its pin three times since `b456ee4fd` (first-parent `d2a1b1b25` on 2026-10-25, `28ab50974` on 2026-10-28, `812991346` on 2026-11-02) and now pins `cff0077cf`, 124 commits past `1461b0c51` (the last upstream runtime the fork merged). Those commits include a PDFium sync to `5f092b529`, the document-font surface, page import at chosen object numbers, page label sections, and catalog metadata.
+
+Comparing every `FPDF_EXPORT` declaration under `public/` (1,009 at the fork's `926c126b2`, 1,065 at `cff0077cf`): no export was removed, 56 were added, and one changed its signature.
+
+```diff
+-FPDF_BOOL EPDFFont_AddFallbackFont(EPDF_FONT_ID font_id);
++FPDF_BOOL EPDFFont_AddFallbackFont(EPDF_FONT_ID font_id, int tier);
+```
+
+Its one Rust caller is `crates/pdfium/src/fonts.rs:122`. Upstream's TS already passes `tier` (`packages/engine/services/src/features/fonts/FontRegistrar.ts:320` on `main`). `pdfium-sys` binds through bindgen from `crates/pdfium-sys/wrapper.h`, so the old call stops compiling rather than misbehaving.
+
+The October removals are settled. On plugins, `EPDF_GetPageRotationByIndex`, `EPDF_GetPageSizeByIndexNormalized`, `EPDFAnnot_ApplyRedaction` and `EPDFAnnot_SetRectangleDifferences` appear only under `docs/`, `pdfium-binding-benchmarks/` and `pdfium-multiplatform-prototype/`, never in `crates/` or `packages/`, and every `EPDFForm_*` name that `crates/` and `packages/engine` call is exported, except `EPDFForm_GetFieldPartialName`, which upstream's TS brings with `cff0077cf`.
+
+One gap matters. Upstream `main` (`ef8ae52d7`, 2026-11-02) calls `EPDFAnnot_GetStructurePosition` from `packages/engine/services/src/features/annotations/internal/read/annotationReadPrimitives.ts:491`, but the runtime `main` pins, `cff0077cf`, doesn't export it. Upstream runtime `embedpdf/main` at `28b8b808f` (`13e012bc7`, four commits past `cff0077cf`) adds it and nothing else. Upstream `main` is mid-bump, and the TS oracle built against `cff0077cf` would fail on annotation reads. Decision D1 covers it.
+
+Merging `cff0077cf` into the fork branch (`git merge-tree` from `926c126b2`) conflicts in three files. The result is the same from `5cc1d8019` and against `28b8b808f`.
+
+| File | Cause |
+|---|---|
+| `core/fpdfapi/page/cpdf_docpagedata.cpp` | Upstream's `4639ac974` fixes the layer tiling-pattern and Type3 image-cache crash that the fork's `926c126b2` fixed independently |
+| `core/fpdfapi/render/cpdf_docrenderdata.cpp` | Same pair: upstream drops `GetCachedType3`'s base fallback, the fork keeps it for fonts the base parsed |
+| `scripts/embedpdf-runtime/build-target.sh` | Upstream added `pdf_use_libyuv=false` to the `wasm32` case and `pdf_enable_brotli=false` to `args.gn`; the fork moved the per-target `case` into `target-args.sh` |
+
+Upstream's DEPS also moved (Skia, libyuv, abseil, libc++, partition_alloc, Rust rolls), so every fork target needs a cold dependency sync and rebuild.
+
+### Payloads and pins
+
+Both releases are needed. The wasm payload hash covers the runtime-src commit and the Rust crates `epdf-wasm` links. The Apple hash (`platforms/apple/apple-engine-hash.sh`) covers the runtime-src commit (line 68), `Cargo.lock` and every crate in `APPLE_CRATES`. The runtime moves and the Rust changes, so both hashes change. Plugins pins `apple-engine-3cf9c87caaf5b2de` in `platforms/apple/EmbedPDF/Package.swift:9`. If the port of `packages/core/text` or `packages/plugin/fonts` adds a crate under `crates/plugins/`, it joins `APPLE_CRATES` or the publish script refuses.
+
+### The dev container's PDFium is stale
+
+The Linux library the dev containers mount at `/opt/pdfium` comes from `.claude/worktrees/plugins-share/packages/engine/runtime/build/libpdfium/linux-arm64`, and its `BUILD-METADATA.json` says it was built from `1461b0c51` on 2026-10-20. Plugins pins `926c126b2`, the fork commit whose message reads "fixing the null image-cache read", a SIGSEGV at 0x18 when a layer page draws a base document's image. Issue #16 reports a SIGSEGV rendering a layered page and names `1461b0c51` as the PDFium it ran against. It may be that crash rather than a lifetime bug. Task 0 checks this before anyone fixes #16 further.
+
+### The sync script
+
+`scripts/sync-upstream.sh` on plugins already takes `--from <local-branch>` (`c2602e40e`) and skips the runtime fetch when the source's runtime commit is present (`0162f1b22`). So the plugins step can be `scripts/sync-upstream.sh --from <impl branch>` today. What it lacks: impl doesn't have the script at all, `--push` knows only `private-fork`, and it merges whatever runtime the source pins, which for upstream `main` right now is `cff0077cf` (see D1). Decision D5 covers the rework.
+
+---
+
+## Tasks
+
+Order: 0, 1, 2, 3, 4, 5, 6, 7, 8. Task 0 can run now. Tasks 1 to 8 wait on D1, D2, D3 and D4.
+
+### Task 0: Rebuild the container's Linux PDFium at the pinned fork commit and recheck #16
+
+Needs nothing. Changes no branch.
+
+- [ ] Build `linux-arm64` from fork `926c126b2` (the commit plugins pins) in a container, into a new directory, not the shared `plugins-share` build.
+- [ ] Run `crates/epdf-engine/tests/document_session.rs::a_page_held_past_close_keeps_a_registry_layers_base_alive` against it, serially, as issue #16 describes.
+- [ ] Report the result to the #16 owner. A pass means #16 is the stale library, and the fix branch can close in favor of rebuilding the shared library. A crash means the lifetime bug is real and independent of the layer fix.
+
+Verifies: whether #16 is a library mismatch. Cost: one Linux PDFium build, under an hour with dependencies cached.
+
+### Task 1: Land or rebase the in-flight branches onto the catch-up base
+
+Depends on D3 and D4.
+
+- [ ] Fix the base branch: `fork` plugins `1454eb541`, or whichever copy D3 names, fast-forwarded so both copies match before the catch-up starts. `private-fork` plugins is an ancestor of `fork` plugins, so this is a fast-forward of `private-fork`.
+- [ ] Merge PR #17 (`feat/native-capi-lifecycle`, 4 commits on `1454eb541`: `crates/epdf-capi`, `platforms/dotnet`, `Cargo.toml`, `Cargo.lock`, one `crates/epdf-engine` file) if it's ready. It shares no file with upstream's changes or with the impl probe. If it isn't ready, it rebases after Task 4; the only likely friction is `Cargo.lock`.
+- [ ] Merge the #16 fix if Task 0 says it's needed and it's ready. It has no commits yet (`fix/held-layer-page-lifetime` is at `1454eb541`).
+- [ ] Decide `align/visibility-render-resolution` per D4. It pins runtime `5cc1d8019`, 6 commits past `926c126b2` (static macOS artifacts and the libLTO patch rebase), and Apple release `apple-engine-546d8c97ab7c9eed`.
+
+Verifies: one plugins tip, identical on both remotes, carrying every branch that should land before the catch-up.
+
+### Task 2: Merge upstream runtime into the fork
+
+Depends on D1 (which commit) and D2 (the layer fix). Runs in a runtime worktree inside the container.
+
+- [ ] Branch `sync/runtime-<short>` off fork `research/multi-platform-rust-core` (or off `align/runtime-catchup` if D4 lands align first).
+- [ ] Merge the D1 commit. Resolve `cpdf_docpagedata.cpp` and `cpdf_docrenderdata.cpp` per D2. Resolve `build-target.sh` by taking upstream's file and porting its two changes into `target-args.sh`: `pdf_use_libyuv=false` for `wasm32` only, `pdf_enable_brotli=false` for every target. Carry `fpdfsdk/epdf_layer_embeddertest.cpp` and the `docs/embedpdf/fork-ledger.md` entry from `926c126b2`, rewritten to name upstream's fix if D2 takes it.
+- [ ] Run the fork's own checks: `scripts/embedpdf-runtime/tests/target-args.test.sh`, and the layer embedder tests on Linux.
+- [ ] Build `wasm32`, `wasm32-eh`, `linux-arm64` and `darwin-arm64` from the merge. iOS and Android follow in Task 6.
+- [ ] Re-extract the export list and compare with `cff0077cf` (or the D1 commit): expect 0 removed, and the `EPDFFont_AddFallbackFont` signature change.
+
+Verifies: the fork builds on every target with upstream's surface, and the layer crash test still passes. Cost: cold dependency syncs; DEPS moved, so expect hours on the first target.
+
+### Task 3: Merge `main` into impl
+
+Branch `research/catchup-2026-11-impl` off `private-fork` impl `52f10e027`.
+
+- [ ] `git -c core.commitGraph=false merge --no-ff <main commit>`, with the runtime pointer set to Task 2's merge. Resolve `.prettierignore` as the union and `engine-runtime-build.local.json` as upstream's entries plus impl's extra targets.
+- [ ] Read the five clean both-sides merges by hand: `WorkerHost.ts`, `wasm-runtime.ts`, `packages/engine/main/src/index.ts`, `pnpm-lock.yaml`, `.github/workflows/build-engine-runtime.yml`.
+- [ ] Pass `tier` in `crates/pdfium/src/fonts.rs` as upstream's `FontRegistrar.ts` does.
+- [ ] `pnpm install`, then `pnpm exec turbo run build --filter=@embedpdf/engine...`, then `CARGO_BUILD_JOBS=6 cargo test --workspace` against Task 2's Linux library.
+
+Verifies: impl builds and its existing suites pass on the new runtime.
+
+### Task 4: Merge impl into plugins
+
+Branch `research/catchup-2026-11-plugins` off the Task 1 base. Can use `scripts/sync-upstream.sh --from research/catchup-2026-11-impl`.
+
+- [ ] Resolve `engine-runtime-build.local.json` by keeping plugins' target entries and taking upstream's `wasm32`.
+- [ ] Read the three clean both-sides merges: `wasm-runtime.ts` (plugins' change is 34 lines), `packages/plugin/search/test/search.test.ts`, `pnpm-lock.yaml`.
+- [ ] Check H3 and M14 survive: upstream didn't touch `packages/core/annotation/src/update/`, and touched 6 files in `packages/plugin/actions`, none of them `document-events.ts`.
+- [ ] `cargo test --workspace` and the TS builds, as in Task 3.
+
+Verifies: plugins carries upstream without a lost Rust or TS edit.
+
+### Task 5: Regenerate the vectors and re-port
+
+The bulk of the work. Follow October's method, crate by crate, at most two agents at once.
+
+- [ ] Run `npx tsx --conditions=development src/staleness.ts` in `tooling/plugin-conformance` and every `:check` script in `tooling/engine-conformance`. Record stale, throws and no-import counts in a table like October's.

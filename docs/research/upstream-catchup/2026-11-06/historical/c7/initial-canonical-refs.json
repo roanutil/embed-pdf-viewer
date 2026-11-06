@@ -1,0 +1,55 @@
+{
+  "utc": "2026-11-04T13:25:23.357139+00:00",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/workspaces/embed-pdf-viewer",
+        "remote",
+        "-v"
+      ],
+      "exit": 0,
+      "stdout": "fork\thttps://github.com/roanutil/embed-pdf-viewer.git (fetch)\nfork\thttps://github.com/roanutil/embed-pdf-viewer.git (push)\norigin\thttps://github.com/embedpdf/embed-pdf-viewer.git (fetch)\norigin\thttps://github.com/embedpdf/embed-pdf-viewer.git (push)\nprivate-fork\thttps://github.com/roanutil/embed-pdf-viewer-private.git (fetch)\nprivate-fork\thttps://github.com/roanutil/embed-pdf-viewer-private.git (push)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/workspaces/embed-pdf-viewer",
+        "ls-remote",
+        "origin",
+        "refs/heads/main"
+      ],
+      "exit": 0,
+      "stdout": "4ad8986099314b9587df423c802db103a21d665d\trefs/heads/main\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/Users/andrew/repos/embed-pdf-runtime",
+        "remote",
+        "-v"
+      ],
+      "exit": 0,
+      "stdout": "fork\thttps://github.com/roanutil/embed-pdf-runtime.git (fetch)\nfork\thttps://github.com/roanutil/embed-pdf-runtime.git (push)\norigin\thttps://github.com/embedpdf/runtime.git (fetch)\norigin\thttps://github.com/embedpdf/runtime.git (push)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/Users/andrew/repos/embed-pdf-runtime",
+        "ls-remote",
+        "origin",
+        "refs/heads/main"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

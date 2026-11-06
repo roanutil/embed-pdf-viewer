@@ -1,0 +1,35 @@
+{
+  "argv": [
+    "git",
+    "--git-dir",
+    "/tmp/embedpdf-c7-viewer-metadata.git",
+    "show",
+    "4ad8986099314b9587df423c802db103a21d665d:packages/engine/core/src/annotation/base.schema.ts"
+  ],
+  "exit": 0,
+  "ranges": [
+    {
+      "line": 66,
+      "context": [
+        " * A dash pattern a write sets: lengths of line, then gap, at least one. An",
+        " * empty pattern draws a solid line (ISO 32000 8.4.3.6), which is",
+        " * `borderStyle: 'solid'`, so a write refuses it; a read never returns one.",
+        " */",
+        "export const DashArrayWriteSchema: z.ZodType<number[]> = z.array(z.number().nonnegative()).min(1);",
+        "",
+        "export const LineEndingSchema: z.ZodType<LineEnding> = z.enum([",
+        "  'none',",
+        "  'square',",
+        "  'circle',",
+        "  'diamond',",
+        "  'open-arrow',",
+        "  'closed-arrow',",
+        "  'butt',",
+        "  'r-open-arrow',",
+        "  'r-closed-arrow',",
+        "  'slash',",
+        "]);"
+      ]
+    }
+  ]
+}

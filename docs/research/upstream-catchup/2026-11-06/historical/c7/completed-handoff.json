@@ -1,0 +1,26 @@
+{
+  "state": "FINISHED scope/design/proposed-plan only; no implementation authorized",
+  "utc": "2026-11-04T13:51:59.896509+00:00",
+  "authority": 916,
+  "plan": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.md",
+    "sha256": "bcf94c0cee6b9f98d90e5375bb5c32d866b9cec3ca398fb0fca7e0a98da18fb0"
+  },
+  "authorHandoffSHA256": "f69ff3b59165ac5b4053067b1067a02c4021166802ce66d6127377f25f78bd59",
+  "review": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/independent-plan-review.md",
+    "sha256": "154910755c707f6054dbf4c40750d09bb390ab94d4decdc04374cf7be3c3ae2c",
+    "verdict": "C0/I0/M0",
+    "evidenceRows": 252,
+    "boundFiles": 47,
+    "metadataExports": 68
+  },
+  "viewerTarget": "4ad8986099314b9587df423c802db103a21d665d",
+  "runtimeMinimum": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+  "recommendedSupplementalRuntime": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e",
+  "proposedDecisions": "RuntimeB and one integration/finalclosureSHA bothprivatebranches remain proposals for future implementation review",
+  "estimate": "Approximately40\u201375 engineeringhours +6\u201318machinehours/platformqueues; no measuredfuturepass",
+  "sourceChanges": false,
+  "buildsTestsMergesPushPublications": false,
+  "resources": "C7 combined reservation released; HOSTmetadata+source Git alternates retained; no newpersistentcontainers/buildvolumes"
+}

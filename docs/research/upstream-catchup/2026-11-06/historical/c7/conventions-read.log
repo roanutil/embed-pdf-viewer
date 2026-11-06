@@ -1,0 +1,693 @@
+# Conventions
+
+How the EmbedPDF client stack is built, and the rules every change follows.
+These documents describe the code as it is. When the code and a document
+disagree, fix one of them in the same pull request.
+
+Start with this page, then read [`architecture.md`](./architecture.md).
+
+## The model
+
+A plugin provides one capability per scope (the workspace, or each open
+document). The capability is its only public surface: synchronous reads,
+verbs that do work, and events. A plugin talks to the engine only through
+`ctx.doc`, and to other plugins only through their capabilities.
+
+### Four kinds of state
+
+| Kind           | What it is                                                   | Home                                                                    | How it changes                                                                   |
+| -------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Mirror         | A local copy of data the engine owns                         | `ctx.mirror(spec)`, `ctx.pageMirror(spec)`                              | Only by folding confirmed engine events (every origin) and by loads              |
+| Pending change | A change this session staged that the engine hasn't answered | the document's change queue (`ctx.changes`), shown by mirrors' `view()` | Staged by a verb or gesture; leaves the views once answered and held, or refused |
+| Session        | State the client owns that is not in the PDF                 | `ctx.state`                                                             | Only through named pure transitions in `model.ts`                                |
+| Resource       | Handles, rasters, workers, registries of functions, caches   | closures, owned through `ctx.cleanup` and `ctx.acquire`                 | Any way; readers are woken with `ctx.notify()`                                   |
+
+### Three kinds of events
+
+| Kind         | Meaning                              | Fired from                                                         |
+| ------------ | ------------------------------------ | ------------------------------------------------------------------ |
+| Fact         | Something changed in the document    | Where the confirmed document event is applied, with `event.origin` |
+| State change | A session value changed              | The plugin's one `ctx.state.onChange` listener                     |
+| Occurrence   | An operation ran, finished or failed | Where the operation reaches that point                             |
+
+## Core rules
+
+1. A capability is a plugin's only public surface. Other plugins and adapters
+   read through it, never through a plugin's state.
+2. Every piece of state has one kind and one home: mirror, pending change,
+   session or resource. State is plain data; everything else is a resource.
+3. A mirror changes only by its fold and by loads. Its fold is pure and the
+   same for every origin. Verbs never write it.
+4. Session state changes only through named pure transitions applied with
+   `ctx.state.update`. A transition that returns the same object changes
+   nothing.
+5. A verb calls the engine and returns. The engine publishes the confirmed
+   event before the call resolves, so the verb's `await` already sees its own
+   write: no refetch, no waiting, no hand-made events.
+6. Every event fires from exactly one place. Fact events carry
+   `event.origin` as it is; no plugin builds an origin by hand. Loads announce
+   `onResynced`.
+7. Reads are synchronous, pure and identity-stable (`memo`, `memoByKey`).
+   They never start engine work.
+8. A plugin declares every token it resolves in `requires` or `optional`, and
+   imports sibling tokens from their `/contract` entries.
+9. Registrations with siblings and subscriptions happen in `connect`, and
+   everything acquired is owned: `ctx.cleanup`, `ctx.listen`, `ctx.acquire`.
+10. A capability rejects with `PluginError` only, and every verb that can
+    refuse has a `can*` twin.
+11. Names and comments follow [`naming.md`](./naming.md) and
+    [`comments.md`](./comments.md).
+
+## Map
+
+| File                                                     | Covers                                                                                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [`architecture.md`](./architecture.md)                   | Layers, scopes and bring-up, the four kinds of state, data flow, reads, reactions, pure cores, plugin anatomy                            |
+| [`state-and-sync.md`](./state-and-sync.md)               | `ctx.state`, `notify`, `watch`, `waitFor`, mirrors, page mirrors, pending changes, resources, reactions, the sync rules                  |
+| [`events.md`](./events.md)                               | Fact, state-change and occurrence events, event sources, naming, `EventOrigin`, `onResynced`, subscribing                                |
+| [`plugins.md`](./plugins.md)                             | Plugin files, manifest, tokens and contracts, package entries, controller, `connect`, dependencies, lifetime, errors, a complete example |
+| [`testing.md`](./testing.md)                             | Where tests live, the test context, fake engines, mirror tests, kernel tests, conformance suites, type tests                             |
+| [`naming.md`](./naming.md)                               | Identifiers, the glossary, type suffixes, the capability vocabulary                                                                      |
+| [`comments.md`](./comments.md)                           | What a comment may say, and how it is checked                                                                                            |
+| [`packages.md`](./packages.md)                           | Where a package lives and what it is called                                                                                              |
+| [`permissions.md`](./permissions.md)                     | Authorization-aware plugins: `can*` twins, gates, per-record authority                                                                   |
+| [`viewer-doors.md`](./viewer-doors.md)                   | One viewer, several deliveries: the entry points that choose the engine                                                                  |
+| [`engine-services.md`](./engine-services.md)             | Layout of `@embedpdf/engine-services`: readers, mutators, the worker host                                                                |
+| [`runtime-confinement.md`](./runtime-confinement.md)     | Thread-confined PDFium: per-thread state, the worker pool, the threading gate                                                            |
+| [`engine-host-isolation.md`](./engine-host-isolation.md) | Running engines in supervised child processes, and the threat model                                                                      |
+| [`server-adapters.md`](./server-adapters.md)             | The CloudPDF server's adapter families: secrets, KMS, storage, CDN, import                                                               |
+| [`server-migrations.md`](./server-migrations.md)         | Forward and rollback database migrations for the CloudPDF server                                                                         |
+| [`docs-architecture.md`](./docs-architecture.md)         | How the documentation site renders one source per framework                                                                              |
+
+Package build and export rules are in
+[`tooling/build/README.md`](../../tooling/build/README.md). Changesets are
+described in [`.agents/skills/embedpdf-changesets/SKILL.md`](../../.agents/skills/embedpdf-changesets/SKILL.md).
+# Architecture
+
+How the client stack is put together: what a plugin is, where its state lives,
+how engine data reaches the UI, and how a plugin's files are laid out. The
+details live in [`state-and-sync.md`](./state-and-sync.md),
+[`events.md`](./events.md) and [`plugins.md`](./plugins.md).
+
+## A plugin in one paragraph
+
+A plugin provides one capability per scope: one for the workspace, or one for
+each open document. The kernel builds it by calling the plugin's
+`create(ctx)`. The capability is the plugin's only public surface: synchronous
+reads, verbs that do work, and events. Inside, a plugin holds up to four kinds
+of state, each with one home and one way to change. It talks to the engine
+only through `ctx.doc`, and to other plugins only through their capabilities.
+
+## Layers
+
+| Layer      | Packages                                                                                       | Responsibility                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Engine     | `@embedpdf/engine-core` (the contract), `@embedpdf/engine` (local), `@cloudpdf/engine` (cloud) | Reads and writes PDF documents; publishes one confirmed event per mutation. |
+| Kernel     | `@embedpdf/core`                                                                               | Scopes, plugin lifetime, the store, capability resolution, mirrors.         |
+| Pure cores | `@embedpdf/core-*`                                                                             | One domain's logic, testable without a kernel, engine or DOM.               |
+| Plugins    | `@embedpdf/plugin-*`, `@cloudpdf/plugin-*`                                                     | One capability each, built on the kernel.                                   |
+| Adapters   | `@embedpdf/react`, `@embedpdf/angular`, `@embedpdf/web`, `@cloudpdf/web`                       | Render capabilities in one framework; read only through capabilities.       |
+| Viewer     | `@embedpdf/viewer`, `@embedpdf/viewer-*`                                                       | The finished viewer, built on the adapters.                                 |
+
+Where each package lives and what it is called: [`packages.md`](./packages.md).
+
+An adapter paints from what a plugin hands out, and decides no geometry. When a
+picture needs a placement, the plugin's read carries it resolved: an
+annotation render item comes with its `frame` and `raster`, and the adapter
+only converts page units to pixels with `@embedpdf/web` (`frameInPixels`,
+`rasterInPixels`). The one core function adapters call is the annotation
+core's `scene()`, the drawing vocabulary every painter maps onto its own
+elements.
+
+## Scopes and bring-up
+
+A plugin declares `scope: 'workspace'` (the default: one instance for the
+kernel) or `scope: 'document'` (one instance per open document).
+
+- **Workspace plugins** are created by `createKernel`, in dependency order.
+  Their `connect` runs in `kernel.start()`.
+- **Document plugins** are created when a document opens. After the engine has
+  opened the document and listed its pages, the kernel gives every document
+  plugin a fresh state cell, then, in dependency order, runs each plugin's
+  `create`, then its `connect`, then starts the first load of the mirrors that
+  plugin created.
+
+A document open is transactional. Everything above runs before the document is
+published; if a `create` or `connect` throws, every teardown registered so far
+runs, the document never becomes ready, and its tab shows `error`. Only after
+bring-up does the document appear in `documents.list()` as `ready` and
+`documents.onOpened` fire.
+
+Closing a document removes its tab at once, revokes the write access of every
+instance's state and mirror cells, aborts the instance lifetime (pending
+`ctx.doc` calls reject with `instance-closed`), runs every registered teardown
+in reverse order, and then fires `documents.onClosed`.
+
+## Four kinds of state
+
+| Kind           | What it is                                                                                  | Where it lives                                                                                  | How it changes                                                                                                                   | Examples                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Mirror         | A local copy of data the engine owns                                                        | `ctx.mirror(spec)` or `ctx.pageMirror(spec)`: a store cell of its own                           | Only by folding confirmed engine events (every origin) and by loads. Verbs never write it.                                       | form fields, annotation records, metadata, signatures, links per page, text geometry per page |
+| Pending change | A change this session staged that the engine hasn't answered                                | The document's change queue (`ctx.changes`), shared by its plugins; mirrors show it in `view()` | Staged by a verb or gesture; leaves the views once the engine answered and each mirror holds the answer, or at once when refused | three annotations the user moved, shown at their new places until the engine answers          |
+| Session        | State the client owns that is not in the PDF                                                | `ctx.state`                                                                                     | Only through named pure transitions in `model.ts`                                                                                | camera, open surfaces, active tool, selection, search session, in-flight flags                |
+| Resource       | Anything that is not plain data: handles, rasters, workers, registries of functions, caches | Closures in the controller, released through `ctx.cleanup` or `ctx.acquire`                     | However the owner likes; readers are woken with `ctx.notify()`                                                                   | raster store, tile manager, command and tool registries, script sandboxes                     |
+
+What the UI sees is each mirror's `view()` (the confirmed value with the
+pending changes replayed on top) and session state, combined by pure,
+memoized reads.
+
+Rules:
+
+- A mirror always holds what the engine confirmed. Nothing optimistic enters
+  it.
+- A pending change leaves the views when the engine answered: an applied one
+  once each mirror holds the answer, a refused one at once. Rollback is
+  leaving: the views show the mirror again, never a copy taken before the
+  change.
+- A new object is named at birth: its create takes a reserved object number
+  (`ctx.changes.takeObjectNumber()`), so everything that holds it before the
+  engine answers holds its final ref.
+- State is plain data: no functions, class instances, handles, `Map`s or
+  `Set`s in `ctx.state` or a mirror. Anything else is a resource.
+- No state exists only to wake the UI. A counter bumped so that selectors
+  re-run is a `ctx.notify()` call instead.
+
+[`state-and-sync.md`](./state-and-sync.md) describes each kind's API.
+
+## Data flow
+
+```
+ user gesture or API call
+          │
+          ▼
+   capability verb ──► ctx.changes.stage(change) ──► every mirror's view() shows it
+          │
+          ▼
+   doc.apply(change), after everything staged before it
+          │                                   another session's mutation
+          ▼                                              │
+   engine confirms ─► document event (origin: local) ◄───┘ (origin: remote)
+          │
+          ▼
+   mirror fold(value, event)  ── the same code for every origin
+          │
+          ├─► new mirror value (its store cell)
+          ├─► the answered change leaves the view
+          └─► the plugin's fact events fire (origin = event.origin)
+          │
+          ▼
+   store change ─► adapters re-run selectors ─► pure memoized reads ─► UI
+```
+
+Both engines publish the event for a session's own mutation before the
+mutation's promise settles (see `DocumentEvent` in
+`packages/engine/core/src/events/DocumentEvent.ts`, checked by
+`runDocumentEventsConformance`). So when a verb's `await` returns, the fold has
+already run: a verb never needs `waitFor`, a revision check or a refetch to see
+its own write.
+
+## Events
+
+A capability exposes three kinds of events:
+
+| Kind         | Meaning                              | Fired from                                                                                                                | Origin                            |
+| ------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Fact         | Something changed in the document    | Where the confirmed document event is applied: a mirror's `changed` callback, or the plugin's one listener for that event | `event.origin`                    |
+| State change | A session value changed              | The plugin's `ctx.state.onChange` listener, comparing previous and next                                                   | none                              |
+| Occurrence   | An operation ran, finished or failed | Where the operation reaches that point                                                                                    | a domain field when one is needed |
+
+An event fires from exactly one place. Events report what happened; what
+something is, is read through a getter. Details: [`events.md`](./events.md).
+
+## Reads
+
+- Reads are synchronous and pure: `get*`, `list*`, `is*`, `has*`, `can*`.
+- A read returns the same object until its inputs change, so adapter
+  selectors compare with `Object.is`. Build such reads with `memo` and
+  `memoByKey` from `@embedpdf/core`, not with hand-written caches.
+- Reads never start engine work. Loading starts with `ensureLoaded(page)`, or
+  by the mirror itself.
+
+## Reactions
+
+Some plugins do not copy engine data but must respond to it: render
+invalidates rasters, search re-runs its query, signature re-judges its
+verdicts, actions clears its trigger cache. A reaction:
+
+- subscribes with `ctx.listen(ctx.doc.events, …)` inside `connect`;
+- ignores origin for what it does;
+- only invalidates its own caches or re-runs its own operations. It never
+  writes another plugin's data.
+
+## Pure cores
+
+A `core-*` package exists when a domain needs logic worth testing without a
+kernel, engine or DOM: page geometry (`core-geometry`), the camera and scene
+(`core-stage`), annotation gestures and hit-testing (`core-annotation`), the
+toolbar solver (`core-ui`).
+
+- Inputs in, decision out: plain functions, or `update(model, message)`
+  returning the next session, the records it changed and the effects, as in
+  `core-annotation`. No I/O, no clock, no randomness.
+- A core never stores engine data. It reads the records it works on from its
+  input and returns what it changed; the plugin decides where that lives.
+- The plugin's controller performs the effects. A core does not call the
+  engine.
+- Cores know nothing about mirrors, overlays or events. They receive the data
+  they need as arguments.
+- A plugin's own pure functions live in its `model.ts`, not in a second
+  `core/` folder.
+
+## Plugin anatomy
+
+```
+packages/plugin/<name>/src/
+  <name>.plugin.ts   the manifest: definePlugin({ id, token, scope, requires, optional, state, create })
+  token.ts           createCapabilityToken(...), called once per package
+  contract.ts        the public lens: capability interface, public types, the token re-exported
+  host-contract.ts   optional: the host lens, the same token widened with createHostToken
+  internal.ts        optional: framework-only helpers (a visibility boundary, not a bundle boundary)
+  index.ts           the plugin factory and `export * from './contract'`
+  model.ts           state shape, initial state, pure transitions, pure projections and folds
+  controller.ts      create(ctx): builds the capability and returns { api, connect? }
+  connect.ts         optional: registrations with sibling plugins, called from connect
+  # larger plugins split the controller into areas:
+  services/          plugin-private helpers shared by the areas
+  read/ write/ sync/ tools/   one area per file, composed with composeApi
+packages/plugin/<name>/test/   mirrors src/
+```
+
+Rules:
+
+- The manifest holds no logic. Everything that registers with a sibling
+  lives in `connect.ts` and runs inside `connect`.
+- `create` returns `{ api, connect? }`, and `controller.ts` is where it is
+  built.
+- Every registration's `Unsubscribe` goes to `ctx.cleanup`, even when both
+  sides close together.
+- Tests mirror `src/` under `test/`.
+
+Each file's role, the manifest fields, contracts and lifetime helpers:
+[`plugins.md`](./plugins.md).
+# engine-services conventions
+
+`@embedpdf/engine-services` contains the synchronous, runtime-agnostic engine logic shared by
+`@embedpdf/engine` and `@cloudpdf/server`.
+
+The package should read like a small framework: a developer should know what a file does from its
+directory before opening it. Paths below are relative to
+`packages/engine/services/` unless they start at the repository root.
+
+## Top-level structure
+
+```txt
+src/
+  runtime/           Low-level helpers for @embedpdf/engine-runtime calls.
+  shared/            Generic helpers used across layers.
+  document-session/  Lifetime and identity state for one open document.
+  features/          Business-level document capabilities.
+  worker-host/       Worker wire dispatch and request orchestration.
+```
+
+Dependencies flow downward:
+
+```txt
+runtime/shared -> document-session -> features -> worker-host
+```
+
+`document-session/` must not import from `features/`. Feature code may use a `DocumentSession`;
+the session layer should stay focused on open-document state, page identity, page handles, and
+revision bookkeeping.
+
+## Feature modules
+
+Each feature follows the same shape:
+
+```txt
+feature-name/
+  FeatureReader.ts
+  FeatureMutator.ts      # only when the feature changes document state
+  internal/
+    ...
+  index.ts
+```
+
+Rules:
+
+- Use `Reader` for read-only orchestration.
+- Use `Mutator` for business-level document changes.
+- Put helper functions, registries, per-subtype codecs, and low-level runtime details in
+  `internal/`.
+- `index.ts` exports only the feature's public orchestration surface.
+- Avoid root-level helper files beside a reader or mutator; if it is not an entry point, it belongs
+  under `internal/`.
+
+## Naming
+
+- Public orchestration classes use `PascalCase.ts`: `MetadataReader.ts`, `PagesMutator.ts`.
+- Internal helper modules use descriptive verb phrases: `readMetadataText.ts`,
+  `writeTextMarkupAnnotation.ts`, `computeMutationImpact.ts`.
+- Avoid generic names like `util.ts`, `helpers.ts`, or `registry.ts` unless they live under an
+  already-specific folder and still read clearly.
+- Use `runtime` or `@embedpdf/engine-runtime` terminology. Do not use upstream project names as
+  directory names.
+
+## Worker boundary
+
+`worker-host/WorkerHost.ts` is the public host entry used by local workers, inline transports, and
+server worker threads. It should own:
+
+- request envelopes;
+- abort controller tracking;
+- resolve/reject serialization;
+- session lookup and close/shutdown routing.
+
+Feature behavior belongs in `features/`, not in worker adapters.
+
+This package runs where PDFium runs: in the engine's worker, the server's worker threads, or the
+page itself when there is no `Worker`. A page's main thread never imports it otherwise. The
+local engine imports it, with `@embedpdf/engine-runtime`, only in
+`packages/engine/main/src/transport/InlineTransport.ts`, loaded with `import()` when an engine
+boots in the page (`packages/engine/main/test/entry-graph.test.ts` checks it). What both engines
+need beside a document handle, such as `EventHub`, lives in `@embedpdf/engine-core/runtime`.
+The checks it runs before a write (a write's values against its kind's schema, the import
+planners) come from `@embedpdf/engine-core/validation`, the entry built with zod; the page's
+entries reach no zod (`packages/engine/core/test/entry-graph.test.ts`). A write is prepared,
+checked and derived; a viewer predicts it with the same preparation and derivation without
+schema validation, and the check only accepts or refuses, so this package writes what the viewer
+predicted or refuses it.
+
+## Mutation safety
+
+- Every job whose effect is `write` or `contentWrite` runs as one layer transaction, begun and ended
+  in `WorkerHost.run` (a signing's `signatures.complete` is the exception: it replaces the
+  document's bytes instead). The transaction commits in `finishMutation`, before the layer is saved; any throw before
+  that aborts it, and the document and the derived caches are as they were. A
+  writer never begins, commits or rolls back on its own.
+- A commit or an abort that fails leaves the session unusable: every later job is refused with
+  `DocNotOpen`, and the document has to be opened again.
+- Mutators still validate caller input and check cancellation before the first native write: a
+  refusal costs no copies, and the error names the caller's mistake.
+- A check that depends on the document runs inside the write, against what the write reads: the
+  caller's authority over an annotation's owner (`AnnotationAuthority`), the members of a thread a
+  delete takes. No read job runs before a write to check it.
+- Writers find annotations from the page's dictionaries (raw handles), so a write never parses a
+  page's content unless it writes that content (flatten, redaction).
+- A write that moves entries of a page's `/Annots` (a delete, a reorder, a flatten, a redaction, a
+  merged field's split) calls `promoteInlineAnnotations` first, before it loads the page: an inline
+  annotation is named by its position only while no entry has moved.
+- A batch is all or nothing too: redaction apply and page flatten throw when a page fails or the
+  call is cancelled, and their per-page results only say `applied` or `unchanged`.
+- Writes bump `cacheSeq` (derived caches) as they go; `finishMutation` bumps `editsSeq` (unsaved
+  edits, the signing version) once per committed write.
+
+## Adding a feature
+
+When adding a new worker capability:
+
+1. Add the wire request/response types in `@embedpdf/engine-core`.
+2. Add a `Reader` or `Mutator` under `features/<name>/`.
+3. Put implementation details under `features/<name>/internal/`.
+4. Add a small handler path in `worker-host/`.
+5. Add local/server/cloud adapter changes only where the public engine API requires them.
+6. Cover the behavior with conformance tests or focused package tests.
+# Thread-confined PDFium runtime
+
+This server can render PDFs on **N worker threads in a single process**, in
+parallel, with zero-copy `postMessage` transfer. This is not "thread-safe
+PDFium" (upstream is explicit that its APIs are not thread-safe). Instead the
+native runtime is built so that **each worker thread owns its own PDFium state**
+and never shares PDFium handles across threads — a _thread-confined_ (shared-
+nothing) contract under which N workers run safely in parallel.
+
+## The contract
+
+1. Each worker thread calls `EPDF_InitThread` before using PDFium and
+   `EPDF_ShutdownThread` after closing every handle it created
+   (wired in `packages/engine/services/src/runtime/lifecycle/bootstrap.ts`).
+2. No document, page, bitmap, annotation, text page, content parser, or font
+   object may cross workers.
+3. The pool enforces this: a doc is pinned to one worker via sticky-by-docId
+   routing in `cloudpdf/server/src/runtime/WorkerThreadPool.ts`.
+
+Two things are private-per-thread, which together make parallel rendering safe:
+the **handles** we create (pinned per worker) and PDFium's internal **globals**
+(made `thread_local` in the native build).
+
+## How it's built (per-target opt-in)
+
+Per-thread globals are gated behind a real GN arg, **default off**:
+
+- Declared in `packages/engine/runtime/runtime-src/pdfium.gni`
+  (`embedpdf_thread_local_globals = false`).
+- Translated to the `EPDF_THREAD_LOCAL_GLOBALS` define in
+  `packages/engine/runtime/runtime-src/BUILD.gn`, consumed by the `EPDF_TLS` macro
+  (`core/fxcrt/epdf_tls.h`).
+- Turned **on per native target** (and left **off for wasm**) by
+  `packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/build-target.sh`.
+  wasm needs nothing — each instance already isolates globals via its own
+  linear memory.
+
+Flag-on is a superset: the build still runs correctly single-threaded. Default
+off keeps every other target and upstream rebases byte-for-byte unchanged.
+
+## Configuring the worker pool
+
+Worker count resolves as: explicit `size` option → `CLOUDPDF_WORKER_POOL_SIZE`
+env → conservative default `min(2, cpus)`.
+
+```bash
+# one worker per CPU (after the gate below is green for your native build)
+CLOUDPDF_WORKER_POOL_SIZE=max   # or an explicit integer, e.g. 8
+```
+
+Keep the conservative default until you have validated the thread-confined
+native build with the gate below.
+
+## The gate (run before scaling in production)
+
+Fix-then-verify order — the two known addon/runtime data races are already fixed
+(`g_napi_lossless` made a per-call local; default `localtime` made thread-safe),
+so a TSAN run surfaces PDFium findings rather than masking them.
+
+1. **Threaded soak** (`testing/tools:epdf_thread_soak`) — multi-thread
+   init/open/render/**encrypted-save**/close. The encrypted-save path exercises
+   the now doc-owned pending-security state across threads.
+
+   ```bash
+   # plain build, native target (defaults EMBEDPDF_TLS_GLOBALS=true)
+   packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/thread-soak-target.sh \
+     darwin-arm64 path/to/icc-and-font-heavy.pdf -- --threads=8 --iterations=200
+
+   # under ThreadSanitizer (the gate)
+   EMBEDPDF_TSAN=1 \
+   packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/thread-soak-target.sh \
+     linux-x64 path/to/icc-and-font-heavy.pdf -- --threads=8 --iterations=200
+   ```
+
+   Use ICC-heavy PDFs to cover the LCMS default-context path (see the gate note
+   in `packages/engine/runtime/runtime-src/core/fxcodec/icc/icc_transform.cpp`).
+
+2. **Single-thread regression** — run the embeddertests to confirm the
+   `thread_local` variant is still correct single-threaded:
+
+   ```bash
+   packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/test-target.sh linux-x64
+   # baseline (process-global) comparison:
+   EMBEDPDF_TLS_GLOBALS=false \
+     packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/test-target.sh linux-x64
+   ```
+
+Only after TSAN + soak are green should you raise the pool size in production.
+
+## Load-test methodology
+
+Compare throughput/latency across three configurations on representative
+(ICC-heavy, font-heavy, encrypted-save) corpora:
+
+- `CLOUDPDF_WORKER_POOL_SIZE=1` — single worker baseline.
+- `CLOUDPDF_WORKER_POOL_SIZE=max` — one thread-confined worker per CPU.
+- A process-pool deployment (multiple single-thread pods/processes) — the
+  crash-isolated comparison point.
+
+Track p50/p95/p99 latency, sustained throughput, and **RSS** (per-thread memory
+matters — see below).
+
+## Tradeoffs
+
+- **Per-thread memory:** each thread duplicates the GEModule (FreeType + font
+  caches), CMaps, stock colorspaces, and the opcode table. N threads ≈ N× that
+  font/cmap footprint. Size the pool (and pod memory) accordingly.
+- **Thread confinement is not crash isolation:** a malformed-PDF segfault kills
+  the process that owns the worker threads. Inline mode therefore loses the API
+  process and all workers. Host mode moves the worker pool into supervised child
+  processes, but all workers within one host still share its crash domain. See
+  [`engine-host-isolation.md`](./engine-host-isolation.md).
+- Keep `pdf_use_partition_alloc=false` (or make `g_allocators` thread_local if
+  it is ever re-enabled).
+# Engine lifecycle, buffers and coordinates
+
+The contracts `multiplatform-plan.md` Section 5.3 makes a Phase 0 deliverable.
+Read this before adding an entry point to `crates/epdf-engine`, changing how a
+buffer crosses the host boundary, or touching close and cancellation.
+
+Every clause below says where it is implemented and what proves it, or says it
+is owed and by which group. A clause with no implementation is a clause
+somebody still has to build; the point of writing them all down now is that the
+ones that are missing are visible rather than assumed.
+
+## 1. Close
+
+**Close is idempotent.** Calling it twice is not an error and the second call
+does nothing. `SpikeSession::close` returns whether the document was released;
+`closing_an_idle_session_releases_it_at_once` covers both calls.
+
+**Close rejects new work immediately, then drains.** From the moment close is
+called, checkouts and reads fail with `DocNotOpen`. Work already outstanding is
+still accepted to completion, because refusing it would deadlock the thing the
+close is waiting for. `close_under_lease_waits_for_the_lease_before_releasing_the_document`.
+
+**Close never releases a resource the host is holding.** A close that arrives
+while a lease is out records the intent and returns `false`; the release
+happens in `finalize`. This is the clause whose violation is a use-after-free
+rather than a wrong answer, which is why the spike exists at all.
+
+**Closing an engine closes its documents.** Owed. There is no engine object
+yet; G3 brings one.
+
+**A running synchronous PDFium call still delays disposal.** Structural, not
+enforced: a synchronous call cannot be interrupted, so disposal waits. Native
+cancellation sets an atomic flag and does not wait for the owner's work queue.
+`crate::cancel::CancelToken` is that flag. Owed: the owner thread it belongs
+to, in G3.
+
+## 2. Poisoning
+
+**A panic partway through a write poisons the session.** A reported failure and
+a panic are different: after a failure the host knows what happened, after a
+panic nobody does. A poisoned session refuses everything with
+`RuntimeUnavailable`, including reads, because a read of a half-applied
+structural edit is a plausible-looking wrong answer and that is worse than an
+error. `a_panic_partway_through_a_write_poisons_the_session`.
+
+**Close is the exception.** A poisoned session still owns a document, and
+refusing to release it would leak for the life of the process.
+
+**A panic before any write does not poison.** Poisoning keys on `wrote`, not on
+`panicked` alone, or every transient host bug would throw away a good session.
+`a_panic_before_any_write_does_not_poison`.
+
+**Pending requests reject on worker failure.** Owed. Host-side, and it belongs
+with the acknowledged event path Stage B has to add.
+
+**Nothing unwinds across the C ABI.** Every `extern "C"` export wraps its work
+in `catch_unwind`, because the workspace deliberately does not set
+`panic = "abort"` and an escaping panic is undefined behaviour.
+`crates/epdf-wasm/src/lib.rs`.
+
+## 3. Admission and budgets
+
+**Lengths and multiplications are validated before allocation.** Every product
+that becomes an allocation size is `checked_mul`, and the result is refused if
+it exceeds `isize::MAX`. `BufferLayout::new`, and its tests
+`overflowing_layouts_are_refused_before_any_allocation` and
+`a_stride_narrower_than_a_row_is_refused`.
+
+**A document larger than the process can hold is an error, not an abort.**
+`Document::from_bytes` reserves fallibly. `read_page_geometry` reserves its
+glyph vector with `try_reserve` for the same reason.
+
+**Bounded queues for jobs, open documents, input bytes, raster and cache bytes
+and search output.** Owed, all of it. `crate::dispatch` describes the shape and
+implements none of it. The reserved control route, so saturation cannot block a
+close or a cancel, is owed with it.
+
+**PDFium's own allocations are invisible to Rust budgets.** Structural. Any
+budget built later bounds what Rust allocates, not what PDFium does behind
+`FPDF_*`, and a budget that claims otherwise is lying.
+
+**A live `WebAssembly.Memory` has no shrink API.** Measure live allocator
+usage, never `byteLength`. The Phase 0 baseline measures JS heap retained per
+snapshot for this reason:
+`tooling/engine-baseline/RESULTS.md`.
+
+## 4. Handles and generations
+
+**Raw pointers never appear in a consumer API.** Stage A takes
+`RawPageHandle`, a `*mut c_void`, at the host adapter boundary only, so nothing
+above `epdf-wasm` names a `pdfium-sys` type. `crate::access`.
+
+**An index is not identity.** Pages are addressed by PDF indirect object
+number, which survives insertion and reordering. `crate::identity`, and
+`PageObjectNumber::new` rejects `0` as `MalformedPdf` because a direct page
+dictionary has no identity to carry.
+
+**Public bindings hand out opaque handles carrying an engine generation, so a
+handle from a replaced engine fails rather than resolving against new state.**
+Owed. The uniffi and napi surfaces are stubs, and building generation-carrying
+handles for a consumer that does not exist would be building the wrong thing
+twice. G3.
+
+**No process-wide singleton without reset.** Owed with the above.
+
+## 5. Buffers
+
+Anything crossing the host boundary as pixels carries its layout with it:
+format, width, height and stride, validated on construction.
+`crate::buffer::BufferLayout`.
+
+**Stride is explicit and may exceed the packed row width.** Rows are addressed
+by stride and stop at the bottom, never by assuming `width * bytes_per_pixel`.
+`rows_are_addressed_by_stride_and_stop_at_the_bottom`.
+
+**A buffer whose length disagrees with its layout is refused**, rather than
+read to whichever of the two is shorter. `a_buffer_whose_length_disagrees_with_its_layout_is_refused`.
+
+**Heap views are rebuilt after WASM memory growth.** Host-side. A `Uint8Array`
+over the old `ArrayBuffer` is detached by growth, so no view may be cached
+across a call that can allocate.
+
+**The web `PageRender` contract is preserved**: `deviceRaster.ts` returns
+`color: 'rgba8'`, `premultipliedAlpha: false` and owned bytes, using
+`FPDF_REVERSE_BYTE_ORDER`. Rust's internal buffers are BGRA where PDFium
+produces BGRA, so the conversion is explicit and belongs at the public service
+boundary. Owed with G4; test channel order and transparent-pixel alpha there,
+because a grayscale fixture cannot tell a B-to-R swap from a correct one.
+
+## 6. Coordinates
+
+**Geometry is PDF user space, y-up, with no device transform.** The viewer
+converts through the page geometry matrix; readers never apply a y-flip.
+`crate::geom`, and `read_page_geometry` emits nothing else.
+
+**Rects are normalized so edges are ordered**, whatever order the file used.
+`normalize_pdf_rect`, and `normalizing_orders_edges_whatever_order_the_file_used`.
+
+**Quad corners are frame-geometric, not reading order.** `p1` upper-start,
+`p2` upper-end, `p3` lower-start, `p4` lower-end, in the glyph's own upright
+frame. Deliberately not a bidi statement: advance direction is a glyph-sequence
+concern carried separately.
+
+**Rotation is one of the four `/Rotate` values**, and page pointers are
+acquired through the pool that normalizes it, so render, text, geometry and
+annotation coordinates share one space. Rust must not call `FPDF_LoadPage`
+itself in Stage A for exactly this reason.
+
+## 7. Cancellation
+
+Four cases, one per operation, from Section 7. Which case each of the 65 wire
+kinds falls into is recorded in
+`tooling/engine-conformance/OPERATIONS.md`, generated from
+`src/operations.ts`, and CI fails if a kind is added without a row.
+
+- `queued-only`: droppable before it starts, not after. No `throwIfAborted`
+  reaches the handler.
+- `cooperative`: the token is checked between units of work, before any write.
+- `non-preemptible`: cooperative up to one synchronous native call that cannot
+  be interrupted. The wait ends; the work completes.
+- `after-first-write`: bookkeeping completes. Mutations are not
+  rollback-atomic, and an `AbortError` is never evidence of rollback.
+
+`crate::cancel::CancelToken` is the Rust side and is a flag, not an
+`AbortSignal`: cancellation of waiting is a host concern and stays in
+TypeScript.

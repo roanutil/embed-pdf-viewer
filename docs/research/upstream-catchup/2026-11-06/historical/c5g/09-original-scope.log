@@ -1,0 +1,101 @@
+# November 2026 catch-up: impl
+
+This is the record of bringing `research/multi-platform-rust-core-impl` up to upstream `main`. It is
+Task 3 of `multiplatform-upstream-catchup-2026-11.md` (committed on `research/catchup-2026-11-plan`
+at `867c1c036`), plus the part of D6 that belongs on impl. Plugins is C4 and follows from here. C4
+runs two plan tasks: Task 4 is the plugins merge, and Task 5 is the port work.
+
+## What was merged
+
+Impl was at `52f10e027`. We merged upstream `main` at `a40d63a19`, 7 commits past the `74afd5575`
+the plan measured. The extra 7 are viewer examples and docs, plus `07a39d018`, which only regenerates
+an API contract. None of them touch `packages/engine` or the runtime pin. The merge is `50786828f`.
+
+It conflicted in the same three places as the C1 probe (`e35924682`), and we resolved them the same
+way:
+
+| Path | Resolution |
+|---|---|
+| `.prettierignore` | Union: upstream's generated-font entries plus impl's conformance and ts-rs entries |
+| `packages/engine/runtime/engine-runtime-build.local.json` | Upstream's `wasm32` and `darwin-arm64` entries plus impl's `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64` |
+| `packages/engine/runtime/runtime-src` | Pinned to `8b1e69abd` on `roanutil/embed-pdf-runtime` (fork `926c126b2` merged with upstream `cff0077cf`, per D1) |
+
+`.gitmodules` keeps impl's URL. Four files merged cleanly with changes from both sides:
+`WorkerHost.ts`, `wasm-runtime.ts`, `packages/engine/main/src/index.ts` and
+`.github/workflows/build-engine-runtime.yml`. Each of them, diffed against upstream, carries exactly
+impl's own hunks from `b456ee4fd` and nothing else. So does `pnpm-lock.yaml`.
+
+## Commits on top
+
+- `77bcc82e1` adds `epdf_ppo.h` to `crates/pdfium-sys/wrapper.h`. The runtime ships it now, and the
+  wrapper includes every public header.
+- `1109eeea1` passes the new `tier` argument to `EPDFFont_AddFallbackFont`, which is what stopped
+  the build. It also threads the tier through `FontRegistry` the way `FontRegistrar.ts` does:
+  `add_fallback` keeps the `FALLBACK_TIERS.own` default, `add_fallback_in_tier` takes one, re-adding
+  a key changes only its tier, and `fallback_order` reports the chain by tier, then by the order
+  added. `StartupFont` gains `tier`, and `fonts.addFallback` reads an optional `tier`.
+- `cbb538fee` binds the rest of the font surface that upstream's TS reads through the runtime, in two
+  new modules, `crates/pdfium/src/font_program.rs` and `crates/pdfium/src/document_fonts.rs`.
+- `798f7b229` makes a wire `tier` coerce the way the TS on the WASM runtime does, below.
+- `2e5a14a81` narrows the two `GetProgramObjNum` results with `u32::try_from`, a number past `u32`
+  reading as the fork's 0 (no program), and reserves the fallback-id buffer with
+  `try_reserve_exact` like the others in `document_fonts.rs`.
+- `332394f16` allows clippy's `useless_conversion` at the three `c_ulong` conversions in
+  `document_fonts.rs`, which are identities where `c_ulong` is 32-bit.
+- `18f7ce2b7` answers `fonts.addFallback` with no payload, as `WorkerHost` does. The plugins merge
+  below says why.
+- `7bf5f760d` corrects two of those lint comments: `c_ulong` is 64-bit on LP64 targets and 32-bit
+  on Windows, wasm32 and other 32-bit targets, not "64-bit on Unix".
+- `7e5b519bf` answers `fonts.clearFallbacks` and `fonts.clear` with no payload too.
+
+## The tier at the FFI boundary
+
+The TS never checks `tier`. `WorkerHost` passes `req.tier` to `FontRegistrar.addFallback`, which
+passes it to `EPDFFont_AddFallbackFont`. `createWasmFunctions`
+(`packages/engine/runtime/src/wasm/wasm-runtime.ts`) changes only `Ptr` bigints, and the slot's
+`cwrap` type is `number` (`pdf-functions.generated.ts:1383`). Emscripten's `cwrap` returns the raw
+export for an all-numeric signature when ASSERTIONS is off, and `ccall` converts only `string` and
+`array` arguments when it is on (`src/library_ccall.js:65` and `:134-145` in emscripten 3.1.72). So
+the JavaScript value reaches the wasm `i32` as it is, and the WebAssembly JS API applies
+`ToInt32(ToNumber(v))`. An absent tier never gets that far: the default parameter makes it
+`FALLBACK_TIERS.own`. `null` is not absent, and ToNumber makes it 0.
+
+Rust now does what the WASM runtime does, and only that runtime. The Node native addon converts
+differently, as noted below. `crates/epdf-engine/src/js_number.rs` implements
+`ToNumber` over every JSON value (strings by the `StringNumericLiteral` grammar, arrays through
+their `join`) and `ToInt32`.
+The host decodes `tier` with it and no longer refuses a value as `WireFormat`. The registry passes
+`ToInt32` of the tier to PDFium: 1.7 is tier 1, -0.5 is 0, `null`, `"own"` and `{}` are 0, `"1"`
+is 1, 2^32 + 1 is 1, and 2^31 wraps to -2^31. `crates/epdf-engine/tests/font_fallback_tier_wire.rs`
+checks each against the chain PDFium actually tries.
+
+The registrar also keeps the raw tier and reports `fallbackKeys` sorted by `left.tier -
+right.tier`, so the reported order uses the number itself, and 1 comes before 1.7 although PDFium
+tries both as tier 1. Rust's `fallback_order` does the same. One case can't match exactly, and it is
+an accepted (2026-11-02) Rust-only exception. When a tier's ToNumber is NaN (a word,
+an object), `Array.prototype.sort` counts the difference as equal. The comparator is then not an
+order, and the TS answer depends on the JavaScript engine's sort algorithm, so V8, JavaScriptCore
+and SpiderMonkey can disagree. Rust answers what a stable insertion sort makes of the same
+comparator, because `sort_by` may panic on a comparator that isn't total. This affects only the
+reported order. PDFium's chain matches exactly. Nothing on impl reports the order to a TS caller
+yet. `fonts.list` does once C4 (plan Task 5) ports it, and C4 has to carry the exception to plugins
+with it.
+
+A separate observation, not part of the exception: TS's native runtime converts a non-number tier
+its own way. The Node addon's generated wrapper reads an `int32` argument as `int32_t x;` followed by
+`napi_get_value_int32(env, argv[i], &x)`, and ignores the status
+(`packages/engine/runtime/build/generate-napi-binding.mjs:65`). For a non-number tier (`null`, a
+string, an object) the call fails with `napi_number_expected` and leaves `x` unwritten, so PDFium
+gets an indeterminate int. A number converts the way `ToInt32` does, so for numbers the two runtimes
+and the Rust agree. The Rust mirrors the WASM runtime, and we didn't change any behavior for the
+native one.
+
+## The font port, split between impl and plugins
+
+Impl has the pdfium-layer bindings for the 45 font functions upstream's TS calls: a registered font's
+program facts and the last-resort font (`FontRegistrar.ts`), a document's faces, fingerprint,
+display programs and `EPDFDoc_ResolveFonts` (`DocumentFontReader.ts`), the missing-character list
+(`DocumentSession.ts`), and the two `/DA` calls that name a document's own program. Each binding
+answers the facts as the fork reports them, and `crates/pdfium/tests/document_fonts.rs` checks them
+against Roboto and `embedded_orientations.pdf`.
+multiplatform-upstream-catchup-2026-11-impl.md

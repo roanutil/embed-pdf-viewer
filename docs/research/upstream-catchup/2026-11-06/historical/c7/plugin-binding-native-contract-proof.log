@@ -1,0 +1,608 @@
+crates/epdf-uniffi/src/lib.rs:319:    /// A `PageGeometrySnapshot` is an untagged union of two run variants with
+crates/epdf-uniffi/src/lib.rs:329:                let snapshot = read_page_geometry(&page, &CancelToken::never())?;
+crates/epdf-uniffi/src/lib.rs:330:                serde_json::to_string(&snapshot).map_err(|e| {
+platforms/dotnet/validation/slice6-linux-arm64-r2.json:70:    "Historical development run, superseded by the nonempty-text run record. Artifact manifest hashes may identify a superseded development status snapshot."
+platforms/dotnet/validation/slice6-linux-arm64-r3.json:69:    "Historical development run, superseded by the nonempty-text run record. Artifact manifest hashes may identify a superseded development status snapshot."
+platforms/dotnet/validation/slice6-linux-arm64.json:69:    "Historical development run, superseded by the nonempty-text run record. Artifact manifest hashes may identify a superseded development status snapshot."
+crates/epdf-uniffi/tests/native_surface.rs:53:fn geometry_comes_back_as_the_same_snapshot_the_web_engine_produces() {
+crates/epdf-uniffi/tests/native_surface.rs:59:    let snapshot: serde_json::Value = serde_json::from_str(&json).expect("geometry is JSON");
+crates/epdf-uniffi/tests/native_surface.rs:60:    let runs = snapshot["runs"].as_array().expect("runs");
+crates/epdf-capi/src/helpers/text.rs:1://! Text helpers over a page's geometry and text snapshots.
+crates/epdf-capi/src/helpers/text.rs:5://! charmap invariants. Here those inputs are refused, so a malformed snapshot
+crates/epdf-capi/src/helpers/text.rs:9:use epdf_engine::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
+crates/epdf-capi/src/helpers/text.rs:12:    PageTextSnapshot, boundary_text_offset, char_map_violation, char_range_for_text_offsets,
+crates/epdf-capi/src/helpers/text.rs:43:    geometry: PageGeometrySnapshot<PageCoordinates>,
+crates/epdf-capi/src/helpers/text.rs:50:    geometry: PageGeometrySnapshot<PageCoordinates>,
+crates/epdf-capi/src/helpers/text.rs:57:    text: PageTextSnapshot,
+crates/epdf-capi/src/helpers/text.rs:64:    text: PageTextSnapshot,
+crates/epdf-capi/src/helpers/text.rs:98:/// The layout of a snapshot whose runs tile its characters in order, from
+crates/epdf-capi/src/helpers/text.rs:101:    geometry: PageGeometrySnapshot<PageCoordinates>,
+crates/epdf-capi/src/helpers/text.rs:161:fn checked_text(text: &PageTextSnapshot) -> Result<u32, Failure> {
+crates/epdf-wasm/tests/borrowed_page.rs:22:use epdf_engine::features::geometry::PageGeometrySnapshot;
+crates/epdf-wasm/tests/borrowed_page.rs:45:/// snapshot wrongly fails here even while the reader itself is correct.
+crates/epdf-wasm/tests/borrowed_page.rs:72:            let in_file: PageGeometrySnapshot = serde_json::from_value(envelope["result"].clone())
+crates/epdf-wasm/tests/borrowed_page.rs:75:                        "{} page {}: the result is not a snapshot: {e}",
+crates/epdf-wasm/tests/borrowed_page.rs:83:                .expect("a snapshot serializes");
+crates/epdf-wasm/tests/borrowed_page.rs:84:            let expected = corpus::quantized(&page_vector.snapshot);
+crates/epdf-uniffi/tests/host_surface.rs:98:        serde_json::json!({ "kind": "document.saveBuffer", "effect": "snapshot", "jobId": 905, "docId": "d", "mode": "incremental" }),
+crates/epdf-wasm/tests/host_bridge.rs:135:        &serde_json::json!({ "kind": "document.saveBuffer", "effect": "snapshot", "jobId": 905, "docId": "d", "mode": "incremental" })
+platforms/apple/EmbedPDFDemo/EmbedPDFDemo/DocumentModel.swift:76:      if let metadata = try await opened.metadata.snapshot() {
+platforms/dotnet/validation/2026-11-02-slice-3-helper-bounds-linux-arm64/capi-tests.log:33:test snapshots_whose_runs_do_not_tile_the_characters_are_refused ... ok
+platforms/dotnet/validation/2026-11-02-slice-3-helper-bounds-linux-arm64/capi-tests.log:34:test snapshots_with_out_of_range_numbers_are_refused ... ok
+crates/epdf-capi/README.md:135:`geometry` is a page-space `pages.geometry` snapshot and `text` a `pages.text`
+crates/epdf-capi/README.md:136:snapshot (`text`, `charCount`, `charMap`). The layout is the engine's
+crates/plugins/annotation/src/sync/records.rs:225:/// `fromSnapshot(current, dtos)`: a fresh read of the whole document. Every
+crates/plugins/annotation/src/sync/records.rs:227:pub fn from_snapshot(current: &Value, dtos: &[Value]) -> Result<Value, Error> {
+crates/plugins/annotation/src/sync/records.rs:621:            let value = from_snapshot(&current(), &annotations)?;
+crates/plugins/annotation/src/sync/records.rs:697:        let records = from_snapshot(&no_records(), &[square(1, 1)]).unwrap();
+crates/plugins/annotation/src/sync/records.rs:711:        let records = Rc::new(from_snapshot(&no_records(), &[square(1, 1), square(2, 1)]).unwrap());
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/engine-test.log:176:test features::forms::snapshot::tests::a_field_ref_is_an_object_number_or_a_full_name ... ok
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/engine-test.log:177:test features::forms::snapshot::tests::a_list_boxs_top_row_is_an_options_position_and_the_last_one_past_the_end ... ok
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/engine-test.log:178:test features::forms::snapshot::tests::an_entry_holds_one_value_a_member_each_or_none ... ok
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/engine-test.log:745:test a_read_cancelled_while_it_runs_reports_aborted_rather_than_a_partial_snapshot ... ok
+crates/epdf-capi/tests/helpers.rs:3://! with the `pages.geometry` snapshots they were built from, and
+crates/epdf-capi/tests/helpers.rs:88:/// The page-space geometry snapshot a layout case was built from.
+crates/epdf-capi/tests/helpers.rs:89:fn geometry_snapshot(case: &str, page: u64) -> Value {
+crates/epdf-capi/tests/helpers.rs:96:        .unwrap_or_else(|| panic!("{case} has no page {page}"))["snapshot"]
+crates/epdf-capi/tests/helpers.rs:138:fn charmap_snapshot(case: &Value) -> Value {
+crates/epdf-capi/tests/helpers.rs:139:    let mut snapshot = json!({ "text": case["text"], "charCount": case["charCount"] });
+crates/epdf-capi/tests/helpers.rs:141:        snapshot["charMap"] =
+crates/epdf-capi/tests/helpers.rs:144:    snapshot
+crates/epdf-capi/tests/helpers.rs:155:        let geometry = geometry_snapshot(&case, page);
+crates/epdf-capi/tests/helpers.rs:179:        let geometry = geometry_snapshot(&case, page);
+crates/epdf-capi/tests/helpers.rs:201:    let geometry = geometry_snapshot("embedded-orientations", 0);
+crates/epdf-capi/tests/helpers.rs:209:    let geometry = geometry_snapshot("non-identity-text", 0);
+crates/epdf-capi/tests/helpers.rs:229:    let geometry = geometry_snapshot("non-identity-text", 0);
+crates/epdf-capi/tests/helpers.rs:260:fn snapshots_whose_runs_do_not_tile_the_characters_are_refused() {
+crates/epdf-capi/tests/helpers.rs:277:fn snapshots_with_out_of_range_numbers_are_refused() {
+crates/epdf-capi/tests/helpers.rs:299:        let text = charmap_snapshot(case);
+crates/epdf-capi/tests/helpers.rs:317:        let text = charmap_snapshot(case);
+crates/epdf-capi/tests/helpers.rs:333:        let text = charmap_snapshot(case);
+crates/epdf-capi/tests/helpers.rs:363:        let text = charmap_snapshot(&source);
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/capi-test.log:60:test snapshots_with_out_of_range_numbers_are_refused ... ok
+platforms/dotnet/validation/2026-11-02-slice-4-facade-linux-arm64/capi-test.log:64:test snapshots_whose_runs_do_not_tile_the_characters_are_refused ... ok
+platforms/dotnet/validation/slice6-osx-arm64-nonempty.json:70:      "results": "Release build completed successfully before source freeze; artifact hashes are listed. Original intermediate dirty-source snapshot was not retained for the compile. Final exact-head rebuild is required after coordinated review fixes."
+platforms/dotnet/validation/slice6-osx-arm64.json:67:    "Historical development run, superseded by the nonempty-text run record. Artifact manifest hashes may identify a superseded development status snapshot."
+platforms/dotnet/EmbedPDF/PdfDocument.cs:28:    public async Task<PageTextSnapshot> GetTextAsync(PageIndex page, CancellationToken cancellationToken = default)
+platforms/dotnet/EmbedPDF/PdfDocument.cs:31:        return Wire.Read<PageTextSnapshot>((await Call(4, new { page = reference }, cancellationToken).ConfigureAwait(false)).Result);
+platforms/dotnet/EmbedPDF/PdfDocument.cs:33:    public async Task<PageGeometrySnapshot> GetGeometryAsync(PageIndex page, CancellationToken cancellationToken = default)
+platforms/dotnet/EmbedPDF/PdfDocument.cs:36:        return Wire.Read<PageGeometrySnapshot>((await Call(5, new { page = reference }, cancellationToken).ConfigureAwait(false)).Result);
+platforms/dotnet/validation/slice6-linux-x64.json:73:      "results": "Release build completed successfully before source freeze; artifact hashes are listed. Original intermediate dirty-source snapshot was not retained for the compile. Final exact-head rebuild is required after coordinated review fixes.",
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:22:        var source = "using EmbedPDF.Engine; class Misuse { void Bad(PageTextSnapshot text) { PdfCharIndex character = new Utf16Offset(1); Utf16Offset offset = new PdfCharIndex(1); TextGeometry.GetTextOffset(text, new Utf16Offset(1)); } }";
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:29:    public void TextSnapshotsAndAllCharmapHelpersConsumeCommittedVectors()
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:33:            var text = new PageTextSnapshot { Text = c.GetProperty("text").GetString()!, CharCount = c.GetProperty("charCount").GetUInt32(), CharMap = c.TryGetProperty("charMap", out var map) ? map.EnumerateArray().Select(a => new CharMapAnchor(new(a[0].GetUInt32()), new(a[1].GetUInt32()))).ToImmutableArray() : null };
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:34:            var roundtrip = Wire.Read<PageTextSnapshot>(JsonSerializer.SerializeToElement(text, Wire.Json)); Assert.Equal(text.Text, roundtrip.Text); if (text.CharMap is { } anchors) Assert.Equal(anchors.ToArray(), roundtrip.CharMap!.Value.ToArray()); else Assert.Null(roundtrip.CharMap);
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:52:                var snapshot = geometry.GetProperty("pages").EnumerateArray().Single(p => p.GetProperty("index").GetUInt32() == page.GetProperty("index").GetUInt32()).GetProperty("snapshot");
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:53:                var decoded = Wire.Read<PageGeometrySnapshot>(snapshot);
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:83:        Assert.Throws<JsonException>(() => Wire.Read<PageGeometrySnapshot>(JsonDocument.Parse("{\"runs\":[{\"kind\":\"future\"}]}").RootElement));
+platforms/dotnet/EmbedPDF.Tests/VectorTests.cs:84:        var nullText = Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"\",\"charCount\":0}").RootElement); var emptyText = Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"\",\"charCount\":0,\"charMap\":[]}").RootElement); Assert.Null(nullText.CharMap); Assert.Empty(emptyText.CharMap!.Value);
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/native-tests.log:63:test snapshots_with_out_of_range_numbers_are_refused ... ok
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/native-tests.log:65:test snapshots_whose_runs_do_not_tile_the_characters_are_refused ... ok
+platforms/dotnet/validation/slice6-linux-arm64-nonempty.json:72:      "results": "Release build completed successfully before source freeze; artifact hashes are listed. Original intermediate dirty-source snapshot was not retained for the compile. Final exact-head rebuild is required after coordinated review fixes.",
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/engine-vectors.log:64:test every_extracted_snapshot_satisfies_the_map_invariants ... ok
+platforms/android/embedpdf/library/src/androidTest/kotlin/com/embedpdf/SmokeTest.kt:67:    fun geometryComesBackAsTheSameSnapshotTheWebEngineProduces() {
+platforms/dotnet/EmbedPDF.Tests/BoundaryTests.cs:13:            Assert.Throws<JsonException>(() => Wire.Read<PageGeometrySnapshot>(JsonDocument.Parse(json).RootElement));
+platforms/dotnet/EmbedPDF.Tests/BoundaryTests.cs:59:    public void MalformedSnapshotsAndSingularTransformsRefuseClearly()
+platforms/dotnet/EmbedPDF.Tests/BoundaryTests.cs:61:        var text = new PageTextSnapshot { Text = "ab", CharCount = 1 };
+platforms/dotnet/EmbedPDF/Models.cs:24:public sealed record PageTextSnapshot
+platforms/dotnet/EmbedPDF/Models.cs:36:public sealed record PageGeometrySnapshot([property: JsonRequired] ImmutableArray<GeometryRun> Runs);
+crates/plugins/stage/src/connect.rs:52:struct Snapshot {
+crates/plugins/stage/src/connect.rs:66:    let snapshot = {
+crates/plugins/stage/src/connect.rs:69:        Rc::new(move || -> Snapshot {
+crates/plugins/stage/src/connect.rs:71:            Snapshot {
+crates/plugins/stage/src/connect.rs:82:    let signature = snapshot.clone();
+crates/plugins/stage/src/connect.rs:103:            let current = snapshot();
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/broad-engine.log:176:test features::forms::snapshot::tests::a_field_ref_is_an_object_number_or_a_full_name ... ok
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/broad-engine.log:177:test features::forms::snapshot::tests::a_list_boxs_top_row_is_an_options_position_and_the_last_one_past_the_end ... ok
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/broad-engine.log:178:test features::forms::snapshot::tests::an_entry_holds_one_value_a_member_each_or_none ... ok
+platforms/dotnet/validation/2026-11-02-slice-2-helper-integration-linux-arm64/broad-engine.log:745:test a_read_cancelled_while_it_runs_reports_aborted_rather_than_a_partial_snapshot ... ok
+crates/plugins/annotation/src/harness/mod.rs:833:        "draftRichText" => unit(a.draft_rich_text(
+platforms/dotnet/EmbedPDF/TextGeometry.cs:6:    public static ImmutableArray<TextSegment> GetSegments(PageGeometrySnapshot geometry, PdfCharRange range)
+platforms/dotnet/EmbedPDF/TextGeometry.cs:8:    public static PageQuad? GetCharacterQuad(PageGeometrySnapshot geometry, PdfCharIndex index)
+platforms/dotnet/EmbedPDF/TextGeometry.cs:13:    public static string SliceText(PageTextSnapshot text, PdfCharRange range)
+platforms/dotnet/EmbedPDF/TextGeometry.cs:15:    public static PdfCharRange GetCharacterRange(PageTextSnapshot text, Utf16Offset start, Utf16Offset end)
+platforms/dotnet/EmbedPDF/TextGeometry.cs:21:    public static Utf16Offset GetTextOffset(PageTextSnapshot text, PdfCharIndex boundary)
+platforms/dotnet/README.md:44:conversions. `PdfCharRange` has character `Start`/`Count`. Geometry snapshots use
+platforms/dotnet/validation/2026-11-02-slice-2-linux-arm64/focused-engine.log:29:test every_extracted_snapshot_satisfies_the_map_invariants ... ok
+platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SignatureTests.swift:40:      let snapshot = try #require(try await signatures.snapshot())
+platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SignatureTests.swift:41:      expectNoDifference(snapshot.revisions.count, 3)
+platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SignatureTests.swift:198:        _ = try await signatures.snapshot()
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/scoped-tests.log:217:test features::forms::snapshot::tests::a_list_boxs_top_row_is_an_options_position_and_the_last_one_past_the_end ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/scoped-tests.log:221:test features::forms::snapshot::tests::an_entry_holds_one_value_a_member_each_or_none ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/scoped-tests.log:222:test features::forms::snapshot::tests::a_field_ref_is_an_object_number_or_a_full_name ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/scoped-tests.log:564:test geometry_comes_back_as_the_same_snapshot_the_web_engine_produces ... ok
+platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/record.json:91:      "results": "C ABI helper tests 19/19: TextSegments and CharacterQuad replay text/layout.json over the pages.geometry snapshots (all segment and glyph probes, including right-to-left, merged multi-line, rotated, sheared, mirrored and zero-geometry characters); SliceText, TextOffsetsToChars and CharacterBoundaryToText replay text/charmap.json (dropped and supplementary characters, inverted ranges) and its violation cases; PageTransform replays every pageTransform case in geometry-page.json (all quarter turns, UserUnit-folded scales, refused out-of-contract, singular and non-finite cases); exact double decoding over 20000 values; rejection of non-tiling runs, out-of-range indices, overflowing numbers and malformed envelopes.",
+crates/plugins/render/src/tile_manager.rs:588:        let snapshot: Vec<(String, Rc<TileEntry>)> =
+crates/plugins/render/src/tile_manager.rs:590:        for (key, entry) in snapshot {
+crates/plugins/render/src/tile_manager.rs:888:        let snapshot: Vec<(String, Rc<TileEntry>)> =
+crates/plugins/render/src/tile_manager.rs:890:        for (key, entry) in snapshot {
+crates/plugins/stage/src/settings/area.rs:18:    /// `snapshotSettings`: the settings slice of the state. The TypeScript
+crates/plugins/stage/src/settings/area.rs:21:    pub(crate) fn snapshot_settings(&self) -> StageSettings {
+crates/plugins/stage/src/settings/area.rs:202:        self.snapshot_settings()
+crates/plugins/stage/src/settings/area.rs:264:        let shown = self.snapshot_settings();
+platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/capi-tests.log:32:test snapshots_with_out_of_range_numbers_are_refused ... ok
+platforms/dotnet/validation/2026-11-02-slice-3-helpers-linux-arm64/capi-tests.log:34:test snapshots_whose_runs_do_not_tile_the_characters_are_refused ... ok
+platforms/dotnet/EmbedPDF.Parity/Program.cs:43:else if (args is ["snapshot", var root, var request, var output]) await NativeSnapshot.Run(root, request, output);
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/broad-regression.log:210:test features::forms::snapshot::tests::a_list_boxs_top_row_is_an_options_position_and_the_last_one_past_the_end ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/broad-regression.log:211:test features::forms::snapshot::tests::a_field_ref_is_an_object_number_or_a_full_name ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/broad-regression.log:212:test features::forms::snapshot::tests::an_entry_holds_one_value_a_member_each_or_none ... ok
+platforms/dotnet/validation/2026-10-30-slice-1-linux-arm64/broad-regression.log:782:test a_read_cancelled_while_it_runs_reports_aborted_rather_than_a_partial_snapshot ... ok
+platforms/dotnet/EmbedPDF.Parity/NativeSnapshot.cs:8:internal static class NativeSnapshot
+packages/plugin/actions/CHANGELOG.md
+packages/plugin/actions/package.json
+packages/plugin/actions/src/lifecycle/document-events.ts
+packages/plugin/actions/test/script-print-policy.test.ts
+packages/plugin/annotation/CHANGELOG.md
+packages/plugin/annotation/package.json
+packages/plugin/annotation/src/contract.ts
+packages/plugin/annotation/src/host-contract.ts
+packages/plugin/annotation/src/model.ts
+packages/plugin/annotation/src/read/properties.ts
+packages/plugin/annotation/src/read/text-fonts.ts
+packages/plugin/annotation/src/rich-text.ts
+packages/plugin/annotation/src/write/selection.ts
+packages/plugin/annotation/src/write/text-editing.ts
+packages/plugin/annotation/test/capability.test.ts
+packages/plugin/annotation/test/controller.test.ts
+packages/plugin/annotation/test/gesture-forget.test.ts
+packages/plugin/annotation/test/read/text-fonts.test.ts
+packages/plugin/annotation/test/rich-text-editing.test.ts
+packages/plugin/attachment/CHANGELOG.md
+packages/plugin/attachment/package.json
+packages/plugin/commands/CHANGELOG.md
+packages/plugin/commands/package.json
+packages/plugin/commands/src/controller.ts
+packages/plugin/commands/src/host-contract.ts
+packages/plugin/commands/src/standard.ts
+packages/plugin/commands/test/controller.test.ts
+packages/plugin/commands/test/standard.test.ts
+packages/plugin/fonts/CHANGELOG.md
+packages/plugin/fonts/package.json
+packages/plugin/fonts/src/controller.ts
+packages/plugin/fonts/src/paint.ts
+packages/plugin/fonts/test/fonts.test.ts
+packages/plugin/form/CHANGELOG.md
+packages/plugin/form/package.json
+packages/plugin/history/CHANGELOG.md
+packages/plugin/history/package.json
+packages/plugin/i18n/CHANGELOG.md
+packages/plugin/i18n/package.json
+packages/plugin/i18n/src/strings/de.ts
+packages/plugin/i18n/src/strings/en.ts
+packages/plugin/i18n/src/strings/es.ts
+packages/plugin/i18n/src/strings/fr.ts
+packages/plugin/i18n/src/strings/ja.ts
+packages/plugin/i18n/src/strings/nl.ts
+packages/plugin/i18n/src/strings/sv.ts
+packages/plugin/i18n/src/strings/zh-cn.ts
+packages/plugin/interaction/CHANGELOG.md
+packages/plugin/interaction/package.json
+packages/plugin/link/CHANGELOG.md
+packages/plugin/link/package.json
+packages/plugin/measurement/CHANGELOG.md
+packages/plugin/measurement/package.json
+packages/plugin/metadata/CHANGELOG.md
+packages/plugin/metadata/package.json
+packages/plugin/outline/CHANGELOG.md
+packages/plugin/outline/package.json
+packages/plugin/page-edit/CHANGELOG.md
+packages/plugin/page-edit/package.json
+packages/plugin/redaction/CHANGELOG.md
+packages/plugin/redaction/package.json
+packages/plugin/render/CHANGELOG.md
+packages/plugin/render/package.json
+packages/plugin/render/src/contract.ts
+packages/plugin/render/src/controller.ts
+packages/plugin/render/src/host-contract.ts
+packages/plugin/render/src/model.ts
+packages/plugin/render/src/render.plugin.ts
+packages/plugin/render/src/snapshot.ts
+packages/plugin/render/test/controller.test.ts
+packages/plugin/render/test/harness.ts
+packages/plugin/render/test/snapshot.test.ts
+packages/plugin/search/CHANGELOG.md
+packages/plugin/search/package.json
+packages/plugin/search/test/search.test.ts
+packages/plugin/selection/CHANGELOG.md
+packages/plugin/selection/package.json
+packages/plugin/shell/CHANGELOG.md
+packages/plugin/shell/package.json
+packages/plugin/signature/CHANGELOG.md
+packages/plugin/signature/package.json
+packages/plugin/stage/CHANGELOG.md
+packages/plugin/stage/package.json
+packages/plugin/stage/src/camera/animation.ts
+packages/plugin/stage/src/camera/gestures.ts
+packages/plugin/stage/src/contract.ts
+packages/plugin/stage/src/controller.ts
+packages/plugin/stage/src/navigation/arrive.ts
+packages/plugin/stage/src/navigation/turn.ts
+packages/plugin/stage/src/read/pages.ts
+packages/plugin/stage/src/services/scene.ts
+packages/plugin/stage/src/settings.ts
+packages/plugin/stage/test/navigation/turn.test.ts
+packages/plugin/stage/test/stage.capability.test.ts
+packages/plugin/stamp/CHANGELOG.md
+packages/plugin/stamp/package.json
+packages/plugin/view-manager/CHANGELOG.md
+packages/plugin/view-manager/package.json
+diff --git a/packages/core/annotation/src/bezier.ts b/packages/core/annotation/src/bezier.ts
+new file mode 100644
+index 0000000000..64ac237d83
+--- /dev/null
++++ b/packages/core/annotation/src/bezier.ts
+@@ -0,0 +1,61 @@
++/**
++ * Cubic Béziers, as the cloudy borders and ink draw them: the point at a
++ * parameter, where a curve turns, points along it, and a number for SVG path
++ * data.
++ */
++import type { Point } from './types';
++
++/** The point at `t` on the cubic Bézier `p0..p3`. */
++export function bezierAt(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
++  const rest = 1 - t;
++  const weights = [rest * rest * rest, 3 * rest * rest * t, 3 * rest * t * t, t * t * t];
++  return {
++    x: weights[0]! * p0.x + weights[1]! * p1.x + weights[2]! * p2.x + weights[3]! * p3.x,
++    y: weights[0]! * p0.y + weights[1]! * p1.y + weights[2]! * p2.y + weights[3]! * p3.y,
++  };
++}
++
++/** Where a cubic Bézier coordinate `p0..p3` turns: the parameters in (0, 1) where its slope is zero. */
++export function bezierTurns(p0: number, p1: number, p2: number, p3: number): number[] {
++  const a = -p0 + 3 * p1 - 3 * p2 + p3;
++  const b = 2 * (p0 - 2 * p1 + p2);
++  const c = p1 - p0;
++  const roots =
++    Math.abs(a) < 1e-12
++      ? Math.abs(b) < 1e-12
++        ? []
++        : [-c / b]
++      : b * b - 4 * a * c < 0
++        ? []
++        : [
++            (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a),
++            (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a),
++          ];
++  return roots.filter((t) => t > 0 && t < 1);
++}
++
++/**
++ * Points along the cubic Bézier `p0..p3` after `p0`, evenly spaced in `t`,
++ * whose chords stay within `tolerance` of the curve: split into n chords, a
++ * cubic strays at most 3/4 of its larger control-point second difference
++ * over n² from them.
++ */
++export function flattenBezier(
++  p0: Point,
++  p1: Point,
++  p2: Point,
++  p3: Point,
++  tolerance: number,
++): Point[] {
++  const bend = Math.max(
++    Math.hypot(p0.x - 2 * p1.x + p2.x, p0.y - 2 * p1.y + p2.y),
++    Math.hypot(p1.x - 2 * p2.x + p3.x, p1.y - 2 * p2.y + p3.y),
++  );
++  const steps = Math.max(1, Math.ceil(Math.sqrt((0.75 * bend) / tolerance)));
++  const points: Point[] = [];
++  for (let i = 1; i <= steps; i++) points.push(bezierAt(p0, p1, p2, p3, i / steps));
++  return points;
++}
++
++/** A number in SVG path data: at most four decimals. */
++export const pathNumber = (value: number): string => Number(value.toFixed(4)).toString();
+diff --git a/packages/core/annotation/src/cloudy.ts b/packages/core/annotation/src/cloudy.ts
+index e51b934f52..2aea90d08c 100644
+--- a/packages/core/annotation/src/cloudy.ts
++++ b/packages/core/annotation/src/cloudy.ts
+@@ -16,6 +16,7 @@
+  * The internal math runs in PDFBox's y-up frame; a `CurveSink` flips back to
+  * y-down and translates into the box's page-space origin on the way out.
+  */
++import { bezierAt, bezierTurns, pathNumber } from './bezier';
+ import { expandRect } from './rect';
+ import type { Rect, Point } from './types';
+ 
+@@ -30,8 +31,6 @@ interface P {
+   y: number;
+ }
+ 
+-const formatNumber = (value: number): string => Number(value.toFixed(4)).toString();
+-
+ /**
+  * Where the cloud's curves go: an SVG path (`PathBuilder`), their bounds
+  * (`CurveBounds`), or the points along them (`CurvePolylines`).
+@@ -54,12 +53,12 @@ class PathBuilder implements CurveSink {
+     private oy: number,
+   ) {}
+   moveTo(x: number, y: number): void {
+-    this.parts.push(`M ${formatNumber(x + this.ox)} ${formatNumber(-y + this.oy)}`);
++    this.parts.push(`M ${pathNumber(x + this.ox)} ${pathNumber(-y + this.oy)}`);
+     this.started = true;
+   }
+   curveTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): void {
+     this.parts.push(
+-      `C ${formatNumber(x1 + this.ox)} ${formatNumber(-y1 + this.oy)}, ${formatNumber(x2 + this.ox)} ${formatNumber(-y2 + this.oy)}, ${formatNumber(x3 + this.ox)} ${formatNumber(-y3 + this.oy)}`,
++      `C ${pathNumber(x1 + this.ox)} ${pathNumber(-y1 + this.oy)}, ${pathNumber(x2 + this.ox)} ${pathNumber(-y2 + this.oy)}, ${pathNumber(x3 + this.ox)} ${pathNumber(-y3 + this.oy)}`,
+     );
+   }
+   close(): void {
+@@ -70,35 +69,6 @@ class PathBuilder implements CurveSink {
+   }
+ }
+ 
+-/** The point at `t` on the cubic Bézier `p0..p3`. */
+-function bezierAt(p0: P, p1: P, p2: P, p3: P, t: number): P {
+-  const rest = 1 - t;
+-  const weights = [rest * rest * rest, 3 * rest * rest * t, 3 * rest * t * t, t * t * t];
+-  return {
+-    x: weights[0]! * p0.x + weights[1]! * p1.x + weights[2]! * p2.x + weights[3]! * p3.x,
+-    y: weights[0]! * p0.y + weights[1]! * p1.y + weights[2]! * p2.y + weights[3]! * p3.y,
+-  };
+-}
+-
+-/** Where a cubic Bézier coordinate `p0..p3` turns: the parameters in (0, 1) where its slope is zero. */
+-function turnsOf(p0: number, p1: number, p2: number, p3: number): number[] {
+-  const a = -p0 + 3 * p1 - 3 * p2 + p3;
+-  const b = 2 * (p0 - 2 * p1 + p2);
+-  const c = p1 - p0;
+-  const roots =
+-    Math.abs(a) < 1e-12
+-      ? Math.abs(b) < 1e-12
+-        ? []
+-        : [-c / b]
+-      : b * b - 4 * a * c < 0
+-        ? []
+-        : [
+-            (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a),
+-            (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a),
+-          ];
+-  return roots.filter((t) => t > 0 && t < 1);
+-}
+-
+ /**
+  * The box around the curves themselves (not their control points), in the
+  * same page space as `PathBuilder`'s path.
+@@ -131,7 +101,10 @@ class CurveBounds implements CurveSink {
+     const p1 = this.place(x1, y1);
+     const p2 = this.place(x2, y2);
+     const p3 = this.place(x3, y3);
+-    for (const t of [...turnsOf(p0.x, p1.x, p2.x, p3.x), ...turnsOf(p0.y, p1.y, p2.y, p3.y)]) {
++    for (const t of [
++      ...bezierTurns(p0.x, p1.x, p2.x, p3.x),
++      ...bezierTurns(p0.y, p1.y, p2.y, p3.y),
++    ]) {
+       this.add(bezierAt(p0, p1, p2, p3, t));
+     }
+     this.add(p3);
+diff --git a/packages/core/annotation/src/index.ts b/packages/core/annotation/src/index.ts
+index 1db2327f9b..9cf1c06b3f 100644
+--- a/packages/core/annotation/src/index.ts
++++ b/packages/core/annotation/src/index.ts
+@@ -67,11 +67,14 @@ export {
+   paragraphsFromPlainText,
+   plainTextOf,
+   rangeHasStyle,
++  restyleRuns,
+   richDocOf,
+   richTextLength,
+   sameStyleDelta,
+   splitRunsAt,
+   styleAt,
++  typeWithStyle,
++  withoutStyle,
+   type FontLookup,
+   type NamedFont,
+   type RichTextRange,
+@@ -133,7 +136,13 @@ export {
+   type FlagKey,
+   type KindCaps,
+ } from './kinds';
+-export { initialTextStyle, kindTakesLink, propertiesOf, sharedProperties } from './props';
++export {
++  initialTextStyle,
++  kindTakesLink,
++  propertiesOf,
++  selectionProperties,
++  sharedProperties,
++} from './props';
+ export { FLAG_PROPERTIES, LINE_ENDING_NAMES } from './kinds/fields';
+ export { engineSubtypeOf, readOfDefaults, widgetAppearanceOf } from './record/defaults';
+ export {
+diff --git a/packages/core/annotation/src/ink-curves.ts b/packages/core/annotation/src/ink-curves.ts
+new file mode 100644
+index 0000000000..118fe367c6
+--- /dev/null
++++ b/packages/core/annotation/src/ink-curves.ts
+@@ -0,0 +1,259 @@
++/**
++ * How Acrobat draws an ink stroke (`/InkList`) when it writes the appearance,
++ * and so how the runtime draws it (`cpdf_ink_curves.h` in the fork): cubic
++ * Béziers fitted to the points as Schneider fits digitized curves ("An
++ * Algorithm for Automatically Fitting Digitized Curves", Graphics Gems,
++ * 1990), without his Newton step. Checked against the appearances Acrobat
++ * wrote, to 0.001 pt, segment for segment:
++ *
++ * - Repeated points in a row count once.
++ * - A piece of the stroke is one cubic. At the stroke's ends it leaves and
++ *   arrives along the first and last segment; where two pieces meet, along
++ *   the line from the point before to the point after (no direction when
++ *   those are the same point: the stroke turns straight back).
++ * - A piece of two points gets handles a third of its length.
++ * - A longer piece gets the least-squares cubic over its points, placed by
++ *   chord length. It stays one piece when every point is within the
++ *   tolerance of the curve, at its place, and the curve is within the
++ *   tolerance of the lines between the points. Otherwise it splits at its
++ *   worst point and both halves are fitted again.
++ * - A stroke of one point is a dot: a circle of radius 0.5, filled and
++ *   stroked.
++ *
++ * The fit is the same in page space: it measures only distances and
++ * directions, which a flip and a shift keep.
++ */
++import { bezierAt, flattenBezier, pathNumber } from './bezier';
++import type { Point } from './types';
++
++/**
++ * How far the curves may stray, in points. Acrobat's lies above 1.2747 and at
++ * most 1.5062 (the dense zigzag in the tests tells), at any width.
++ */
++export const INK_CURVE_TOLERANCE = Math.SQRT2;
++
++/** The radius of the dot a stroke of one point draws. */
++export const INK_DOT_RADIUS = 0.5;
++
++/** One cubic of a stroke, from the end of the one before (or the stroke's start). */
++export interface InkCubic {
++  control1: Point;
++  control2: Point;
++  end: Point;
++}
++
++/** One stroke as it is drawn: cubics from its first point, or a dot. */
++export type InkStrokeCurves =
++  | { kind: 'curves'; start: Point; cubics: InkCubic[] }
++  | { kind: 'dot'; center: Point };
++
++/**
++ * A piece of the stroke to fit: its first and last point, and the directions
++ * the curve leaves the first along and arrives at the last against (pointing
++ * back into the curve), both unit or none.
++ */
++interface Piece {
++  first: number;
++  last: number;
++  leaving: Point;
++  arriving: Point;
++}
++
++const plus = (a: Point, b: Point): Point => ({ x: a.x + b.x, y: a.y + b.y });
++const minus = (a: Point, b: Point): Point => ({ x: a.x - b.x, y: a.y - b.y });
++const times = (a: Point, s: number): Point => ({ x: a.x * s, y: a.y * s });
++const dot = (a: Point, b: Point): number => a.x * b.x + a.y * b.y;
++const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
++
++/** `v` at length 1; no direction (0, 0) when it has no length. */
++function unit(v: Point): Point {
++  const length = Math.hypot(v.x, v.y);
++  return length === 0 ? { x: 0, y: 0 } : { x: v.x / length, y: v.y / length };
++}
++
++/** Where each point of the piece sits along it, 0 to 1, by the length of the lines between them. */
++function chordLengthPlaces(points: Point[], piece: Piece): number[] {
++  const places = [0];
++  for (let i = piece.first + 1; i <= piece.last; i++)
++    places.push(places[places.length - 1]! + distance(points[i]!, points[i - 1]!));
++  const length = places[places.length - 1]!;
++  return places.map((place) => place / length);
++}
++
++/**
++ * The cubic from the piece's first point to its last, along its two
++ * directions, whose handle lengths put it closest to the points at their
++ * places (least squares). Handles that come out shorter than a millionth of
++ * the piece's span, or backwards, are a third of the span instead.
++ */
++function leastSquaresCubic(points: Point[], piece: Piece, places: number[]): Point[] {
++  const start = points[piece.first]!;
++  const end = points[piece.last]!;
++  let c00 = 0;
++  let c01 = 0;
++  let c11 = 0;
++  let x0 = 0;
++  let x1 = 0;
++  places.forEach((u, i) => {
++    const rest = 1 - u;
++    const b0 = rest * rest * rest;
++    const b1 = 3 * u * rest * rest;
++    const b2 = 3 * u * u * rest;
++    const b3 = u * u * u;
++    const a0 = times(piece.leaving, b1);
++    const a1 = times(piece.arriving, b2);
++    c00 += dot(a0, a0);
++    c01 += dot(a0, a1);
++    c11 += dot(a1, a1);
++    const off = minus(
++      points[piece.first + i]!,
++      plus(plus(times(start, b0), times(start, b1)), plus(times(end, b2), times(end, b3))),
++    );
++    x0 += dot(a0, off);
++    x1 += dot(a1, off);
++  });
++  const det = c00 * c11 - c01 * c01;
++  let leavingLength = det === 0 ? 0 : (x0 * c11 - x1 * c01) / det;
++  let arrivingLength = det === 0 ? 0 : (c00 * x1 - c01 * x0) / det;
++  const span = distance(end, start);
++  if (leavingLength < 1e-6 * span || arrivingLength < 1e-6 * span) {
++    leavingLength = span / 3;
++    arrivingLength = span / 3;
++  }
++  return [
++    start,
++    plus(start, times(piece.leaving, leavingLength)),
++    plus(end, times(piece.arriving, arrivingLength)),
++    end,
++  ];
++}
++
++/** The piece's point farthest from the curve at its place: the square of that distance, and which (the last of equals). */
++function worstPoint(
++  points: Point[],
++  piece: Piece,
++  places: number[],
++  cubic: Point[],
++): { squared: number; index: number } {
++  const [p0, p1, p2, p3] = cubic as [Point, Point, Point, Point];
++  let worst = { squared: 0, index: Math.floor((piece.last - piece.first + 1) / 2) + piece.first };
++  for (let i = piece.first + 1; i < piece.last; i++) {
++    const off = minus(bezierAt(p0, p1, p2, p3, places[i - piece.first]!), points[i]!);
++    const squared = dot(off, off);
++    if (squared >= worst.squared) worst = { squared, index: i };
++  }
++  return worst;
++}
++
++function distanceToSegment(p: Point, a: Point, b: Point): number {
++  const ab = minus(b, a);
++  const lengthSquared = dot(ab, ab);
++  const t =
++    lengthSquared === 0 ? 0 : Math.min(1, Math.max(0, dot(minus(p, a), ab) / lengthSquared));
++  return distance(p, plus(a, times(ab, t)));
++}
++
++/** How far the curve strays from the lines between the piece's points: the farthest of 65 places along it, each from its nearest line. */
++function distanceFromLines(points: Point[], piece: Piece, cubic: Point[]): number {
++  const [p0, p1, p2, p3] = cubic as [Point, Point, Point, Point];
++  let farthest = 0;
++  for (let k = 0; k <= 64; k++) {
++    const at = bezierAt(p0, p1, p2, p3, k / 64);
++    let nearest = Infinity;
++    for (let i = piece.first; i < piece.last; i++)
++      nearest = Math.min(nearest, distanceToSegment(at, points[i]!, points[i + 1]!));
++    farthest = Math.max(farthest, nearest);
++  }
++  return farthest;
++}
++
++/**
++ * The stroke as Acrobat draws it: the cubics that fit its points, or a dot
++ * for one point; `null` for a stroke with no points.
++ */
++export function fitInkStroke(
++  stroke: readonly Point[],
++  tolerance: number = INK_CURVE_TOLERANCE,
++): InkStrokeCurves | null {
++  const points: Point[] = [];
++  for (const point of stroke) {
++    const previous = points[points.length - 1];
++    if (!previous || previous.x !== point.x || previous.y !== point.y) points.push(point);
++  }
++  if (points.length === 0) return null;
++  if (points.length === 1) return { kind: 'dot', center: points[0]! };
++
++  // The pieces still to fit, the next on top: a split piece's first half is
++  // fitted (and split) before its second, so the cubics come out in order.
++  const cubics: InkCubic[] = [];
++  const last = points.length - 1;

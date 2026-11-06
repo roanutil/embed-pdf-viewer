@@ -1,0 +1,42 @@
+4346c5131cd009c4086fdce13bde7fd43fbd4ce0	Merge pull request #114 from embedpdf/embedpdf/feature/signature-field-box
+0b3eb09394120f878f327815ff32181cbfee2bf9	Draw a signature field's box
+eeac787c02fac7b40c74c91bbff0ffb5f59ff97e	Merge pull request #113 from embedpdf/embedpdf/fix/comment-reads-over-reader-defaults
+8bdd5c097be2c29f72a70dd13e0a1e98ce28f65c	Read a comment's rich text over the reader's defaults
+f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185	Merge pull request #112 from embedpdf/embedpdf/sync/2b52a82ab
+3a159818a26a29bdcb7d62113dd366f689e2742d	Sync S16: merge upstream PDFium up to 2b52a82ab (Nov 2 2026)
+27c5057056772b1195d36f9278eabc84bc2ca11d	Merge pull request #111 from embedpdf/embedpdf/fix/layer-mode-linearized
+bf1e947e93ebedbe41bcb79b357434f4d15569f4	Open linearized files through the layer in layer mode
+cbdceae52fe2ed10eaf446f459cbd8d45b355d52	Merge pull request #110 from embedpdf/embedpdf/feature/markup-rich-text
+605f21fa1f5c51572d4b2c061237a3a3688fb989	Write a markup annotation's comment as rich text
+538900db897e2d456b97e77b0c4377451d77d714	Merge pull request #109 from embedpdf/embedpdf/feature/set-subtype
+f2dd408977675651fdca3d5ac287ebd464f99da9	Merge pull request #108 from embedpdf/embedpdf/fix/layer-mode-writer-set-subtype
+01c5eeec2d37e5e0f85c4d5cf20a170e2ab2b539	List the kind-change test among the layer-mode writers
+bba2cd79b8e166313834daa41feb35bba6383072	List the kind-change test among the layer-mode writers
+922d77650069bcf9147d19cf38aa0fe05b7b849c	Merge pull request #107 from embedpdf/embedpdf/fix/measure-caption-stroke
+195dbbe1015596fdd2a09571eb76fafeeb72605b	Give the caption golden's polygon and polyline a stroke colour
+8074892ce11e0c3358f6c999622cd71510a0f1d8	Merge pull request #105 from embedpdf/embedpdf/feature/ink-curves
+5bbe69f5c1eb84e8eb8b94be5b82121748551349	Merge pull request #106 from embedpdf/embedpdf/fix/iso-dashes
+1702a9b77ca35594c3f6fd09bb4ec19019614184	Draw an empty dash pattern as a solid line
+a305cb7331857b165548912189fac57d1edefc03	Draw ink with the curves Acrobat fits to its points
+986db177f9ea68eae0bae3c6ec4e64a3a2c1b1b0	Merge pull request #104 from embedpdf/embedpdf/feature/no-stroke
+66031e976d61bc384ad7f37a19ed3b9632b32019	Merge pull request #103 from embedpdf/embedpdf/feature/set-subtype
+e9b936d8c0c16478a96963eb3d208f1a8312b052	Merge pull request #102 from embedpdf/embedpdf/fix/postscript-base-font
+cad388d24a23d99d523d9640ee76e8aa308eb792	Draw no stroke for an empty or missing /C, as Acrobat does
+991fe73a2f2b49ebf78958a9b1dfce31684bb2a4	Merge pull request #101 from embedpdf/embedpdf/fix/latin-fallback-floor
+2ddfac77ea4ef55a65a6899dc78d611e0b9ddb2a	Name a registered font's /BaseFont by its PostScript name
+e7494b7b21482104a38e9a2d922563f019b85252	Change an annotation's kind in place
+2135c744e02d57538a5924def4b8cab99ca0fd4f	Draw Latin a font lacks in the standard font that stands in for it
+2b52a82ab8170966f08beec1c1bf1aa3d67b6b55	Remove CPDF_ColorSpace::IsStdConversionEnabled() and related code
+bbb9926d4de4909ad5dc3dce76607e83589809c6	Reject Pattern color spaces for images in CPDF_DIB
+7e01bafbd2f8311a0b3fcbc0371a06a7c2444cd3	Rename bTransMask to is_transparency_mask in CPDF_ColorSpace
+55a435dce3f4969356d8875f590561983521a1b4	Roll third_party/llvm-libc/src/ 14e51fd2c..d8f204500 (184 commits)
+9185ccc21bbe6d0f6176e47c8d2062387483e990	Roll v8/ 0d546234e..bb54fc4e8 (1107 commits)
+04d4d5c8af604434edb688072438f3eaa44516d5	Roll third_party/skia/ 0abfcf118..607de4b03 (139 commits; 15 trivial rolls)
+38ee50754c65c85ef1cc3868e8768b7ed4303df9	Roll third_party/googletest/src/ 4fe3307fb..0b6564954 (7 commits)
+b75764a1def138ff0f308c637865f195774ccdc4	Roll third_party/fast_float/src/ b0ab987b3..42f254836 (15 commits)
+f7878a86a13ecebd52b80d6f580cacd076a93c31	Roll third_party/icu/ 5aa526207..a0ea93436 (9 commits)
+42ca519616777f5f9631ee4005f7aeec0dbe7c13	Roll tools/win/ ae34cdd98..d72db9e30 (2 commits)
+bc5a4257b38111b11f024b6435b5d35a87cb8aaf	Remove obsolete reproxy.cfg generation from DEPS
+69856420ff400df40d9e8789538e84c10283dfb1	Roll Zlib from 456ae730017b to 9f9f52c60a14 (1 revision)
+8033ab4e6d7f76abc6487593123fd688c9f65441	Roll Catapult from e1165abbf12a to c29dedc30c9f (22 revisions)
+008604d239a5bd2207c867b8967d407b3d058d8d	Roll Jinja2 from c3027d884967 to fde3c16799bd (1 revision)

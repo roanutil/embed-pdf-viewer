@@ -1,0 +1,42 @@
+{
+  "state": "C7 scope/design/proposed-plan COMPLETE and ready for independent planning review; implementation not authorized",
+  "utc": "2026-11-04T13:43:07.739682+00:00",
+  "plan": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.md",
+    "sha256": "bcf94c0cee6b9f98d90e5375bb5c32d866b9cec3ca398fb0fca7e0a98da18fb0"
+  },
+  "pins": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/pinned-targets.json",
+    "sha256": "4fa4d186cbb2cb794e9b7fabcd689084d799f711391e74f844d287fc49e59c51"
+  },
+  "coreInventory": {
+    "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.md": "e72edeb1baa0959c19d108e6a7a6b060deacd78bf3b970c30ee8f4b251bb7446",
+    "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.json": "4ab0faedfc25fc28ceb1dbf67c2be1fa484ccf695bf5147fe2d528056260d845"
+  },
+  "pluginInventory": {
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.md": "cd45a0fd030c3136f8f3242f8f3afb5006f08458fef13e21291f849306ffaa4f",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.json": "b3377d1e9e2226bd066ffd228556baea202abba81659b477167f455f68a1946e",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-command-index.json": "dbe757c7e70cd30e2ab50f5fc4515868722a33705c49a5b7b5474ca3da60bc68"
+  },
+  "proofIndex": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/proof-index.json",
+    "sha256": "15111ddcbd61110bbc6e0748ffb6ea42171703fd37d03cee0a733ee1df0eb487"
+  },
+  "recommendationsNotApproved": [
+    "Pinned runtimeeeac supplemental comment-default correction rather than minimum viewer-selectedf1ba",
+    "One integration sequence from identicalf28ed, same final closure SHA for both private refs"
+  ],
+  "engineeringEstimate": "Approximately40\u201375h union; finalized plugin29\u201352h included once, core/runtime/merge8\u201317h, distinct release-close1\u20133h; rounded for coordination/review uncertainty. Machine6\u201318h plus unavailable platform queues.",
+  "resources": {
+    "C7LeadCombinedReservation": "RELEASED: no further source reads; plugin worker also reports finished reading",
+    "hostMetadataExports": [
+      "/private/tmp/kkt-peach-lemur/c7/viewer-metadata.git",
+      "/private/tmp/kkt-peach-lemur/c7/runtime-metadata.git"
+    ],
+    "sourceGitAlternates": "Preserve existing HOST source .git object stores; own bare exports are not standalone clones",
+    "newContainersOrBuildVolumes": [],
+    "deletedResources": []
+  },
+  "verification": "All proof-index file hashes and68 exported metadata files rehashed/verified locally; no software tests run",
+  "limits": "OriginalC5h completed; currentC5f340pass/2skip0fail is historical baseline, not newtarget acceptance."
+}

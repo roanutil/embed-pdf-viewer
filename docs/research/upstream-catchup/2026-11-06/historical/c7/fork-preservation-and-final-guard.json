@@ -1,0 +1,40 @@
+[
+  {
+    "argv": [
+      "git",
+      "--git-dir",
+      "/tmp/embedpdf-c7-runtime-metadata.git",
+      "log",
+      "--format=%H%x09%s",
+      "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185..3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+    ],
+    "exit": 0,
+    "stdout": "3c55b7a1c0bf956231392a573e87f28dd6d6667d\tMerge upstream 28b8b808f into the fork\n8b1e69abdef4cb7c5d6c669c96a162533b2350ef\tTidy the layer-seam ledger entry after the cff0077cf merge\n06263efda255e630ef4cec54cd0d3b951bfc3335\tCheck in the target-args goldens\n68d6e72ecdbac468afff8ffd7eb11dfe60cf5ae4\tCorrect the wasm libyuv note in target-args.sh\n9d18384078c32ae5a8de2ab04169a0822697c3e5\tPin the emsdk version per wasm target\n6dfc036978f78baf71663f2554f998f28c490a6f\tMerge upstream cff0077cf into the fork\n926c126b24a471ff0b0b8f38ea73d66cf96cfb5d\tKeep a layer's tiling patterns and Type3 fonts layer-local, fixing the null image-cache read\n1d23fe9e985e4fc50e9c2ea78703552be91cf59e\tMerge embedpdf/runtime 1461b0c51 into research/multi-platform-rust-core\n7c7b600b1dfcef78bbedb25e79e5c46bf9f3e150\tMerge remote-tracking branch 'origin/embedpdf/main' into research/multi-platform-rust-core\nd045f389de885dd616e03077301df5ef5aa8c84e\tMerge commit 'f5ca81379' into research/multi-platform-rust-core\nca1932c4afd3414a280cd3afb6cabd8d0e15cf48\tChanges needed for embed-pdf-viewer/\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/workspaces/embed-pdf-viewer",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit": 0,
+    "stdout": "f28ed4ea4aa46c8e69676558993b103d68b19e08\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/workspaces/embed-pdf-viewer",
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=no"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]
