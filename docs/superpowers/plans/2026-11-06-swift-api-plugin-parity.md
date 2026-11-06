@@ -1,6 +1,6 @@
 # Swift API and Plugin Parity Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. This is a proposed plan; obtain design review before writing product code.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. The user approved execution on 2026-11-06; do not merge or publish.
 
 **Goal:** Expose all Rust viewer plugins through the supported Swift API, complete missing members, and ship SwiftUI controls for history, outlines and attachments.
 
@@ -16,7 +16,7 @@
 - All kernel access uses `KernelBound`/kernel jobs. Every exported promise operation forwards `CancelToken`; Swift uses `bridgedCancellable`.
 - Swift adds platform adaptation and presentation only. Mirrors, undo policy, permissions, attachment naming, outline tree rules, and confirmed event origin stay in Rust.
 - Preserve existing config defaults, typed `PDFError` codes, source compatibility, and generated-file exclusions. Do not hand-edit generated bindings or pin binaries that do not contain the new API.
-- This planning branch changes documentation only. Implementation changes no npm package unless a separately justified boundary requires it; any directly affected npm packages then need separate changeset files.
+- The initial planning commit changes documentation only. Implementation changes no npm package unless a separately justified boundary requires it; any directly affected npm packages then need separate changeset files.
 
 ## Review focus
 
@@ -90,11 +90,11 @@ is not emitted as a generated Swift type). `FormValidationResult` and
 `StagePageDestination` alias existing generated records. Also export the
 existing `CustomMetadataUpdatedEvent` used by the metadata event enum.
 
-- [ ] Add focused tests to the existing suites: custom metadata set/remove/refresh; required-field validation before/after fill; selected page refs after reorder; destination navigation and zoom availability; each new permission read under a denied scope; cursor claim release. Prove the new methods are missing by running the focused Swift tests against the current binary.
-- [ ] Forward the methods above through `bridged` or `bridgedCancellable`, matching the Rust signature; add missing type aliases. Rerun each changed Swift suite. Assert custom deletion with an explicitly present dictionary key whose value is `nil`, not by assigning a dictionary subscript `nil` (which removes the key).
-- [ ] Build the coverage manifest from all public Rust controller/sub-capability methods, exported handle methods and Swift mappings, including feedback. Each entry records crate, Rust symbol/path, exported symbol, Swift symbol/path, and either coverage or a specific exclusion reason. Classify all eight pure core crates explicitly. Capture controller members that have never reached UniFFI, not just wrapper omissions.
-- [ ] Implement the coverage checker over that manifest and source inventories. Test that a temporary unaccounted controller member is detected and that escaped/renamed Swift methods, feedback in a separate file, constructors and internal conversion helpers are classified correctly. Run `python3 platforms/apple/check-swift-api-coverage.py`; only the three missing plugin families assigned to Tasks 2–4 may be marked pending at this stage.
-- [ ] Commit as `feat(apple): complete existing Swift capability methods and track parity`. Record any additional substantive gaps as plan changes before continuing.
+- [x] Add focused tests to the existing suites: custom metadata set/remove/refresh; required-field validation before/after fill; selected page refs after reorder; destination navigation and zoom availability; each new permission read under a denied scope; cursor claim release. Prove the new methods are missing by running the focused Swift tests against the current binary.
+- [x] Forward the methods above through `bridged` or `bridgedCancellable`, matching the Rust signature; add missing type aliases. Rerun each changed Swift suite. Assert custom deletion with an explicitly present dictionary key whose value is `nil`, not by assigning a dictionary subscript `nil` (which removes the key).
+- [x] Build the coverage manifest from all public Rust controller/sub-capability methods, exported handle methods and Swift mappings, including feedback. Each entry records crate, Rust symbol/path, exported symbol, Swift symbol/path, and either coverage or a specific exclusion reason. Classify all eight pure core crates explicitly. Capture controller members that have never reached UniFFI, not just wrapper omissions.
+- [x] Implement the coverage checker over that manifest and source inventories. Test that a temporary unaccounted controller member is detected and that escaped/renamed Swift methods, feedback in a separate file, constructors and internal conversion helpers are classified correctly. Run `python3 platforms/apple/check-swift-api-coverage.py`; only the three missing plugin families assigned to Tasks 2–4 may be marked pending at this stage.
+- [x] Commit as `feat(apple): complete existing Swift capability methods and track parity`. Record any additional substantive gaps as plan changes before continuing.
 
 ## Task 2: History capability
 

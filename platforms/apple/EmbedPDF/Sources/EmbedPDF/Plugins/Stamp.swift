@@ -51,6 +51,10 @@ public struct StampPreview: @unchecked Sendable {
 /// (`createAsset(from:in:on:)`); the last two export through the engine's
 /// `page.annotations.exportAppearance`.
 public struct StampCapability: Sendable {
+  public func canCreateFromAnnotations(in document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canCreateFromAnnotations(documentId: document?.id) }
+  }
+
   let handle: StampHandle
   let viewer: PDFViewer
 

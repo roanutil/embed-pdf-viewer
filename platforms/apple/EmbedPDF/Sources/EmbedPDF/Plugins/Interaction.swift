@@ -27,6 +27,10 @@ extension InteractionHandler {
 /// viewer needs `ViewerConfig(interaction: true)`. It keeps the viewer
 /// alive. After its document closes, every call throws `instance-closed`.
 public struct InteractionCapability: Sendable {
+  public func hasCursorClaim() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.hasCursorClaim() }
+  }
+
   let handle: InteractionHandle
   let viewer: PDFViewer
 

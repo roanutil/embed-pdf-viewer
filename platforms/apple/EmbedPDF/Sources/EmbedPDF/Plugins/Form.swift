@@ -1,6 +1,7 @@
 public import EmbedPDFBindings
 public import Foundation
 
+public typealias FormValidationResult = EmbedPDFBindings.FormValidationResult
 public typealias FormFieldRef = EmbedPDFBindings.FormFieldRef
 public typealias FormFieldFamily = EmbedPDFBindings.FormFieldFamily
 public typealias FormConfig = EmbedPDFBindings.FormConfig
@@ -44,6 +45,18 @@ public typealias FormWidgetEvent = EmbedPDFBindings.FormWidgetEvent
 /// viewer alive. After its document closes, every call throws
 /// `instance-closed`.
 public struct FormCapability: Sendable {
+  public func validate() async throws(PDFError) -> FormValidationResult {
+    try await bridged { try await handle.validate() }
+  }
+
+  public func canRestoreAttribution() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canRestoreAttribution() }
+  }
+
+  public func canWriteScripts() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canWriteScripts() }
+  }
+
   let handle: FormHandle
   let viewer: PDFViewer
 

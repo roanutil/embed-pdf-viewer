@@ -1,6 +1,6 @@
 # Swift API and plugin coverage
 
-Status: proposal for review; implementation is not authorized by this document.
+Status: approved for implementation by the user on 2026-11-06; merge remains subject to user review.
 
 Base: `research/multi-platform-rust-core-impl-plugins`, commit
 `8fa01cc1ec4d0739af535feec6928e6a81163fd9`.
@@ -146,7 +146,7 @@ must stop its subscriptions when its view disappears or changes document.
 - All kernel access uses `KernelBound`/kernel jobs. Every exported promise operation forwards `CancelToken`; Swift uses `bridgedCancellable`.
 - Swift adds platform adaptation and presentation only. Mirrors, undo policy, permissions, attachment naming, outline tree rules, and confirmed event origin stay in Rust.
 - Preserve existing config defaults, typed `PDFError` codes, source compatibility, and generated-file exclusions. Do not hand-edit generated bindings or pin binaries that do not contain the new API.
-- This planning branch changes documentation only. Implementation changes no npm package unless a separately justified boundary requires it; any directly affected npm packages then need separate changeset files.
+- The initial planning commit changes documentation only. Implementation changes no npm package unless a separately justified boundary requires it; any directly affected npm packages then need separate changeset files.
 
 ## Completion criteria
 
