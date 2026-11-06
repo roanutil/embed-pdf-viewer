@@ -141,7 +141,7 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
       const result = sent.value;
       const after = await page.annotations.list();
 
-      // The result is `{ meta }` since 83f6598d2; what went is `meta.changed`
+      // The result is `{ meta }` since 83f6598d2; what went is `meta.changedRefs`
       // (`deletedAnnotationsOf`), so `deleted` is gone. Annotation names no
       // longer change, so `weakRefsInvalidated` and `shouldRefetch` went in
       // bc0057f3a.
@@ -151,7 +151,7 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
         ref,
         request: sent.request,
         meta: {
-          changed: result.meta.changed,
+          changedRefs: result.meta.changedRefs,
         },
         /** What is left, in order. `null` for an annotation with no /NM. */
         remaining: after.annotations.map((a) => a.nm),

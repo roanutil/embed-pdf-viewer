@@ -36,224 +36,224 @@
       "name": "unprobed",
       "raw": null,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "none",
       "raw": 0,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "print",
       "raw": 4,
       "bits": {
-        "bit3": true,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": true,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "print-high-without-print",
       "raw": 2048,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": true
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": true
       }
     },
     {
       "name": "print-and-high",
       "raw": 2052,
       "bits": {
-        "bit3": true,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": true
+        "print": true,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": true
       }
     },
     {
       "name": "modify",
       "raw": 8,
       "bits": {
-        "bit3": false,
-        "bit4": true,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": true,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "copy",
       "raw": 16,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": true,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": true,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "annotate-fill",
       "raw": 32,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": true,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": true,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "fill-forms-only",
       "raw": 256,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": true,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": true,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "accessibility",
       "raw": 512,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": true,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": true,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "assemble",
       "raw": 1024,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": true,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": false,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": true,
+        "printHighQuality": false
       }
     },
     {
       "name": "annotate-and-modify",
       "raw": 40,
       "bits": {
-        "bit3": false,
-        "bit4": true,
-        "bit5": false,
-        "bit6": true,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": true,
+        "copy": false,
+        "modifyAnnotations": true,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "reserved-bits-set",
       "raw": 4307,
       "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": true,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
+        "print": false,
+        "modifyContents": false,
+        "copy": true,
+        "modifyAnnotations": false,
+        "fillForms": false,
+        "copyForAccessibility": false,
+        "assemble": false,
+        "printHighQuality": false
       }
     },
     {
       "name": "all-surfaced",
       "raw": 3900,
       "bits": {
-        "bit3": true,
-        "bit4": true,
-        "bit5": true,
-        "bit6": true,
-        "bit9": true,
-        "bit10": true,
-        "bit11": true,
-        "bit12": true
+        "print": true,
+        "modifyContents": true,
+        "copy": true,
+        "modifyAnnotations": true,
+        "fillForms": true,
+        "copyForAccessibility": true,
+        "assemble": true,
+        "printHighQuality": true
       }
     },
     {
       "name": "pdfium-unencrypted",
       "raw": 4294967295,
       "bits": {
-        "bit3": true,
-        "bit4": true,
-        "bit5": true,
-        "bit6": true,
-        "bit9": true,
-        "bit10": true,
-        "bit11": true,
-        "bit12": true
+        "print": true,
+        "modifyContents": true,
+        "copy": true,
+        "modifyAnnotations": true,
+        "fillForms": true,
+        "copyForAccessibility": true,
+        "assemble": true,
+        "printHighQuality": true
       }
     },
     {
       "name": "negative",
       "raw": -1,
       "bits": {
-        "bit3": true,
-        "bit4": true,
-        "bit5": true,
-        "bit6": true,
-        "bit9": true,
-        "bit10": true,
-        "bit11": true,
-        "bit12": true
+        "print": true,
+        "modifyContents": true,
+        "copy": true,
+        "modifyAnnotations": true,
+        "fillForms": true,
+        "copyForAccessibility": true,
+        "assemble": true,
+        "printHighQuality": true
       }
     }
   ],

@@ -301,7 +301,7 @@ async function familyOf(doc: OpenedDocument, ref: FormFieldRef): Promise<string 
       ? candidate.name === ref.name
       : candidate.ref.kind === 'objectNumber' && candidate.ref.objectNumber === ref.objectNumber,
   );
-  return field?.family ?? null;
+  return field?.kind ?? null;
 }
 
 function v3Value(value: Record<string, unknown>, family: string | null): FormFieldValue {

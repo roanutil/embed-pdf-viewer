@@ -1,7 +1,8 @@
 /**
  * Emits `vectors/security/state.json`: what `buildSecurityInfo`,
- * `openedAsFromCode`, `advisoryFromPdfBits` and `securityStateFromProbe`
- * produce.
+ * `openedAsFromCode`, `permissionFlagsOf` and `securityStateFromProbe` produce.
+ * The unread advisory (`advisoryFromPdfBits`) was removed upstream in
+ * a780243ba, so no advisory section is emitted.
  *
  * From the repository root:
  *   pnpm --filter @embedpdf/tooling-engine-conformance run security
@@ -15,11 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
-import {
-  advisoryFromPdfBits,
-  securityStateFromProbe,
-} from '../../../packages/engine/core/src/engine/document-security-state';
+import { securityStateFromProbe } from '../../../packages/engine/core/src/engine/document-security-state';
 import type { DocumentSecurityProbeInfo } from '../../../packages/engine/core/src/wire/worker-protocol';
 import {
   buildSecurityInfo,
@@ -28,7 +25,6 @@ import {
 import { hasAllStandardSecurityPermissions } from '../../../packages/engine/services/src/shared/securityPermissions';
 
 import {
-  ADVISORY_CASES,
   ALL_ALLOWED_CASES,
   BUILD_CASES,
   OPENED_AS_CODE_CASES,
@@ -133,13 +129,6 @@ async function main(): Promise<void> {
 
     // `openedAsFromCode`.
     openedAsFromCode: OPENED_AS_CODE_CASES.map((c) => ({ ...c, openedAs: openedAsFromCode(c.code) })),
-
-    // `advisoryFromPdfBits`, with the decoded bits alongside so a divergence
-    // separates a decoder disagreement from an advisory one.
-    advisory: ADVISORY_CASES.map((c) => {
-      const bits = decodePdfBits(c.raw);
-      return { ...c, bits, advisory: advisoryFromPdfBits(bits) };
-    }),
 
     // `securityStateFromProbe`.
     state: STATE_CASES.map((c) => ({

@@ -265,233 +265,6 @@
       "openedAs": "none"
     }
   ],
-  "advisory": [
-    {
-      "name": "unprobed",
-      "covers": "Null bits advise nothing.",
-      "raw": null,
-      "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": false,
-        "canFillForms": false,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "none",
-      "covers": "A zero word.",
-      "raw": 0,
-      "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": false,
-        "canFillForms": false,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "print-high-without-print",
-      "covers": "Bit 12 refines bit 3 and does not stand alone, matching the resolver.",
-      "raw": 2048,
-      "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": true
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": false,
-        "canFillForms": false,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "print-and-high",
-      "covers": "Both, so the refinement applies.",
-      "raw": 2052,
-      "bits": {
-        "bit3": true,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": true
-      },
-      "advisory": {
-        "canPrint": true,
-        "canPrintHigh": true,
-        "canCopy": false,
-        "canAnnotate": false,
-        "canFillForms": false,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "fill-without-annotate",
-      "covers": "Bit 9 alone still allows filling.",
-      "raw": 256,
-      "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": false,
-        "bit9": true,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": false,
-        "canFillForms": true,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "annotate-without-modify",
-      "covers": "canModifyForms needs bit 4 as well as bit 6.",
-      "raw": 32,
-      "bits": {
-        "bit3": false,
-        "bit4": false,
-        "bit5": false,
-        "bit6": true,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": true,
-        "canFillForms": true,
-        "canModifyForms": false,
-        "canModifyPages": false,
-        "canAssemble": false
-      }
-    },
-    {
-      "name": "annotate-and-modify",
-      "covers": "Both, so form modification is advised.",
-      "raw": 40,
-      "bits": {
-        "bit3": false,
-        "bit4": true,
-        "bit5": false,
-        "bit6": true,
-        "bit9": false,
-        "bit10": false,
-        "bit11": false,
-        "bit12": false
-      },
-      "advisory": {
-        "canPrint": false,
-        "canPrintHigh": false,
-        "canCopy": false,
-        "canAnnotate": true,
-        "canFillForms": true,
-        "canModifyForms": true,
-        "canModifyPages": true,
-        "canAssemble": true
-      }
-    },
-    {
-      "name": "all-allowed",
-      "covers": "The 0xFFFFFFFC word.",
-      "raw": 4294967292,
-      "bits": {
-        "bit3": true,
-        "bit4": true,
-        "bit5": true,
-        "bit6": true,
-        "bit9": true,
-        "bit10": true,
-        "bit11": true,
-        "bit12": true
-      },
-      "advisory": {
-        "canPrint": true,
-        "canPrintHigh": true,
-        "canCopy": true,
-        "canAnnotate": true,
-        "canFillForms": true,
-        "canModifyForms": true,
-        "canModifyPages": true,
-        "canAssemble": true
-      }
-    },
-    {
-      "name": "unencrypted-word",
-      "covers": "What PDFium reports with no encryption dict.",
-      "raw": -1,
-      "bits": {
-        "bit3": true,
-        "bit4": true,
-        "bit5": true,
-        "bit6": true,
-        "bit9": true,
-        "bit10": true,
-        "bit11": true,
-        "bit12": true
-      },
-      "advisory": {
-        "canPrint": true,
-        "canPrintHigh": true,
-        "canCopy": true,
-        "canAnnotate": true,
-        "canFillForms": true,
-        "canModifyForms": true,
-        "canModifyPages": true,
-        "canAssemble": true
-      }
-    }
-  ],
   "state": [
     {
       "name": "unencrypted",
@@ -513,7 +286,16 @@
         },
         "permissions": {
           "known": true,
-          "bits": 4294967295,
+          "flags": {
+            "print": true,
+            "modifyContents": true,
+            "copy": true,
+            "modifyAnnotations": true,
+            "fillForms": true,
+            "copyForAccessibility": true,
+            "assemble": true,
+            "printHighQuality": true
+          },
           "allAllowed": true,
           "openedAs": "none",
           "securityHandlerRevision": null,
@@ -545,7 +327,16 @@
         },
         "permissions": {
           "known": true,
-          "bits": 4294967292,
+          "flags": {
+            "print": true,
+            "modifyContents": true,
+            "copy": true,
+            "modifyAnnotations": true,
+            "fillForms": true,
+            "copyForAccessibility": true,
+            "assemble": true,
+            "printHighQuality": true
+          },
           "allAllowed": true,
           "openedAs": "owner",
           "securityHandlerRevision": 4,
@@ -577,7 +368,16 @@
         },
         "permissions": {
           "known": true,
-          "bits": 4294967284,
+          "flags": {
+            "print": true,
+            "modifyContents": false,
+            "copy": true,
+            "modifyAnnotations": true,
+            "fillForms": true,
+            "copyForAccessibility": true,
+            "assemble": true,
+            "printHighQuality": true
+          },
           "allAllowed": false,
           "openedAs": "user",
           "securityHandlerRevision": 4,
@@ -609,7 +409,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -644,7 +444,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -680,7 +480,16 @@
         },
         "permissions": {
           "known": true,
-          "bits": 4294967295,
+          "flags": {
+            "print": true,
+            "modifyContents": true,
+            "copy": true,
+            "modifyAnnotations": true,
+            "fillForms": true,
+            "copyForAccessibility": true,
+            "assemble": true,
+            "printHighQuality": true
+          },
           "allAllowed": true,
           "openedAs": "none",
           "securityHandlerRevision": null,
@@ -712,7 +521,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -744,7 +553,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -779,7 +588,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -816,7 +625,7 @@
         },
         "permissions": {
           "known": false,
-          "bits": null,
+          "flags": null,
           "allAllowed": null,
           "openedAs": null,
           "securityHandlerRevision": null,
@@ -854,7 +663,16 @@
         },
         "permissions": {
           "known": true,
-          "bits": 4294967295,
+          "flags": {
+            "print": true,
+            "modifyContents": true,
+            "copy": true,
+            "modifyAnnotations": true,
+            "fillForms": true,
+            "copyForAccessibility": true,
+            "assemble": true,
+            "printHighQuality": true
+          },
           "allAllowed": true,
           "openedAs": "none",
           "securityHandlerRevision": null,

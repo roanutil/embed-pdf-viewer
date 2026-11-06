@@ -65,7 +65,7 @@ struct Case {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: Value,
+    changed_refs: Value,
 }
 
 fn load() -> VectorFile {
@@ -235,7 +235,7 @@ fn a_create_is_append_only_and_says_so() {
         let meta = &result["meta"];
         assert_eq!(
             test_support::canonical_numbers(&meta["changed"]),
-            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed),
+            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed_refs),
             "{}: the changed list",
             case.name,
         );

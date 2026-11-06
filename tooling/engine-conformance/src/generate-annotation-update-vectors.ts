@@ -829,7 +829,7 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
         hasModified: typeof modifiedAt === 'string' && modifiedAt.length > 0,
         appearance: result.appearance,
         meta: {
-          changed: result.meta.changed,
+          changedRefs: result.meta.changedRefs,
         },
       };
     } finally {

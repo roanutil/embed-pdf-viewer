@@ -17,7 +17,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
+import { permissionFlagsOf } from '../../../packages/engine/core/src/auth/scope';
 import { scopeNotCovered } from '../../../packages/engine/core/src/auth/scope/coverage';
 import { parseScope } from '../../../packages/engine/core/src/auth/scope/parser';
 import {
@@ -34,7 +34,7 @@ import {
 import type {
   DocCapability,
   Identity,
-  PdfBits,
+  PdfPermissionFlags,
 } from '../../../packages/engine/core/src/auth/scope/types';
 
 import {
@@ -65,7 +65,7 @@ interface ParseResult extends ParseCase {
 interface BitsResult {
   readonly name: string;
   readonly raw: number | null;
-  readonly bits: PdfBits;
+  readonly bits: PdfPermissionFlags;
 }
 
 interface PerBitsResult {
@@ -129,7 +129,7 @@ function runResolveCase(entry: ResolveCase): ResolveResult {
   const results = entry.bits.map((name): PerBitsResult => {
     const declared = BITS_BY_NAME.get(name);
     if (!declared) throw new Error(`resolve case ${entry.name} names unknown bits ${name}`);
-    const bits = decodePdfBits(declared.raw);
+    const bits = permissionFlagsOf(declared.raw);
 
     const expanded = [...expandRawScope(entry.scope, bits)].sort();
     const granted = ALL_CAPABILITIES.filter((c) =>
@@ -240,7 +240,7 @@ async function main(): Promise<void> {
   const bitsTable: readonly BitsResult[] = BITS_CASES.map((b) => ({
     name: b.name,
     raw: b.raw,
-    bits: decodePdfBits(b.raw),
+    bits: permissionFlagsOf(b.raw),
   }));
 
   let differed = false;

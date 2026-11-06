@@ -71,3 +71,31 @@ This section supersedes the provisional build/test status above; those entries r
 | Both research refs, Job5 | Final reviewed acceptance, merge correct result into each requested fork branch, push and verify ancestry | Neither research ref has been advanced for catch-up. Preserve distinct branch scope and all private behavior. |
 
 Resume with Job3 contract rows and their TS-oracle generators. Check existing commits and receipts first; do not rebuild completed runtime inputs or repeat the accepted ports. Whole catch-up is incomplete.
+
+## Job 3 checkpoint: conformance typecheck migration (2026-11-06)
+
+The ten generator typecheck diagnostics are fixed on the TypeScript side. `pnpm run typecheck` in `tooling/engine-conformance` now exits 0. Vectors were regenerated with `pnpm run <group>` for annotation-create, annotation-delete, annotation-move, annotation-update, form-write, scope, security and signature-protection.
+
+1. `AnnotationListMutationMeta.changed` became `changedRefs` (upstream wire schema). Generators and the Rust annotation_create replay follow it. Annotation `appearance.changed` is a boolean and keeps its name.
+2. `FormField.family` became `kind`. The form-write generator reads `field.kind`; values are unchanged.
+3. `PdfBits`, `decodePdfBits` and `pdf-bits` became `PdfPermissionFlags` and `permissionFlagsOf` (upstream a780243ba). Scope vectors carry named flags.
+4. The advisory section of the security vectors was removed. Upstream removed `advisoryFromPdfBits` in a780243ba, so no advisory is emitted. The Rust advisory code in `crates/epdf-engine/src/features/security/state.rs` is now a Rust-only divergence to remove.
+5. `SignatureDTO` became `Signature`. The signature fixture field `contentsSize` became `contentsSizeBytes`.
+
+Semantic check against the committed vectors, after mapping the renamed keys: `signature/protection.json` has zero differences. The annotation and form vectors also carry upstream DTO changes, not only renames: `richText: null` is now present on created annotations, and authority grants carry `permissionFlags` in place of `pdfBits`.
+
+Rust replay status after this checkpoint (`cargo test --test <name>` in `crates/epdf-engine`), counted as passed/failed:
+
+| Replay | Result | Cause to fix |
+|---|---|---|
+| annotation_create | 20 / 2 | Read DTO lacks `richText` (null). A line read sent back as a create is refused with `line has no field richText`. |
+| annotation_update | 8 / 25 | Not yet investigated past the rename. |
+| scope_conformance | 2 / 3 | `PdfBits` to `PdfPermissionFlags` in `auth/scope`. |
+| security_state | 0 / 8 | Advisory removed upstream; `bits` replaced by flags on the state. |
+| form_write | 3 / 4 | `family` to `kind` on the field DTO. |
+| security_scope | 23 / 0 | Passes, although it still names `pdfBits` in grants. Recheck after the flag migration. |
+| form_apply | 4 / 0 | Passes. |
+
+The Rust production code is not changed in this checkpoint. Only `crates/epdf-engine/tests/annotation_create.rs` changed, to read `changedRefs`. The failures above are the exact remaining Job 3 work. Do not repair them by restoring the old vector keys.
+
+Remaining in this checkpoint: the Rust migrations above, the other Job 3 contract rows, and the full replay of every regenerated group. Vector checksums in SHA256SUMS are not refreshed here.
