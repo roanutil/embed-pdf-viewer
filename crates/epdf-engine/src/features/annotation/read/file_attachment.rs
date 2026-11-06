@@ -44,8 +44,10 @@ pub struct AttachmentFileInfo {
     /// `/Desc`.
     pub description: Option<String>,
     /// `/Params /Size`, the DECODED length.
+    #[serde(rename = "sizeBytes")]
     pub size: Option<i32>,
     /// `/Params /CheckSum`, as lowercase hex.
+    #[serde(rename = "md5")]
     pub checksum: Option<String>,
     /// `/Params /CreationDate`, as ISO 8601 with the offset the PDF date was
     /// written with (fd175ba50). A date that does not parse reads `null`.

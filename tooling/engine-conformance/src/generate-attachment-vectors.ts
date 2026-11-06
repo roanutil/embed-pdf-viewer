@@ -18,6 +18,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { assertAttachmentCoverage } from './attachment-coverage';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -133,6 +134,8 @@ async function main(): Promise<void> {
   const check = process.argv.includes('--check');
   const cases: unknown[] = [];
   for (const entry of CASES) cases.push(await readCase(entry));
+  const downloads = cases.flatMap((value) => (value as { downloads: Downloaded[] }).downloads);
+  assertAttachmentCoverage(downloads);
   const text = serialize(cases);
   const absolute = join(vectorsRoot, 'attachments.json');
 
