@@ -702,7 +702,7 @@ const cases: ScenarioCase[] = [
     'No-authority dimensions are reported as skipped; an unreadable mirror reports its failure rather than a silent successful calibration.',
     [
       call('remeasurePage', [pr(1), FEET]),
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 1 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: 1 }),
       call('remeasurePage', [pr(1), FEET]),
     ],
     [],

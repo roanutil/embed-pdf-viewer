@@ -251,7 +251,7 @@ test('every owned mutation has exact current ops, result kind, refs, schema fiel
   assert.ok(count > 70, `only ${count} writes`);
 });
 import type { CommentThread } from '@embedpdf/engine-core/runtime';
-import type { AnnotationState } from '../../../packages/plugin/annotation/src/model';
+import type { AnnotationModel } from '../../../packages/plugin/annotation/src/model';
 import { objRef, pr } from '../src/suites/annotation-live-fixtures';
 const numbers = (annotations: readonly Annotation[]) =>
   annotations.map((annotation) => {
@@ -259,7 +259,7 @@ const numbers = (annotations: readonly Annotation[]) =>
     return annotation.ref.kind === 'objectNumber' ? annotation.ref.objectNumber : -1;
   });
 function session(name: string, index = -1) {
-  const state = result(name).trace.at(index)?.state as { plugins: Record<string, AnnotationState> };
+  const state = result(name).trace.at(index)?.state as { plugins: Record<string, AnnotationModel> };
   assert.ok(state?.plugins['annotation::a'], name);
   return state.plugins['annotation::a']!.session;
 }

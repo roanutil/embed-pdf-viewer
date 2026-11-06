@@ -230,7 +230,7 @@ const cases: ScenarioCase[] = [
       settle('v1', { viewports: [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)] }),
       m('getPageScale', [pr(1)]),
       emit(scaleFact(pr(9))),
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 0 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: 0 }),
       emit({
         type: 'document.versioned',
         version: { sha256: 'version2', byteLength: 100 },

@@ -590,7 +590,7 @@ for (const c of pure.cases)
     const out = Reflect.apply(pure.functions[c.fn]!, undefined, decode(c.args) as unknown[]);
     if (c.fn === 'estimateCollateral')
       assert.deepEqual(out, { count: collateral[c.name]!.length, refs: collateral[c.name] });
-    else if (c.fn === 'initialRedactionState')
+    else if (c.fn === 'initialRedactionModel')
       assert.deepEqual(out, { applying: false, lastResult: null });
     else if (c.fn === 'startApply')
       assert.deepEqual(out, { ...(c.args[0] as object), applying: true });

@@ -30,13 +30,13 @@ import {
   type TranslationSources,
 } from '../../../../packages/plugin/i18n/src/translate';
 import * as model from '../../../../packages/plugin/i18n/src/model';
-import { initialI18nModel as initialI18nState, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
+import { initialI18nModel as initialI18nModel, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
 import type {
   I18nConfig,
   Locale,
   I18nCapability,
 } from '../../../../packages/plugin/i18n/src/contract';
-import type { I18nModel as I18nState } from '../../../../packages/plugin/i18n/src/model';
+import type { I18nModel as I18nModel } from '../../../../packages/plugin/i18n/src/model';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
 import {
@@ -174,7 +174,7 @@ type PureFunctions = typeof transitions & {
   translate: typeof translate;
   interpolate: typeof interpolate;
   negotiateLocale: typeof negotiateLocale;
-  initialI18nState: typeof initialI18nState;
+  initialI18nModel: typeof initialI18nModel;
   seedFromSettings: typeof seedFromSettings;
   plurals: typeof plurals;
   mergeTranslations: typeof model.mergeTranslations;
@@ -187,7 +187,7 @@ const fnCase = <K extends keyof PureFunctions>(
   covers?: string,
 ): FunctionCase => (covers === undefined ? { name, fn, args } : { name, fn, args, covers });
 
-const state = (over: Partial<I18nState> = {}): I18nState => ({
+const state = (over: Partial<I18nModel> = {}): I18nModel => ({
   locale: 'es',
   locales: { en, es },
   loading: null,
@@ -213,7 +213,7 @@ const seeded = (
   name: string,
   config: Partial<Parameters<typeof seedFromSettings>[1]>,
 ): FunctionCase =>
-  fnCase(name, 'seedFromSettings', [initialI18nState(), { ...I18N_DEFAULTS, ...config }]);
+  fnCase(name, 'seedFromSettings', [initialI18nModel(), { ...I18N_DEFAULTS, ...config }]);
 
 const coreCases: FunctionCase[] = [
   // translate
@@ -461,7 +461,7 @@ const coreCases: FunctionCase[] = [
     'fr',
   ]),
   transition('load-failed-clears', 'endLocaleLoad', [state({ loading: 'ar' }), 'ar']),
-  fnCase('initial-empty-state', 'initialI18nState', []),
+  fnCase('initial-empty-state', 'initialI18nModel', []),
   transition('unregister-removes', 'unregisterLocale', [state(), 'es']),
   transition('unregister-unknown-is-ignored', 'unregisterLocale', [state(), 'ar']),
   transition(
@@ -1204,12 +1204,12 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'plugins/i18n/core.json',
     describes:
-      'packages/plugin/i18n: translate, interpolate, negotiateLocale, initialI18nState and named state transitions.',
+      'packages/plugin/i18n: translate, interpolate, negotiateLocale, initialI18nModel and named state transitions.',
     functions: {
       translate,
       interpolate,
       negotiateLocale,
-      initialI18nState,
+      initialI18nModel,
       seedFromSettings,
       mergeTranslations: model.mergeTranslations,
       nestKeys: model.nestKeys,

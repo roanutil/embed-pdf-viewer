@@ -101,7 +101,7 @@ test('merge and dotted nesting preserve siblings and insertion precedence withou
 });
 test('transitions preserve identity for ignored calls and expose exact waiting, seeded and removal state', () => {
   const en: Locale = { code: 'en', name: 'English', translations: { hi: 'Hello' } };
-  const state = { ...model.initialI18nState(), locale: 'en', locales: { en } };
+  const state = { ...model.initialI18nModel(), locale: 'en', locales: { en } };
   assert.equal(model.setLocale(state, 'de'), state);
   assert.equal(model.setLocale(state, 'en'), state);
   assert.equal(model.unregisterLocale(state, 'de'), state);
@@ -131,7 +131,7 @@ test('transitions preserve identity for ignored calls and expose exact waiting, 
     loading: null,
     waitingTranslations: {},
   });
-  const startup = pure('initial-lazy-startup-seeds-loading') as model.I18nState;
+  const startup = pure('initial-lazy-startup-seeds-loading') as model.I18nModel;
   assert.equal(startup.locale, 'en');
   assert.equal(startup.loading, 'ar');
   assert.deepEqual(startup.waitingTranslations, {});
@@ -465,12 +465,12 @@ const english: Locale = {
 const dutch: Locale = { code: 'nl', name: 'Nederlands', translations: { hi: 'Hallo' } };
 const context = (
   registered: NonNullable<
-    Parameters<typeof createTestContext<model.I18nState, typeof I18N_DEFAULTS>>[0]
+    Parameters<typeof createTestContext<model.I18nModel, typeof I18N_DEFAULTS>>[0]
   >['settings'],
 ) => {
   const ctx = createTestContext({
     id: 'i18n',
-    state: model.initialI18nState(),
+    state: model.initialI18nModel(),
     settings: registered,
     doc: null,
   });

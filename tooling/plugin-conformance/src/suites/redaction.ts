@@ -723,7 +723,7 @@ const cases: ScenarioCase[] = [
 import { pending } from './redaction-read-inputs';
 
 const functions = {
-  initialRedactionState: model.initialRedactionModel,
+  initialRedactionModel: model.initialRedactionModel,
   startApply: model.startApply,
   finishApply: model.finishApply,
   setLastResult: model.setLastResult,
@@ -765,7 +765,7 @@ const c = (
     covers,
   );
 const functionCases: FunctionCase[] = [
-  f('initial-state', 'initialRedactionState', []),
+  f('initial-state', 'initialRedactionModel', []),
   f('started-from-idle', 'startApply', [initial]),
   f('started-keeps-the-last-result', 'startApply', [done]),
   f(

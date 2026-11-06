@@ -170,3 +170,20 @@ Still open, grouped by cause:
 5. Remaining argument, property and assignment mismatches (about 250), to be worked file by file.
 
 Vector checks (`vectors:check`, `coverage:check`) fail at module load on the same API drift, so they cannot run until the typecheck is clean.
+
+## Plugin conformance tooling: progress and approval needed (2026-11-06)
+
+Typecheck: 119 errors, from 464 at the start of this step. The fake engine typechecks clean.
+
+Finding: the tooling was already stale at the starting commit. `595fa2bd5` removed `cssFontFamilyForFont`, `cssFontFamilyForFace` and `familyKey` from the packages before `2b86156d3`, and the tooling still imported them. `vectors:check` could not have run at the starting commit either.
+
+Done in this step: confirmed renames (model `…State`→`…Model`, `removePane`→`deletePane`, `listAllLinks`→`readAllLinks`, `readAssetBytes`→`getAssetBytes`, `dispose`→`destroy`, `tx`→`transaction`, `warningFlags` removed from action trees); origin and event shapes updated; `fake-engine.ts` moved to permission flags, the event `layout` read, and the current member tables; cases for the removed CSS font helpers dropped from `annotation-pure.ts` (the helpers no longer exist in the packages).
+
+Needs your approval (a TypeScript change, or a loss of test coverage):
+
+1. Tooling imports symbols that exist in the packages but are no longer exported: `familyKey` and `interpolate` (rich-text and i18n), `layoutFontOf`, `layoutVariableText`, `VariableTextOptions` and `layout/breaks` (form), `FontProgram` (fonts), `PageGeom` (stage), `CommandDef` (commands). Options:
+   a. Export them from their packages. This adds to the TypeScript public surface, so it needs your approval.
+   b. Drop the tooling cases that use them. Coverage for those functions is lost until an equivalent is written.
+   I recommend (a) for the internal helpers the cases need, and (b) for any whose function no longer exists at all.
+
+Still open (about 100 errors, to be worked file by file): event-model fixtures that build `layout` on `pages.*` events, the `goToPage` trigger `page` field (now `pageIndex`), permission flags in callers that still pass bits, and assorted settings and argument renames. Vector regeneration waits until typecheck is clean, and then each changed vector needs the same review as before.

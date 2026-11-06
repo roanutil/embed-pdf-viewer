@@ -165,9 +165,9 @@ for (const [rectName, rect] of [
   ['whole-page', rc(0, 0, 612, 792)],
   ['fractional', rc(33.3, 47.9, 101.1, 99.7)],
 ] as const) {
-  for (const bleed of BLEEDS) tiles.push(c('bleedRect', `${rectName}/${bleed}`, rect, bleed, LETTER));
+  for (const bleedPx of BLEEDS) tiles.push(c('bleedRect', `${rectName}/${bleedPx}`, rect, bleedPx, LETTER));
 }
-tiles.push(c('bleedRect', 'negative-bleed', rc(64, 64, 64, 64), -2, LETTER));
+tiles.push(c('bleedRect', 'negative-bleedPx', rc(64, 64, 64, 64), -2, LETTER));
 tiles.push(c('bleedRect', 'outside-page', rc(700, 900, 10, 10), 1, LETTER));
 
 {
@@ -280,7 +280,7 @@ const OPTIONS: [string, RenderPluginOptions][] = [
         size: 384,
         quantize: [2, 8],
         maxScale: 64,
-        bleed: 0,
+        bleedPx: 0,
         engageAt: 1.5,
         prefetch: { margin: 0.25, velocityBias: false },
         settleMs: 0,
@@ -447,7 +447,7 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/render-tiles.json',
-    describes: 'packages/plugin/render/src/tiles.ts: the aligned tile grid, paint and engine rects, bleed, coverage, the prefetch ring.',
+    describes: 'packages/plugin/render/src/tiles.ts: the aligned tile grid, paint and engine rects, bleedPx, coverage, the prefetch ring.',
     functions: tilesFns,
     cases: tiles,
   },

@@ -38,7 +38,7 @@ import {
   fieldRightsOf,
   type AnnotationOwner,
   type Identity,
-  decodePdfBits,
+  permissionFlagsOf,
   expandRawScope,
   type DocCapability,
   type DocumentSecurityState,
@@ -164,6 +164,7 @@ type TableServices = {
 const SERVICE_MEMBERS = {
   pages: {
     list: true,
+    copy: true,
     reorder: true,
     rotate: true,
     delete: true,
@@ -231,8 +232,17 @@ const SERVICE_MEMBERS = {
   'page.measure': { listViewports: true, setScale: true },
   pieceInfo: { get: true, update: true, list: true, delete: true },
   'page.pieceInfo': { get: true, update: true, list: true, delete: true },
-  fonts: { setEmbeddingPolicy: true, setTypographicFeatures: true },
+  fonts: {
+    setEmbeddingPolicy: true,
+    setTypographicFeatures: true,
+    list: true,
+    resolve: true,
+    getProgram: true,
+    downloadProgram: true,
+  },
 } satisfies { [Path in keyof TableServices]: { [Member in keyof TableServices[Path]]-?: true } };
+
+type DecodedPageList = { pages?: PageLayout[]; labels?: unknown[]; namedPages?: unknown[] };
 
 interface Pending {
   readonly label: string;
@@ -455,15 +465,16 @@ export function createFakeEngine(
     let lastServerId: number | null = null;
     const publish = (given: DocumentEvent) => {
       let event = given;
-      if ('layout' in event) {
+      // Page results carry the new layout; `pages.scaleSet` does not.
+      const layout = (event as { layout?: DecodedPageList | null }).layout;
+      if (layout) {
         // A layout written without `labels` (every case before page label
         // sections) is one with none, as `PageListSnapshot` now requires.
-        if (event.layout && !('labels' in event.layout)) {
-          event = { ...event, layout: { ...event.layout, labels: [] } } as DocumentEvent;
-        }
-        pages = event.layout.pages ?? [];
-        labels = event.layout.labels ?? [];
-        namedPages = event.layout.namedPages ?? [];
+        const complete = 'labels' in layout ? layout : { ...layout, labels: [] };
+        event = { ...event, layout: complete } as DocumentEvent;
+        pages = complete.pages ?? [];
+        labels = complete.labels ?? [];
+        namedPages = complete.namedPages ?? [];
       }
       if ('origin' in event && event.origin.serverSequence !== null) {
         lastServerId = Math.max(lastServerId ?? 0, event.origin.serverSequence);
@@ -503,7 +514,7 @@ export function createFakeEngine(
       security.passwordPrompt ?? passwordPromptFromState(currentSecurityState),
     );
     const identity = decode(security.identity ?? {}) as Identity;
-    const currentBits = () => decodePdfBits(currentSecurityState.permissions.bits);
+    const currentBits = () => currentSecurityState.permissions.flags ?? permissionFlagsOf(null);
     const allows = (capability: string) =>
       security.allows !== undefined
         ? security.allows === '*' || security.allows.includes(capability)

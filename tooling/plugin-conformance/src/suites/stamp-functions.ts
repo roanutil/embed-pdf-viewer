@@ -4,14 +4,14 @@
  * `crates/plugins/stamp/tests/conformance.rs`.
  */
 import * as model from '../../../../packages/plugin/stamp/src/model';
-import { initialStampModel as initialStampState } from '../../../../packages/plugin/stamp/src/model';
-import type { StampModel as StampState } from '../../../../packages/plugin/stamp/src/model';
+import { initialStampModel as initialStampModel } from '../../../../packages/plugin/stamp/src/model';
+import type { StampModel as StampModel } from '../../../../packages/plugin/stamp/src/model';
 import type { StampAsset, StampLibrary } from '../../../../packages/plugin/stamp/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';
 
 const functions = {
-  initialStampState,
+  initialStampModel,
   addLibrary: model.addLibrary,
   setLibrary: model.setLibrary,
   removeLibrary: model.removeLibrary,
@@ -52,8 +52,8 @@ const asset = (id: string, libraryId: string, over: Partial<StampAsset> = {}): S
   ...over,
 });
 
-const EMPTY = initialStampState();
-const ONE: StampState = {
+const EMPTY = initialStampModel();
+const ONE: StampModel = {
   armed: {},
   libraries: { L: library('L', ['a', 'b'], { categories: ['Team'] }) },
   libraryOrder: ['L'],
@@ -62,14 +62,14 @@ const ONE: StampState = {
     b: asset('b', 'L', { kind: 'signature', subject: 'S', categories: ['x'], page: pr(101) }),
   },
 };
-const TWO: StampState = {
+const TWO: StampModel = {
   armed: {},
   libraries: { ...ONE.libraries, M: library('M', ['c'], { kind: 'signatures' }) },
   libraryOrder: ['L', 'M'],
   assets: { ...ONE.assets, c: asset('c', 'M', { page: pr(102) }) },
 };
 /** An asset whose library is gone, and a library listing an asset that is. */
-const ORPHANS: StampState = {
+const ORPHANS: StampModel = {
   armed: {},
   libraries: { M: library('M', ['gone', 'c']) },
   libraryOrder: ['M'],
@@ -77,7 +77,7 @@ const ORPHANS: StampState = {
 };
 
 const cases: FunctionCase[] = [
-  { name: 'initial-state', fn: 'initialStampState', args: [] },
+  { name: 'initial-state', fn: 'initialStampModel', args: [] },
   r('library-added-to-empty', 'addLibrary', [EMPTY, library('L')]),
   r('library-added-appends-order', 'addLibrary', [ONE, library('M', [], { kind: 'signatures' })]),
   r(

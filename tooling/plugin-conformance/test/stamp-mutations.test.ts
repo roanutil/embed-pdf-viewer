@@ -108,7 +108,7 @@ test('canonical append case preserves the imported Stamp1 registration in its st
 
 import type { ScenarioCase, TraceEntry } from '../src/scenario';
 import type { StampAsset, StampLibrary } from '../../../packages/plugin/stamp/src/contract';
-import type { StampState } from '../../../packages/plugin/stamp/src/model';
+import type { StampModel } from '../../../packages/plugin/stamp/src/model';
 import { canonical } from '../src/canonical';
 import { operationAt } from '../src/suites/annotation-live-fixtures';
 import { PDF, png, jpeg, pdf, bytes } from '../src/suites/stamp-current-fixtures';
@@ -140,8 +140,8 @@ function value<T = unknown>(trace: TraceEntry[], step: number): T {
   assert.ok(r && 'returned' in r, `returned ${step}`);
   return r.returned as T;
 }
-function state(trace: TraceEntry[], step = trace.length - 1): StampState {
-  const state = trace[step].state as { plugins?: { stamp?: StampState }; stamp?: StampState };
+function state(trace: TraceEntry[], step = trace.length - 1): StampModel {
+  const state = trace[step].state as { plugins?: { stamp?: StampModel }; stamp?: StampModel };
   const s = state.plugins?.stamp ?? state.stamp;
   assert.ok(s);
   return s;

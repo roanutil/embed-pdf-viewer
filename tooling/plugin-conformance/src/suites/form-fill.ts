@@ -503,7 +503,7 @@ const cases: ScenarioCase[] = [
       emit({ ...deleteAnswer(1, NAME, [ROWS[0]!]).events[0]! }),
       call('get', [ref(1)]),
       call('getWidget', [objRef(101)]),
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 0 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: 0 }),
       call('getSnapshot'),
     ],
     FORM,

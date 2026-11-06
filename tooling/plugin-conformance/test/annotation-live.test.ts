@@ -236,7 +236,7 @@ import {
   type ChangeResult,
 } from '@embedpdf/engine-core/runtime';
 import { annotationAfter } from '../../../packages/core/annotation/src/record';
-import type { AnnotationState } from '../../../packages/plugin/annotation/src/model';
+import type { AnnotationModel } from '../../../packages/plugin/annotation/src/model';
 const owned = [...apiSuites, ...crudSuites, ...hydrationSuites, ...reconciliationSuites];
 const currentCases = owned.flatMap((s) => (s.kind === 'scenario' ? s.cases : []));
 const runs = new Map<string, { input: ScenarioCase; trace: TraceEntry[] }>();
@@ -285,7 +285,7 @@ function read<T = unknown>(name: string, method: string, which = -1): T {
   return settled.resolved as T;
 }
 function session(name: string, i = -1) {
-  const state = getRun(name).trace.at(i)?.state as { plugins: Record<string, AnnotationState> };
+  const state = getRun(name).trace.at(i)?.state as { plugins: Record<string, AnnotationModel> };
   assert.ok(state?.plugins['annotation::a']);
   return state.plugins['annotation::a']!.session;
 }
@@ -851,7 +851,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
       await kernel.documents.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
       const a = kernel.capability(AnnotationToken, 'a');
       await a.whenSynced();
-      const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationState).session;
+      const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationModel).session;
       let refusalObserved = false;
       a.onWriteFailed(() => {
         refusalObserved = true;
@@ -1092,7 +1092,7 @@ test('the explicit internal failure-callback reentry edge stays publicly empty a
     await kernel.documents.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
     const a = kernel.capability(AnnotationToken, 'a');
     await a.whenSynced();
-    const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationState).session;
+    const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationModel).session;
     let reentered = false,
       callbackError: unknown;
     a.onWriteFailed(() => {

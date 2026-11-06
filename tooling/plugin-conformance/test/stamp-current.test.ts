@@ -42,10 +42,10 @@ import {
 import { createFakeEngine } from '../src/fake-engine';
 import { createTestContext } from '@embedpdf/core/testing';
 import {
-  initialStampState,
+  initialStampModel,
   armAsset,
   disarmDocuments,
-  type StampState,
+  type StampModel,
 } from '../../../packages/plugin/stamp/src/model';
 import { createStampController } from '../../../packages/plugin/stamp/src/controller';
 import { stampPlugin } from '../../../packages/plugin/stamp/src/stamp.plugin';
@@ -89,8 +89,8 @@ function resolved<T = unknown>(trace: TraceEntry[], step: number): T {
   assert.ok(result, `resolved step ${step}`);
   return result.resolved as T;
 }
-function state(trace: TraceEntry[], step = trace.length - 1): StampState {
-  const data = trace[step].state as { plugins?: { stamp?: StampState }; stamp?: StampState };
+function state(trace: TraceEntry[], step = trace.length - 1): StampModel {
+  const data = trace[step].state as { plugins?: { stamp?: StampModel }; stamp?: StampModel };
   const result = data.plugins?.stamp ?? data.stamp;
   assert.ok(result);
   return result;
@@ -345,7 +345,7 @@ test('all import failures close opened documents, commit nothing and preserve ex
     'a-render-with-no-image-throws',
   ]) {
     const { trace } = await run(name);
-    assert.deepEqual(state(trace), initialStampState(), name);
+    assert.deepEqual(state(trace), initialStampModel(), name);
     const calls = engineCalls(trace);
     assert.equal(
       calls.filter((c) => c.path === 'open').length,
@@ -515,7 +515,7 @@ test('all current pure inputs invoke named transitions with exact identity and d
   };
   assert.equal(pure.cases.length, 20);
   for (const c of pure.cases) {
-    const result = pure.functions[c.fn](...(c.args as never[])) as StampState;
+    const result = pure.functions[c.fn](...(c.args as never[])) as StampModel;
     const expect = expected[c.name];
     assert.ok(expect, c.name);
     if (expect.same) assert.equal(result, c.args[0], c.name);
@@ -525,13 +525,13 @@ test('all current pure inputs invoke named transitions with exact identity and d
   }
   const execute = (name: string) => {
     const c = pure.cases.find((c) => c.name === name)!;
-    return pure.functions[c.fn](...(c.args as never[])) as StampState;
+    return pure.functions[c.fn](...(c.args as never[])) as StampModel;
   };
   assert.deepEqual(execute('asset-added-twice').libraries.L.assetIds, ['a', 'b', 'a']);
   assert.equal(execute('asset-updated').assets.c.label, 'Relabelled');
   assert.equal(execute('library-updated').libraries.M.name, 'Renamed');
   assert.deepEqual(execute('disarm-documents').armed, { b: 'c' });
-  const initial = initialStampState();
+  const initial = initialStampModel();
   const armed = armAsset(initial, 'a', 'x');
   assert.deepEqual(armed.armed, { a: 'x' });
   assert.equal(disarmDocuments(initial, ['missing']), initial);
@@ -553,7 +553,7 @@ test('the unconfigured local defaults succeed and binary cache clears on control
   const local = localAssetEngine(fake.engine);
   const ctx = createTestContext({
     id: 'stamp',
-    state: initialStampState(),
+    state: initialStampModel(),
     settings: { defaults: STAMP_DEFAULTS, whole: ['assetEngine'] },
     engine: local,
     doc: null,
@@ -578,7 +578,7 @@ test('the unconfigured local defaults succeed and binary cache clears on control
   );
   const localContext = createTestContext({
     id: 'stamp',
-    state: initialStampState(),
+    state: initialStampModel(),
     settings: { defaults: STAMP_DEFAULTS, whole: ['assetEngine'] },
     engine: localAssetEngine(fakeWithId.engine),
     doc: null,
@@ -997,7 +997,7 @@ test('required PieceInfo refusals recover through a complete current local impor
   };
   const result = await runScenario(recovered);
   assert.deepEqual(result.unmatched, []);
-  assert.deepEqual(state(result.trace, 5), initialStampState());
+  assert.deepEqual(state(result.trace, 5), initialStampModel());
   assert.deepEqual(state(result.trace).libraryOrder, ['stamp-lib-0-7']);
   assert.deepEqual(value(result.trace, 7), canonical(pdf('page-100')));
 });
@@ -1024,7 +1024,7 @@ test('settings replace the engine port, reset canImport and retain ownership onl
     localBorrowed = localAssetEngine(borrowed.engine);
   const ctx = createTestContext({
     id: 'stamp',
-    state: initialStampState(),
+    state: initialStampModel(),
     settings: {
       defaults: STAMP_DEFAULTS,
       registered: {
@@ -1170,7 +1170,7 @@ test('all original40 mappings and current43 complete inputs have exact digests a
   const added = pure.cases.find((c) => c.name === 'library-added-to-empty')!;
   assert.equal(added.fn, 'addLibrary');
   assert.deepEqual(added.args, [
-    initialStampState(),
+    initialStampModel(),
     { id: 'L', name: 'Library L', kind: 'stamps', assetIds: [] },
   ]);
 });

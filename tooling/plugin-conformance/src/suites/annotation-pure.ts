@@ -17,7 +17,6 @@ import {
 } from '../../../../packages/plugin/annotation/src/tools/definitions';
 import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
 import {
-  cssFontFamilyForFace,
   familyKey,
   fontForFace,
   rangeProps,
@@ -31,7 +30,6 @@ import {
   faceForFont,
   richDocOf,
 } from '../../../../packages/core/annotation/src/richtext';
-import { cssFontFamilyForFont } from '../../../../packages/core/annotation/src/font-css';
 import { previewBucket } from '../../../../packages/plugin/annotation/src/host-contract';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
 import { mergeSettings, type DeepPartial } from '../../../../packages/core/main/src/settings';
@@ -83,7 +81,7 @@ function transition(label: string, fn: string, ...args: unknown[]): FunctionCase
 }
 const retire = (before: string, reason: string) => migration.push({ before, after: null, reason });
 const fromDTO = upstreamFromDTO;
-const initialAnnotationState = annotationModel.initialAnnotationModel;
+const initialAnnotationModel = annotationModel.initialAnnotationModel;
 const DEFAULT_CHROME = ANNOTATION_DEFAULTS.chrome;
 
 const cases: FunctionCase[] = [];
@@ -325,10 +323,10 @@ cases.push(
 );
 
 // ── current state and shared settings transitions ──────────────────────────
-const state = initialAnnotationState();
+const state = initialAnnotationModel();
 cases.push(
-  c('initialAnnotationState', 'default'),
-  // Settings are shared by the registration now, rather than stored in AnnotationState.
+  c('initialAnnotationModel', 'default'),
+  // Settings are shared by the registration now, rather than stored in AnnotationModel.
   {
     name: 'mergeSettings/configured',
     fn: 'mergeSettings',
@@ -372,10 +370,10 @@ cases.push(
   }),
   transition('set-text-selection', 'setTextSelection', state, { id: 'obj:1', start: 1, end: 3 }),
 );
-migration.push({ before: 'initialAnnotationState/configured', after: 'mergeSettings/configured' });
+migration.push({ before: 'initialAnnotationModel/configured', after: 'mergeSettings/configured' });
 retire(
   'annotationReducer/set-hydration',
-  '4fc1a32af: hydration is mirror resource state, not AnnotationState. Live loading/ready/error/refresh coverage belongs to b1b.',
+  '4fc1a32af: hydration is mirror resource state, not AnnotationModel. Live loading/ready/error/refresh coverage belongs to b1b.',
 );
 retire(
   'annotationReducer/unknown-action',
@@ -383,7 +381,7 @@ retire(
 );
 retire(
   'annotationReducer/stamp-armed',
-  '4fc1a32af removes STAMP_ARM_CHANGED and stampArmEpoch from model.ts; no stamp-arm epoch exists in AnnotationState. Live stamps arm/disarm coverage belongs to b1b.',
+  '4fc1a32af removes STAMP_ARM_CHANGED and stampArmEpoch from model.ts; no stamp-arm epoch exists in AnnotationModel. Live stamps arm/disarm coverage belongs to b1b.',
 );
 
 // ── rich text ─────────────────────────────────────────────────────────────────
@@ -419,12 +417,6 @@ for (const [label, face] of [
   cases.push(c('fontForFace', label, face, FONTS));
 }
 cases.push(c('fontForFace', 'no-fonts', { family: 'Inter', weight: 700 }));
-for (const family of ['Helvetica', 'courier new', 'Inter', 'Unknown Face']) {
-  cases.push(c('cssFontFamilyForFace', family, family, FONTS));
-}
-cases.push(c('cssFontFamilyForFace', 'no-fonts', 'Inter'));
-for (const font of ['helvetica-bold', 'courier', 'symbol', 'inter-bold'])
-  cases.push(c('cssFontFamilyForFont', font, font));
 cases.push(c('familyKey', 'punctuated', " Times-New_Roman 'PS' "));
 cases.push(
   c('bodyFromTextStyle', 'plain', TEXT_STYLE),
@@ -862,7 +854,7 @@ export const suites: Suite[] = [
       toolTouchOf: isTouchDirect as never,
       buildTextItems: buildTextItems as never,
       iconPlacement: iconPlacementDraft as never,
-      initialAnnotationState: initialAnnotationState as never,
+      initialAnnotationModel: initialAnnotationModel as never,
       mergeSettings: mergeSettings as never,
       withSnap: annotationModel.withSnap as never,
       withSession: annotationModel.withSession as never,
@@ -876,9 +868,6 @@ export const suites: Suite[] = [
         faceForFont(font, fonts && (() => fonts))) as never,
       fontForFace: ((face: never, fonts?: never[]) =>
         fontForFace(face, fonts && (() => fonts))) as never,
-      cssFontFamilyForFace: ((family: string, fonts?: never[]) =>
-        cssFontFamilyForFace(family, fonts && (() => fonts))) as never,
-      cssFontFamilyForFont: cssFontFamilyForFont as never,
       familyKey: familyKey as never,
       bodyFromTextStyle: ((t: never, fonts?: never[]) =>
         bodyFromTextStyle(t, fonts && (() => fonts))) as never,

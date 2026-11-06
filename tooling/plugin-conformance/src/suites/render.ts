@@ -1513,9 +1513,9 @@ const tileCases: ScenarioCase[] = [
     (v) => [...v.plan('stage', 44, DEEP), ...v.plan('stage', 44, DEEP), ...v.plan('stage', 11, DEEP)],
   ),
   tileCase(
-    'no-bleed',
-    'bleed 0 paints and fetches the logical tile rects; disengaging without debug drops state silently and re-engaging paints from the store.',
-    { tiles: { bleed: 0, prefetch: { margin: 0 } } },
+    'no-bleedPx',
+    'bleedPx 0 paints and fetches the logical tile rects; disengaging without debug drops state silently and re-engaging paints from the store.',
+    { tiles: { bleedPx: 0, prefetch: { margin: 0 } } },
     doc(),
     (v) => [
       ...v.plan('stage', 11, DEEP),

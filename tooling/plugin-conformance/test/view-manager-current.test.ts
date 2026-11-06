@@ -194,7 +194,7 @@ test('all82 pure rows pin complete states and ignored transition identities inde
   for (const c of pure.cases) {
     const actual = invoke(c.name);
     assert.deepEqual(actual, expected[c.name], c.name);
-    if (!['initialViewManagerState', 'nextPaneId', 'paneOfDocument'].includes(c.fn))
+    if (!['initialViewManagerModel', 'nextPaneId', 'paneOfDocument'].includes(c.fn))
       assert.equal(actual === c.args[0], same.has(c.name), c.name + ' identity');
   }
 });

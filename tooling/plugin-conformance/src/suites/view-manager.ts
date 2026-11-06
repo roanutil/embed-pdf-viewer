@@ -60,7 +60,7 @@ const panes = st(
 const nan = NaN;
 
 const reducerCases: FunctionCase[] = [
-  fn('initial-state', 'initialViewManagerState'),
+  fn('initial-state', 'initialViewManagerModel'),
   fn('create', 'createPane', panes),
   fn('create-on-empty', 'createPane', st([])),
   fn('remove-unknown-is-ignored', 'deletePane', panes, 'nope'),
@@ -522,7 +522,7 @@ export const suites: Suite[] = [
     file: 'plugins/view-manager/reducer.json',
     describes:
       'packages/plugin/view-manager: named model transitions, generated pane ids and ordered document partition.',
-    functions: { ...model, initialViewManagerState: model.initialViewManagerModel },
+    functions: { ...model, initialViewManagerModel: model.initialViewManagerModel },
     cases: reducerCases,
   },
   {
