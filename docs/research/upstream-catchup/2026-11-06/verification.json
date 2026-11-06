@@ -1,1 +1,134 @@
-{}
+{
+  "verifiedUTC": "2026-11-06T19:46:49.462987+00:00",
+  "scope": "Planning documents and infrastructure state only; no product tests/builds",
+  "canonicalViewerTarget": "8297bad8d388eb9c70324c22cb001c59248f95f4",
+  "viewerSelectedRuntime": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
+  "publicBranchTips": {
+    "research/multi-platform-rust-core-impl": "5a2f25f063054c344ea514c2f6da788ad45052f3",
+    "research/multi-platform-rust-core-impl-plugins": "8fa01cc1ec4d0739af535feec6928e6a81163fd9"
+  },
+  "currentMarkdownLinksChecked": 41,
+  "historicalFilesByteExact": 91,
+  "hashedFiles": 127,
+  "secretPatternScan": "No matches for GitHub tokens, AWS access keys, private keys or bearer credentials",
+  "checks": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/research/multi-platform-rust-core-impl"
+      ],
+      "exit": 0,
+      "stdout": "5a2f25f063054c344ea514c2f6da788ad45052f3",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "8297bad8d388eb9c70324c22cb001c59248f95f4",
+        "5a2f25f063054c344ea514c2f6da788ad45052f3"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/research/multi-platform-rust-core-impl-plugins"
+      ],
+      "exit": 0,
+      "stdout": "8fa01cc1ec4d0739af535feec6928e6a81163fd9",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "8297bad8d388eb9c70324c22cb001c59248f95f4",
+        "8fa01cc1ec4d0739af535feec6928e6a81163fd9"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "5a2f25f063054c344ea514c2f6da788ad45052f3",
+        "8fa01cc1ec4d0739af535feec6928e6a81163fd9"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "refs/catchup/2026-11-06/viewer-target"
+      ],
+      "exit": 0,
+      "stdout": "8297bad8d388eb9c70324c22cb001c59248f95f4",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "8297bad8d388eb9c70324c22cb001c59248f95f4",
+        "packages/engine/runtime/runtime-src"
+      ],
+      "exit": 0,
+      "stdout": "160000 commit 4346c5131cd009c4086fdce13bde7fd43fbd4ce0\tpackages/engine/runtime/runtime-src",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "cat-file",
+        "-t",
+        "4346c5131cd009c4086fdce13bde7fd43fbd4ce0"
+      ],
+      "exit": 0,
+      "stdout": "commit",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--porcelain",
+        "--untracked-files=no",
+        "--",
+        ".",
+        ":(exclude)docs/research/upstream-catchup/2026-11-06"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "sha256sum",
+        "--check",
+        "SHA256SUMS"
+      ],
+      "exit": 0,
+      "stdout": "127 files verified",
+      "stderr": ""
+    }
+  ],
+  "limitations": [
+    "C7 historical bare metadata excluded; original host records retained",
+    "Project dependencies and runtime artifacts not provisioned",
+    "No dotnet installed in current ARM64 image; Android NDK and Apple hosts unavailable here",
+    "No product integration/behavior/platform acceptance claimed"
+  ]
+}

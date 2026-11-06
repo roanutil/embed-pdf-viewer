@@ -48,7 +48,7 @@ for file in out.rglob('*'):
  except UnicodeError: continue
  for category,pattern in secret_patterns.items():
   assert not re.search(pattern,text),f'Possible {category} in {file.relative_to(out)}; inspect before public commit'
-status=git('status','--porcelain','--untracked-files=no'); assert status['exit']==0 and not status['stdout'],status
+status=git('status','--porcelain','--untracked-files=no','--','.',':(exclude)docs/research/upstream-catchup/2026-11-06'); assert status['exit']==0 and not status['stdout'],status
 checks.append(status)
 all_files=sorted(x for x in out.rglob('*') if x.is_file() and x.name not in ('verification.json','SHA256SUMS'))
 manifest=''.join(hashlib.sha256(x.read_bytes()).hexdigest()+'  '+str(x.relative_to(out))+'\n' for x in all_files)
