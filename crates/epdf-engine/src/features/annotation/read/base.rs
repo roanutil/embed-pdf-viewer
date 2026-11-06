@@ -21,6 +21,7 @@ use crate::features::actions::destination::PdfDestination;
 use crate::features::actions::reader::{ActionTree, read_action_model};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
 use crate::features::annotation::flags::AnnotationFlags;
+use crate::features::annotation::rich_text::to_line_breaks;
 use crate::features::annotation::vocabulary::{AnnotationReplyType, BlendMode};
 use crate::geom::PdfRect;
 use crate::identity::{AnnotationIdentityQuality, AnnotationRef, PageObjectNumber};
@@ -203,7 +204,8 @@ pub fn read_annotation_base(
             right: f64::from(rect.right),
             top: f64::from(rect.top),
         },
-        contents: dictionary_read("Contents", annotation.string_value("Contents"))?,
+        contents: dictionary_read("Contents", annotation.string_value("Contents"))?
+            .map(|text| to_line_breaks(&text, '\n')),
         subject: dictionary_read("Subj", annotation.string_value("Subj"))?,
         author: dictionary_read("T", annotation.string_value("T"))?,
         // A date the parser refuses becomes `None` rather than an error. A

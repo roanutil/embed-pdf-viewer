@@ -1,0 +1,851 @@
+{
+  "schemaVersion": 1,
+  "kind": "annotation.lineBreaks",
+  "fixture": "tooling/engine-conformance/fixtures/rich_metadata.pdf",
+  "contentsCases": [
+    {
+      "name": "lf",
+      "input": {
+        "contents": "alpha\nbeta"
+      },
+      "contents": "alpha\nbeta",
+      "pdfContents": "alpha\rbeta"
+    },
+    {
+      "name": "crlf",
+      "input": {
+        "contents": "alpha\r\nbeta"
+      },
+      "contents": "alpha\nbeta",
+      "pdfContents": "alpha\rbeta"
+    },
+    {
+      "name": "cr",
+      "input": {
+        "contents": "alpha\rbeta"
+      },
+      "contents": "alpha\nbeta",
+      "pdfContents": "alpha\rbeta"
+    },
+    {
+      "name": "mixed",
+      "input": {
+        "contents": "a\r\nb\rc\nd"
+      },
+      "contents": "a\nb\nc\nd",
+      "pdfContents": "a\rb\rc\rd"
+    },
+    {
+      "name": "unicode",
+      "input": {
+        "contents": "é\r\n😀\n中"
+      },
+      "contents": "é\n😀\n中",
+      "pdfContents": "é\r😀\r中"
+    },
+    {
+      "name": "empty",
+      "input": {
+        "contents": ""
+      },
+      "contents": "",
+      "pdfContents": ""
+    },
+    {
+      "name": "null",
+      "input": {
+        "contents": null
+      },
+      "contents": null,
+      "pdfContents": null
+    },
+    {
+      "name": "omitted",
+      "input": {},
+      "contents": null,
+      "pdfContents": null
+    }
+  ],
+  "richCases": [
+    {
+      "name": "lf",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "alpha\nbeta\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\rbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "crlf",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\r\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "alpha\nbeta\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\rbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\r\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "cr",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\rbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "alpha\nbeta\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\rbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\rbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "alpha\nbeta"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "mixed",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "a\r\nb\rc\nd"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "a\nb\nc\nd\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "a\rb\rc\rd"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "a\r\nb\rc\nd"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "a\nb\nc\nd"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "é\r\n😀\n中"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "é\n😀\n中\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "é\r😀\r中"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "é\r\n😀\n中"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": "é\n😀\n中"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty",
+      "input": {
+        "body": {
+          "family": "helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      },
+      "plainText": "\ntail\nline",
+      "engine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\rline"
+              }
+            ]
+          }
+        ]
+      },
+      "rawEngine": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ],
+        "source": "richtext",
+        "diagnostics": []
+      },
+      "parsed": {
+        "body": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#000000",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        },
+        "paragraphs": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "tail\nline"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

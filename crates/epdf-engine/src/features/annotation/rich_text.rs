@@ -5,10 +5,10 @@
 //!
 //! The fork's `EPDFAnnot_GetRichTextJSON` / `EPDFAnnot_SetRichTextJSON` JSON
 //! is the DTO shape plus `source` and `diagnostics`, so reading is a parse and
-//! writing is a stringify, except for FACES. The DTO names a face the way the
-//! host does (a registered font's key, a standard font's kebab name); the fork
-//! names it the way a PDF does (family, weight, italic). Both directions map
-//! here.
+//! writing is a stringify, except for faces and line breaks. The DTO names a
+//! face the way the host does (a registered font's key, a standard font's
+//! kebab name); the fork names it by family, weight and italic. Public hard
+//! line breaks are LF and the fork's JSON uses PDF CR. Both directions map here.
 //!
 //! Only what the engine itself reasons about is typed: the body's face, size,
 //! colour and alignment. Paragraph properties and run deltas are carried as
@@ -50,7 +50,7 @@ pub struct RichTextBody {
 /// `RichTextRun`. The style holds only what the run overrides.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RichTextRun {
-    /// May contain `\r`: a hard line break inside the paragraph.
+    /// May contain `\n`: a hard line break inside the paragraph.
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub style: Option<Map<String, Value>>,
@@ -113,14 +113,14 @@ pub(crate) fn to_line_breaks(text: &str, line_break: char) -> String {
     out
 }
 
-/// `richTextPlainText`: paragraphs joined by `\r`, runs concatenated. What the
-/// fork writes to `/Contents`.
+/// `richTextPlainText`: public LF line breaks, with paragraphs joined and runs concatenated.
 pub fn plain_text(paragraphs: &[RichTextParagraph]) -> String {
-    paragraphs
+    let text = paragraphs
         .iter()
         .map(|p| p.runs.iter().map(|r| r.text.as_str()).collect::<String>())
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n");
+    to_line_breaks(&text, '\n')
 }
 
 /// `richTextParagraphsFromPlainText`: one paragraph per line break, one run
@@ -285,7 +285,7 @@ fn with_engine_face(
     out
 }
 
-/// `engineRichTextJson`: the fork's JSON for a write, faces resolved.
+/// `engineRichTextJson`: the fork's JSON for a write, faces resolved and hard breaks as CR.
 pub fn engine_rich_text_json(
     input: &RichTextDocumentInput,
     describe: Option<DescribeFont<'_>>,
@@ -298,7 +298,7 @@ pub fn engine_rich_text_json(
                 .runs
                 .iter()
                 .map(|r| RichTextRun {
-                    text: r.text.clone(),
+                    text: to_line_breaks(&r.text, '\r'),
                     style: r.style.as_ref().map(|s| with_engine_face(s, describe)),
                 })
                 .collect(),
@@ -331,6 +331,9 @@ pub fn parse_engine_rich_text(json: &str) -> Option<RichTextDocument> {
     for paragraph in paragraphs.as_array_mut().into_iter().flatten() {
         let runs = paragraph.get_mut("runs").and_then(Value::as_array_mut);
         for run in runs.into_iter().flatten() {
+            if let Some(Value::String(text)) = run.get_mut("text") {
+                *text = to_line_breaks(text, '\n');
+            }
             if let Some(Value::Object(style)) = run.get_mut("style") {
                 lowercase_color(style);
             }
@@ -459,8 +462,8 @@ mod tests {
     fn contents_must_be_the_plain_projection() {
         let rich =
             RichTextDocumentInput { body: None, paragraphs: paragraphs_from_plain_text("a\nb") };
-        assert!(assert_agreement(Some("a\rb"), Some(&rich)).is_ok());
-        assert!(assert_agreement(Some("a\nb"), Some(&rich)).is_err());
+        assert!(assert_agreement(Some("a\nb"), Some(&rich)).is_ok());
+        assert!(assert_agreement(Some("a\rb"), Some(&rich)).is_err());
         assert!(assert_agreement(None, Some(&rich)).is_ok());
     }
 
