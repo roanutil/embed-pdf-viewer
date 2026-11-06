@@ -1,5 +1,43 @@
 # @embedpdf/plugin-annotation
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#999](https://github.com/embedpdf/embed-pdf-viewer/pull/999) by [@bobsingor](https://github.com/bobsingor) – `chrome.marquee` is one look: a change replaces it whole, and a color it leaves out follows the accent again. The other `chrome` groups still merge per key.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – The sub-capabilities are `AnnotationSelectionCapability`, `AnnotationDraftCapability`, `AnnotationTextCapability`, `AnnotationToolsCapability`, `AnnotationStampsCapability`, `AnnotationLinksCapability` and `CommentsCapability` (were `…Api`). `AnnotationToolDefinition` replaces `AnnotationToolDef`. Read shapes are `readonly`.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – The selection is `selection.select(refs)` and `selection.getSelected()`, as page-edit, attachment and outline have them (was `set` and `list`). `CommentThreadChangedEvent` is tagged `type` (was `change`). The host contract's functions start with a verb: `getAuthority`, `getPictureEpoch`, `getPictureVersion`, `isPending`, `getDistanceCreationPage`. The snap settings are `alignmentThresholdPx` and `rotationThresholdDeg`.
+
+### Patch Changes
+
+- [#982](https://github.com/embedpdf/embed-pdf-viewer/pull/982) by [@bobsingor](https://github.com/bobsingor) – A lent record with no live drawing keeps its picture while a new look is pending, instead of drawing its bare style in its place.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#973](https://github.com/embedpdf/embed-pdf-viewer/pull/973) by [@bobsingor](https://github.com/bobsingor) – `selection.update({ subtype })` changes each selected annotation that can become that kind, as the same annotation, and the rest keep theirs. `selection.getProperties()` leads with a `subtype` choice when the selection's kinds are siblings that can change kind (not a replacement's strikeout), offering the kinds people may change by hand.
+
+- [#975](https://github.com/embedpdf/embed-pdf-viewer/pull/975) by [@bobsingor](https://github.com/bobsingor) – The caret works as in a word processor. With a caret in a text box, `selection.getProperties()` reports the text typed next: the style of the text before the caret (at the start of a line, the text after it). `text.toggleFormat()` and a font, size or color from `selection.update()` at a caret style the text typed next, without writing anything, and moving the caret drops that style. A selected box reads all of its text, so bold shows only when every word is bold, and a change styles all of it, a word with its own style included. `text.toggleFormat()` turns a format on unless all of the text already has it, so words that disagree all take it. A box restyled while it is already drawn live now draws in its new font at once, not in the font answer for its old style.
+
+- [#971](https://github.com/embedpdf/embed-pdf-viewer/pull/971) by [@bobsingor](https://github.com/bobsingor) – A shape or line tool's defaults may set `color: null`, so the tool draws without a stroke.
+
+### Patch Changes
+
+- [#974](https://github.com/embedpdf/embed-pdf-viewer/pull/974) by [@bobsingor](https://github.com/bobsingor) – A free text box restyled after it was typed in is drawn in its new font at once: the fonts the engine answered for its old font no longer draw its body while its other runs follow the new one. An answer holds for the faces it was asked about; a box whose faces change is asked again, and typing keeps the answer.
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – With the fonts plugin installed, a free text box being typed in is drawn in the font programs the engine will write it with. The box is resolved when the edit starts, and again after a pause once its text has a character it wasn't resolved with, so a box whose font can't draw it moves to the font the engine moves it to. A `TextItem` carries its body `face` and the `programs` to mount, and `css.fontFamily` names them. `getCssFontFamily(face, id)` takes a run's whole face and the box, and `getFamilyOfCss(cssFamily)` reads a drawn family back. A document's own fonts map to and from their faces like registered ones.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – A hovered redaction's label is drawn in its fonts as the engine picks them (`label.fonts`, from the fonts plugin), and again once they're found. Without the fonts plugin, a text box draws in the standard font the engine falls back to for its font or face, in that font's built-in program, and `getFamilyOfCss()` reads a standard program's family back as its face's family. A text box being typed in follows its programs as they reach the browser.
+
 ## 3.0.0-next.19
 
 ### Patch Changes

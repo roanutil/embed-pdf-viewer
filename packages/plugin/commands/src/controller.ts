@@ -27,7 +27,7 @@ import { ShellToken } from '@embedpdf/plugin-shell/contract';
 
 import type {
   CommandContext,
-  CommandDef,
+  CommandDefinition,
   CommandExecutedEvent,
   CommandExecutionFailedEvent,
   CommandFamily,
@@ -54,7 +54,7 @@ import {
 import { createTurningOff } from './write/turning-off';
 
 const panelTarget = (
-  definition: CommandDef,
+  definition: CommandDefinition,
 ): { id: string; exclusive?: string; focus?: boolean } | null =>
   definition.panel === undefined
     ? null
@@ -354,7 +354,10 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
   );
 
   /** What running a command does: its `run`, or opening what it opens. */
-  const runCommand = async (definition: CommandDef, context: CommandContext): Promise<void> => {
+  const runCommand = async (
+    definition: CommandDefinition,
+    context: CommandContext,
+  ): Promise<void> => {
     if (definition.run) {
       await definition.run(context);
       return;
@@ -399,7 +402,10 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
     return { status: 'executed' };
   };
 
-  const registerOne = (definition: CommandDef, options?: RegisterCommandOptions): Unsubscribe => {
+  const registerOne = (
+    definition: CommandDefinition,
+    options?: RegisterCommandOptions,
+  ): Unsubscribe => {
     const taken = registered.has(definition.id) || configured().commands.has(definition.id);
     if (taken && !options?.replace) {
       throw new PluginError('conflict', 'commands', `duplicate command '${definition.id}'`);
@@ -458,19 +464,29 @@ export function createCommandsController(ctx: PluginContext<void, CommandsSettin
     onExecutionFailed: executionFailed.on,
     // ── host lens ──
     matchStroke: (stroke: KeyStroke, options) => {
+      let waiting: ShortcutMatch | null = null;
       let refused: ShortcutMatch | null = null;
       for (const entry of definedCommands()) {
         if (options.inTextField && !entry.definition.shortcutInTextFields) continue;
         if (!entry.parsed.some((shortcut) => matchShortcut(shortcut, stroke, options))) continue;
         const context = commandContext();
         const refusal = refusalOf(entry.definition, context);
-        if (!refusal) return { commandId: entry.definition.id, refusal: null };
+        const visible = derive(entry.definition.visible, context, true);
+        if (!refusal) {
+          // Commands that share keys take turns: Escape cancels a drawing while there is one,
+          // and lets a snapshot go while there is one.
+          if (visible && derive(entry.definition.enabled, context, true)) {
+            return { commandId: entry.definition.id, refusal: null };
+          }
+          waiting ??= { commandId: entry.definition.id, refusal: null };
+          continue;
+        }
         // A refused command takes its keys only where it would show: Delete with nothing
         // selected stays the page's, even where deleting is turned off.
-        if (!derive(entry.definition.visible, context, true)) continue;
+        if (!visible) continue;
         refused ??= { commandId: entry.definition.id, refusal };
       }
-      return refused;
+      return waiting ?? refused;
     },
     getMenuTarget: (id) => {
       const entry = entryOf(id);

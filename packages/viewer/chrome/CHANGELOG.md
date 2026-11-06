@@ -1,5 +1,106 @@
 # @embedpdf/viewer-chrome
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#999](https://github.com/embedpdf/embed-pdf-viewer/pull/999) by [@bobsingor](https://github.com/bobsingor) – The viewer takes `null` for `identity` and `scope`, as its settings read them: `identity: null` is nobody, and `scope: null` lets the user do everything.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – A viewer command is a `CommandDefinition` (was `CommandDef`).
+
+- [#1006](https://github.com/embedpdf/embed-pdf-viewer/pull/1006) by [@bobsingor](https://github.com/bobsingor) – A command of yours can have `labelParams`, which gets the same context as `enabled`: plugins by name through `get`, your `appState`, the document and the viewer. Its values fill the `{name}` slots in the command's label, and a number `count` picks the plural form of translated words.
+
+- [#1004](https://github.com/embedpdf/embed-pdf-viewer/pull/1004) by [@bobsingor](https://github.com/bobsingor) – `strings` takes a language's words as a function that loads them the first time the language shows, and `plugins.i18n.fallbackLocale` sets the fallback language, also shown when the browser asks for none of the viewer's languages. `plugins.i18n` takes only `fallbackLocale`. `document:download` saves the document under its name.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – `ViewerLifetime.destroy()` replaces `dispose()`. The signature setting's key is `signingKey`.
+
+- [#1011](https://github.com/embedpdf/embed-pdf-viewer/pull/1011) by [@bobsingor](https://github.com/bobsingor) – Selected redaction marks can be applied from the `annotation` bar: its new `annotation:apply-redaction` command shows when every selected annotation is a redaction mark, and asks first in the same confirmation as `redaction:apply`, counting only those marks and the other annotations under them. The confirmation's title takes plural forms in `strings` now (`demo.redactConfirmTitle`), and the command's label is `commands.redact.apply`, such as `{ one: 'Apply Redaction', other: 'Apply {count} Redactions' }`.
+
+### Patch Changes
+
+- [#1009](https://github.com/embedpdf/embed-pdf-viewer/pull/1009) by [@bobsingor](https://github.com/bobsingor) – A comment without an author shows as "Guest" instead of "Unknown", in every language, as it did in v2.
+
+- [#997](https://github.com/embedpdf/embed-pdf-viewer/pull/997) by [@bobsingor](https://github.com/bobsingor) – The attachments panel reads a file's `sizeBytes`.
+
+- [#1001](https://github.com/embedpdf/embed-pdf-viewer/pull/1001) by [@bobsingor](https://github.com/bobsingor) – On a phone, a submenu opened in a menu's sheet covers the menu under it completely. Before, once it finished sliding in, the rows of the menu under it that open submenus showed through its top rows.
+
+- [#1002](https://github.com/embedpdf/embed-pdf-viewer/pull/1002) by [@bobsingor](https://github.com/bobsingor) – Follows engine-core: form fields are tagged `kind`.
+
+- [#1007](https://github.com/embedpdf/embed-pdf-viewer/pull/1007) by [@bobsingor](https://github.com/bobsingor) – Counts read right in every language: the number of files and comments, search results, redaction marks and selected annotations each pick their language's plural form, such as Polish's `few` and `many` and Arabic's six forms, instead of choosing between a singular and a plural word or a "Label: 3" wording. `attachments.countPlural` and `comments.countPlural` are gone: `attachments.count`, `comments.count`, `demo.searchResults`, `demo.redactConfirmBody`, `demo.redactConfirmCollateral` and `stylePanel.selected` take plural forms in `strings`, such as `{ one: '{count} file', other: '{count} files' }`.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#973](https://github.com/embedpdf/embed-pdf-viewer/pull/973) by [@bobsingor](https://github.com/bobsingor) – The style panel has a **Type** row for a selected highlight, underline, squiggly line or strikethrough, and for a square or circle: one button per kind it can become, each with its tool's icon. Picking one changes the annotation's kind in place, with its comment and replies. The `annotation.style.kind` label is translated into every viewer language.
+
+- [#971](https://github.com/embedpdf/embed-pdf-viewer/pull/971) by [@bobsingor](https://github.com/bobsingor) – The style panel offers no color for a shape's or line's stroke and for a form field's border, as it does for fills.
+
+- [#980](https://github.com/embedpdf/embed-pdf-viewer/pull/980) by [@bobsingor](https://github.com/bobsingor) – Take a Snapshot, in the document menu: drag a box over a page, or click a page for all of it, and a bar under the box copies the picture (`Ctrl`/`Cmd`+`C`) or saves it as a PNG; `Escape` lets it go. New commands `tool:snapshot`, `snapshot:copy`, `snapshot:save` and `snapshot:clear`, the `snapshot` bar, and the `snapshots` feature for `disable`. A PDF that forbids copying has no Take a Snapshot. In all fifteen languages.
+
+### Patch Changes
+
+- [#970](https://github.com/embedpdf/embed-pdf-viewer/pull/970) by [@bobsingor](https://github.com/bobsingor) – The style panel's font picker offers only the fonts new text can be written in. A document font that can't be chosen (one the PDF holds only the characters of, a Type 3 font, one licensed for viewing only) is no longer listed greyed; the box that has it still shows it as its font, with why it can't be chosen for another box.
+
+## 3.0.0-next.21
+
+### Minor Changes
+
+- [#958](https://github.com/embedpdf/embed-pdf-viewer/pull/958) by [@bobsingor](https://github.com/bobsingor) – The View menu's Scrolling group gains Page by page (`view:scroll-paged`, icon `pageByPage`), next to Vertical and Horizontal: one page or spread at a time, turned by scrolling or swiping past its edge. Vertical and Horizontal now also switch back to scrolling every page, and a lock on `flow` or `layout` greys them out. The label is in all 15 languages.
+
+- [#957](https://github.com/embedpdf/embed-pdf-viewer/pull/957) by [@bobsingor](https://github.com/bobsingor) – The page number:
+  - The `pager` bar holds the previous and next page buttons around the page number, one group that never moves into "More". The number and the count are one button, "3 / 12", that turns the number into a field to type a page: `pageNumber.page` and `pageNumber.pages` say `{current} / {total}` and `{first}–{last} / {total}` in every language. It names the pages the buttons step past, the Stage's `listCurrentPages()`: "2–3 / 12" while a spread fits across the view, so Next goes to 4–5, and the one page once you zoom in past it. A document of one page has no page number, and `page:next`, `page:previous`, `page:first` and `page:last` don't show for it.
+  - A floating bar whose place says `hideWhenIdle: true`, and by default the bar with the page number, at every size, fades out once the pages and the pointer have been still for two seconds, and comes back when the pages move, the pointer moves over them or presses them, or the keyboard reaches it. It stays while the pointer is on it, while you're using it from the keyboard or typing in it, and while a menu from it is open. Out of sight it takes no clicks and keeps its place in the keyboard's order. `hideWhileScrolling` is gone.
+  - A floating bar's corners follow the theme's `radius`, like its buttons, instead of being round.
+  - A command's chevron to the next or previous page points the other way in a right-to-left language, in a bar, a menu and a strip bar, where the row mirrors.
+
+- [#963](https://github.com/embedpdf/embed-pdf-viewer/pull/963) by [@bobsingor](https://github.com/bobsingor) – The strip over selected text sits below it, as the annotation strip does, and above it only when there's no room below. Its menus open on the strip's side, away from the text.
+
+- [#963](https://github.com/embedpdf/embed-pdf-viewer/pull/963) by [@bobsingor](https://github.com/bobsingor) – The style panel shows only styles: the flags section (`/F`) is gone, with its title and hints (`annotationFlags.*`) in the language packs. A selection with nothing to style shows the panel's empty state.
+
+### Patch Changes
+
+- [#952](https://github.com/embedpdf/embed-pdf-viewer/pull/952) by [@bobsingor](https://github.com/bobsingor) – The spinner on a page whose picture is on its way turns in place. It slid across the page instead, because its placement and its spin shared one `transform`. The `page-loading` part is still the circle, so restyling it works as before.
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#948](https://github.com/embedpdf/embed-pdf-viewer/pull/948) by [@bobsingor](https://github.com/bobsingor) – `appState` in the viewer's config: your app's state, which your commands get as `appState`. It follows its prop, and the commands' buttons follow it. `CommandDef<AppState>` and `CommandContext<AppState>` type it.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – The viewer installs the fonts plugin: text typed in a free text box or a text field shows in the font program the engine writes with, a document's own fonts included. `viewer.get('fonts')` returns it.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – `fonts` is a setting of the viewer's own (`ViewerCustomization`, with `ViewerFont.label`): each font is read once and registered on a local engine, and the fonts plugin draws it by program; a cloud engine's fonts are its server's, so the setting is ignored there, with a warning. The style panel's font picker lists every font text can be written in, for text boxes, form fields and redaction labels alike: In this document, Your fonts (Server fonts on the cloud), then the standard fonts; a font that can't be chosen shows greyed with why, and a box's own font shows either way. A typed signature's font goes to the stamp plugin, which registers it where the mark is written, and the maker shows the typed name in it.
+
+- [#939](https://github.com/embedpdf/embed-pdf-viewer/pull/939) by [@bobsingor](https://github.com/bobsingor) – A page whose picture takes more than 400 milliseconds to arrive shows a spinner, in the main view and in the thumbnails, in the middle of the part of the page on screen; a page that can't load says so ("This page couldn't load.", or "You don't have access to this page." without `doc.render`), in all 15 languages. Restyle or hide them with the `page-loading` and `page-error` parts, and change the wait with `plugins.render.slowAfterMs`.
+
+- [#931](https://github.com/embedpdf/embed-pdf-viewer/pull/931) by [@bobsingor](https://github.com/bobsingor) – The thumbnails panel follows its own permission: its rail draws each page's thumbnail, and the panel is there only when the session may have thumbnails (`doc.render.thumbnail`, which `doc.render` includes), like any command the session may not run. The reason it's missing is translated into every language the viewer ships.
+
+- [#933](https://github.com/embedpdf/embed-pdf-viewer/pull/933) by [@bobsingor](https://github.com/bobsingor) – The facing-pages, scroll direction and view rotation commands follow setting locks: while a plugin or your app locks the setting one changes, its menu rows and buttons show greyed out, the current choice still checked, with the lock's reason as the tooltip. The general sentence, for a lock without a reason of its own, is translated into every language the viewer ships.
+
+- [#949](https://github.com/embedpdf/embed-pdf-viewer/pull/949) by [@bobsingor](https://github.com/bobsingor) – The viewer's own tooltips replace the browser's `title` everywhere in the chrome (`useTooltip`, `WithTooltip`, `TooltipButton`). A tooltip shows once the pointer rests on its button (at once while another one shows or just went), at once on focus from the keyboard, and never for a touch; the pointer can move onto it, and it goes on a press, on Escape, or when the pointer and focus leave. One shows at a time. It opens in the top layer on the side its button's menu would open, or beside a menu's row, flipped when there's no room, in the theme's font and the `tooltip` and `tooltip-text` tokens. It says a command's label, its shortcut the way the platform writes it, and why it can't run, and names itself in the button's `aria-describedby` for what the button's name doesn't say already. Icon buttons in the panels and dialogs take their name (`aria-label`) from it. Text cut short (an attachment's file name, an outline item's title) shows whole in one, only while it's cut short. A menu is named after its button.
+
+  Toolbars: a command's item takes `emphasis: 'primary'`, drawn filled in the accent, with the part `toolbar-button-primary` beside `toolbar-button`; every toolbar is the part `toolbar toolbar-<id>`; `{ custom, grow: true }` takes the room the bar has left, through the headless toolbar. Bars floating on one edge share it: the corner bars sit in the corners and the middle one stays centered, moving aside only as far as a corner bar needs; where it doesn't fit beside them, the corner bars move one row in, and two corner bars that don't fit side by side stack the same way. The bars on the two sides stay level until they'd meet, then sit one over the other. A floating bar's place takes `hideWhileScrolling`, on a phone by default for the bar with the page number. The page number reads a spread's first and last page ("Pages 1–2 of 8"), and opens its field at the first. `<epdf-button>` and `<epdf-menu-item>` take `active` (shown pressed or checked), and `<epdf-icon name size label>` draws an icon of the viewer's or of yours.
+
+  Theme: `page-background` and `page-shadow` tokens beside `tooltip` and `tooltip-text`, and `light` beside `dark`: `light` or `dark` wins in its mode, then `tokens`, then `accent`.
+
+  Panels: a built-in panel's id brings its title and icon in any layout, a whole layout of yours too. The panel's title is its button's label: a string for `panel:<id>` comes first, then the layout's `title` or `titleKey`. `open` opens a panel when each document opens, where it docks (the first in the layout of two on one side), and waits for its button where it would cover the pages; `closable: false` takes away its close button where it docks, and its button opens it without closing it. An overlay panel has a resize edge like a docked one, with Home and End, and a sheet on a viewer wider than a phone is as wide as the panel's `width`, centered.
+
+  Config: `size` (`'auto'` or the size the layout is for at every width) and `touch` (`'auto'` or a boolean) set `env.size` and `env.touch`, and `warnBeforeLeaving: false` turns off the question on leaving the page; each is read once.
+
+  `viewer.get()` of a document's plugin throws `PluginError('not-ready')` before its document has opened, and `watch()` waits while its read throws that, starting once the read works and waiting again after the document closes. `watch(read, onChange, options)` takes `{ immediate, isEqual }` (`WatchOptions`) in place of a third-argument `isEqual`; with `immediate`, `onChange` gets the first value too, with `previous` `undefined`.
+
+  The words: `pageNumber.page`, `pageNumber.pages` and `pageNumber.goToPage`, and 23 `comments.*` keys, replace the `demo.*` ones in all 15 languages.
+
+### Patch Changes
+
+- [#938](https://github.com/embedpdf/embed-pdf-viewer/pull/938) by [@bobsingor](https://github.com/bobsingor) –
+  - A click in a sheet or dialog that closes it and puts the cursor somewhere else, such as
+    `form.focus()` from a panel of your own, leaves the cursor there instead of on the button that
+    opened it.
+  - A floating bar with `hideWhileScrolling` hides after a click on one of its buttons too: only a bar
+    you're using from the keyboard, or typing in, stays while the pages scroll.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

@@ -23,6 +23,7 @@ export type {
   PlacedMenuItem,
 } from './ui/placed-components';
 export type { PanelResizeEvent, ViewerFont } from './config-context';
+export type { LanguageStrings, StringsLoader } from './locales';
 export type {
   PluginSettings,
   SignatureFont,
@@ -146,4 +147,4 @@ export type {
   ViewerSize,
 } from '@embedpdf/core-ui';
 // A command as the `commands` config takes it: the headless one, with the viewer's words.
-export type { CommandContext, CommandDef } from './config/viewer-commands';
+export type { CommandContext, CommandDefinition } from './config/viewer-commands';

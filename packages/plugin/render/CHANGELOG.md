@@ -1,5 +1,39 @@
 # @embedpdf/plugin-render
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#999](https://github.com/embedpdf/embed-pdf-viewer/pull/999) by [@bobsingor](https://github.com/bobsingor) – The `format` and `quality` settings read `null` while the engine chooses, so `updateSettings({ format: null })` gives the choice back; they used to read `undefined`, which a change could never set. `snapshot.box` is one look: a change replaces it whole, and a color it leaves out follows the accent again.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – The full-page and tile settings types are `FullPageSettings` and `TilesSettings` (were `…Options`).
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – The tile settings name their units: `bleedPx` and `engageRatio` (were `bleed` and `engageAt`). Results say `mimeType`. The host contract's view demand ends with `destroy()`, and `getKeptAppearances()` starts with a verb.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#980](https://github.com/embedpdf/embed-pdf-viewer/pull/980) by [@bobsingor](https://github.com/bobsingor) – `renderPage` renders part of a page: `rect`, in page space, cut at the page's edge (one that misses the page is `invalid-input`), sized by `width` or `scale`. `rotation` turns the picture. Either one renders for its caller alone, outside the layers' cache. New `snapshot` tool, added when the interaction plugin is there: drag a box on a page, or click for the whole page, and the box is held as the snapshot, `{ page, rect, image }`, its picture a PNG at `snapshot.scale` (default 2) pixels per point, turned as the page is shown, made smaller to fit 16 million pixels or the deployment's budget, and rendered once every change made before it is in. New `canSnapshot()` (`doc.render` and `doc.content.copy`), `getSnapshot()`, `clearSnapshot()`, `onSnapshotChanged`, the `snapshot` settings (`scale`, `box.fill`, `box.stroke`) and, on the host lens, `getSnapshotBox(page)`.
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#939](https://github.com/embedpdf/embed-pdf-viewer/pull/939) by [@bobsingor](https://github.com/bobsingor) – Show that a page is loading: `render.getPictureState(page, view)` says whether a picture of the page is on screen in a view, as `{ status, slow }`. `status` is `'loading'` from the moment a layer paints the page until its first picture is on screen, then `'ready'`; `'forbidden'` without `doc.render`, `'error'` when it couldn't be drawn, and `'idle'` in a view that doesn't show the page. Tiles arriving as the view zooms and a redraw after a change keep the page `'ready'`. `slow` turns on once a page has waited `slowAfterMs` (a new setting, 400 by default), the moment to show an indicator, so a page that shows quickly never flashes one. `onPictureStateChanged` fires on every change. Whatever paints a page reports it: the layers through `reportPicture(view, page)` on the host lens, and a plugin painting the pictures through the `report` its `paint(host, page, report)` now gets (`report.shown()`, `report.failed(error)`).
+
+- [#936](https://github.com/embedpdf/embed-pdf-viewer/pull/936) by [@bobsingor](https://github.com/bobsingor) – Another plugin can paint the page pictures: `render.handOverPictures({ paints(view), paint(host, page) })` hands it every `<RenderLayer>` whose view `paints` accepts, and the render plugin fetches nothing for them. `paint` gets the layer's box and the page (`ref`, `pageIndex`, `view`, `transform`, `getViewDemand`), and returns `{ update(page), destroy() }`: `update` follows the zoom, a turn or a reorder, `destroy` comes when the page goes or the pictures are given back. One plugin paints them at a time: a second is refused (`conflict`). It returns the function that gives them back; otherwise they stay handed over until the document closes. Taken in a plugin's `connect()`, the hand-over holds from the first layout. `getPicturePainter()` says which painter holds them.
+
+- [#931](https://github.com/embedpdf/embed-pdf-viewer/pull/931) by [@bobsingor](https://github.com/bobsingor) – Thumbnails have their own permission. `renderThumbnail(page, options?)` now renders the page's thumbnail, the whole page at 512 pixels on its long side, and needs only `doc.render.thumbnail` (which `doc.render` includes); its `maxWidth` option is gone, so show the picture smaller with CSS, or use `renderPage` for an exact width. `canRenderThumbnail()` says whether the session may have them. A layer asks for a thumbnail with `thumbnail: true` in `renderSource` and `getSourceKey`: one picture per page, whatever the scale.
+
+### Patch Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – Registering fonts on the local engine after pages were drawn repaints every page: a page's text draws a glyph its own font lacks from a registered fallback, so a page drawn before the fallback arrived kept the old one. A write's `fonts.changed` repaints nothing more than its own events do.
+
+- [#940](https://github.com/embedpdf/embed-pdf-viewer/pull/940) by [@bobsingor](https://github.com/bobsingor) – A page that shows before the engine has it (a blank insert, a deleted page an undo brings back) is drawn once the engine has it: until then nothing asks the engine for its pictures or tiles, and a page that goes before it lands rejects `not-found`. A copy shows at once, drawn as the page it copies.
+
 ## 3.0.0-next.19
 
 ## 3.0.0-next.18

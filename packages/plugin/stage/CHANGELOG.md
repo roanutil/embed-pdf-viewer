@@ -1,5 +1,33 @@
 # @embedpdf/plugin-stage
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#999](https://github.com/embedpdf/embed-pdf-viewer/pull/999) by [@bobsingor](https://github.com/bobsingor) – `reveal()`'s `rect` is `rect?: Rect`: left out is the whole page, and `null` is no longer taken. A `zoomBox` change that gives a color as `undefined` follows the accent, instead of storing `undefined`.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – Read shapes are `readonly`, the settings included. Follows core-geometry and core-stage: `Rotation`, `PageGeometry`.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – `StageViewState.pageIndex` replaces `cursor`. `getPageBox()` replaces `getPageFrame()`, since `PageFrame` is a setting. A reveal's alignment is `align?: RevealAlignment`, its values `ArrivalAlignValue` (were `anchor`, `RevealAnchor` and `RevealAnchorValue`, a copy of it). Settings events carry `changedKeys`.
+
+## 3.0.0-next.22
+
+## 3.0.0-next.21
+
+### Minor Changes
+
+- [#958](https://github.com/embedpdf/embed-pdf-viewer/pull/958) by [@bobsingor](https://github.com/bobsingor) – In paged flow, pushing past the edge of the page turns it, as readers expect from a wheel, a trackpad and a finger. Scroll or swipe past the bottom for the next page, at its top; past the top for the previous page, at its bottom; or swipe sideways past the edge (the other way in a right-to-left document). A tall page stops at its bottom first, and the next push turns it. One gesture turns one page, and its momentum doesn't scroll the page that arrives. The new `turnGestures` setting (default `true`) turns this off, leaving page turns to `nextPage()`, `previousPage()` and navigation. Nothing changes in continuous flow.
+
+- [#957](https://github.com/embedpdf/embed-pdf-viewer/pull/957) by [@bobsingor](https://github.com/bobsingor) – `listCurrentPages()` gives the pages you're on: the current spread while it fits across the view, its two pages side by side however tall they are, else the current page alone. `nextPage()` and `previousPage()` step past those pages, and `canGoNext()` and `canGoPrevious()` say whether there's a page after or before them. A spread that fits across the view but is taller than it used to step one page at a time, so Next from 1–2 went to page 2, already on screen, and nothing moved; and on the second page of the first or last spread, Previous or Next was enabled and did nothing. A spread that fits across the view also lands at its top, like a page.
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#933](https://github.com/embedpdf/embed-pdf-viewer/pull/933) by [@bobsingor](https://github.com/bobsingor) – Lock settings for one document: `stage.lockSettings({ settings, by, reasonKey? })` holds them at a value over `updateSettings()`, the responsive rules, a restored view state and `resetSettings()`, which still change the settings underneath, so the user's own choice is back when the lock goes. It returns the function that lets go; otherwise the lock lasts until the document closes. A second lock on a setting at another value is refused (`conflict`), naming the holder; at the same value both hold. `getLock(setting)` says who holds a setting and why. Every setting but `zoom` can be locked. Taken in a plugin's `connect()`, a lock holds from the Stage's first layout. `getViewState()` saves the locked settings as they are underneath the lock.
+
+- [#949](https://github.com/embedpdf/embed-pdf-viewer/pull/949) by [@bobsingor](https://github.com/bobsingor) – `padding` takes `{ top, right, bottom, left }` beside one number, room for a toolbar floating over one edge. A change names only the sides it sets (`{ bottom: 56 }`) and the others are 0, as with `pageFrame`; `getSettings().padding` is what was given, with every side. The fit modes, the clamp, the scrollbars, arrivals and the wrapped grid's line width use each side, and a `'center'` or fractional placement shifts by half the difference between two sides, so equal sides place the content where they did.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

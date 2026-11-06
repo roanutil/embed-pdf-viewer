@@ -1,5 +1,69 @@
 # @embedpdf/engine-services
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#982](https://github.com/embedpdf/embed-pdf-viewer/pull/982) by [@bobsingor](https://github.com/bobsingor) – A signature field draws its box: placing one writes its background and border, and a restyle draws them again, as it does for a widget in no field. Once a mark is in the field (it is signed, or a mark was drawn in), the mark stays: a resize keeps it, and a style change is refused with `InvalidArg`. A mark drawn in records how it fits the widget, as a stamp records its own.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – A worker image encoder's result says `mimeType` (was `contentType`), as render results do.
+
+### Patch Changes
+
+- [#997](https://github.com/embedpdf/embed-pdf-viewer/pull/997) by [@bobsingor](https://github.com/bobsingor) – Reads and writes a `submit-form` action's flags by name, and says the renamed fields (`sizeBytes`, `md5`, `displaySha256`, `contentsSizeBytes`, `changedRefs`, the seed value's booleans).
+
+- [#995](https://github.com/embedpdf/embed-pdf-viewer/pull/995) by [@bobsingor](https://github.com/bobsingor) – A stamping import still puts an item in no group in the caller's group, now that an annotation create's `groupId: null` asks for no group, and still gives each copy a fresh name, now that `nm: null` asks for none.
+
+- [#985](https://github.com/embedpdf/embed-pdf-viewer/pull/985) by [@bobsingor](https://github.com/bobsingor) – Page text comes from `toPageText`: lines end in `\n`, and noncharacters such as the U+FFFE PDFium writes for a joined line-end hyphen give no text. An annotation's `/Contents` reads with `\n` line breaks and is written with `\r`, as Acrobat writes it. Hard line breaks in rich text runs read as `\n` and are written as `\r`.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – Follows engine-core's names.
+
+- [#1002](https://github.com/embedpdf/embed-pdf-viewer/pull/1002) by [@bobsingor](https://github.com/bobsingor) – Follows engine-core: form fields are tagged `kind`.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#973](https://github.com/embedpdf/embed-pdf-viewer/pull/973) by [@bobsingor](https://github.com/bobsingor) – An update with a sibling `subtype` writes the annotation as its new kind: its `/Subtype`, its fields as the new kind's, and an appearance drawn as one. Undo puts the old kind back, also when the annotation changed since.
+
+- [#978](https://github.com/embedpdf/embed-pdf-viewer/pull/978) by [@bobsingor](https://github.com/bobsingor) – A markup annotation's comment reads and writes as rich text: `richText` reads its `/RC` (`null` without one) and a write sets `/RC` and `/Contents` together, as Acrobat writes a note's, without touching its appearance. Writing `contents` alone on a formatted comment rewrites its `/RC` too, so other PDF apps no longer show the old text. A comment body that names no font reads as Helvetica, and is written back naming none. A redaction's overlay font is read from its `/DA` alone, so a comment in another font no longer changes it.
+
+- [#971](https://github.com/embedpdf/embed-pdf-viewer/pull/971) by [@bobsingor](https://github.com/bobsingor) – `color: null` on a square, circle, polygon, polyline, line or ink is written as `/C []`, the empty color ISO 32000 defines as no color. A shape whose `/C` is empty or left out reads `color: null`, where it read red before.
+
+## 3.0.0-next.21
+
+### Patch Changes
+
+- [#950](https://github.com/embedpdf/embed-pdf-viewer/pull/950) by [@KleiKodesh](https://github.com/KleiKodesh) – An `/XYZ` destination that leaves out trailing parameters, such as `[page /XYZ 10 700]`, keeps the left and top it has instead of reading all three as `null`. `/XYZ` is now read through `FPDFDest_GetView` and the null-parameter mask like every other view type. A `0` zoom still reads as `null`, which means the same.
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – Serve the `document.fonts.list`, `document.fonts.resolve` and `document.fonts.program` worker requests: every font the document holds, wherever it sits (form resources, page and form XObject resources, patterns, soft masks, Type 3 resources and annotation appearances), with what each program is and whether new text can be written with it.
+
+  A free text, a widget or a form field can name a font the document holds whole by its name. The write uses the document's own program instead of embedding another; a font that can't be chosen (a subset, a font the document only names, a preview-and-print licence, a Type 1, CFF or Type 3 program, or one without a Unicode cmap) is refused with `InvalidArg` and `details.restrictions`. A widget's or a box's `fontFamily` reads back by that name.
+
+  A write that draws characters no font has reports them in `meta.missingCharacters`. A change reports them per op, in each item's `meta`, and for the whole change in its own, so the cloud, whose writes are changes, reports them too.
+
+  Fix `forms.create` and `forms.addWidget` refusing a widget whose `fontFamily` names a registered font.
+
+  A document font that is Type 1, bare CFF or a TrueType without a Unicode cmap is served as its display program: `document.fonts.program` takes a display hash (`displayHash`) and returns what a browser loads.
+
+  Every thread registers the last-resort font, and registers it again after `fonts.clear`, so a character no font has is drawn as a box, embedded with the appearance, and reported. Fallback fonts have tiers: `FontRegistrar.addFallback(key, tier)` and `StartupFontSpec.tier`; `fallbackKeys()` lists them by tier. Characters a form field or a redaction label drew with no font are reported in the write's `meta.missingCharacters`, and `document.fonts.resolve` for a widget answers what its write draws.
+
+  A write says whether it changed the fonts the document's list shows (`fontsChanged`): from a session's first write with `reportEveryFontChange` (the server's), else once the session's fonts were listed. Read from the runtime's fonts fingerprint, which on a layer walks only what the write touched. Serve the `fonts.list` and `fonts.program` requests (the engine's fonts, and a served one's bytes); a startup font takes `serve`.
+
+- [#940](https://github.com/embedpdf/embed-pdf-viewer/pull/940) by [@bobsingor](https://github.com/bobsingor) – Copy pages of the document (`pages.copy`), with their annotations and their form fields as fields of their own, and insert pages at the object numbers a caller names (`pages.insert` with `objectNumbers`). An undo of an insert or a copy deletes the form fields its pages brought along with the pages, and a redo brings both back.
+
+  Page edits now move `/PageLabels` with the pages: a section stays with the page it starts at, a page takes the numbering of the section it lands in, and an undo puts the sections back as they were. The page list reads its labels from the sections.
+
+- [#945](https://github.com/embedpdf/embed-pdf-viewer/pull/945) by [@bobsingor](https://github.com/bobsingor) – Annotation reads include `structurePosition`, the annotation's place in the document's tags, found from the annotation up without loading its page.
+
+### Patch Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – A free text box written in a document font is drawn in that font's own program, and its `/DS` and `/RC` name the font's family, weight and italic. They used to name the font list's name, which no font in the file has, so the box was drawn in Helvetica while it read back the chosen name. A document font is found by the name the font list gives it, everything the PDF draws under that name, when a write or `resolve` names it. `resolve` uses the program a write would. A font program two font dictionaries read differently is served by display hash, so each download and coverage is the one its dictionary draws, and `resolve` for a field in either gives the one its own dictionary reads: both used to get one dictionary's widths.
+
 ## 3.0.0-next.19
 
 ## 3.0.0-next.18

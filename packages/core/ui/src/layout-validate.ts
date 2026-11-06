@@ -57,7 +57,7 @@ const FLOAT_POSITIONS: readonly string[] = [
   'bottom',
   'bottom-end',
 ];
-const SELECTION_TARGETS: readonly string[] = ['selection', 'annotation'];
+const SELECTION_TARGETS: readonly string[] = ['selection', 'annotation', 'snapshot'];
 const PRESENTATIONS: readonly string[] = ['dock', 'overlay', 'sheet'];
 const SIZES: readonly string[] = ['compact', 'medium', 'expanded'];
 const WIDTH_FIELDS: readonly string[] = ['initial', 'min', 'max'];
@@ -145,9 +145,9 @@ function placeProblems(
       : [
           `${where}: "${place.float}" is not a floating position${didYouMean(place.float, FLOAT_POSITIONS)}`,
         ];
-    const hide: unknown = place.hideWhileScrolling;
+    const hide: unknown = place.hideWhenIdle;
     if (hide !== undefined && typeof hide !== 'boolean')
-      problems.push(`${where}: hideWhileScrolling ${JSON.stringify(hide)} is not true or false`);
+      problems.push(`${where}: hideWhenIdle ${JSON.stringify(hide)} is not true or false`);
     return problems;
   }
   if ('with' in place) {
@@ -167,7 +167,7 @@ function placeProblems(
   if ('at' in place)
     return SELECTION_TARGETS.includes(place.at)
       ? []
-      : [`${where}: "${place.at}" is not selection or annotation`];
+      : [`${where}: "${place.at}" is not selection, annotation or snapshot`];
   if ('panel' in place) {
     const panels = Object.keys(data.panels ?? {});
     return panels.includes(place.panel)

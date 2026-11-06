@@ -1,5 +1,68 @@
 # @cloudpdf/sdk
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#991](https://github.com/embedpdf/embed-pdf-viewer/pull/991) by [@bobsingor](https://github.com/bobsingor) – The manifest and cache delta types have `contentsVersion`.
+
+- [#989](https://github.com/embedpdf/embed-pdf-viewer/pull/989) by [@bobsingor](https://github.com/bobsingor) – The head type has `engine`, the server's engine value for each kind of cached read; the manifest type no longer has `serverFonts`.
+
+- [#994](https://github.com/embedpdf/embed-pdf-viewer/pull/994) by [@bobsingor](https://github.com/bobsingor) – Every error response is one type, `ErrorResponse`, with its error `EngineError` and a `code` from one list, replacing `EngineErrorPayload`, `AdminErrorPayload` and the per-operation error types such as `DocHead404Response`. A response type is named after its operation alone (`DocFormsListResponse`, not `DocFormsList200Response`). Sizes, counts, durations and timestamps are integers, and `nextCursor`, `thumbnailState` and `thumbnailUrl` are always there. A signature's `fieldMdp` and `lock` are `FieldLockSpec`, whose `permission` is a `DocMdpPermission` that is never null. A DocMDP level and a page or widget rotation are integers.
+
+- [#996](https://github.com/embedpdf/embed-pdf-viewer/pull/996) by [@bobsingor](https://github.com/bobsingor) – Every point in time is an ISO 8601 date-time string, where `createdAt`, `updatedAt`, the other `…At` fields and every `expiresAt` were numbers in milliseconds or seconds. A token revoke takes `expiresAt` instead of `expiresAtSeconds`. A grant's `createdAt` and `updatedAt`, and a visitor's `firstSeenAt` and `lastSeenAt`, are no longer typed nullable.
+
+- [#997](https://github.com/embedpdf/embed-pdf-viewer/pull/997) by [@bobsingor](https://github.com/bobsingor) – Names follow one rule: `sizeBytes` (documents, layers, versions and the init request), `baseSha256`, a manifest's `baseSizeBytes`, `uploadTtlSeconds` (also on `uploads.create`), `expiresInSeconds`, `docIds`, `md5`, `displaySha256` and `sourceSha256`, `contentsSizeBytes`, `changedRefs`, usage metrics `pdfViews`, `pdfUploads` and `storageBytes` with module meters in a typed `moduleMeters` map, a `submit-form` action's named flags, a seed value's `…Required` booleans and `parserVersion`, and the path arguments `docId`, `annotationKey`, `sha256` and `displaySha256`. `/access`, the event stream's `session` event and object-number reservations say `expiresInSeconds`. Action trees drop `warningFlags`.
+
+- [#995](https://github.com/embedpdf/embed-pdf-viewer/pull/995) by [@bobsingor](https://github.com/bobsingor) – A destination's `x`, `y` and `zoom` are always there, `null` to keep the viewer's value, and a document's `openDestination` is always there. A line's `captionEnabled` is a boolean, never `null`. A grant create takes `null` for `origins` and `expiresAt`, as a grant read says them.
+
+- [#993](https://github.com/embedpdf/embed-pdf-viewer/pull/993) by [@bobsingor](https://github.com/bobsingor) – A field's stored value and a measure are one type each, `FormValueEntry` and `PdfMeasurement`, replacing the per-family and per-kind copies such as `FormFieldTextValueEntry` and `AnnotationLineMeasure`. The documentation of each union and enum with a catch-all says what a kind or value the SDK doesn't know reads as.
+
+- [#1005](https://github.com/embedpdf/embed-pdf-viewer/pull/1005) by [@bobsingor](https://github.com/bobsingor) – A document head's `permissions.flags` (`PdfPermissionFlags`) replaces `bits`.
+
+- [#982](https://github.com/embedpdf/embed-pdf-viewer/pull/982) by [@bobsingor](https://github.com/bobsingor) – `WidgetAnnotation` has `hasMark`: `true` for a signature field's widget with a
+  mark in it (signed, or a mark drawn in), whose style can then no longer change.
+
+- [#1002](https://github.com/embedpdf/embed-pdf-viewer/pull/1002) by [@bobsingor](https://github.com/bobsingor) – `uploads.create()` and `upload()` resolve `{ status, document }` (was `tag`). Form fields are tagged `kind`, and the init and import answers say `status`.
+
+- [#992](https://github.com/embedpdf/embed-pdf-viewer/pull/992) by [@bobsingor](https://github.com/bobsingor) – Every request sends `EmbedPDF-Version`, the version the SDK was generated from.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#978](https://github.com/embedpdf/embed-pdf-viewer/pull/978) by [@bobsingor](https://github.com/bobsingor) – Annotations, drafts and patches of every markup kind have `richText`, the
+  comment with formatting (`RichTextDocument`, `RichTextDocumentInput`), or
+  `null` for a plain comment.
+
+- [#967](https://github.com/embedpdf/embed-pdf-viewer/pull/967) by [@bobsingor](https://github.com/bobsingor) – `deployment.modules()` lists the installed server modules: their names, permissions and meters. `tenants.usage` takes `from` and `to` for a window of UTC days, and its `metrics` include modules' meters.
+
+- [#971](https://github.com/embedpdf/embed-pdf-viewer/pull/971) by [@bobsingor](https://github.com/bobsingor) – A square, circle, polygon, polyline, line or ink annotation's `color` may be `null`: no stroke.
+
+## 3.0.0-next.21
+
+### Minor Changes
+
+- [#956](https://github.com/embedpdf/embed-pdf-viewer/pull/956) by [@bobsingor](https://github.com/bobsingor) – `tenants.update({ tenantId, features })` sets the server modules a tenant may use, and tenant records have `features`.
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – `doc.fonts.list()`, `doc.fonts.resolve()`, `doc.fonts.programs.get()` and `doc.fonts.programs.download()`: the fonts text can be written in, what a write would draw each run in, and a font program's facts and file. A manifest carries `fontsVersion` and `serverFonts`, a change's cache delta `fontsVersion`, and a write's meta the `missingCharacters` it drew in no font.
+
+- [#940](https://github.com/embedpdf/embed-pdf-viewer/pull/940) by [@bobsingor](https://github.com/bobsingor) – Add the `pages.copy` change op and `objectNumbers` on `pages.insert`, and the page label sections (`labels`) in every page list answer.
+
+- [#924](https://github.com/embedpdf/embed-pdf-viewer/pull/924) by [@bobsingor](https://github.com/bobsingor) – `new CloudPDFClient({ token })` reaches CloudPDF SaaS: `baseUrl` is only needed for your own CloudPDF server. `CloudPDFEnvironment.Saas` names the SaaS address. Proxy uploads go to the same address, with the client's token.
+
+- [#951](https://github.com/embedpdf/embed-pdf-viewer/pull/951) by [@bobsingor](https://github.com/bobsingor) – Annotations and widgets have `structurePosition`: where the annotation sits in the document's tags, or `null` when it isn't tagged.
+
+- [#925](https://github.com/embedpdf/embed-pdf-viewer/pull/925) by [@bobsingor](https://github.com/bobsingor) – `import { upload } from '@cloudpdf/sdk/upload'` uploads a PDF from the browser with an upload token from your server: `upload(file, { token, name?, onProgress?, signal?, baseUrl? })`. The entry is about 3 KB gzipped and has no Node imports. It sends the file with XHR, so `onProgress` follows the bytes. `uploads.create` on a server now reports progress as the bytes go too, instead of only at the start and the end. `Uploads` takes the source reader as a second argument.
+
+### Patch Changes
+
+- [#944](https://github.com/embedpdf/embed-pdf-viewer/pull/944) by [@bobsingor](https://github.com/bobsingor) – `tokens.issue` and `grants.create` say that a tenant token gives only document permissions it holds itself, and `grants.update` can answer `403`.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

@@ -1,5 +1,37 @@
 # @embedpdf/core
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#999](https://github.com/embedpdf/embed-pdf-viewer/pull/999) by [@bobsingor](https://github.com/bobsingor) – A settings declaration's `whole` names a setting inside a group by its path (`'snapshot.box'`), and a whole setting's change takes its defaults for what it leaves out, never the value before. `mergeSettings(settings, changes, declaration?)` takes the declaration (`defaults` and `whole`) instead of the `whole` list. `MirrorSpec.load()` answers `cursor?: number`, no `null`.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – `PluginDefinition<State, Capability, PluginSettings>` replaces `PluginDef<S, C, T>`, and the generics of `PluginContext<State, PluginSettings>` and `StateCell<State>` are named.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – `destroy()` is the one verb that ends an object's life, never `dispose()`: prepared and staged prints, `Scope` (with `destroyed`), event hook sources, the settings store and the test kernel. `acquire(get, release)` names its second argument for what it does. `Kernel.getStatus()` replaces `status()`. A document's page-list counter is `pagesSequence` (on `DocumentMeta` and `DocumentPagesChangedEvent`), not `revision`, which in a PDF means a saved file revision. `PendingPage` is tagged `kind`. Settings events carry `changedKeys`, as metadata's do. Mirror specs take `onChanged`. A document's grant question is `openRequest`, as the engine names it, and `retry()` takes `visitorIdentity`. `changes.listPending()` and the page view's `getPending(page)` start with a verb.
+
+## 3.0.0-next.22
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – Add `ctx.measurer`, the host's text measuring: how wide text is in a font program, as the browser that draws it shapes it, for a plugin that lays text out as the engine does. `createKernel({ measurer })` takes a `HostTextMeasurer` (`ready(program)`, which starts loading a program that isn't; `refused(program)`, for one the host can't use; `width(program, text, rtl)` in thousandths of an em; and `onChange(listener)`, called when a program is ready or refused); a browser passes `browserTextMeasurer()` from `@embedpdf/web`. Without one, `ctx.measurer` is `null`. An instance's `onChange` listeners go when it closes. `createTestContext({ measurer })` takes one too.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – Re-exports the document fonts types from the engine: `FontList`, `Font`, `FontName`, `FontProgram`, `FontProgramInfo`, `FontResolution`, `FontResolveRequest`, `FontRestriction` and `FontSource`.
+
+- [#942](https://github.com/embedpdf/embed-pdf-viewer/pull/942) by [@bobsingor](https://github.com/bobsingor) – `createTestContext()` pages take a `tabOrder`, the order their annotations take keyboard focus in, for testing plugins that follow it.
+
+- [#940](https://github.com/embedpdf/embed-pdf-viewer/pull/940) by [@bobsingor](https://github.com/bobsingor) – The page list shows this session's page edits before the engine answers: `DocumentMeta.pages` (and `ctx.getPage`, `ctx.pageOf`, `documents.listPages`) are the engine's pages with the pending changes' page ops replayed on top: a rotate, a move, a delete, a blank insert or a copy that names its pages, and `pages.restore`, a new predicted op for an undo that brings deleted pages back. An index a verb takes names a page of this list. `revision` and `onPagesChanged` move when the list does; an answer the prediction got right leaves the same list and the same page objects. `DocumentMeta.pendingPages` names the pages the engine doesn't have yet, with where each one's look comes from (`PendingPage`: `blank`, `own`, or `copy` of another page), and a page mirror reads such a page once the engine has it. `reorderBackOf`, `restoredPagesOf` and `rotateBackOf` are re-exported for a change's `undo`.
+
+  `DocumentMeta.pageLabels` holds the page label sections, moved with the pending page edits as the engine moves them, so each page's `label` is the one the engine will give it. `pages.relabel`, a new predicted op, puts sections back in an undo.
+
+- [#936](https://github.com/embedpdf/embed-pdf-viewer/pull/936) by [@bobsingor](https://github.com/bobsingor) – A plugin's own permissions work like the core's: declare them with `declare module '@embedpdf/core' { interface PluginPermissions { 'my-plugin.view': true } }`, and `ctx.allows()` and a command's `requires` take them, typed. `Permission` now includes them, and `PluginPermissions` is re-exported from `@embedpdf/engine-core` so the declaration merges.
+
+- [#933](https://github.com/embedpdf/embed-pdf-viewer/pull/933) by [@bobsingor](https://github.com/bobsingor) – Add `SettingLock`, who holds a locked setting and why: `by` (a plugin's id, or `'app'`) and `reasonKey`, the translation key of the sentence its disabled controls show. A plugin that lets others lock its settings answers `getLock(key)` with it, as the Stage does.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

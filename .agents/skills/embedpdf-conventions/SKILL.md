@@ -31,6 +31,7 @@ do not load unrelated ones.
 | adds or changes a CloudPDF server adapter family                                                                     | [server-adapters.md](../../../docs/conventions/server-adapters.md)                                             |
 | adds a database migration or touches rollback                                                                        | [server-migrations.md](../../../docs/conventions/server-migrations.md)                                         |
 | changes documentation structure or per-framework rendering                                                           | [docs-architecture.md](../../../docs/conventions/docs-architecture.md)                                         |
+| changes a wire response, a cached `@token` URL, `/head`, the manifest or a version header                       | [api-evolution.md](../../../docs/conventions/api-evolution.md)                                                 |
 
 Package build and export rules remain in
 [`tooling/build/README.md`](../../../tooling/build/README.md). Licensing,

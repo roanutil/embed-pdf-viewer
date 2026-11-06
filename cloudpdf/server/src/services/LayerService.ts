@@ -407,6 +407,7 @@ export class LayerService {
             formsVersion: base.formsVersion,
             outlineVersion: base.outlineVersion,
             fontsVersion: base.fontsVersion,
+            contentsVersion: base.contentsVersion,
           }
         : {}),
     });
@@ -1708,13 +1709,13 @@ export class LayerService {
   ): Promise<ChangeAnswer[]> {
     // The outcome table answers retries; the audit log's replay (by
     // `Idempotency-Key`) stays out of it.
-    const writeCtx: LayerWriteContext = { ...ctx, idempotencyKey: undefined };
-    return this.enqueueLayerWrite(writeCtx, input.docId, input.layerName, async () => {
+    const writeContext: LayerWriteContext = { ...ctx, idempotencyKey: undefined };
+    return this.enqueueLayerWrite(writeContext, input.docId, input.layerName, async () => {
       // A request whose every change has its answer gets them, and nothing
       // else happens: its numbers were spent by the attempt that answered.
       let kept = new Map<string, ChangeOutcomeRow>();
       const { layer } = await this.prepareLayerMutation(
-        writeCtx,
+        writeContext,
         input.docId,
         input.layerName,
         () => ({
@@ -1730,8 +1731,9 @@ export class LayerService {
           return answers.every((answer) => answer !== undefined) ? answers : undefined;
         },
       );
-      const plan = await this.planChanges(writeCtx, layer, input, kept);
-      if (plan.run.length === 0) return this.commitChanges(writeCtx, input, layer, plan, [], null);
+      const plan = await this.planChanges(writeContext, layer, input, kept);
+      if (plan.run.length === 0)
+        return this.commitChanges(writeContext, input, layer, plan, [], null);
       return this.withTempWorkerFile('layer-artifact', 'artifact.layer', async (artifactPath) => {
         const payload = await this.runLayerWrite(
           input.docId,
@@ -1755,7 +1757,7 @@ export class LayerService {
         }
         const artifact =
           payload.artifact || payload.artifactFile ? requireLayerArtifact(payload) : null;
-        return this.commitChanges(writeCtx, input, layer, plan, payload.outcomes, artifact);
+        return this.commitChanges(writeContext, input, layer, plan, payload.outcomes, artifact);
       });
     });
   }
@@ -1890,6 +1892,9 @@ export class LayerService {
               : {}),
             ...(bumped.versions.forms_version !== undefined
               ? { formsVersion: bumped.versions.forms_version }
+              : {}),
+            ...(bumped.versions.contents_version !== undefined
+              ? { contentsVersion: bumped.versions.contents_version }
               : {}),
             ...(bumped.versions.fonts_version !== undefined
               ? { fontsVersion: bumped.versions.fonts_version }
@@ -2052,6 +2057,7 @@ export class LayerService {
       attachments_version?: number;
       layout_version?: number;
       fonts_version?: number;
+      contents_version?: number;
     };
     pages: DurablePageRow[];
   }> {
@@ -2066,6 +2072,7 @@ export class LayerService {
         'attachments_version',
         'layout_version',
         'fonts_version',
+        'contents_version',
       ])
       .where('id', '=', layer.id)
       .executeTakeFirst();
@@ -2114,6 +2121,10 @@ export class LayerService {
           : {}),
         ...(facts.layout ? { layout_version: Number(current.layout_version) + 1 } : {}),
         ...(written.fonts ? { fonts_version: Number(current.fonts_version ?? 1) + 1 } : {}),
+        // A page that came or went changes the document's contents.
+        ...(facts.pageSet.some((step) => step.pages.length > 0)
+          ? { contents_version: Number(current.contents_version ?? 1) + 1 }
+          : {}),
       },
       pages,
     };
@@ -2292,7 +2303,7 @@ export class LayerService {
           wanted > 0 && this.takeIssueTurn(ctx) ? await objectNumbers.issue(trx, key, wanted) : [];
         return {
           session: touched.state,
-          expiresIn: secondsOf(touched.expiresIn),
+          expiresInSeconds: secondsOf(touched.expiresIn),
           objectNumbers: rangesOf(issued),
         };
       });
@@ -2307,7 +2318,7 @@ export class LayerService {
   async reserveObjectNumbers(
     ctx: LayerWriteContext,
     input: { docId: string; layerName: string; count: number },
-  ): Promise<{ objectNumbers: ObjectNumberRange[]; expiresIn: number }> {
+  ): Promise<{ objectNumbers: ObjectNumberRange[]; expiresInSeconds: number }> {
     const objectNumbers = this.requireObjectNumbers();
     if (
       !Number.isInteger(input.count) ||
@@ -2330,7 +2341,7 @@ export class LayerService {
         if (issued.length < input.count) {
           throw new EngineError(EngineErrorCode.LayerFull, 'no more object numbers to hand out');
         }
-        return { objectNumbers: rangesOf(issued), expiresIn: secondsOf(touched.expiresIn) };
+        return { objectNumbers: rangesOf(issued), expiresInSeconds: secondsOf(touched.expiresIn) };
       });
   }
 
@@ -2366,7 +2377,7 @@ export class LayerService {
         await objectNumbers.issue(trx, key, FIRST_OBJECT_NUMBERS);
         held = await objectNumbers.held(trx, key);
       }
-      return { held, expiresIn: secondsOf(touched.expiresIn) };
+      return { held, expiresInSeconds: secondsOf(touched.expiresIn) };
     });
   }
 
@@ -2750,6 +2761,8 @@ export class LayerService {
         // lists change.
         const annotationsVersion = Number(currentLayer.annotations_version ?? 1) + 1;
         const formsVersion = Number(currentLayer.forms_version ?? 1) + 1;
+        // Their pages' content moves too.
+        const contentsVersion = Number(currentLayer.contents_version ?? 1) + 1;
         const fontsVersion = this.fontsVersionAfter(input.docId, input.layerName, currentLayer);
         const durable: CommittedPageFlatten = {
           pages: nextPages,
@@ -2767,6 +2780,7 @@ export class LayerService {
               docVersion: durable.layerDocVersion,
               annotationsVersion,
               formsVersion,
+              contentsVersion,
               ...(fontsVersion !== undefined ? { fontsVersion } : {}),
               pages: nextPages,
             }),
@@ -2799,6 +2813,7 @@ export class LayerService {
             doc_version: durable.layerDocVersion,
             annotations_version: annotationsVersion,
             forms_version: formsVersion,
+            contents_version: contentsVersion,
             ...(fontsVersion !== undefined ? { fonts_version: fontsVersion } : {}),
           },
           auditId,
@@ -2877,6 +2892,8 @@ export class LayerService {
         // fields included — both lists change.
         const annotationsVersion = Number(currentLayer.annotations_version ?? 1) + 1;
         const formsVersion = Number(currentLayer.forms_version ?? 1) + 1;
+        // Their pages' content moves too.
+        const contentsVersion = Number(currentLayer.contents_version ?? 1) + 1;
         const fontsVersion = this.fontsVersionAfter(input.docId, input.layerName, currentLayer);
         const result: RedactionApplyResult = {
           ...input.raw,
@@ -2889,6 +2906,7 @@ export class LayerService {
               docVersion: layerDocVersion,
               annotationsVersion,
               formsVersion,
+              contentsVersion,
               ...(fontsVersion !== undefined ? { fontsVersion } : {}),
               pages: nextPages,
             }),
@@ -2921,6 +2939,7 @@ export class LayerService {
             doc_version: layerDocVersion,
             annotations_version: annotationsVersion,
             forms_version: formsVersion,
+            contents_version: contentsVersion,
             ...(fontsVersion !== undefined ? { fonts_version: fontsVersion } : {}),
           },
           auditId,
@@ -2956,6 +2975,7 @@ export class LayerService {
     annotations_version: number | bigint;
     forms_version: number | bigint;
     fonts_version: number | bigint;
+    contents_version: number | bigint;
   }> {
     // Plain read — values feed the next-version computation. The fence is
     // the guarded UPDATE (see guardedVersionBump), never a SELECT check.
@@ -2968,6 +2988,7 @@ export class LayerService {
         'annotations_version',
         'forms_version',
         'fonts_version',
+        'contents_version',
       ])
       .where('id', '=', layer.id)
       .executeTakeFirst();
@@ -3024,11 +3045,11 @@ export class LayerService {
       // The layer signs over its own base: the upload, or the version its
       // last signature made. Other layers' signatures never move it.
       const head = await this.requireDocumentService().getHead(ctx, input.docId);
-      const baseSha = layer.baseSha ?? head.baseSha;
+      const baseSha = layer.baseSha ?? head.baseSha256;
       const baseVersion = await this.layerState.baseVersionFacts(
         input.docId,
         baseSha,
-        head.storageSizeBytes,
+        head.sizeBytes,
       );
       const fieldObjectNumber = await this.resolveSignatureField(
         input.docId,
@@ -3253,7 +3274,7 @@ export class LayerService {
                     jobId,
                     path: candidatePath,
                     byteRange: prepared.byteRange,
-                    contentsSize: prepared.contentsSize,
+                    contentsSizeBytes: prepared.contentsSizeBytes,
                     fieldObjectNumber: signing.fieldObjectNumber,
                     cms: cmsBytes,
                     password: null as string | null,
@@ -3601,7 +3622,7 @@ export class LayerService {
   private async uploadVersionObject(
     key: string,
     candidatePath: string,
-    version: { sha256: string; byteLength: number },
+    version: { sha256: string; sizeBytes: number },
   ): Promise<void> {
     const storage = this.requireStorage();
     const alreadyThere = async (): Promise<boolean> =>
@@ -3609,7 +3630,7 @@ export class LayerService {
     if (await alreadyThere()) return;
     try {
       const put = await storage.put(key, createReadStream(candidatePath), {
-        contentLength: version.byteLength,
+        contentLength: version.sizeBytes,
       });
       if (put.sha256 !== version.sha256) {
         throw new EngineError(
@@ -3782,7 +3803,7 @@ export class LayerService {
           docId: input.docId,
           layerId: layer.id,
           sha256: finalized.version.sha256,
-          byteLength: finalized.version.byteLength,
+          byteLength: finalized.version.sizeBytes,
           parent,
           signingId: signing.id,
           storageKey: input.versionKey,
@@ -3794,6 +3815,7 @@ export class LayerService {
           outlineVersion: layer.outlineVersion,
           // A signature's appearance may draw with a font of its own.
           fontsVersion: layer.fontsVersion + 1,
+          contentsVersion: layer.contentsVersion,
           createdAt: now,
         });
 
@@ -3836,7 +3858,7 @@ export class LayerService {
           artifactVersion: nextVersion,
           artifactKey: input.versionKey,
           artifactSha: finalized.version.sha256,
-          artifactSize: finalized.version.byteLength,
+          artifactSize: finalized.version.sizeBytes,
           // A signing answers a retry by the signing itself.
           idempotencyKey: null,
           // The event names the signing, as the local engine's does.
@@ -3918,6 +3940,7 @@ export class LayerService {
       forms_version?: number;
       outline_version?: number;
       fonts_version?: number;
+      contents_version?: number;
     },
     lastAuditId: number,
     now: number,

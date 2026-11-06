@@ -1,5 +1,33 @@
 # @embedpdf/plugin-commands
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#1006](https://github.com/embedpdf/embed-pdf-viewer/pull/1006) by [@bobsingor](https://github.com/bobsingor) – A command can have `labelParams(context)`: the values for its label's `{name}` slots, such as how many pages are selected. It's asked like `enabled`, again whenever the viewer's state or your app's changes. The values go into `label`, into the translated words under `labelKey` or the command's id, where a number `count` picks the plural form, and into every sentence that names the label. A `labelParams` that throws gives no values. Without the i18n plugin, `label`'s slots are filled too.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – `CommandDefinition` replaces `CommandDef`.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – A bound command's formatted shortcut is `shortcutLabel`; `shortcut` stays the key a command definition takes.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#980](https://github.com/embedpdf/embed-pdf-viewer/pull/980) by [@bobsingor](https://github.com/bobsingor) – New standard commands: `tool:snapshot`, not allowed without `doc.content.copy` (`commands.notAllowed.doc-content-copy`); `snapshot:copy` (`Mod+C`), `snapshot:save` (a PNG named after the document and the page) and `snapshot:clear` (`Escape`), each enabled while there is a snapshot. `StandardCommandsPlatform` has `copyImage(image)`, and `saveFile` takes the file's content type. Commands that share a key take turns: a key runs the one that can run now, wherever it is in the list, so Escape lets a snapshot go even though cancelling a drawing has Escape too.
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#948](https://github.com/embedpdf/embed-pdf-viewer/pull/948) by [@bobsingor](https://github.com/bobsingor) – Commands read your app's state. The new `appState` setting is what every command's functions get as `appState` (values, and functions that change them); a new value replaces the old one whole and every command's `enabled`, `active` and `visible` are asked again. After a command runs, every command is asked again too, so a button whose `run` changed state outside the viewer shows it at once. `CommandDef<AppState>`, `CommandContext<AppState>` and `commandsPlugin<AppState>()` type it; a command's functions are methods, so a typed command goes wherever a command does.
+
+- [#933](https://github.com/embedpdf/embed-pdf-viewer/pull/933) by [@bobsingor](https://github.com/bobsingor) – A command that changes a setting can say so with `locked: (context) => owner.getLock(key)`. While a lock holds that setting, the command shows disabled, whatever the `notAllowed` setting says, stays `active` for its own value, and gives the lock's sentence (its `reasonKey`, else `commands.locked.default`) as `disabledReason`. `getRefusal()` reports it with a third reason, `'locked'`, and `execute()` refuses it.
+
+- [#949](https://github.com/embedpdf/embed-pdf-viewer/pull/949) by [@bobsingor](https://github.com/bobsingor) – A command's `enabled`, `active` or `visible` that throws now counts as `false`, so its button shows disabled, not pressed, or hidden; only a command without one takes the default (enabled, not active, visible). `allowed` keeps its own rule.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

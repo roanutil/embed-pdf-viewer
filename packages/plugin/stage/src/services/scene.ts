@@ -202,18 +202,18 @@ export function createScene(ctx: PluginContext<StageModel>) {
   // unbounded pan is free, and coordinates stay local.
   let sceneCache: { key: string; scene: Scene } | null = null;
   // The registry signature: page count plus the kernel's monotonic
-  // `revision`. The revision changes on every page mutation (rotate, move,
+  // `pagesSequence`. It changes on every page mutation (rotate, move,
   // delete), so a change that keeps the page count (a rotation) still re-keys
   // the scene instead of rendering the page in its stale box.
   const documentKey = (): string => {
     const document = ctx.document();
-    return document ? `${document.pageCount}.${document.revision}` : '0.0';
+    return document ? `${document.pageCount}.${document.pagesSequence}` : '0.0';
   };
   const buildScene = (): Scene => {
     const { grouping: groups } = grouping();
     if (state().flow === 'paged') {
       const index = groups.length
-        ? Math.min(itemIndexOfPage(state().cursor), groups.length - 1)
+        ? Math.min(itemIndexOfPage(state().pageIndex), groups.length - 1)
         : 0;
       const key = `paged|${documentKey()}|${settingsKey()}|${index}`;
       if (sceneCache && sceneCache.key === key) return sceneCache.scene;
@@ -252,7 +252,35 @@ export function createScene(ctx: PluginContext<StageModel>) {
   /** The item shown for the cursor: the slice's only item (paged) or the full-scene item. */
   const cursorItem = (): SceneItem => {
     const scene = buildScene();
-    return paged() ? scene.items[0] : scene.items[itemIndexOfPage(state().cursor)];
+    return paged() ? scene.items[0] : scene.items[itemIndexOfPage(state().pageIndex)];
+  };
+
+  /** Whether an item is one navigation unit now: it fits across the view, or fit-all shows all. */
+  const isWhole = (item: SceneItem): boolean =>
+    isFitAll() || fitsAcross(itemRect(item), camera().zoom);
+
+  /**
+   * The pages you're on, the navigation unit: the cursor's item while it is
+   * whole (a spread you see side by side), else the cursor page alone. The
+   * page number names them, and nextPage and previousPage step past them.
+   */
+  const currentPages = (): readonly number[] => {
+    const item = cursorItem();
+    if (!item) return [];
+    return isWhole(item) ? item.pageIndexes : [state().pageIndex];
+  };
+
+  /**
+   * Where the unit that holds `pageIndex` starts: its item's first page while
+   * that item is whole, else the page itself. A paged scene holds only the
+   * cursor's item, so there it measures that one.
+   */
+  const unitStartOf = (pageIndex: number): number => {
+    const group = grouping().grouping[itemIndexOfPage(pageIndex)];
+    if (!group || group.length === 1) return pageIndex;
+    const scene = buildScene();
+    const item = paged() ? scene.items[0] : scene.items[itemIndexOfPage(pageIndex)];
+    return item && isWhole(item) ? group[0] : pageIndex;
   };
 
   /**
@@ -268,16 +296,14 @@ export function createScene(ctx: PluginContext<StageModel>) {
     return { x: box.x + world.x, y: box.y + world.y, width: world.width, height: world.height };
   };
 
-  // Does this rect fit the padded viewport at this zoom? It decides the
-  // navigation step size and the arrival subject, never the alignment.
-  const fits = (rect: StageRect, zoom: number): boolean => {
+  // Does this rect fit across the padded viewport at this zoom: its width, the
+  // axis an item's pages sit side by side on? An item that fits across is seen
+  // whole, however tall it is, the way a tall page is still one page. It
+  // decides the navigation unit and the arrival subject, never the alignment.
+  const fitsAcross = (rect: StageRect, zoom: number): boolean => {
     const size = viewport();
     const inset = padding();
-    const tolerance = 0.5;
-    return (
-      rect.width * zoom <= size.width - inset.left - inset.right + tolerance &&
-      rect.height * zoom <= size.height - inset.top - inset.bottom + tolerance
-    );
+    return rect.width * zoom <= size.width - inset.left - inset.right + 0.5;
   };
   // An alignment policy → a concrete viewport point: a fraction per axis
   // (start = 0, center = ½, end = 1; named x stops are logical under RTL).
@@ -328,7 +354,7 @@ export function createScene(ctx: PluginContext<StageModel>) {
     const scene = buildScene();
     return scene.itemCount
       ? anchorFromCamera(camera(), scene, viewport(), at)
-      : { pageIndex: state().cursor, fx: 0.5, fy: 0 };
+      : { pageIndex: state().pageIndex, fractionX: 0.5, fractionY: 0 };
   };
   const currentAnchor = (): Anchor => anchorAt(anchorPoint());
 
@@ -363,8 +389,10 @@ export function createScene(ctx: PluginContext<StageModel>) {
     itemRect,
     pageRectOf,
     cursorItem,
+    currentPages,
+    unitStartOf,
     worldRectForContent,
-    fits,
+    fitsAcross,
     alignPoint,
     anchorPoint,
     fitBox,

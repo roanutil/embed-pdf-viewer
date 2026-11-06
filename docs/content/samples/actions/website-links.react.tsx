@@ -22,7 +22,7 @@ const links = async (): Promise<OpenInput> => {
 };
 // [!/doc-source]
 
-// A link to a website, as a PDF carries it: what getActionTree() reads from a link.
+// A link to a website, as a PDF carries it: what readActionTree() reads from a link.
 const websiteLink: PdfActionTree = {
   root: {
     type: 'uri',
@@ -32,13 +32,12 @@ const websiteLink: PdfActionTree = {
     next: [],
   },
   incomplete: false,
-  warningFlags: 0,
   warnings: [],
 };
 const click: ActionContext = {
   origin: 'user',
   source: { kind: 'api' },
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 
 // Your UI decides how a website opens: here, it asks first.

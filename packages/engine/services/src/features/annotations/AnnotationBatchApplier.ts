@@ -149,9 +149,10 @@ export class AnnotationBatchApplier {
         prepareCreate(create.draft, create.resources, ctx),
       );
       labelled(create.label, () => this.claimName(given.nm, record, claimed));
-      // A fresh name is never taken: no claim needed.
+      // A create of your own left without a name gets a fresh one, never
+      // taken: no claim needed. `nm: null` asks for none.
       const draft =
-        given.nm || create.attribution.kind !== 'stamp'
+        given.nm !== undefined || create.attribution.kind !== 'stamp'
           ? given
           : { ...given, nm: generateUuidV7() };
       if (create.objectNumber !== undefined) {
@@ -178,7 +179,8 @@ export class AnnotationBatchApplier {
       return { create, record, ctx, draft, replyTo, parent };
     });
     throwIfAborted(signal);
-    if (prepared.length === 0) return { created: [], meta: metaOf(this.session.writeStamp(), [], []) };
+    if (prepared.length === 0)
+      return { created: [], meta: metaOf(this.session.writeStamp(), [], []) };
 
     const placed = prepared.map(({ create, record, ctx, draft }): Placed => {
       throwIfAborted(signal);
@@ -261,10 +263,10 @@ export class AnnotationBatchApplier {
       );
     });
 
-    const readCtx = readContextFor(this.session, this.fonts);
+    const readContext = readContextFor(this.session, this.fonts);
     const created = placed.map((at) =>
       this.withOpen(at, (annotPtr) =>
-        readAnnotationFromPtr(fn, mem, annotPtr, at.pageObjectNumber, at.index, readCtx),
+        readAnnotationFromPtr(fn, mem, annotPtr, at.pageObjectNumber, at.index, readContext),
       ),
     );
     joinWidgetFieldNumbers(this.runtime, this.session, created);
@@ -386,7 +388,7 @@ function metaOf(
     affectedPages: pages.map((page) => toPageRef(page)),
     cacheDelta: null,
     ...stamp,
-    changed: [
+    changedRefs: [
       ...placed.map(
         (at): AnnotationRef => ({
           kind: 'objectNumber',

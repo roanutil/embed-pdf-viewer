@@ -82,7 +82,7 @@ import type {
   SignatureCancelResult,
   SignatureCompleteInput,
   SignatureCompleteResult,
-  SignatureDTO,
+  Signature,
   SignaturePrepareInput,
   SignaturePrepared,
   SignatureSnapshot,
@@ -363,7 +363,7 @@ export interface SignaturesFinalizeCandidateWorkerRequest {
   /** The /ByteRange the prepare reported — the fence every check is made against. */
   byteRange: [number, number, number, number];
   /** The reserved /Contents size the prepare reported (the hole holds twice as many hex digits). */
-  contentsSize: number;
+  contentsSizeBytes: number;
   fieldObjectNumber: number;
   /** The detached CMS over the prepared digest. */
   cms: ArrayBuffer;
@@ -1047,7 +1047,7 @@ export interface RenderEncode {
  *  own its buffer — it rides the transfer manifest zero-copy, so a pooled
  *  view (e.g. a Node `Buffer` slab slice) would detach unrelated data. */
 export interface EncodedImageWire {
-  contentType: string;
+  mimeType: string;
   width: number;
   height: number;
   bytes: Uint8Array;
@@ -1473,7 +1473,7 @@ export interface DocumentFontsProgramWorkerRequest {
   jobId: WorkerJobId;
   docId: string;
   layerName?: string;
-  displayHash: string;
+  displaySha256: string;
   part: 'info' | 'data';
 }
 
@@ -1717,7 +1717,7 @@ export type WorkerResultPayload<C extends Coordinates = PageCoordinates> =
        * The installed signature as the sealed file reports it, in page space:
        * the finalizer measures it while its own session is open.
        */
-      signature: SignatureDTO;
+      signature: Signature;
       /** The sealed file's last object number: every object it has is at or below it. */
       lastObjectNumber: number;
       /** What the sealed file's signatures forbid from now on. */

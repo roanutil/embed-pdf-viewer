@@ -1,5 +1,13 @@
 # @embedpdf/engine-runtime-win32-x64
 
+## 3.0.0-next.23
+
+## 3.0.0-next.22
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
 ## 3.0.0-next.19
 
 ## 3.0.0-next.18

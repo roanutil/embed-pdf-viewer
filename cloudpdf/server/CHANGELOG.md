@@ -1,5 +1,75 @@
 # @cloudpdf/server
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#991](https://github.com/embedpdf/embed-pdf-viewer/pull/991) by [@bobsingor](https://github.com/bobsingor) – Layers and base versions store `contents_version` (migration 052), raised in the same transaction as a flatten, a redaction or a change to the page set, and published in the manifest. Versioned searches pin it with `layoutVersion` instead of a content epoch, so an annotation write keeps every cached search and a content write refreshes them; the unversioned search form takes the same two pins as optional parameters.
+
+- [#989](https://github.com/embedpdf/embed-pdf-viewer/pull/989) by [@bobsingor](https://github.com/bobsingor) – `/head` carries this server's engine value for each kind of cached read: a digest of the rules and fonts it computes that kind with, never of its release, so a deploy that changes nothing keeps every cached answer. Every versioned read checks the token's engine value and shape: a shape newer than the server answers is refused, and another engine value is answered with this server's own answer, uncached, and its value in `EmbedPDF-Engine` (exposed to browsers), so nothing is cached under a value that doesn't describe it and no request fails during a rolling deploy. Renders are stored by engine value. The manifest no longer carries `serverFonts`.
+
+- [#994](https://github.com/embedpdf/embed-pdf-viewer/pull/994) by [@bobsingor](https://github.com/bobsingor) – Every error response is `{ error: { code, message, details? } }` with a code from `EngineErrorCode`. An engine error no longer carries `name`. A license refusal is `LicenseInvalid` with the license status's code in `details.licenseCode`; a usage limit says its `metric` and `limit` in `details`; a thumbnail that isn't ready says its state in `details.state`; `BadInput` is `InvalidArg`; and an error from Fastify itself carries the code for its status instead of Fastify's own.
+
+- [#996](https://github.com/embedpdf/embed-pdf-viewer/pull/996) by [@bobsingor](https://github.com/bobsingor) – Every point in time the server sends is an ISO 8601 string in UTC, and a grant's and a token revoke's `expiresAt` are taken as one, with its offset. Rows keep their milliseconds. The admin routes' records are typed by the contract's, so a field the contract doesn't say no longer compiles.
+
+- [#997](https://github.com/embedpdf/embed-pdf-viewer/pull/997) by [@bobsingor](https://github.com/bobsingor) – Takes and sends the renamed fields: `sizeBytes` (documents, layers, versions), `baseSha256`, the manifest's `baseSizeBytes`, `uploadTtlSeconds`, `expiresInSeconds` (also the editing session's on `/access`, the event stream and object-number reservations), `docIds` and the camelCase usage metrics (module meters in `moduleMeters`), and names its path parameters `docId`, `annotationKey`, `sha256` and `displaySha256`.
+
+- [#992](https://github.com/embedpdf/embed-pdf-viewer/pull/992) by [@bobsingor](https://github.com/bobsingor) – Every response says which version the server is, in `EmbedPDF-Server-Version`. A request's `EmbedPDF-Version` is answered within the server's major; another major, or a value that isn't `<major>.<minor>`, gets a 400 naming both versions. CORS allows `EmbedPDF-Version` and exposes `EmbedPDF-Server-Version`.
+
+### Patch Changes
+
+- [#995](https://github.com/embedpdf/embed-pdf-viewer/pull/995) by [@bobsingor](https://github.com/bobsingor) – A grant create takes `origins: null` and `expiresAt: null`, as a grant read says them: any origin and no expiry.
+
+- [#1005](https://github.com/embedpdf/embed-pdf-viewer/pull/1005) by [@bobsingor](https://github.com/bobsingor) – The head and `/access` carry named permission flags, not the raw word; `/access` no longer sends the `advisory`.
+
+- [#988](https://github.com/embedpdf/embed-pdf-viewer/pull/988) by [@bobsingor](https://github.com/bobsingor) – Every versioned read (`…@token`) now answers exactly the state its pins name. The pins are checked before the read and again after it, and a read that a layer write began during is refused as no longer current, so a write can no longer end up cached for a year under an older version. Before, page renders, page text and geometry, appearance batches, outline, metadata, fonts, attachments, layout, actions, search, signatures and downloads checked their pins only before reading, and the annotation and form reads could still send an applied but uncommitted write.
+
+- [#990](https://github.com/embedpdf/embed-pdf-viewer/pull/990) by [@bobsingor](https://github.com/bobsingor) – `redactions.apply` parses its body with `RedactionApplyScopeInputSchema`, which still refuses a field it doesn't know, now that the scope a response carries is read tolerantly.
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – Follows engine-core's names: `FormField`, `Signature`.
+
+- [#1002](https://github.com/embedpdf/embed-pdf-viewer/pull/1002) by [@bobsingor](https://github.com/bobsingor) – The document init and import answers say `status`, not `tag`. Form fields are tagged `kind`.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – The image encoder and the appearance batch say `mimeType`, as engine-core's render results do.
+
+## 3.0.0-next.22
+
+### Minor Changes
+
+- [#967](https://github.com/embedpdf/embed-pdf-viewer/pull/967) by [@bobsingor](https://github.com/bobsingor) – Modules describe themselves, and count their usage. A module has a `name` (required) and a `description`, and declares `meters` (each with a `label` and a `unit`) that its routes count with `req.meters.count(meter, { oncePerDay })` for the document's tenant. A permission can say how it relates to the core's: `replaces` (`protected-display.view` replaces `doc.render`) and `bypassedBy` (`doc.download`…), facts for a grant dialog that the server doesn't enforce; a token may hold a permission and the one it replaces, and the core one has its usual effect. `GET /v1/deployment/modules` lists the installed modules as they declare themselves, with the API token. Tenant usage is counted per UTC day: `tenants.usage` takes `from` and `to` in place of `period`, and reports each installed module's meters next to the core's. Migration 051 moves the counters to days (a month counted before keeps its total on its first day) and keeps the once-a-day keys as hashes, swept when the day is over.
+
+## 3.0.0-next.21
+
+### Minor Changes
+
+- [#964](https://github.com/embedpdf/embed-pdf-viewer/pull/964) by [@bobsingor](https://github.com/bobsingor) – A Postgres connection that fails while idle in the pool no longer crashes the server. A database restart or failover, `pg_terminate_backend`, or a proxy closing the connection used to reach Node as an uncaught `error` event from `pg.Pool`. The pool now drops that connection and opens a new one for the next query. `createPostgresDb` takes `onIdleConnectionError` to report these, and `cloudpdf-server` logs each one's message as a warning.
+
+- [#955](https://github.com/embedpdf/embed-pdf-viewer/pull/955) by [@bobsingor](https://github.com/bobsingor) – `buildApp` takes the deployment's license as `license`: the runtime `createLicenseRuntime` made, and nothing else. It replaces `licenseGate`. Any other object, including a copy of a runtime, stops the build with an error naming `createLicenseRuntime`. The runtime is sealed: its methods can't be replaced, and `buildApp` enforces the license from the runtime behind it. `createLicenseRuntime` takes only `db`, `env`, `secretResolver` and `startTimer`, and passes nothing else on, so license verification always uses the identity compiled into the package.
+
+- [#956](https://github.com/embedpdf/embed-pdf-viewer/pull/956) by [@bobsingor](https://github.com/bobsingor) – Tenants have `features`: the server modules each tenant may use, by module id. A module's routes answer only tenants whose features hold it; others get `403 FeatureNotEnabled`, and a feature held as `{ id, stopped: 'cap' }` answers `402 FeatureStopped`. A new tenant has none: the operator turns modules on per tenant with `PATCH /v1/tenants/:tenantId` (API token only, every id an installed module), and other replicas follow within 30 seconds. Migration 050 adds the column on SQLite and Postgres.
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#944](https://github.com/embedpdf/embed-pdf-viewer/pull/944) by [@bobsingor](https://github.com/bobsingor) – A tenant token hands out only the document permissions it holds itself. `tokens.issue` with kind `doc`, `grants.create`, and `grants.update` when it changes the scope answer `403 Forbidden` naming what the token doesn't hold. A key with `tokens.issue-doc`, `doc.open` and `doc.render` mints reading tokens and nothing more. The API token and `*` hold everything, as before.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – Every worker registers Noto Sans Hebrew and Noto Naskh Arabic as fallback fonts, tried after the deployment's own (`CLOUDPDF_FONTS`), so Hebrew and Arabic draw with no setup. A key the deployment uses keeps its font.
+
+  The server's fonts (`CLOUDPDF_FONTS`, renamed from `CLOUDPDF_FALLBACK_FONTS`; `buildApp({ fonts })`, `ServerFontDescriptor` and `loadServerFontsFromEnv()`) take `serve`: a served font's file goes to a client that may write text, at one URL for every document (`/v1/font-program-files/{hash}`, `private, immutable`), so the viewer types in it; a font not served is listed with `'not-served'`. Noto Sans Hebrew and Noto Naskh Arabic are served.
+
+  A document's fonts on the cloud: `GET …/fonts@{fontsVersion,serverFonts}` (the base's shared URL while a layer draws what the base does), `POST …/fonts/resolve`, a program's facts at `…/font-programs/{hash}` and its bytes at `…/font-program-files/{hash}` (for a token with `doc.annotate.modify`, `doc.forms.fill`, `doc.forms.modify` or `doc.redact` that the document's signatures leave it, `private`, never on the CDN). The manifest's `fontsVersion` (migration 049, on layers and base versions) moves with every write the engine says changed the fonts the list shows, and its `CacheDelta` carries it. The manifest's `serverFonts`, a fingerprint of the server's fonts, is in the font list's URL and every picture's, rendered and stored: a change of the server's fonts draws every page again once, and a replica answers only URLs with its own.
+
+- [#940](https://github.com/embedpdf/embed-pdf-viewer/pull/940) by [@bobsingor](https://github.com/bobsingor) – Accept the `pages.copy` change op and object numbers on `pages.insert`. Copies are counted as new pages for the layer's page set and object number estimates, and page list answers carry the page label sections (`labels`).
+
+- [#931](https://github.com/embedpdf/embed-pdf-viewer/pull/931) by [@bobsingor](https://github.com/bobsingor) – Each kind of page picture needs its own permission and no other. Thumbnails have routes of their own, at the document's and a layer's path (`render/thumbnail/…`), and need `doc.render.thumbnail`, which `doc.render` includes: the whole page at 512 pixels on its long side, cached like print pictures and never classified against the render lattice. Print pictures no longer need `doc.render`: `doc.print` is enough, and `doc.print.high` for 300 DPI. `/access` lists `doc.render.thumbnail` in `effectiveScope` for a session with `doc.render`. A server module's raw render can ask for a thumbnail, which needs `doc.render.thumbnail` in its `requires.document`.
+
+- [#926](https://github.com/embedpdf/embed-pdf-viewer/pull/926) by [@bobsingor](https://github.com/bobsingor) – The server knows the plugin permissions its installed modules declare (`bundle.permissions`); a plugin whose permission is checked elsewhere, by a viewer plugin for example, is installed as a module that only declares permissions, which needs no document plane. Issuing a token or saving a grant that names a plugin permission no installed plugin declares is refused with `InvalidArg`. `/access` puts the installed plugin permissions a token holds (every one under `*`) into `effectiveScope`; a plugin permission whose plugin isn't installed is carried by the token but takes no effect. The app bundle also lists the routes it mounted (`routes`).
+
+  Add server modules: packages that run inside the server with their own routes and permissions, written with the new `@cloudpdf/server-modules`. Name them in `CLOUDPDF_MODULES` (or pass `buildApp({ modules })`); each reads its settings from `CLOUDPDF_<ID>_*`, and a module that won't load, misses a required setting, or asks for something other than core document permissions in `requires.document` stops the server at boot. A module's routes mount at `/v1/docs/:docId/layers/:layerName/<id>/…` behind `doc.open` and the module's own permission. Each request reaches the server's API through its own routes, in process (that connection reaches only this server, never a CDN or another host): as the caller, with their own token, and as the module, with a short-lived token for that document carrying `doc.open` and `requires.document`. Raw page pixels come from the host in the engine's own terms (`PageRenderOptions` in, a `PageRenderRaster` with its transform out), drawn as the module: everything the picture draws needs its permission in `requires.document`, with the local engine's defaults, and print pictures are refused. The host side is typed in the new `@cloudpdf/server/modules` entry.
+
+- [#925](https://github.com/embedpdf/embed-pdf-viewer/pull/925) by [@bobsingor](https://github.com/bobsingor) – Upload tokens let a browser upload straight to CloudPDF. `tokens.issue` with kind `upload` makes one for a folder, with your metadata, a file count (one by default), an optional size limit and an origin lock. The token reaches only init, commit and the proxy upload. There it uploads into its folder with its metadata, whatever the request says, and commits only the documents it started. Every other route refuses it. Migration 048 adds `documents.upload_token_jti` and the `upload_token_uses` table, which counts each token's documents atomically.
+
 ## 3.0.0-next.19
 
 ### Minor Changes

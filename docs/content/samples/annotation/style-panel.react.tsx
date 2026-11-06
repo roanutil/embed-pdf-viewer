@@ -39,7 +39,7 @@ function SelectSquare() {
     done.current = true;
     const square = annotation.list().find((each) => each.nm === 'square');
     if (!square) return;
-    annotation.selection.set([square.ref]);
+    annotation.selection.select([square.ref]);
     stage.reveal(square.page, { rect: square.rect });
   }, [annotation, stage, ready]);
 
@@ -65,7 +65,7 @@ function Control({ property }: { property: AnnotationProperty }) {
             value={typeof value === 'string' ? value : '#ffffff'}
             onChange={(event) => update(event.target.value)}
           />
-          {property.key === 'interiorColor' && (
+          {property.allowsNone && (
             <button type="button" className="link" onClick={() => update(null)}>
               {value === null ? 'none' : 'remove'}
             </button>

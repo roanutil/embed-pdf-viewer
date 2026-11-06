@@ -29,13 +29,12 @@ const links = async (): Promise<OpenInput> => {
 const script = (code: string): PdfActionTree => ({
   root: { type: 'javascript', subtype: 'JavaScript', script: code, next: [] },
   incomplete: false,
-  warningFlags: 0,
   warnings: [],
 });
 const click: ActionContext = {
   origin: 'user',
   source: { kind: 'api' },
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 
 const GREETING = "app.alert('Hello, ' + identity.name + ' from ' + identity.corporation + '!');";

@@ -1,5 +1,39 @@
 # @embedpdf/plugin-form
 
+## 3.0.0-next.23
+
+### Minor Changes
+
+- [#1003](https://github.com/embedpdf/embed-pdf-viewer/pull/1003) by [@bobsingor](https://github.com/bobsingor) – `FormToolDefinition` replaces `FormToolDef`, and form fields are `FormField`. Read shapes are `readonly`.
+
+- [#1002](https://github.com/embedpdf/embed-pdf-viewer/pull/1002) by [@bobsingor](https://github.com/bobsingor) – Form fields are tagged `kind`: `list({ kind })`, the `fillable` setting's field kinds (`FormFieldKind`), a form tool's `fieldKind` and `AuthorableFormKind`.
+
+- [#1000](https://github.com/embedpdf/embed-pdf-viewer/pull/1000) by [@bobsingor](https://github.com/bobsingor) – `WidgetActivationResult` is tagged `status`, as every call result is (was `kind`). `FormUiEffect` is tagged `type`. The scripting realm ends with `destroy()`.
+
+### Patch Changes
+
+- [#997](https://github.com/embedpdf/embed-pdf-viewer/pull/997) by [@bobsingor](https://github.com/bobsingor) – A scripted submit no longer sends `flagsRaw`.
+
+- [#982](https://github.com/embedpdf/embed-pdf-viewer/pull/982) by [@bobsingor](https://github.com/bobsingor) – In design mode a restyled signature field shows its new look at once and keeps it, instead of flashing it and going back. A signature field with a mark in it is drawn only by its picture.
+
+## 3.0.0-next.22
+
+## 3.0.0-next.21
+
+## 3.0.0-next.20
+
+### Minor Changes
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – With the fonts plugin installed, a widget's text is drawn in the fonts the engine writes it in: the painter and the editor lay it out with the fonts plugin's `getPaintFonts()`, so Hebrew, Arabic and any other script a field's font lacks draws in the engine's fallback, in its order and place, before the engine's picture arrives. Until a widget's fonts are found its look keeps the engine's picture (`getWidgetPainting()` is `null`), and `listShownWidgets()` lists the page again once they are. Until then, a text field in a font of its own is edited in that font's program, then the fallbacks and the last resort: `getTextEditorLayout()` names them in `fontFamily` and `programs`.
+
+- [#941](https://github.com/embedpdf/embed-pdf-viewer/pull/941) by [@bobsingor](https://github.com/bobsingor) – `getWidgetFontCss(widget)` on the host contract: how a control the painter doesn't draw (a list box's rows) draws the widget's text, as the engine picks its font (the fonts plugin's CSS; without it, the standard font the engine falls back to), with the programs to mount.
+
+- [#942](https://github.com/embedpdf/embed-pdf-viewer/pull/942) by [@bobsingor](https://github.com/bobsingor) – Move the cursor between fields. `focus(ref, { select })` brings a field into view, on whatever page it is, and puts the cursor in it; `focusNext({ backward, empty, wrap, from })` moves on as Tab does. Tab and Shift+Tab follow the document's order from page to page, including pages that aren't on screen, using each page's own tab order (rows, columns, or its annotations' order), skipping fields the user can't fill in, with a radio group as one stop whose buttons the arrow keys pick between. `getFocusedField()`, the `focusedField` state and `onFocusChanged` tell you which field the cursor is in. A script's `field.setFocus()` puts the cursor in that field.
+
+### Patch Changes
+
+- [#945](https://github.com/embedpdf/embed-pdf-viewer/pull/945) by [@bobsingor](https://github.com/bobsingor) – Tab and `focusNext()` follow a tagged form's reading order on pages whose `/Tabs` says structure, as most forms from Acrobat, Word or LiveCycle do; fields the tags leave out come after the tagged ones, in the order the page lists them.
+
 ## 3.0.0-next.19
 
 ## 3.0.0-next.18

@@ -28,17 +28,18 @@ export type FloatPosition =
   | 'bottom'
   | 'bottom-end';
 
-/** What a bar over a selection follows: selected text, or selected annotations. */
-export type SelectionTarget = 'selection' | 'annotation';
+/** What a bar over a selection follows: selected text, selected annotations, or the snapshot tool's box. */
+export type SelectionTarget = 'selection' | 'annotation' | 'snapshot';
 
-/** A bar floating over the pages: where, and whether it gets out of the way while they scroll. */
+/** A bar floating over the pages: where, and whether it rests out of sight while nothing moves. */
 export interface FloatPlace {
   readonly float: FloatPosition;
   /**
-   * Fade out while the pages scroll, and come back once they have been still for a moment;
-   * `false` stays. Default: on a phone (a compact viewer) for a bar with the page number.
+   * Fade out once the pages and the pointer have been still for a moment, and come back when the
+   * pages move, the pointer moves or presses over them, or focus comes into the bar; `false`
+   * stays. Default: for a bar with the page number.
    */
-  readonly hideWhileScrolling?: boolean;
+  readonly hideWhenIdle?: boolean;
 }
 
 /**
@@ -848,11 +849,11 @@ export type LayoutOption = Layout | LayoutData | LayoutFunction;
  * warning saying so.
  */
 export function resolveLayout(
-  option: LayoutOption | null | undefined,
+  option: LayoutOption | undefined,
   defaults: Layout,
   env: LayoutEnv,
 ): Layout {
-  if (option === undefined || option === null) return defaults;
+  if (option === undefined) return defaults;
   if (typeof option === 'function') {
     let result: unknown;
     try {

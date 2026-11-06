@@ -45,6 +45,7 @@ const json = (value: unknown) => ({ type: 'application/json', body: JSON.stringi
 /** A module with two routes: one that says who asked and what, one that echoes bytes. */
 const echo: HostedModule = {
   id: 'echo',
+  name: 'Echo',
   permissions: { read: { level: 'document', label: 'Read the echo' } },
   setup(host) {
     host.docRoute({
@@ -72,6 +73,12 @@ let fx: DbSeededFixture | undefined;
 beforeAll(async () => {
   fx = await buildDbSeededFixture({ secret: 'cloud-module-channel-secret', modules: [echo] });
   await seedDocumentFromBytes(fx, TENANT_ID, DOC_ID, fixturePath, 8);
+  // A module answers only a tenant that has it turned on.
+  await fx.db
+    .updateTable('tenants')
+    .set({ features_json: JSON.stringify([{ id: 'echo' }]) })
+    .where('id', '=', TENANT_ID)
+    .execute();
 });
 
 afterAll(async () => {

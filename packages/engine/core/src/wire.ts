@@ -71,7 +71,8 @@ export {
   LayerScopesSchema,
   CacheDeltaSchema,
   MutationMetaSchema,
-  EngineErrorPayloadSchema,
+  EngineErrorSchema,
+  ErrorResponseSchema,
   AnnotationListSchema,
   PageTextSnapshotSchema,
   PageGeometrySnapshotSchema,
@@ -93,6 +94,7 @@ export {
   AnnotationReorderBodySchema,
   AnnotationReorderResultSchema,
   DocumentWireComponents,
+  SignatureWireComponents,
   FormMutationMetaSchema,
   FormWireComponents,
   FormSetValueResultSchema,
@@ -146,6 +148,7 @@ export {
   PageFlattenInputSchema,
   PageFlattenResultSchema,
   RedactionApplyScopeSchema,
+  RedactionApplyScopeInputSchema,
   RedactionApplyResultSchema,
   SearchQuerySchema,
   SearchRequestSchema,
@@ -153,6 +156,7 @@ export {
   SearchMatchSchema,
   SearchSliceSchema,
   IdentitySchema,
+  IdentityInputSchema,
 } from './wire/schemas';
 export {
   PdfActionTypeSchema,
@@ -308,7 +312,6 @@ export {
   decodeSearchToken,
   encodeTokenText,
   decodeTokenText,
-  SEARCH_RESULT_FORMAT,
   encodeAppearanceModes,
 } from './wire/tokens';
 export type { DownloadToken, SearchToken } from './wire/tokens';
@@ -348,8 +351,6 @@ export {
 export {
   AnnotationRefSchema,
   ColorSchema,
-  PointSchema,
-  RectSchema,
   LineEndingSchema,
   LineEndingsSchema,
   AnnotationBorderStyleSchema,
@@ -462,6 +463,16 @@ export type {
   LayerVersions,
 } from './wire/schemas';
 export { encodeAnalysisToken, decodeAnalysisToken, type AnalysisToken } from './wire/tokens';
+export {
+  CACHED_READ_KINDS,
+  EngineValuesSchema,
+  SHAPES,
+  tokenPinOf,
+  type CachedReadKind,
+  type EngineValues,
+  type TokenPin,
+} from './wire/cachedReads';
+export { API_VERSION, apiVersionOf, parseApiVersion, type ApiVersion } from './wire/apiVersion';
 export type {
   AnnotationsExportToken,
   FontsToken,
@@ -492,3 +503,4 @@ export {
   ChangeResultSchema,
   ChangeWireComponents,
 } from './wire/changeSchemas';
+export { closed, readingOf, readsUnknownAs, withCatchAll, type SetReading } from './wire/reading';

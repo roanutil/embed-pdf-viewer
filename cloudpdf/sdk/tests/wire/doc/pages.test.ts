@@ -23,6 +23,7 @@ describe("PagesClient", () => {
                     attachmentsVersion: 1,
                     outlineVersion: 1,
                     fontsVersion: 1,
+                    contentsVersion: 1,
                     layerVersion: 1,
                     working: true,
                     pages: [
@@ -59,7 +60,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { measure: null };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -84,7 +85,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { measure: null };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -145,7 +146,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
 
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -184,6 +185,7 @@ describe("PagesClient", () => {
                     attachmentsVersion: 1,
                     outlineVersion: 1,
                     fontsVersion: 1,
+                    contentsVersion: 1,
                     layerVersion: 1,
                     working: true,
                     pages: [
@@ -222,7 +224,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -250,7 +252,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -287,7 +289,7 @@ describe("PagesClient", () => {
                         ref: { kind: "objectNumber", objectNumber: 1 },
                         label: null,
                         size: { width: 1.1, height: 1.1 },
-                        rotation: 1.1,
+                        rotation: 1,
                         userUnit: 1.1,
                         tabOrder: null,
                         boxes: {
@@ -317,6 +319,7 @@ describe("PagesClient", () => {
                     attachmentsVersion: 1,
                     outlineVersion: 1,
                     fontsVersion: 1,
+                    contentsVersion: 1,
                     layerVersion: 1,
                     working: true,
                     pages: [
@@ -355,7 +358,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -383,7 +386,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -420,7 +423,7 @@ describe("PagesClient", () => {
                         ref: { kind: "objectNumber", objectNumber: 1 },
                         label: null,
                         size: { width: 1.1, height: 1.1 },
-                        rotation: 1.1,
+                        rotation: 1,
                         userUnit: 1.1,
                         tabOrder: null,
                         boxes: {
@@ -450,6 +453,7 @@ describe("PagesClient", () => {
                     attachmentsVersion: 1,
                     outlineVersion: 1,
                     fontsVersion: 1,
+                    contentsVersion: 1,
                     layerVersion: 1,
                     working: true,
                     pages: [
@@ -488,7 +492,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
@@ -516,7 +520,7 @@ describe("PagesClient", () => {
         const server = mockServerPool.createServer();
         const client = new CloudPDFClient({ maxRetries: 0, token: "test", environment: server.baseUrl });
         const rawRequestBody = { string: { key: "value" } };
-        const rawResponseBody = { key: "value" };
+        const rawResponseBody = { error: { code: "Unknown", message: "message" } };
 
         server
             .mockEndpoint()
