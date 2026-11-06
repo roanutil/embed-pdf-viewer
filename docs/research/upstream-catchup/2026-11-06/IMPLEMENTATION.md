@@ -143,3 +143,9 @@ Full `epdf-engine` suite: 1498 passed, 1 failed. The starting commit had 13 fail
 Open, not resolved:
 
 - `fonts/wire.json`, the approved regeneration, answers `NotFound` at `document.fonts.program` for a display hash that `document.fonts.list` reports one step earlier. The case's covers text says the program is read from the document. Results are deterministic across three regenerations. `generate-font-vectors.ts`, `services/src/features/fonts/` and the TypeScript source are unchanged since the starting commit. The likely cause is the oracle environment, not a TypeScript change. This regeneration was approved on the premise of a TypeScript change, so it needs your decision: revert it and have Rust match the covers text, or keep the `NotFound` answer and treat it as a TypeScript bug.
+
+## Font vector reverted (2026-11-06)
+
+`fonts/wire.json` is back at its committed version (`2b86156d3`). The approved regeneration answered `NotFound` at `document.fonts.program` for a display hash that `document.fonts.list` reports one step earlier. The case's covers text says that program is read from the document. The TypeScript source and generator are unchanged since the starting commit, and three regenerations gave the same answer. The cause is probably the oracle's runtime environment, not a TypeScript change, so the regeneration is not kept.
+
+Open: find why the oracle answers `NotFound` in this environment. Until then, `fonts_wire_corpus` matches the committed vector and passes, and Rust is not changed for this case.
