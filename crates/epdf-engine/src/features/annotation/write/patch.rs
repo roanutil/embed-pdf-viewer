@@ -353,8 +353,7 @@ fn free_text_follows(
     }
     if text_changed {
         let projected = paragraphs_of(Some(&paragraphs)).unwrap_or_default();
-        // The engine writes `/Contents` from the rich text: a line break
-        // reads back as `\r`.
+        // Public text uses LF; the string writer converts PDF contents to CR.
         patch.insert("contents".into(), Value::String(plain_text(&projected)));
     }
     patch.insert(
@@ -585,6 +584,13 @@ pub fn pdf_derive_annotation_patch(
         callout_end_follows(current, &mut patch);
     }
     measurement_follows(subtype, current, &mut patch)?;
+    if owner_of(subtype, "dashArray").is_some()
+        && patch.get("borderStyle").and_then(Value::as_str) == Some("dashed")
+        && !patch.contains_key("dashArray")
+        && current.get("dashArray").is_none_or(Value::is_null)
+    {
+        patch.insert("dashArray".into(), serde_json::json!(super::prepare::DEFAULT_DASH_ARRAY));
+    }
     Ok(patch)
 }
 
@@ -679,7 +685,7 @@ mod tests {
         assert!(!resolved.data.contains_key("contents"), "the text isn't rewritten");
         let text = pdf_resolve_annotation_patch(&current, map(json!({ "contents": "a\nb" })), None)
             .unwrap();
-        assert_eq!(text.data["contents"], "a\rb");
+        assert_eq!(text.data["contents"], "a\nb");
     }
 
     #[test]

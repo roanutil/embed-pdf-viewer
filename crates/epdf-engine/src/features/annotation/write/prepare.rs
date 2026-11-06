@@ -397,6 +397,9 @@ impl StampFit {
 /// `Some(None)` null.
 pub type Nullable<T> = Option<Option<T>>;
 
+/// Three units on, three off: the ISO default stated for consistent redraws.
+pub(crate) const DEFAULT_DASH_ARRAY: [f64; 2] = [3.0, 3.0];
+
 /// A line's leader lines (`LineLeaderSchema`): `/LL`, `/LLE`, `/LLO`.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -432,7 +435,7 @@ pub struct DraftFields {
     pub reply: Nullable<ReplyDraft>,
     pub group_id: Nullable<String>,
     // Style.
-    pub color: Option<Rgb>,
+    pub color: Nullable<Rgb>,
     pub opacity: Option<f64>,
     pub stroke_width: Option<f64>,
     pub border_style: Option<AnnotationBorderStyle>,
@@ -702,7 +705,20 @@ pub(crate) fn read_field(
             fields.group_id =
                 Some(if value.is_null() { None } else { Some(non_empty(kind, name, value)?) });
         }
-        "color" => fields.color = Some(read_color(kind, name, value)?),
+        "color" => {
+            fields.color = Some(
+                if value.is_null()
+                    && matches!(
+                        subtype,
+                        S::Square | S::Circle | S::Line | S::Polygon | S::Polyline | S::Ink
+                    )
+                {
+                    None
+                } else {
+                    Some(read_color(kind, name, value)?)
+                },
+            );
+        }
         "fontColor" => fields.font_color = Some(read_color(kind, name, value)?),
         "interiorColor" => {
             fields.interior_color =
@@ -735,6 +751,9 @@ pub(crate) fn read_field(
         }
         "dashArray" => {
             let dashes: Option<Vec<f64>> = read_nullable(kind, name, value)?;
+            if dashes.as_ref().is_some_and(Vec::is_empty) {
+                return Err(invalid(kind, name, "expected at least one dash length"));
+            }
             if dashes.iter().flatten().any(|d| !nonnegative(*d)) {
                 return Err(invalid(kind, name, "expected numbers of 0 or more"));
             }
@@ -1282,8 +1301,7 @@ pub fn derive_draft(
             };
             let body = body_with_style(base, fields, context);
             let rich = RichTextDocumentInput { body: Some(body), paragraphs };
-            // The engine writes `/Contents` from the rich text: a line break
-            // reads back as `\r`.
+            // Public text uses LF; the string writer converts PDF contents to CR.
             fields.contents = Some(Some(plain_text(&rich.paragraphs)));
             fields.rich_text = Some(rich);
         }
@@ -1302,6 +1320,19 @@ pub fn derive_draft(
             }
         }
         _ => {}
+    }
+    if draft.subtype == S::Widget {
+        if matches!(
+            fields.widget.border_style,
+            Some(crate::features::annotation::read::record::WidgetBorderStyle::Dashed)
+        ) && fields.widget.dash_array.is_none()
+        {
+            fields.widget.dash_array = Some(Some(DEFAULT_DASH_ARRAY.to_vec()));
+        }
+    } else if fields.border_style == Some(AnnotationBorderStyle::Dashed)
+        && fields.dash_array.is_none()
+    {
+        fields.dash_array = Some(Some(DEFAULT_DASH_ARRAY.to_vec()));
     }
     Ok(draft)
 }
@@ -1517,7 +1548,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(derived.fields.intent, Some(Some("free-text".to_owned())));
-        assert_eq!(derived.fields.contents, Some(Some("a\rb".to_owned())));
+        assert_eq!(derived.fields.contents, Some(Some("a\nb".to_owned())));
         let body = derived.fields.rich_text.unwrap().body.unwrap();
         assert_eq!(body["family"], "Times");
         assert_eq!(body["weight"], 700);

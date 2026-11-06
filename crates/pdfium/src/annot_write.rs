@@ -166,6 +166,12 @@ impl Annotation<'_> {
         }
     }
 
+    /// Write an empty color array: no stroke, rather than removing the entry.
+    pub fn set_no_color(&self, color_type: i32) -> bool {
+        // SAFETY: the annotation handle is live for this borrow.
+        unsafe { pdfium_sys::EPDFAnnot_SetNoColor(self.as_raw(), color_type as u32) != 0 }
+    }
+
     /// `/CA`, from a 0..=1 opacity.
     ///
     /// Passed through as given: the fork stores it (1 removes `/CA`) and

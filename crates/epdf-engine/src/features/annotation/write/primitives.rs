@@ -44,6 +44,14 @@ pub fn set_color(
     checked(annotation.set_color(which as i32, r, g, b), "EPDFAnnot_SetColor")
 }
 
+/// An explicit empty color array, used when a stroke is absent.
+pub fn set_no_color(
+    annotation: &Annotation<'_>,
+    which: AnnotationColorType,
+) -> Result<(), EngineError> {
+    checked(annotation.set_no_color(which as i32), "EPDFAnnot_SetNoColor")
+}
+
 /// `clearAnnotColor`: a false return is benign, there was nothing to clear.
 pub fn clear_color(annotation: &Annotation<'_>, which: AnnotationColorType) {
     annotation.clear_color(which as i32);

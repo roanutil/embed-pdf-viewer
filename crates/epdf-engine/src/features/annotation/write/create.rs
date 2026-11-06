@@ -492,7 +492,11 @@ fn apply_draft(
             let quads = f.quad_points.as_deref().unwrap_or_default();
             p::append_quad_points(annotation, quads)?;
             p::set_rect_from_quad_points(annotation, quads)?;
-            set_color(annotation, C::Color, f.color.unwrap_or(default_color(draft.subtype)))?;
+            set_color(
+                annotation,
+                C::Color,
+                f.color.flatten().unwrap_or(default_color(draft.subtype)),
+            )?;
             set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
             if draft.subtype == S::Strikeout {
                 write_intent(annotation, f)?;
@@ -552,7 +556,7 @@ fn apply_draft(
         }
         S::Text => {
             p::set_rect(annotation, f.rect.ok_or_else(|| unknown("a note create has no rect"))?)?;
-            set_color(annotation, C::Color, f.color.unwrap_or(Rgb::YELLOW))?;
+            set_color(annotation, C::Color, f.color.flatten().unwrap_or(Rgb::YELLOW))?;
             set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
             p::set_name(annotation, f.note_icon.unwrap_or(NoteIcon::Note).pdf_name())?;
             if let Some(open) = f.open {
@@ -568,7 +572,7 @@ fn apply_draft(
         }
         S::Caret => {
             write_annotation_box(annotation, placed_box(f)?, rotation(f))?;
-            set_color(annotation, C::Color, f.color.unwrap_or(Rgb::RED))?;
+            set_color(annotation, C::Color, f.color.flatten().unwrap_or(Rgb::RED))?;
             set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
             write_intent(annotation, f)?;
         }
@@ -609,7 +613,7 @@ fn apply_draft(
         }
         S::FileAttachment => {
             p::set_rect(annotation, f.rect.ok_or_else(|| unknown("an attachment has no rect"))?)?;
-            set_color(annotation, C::Color, f.color.unwrap_or(Rgb::YELLOW))?;
+            set_color(annotation, C::Color, f.color.flatten().unwrap_or(Rgb::YELLOW))?;
             set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
             p::set_name(
                 annotation,
@@ -724,7 +728,10 @@ fn apply_border(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), Engi
 
 /// `applyGeometryStyleDraft`: `/C`, `/CA` and the border.
 fn apply_geometry_style(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
-    set_color(annotation, C::Color, f.color.unwrap_or(Rgb::RED))?;
+    match f.color.unwrap_or(Some(Rgb::RED)) {
+        Some(color) => set_color(annotation, C::Color, color)?,
+        None => p::set_no_color(annotation, C::Color)?,
+    }
     set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
     apply_border(annotation, f)
 }
@@ -788,7 +795,7 @@ fn apply_free_text(
         annotation,
         f.font_family.as_deref().unwrap_or("helvetica"),
         f.font_size.unwrap_or(12.0),
-        f.color.unwrap_or(Rgb::BLACK),
+        f.color.flatten().unwrap_or(Rgb::BLACK),
         context,
     )?;
     let rich = f.rich_text.clone().ok_or_else(|| unknown("a free text without its rich text"))?;
@@ -840,7 +847,7 @@ fn apply_redact(
         Some(rect) => p::set_rect(annotation, rect)?,
         None => p::set_rect_from_quad_points(annotation, quads)?,
     }
-    set_color(annotation, C::Color, f.color.unwrap_or(Rgb::RED))?;
+    set_color(annotation, C::Color, f.color.flatten().unwrap_or(Rgb::RED))?;
     set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
     if let Some(Some(fill)) = f.interior_color {
         set_color(annotation, C::InteriorColor, fill)?;

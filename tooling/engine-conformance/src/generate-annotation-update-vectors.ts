@@ -36,6 +36,11 @@ import { normalizeWriteStamps } from './annotation-write-stamps';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
+const runtimeArgument = process.argv.find((arg) => arg.startsWith('--runtime='));
+const runtimePreference = runtimeArgument?.slice('--runtime='.length) ?? 'wasm';
+if (runtimePreference !== 'wasm' && runtimePreference !== 'native') {
+  throw new Error(`unsupported runtime ${runtimePreference}: use wasm or native`);
+}
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
 const SCHEMA_VERSION = 1;
@@ -102,7 +107,11 @@ function resourcesOf(
 }
 
 /** A tiny 4x2 PNG, for the stamp cases. */
-const STAMP_PNG = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130];
+const STAMP_PNG = [
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0,
+  0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200,
+  28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+];
 
 const CASES: readonly UpdateCase[] = [
   {
@@ -210,11 +219,20 @@ const CASES: readonly UpdateCase[] = [
       'A vertex list that SHRINKS, which /QuadPoints cannot do. SetVertices replaces the array rather than appending to it, so there is no stale tail and no preflight to refuse one.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 420, y: 412 }, { x: 300, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 420, y: 412 },
+        { x: 300, y: 412 },
+      ],
     },
     patch: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
     },
   },
   {
@@ -223,19 +241,34 @@ const CASES: readonly UpdateCase[] = [
       'A polygon flattened onto a line. PDFium has no appearance to bake for one, so the verdict is a third thing: the edit landed and the stream could not be rebuilt. A client is told rather than shown a stale picture.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
     },
-    patch: { subtype: 'polygon', vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }] },
+    patch: {
+      subtype: 'polygon',
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+      ],
+    },
     // Refused since 404b79b3e ("Engine API v3 drawing details": too few
     // points to draw is InvalidArg); the case records the refusal code.
     refused: true,
   },
   {
     name: 'polygon-clear-cloudy',
-    covers: 'A polygon is the one vertex kind with a /BE, and it clears on the same terms a shape does.',
+    covers:
+      'A polygon is the one vertex kind with a /BE, and it clears on the same terms a shape does.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       cloudyIntensity: 2,
     },
     patch: { subtype: 'polygon', cloudyIntensity: null },
@@ -246,7 +279,11 @@ const CASES: readonly UpdateCase[] = [
       'A tri-state clear of a fill that was there. On the create path clearing and not saying are the same thing; here they are not.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       interiorColor: '#00ff00',
     },
     patch: { subtype: 'polygon', interiorColor: null },
@@ -257,7 +294,11 @@ const CASES: readonly UpdateCase[] = [
       'A border width with no style. /BS takes both in one call, so the writer has to READ the style rather than default it: defaulting would reset a dashed border nobody mentioned.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       borderStyle: 'dashed',
       dashArray: [4, 2],
     },
@@ -269,7 +310,11 @@ const CASES: readonly UpdateCase[] = [
       'The other half of the /BS read-modify-write: a style with no width. Defaulting the width would reset a three-point border nobody mentioned.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       strokeWidth: 3,
     },
     patch: { subtype: 'polygon', borderStyle: 'dashed', dashArray: [5, 3] },
@@ -280,24 +325,34 @@ const CASES: readonly UpdateCase[] = [
       'The rotation scalar, removed. A vertex kind carries an angle and no logical box; since 6153c181e the angle turns the upright points when the appearance is drawn, so clearing it is the whole of un-rotating one and regenerates the appearance.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       rotation: 330,
     },
     patch: { subtype: 'polygon', rotation: null },
   },
   {
     name: 'polyline-endings',
-    covers: 'The /LE pair, changed after creation. The two ends differ, so a writer that wrote one twice is visible.',
+    covers:
+      'The /LE pair, changed after creation. The two ends differ, so a writer that wrote one twice is visible.',
     draft: {
       subtype: 'polyline',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       lineEndings: { start: 'none', end: 'none' },
     },
     patch: { subtype: 'polyline', lineEndings: { start: 'diamond', end: 'open-arrow' } },
   },
   {
     name: 'line-endpoints',
-    covers: 'Moving a line is moving its two points, and its /Rect is the caller arithmetic over them.',
+    covers:
+      'Moving a line is moving its two points, and its /Rect is the caller arithmetic over them.',
     draft: { subtype: 'line', linePoints: { start: { x: 450, y: 492 }, end: { x: 560, y: 392 } } },
     patch: { subtype: 'line', linePoints: { start: { x: 450, y: 452 }, end: { x: 520, y: 492 } } },
   },
@@ -308,11 +363,26 @@ const CASES: readonly UpdateCase[] = [
     draft: {
       subtype: 'ink',
       inkList: [
-        [{ x: 72, y: 592 }, { x: 120, y: 512 }, { x: 160, y: 592 }],
-        [{ x: 180, y: 572 }, { x: 240, y: 492 }],
+        [
+          { x: 72, y: 592 },
+          { x: 120, y: 512 },
+          { x: 160, y: 592 },
+        ],
+        [
+          { x: 180, y: 572 },
+          { x: 240, y: 492 },
+        ],
       ],
     },
-    patch: { subtype: 'ink', inkList: [[{ x: 80, y: 582 }, { x: 130, y: 532 }]] },
+    patch: {
+      subtype: 'ink',
+      inkList: [
+        [
+          { x: 80, y: 582 },
+          { x: 130, y: 532 },
+        ],
+      ],
+    },
   },
   {
     name: 'text-state-alone',
@@ -339,7 +409,8 @@ const CASES: readonly UpdateCase[] = [
   },
   {
     name: 'text-icon',
-    covers: 'The /Name icon, changed after creation. The picture is the generator\'s, baked from /C and /Name.',
+    covers:
+      "The /Name icon, changed after creation. The picture is the generator's, baked from /C and /Name.",
     draft: { subtype: 'text', rect: { x: 72, y: 172, width: 20, height: 20 } },
     patch: { subtype: 'text', icon: 'help', color: '#00a0ff' },
   },
@@ -608,16 +679,108 @@ const CASES: readonly UpdateCase[] = [
   {
     name: 'ink-intent',
     covers: 'The only /IT ink carries, set after creation.',
-    draft: { subtype: 'ink', inkList: [[{ x: 72, y: 592 }, { x: 240, y: 492 }]] },
+    draft: {
+      subtype: 'ink',
+      inkList: [
+        [
+          { x: 72, y: 592 },
+          { x: 240, y: 492 },
+        ],
+      ],
+    },
     patch: { subtype: 'ink', intent: 'ink-highlight' },
+  },
+];
+
+const STROKE_DASH_CASES: readonly UpdateCase[] = [
+  {
+    name: 'stroke-clear',
+    covers: 'A null color patch removes stroke without changing width or identity.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      color: '#123456',
+      strokeWidth: 4,
+    },
+    patch: { color: null },
+  },
+  {
+    name: 'stroke-restore',
+    covers: 'A color value restores a null stroke.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      color: null,
+      strokeWidth: 4,
+    },
+    patch: { color: '#123456' },
+  },
+  {
+    name: 'stroke-omitted',
+    covers: 'Changing width leaves a stroke color untouched.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 }, color: '#123456' },
+    patch: { strokeWidth: 4 },
+  },
+  {
+    name: 'dash-default',
+    covers: 'Changing a solid border to dashed states its missing pattern.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 } },
+    patch: { borderStyle: 'dashed' },
+  },
+  {
+    name: 'dash-preserve',
+    covers: 'Changing width preserves an existing dash pattern.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+    },
+    patch: { strokeWidth: 4 },
+  },
+  {
+    name: 'dash-clear',
+    covers: 'A null patch clears an existing dash pattern.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+    },
+    patch: { dashArray: null },
+  },
+  {
+    name: 'dash-zero',
+    covers: 'A nonempty zero pattern can replace another dash.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+    },
+    patch: { dashArray: [0] },
+  },
+  {
+    name: 'dash-empty-refused',
+    covers: 'An empty pattern refuses before another field changes.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 }, contents: 'before' },
+    patch: { dashArray: [], contents: 'after' },
+    refused: true,
+  },
+  {
+    name: 'dash-negative-refused',
+    covers: 'Negative pattern lengths refuse.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 } },
+    patch: { dashArray: [-1] },
+    refused: true,
   },
 ];
 
 async function readCase(entry: UpdateCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
+  const engine = await createLocalEngine({
     runtime: {
-      prefer: 'wasm',
+      prefer: runtimePreference,
       wasm: {
         print: (message: string) => process.stderr.write(`${message}\n`),
         printErr: (message: string) => process.stderr.write(`${message}\n`),
@@ -703,18 +866,19 @@ function serialize(cases: readonly unknown[]): string {
     null,
     2,
   ).replace(/\n}$/, ',');
-  const body = cases
-    .map((entry) => `  ${JSON.stringify(normalizeSessionIds(entry))}`)
-    .join(',\n');
+  const body = cases.map((entry) => `  ${JSON.stringify(normalizeSessionIds(entry))}`).join(',\n');
   return `${head}\n  "cases": [\n${body}\n  ]\n}\n`;
 }
 
-async function main(): Promise<void> {
-  const check = process.argv.includes('--check');
+async function emitCases(
+  entries: readonly UpdateCase[],
+  filename: string,
+  check: boolean,
+): Promise<void> {
   const cases: unknown[] = [];
-  for (const entry of CASES) cases.push(await readCase(entry));
+  for (const entry of entries) cases.push(await readCase(entry));
   const text = serialize(cases);
-  const absolute = join(vectorsRoot, 'update.json');
+  const absolute = join(vectorsRoot, filename);
 
   let current: string | undefined;
   try {
@@ -723,12 +887,12 @@ async function main(): Promise<void> {
     current = undefined;
   }
   if (current === text) {
-    process.stdout.write('  ok      annotation/update.json\n');
+    process.stdout.write(`  ok      annotation/${filename}\n`);
     return;
   }
   if (check) {
     process.stdout.write(
-      `  DIFFERS annotation/update.json${current === undefined ? ' (missing)' : ''}\n`,
+      `  DIFFERS annotation/${filename}${current === undefined ? ' (missing)' : ''}\n`,
     );
     process.stderr.write(
       '\nAnnotation update vectors differ. Regenerate with:\n' +
@@ -740,7 +904,13 @@ async function main(): Promise<void> {
   }
   await mkdir(dirname(absolute), { recursive: true });
   await writeFile(absolute, text);
-  process.stdout.write('  written annotation/update.json\n');
+  process.stdout.write(`  written annotation/${filename}\n`);
+}
+
+async function main(): Promise<void> {
+  const check = process.argv.includes('--check');
+  if (!process.argv.includes('--stroke-dash-only')) await emitCases(CASES, 'update.json', check);
+  await emitCases(STROKE_DASH_CASES, 'stroke-dash-update.json', check);
 }
 
 main().catch((error: unknown) => {

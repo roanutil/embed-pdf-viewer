@@ -36,6 +36,11 @@ import { normalizeWriteStamps } from './annotation-write-stamps';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
+const runtimeArgument = process.argv.find((arg) => arg.startsWith('--runtime='));
+const runtimePreference = runtimeArgument?.slice('--runtime='.length) ?? 'wasm';
+if (runtimePreference !== 'wasm' && runtimePreference !== 'native') {
+  throw new Error(`unsupported runtime ${runtimePreference}: use wasm or native`);
+}
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
 const SCHEMA_VERSION = 1;
@@ -213,7 +218,11 @@ const CASES: readonly CreateCase[] = [
       'A closed vertex path with a fill and a cloudy border. Only a polygon takes /BE: an open path has no interior for one to enclose.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
+      vertices: [
+        { x: 300, y: 492 },
+        { x: 420, y: 492 },
+        { x: 360, y: 412 },
+      ],
       color: '#0000ff',
       interiorColor: '#ffff00',
       cloudyIntensity: 1,
@@ -225,7 +234,11 @@ const CASES: readonly CreateCase[] = [
       'An open vertex path with a /LE pair, which the polygon family does not have. The two endings differ, so a writer that wrote one twice is visible.',
     draft: {
       subtype: 'polyline',
-      vertices: [{ x: 300, y: 592 }, { x: 360, y: 512 }, { x: 420, y: 592 }],
+      vertices: [
+        { x: 300, y: 592 },
+        { x: 360, y: 512 },
+        { x: 420, y: 592 },
+      ],
       lineEndings: { start: 'open-arrow', end: 'diamond' },
     },
   },
@@ -233,7 +246,13 @@ const CASES: readonly CreateCase[] = [
     name: 'polyline-defaults',
     covers:
       'The same without a /LE, so the pair that draws nothing is what a reader gets back rather than an absent entry it has to interpret.',
-    draft: { subtype: 'polyline', vertices: [{ x: 450, y: 592 }, { x: 560, y: 512 }] },
+    draft: {
+      subtype: 'polyline',
+      vertices: [
+        { x: 450, y: 592 },
+        { x: 560, y: 512 },
+      ],
+    },
   },
   {
     name: 'line',
@@ -253,8 +272,15 @@ const CASES: readonly CreateCase[] = [
     draft: {
       subtype: 'ink',
       inkList: [
-        [{ x: 72, y: 592 }, { x: 120, y: 512 }, { x: 160, y: 592 }],
-        [{ x: 180, y: 572 }, { x: 240, y: 492 }],
+        [
+          { x: 72, y: 592 },
+          { x: 120, y: 512 },
+          { x: 160, y: 592 },
+        ],
+        [
+          { x: 180, y: 572 },
+          { x: 240, y: 492 },
+        ],
       ],
       intent: 'ink-highlight',
       opacity: 0.3,
@@ -266,7 +292,11 @@ const CASES: readonly CreateCase[] = [
       'A cloudy intensity of zero, which is not a cloud. A writer that passed it through writes a /BE that says the border is cloudy with no waviness, which is a different dictionary from the one a plain border has.',
     draft: {
       subtype: 'polygon',
-      vertices: [{ x: 450, y: 342 }, { x: 560, y: 342 }, { x: 505, y: 252 }],
+      vertices: [
+        { x: 450, y: 342 },
+        { x: 560, y: 342 },
+        { x: 505, y: 252 },
+      ],
       cloudyIntensity: 0,
     },
     // Refused since c78997346 declared a cloudy intensity positive; the
@@ -279,7 +309,10 @@ const CASES: readonly CreateCase[] = [
       'A rotation of zero. Zero degrees is not a rotation, so the key is cleared rather than stamped, and a file that had none keeps none.',
     draft: {
       subtype: 'polyline',
-      vertices: [{ x: 300, y: 342 }, { x: 420, y: 252 }],
+      vertices: [
+        { x: 300, y: 342 },
+        { x: 420, y: 252 },
+      ],
       rotation: 0,
     },
   },
@@ -287,7 +320,16 @@ const CASES: readonly CreateCase[] = [
     name: 'ink-advisory-rotation',
     covers:
       'A rotation scalar on a vertex kind. Since 6153c181e the strokes are stored upright and the generator turns them by this angle about the middle of their box; it never carries a logical box, which is what separates it from the shape family.',
-    draft: { subtype: 'ink', inkList: [[{ x: 72, y: 692 }, { x: 240, y: 612 }]], rotation: 315 },
+    draft: {
+      subtype: 'ink',
+      inkList: [
+        [
+          { x: 72, y: 692 },
+          { x: 240, y: 612 },
+        ],
+      ],
+      rotation: 315,
+    },
   },
   {
     name: 'text-defaults',
@@ -400,7 +442,11 @@ const CASES: readonly CreateCase[] = [
       fontFamily: 'helvetica-oblique',
       fontSize: 11,
       textAlign: 'right',
-      calloutLine: [{ x: 200, y: 542 }, { x: 260, y: 492 }, { x: 300, y: 462 }],
+      calloutLine: [
+        { x: 200, y: 542 },
+        { x: 260, y: 492 },
+        { x: 300, y: 462 },
+      ],
       lineEnding: 'open-arrow',
       contents: 'This bit here.',
     },
@@ -486,7 +532,10 @@ const CASES: readonly CreateCase[] = [
     covers:
       'A marker and the file it names. PDFium derives the size, the checksum and the creation date from the bytes, so the read back proves the stream was written and not just the filespec.',
     resources: {
-      file: [116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120, 10],
+      file: [
+        116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120,
+        10,
+      ],
     },
     draft: {
       subtype: 'file-attachment',
@@ -515,7 +564,8 @@ const CASES: readonly CreateCase[] = [
   },
   {
     name: 'link-uri',
-    covers: 'A /URI action. The reader normalizes /Dest and /A /GoTo together, so this is the one target shape it cannot confuse with the other.',
+    covers:
+      'A /URI action. The reader normalizes /Dest and /A /GoTo together, so this is the one target shape it cannot confuse with the other.',
     draft: {
       subtype: 'link',
       rect: { x: 210, y: 132, width: 130, height: 20 },
@@ -648,7 +698,12 @@ const CASES: readonly CreateCase[] = [
     covers:
       'A 4x2 image in a square box under the default fit. Aspect is preserved and the leftover space is split evenly, so a writer that pinned the image to a corner is visible in the appearance.',
     resources: {
-      appearance: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130],
+      appearance: [
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2,
+        0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71,
+        12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96,
+        130,
+      ],
     },
     draft: { subtype: 'stamp', box: { x: 72, y: 312, width: 80, height: 80 }, name: 'Approved' },
   },
@@ -656,7 +711,12 @@ const CASES: readonly CreateCase[] = [
     name: 'stamp-png-cover',
     covers: 'The same bytes filling the box instead, which crops rather than letterboxes.',
     resources: {
-      appearance: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130],
+      appearance: [
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2,
+        0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71,
+        12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96,
+        130,
+      ],
     },
     draft: { subtype: 'stamp', box: { x: 170, y: 312, width: 80, height: 80 }, fit: 'cover' },
   },
@@ -664,7 +724,12 @@ const CASES: readonly CreateCase[] = [
     name: 'stamp-png-fill',
     covers: 'And distorting it, which is the one policy that discards the aspect ratio.',
     resources: {
-      appearance: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130],
+      appearance: [
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2,
+        0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71,
+        12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96,
+        130,
+      ],
     },
     draft: { subtype: 'stamp', box: { x: 270, y: 312, width: 80, height: 80 }, fit: 'fill' },
   },
@@ -673,7 +738,12 @@ const CASES: readonly CreateCase[] = [
     covers:
       'A second enumerated label, to prove the code reaches the document rather than one label being hardcoded. A label outside the set is refused: the reader reports a custom /Name a file carries, and the writer will not author one.',
     resources: {
-      appearance: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130],
+      appearance: [
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2,
+        0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71,
+        12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96,
+        130,
+      ],
     },
     draft: { subtype: 'stamp', box: { x: 370, y: 312, width: 80, height: 80 }, name: 'Draft' },
   },
@@ -682,7 +752,12 @@ const CASES: readonly CreateCase[] = [
     covers:
       'A rotated stamp, authored in the unrotated frame and turned by an /AP matrix. Fitting into the rotated box instead bakes the letterbox bands in and the closing re-fit shrinks the image a second time.',
     resources: {
-      appearance: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130],
+      appearance: [
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2,
+        0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71,
+        12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96,
+        130,
+      ],
     },
     draft: { subtype: 'stamp', box: { x: 75, y: 427, width: 90, height: 60 }, rotation: 330 },
   },
@@ -789,11 +864,142 @@ const CASES: readonly CreateCase[] = [
   },
 ];
 
+const STROKE_DASH_CASES: readonly CreateCase[] = [
+  {
+    name: 'markup-null-color-refused',
+    covers: 'Nullable stroke colors do not widen a markup color write.',
+    draft: { subtype: 'highlight', quadPoints: [QUAD], color: null },
+    refused: true,
+  },
+  {
+    name: 'square-no-stroke',
+    covers: 'Null stroke keeps width and fill geometry.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      color: null,
+      strokeWidth: 6,
+      interiorColor: '#00ff00',
+    },
+  },
+  {
+    name: 'circle-no-stroke',
+    covers: 'A circle can have a fill with no stroke.',
+    draft: {
+      subtype: 'circle',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      color: null,
+      strokeWidth: 4,
+      interiorColor: '#00ff00',
+    },
+  },
+  {
+    name: 'line-no-stroke',
+    covers: 'No stroke keeps line-ending width geometry.',
+    draft: {
+      subtype: 'line',
+      linePoints: { start: { x: 40, y: 50 }, end: { x: 100, y: 80 } },
+      color: null,
+      strokeWidth: 4,
+      lineEndings: { start: 'none', end: 'closed-arrow' },
+    },
+  },
+  {
+    name: 'polygon-no-stroke',
+    covers: 'A polygon can be filled without a stroke.',
+    draft: {
+      subtype: 'polygon',
+      vertices: [
+        { x: 40, y: 50 },
+        { x: 100, y: 50 },
+        { x: 70, y: 90 },
+      ],
+      color: null,
+      strokeWidth: 3,
+      interiorColor: '#00ff00',
+    },
+  },
+  {
+    name: 'polyline-no-stroke',
+    covers: 'No stroke keeps a polyline geometry record.',
+    draft: {
+      subtype: 'polyline',
+      vertices: [
+        { x: 40, y: 50 },
+        { x: 100, y: 90 },
+      ],
+      color: null,
+      strokeWidth: 3,
+    },
+  },
+  {
+    name: 'ink-no-stroke',
+    covers: 'Ink retains positive width while color is null.',
+    draft: {
+      subtype: 'ink',
+      inkList: [
+        [
+          { x: 40, y: 50 },
+          { x: 100, y: 90 },
+        ],
+      ],
+      color: null,
+      strokeWidth: 3,
+    },
+  },
+  {
+    name: 'stroke-omitted-default',
+    covers: 'Omitted stroke uses the create default.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 } },
+  },
+  {
+    name: 'dash-omitted-default',
+    covers: 'A dashed create with no pattern states three on and three off.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+    },
+  },
+  {
+    name: 'dash-null',
+    covers: 'Explicit null does not acquire the omitted-pattern default.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+      dashArray: null,
+    },
+  },
+  {
+    name: 'dash-zero',
+    covers: 'A nonempty zero-length dash pattern is valid.',
+    draft: {
+      subtype: 'square',
+      box: { x: 40, y: 50, width: 60, height: 40 },
+      borderStyle: 'dashed',
+      dashArray: [0],
+    },
+  },
+  {
+    name: 'dash-empty-refused',
+    covers: 'An empty pattern refuses rather than silently clearing.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 }, dashArray: [] },
+    refused: true,
+  },
+  {
+    name: 'dash-negative-refused',
+    covers: 'Negative dash lengths refuse.',
+    draft: { subtype: 'square', box: { x: 40, y: 50, width: 60, height: 40 }, dashArray: [-1] },
+    refused: true,
+  },
+];
+
 async function readCase(entry: CreateCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
+  const engine = await createLocalEngine({
     runtime: {
-      prefer: 'wasm',
+      prefer: runtimePreference,
       wasm: {
         print: (message: string) => process.stderr.write(`${message}\n`),
         printErr: (message: string) => process.stderr.write(`${message}\n`),
@@ -875,18 +1081,19 @@ function serialize(cases: readonly unknown[]): string {
     null,
     2,
   ).replace(/\n}$/, ',');
-  const body = cases
-    .map((entry) => `  ${JSON.stringify(normalizeSessionIds(entry))}`)
-    .join(',\n');
+  const body = cases.map((entry) => `  ${JSON.stringify(normalizeSessionIds(entry))}`).join(',\n');
   return `${head}\n  "cases": [\n${body}\n  ]\n}\n`;
 }
 
-async function main(): Promise<void> {
-  const check = process.argv.includes('--check');
+async function emitCases(
+  entries: readonly CreateCase[],
+  filename: string,
+  check: boolean,
+): Promise<void> {
   const cases: unknown[] = [];
-  for (const entry of CASES) cases.push(await readCase(entry));
+  for (const entry of entries) cases.push(await readCase(entry));
   const text = serialize(cases);
-  const absolute = join(vectorsRoot, 'create.json');
+  const absolute = join(vectorsRoot, filename);
 
   let current: string | undefined;
   try {
@@ -895,12 +1102,12 @@ async function main(): Promise<void> {
     current = undefined;
   }
   if (current === text) {
-    process.stdout.write('  ok      annotation/create.json\n');
+    process.stdout.write(`  ok      annotation/${filename}\n`);
     return;
   }
   if (check) {
     process.stdout.write(
-      `  DIFFERS annotation/create.json${current === undefined ? ' (missing)' : ''}\n`,
+      `  DIFFERS annotation/${filename}${current === undefined ? ' (missing)' : ''}\n`,
     );
     process.stderr.write(
       '\nAnnotation create vectors differ. Regenerate with:\n' +
@@ -912,7 +1119,13 @@ async function main(): Promise<void> {
   }
   await mkdir(dirname(absolute), { recursive: true });
   await writeFile(absolute, text);
-  process.stdout.write('  written annotation/create.json\n');
+  process.stdout.write(`  written annotation/${filename}\n`);
+}
+
+async function main(): Promise<void> {
+  const check = process.argv.includes('--check');
+  if (!process.argv.includes('--stroke-dash-only')) await emitCases(CASES, 'create.json', check);
+  await emitCases(STROKE_DASH_CASES, 'stroke-dash-create.json', check);
 }
 
 main().catch((error: unknown) => {

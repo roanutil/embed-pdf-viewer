@@ -1,17 +1,8 @@
-//! Colour, opacity and the effective border.
+//! Color, opacity and effective border fields shared by annotation families.
 //!
-//! G7. Ports `services/src/features/annotations/internal/read/readStyle.ts`.
-//!
-//! Three layers, each a superset of the one before, because the DTO families
-//! are: ink has stroke styling and no fill, the shape and vertex families add
-//! `/IC`, and free text reads only the border half because it gets its colour
-//! from `/DA`. They are separate functions rather than one with flags so a
-//! reader asks for what its family has.
-//!
-//! Every default here is the v2 engine's, which means a document that omitted
-//! an entry reads the same through this port as it did through the engine that
-//! wrote it. Red for geometry, and it is not arbitrary: it is what the
-//! annotation was drawn as.
+//! Missing or empty geometry colors mean no stroke. Color defaults belong
+//! to creates; a reader preserves what the file says. Border fields resolve
+//! the effective `/BS`, legacy `/Border` and ISO defaults through PDFium.
 
 use pdfium::Annotation;
 use serde::{Deserialize, Serialize};
@@ -31,7 +22,7 @@ pub struct Color {
     pub b: u8,
 }
 
-/// What a geometry annotation with no `/C` is drawn as.
+/// The color geometry creates supply when their draft omits it.
 pub const DEFAULT_GEOMETRY_COLOR: Color = Color { r: 255, g: 0, b: 0 };
 
 /// The border a bordered kind draws, after `/BS`, the legacy `/Border` array
@@ -41,10 +32,7 @@ pub const DEFAULT_GEOMETRY_COLOR: Color = Color { r: 255, g: 0, b: 0 };
 pub struct BorderFields {
     pub stroke_width: f64,
     pub border_style: AnnotationBorderStyle,
-    /// Absent, not empty, when the border is not dashed or names no pattern.
-    /// The wire distinguishes the two and a clearing patch operates on the
-    /// difference.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Null when the border is solid or names no pattern.
     pub dash_array: Option<Vec<f64>>,
 }
 
@@ -52,7 +40,7 @@ pub struct BorderFields {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeometryStyleFields {
-    pub color: Color,
+    pub color: Option<Color>,
     pub opacity: f64,
     #[serde(flatten)]
     pub border: BorderFields,
@@ -112,7 +100,7 @@ pub fn read_geometry_style(
     annotation: &Annotation<'_>,
 ) -> Result<GeometryStyleFields, EngineError> {
     Ok(GeometryStyleFields {
-        color: read_color(annotation, DEFAULT_GEOMETRY_COLOR),
+        color: read_color_entry(annotation, AnnotationColorType::Color),
         opacity: read_opacity(annotation),
         border: read_border_fields(annotation)?,
     })

@@ -159,7 +159,7 @@ pub struct BorderRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeometryStyleRecord {
-    pub color: HexColor,
+    pub color: Option<HexColor>,
     pub opacity: f64,
     #[serde(flatten)]
     pub border: BorderRecord,
@@ -466,10 +466,10 @@ fn border(annotation: &Annotation<'_>) -> Result<BorderRecord, EngineError> {
     })
 }
 
-/// `readGeometryStyleExtras`: red when there is no `/C`.
+/// A missing or empty `/C` reads as no stroke.
 fn geometry_style(annotation: &Annotation<'_>) -> Result<GeometryStyleRecord, EngineError> {
     Ok(GeometryStyleRecord {
-        color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(RED)),
+        color: color(annotation, AnnotationColorType::Color),
         opacity: opacity(annotation),
         border: border(annotation)?,
     })

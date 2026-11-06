@@ -455,7 +455,7 @@ fn apply_patch(
     apply_base(annotation, f)?;
     match resolved.subtype {
         S::Highlight | S::Underline | S::Squiggly | S::Strikeout => {
-            if let Some(color) = f.color {
+            if let Some(color) = f.color.flatten() {
                 set_color(annotation, C::Color, color)?;
             }
             if let Some(opacity) = f.opacity {
@@ -537,7 +537,7 @@ fn apply_patch(
             if let Some(rect) = f.rect {
                 p::set_rect(annotation, rect)?;
             }
-            if let Some(color) = f.color {
+            if let Some(color) = f.color.flatten() {
                 set_color(annotation, C::Color, color)?;
             }
             if let Some(opacity) = f.opacity {
@@ -561,7 +561,7 @@ fn apply_patch(
         }
         S::Caret => {
             apply_annotation_box_patch(annotation, f.r#box, f.rotation)?;
-            if let Some(color) = f.color {
+            if let Some(color) = f.color.flatten() {
                 set_color(annotation, C::Color, color)?;
             }
             if let Some(opacity) = f.opacity {
@@ -591,7 +591,7 @@ fn apply_patch(
             if let Some(rect) = f.rect {
                 p::set_rect(annotation, rect)?;
             }
-            if let Some(color) = f.color {
+            if let Some(color) = f.color.flatten() {
                 set_color(annotation, C::Color, color)?;
             }
             if let Some(opacity) = f.opacity {
@@ -686,7 +686,10 @@ fn apply_geometry_style_patch(
     f: &DraftFields,
 ) -> Result<(), EngineError> {
     if let Some(color) = f.color {
-        set_color(annotation, C::Color, color)?;
+        match color {
+            Some(color) => set_color(annotation, C::Color, color)?,
+            None => p::set_no_color(annotation, C::Color)?,
+        }
     }
     if let Some(opacity) = f.opacity {
         set_opacity(annotation, opacity)?;
@@ -804,7 +807,7 @@ fn apply_free_text_patch(
         Some(None) => p::clear_border_effect(annotation),
         Some(Some(intensity)) => p::set_border_effect(annotation, intensity)?,
     }
-    if let Some(Rgb(r, g, b)) = f.color {
+    if let Some(Rgb(r, g, b)) = f.color.flatten() {
         // A border colour change keeps the font `/DA` names and its size.
         match annotation.default_appearance() {
             Some(da) => {
@@ -881,7 +884,7 @@ fn apply_redact_patch(
             p::set_rect_from_quad_points(annotation, quads)?;
         }
     }
-    if let Some(color) = f.color {
+    if let Some(color) = f.color.flatten() {
         set_color(annotation, C::Color, color)?;
     }
     if let Some(opacity) = f.opacity {
