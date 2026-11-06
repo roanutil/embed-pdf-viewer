@@ -378,16 +378,24 @@ pub fn write_rich_text(
 }
 
 /// `assertRichTextAgreement`: a draft or patch carrying both `contents` and
-/// `richText` must agree, `contents` being the plain projection. A stale DTO
-/// echo fails loud here instead of quietly restoring old text.
+/// `richText` must agree after equivalent line breaks normalize to LF.
+/// A stale DTO echo fails loud instead of quietly restoring old text.
 pub fn assert_agreement(
     contents: Option<&str>,
     rich_text: Option<&RichTextDocumentInput>,
 ) -> Result<(), EngineError> {
-    let (Some(contents), Some(rich_text)) = (contents, rich_text) else {
+    assert_paragraphs_agreement(contents, rich_text.map(|rich| rich.paragraphs.as_slice()))
+}
+
+/// Agreement is independent of how a caller spells equivalent line breaks.
+pub(crate) fn assert_paragraphs_agreement(
+    contents: Option<&str>,
+    paragraphs: Option<&[RichTextParagraph]>,
+) -> Result<(), EngineError> {
+    let (Some(contents), Some(paragraphs)) = (contents, paragraphs) else {
         return Ok(());
     };
-    if contents != plain_text(&rich_text.paragraphs) {
+    if to_line_breaks(contents, '\n') != plain_text(paragraphs) {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
             "free-text: `contents` must equal the plain projection of `richText` when both are given",
@@ -462,8 +470,10 @@ mod tests {
     fn contents_must_be_the_plain_projection() {
         let rich =
             RichTextDocumentInput { body: None, paragraphs: paragraphs_from_plain_text("a\nb") };
-        assert!(assert_agreement(Some("a\nb"), Some(&rich)).is_ok());
-        assert!(assert_agreement(Some("a\rb"), Some(&rich)).is_err());
+        for contents in ["a\nb", "a\rb", "a\r\nb"] {
+            assert!(assert_agreement(Some(contents), Some(&rich)).is_ok());
+        }
+        assert!(assert_agreement(Some("stale"), Some(&rich)).is_err());
         assert!(assert_agreement(None, Some(&rich)).is_ok());
     }
 

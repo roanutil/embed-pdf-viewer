@@ -8,6 +8,17 @@ import {
   richTextPlainText,
 } from '../../../packages/engine/core/src/dto/RichText';
 import { toLineBreaks } from '../../../packages/engine/core/src/text/lineBreaks';
+import { assertRichTextAgreement } from '../../../packages/engine/core/src/annotation/resolve/comment';
+import {
+  pdfResolveAnnotationDraft,
+  pdfResolveAnnotationPatch,
+} from '../../../packages/engine/core/src/annotation/checkWrite';
+import type {
+  Annotation,
+  AnnotationDraft,
+  AnnotationPatch,
+} from '../../../packages/engine/core/src/annotation/kinds';
+import type { PdfCoordinates } from '../../../packages/engine/core/src/pageSpace/coordinates';
 import {
   engineRichTextJson,
   parseEngineRichText,
@@ -90,9 +101,70 @@ async function main() {
       parsed: parseEngineRichText(JSON.stringify(rawEngine)),
     };
   });
+  const paragraphs = [{ runs: [{ text: 'a' }] }, { runs: [{ text: 'b' }] }];
+  const agreementInputs = [
+    { name: 'agreement-lf', input: { contents: 'a\nb', richText: { paragraphs } } },
+    { name: 'agreement-cr', input: { contents: 'a\rb', richText: { paragraphs } } },
+    { name: 'agreement-crlf', input: { contents: 'a\r\nb', richText: { paragraphs } } },
+    { name: 'agreement-mismatch', input: { contents: 'stale', richText: { paragraphs } } },
+    { name: 'agreement-contents-null', input: { contents: null, richText: { paragraphs } } },
+    { name: 'agreement-contents-omitted', input: { richText: { paragraphs } } },
+    { name: 'agreement-rich-omitted', input: { contents: 'a\rb' } },
+    { name: 'agreement-both-omitted', input: {} },
+  ];
+  const currentAnnotation = {
+    subtype: 'free-text',
+    intent: 'free-text',
+    contents: 'old',
+    fontFamily: 'helvetica',
+    fontSize: 12,
+    fontColor: '#000000',
+    textAlign: 'left',
+    richText: { body: DEFAULT_RICH_TEXT_BODY, paragraphs: [{ runs: [{ text: 'old' }] }] },
+  } as unknown as Annotation<PdfCoordinates>;
+  const outcome = (read: () => { contents?: string | null } | void) => {
+    try {
+      const value = read();
+      if (value === undefined) return { accepted: true };
+      return {
+        accepted: true,
+        hasContents: Object.prototype.hasOwnProperty.call(value, 'contents'),
+        ...(Object.prototype.hasOwnProperty.call(value, 'contents')
+          ? { contents: value.contents }
+          : {}),
+      };
+    } catch (error) {
+      return { accepted: false, code: String((error as { code?: unknown }).code) };
+    }
+  };
+  const agreementCases = agreementInputs.map(({ name, input }) => ({
+    name,
+    input,
+    agreement: outcome(() => assertRichTextAgreement(input)),
+    draft: outcome(() =>
+      pdfResolveAnnotationDraft({
+        subtype: 'free-text',
+        box: { left: 0, bottom: 0, right: 100, top: 50 },
+        ...input,
+      } as AnnotationDraft<PdfCoordinates>),
+    ),
+    patch: outcome(() =>
+      pdfResolveAnnotationPatch(currentAnnotation, {
+        subtype: 'free-text',
+        ...input,
+      } as AnnotationPatch<PdfCoordinates>),
+    ),
+  }));
   const next =
     JSON.stringify(
-      { schemaVersion: 1, kind: 'annotation.lineBreaks', fixture, contentsCases, richCases },
+      {
+        schemaVersion: 2,
+        kind: 'annotation.lineBreaks',
+        fixture,
+        contentsCases,
+        richCases,
+        agreementCases,
+      },
       null,
       2,
     ) + '\n';

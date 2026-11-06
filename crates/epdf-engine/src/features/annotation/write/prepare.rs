@@ -32,8 +32,8 @@ use crate::features::annotation::intent::{
     CaretIntent, FreeTextIntent, InkIntent, StrikeoutIntent,
 };
 use crate::features::annotation::rich_text::{
-    RichTextDocumentInput, RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text,
-    plain_text,
+    RichTextDocumentInput, RichTextParagraph, assert_agreement, face_for_free_text_font,
+    paragraphs_from_plain_text, plain_text,
 };
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::features::annotation::vocabulary::{
@@ -1250,14 +1250,11 @@ pub fn derive_draft(
     use AnnotationSubtype as S;
     let fields = &mut draft.fields;
     // `assertRichTextAgreement`.
-    if draft.subtype == S::FreeText
-        && let (Some(Some(contents)), Some(rich)) = (&fields.contents, &fields.rich_text)
-        && *contents != plain_text(&rich.paragraphs)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
+    if draft.subtype == S::FreeText {
+        assert_agreement(
+            fields.contents.as_ref().and_then(Option::as_deref),
+            fields.rich_text.as_ref(),
+        )?;
     }
     match draft.subtype {
         // `noteDraftStateFollows`.

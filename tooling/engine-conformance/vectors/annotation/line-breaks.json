@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "annotation.lineBreaks",
   "fixture": "tooling/engine-conformance/fixtures/rich_metadata.pdf",
   "contentsCases": [
@@ -845,6 +845,263 @@
             ]
           }
         ]
+      }
+    }
+  ],
+  "agreementCases": [
+    {
+      "name": "agreement-lf",
+      "input": {
+        "contents": "a\nb",
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-cr",
+      "input": {
+        "contents": "a\rb",
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-crlf",
+      "input": {
+        "contents": "a\r\nb",
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-mismatch",
+      "input": {
+        "contents": "stale",
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": false,
+        "code": "InvalidArg"
+      },
+      "draft": {
+        "accepted": false,
+        "code": "InvalidArg"
+      },
+      "patch": {
+        "accepted": false,
+        "code": "InvalidArg"
+      }
+    },
+    {
+      "name": "agreement-contents-null",
+      "input": {
+        "contents": null,
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-contents-omitted",
+      "input": {
+        "richText": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-rich-omitted",
+      "input": {
+        "contents": "a\rb"
+      },
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": "a\nb"
+      }
+    },
+    {
+      "name": "agreement-both-omitted",
+      "input": {},
+      "agreement": {
+        "accepted": true
+      },
+      "draft": {
+        "accepted": true,
+        "hasContents": true,
+        "contents": ""
+      },
+      "patch": {
+        "accepted": true,
+        "hasContents": false
       }
     }
   ]

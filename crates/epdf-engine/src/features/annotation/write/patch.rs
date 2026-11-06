@@ -23,7 +23,8 @@ use super::prepare::{DraftFields, FieldOwner, owner_of, read_field, standard_sta
 use super::shape_for_rect::pdf_resolve_rect_command;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::rich_text::{
-    RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text, plain_text,
+    RichTextParagraph, assert_paragraphs_agreement, face_for_free_text_font,
+    paragraphs_from_plain_text, plain_text,
 };
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::geom::{PdfPoint, PdfPointTurn, PdfRect, pdf_point_turned, pdf_point_unturned};
@@ -243,18 +244,14 @@ fn paragraphs_of(value: Option<&Value>) -> Option<Vec<RichTextParagraph>> {
 /// `assertRichTextAgreement`: `contents` beside `richText` is its plain
 /// projection.
 fn assert_rich_text_agreement(patch: &Map<String, Value>) -> Result<(), EngineError> {
-    let (Some(contents), Some(rich)) =
-        (patch.get("contents").and_then(Value::as_str), patch.get("richText"))
-    else {
+    let (Some(contents), Some(rich)) = (
+        patch.get("contents").and_then(Value::as_str),
+        patch.get("richText").filter(|value| !value.is_null()),
+    ) else {
         return Ok(());
     };
     let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
-    if contents != plain_text(&paragraphs) {
-        return Err(invalid(
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
-    }
-    Ok(())
+    assert_paragraphs_agreement(Some(contents), Some(&paragraphs))
 }
 
 /// `freeTextFollows`: a free text's text lives in its rich text. New
