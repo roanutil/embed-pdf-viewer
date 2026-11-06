@@ -32,7 +32,7 @@ epdf-plugin-interaction = { path = "../plugins/interaction", default-features = 
 epdf-plugin-link = { path = "../plugins/link", default-features = false, features = ["uniffi"] }
 epdf-plugin-measurement = { path = "../plugins/measurement", default-features = false, features = ["uniffi"] }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
-epdf-plugin-outline = { path = "../plugins/outline", default-features = false }
+epdf-plugin-outline = { path = "../plugins/outline", default-features = false, features = ["uniffi"] }
 epdf-plugin-page-edit = { path = "../plugins/page-edit", default-features = false, features = ["uniffi"] }
 epdf-plugin-redaction = { path = "../plugins/redaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }

@@ -4720,189 +4720,378 @@
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "list",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "list"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "list"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "item"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "item"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get_children",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "children"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "children"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "list_rows",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "rows"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "rows"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get_current_item",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "current_item"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "currentItem"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "is_incomplete",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "is_incomplete"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "isIncomplete"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get_status",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "status"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "status"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "ensure_loaded",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "ensure_loaded"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "ensureLoaded"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "refresh",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "refresh"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "refresh"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "is_expanded",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "is_expanded"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "isExpanded"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "expand",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "expand"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "expand"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "collapse",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "collapse"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "collapse"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "toggle",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "toggle"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "toggle"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "expand_all",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "expand_all"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "expandAll"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "collapse_all",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "collapse_all"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "collapseAll"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "reveal",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "reveal"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "reveal"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get_selected",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "selected_items"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "selectedItems"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "select",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "select"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "select"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "activate",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "activate"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "activate"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "can_edit",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "can_edit"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "canEdit"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "get_current_view_target",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "current_view_target"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "currentViewTarget"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "create",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "create"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "create"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "update",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "update"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "update"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "move_items",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "move_items"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "move"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "delete",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "delete_items"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "delete"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "on_changed",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "outline",
       "path": "crates/plugins/outline/src/controller.rs",
       "owner": "OutlineCapability",
       "symbol": "on_resynced",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/outline/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Outline.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "page-edit",

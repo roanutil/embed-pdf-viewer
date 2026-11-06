@@ -142,11 +142,11 @@ patch precedent. Targets/actions reuse link types where lossless; preserve
 unrecognized read-only action payloads explicitly rather than dropping them.
 `OutlineEvent` has changed and resynced cases with original refs/origin/data.
 
-- [ ] Add failing codec tests for top-level/null parents, positions, opaque action data, and omit/clear; handle tests for every controller operation; real-host tests for lazy load, create/select/update/move/delete and current-view targets. Include unavailable optional stage/actions/link plugins.
-- [ ] Implement boundary records/conversions, `KernelBound` handle, event listener, host accessor, and Swift capability. Every promise-taking load/write gets `CancelToken`; preserve Rust expansion and selection behavior. Add no Swift tree-building policy.
-- [ ] Add save/reopen tests for nested outlines, explicit target/color clearing and stable refs; denied edit scope must leave state unchanged. Test pending write cancellation and close, using deterministic Rust engine control where timing matters.
-- [ ] Run `cargo test -p epdf-plugin-outline -p epdf-viewer-host`, regenerate bindings, and run `EmbedPDFTests/OutlineTests`. Assert fact events once with original origin and resync separate from per-item changes. Update coverage entries.
-- [ ] Commit as `feat(apple): expose typed outline capability`.
+- [x] Add failing codec tests for top-level/null parents, positions, opaque action data, and omit/clear; handle tests for every controller operation; real-host tests for lazy load, create/select/update/move/delete and current-view targets. Include unavailable optional stage/actions/link plugins.
+- [x] Implement boundary records/conversions, `KernelBound` handle, event listener, host accessor, and Swift capability. Every promise-taking load/write gets `CancelToken`; preserve Rust expansion and selection behavior. Add no Swift tree-building policy.
+- [x] Add save/reopen tests for nested outlines, explicit target/color clearing and stable refs; denied edit scope must leave state unchanged. Test pending write cancellation and close, using deterministic Rust engine control where timing matters.
+- [x] Run `cargo test -p epdf-plugin-outline -p epdf-viewer-host`, regenerate bindings, and run `EmbedPDFTests/OutlineTests`. Assert fact events once with original origin and resync separate from per-item changes. Update coverage entries.
+- [x] Commit as `feat(apple): expose typed outline capability`.
 
 ## Task 4: Attachment capability
 

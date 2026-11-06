@@ -580,6 +580,19 @@ impl ViewerHost {
         .await
     }
 
+    /// The document's lazy outline mirror and editing commands.
+    pub async fn outline(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<epdf_plugin_outline::ffi::OutlineHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = capability(&s.kernel, &epdf_plugin_outline::OUTLINE, Some(&document_id))?;
+            Ok(epdf_plugin_outline::ffi::OutlineHandle::new(cap, post))
+        })
+        .await
+    }
+
     /// Undo and redo for one open document's staged changes.
     pub async fn history(
         &self,
