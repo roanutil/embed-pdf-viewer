@@ -81,7 +81,10 @@ function classifyType(ctype, isReturn = false) {
   // FPDF_ANNOTATION_SUBTYPE) to their canonical C type. This lets us tell
   // an int-typedef'd enum apart from a struct-pointer-typedef without
   // hard-coding either set.
-  const raw = ctype.replace(/\bconst\b/g, '').replace(/\s+/g, ' ').trim();
+  const raw = ctype
+    .replace(/\bconst\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (raw === 'void') {
     return { ts: isReturn ? 'void' : 'number', wasm: abi('void', null), native: abi('void', null) };
   }
@@ -97,6 +100,12 @@ function classifyType(ctype, isReturn = false) {
   }
   if (/\bFPDF_BOOL\b/.test(raw) && !/\*/.test(raw)) {
     return { ts: 'boolean', wasm: abi('bool', 'boolean'), native: abi('bool', 'boolean') };
+  }
+
+  // Fixed-width integers retain their ABI even where uint64_t resolves to
+  // unsigned long (LP64), which is otherwise used for PDFium's 32-bit flags.
+  if (/\b(?:uint64_t|int64_t)\b/.test(raw) && !/\*/.test(raw)) {
+    return { ts: 'bigint', wasm: abi('i64', 'bigint'), native: abi('i64', 'bigint') };
   }
 
   const clean = fullyResolveTypedefs(raw);
@@ -170,7 +179,9 @@ if (!existsSync(includeDir)) {
 
 mkdirSync(outDir, { recursive: true });
 
-const headers = walk(includeDir).filter((file) => !isCppHelperHeader(file)).sort();
+const headers = walk(includeDir)
+  .filter((file) => !isCppHelperHeader(file))
+  .sort();
 const allHeader = resolve(outDir, 'all.h');
 writeFileSync(
   allHeader,
@@ -178,24 +189,27 @@ writeFileSync(
 );
 
 const astPath = resolve(outDir, 'ast.json');
-const astJson = execFileSync('clang', [
-  '-std=c11',
-  `-I${includeDir}`,
-  '-fsyntax-only',
-  '-Xclang',
-  '-ast-dump=json',
-  allHeader,
-], { maxBuffer: 128 * 1024 * 1024 }).toString();
+const astJson = execFileSync(
+  'clang',
+  ['-std=c11', `-I${includeDir}`, '-fsyntax-only', '-Xclang', '-ast-dump=json', allHeader],
+  { maxBuffer: 128 * 1024 * 1024 },
+).toString();
 writeFileSync(astPath, astJson);
 
 const ast = JSON.parse(readFileSync(astPath, 'utf8'));
 recordTypedefs(ast);
 const functions = collectFunctions(ast).sort((a, b) => a.name.localeCompare(b.name));
 
-writeFileSync(resolve(outDir, 'functions.json'), JSON.stringify({ target, functions }, null, 2) + '\n');
+writeFileSync(
+  resolve(outDir, 'functions.json'),
+  JSON.stringify({ target, functions }, null, 2) + '\n',
+);
 writeFileSync(
   resolve(outDir, 'exported-functions.txt'),
-  functions.map((fn) => `_${fn.name}`).concat(['_malloc', '_free']).join(','),
+  functions
+    .map((fn) => `_${fn.name}`)
+    .concat(['_malloc', '_free'])
+    .join(','),
 );
 
 const tsTypeOf = (meta) => (meta.ts === 'Ptr' ? 'Ptr' : meta.ts);
