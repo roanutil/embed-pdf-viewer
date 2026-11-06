@@ -88,11 +88,26 @@ pub enum EngineErrorCode {
     /// The grant asks its visitors who they are, and this visitor has not
     /// answered what it requires. `details` is a `VisitorIdentityRequest`.
     VisitorIdentityRequired,
+    // Shared server responses use the same vocabulary; this adds no local operations.
+    Conflict,
+    EngineBusy,
+    EngineRestarting,
+    DocumentQuarantined,
+    ThumbnailNotReady,
+    TooManyRequests,
+    GrantExpired,
+    OriginRequired,
+    OriginNotAllowed,
+    FeatureNotEnabled,
+    FeatureStopped,
+    LicenseInvalid,
+    LicenseUsageLimit,
+    UpstreamError,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 30] = [
+    pub const ALL: [EngineErrorCode; 44] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
@@ -123,6 +138,20 @@ impl EngineErrorCode {
         Self::IdempotencyKeyReused,
         Self::LayerDeleted,
         Self::VisitorIdentityRequired,
+        Self::Conflict,
+        Self::EngineBusy,
+        Self::EngineRestarting,
+        Self::DocumentQuarantined,
+        Self::ThumbnailNotReady,
+        Self::TooManyRequests,
+        Self::GrantExpired,
+        Self::OriginRequired,
+        Self::OriginNotAllowed,
+        Self::FeatureNotEnabled,
+        Self::FeatureStopped,
+        Self::LicenseInvalid,
+        Self::LicenseUsageLimit,
+        Self::UpstreamError,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -157,6 +186,20 @@ impl EngineErrorCode {
             Self::IdempotencyKeyReused => "IdempotencyKeyReused",
             Self::LayerDeleted => "LayerDeleted",
             Self::VisitorIdentityRequired => "VisitorIdentityRequired",
+            Self::Conflict => "Conflict",
+            Self::EngineBusy => "EngineBusy",
+            Self::EngineRestarting => "EngineRestarting",
+            Self::DocumentQuarantined => "DocumentQuarantined",
+            Self::ThumbnailNotReady => "ThumbnailNotReady",
+            Self::TooManyRequests => "TooManyRequests",
+            Self::GrantExpired => "GrantExpired",
+            Self::OriginRequired => "OriginRequired",
+            Self::OriginNotAllowed => "OriginNotAllowed",
+            Self::FeatureNotEnabled => "FeatureNotEnabled",
+            Self::FeatureStopped => "FeatureStopped",
+            Self::LicenseInvalid => "LicenseInvalid",
+            Self::LicenseUsageLimit => "LicenseUsageLimit",
+            Self::UpstreamError => "UpstreamError",
         }
     }
 }
