@@ -37,10 +37,11 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
 const runtimeArgument = process.argv.find((arg) => arg.startsWith('--runtime='));
-const runtimePreference = runtimeArgument?.slice('--runtime='.length) ?? 'wasm';
-if (runtimePreference !== 'wasm' && runtimePreference !== 'native') {
-  throw new Error(`unsupported runtime ${runtimePreference}: use wasm or native`);
+const requestedRuntime = runtimeArgument?.slice('--runtime='.length) ?? 'wasm';
+if (requestedRuntime !== 'wasm' && requestedRuntime !== 'native') {
+  throw new Error(`unsupported runtime ${requestedRuntime}: use wasm or native`);
 }
+const runtimePreference: 'wasm' | 'native' = requestedRuntime;
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
 const SCHEMA_VERSION = 1;
