@@ -1,0 +1,14 @@
+{
+  "authority": "coordinator916 user NEW scope+plan only latest canonical upstreammain for both impl/impl-plugins",
+  "startingTip": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+  "deliverable": "Pinned canonical viewer/runtime targets with timestamps, functional delta inventory, proposed branch routing/conflict strategy/dependency jobs, acceptance tests/platform/resource/release/pin implications, estimates/risks/neededquestions/definitionofdone",
+  "constraints": [
+    "No implementation/source edits/merge/push/build/test/release/pin changes authorized",
+    "Only read-only metadata and own planning files; all Git/API inside approved Docker image",
+    "Keep completed originaltarget C5h/C5f closed; new latestscope distinct",
+    "Preserve user checkout/source/J8 distributable/evidence, coordinate cleanup dependencies",
+    "SAME inherited model, all workers owned by multiplexer; no model overrides"
+  ],
+  "planningPath": "/private/tmp/kkt-peach-lemur/c7",
+  "status": "Canonical target discovery active; do not guess canonical URL/main"
+}

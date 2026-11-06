@@ -1,0 +1,318 @@
+diff --git a/core/fpdfdoc/cpdf_appearancegenerator.h b/core/fpdfdoc/cpdf_appearancegenerator.h
+index 147832e7e..0834af454 100644
+--- a/core/fpdfdoc/cpdf_appearancegenerator.h
++++ b/core/fpdfdoc/cpdf_appearancegenerator.h
+@@ -51,6 +51,12 @@ class CPDF_AppearanceGenerator {
+                                               FormType type,
+                                               const WideString& value_override);
+ 
++  // A widget that shows only its box, a signature field's or one in no
++  // field: its background (/MK /BG) and border (/MK /BC, /BS) as a text
++  // field draws them, as a new normal appearance.
++  static void GenerateBoxFormAP(CPDF_Document* doc,
++                                CPDF_Dictionary* annot_dict);
++
+   // A check box's Off and on appearances: the box, and when on, the symbol
+   // its /MK /CA names (a check by default) in its /DA colour (black by
+   // default).
+diff --git a/core/fpdfdoc/cpdf_appearancegenerator_forms.cpp b/core/fpdfdoc/cpdf_appearancegenerator_forms.cpp
+index f7e051cbd..42856fc44 100644
+--- a/core/fpdfdoc/cpdf_appearancegenerator_forms.cpp
++++ b/core/fpdfdoc/cpdf_appearancegenerator_forms.cpp
+@@ -253,21 +253,18 @@ ByteString GenerateListBoxAP(const CPDF_Dictionary* annot_dict,
+   return ByteString(body_stream);
+ }
+ 
+-void GenerateTextFieldFormAP(fxcrt::ostringstream& app_stream,
+-                             const CPDF_Dictionary* annot_dict,
+-                             const CFX_FloatRect& bbox,
+-                             const DefaultAppearanceInfo& da_info,
+-                             CPDF_AnnotFontMap& map,
+-                             const CPDF_RichTextLayout::Options& options,
+-                             const WideString* value_override) {
+-  const AppearanceCharacteristics mk =
+-      GetAppearanceCharacteristics(annot_dict->GetDictFor("MK"));
++// A field's background and border, in isolated graphics state: what a text
++// field draws under its text, and all a signature field's box is. A solid
++// border is a stroked rectangle; the other styles draw as a combo box's and
++// a list box's do.
++void WriteFieldBox(fxcrt::ostringstream& app_stream,
++                   const AppearanceCharacteristics& mk,
++                   const BorderStyleInfo& bs,
++                   const CFX_FloatRect& bbox) {
+   const bool has_bg =
+       mk.background_color.nColorType != CFX_Color::Type::kTransparent;
+   const bool has_bc =
+       mk.border_color.nColorType != CFX_Color::Type::kTransparent;
+-
+-  const BorderStyleInfo bs = GetBorderStyleInfo(annot_dict->GetDictFor("BS"));
+   const float bw = bs.width;
+   const float half_bw = bw / 2.0f;
+ 
+@@ -276,12 +273,6 @@ void GenerateTextFieldFormAP(fxcrt::ostringstream& app_stream,
+     stroke_rect.Deflate(half_bw, half_bw);
+   }
+ 
+-  CFX_FloatRect body_rect = bbox;
+-  body_rect.Deflate(2.0f * bw, bw);
+-
+-  // Background + border in isolated graphics state. A solid border is a
+-  // stroked rectangle; the other styles draw as a combo box's and a list
+-  // box's do.
+   app_stream << "q\n";
+   if (has_bg) {
+     app_stream << GenerateColorAP(mk.background_color, PaintOperation::kFill);
+@@ -297,6 +288,24 @@ void GenerateTextFieldFormAP(fxcrt::ostringstream& app_stream,
+     app_stream << GenerateBorderAP(bbox, bs, mk.border_color);
+   }
+   app_stream << "Q\n";
++}
++
++void GenerateTextFieldFormAP(fxcrt::ostringstream& app_stream,
++                             const CPDF_Dictionary* annot_dict,
++                             const CFX_FloatRect& bbox,
++                             const DefaultAppearanceInfo& da_info,
++                             CPDF_AnnotFontMap& map,
++                             const CPDF_RichTextLayout::Options& options,
++                             const WideString* value_override) {
++  const AppearanceCharacteristics mk =
++      GetAppearanceCharacteristics(annot_dict->GetDictFor("MK"));
++  const BorderStyleInfo bs = GetBorderStyleInfo(annot_dict->GetDictFor("BS"));
++  const float bw = bs.width;
++
++  CFX_FloatRect body_rect = bbox;
++  body_rect.Deflate(2.0f * bw, bw);
++
++  WriteFieldBox(app_stream, mk, bs, bbox);
+ 
+   // Text content in isolated graphics state with proper clipping
+   app_stream << "/Tx BMC\nq\n";
+@@ -988,6 +997,25 @@ CPDF_AppearanceGenerator::GenerateEphemeralFormAP(
+                      std::move(target.normal_stream)};
+ }
+ 
++// static
++void CPDF_AppearanceGenerator::GenerateBoxFormAP(CPDF_Document* doc,
++                                                 CPDF_Dictionary* annot_dict) {
++  const AppearanceCharacteristics mk =
++      GetAppearanceCharacteristics(annot_dict->GetDictFor("MK"));
++  const BorderStyleInfo bs = GetBorderStyleInfo(annot_dict->GetDictFor("BS"));
++  const AnnotationDimensionsAndColor dims =
++      GetAnnotationDimensionsAndColor(annot_dict);
++
++  fxcrt::ostringstream content;
++  WriteFieldBox(content, mk, bs, dims.bbox);
++  // A new stream, as a check box's are: the old /N may be another widget's
++  // too, or a drawing someone placed in this one.
++  const uint32_t normal_obj_num =
++      CreateFormXObjectStream(doc, content, dims.bbox, dims.matrix);
++  annot_dict->GetOrCreateDictFor(pdfium::annotation::kAP)
++      ->SetNewFor<CPDF_Reference>("N", doc, normal_obj_num);
++}
++
+ // static
+ void CPDF_AppearanceGenerator::GenerateCheckboxFormAP(
+     CPDF_Document* doc,
+diff --git a/fpdfsdk/epdf_annot.cpp b/fpdfsdk/epdf_annot.cpp
+index 1a92680e2..9cb934875 100644
+--- a/fpdfsdk/epdf_annot.cpp
++++ b/fpdfsdk/epdf_annot.cpp
+@@ -4605,7 +4605,7 @@ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+ EPDFAnnot_GenerateFormFieldAP(FPDF_ANNOTATION annot) {
+   ScopedFPDFAnnotationView annot_view(annot);
+   CPDF_AnnotContext* pContext = CPDFAnnotContextFromFPDFAnnotation(annot);
+-  if (!pContext) {
++  if (!pContext || FPDFAnnot_GetSubtype(annot) != FPDF_ANNOT_WIDGET) {
+     return false;
+   }
+ 
+@@ -4631,8 +4631,10 @@ EPDFAnnot_GenerateFormFieldAP(FPDF_ANNOTATION annot) {
+     pLookup = pLookup->GetDictFor("Parent");
+   }
+ 
+-  if (ft.IsEmpty()) {
+-    return false;
++  // A signature field's widget and one in no field show only their box.
++  if (ft.IsEmpty() || ft == "Sig") {
++    CPDF_AppearanceGenerator::GenerateBoxFormAP(pDoc, pAnnotDict.Get());
++    return true;
+   }
+ 
+   uint32_t ff = 0;
+diff --git a/fpdfsdk/epdf_form.cpp b/fpdfsdk/epdf_form.cpp
+index 846a93fca..72f517344 100644
+--- a/fpdfsdk/epdf_form.cpp
++++ b/fpdfsdk/epdf_form.cpp
+@@ -2450,6 +2450,9 @@ void BakeWidgetAppearance(CPDF_Document* doc,
+       CPDF_AppearanceGenerator::GenerateFormAP(
+           doc, widget, CPDF_AppearanceGenerator::kListBox);
+       break;
++    case 7:  // signature: its box, until a signature is drawn into it
++      CPDF_AppearanceGenerator::GenerateBoxFormAP(doc, widget);
++      break;
+     default:
+       break;
+   }
+diff --git a/fpdfsdk/epdf_form_embeddertest.cpp b/fpdfsdk/epdf_form_embeddertest.cpp
+index 177a7a53c..8789fd50d 100644
+--- a/fpdfsdk/epdf_form_embeddertest.cpp
++++ b/fpdfsdk/epdf_form_embeddertest.cpp
+@@ -1478,6 +1478,88 @@ TEST_F(EPDFFormEmbedderTest, AttachWidgetsFormsARadioGroup) {
+   UnloadPage(page);
+ }
+ 
++TEST_F(EPDFFormEmbedderTest, AttachToSignatureFieldDrawsItsBox) {
++  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
++  FPDF_PAGE page = LoadPage(0);
++  ASSERT_TRUE(page);
++
++  const uint32_t field = EPDFForm_CreateField(
++      document(), EPDF_FORMFIELD_FAMILY_SIGNATURE,
++      GetFPDFWideString(L"approval").get(), 0);
++  ASSERT_GT(field, 0u);
++  const uint32_t widget = CreateWidgetAnnot(page, 20, 200, 180, 240);
++  ASSERT_GT(widget, 0u);
++  {
++    ScopedFPDFAnnotation annot(EPDFPage_GetAnnotByObjectNumber(page, widget));
++    ASSERT_TRUE(annot);
++    ASSERT_TRUE(EPDFAnnot_SetMKColor(annot.get(), EPDF_MK_COLOR_BG, 255, 0, 0));
++    ASSERT_TRUE(EPDFAnnot_SetMKColor(annot.get(), EPDF_MK_COLOR_BC, 0, 0, 255));
++  }
++  ASSERT_TRUE(EPDFForm_AttachWidget(document(), field, widget, nullptr, 0));
++
++  // The box: the background filled, the border stroked inside it.
++  const std::wstring box = GetEffectiveWidgetAppearance(document(), widget);
++  EXPECT_NE(std::wstring::npos, box.find(L"1 0 0 rg"));
++  EXPECT_NE(std::wstring::npos, box.find(L"re f*"));
++  EXPECT_NE(std::wstring::npos, box.find(L"0 0 1 RG"));
++  EXPECT_NE(std::wstring::npos, box.find(L"re s"));
++  UnloadPage(page);
++}
++
++TEST_F(EPDFFormEmbedderTest, SignatureFieldBoxRedrawsInItsNewStyle) {
++  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
++  FPDF_PAGE page = LoadPage(0);
++  ASSERT_TRUE(page);
++
++  const uint32_t field = EPDFForm_CreateField(
++      document(), EPDF_FORMFIELD_FAMILY_SIGNATURE,
++      GetFPDFWideString(L"approval").get(), 0);
++  ASSERT_GT(field, 0u);
++  const uint32_t widget = CreateWidgetAnnot(page, 20, 200, 180, 240);
++  ASSERT_GT(widget, 0u);
++  ASSERT_TRUE(EPDFForm_AttachWidget(document(), field, widget, nullptr, 0));
++  // No colours: an empty box.
++  EXPECT_EQ(std::wstring::npos,
++            GetEffectiveWidgetAppearance(document(), widget).find(L"rg"));
++
++  ScopedFPDFAnnotation annot(EPDFPage_GetAnnotByObjectNumber(page, widget));
++  ASSERT_TRUE(annot);
++  ASSERT_TRUE(EPDFAnnot_SetMKColor(annot.get(), EPDF_MK_COLOR_BG, 0, 255, 0));
++  ASSERT_TRUE(EPDFAnnot_GenerateFormFieldAP(annot.get()));
++  EXPECT_NE(std::wstring::npos,
++            GetEffectiveWidgetAppearance(document(), widget).find(L"0 1 0 rg"));
++  UnloadPage(page);
++}
++
++TEST_F(EPDFFormEmbedderTest, WidgetInNoFieldDrawsItsBox) {
++  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
++  FPDF_PAGE page = LoadPage(0);
++  ASSERT_TRUE(page);
++
++  const uint32_t widget = CreateWidgetAnnot(page, 20, 200, 180, 240);
++  ASSERT_GT(widget, 0u);
++  ScopedFPDFAnnotation annot(EPDFPage_GetAnnotByObjectNumber(page, widget));
++  ASSERT_TRUE(annot);
++  ASSERT_TRUE(EPDFAnnot_SetMKColor(annot.get(), EPDF_MK_COLOR_BG, 0, 0, 255));
++  ASSERT_TRUE(EPDFAnnot_GenerateFormFieldAP(annot.get()));
++  EXPECT_NE(std::wstring::npos,
++            GetEffectiveWidgetAppearance(document(), widget).find(L"0 0 1 rg"));
++  UnloadPage(page);
++}
++
++TEST_F(EPDFFormEmbedderTest, GenerateFormFieldAPRefusesAnotherSubtype) {
++  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
++  FPDF_PAGE page = LoadPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation square(EPDFPage_CreateAnnot(page, FPDF_ANNOT_SQUARE));
++  ASSERT_TRUE(square);
++  EXPECT_FALSE(EPDFAnnot_GenerateFormFieldAP(square.get()));
++  EXPECT_FALSE(EPDFAnnot_HasAppearanceStream(square.get(),
++                                             FPDF_ANNOT_APPEARANCEMODE_NORMAL));
++  UnloadPage(page);
++}
++
+ TEST_F(EPDFFormEmbedderTest, AttachToLegacyMergedFieldKeepsFieldId) {
+   ASSERT_TRUE(OpenDocument("toggle_fields.pdf"));
+   FPDF_PAGE page = LoadPage(0);
+diff --git a/public/epdf_annot.h b/public/epdf_annot.h
+index fb411207c..77ee661ea 100644
+--- a/public/epdf_annot.h
++++ b/public/epdf_annot.h
+@@ -1626,10 +1626,14 @@ FPDF_EXPORT int FPDF_CALLCONV EPDFAnnot_GetMKRotation(FPDF_ANNOTATION annot);
+ //             symbol /MK /CA names in the /DA colour. A push button: its
+ //             background and border, and its caption (/MK /CA) centred in
+ //             the /DA font and colour; an icon (/MK /I) is not drawn.
++//   - /Sig, and a widget in no field -> its box: the background and border
++//             as a text field draws them. It replaces whatever the widget
++//             shows, a signature drawn into it included.
+ //
+ //   annot - handle to a widget annotation.
+ //
+-// Returns true on success, false if the annotation is not a form field.
++// Returns true on success, false for another subtype or a field type it
++// doesn't draw.
+ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+ EPDFAnnot_GenerateFormFieldAP(FPDF_ANNOTATION annot);
+ 
+diff --git a/public/epdf_form.h b/public/epdf_form.h
+index ca75afe86..032a87add 100644
+--- a/public/epdf_form.h
++++ b/public/epdf_form.h
+@@ -641,7 +641,8 @@ EPDFForm_CreateField(FPDF_DOCUMENT document,
+ // merged field). For checkbox/radio fields |on_state| names the widget's
+ // checked appearance state and must be non-empty; for other families pass
+ // NULL. Adoption wires /Parent + /Kids, seeds toggle /AP states and /AS,
+-// and bakes the family-correct appearance stream. Adopting into a legacy
++// and bakes the family-correct appearance stream (a signature field's: its
++// box, EPDFAnnot_GenerateFormFieldAP()). Adopting into a legacy
+ // MERGED field first splits it (the field keeps its object number; the
+ // previously merged widget becomes a new kid annotation, whose /P names its
+ // page - widget identity changes, field identity never does). |split_objnum| is
+diff --git a/testing/embedpdf_layer_mode_writers.txt b/testing/embedpdf_layer_mode_writers.txt
+index 660ed9846..2c2c129b3 100644
+--- a/testing/embedpdf_layer_mode_writers.txt
++++ b/testing/embedpdf_layer_mode_writers.txt
+@@ -214,6 +214,7 @@ EPDFFontEmbedderTest.WidgetDrawsEachClusterInAFontThatHasIt 20
+ EPDFFontEmbedderTest.WidgetDrawsWhatNoFontHasWithTheLastResort 20
+ EPDFFontEmbedderTest.WidgetWritesWithADocumentProgram 52
+ EPDFFormEmbedderTest.AttachToLegacyMergedFieldKeepsFieldId 6
++EPDFFormEmbedderTest.AttachToSignatureFieldDrawsItsBox 7
+ EPDFFormEmbedderTest.AttachWidgetsFormsARadioGroup 11
+ EPDFFormEmbedderTest.CalculationOrderSetReplaceAndRemove 1
+ EPDFFormEmbedderTest.ChoiceValueAndIndicesAreWrittenAsGiven 3
+@@ -230,6 +231,7 @@ EPDFFormEmbedderTest.FieldEmbedMetadataIsSnapshotted 1
+ EPDFFormEmbedderTest.FieldEmbedMetadataReadsAndWrites 2
+ EPDFFormEmbedderTest.FieldEmbedMetadataWritesTheFieldNotItsParent 1
+ EPDFFormEmbedderTest.FieldSettersValidateAndApply 3
++EPDFFormEmbedderTest.GenerateFormFieldAPRefusesAnotherSubtype 2
+ EPDFFormEmbedderTest.ListBoxTopIndexIsRead 1
+ EPDFFormEmbedderTest.ListBoxValuesAreAnArray 1
+ EPDFFormEmbedderTest.MalformedDefaultReadsAsUnsupported 1
+@@ -242,6 +244,7 @@ EPDFFormEmbedderTest.RepairCreatesAcroFormAndLinksKids 4
+ EPDFFormEmbedderTest.RepairLinksRecoveredFields 1
+ EPDFFormEmbedderTest.RequiredMultiSelectArrayIsNotSkippedOnExport 2
+ EPDFFormEmbedderTest.SetFieldOptionsWritesOnlyTheOptions 1
++EPDFFormEmbedderTest.SignatureFieldBoxRedrawsInItsNewStyle 8
+ EPDFFormEmbedderTest.SplitKeepsEachPlanesActions 5
+ EPDFFormEmbedderTest.TextValueAndItsPicture 2
+ EPDFFormEmbedderTest.ToggleDefaultIsTheNameItIsGiven 1
+@@ -249,6 +252,7 @@ EPDFFormEmbedderTest.ToggleValueIsTheNameItIsGiven 1
+ EPDFFormEmbedderTest.ToggleWidgetsTurnOnTheirOwnState 3
+ EPDFFormEmbedderTest.TwoPlaneTwinWidgetsFillTogether 9
+ EPDFFormEmbedderTest.TypedValueSnapshotPreservesPdfShapes 3
++EPDFFormEmbedderTest.WidgetInNoFieldDrawsItsBox 3
+ EPDFFormEmbedderTest.WidgetRotationTurnsItsAppearance 2
+ EPDFInkAppearanceEmbedderTest.AZigzagIsOneCubicPerPair 4
+ EPDFInkAppearanceEmbedderTest.DrawsAcrobatsCurves 10

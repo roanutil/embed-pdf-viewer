@@ -1,0 +1,6130 @@
+{
+  "createdUTC": "2026-11-04T05:29:06.307748+00:00",
+  "scope": "Original pinned November catch-up, not current upstream main; no new tests/builds/source/ref mutations",
+  "verdict": {
+    "pushAndPluginsIntegration": "PASS: public combined and public/private plugins identical to expected f28ed",
+    "originalViewerMergeOnImpl": "PASS: measured 74afd5575 and actual a40d63a19 targets plus all nine documented impl Task3 followups contained",
+    "implFullyCaughtUpWithOriginalOverallFeatureScope": "NO: impl is an earlier layering branch; original D1 runtime structurePosition and C4/C5 parity/releases are on plugins, not impl",
+    "allCorrect": "Source integration, original-target containment, pin and releases verified; stable-source default-consumer acceptance PENDING. Contaminated exit65 is not an immutable-f28ed product verdict."
+  },
+  "refs": [
+    {
+      "repo": "https://github.com/roanutil/embed-pdf-viewer",
+      "branch": "research/catchup-2026-11-combined",
+      "sha": "f28ed4ea4aa46c8e69676558993b103d68b19e08"
+    },
+    {
+      "repo": "https://github.com/roanutil/embed-pdf-viewer",
+      "branch": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "f28ed4ea4aa46c8e69676558993b103d68b19e08"
+    },
+    {
+      "repo": "https://github.com/roanutil/embed-pdf-viewer-private",
+      "branch": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "f28ed4ea4aa46c8e69676558993b103d68b19e08"
+    },
+    {
+      "repo": "https://github.com/roanutil/embed-pdf-viewer-private",
+      "branch": "research/multi-platform-rust-core-impl",
+      "sha": "3756c648aa0b9de26744f7939237903bd57a83e8"
+    }
+  ],
+  "publicImplBranch": "ABSENT on public fork; fresh private API resolves it",
+  "ancestry": {
+    "implAhead": 0,
+    "implBehind": 1531,
+    "treePathsDifferent": 2532,
+    "meaning": "Whole branch history, including plugin port history, merges and docs; not 1531 missing original-scope features. No squash/cherry-pick inference needed: impl tip is exact plugins ancestor."
+  },
+  "originalTargets": {
+    "viewerMeasured": "74afd55753ee7e6b34c57e3dc2e1a683b4c5a23b",
+    "viewerActualMerge": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+    "runtimeBase": "cff0077cff2493f89f252d1f2f039ca35b6d5c95",
+    "runtimeD1": "28b8b808f52d544b17a973199410cda0cc43530f",
+    "implRuntime": "8b1e69abdef4cb7c5d6c669c96a162533b2350ef",
+    "pluginsRuntime": "3c55b7a1c0bf956231392a573e87f28dd6d6667d",
+    "planCommit": "867c1c0368b8235ae6221a3d0f034591c110601e"
+  },
+  "pin": {
+    "head": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+    "parent": "9deb7e29aa335403943ad298a3cb74b3937686db",
+    "path": "platforms/apple/EmbedPDF/Package.swift",
+    "manifestSHA256": "67c3817e19a9d06dafcbd832c900db72da89c8fdb9d18373153d60e7a989cfc7",
+    "blob": "fa6ecf1f1a1f61a915e9e5c96a280094a872625a",
+    "author": "Andrew Roan <roanutil@users.noreply.github.com>",
+    "committer": "Andrew Roan <roanutil@users.noreply.github.com>",
+    "trackedClean": true,
+    "diff": "diff --git a/platforms/apple/EmbedPDF/Package.swift b/platforms/apple/EmbedPDF/Package.swift\nindex 0b7621233..fa6ecf1f1 100644\n--- a/platforms/apple/EmbedPDF/Package.swift\n+++ b/platforms/apple/EmbedPDF/Package.swift\n@@ -6,8 +6,8 @@ import PackageDescription\n // release tag on embed-pdf-runtime and the SHA-256 of its\n // EmbedPDFBindings.xcframework.zip. Both are \"unpublished\" until the first\n // publish.\n-let engineRelease = \"apple-engine-552d4e174b64d0a5\"\n-let engineChecksum = \"55228e78cc5e418a3d248eca1b981815456266042b764c96bdced12954b3b0a0\"\n+let engineRelease = \"apple-engine-3816be131b65bdee\"\n+let engineChecksum = \"88cfb206b6d3fd74e017062411bbd6a5133616882e52df299754aa9487c0a116\"\n \n let package = Package(\n   name: \"EmbedPDF\","
+  },
+  "releases": {
+    "apple": {
+      "tag": "apple-engine-3816be131b65bdee",
+      "target": "3c55b7a1c0bf956231392a573e87f28dd6d6667d",
+      "prerelease": true,
+      "draft": false,
+      "assets": [
+        {
+          "name": "EmbedPDFBindings.xcframework.zip",
+          "digest": "sha256:88cfb206b6d3fd74e017062411bbd6a5133616882e52df299754aa9487c0a116",
+          "size": 170522817,
+          "url": "https://github.com/roanutil/embed-pdf-runtime/releases/download/apple-engine-3816be131b65bdee/EmbedPDFBindings.xcframework.zip"
+        },
+        {
+          "name": "EmbedPDFBindings.xcframework.zip.sha256",
+          "digest": "sha256:f7271aa5e227d448d9eda76bc709e64ab037c4973743a1d289837d1a9b68ef6c",
+          "size": 99,
+          "url": "https://github.com/roanutil/embed-pdf-runtime/releases/download/apple-engine-3816be131b65bdee/EmbedPDFBindings.xcframework.zip.sha256"
+        }
+      ]
+    },
+    "wasm": {
+      "tag": "runtime-payloads-e352d80f0a7c2851",
+      "target": "3c55b7a1c0bf956231392a573e87f28dd6d6667d",
+      "prerelease": true,
+      "draft": false,
+      "assets": [
+        {
+          "name": "engine-runtime-payload-wasm32.tar.gz",
+          "digest": "sha256:045b994b7770e39055095fb76db0d0def90b16be3b7b7f86e4fd161349bbb183",
+          "size": 11004270,
+          "url": "https://github.com/roanutil/embed-pdf-runtime/releases/download/runtime-payloads-e352d80f0a7c2851/engine-runtime-payload-wasm32.tar.gz"
+        },
+        {
+          "name": "engine-runtime-payload-wasm32.tar.gz.sha256",
+          "digest": "sha256:7f83253b42996d9cd7bc12fee7af97cf8b118e657b0ec682d06e71c1e1b2cf50",
+          "size": 103,
+          "url": "https://github.com/roanutil/embed-pdf-runtime/releases/download/runtime-payloads-e352d80f0a7c2851/engine-runtime-payload-wasm32.tar.gz.sha256"
+        }
+      ]
+    }
+  },
+  "originalScopeFunctionalDifferences": [
+    {
+      "featureGroup": "Scope permissions and engine font routing",
+      "representativeExactCommits": [
+        {
+          "sha": "1c78c4afd0c6215c98b21845e060e6cdbc3018a0",
+          "subject": "Port the plugin permissions and thumbnail scope to the Rust parser"
+        },
+        {
+          "sha": "112fbeb6eb2fa9925e3f5c8cf9b76a20d6a44d1b",
+          "subject": "Route the five font kinds upstream added"
+        },
+        {
+          "sha": "7b93e153c8eadb462456d3b297e747b351822ba3",
+          "subject": "Port the font registrar and document font reader to the Rust engine"
+        }
+      ],
+      "matchingTreeDifferences": [
+        {
+          "status": "A",
+          "paths": [
+            "crates/epdf-engine/src/auth/scope/coverage.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/epdf-engine/src/auth/scope/mod.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/epdf-engine/src/auth/scope/parser.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/epdf-engine/src/auth/scope/resolver.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/epdf-engine/src/auth/scope/types.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/epdf-engine/src/features/fonts/document.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/epdf-engine/src/features/fonts/list.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/operations.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/scope-cases.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "featureGroup": "Original runtime D1 structure positions and native bindings",
+      "representativeExactCommits": [
+        {
+          "sha": "6529e882473bb62d79a65c091d56450553055f25",
+          "subject": "Pin runtime-src to the fork merge of upstream 28b8b808f"
+        },
+        {
+          "sha": "b6b2acfe9afcd7b258ae9bd305e60d840395b6ad",
+          "subject": "Read where each annotation sits in the structure tree"
+        }
+      ],
+      "matchingTreeDifferences": [
+        {
+          "status": "M",
+          "paths": [
+            "packages/engine/runtime/runtime-src"
+          ]
+        }
+      ]
+    },
+    {
+      "featureGroup": "Page imports, label sections and metadata",
+      "representativeExactCommits": [
+        {
+          "sha": "54410bd3874816c406407d53778f3be7a31d6d9b",
+          "subject": "Bind the page import, page label section and XMP packet calls"
+        },
+        {
+          "sha": "048c074a9766c005ff4da1e2bded8251700b0788",
+          "subject": "Read page labels as sections and move them with page edits"
+        },
+        {
+          "sha": "ab7c069c97f8b1c376a4bca410ae2e8237e40257",
+          "subject": "Keep the XMP packet in step with metadata updates"
+        }
+      ],
+      "matchingTreeDifferences": [
+        {
+          "status": "A",
+          "paths": [
+            "crates/epdf-engine/src/features/pages/tab_order.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/action.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/action_write.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/annot.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/annot_write.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/base.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/capture.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/document.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/error.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/extract.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/fonts.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/form.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/form_write.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/lib.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/library.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/measure.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/metadata.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/metadata_write.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/named_pages.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/outline.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/page.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/page_list.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/page_write.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/save.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/signature.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/pdfium/src/signature_write.rs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "crates/pdfium/src/stamp.rs"
+          ]
+        }
+      ]
+    },
+    {
+      "featureGroup": "Reviewed plugin parity: form focus/tab order, zoom/locks and native command appState",
+      "representativeExactCommits": [
+        {
+          "sha": "c04ec59e8aacddc365fc33f661ef608adcd01ba7",
+          "subject": "feat: port form cursor, tab order and setting lock parity"
+        },
+        {
+          "sha": "d53ad0bf42917234acfeb12b3f994e32045e194b",
+          "subject": "Port the stage's marquee zoom, zoom limits and settings locks"
+        },
+        {
+          "sha": "41ccb3bed0e13892c3b0556e8c941d9bf9902068",
+          "subject": "Carry app state through native command callbacks"
+        }
+      ],
+      "matchingTreeDifferences": [
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/Cargo.toml"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/build.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/availability.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/contract.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/controller.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/harness.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/lib.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/registry.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/settings.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/src/turning_off.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/tests/behavior.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/tests/conformance.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/tests/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/tests/menu_target.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/commands/tests/teardown.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/Cargo.toml"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/build.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/connect.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/console.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/contract.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/controller.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/engine.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/engine/tab_order.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/field_selection.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/harness/functions.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/harness/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/lib.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/model.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/promise.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/read/fields.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/read/fill_items.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/read/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/read/settings.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/read/widgets.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/scripting/controller.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/scripting/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/scripting/overlay.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/scripting/results.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/cursor.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/design.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/events.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/formatted.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/index_cache.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/looks.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/object_numbers.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/pictures.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/rights.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/scripting.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/services/siblings.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/sync/fields.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/sync/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/sync/predict.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/tools/definitions.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/tools/handlers.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/tools/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/value.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/activation.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/fields.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/fill.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/focus.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/interchange.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/lending.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/next_in_line.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/reset.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/script_effects.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/typing.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/src/write/values.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/behavior.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/budget.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/conformance.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/engine_cross_check.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/focus.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/sharing.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/form/tests/tab_order.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/Cargo.toml"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/build.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/camera/animation.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/camera/gestures.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/camera/write.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/connect.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/contract.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/controller.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/destination.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/harness.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/host_contract.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/lib.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/model.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/motion.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/navigation/arrive.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/navigation/reveal.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/navigation/zoom.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/navigation/zoom_drag.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/prelude.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/read/pages.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/responsive.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/scroll_handler.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/services/events.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/services/mod.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/services/scene.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/settings.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/settings/area.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/state.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/token.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/view/lifecycle.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/working_set.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/src/zoom_drag_handler.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/tests/api.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/tests/conformance.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/tests/ffi.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "crates/plugins/stage/tests/zoom_tools.rs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift"
+          ]
+        }
+      ]
+    },
+    {
+      "featureGroup": "Vectors and release publication/pins",
+      "representativeExactCommits": [
+        {
+          "sha": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+          "subject": "Pin Apple engine to reviewed 3816be131b65bdee release"
+        }
+      ],
+      "matchingTreeDifferences": [
+        {
+          "status": "A",
+          "paths": [
+            "platforms/apple/EmbedPDF/Package.swift"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "scripts/publish-engine-payload.mjs"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/OPERATIONS.md"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/README.md"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/fixtures/generate.mjs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/fixtures/page_labels.pdf"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/fixtures/structure_tree.pdf"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/fixtures/tiny.png"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/package.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/check-operations.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-annotation-read-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-extract-vectors.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/src/generate-font-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-form-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-metadata-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-pages-mutate-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-scope-vectors.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/src/generate-signature-protection-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/generate-wire-vectors.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/operations.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/recording-engine.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/render-cases.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/scope-cases.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/search-cases.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/src/worker-kinds.ts"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/annotation/create.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/annotation/read.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/annotation/update.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/vectors/fonts/wire.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/forms/apply.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/forms/snapshot.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/metadata/actions.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/metadata/pages.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/metadata/read.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/pages/extract.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/pages/mutate.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/render/geometry.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/vectors/scope/coverage.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/scope/parse.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/scope/resolve.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/search/slice-protocol.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/engine-conformance/vectors/signature/protection.json"
+          ]
+        },
+        {
+          "status": "M",
+          "paths": [
+            "tooling/engine-conformance/vectors/wire/requests.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/fixtures/annotation-core/measured-items.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/fixtures/signature/fixtures.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/fixtures/signature/generate.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2a-retired.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1a/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1a/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1a/annotation-pure.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1a/annotation-repository.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-api.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-crud.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-fixtures.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-hydration.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-i/reconciliation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-comments.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-grouping.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-hover.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-markup.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-tools.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b1b-ii/family.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/baseline.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-actions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-core.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-design.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-fill.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-fixtures.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/form-scripting.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-i/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/baseline.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/form-design.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/form-fill.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-ii/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/baseline.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/family.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/form-actions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/form-scripting.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b2-iii/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-i/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-i/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-i/current-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-ii/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-ii/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-ii/current-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iii/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iii/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iii/current-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iv/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iv/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-iv/current-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-v/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-v/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-v/aggregate-accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3-v/current-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/archive-sha256.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/c-signature-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/inputs-runtime.json.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/measurement.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/redaction.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-api.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-assets.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-fixtures.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-functions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-library.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/stamp-placement.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2b3/task11-stamp-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/artifact-manifest.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/deferred-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/lifetime-red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/original-acrojs.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/original-pure-outcomes.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/prelude-import.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/upstream-fields.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/upstream-flags.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c1/upstream-identity.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/account.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/baseline-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/before-focus-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/before-named-transitions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/final-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/focus-upstream.patch.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/focused-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/generated-prelude.js.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/original-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/original-shell.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/prelude-inspected.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c10/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/before-named-transitions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/current-contract.patch.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/generated-prelude.js.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/named-transitions.patch.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/original-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/original-view-manager.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/prelude-inspected.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c11/test-authoring-failure.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/current-fixture-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/deferred-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/earliest-direct-page-contract.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/link-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/original-actions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/original-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/prelude-import.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-get.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-get.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-settings.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-settings.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-sink.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-sink.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-view.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-view.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/README.md"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/green-initial.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/m14-final.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/m14-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/m14-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/original-actions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/prelude-import.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/prelude-import.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/runtime-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/runtime-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work4.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/semantics-work4.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/actions-aggregate160.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/default-vm-pending-reproduction.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-green.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/fix1-targeted-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/focused-work4.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/format-final.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/green-initial.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/original-actions.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/owned-typecheck-root-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/prelude-import.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/prelude-import.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/runtime-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/runtime-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c4/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/before-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/final-owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/final-targeted-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/named-diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/original-commands.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/original-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/original-inputs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/prelude-import.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c5/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/base-acrojs-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/base-actions-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/base-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/base-link.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/base-source-authority.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/cache-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/debug.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/direct-test-contracts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/final-test-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-audit.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-green.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/fix1-runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/green.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/original-link.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work4.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work5.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/owned-work6.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/pre-4fc1a32af-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/pre-4fc1a32af-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/pre-4fc1a32af-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/pre-4fc1a32af-source.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/prelude-inspected.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/remaining-annotation-bridge-consumers.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/returned-refusals.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/runtime-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/runtime-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work2.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work3.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work4.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work5.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work5.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work6.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work7.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/semantics-work7.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c6/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/base-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/capabilityVocabulary-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/capabilityVocabulary-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/capabilityVocabulary-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/customSplit-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/customSplit-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/customSplit-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/direct-test-contracts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/final-format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/green-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/mirrorOwnership-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/mirrorOwnership-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/mirrorOwnership-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/onDemand-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/onDemand-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/onDemand-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/original-metadata.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/owned-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/owned-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/owned-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/prelude-inspected.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/runtime-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/tests-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/tests-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c7/tests-work3.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/baseline-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/channels-work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/direct-test-contracts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/direct-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/direct-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/identity-green.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/identity-red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/layout-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/original-page-edit-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/owned-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/prelude-inspected.diff.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/fix1/targeted-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/focused-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/focused-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/format-final.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/generated-prelude.js.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/objectNumber-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/objectNumber-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/original-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/original-page-edit.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/owned-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/pageSpace-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/pageSpace-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/permissions-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/permissions-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/prelude-inspected.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/red.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/runtime-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/semantics-work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/semantics-work2.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/stagedEdits-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/stagedEdits-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c8/work.out.gz"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/account.py"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/accounting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/accounting.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/current-inputs-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/diagnostics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/direct-test-contracts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/focused-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/focused-work.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/format-check.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/format-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/format.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/full-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/generated-prelude.js.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/integrity.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/namedTransitions-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/namedTransitions-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/namedTransitions-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/namedTransitions-parent-translate.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/negative-channels.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/original-commands-current.test.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/original-i18n.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/original-runtime.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/owned-typecheck.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/prelude-inspected.diff"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/prelude-restoration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/preservation-tests.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/preservation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/red.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/runtime-render.out"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/runtime-summary.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/scriptAwareNegotiation-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/scriptAwareNegotiation-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/scriptAwareNegotiation-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/scriptAwareNegotiation-parent-translate.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/settingsContract-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/settingsContract-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/settingsContract-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/settingsContract-parent-translate.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/source-evidence.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/task11-current-drift.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/translationFallbackKeyAndBundles-parent-contract.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/translationFallbackKeyAndBundles-parent-controller.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/translationFallbackKeyAndBundles-parent-model.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/historical/task-12b2c9/translationFallbackKeyAndBundles-parent-translate.ts.txt"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/package.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/canonical.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/case-entropy.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/coverage.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/emit-one.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/fake-engine.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/generate.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/loader/instance-hook.mjs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/member-order-allow.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/probe.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/removed.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/scenario.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/staleness.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/stamp-module-host.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/acrojs.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/actions-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/actions.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-api.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-comments.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-geometry.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-measurement.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-model.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-update.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-core-view.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-crud.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-grouping.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-hover.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-hydration.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-live-answers.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-live-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-live-inputs.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-markup.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-pure.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-reconciliation.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-repository.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/annotation-tools.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/attachment.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/commands.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/current-event-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/fonts.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-actions.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-core-lifecycle.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-core.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-design.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-fill.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-live-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-painter.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-script-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/form-scripting.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/geometry.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/history.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/i18n.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/interaction.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/kernel-utils.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/kernel.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/link.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/measurement-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/measurement.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/metadata-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/metadata.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/outline.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/page-edit-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/page-edit.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/redaction-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/redaction-read-inputs.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/redaction.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/render-pure.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/render.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/search-reducer.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/search.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/selection.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/shell.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/signature-core.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/signature-plugin.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stage-plugin.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stage-pure.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stage.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-api.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-assets.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-current-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-functions.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-library.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-mutation-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-placement-fixtures.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/stamp-placement.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/ui-core.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/suites/view-manager.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/src/vectors.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/acrojs-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/acrojs-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-lifecycle-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-lifecycle-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-script-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/actions-script-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/annotation-current-pure.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/annotation-live-ii-refusals.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/annotation-live-ii.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/annotation-live-refusals.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/annotation-live.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/audit-kernel.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/commands-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/commands-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/current-suite-refusals.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/current-suites.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/form-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/form-live.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/form-script.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/generated-prelude.test.mjs"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/harness.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/i18n-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/i18n-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/kernel-refusals.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/link-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/link-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/measurement.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/metadata-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/metadata-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/page-edit-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/page-edit-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/redaction.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/remaining-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/shell-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/shell-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/stamp-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/stamp-mutations.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/stamp-placement.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/view-manager-current.test.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/test/view-manager-evidence.ts"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/tsconfig.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/acrojs-host.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/acrojs.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-anchor.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-cloudy.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-endings.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-flags.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-geometry-basics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-geometry-hit.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-geometry-shapes.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-geometry-text.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-groups.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-hit.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-kinds.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-measurement-model.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-measurement.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-placement.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-props.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-richtext.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-scene.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-snap.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-update.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/annotation-view.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/fonts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/form-painter.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/geometry-affine.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/geometry-basics.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/geometry-page.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/geometry-text-quad.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/signature-document.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/signature-parse.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/signature-signers.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/signature-trust.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/signature-verify.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/stage-anchor.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/stage-camera.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/stage-layout.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-helpers.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-projection.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-schema.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-shortcuts.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-solver.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/core/ui-transforms.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/coverage.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/environment.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/kernel/lifecycle.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/kernel/turns.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/kernel/utils.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-dispatcher.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-hover.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-lifecycle.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-script.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-submit.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions-triggers.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/actions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-api.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-comments.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-crud.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-grouping.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-hover.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-hydration.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-markup.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-pure.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-reconciliation.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-repository.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/annotation-tools.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/attachment.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/commands/functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/commands/plugin.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-actions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-core-lifecycle.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-core.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-design.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-fill.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/form-scripting.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/history.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/i18n/core.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/i18n/plugin.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/i18n/plurals.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/interaction-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/interaction.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/link-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/link.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/measurement-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/measurement.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/metadata.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/outline.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/page-edit.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/redaction-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/redaction.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-capability.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-ledger.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-policy.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-strategy.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-tile-plane.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/render-tiles.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/search-find-all.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/search-reducer.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/search-stage.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/search.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/selection-geometry.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/selection-handles.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/selection.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/shell/plugin.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/shell/reducer.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/signature-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/signature.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-capability.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-destination.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-events.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-feeds.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-motion.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stage-pure.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stamp-api.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stamp-assets.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stamp-functions.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stamp-library.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/stamp-placement.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/view-manager/plugin.json"
+          ]
+        },
+        {
+          "status": "A",
+          "paths": [
+            "tooling/plugin-conformance/vectors/plugins/view-manager/reducer.json"
+          ]
+        }
+      ]
+    }
+  ],
+  "allExactAncestryCommitsAndPaths": "/private/tmp/kkt-peach-lemur/c5g/source-audit.json",
+  "defaultConsumer": {
+    "actualExit": 65,
+    "testsExecuted": 0,
+    "classification": "INVALID immutable-f28ed verdict: proven concurrent checkout during active build",
+    "causeEstablished": "Shared worktree switched from f28ed to a68 at 05:21:17 UTC and restored at 05:21:25 UTC, during validation already active by 05:21:11 UTC. Compiler line33/no locked diagnostic matches transient a68 source, not intended f28ed line34/locked94.",
+    "stableSourceCoverage": "PENDING isolated-worktree validation",
+    "sourceFixEstablished": false,
+    "preservedOriginalEvidence": "/private/tmp/kkt-peach-lemur/c5g/result.json",
+    "timingAddendum": {
+      "path": "/private/tmp/kkt-peach-lemur/c5g/timing-addendum.md",
+      "sha256": "6854e3840004dcd77a7a2a3531bf59c0430541c0004b359d094ec3fe0de34719"
+    }
+  },
+  "priorDownloadAudit": {
+    "path": "/private/tmp/kkt-peach-lemur/c5f/outcome-audit/result.json",
+    "sha256": "638820c13a23647ae4d158a1c63ea9c43599dd58258af819d2e6557c1cdf5ca5"
+  },
+  "limits": [
+    "No latest-main drift assessed",
+    "No fresh builds/tests launched",
+    "Apple local override 333+9 test pass is different evidence and is not default-consumer acceptance",
+    "WASM 22 browser cases have accepted hidden-measurement-clone fixture limitation; no expanded UI claim"
+  ],
+  "evidenceFiles": {
+    "/private/tmp/kkt-peach-lemur/c5g/09-original-scope.log": "e7557225e52ad85c54e2ae531468415425997edce0d140351ea0708149efe0aa",
+    "/private/tmp/kkt-peach-lemur/c5g/07-apple-release.json": "01f0514d09458ffbe255550beee4305fb5b5c97d27b71b946388d853c0714803",
+    "/private/tmp/kkt-peach-lemur/c5g/collect.py": "ccad17fdfe1959929e9537d059b41e98e4288fbc0f3e0dd34adab7b9cbc42332",
+    "/private/tmp/kkt-peach-lemur/c5g/scope-audit.json": "b1106965382f34aec2f3a490fe42a1113c7fad9f583c28ff78e130fb73e9d9b6",
+    "/private/tmp/kkt-peach-lemur/c5g/source-audit.json": "d3cc9369907c08dcbdf2e126555d60c64f6759849af260517a740de511dabe82",
+    "/private/tmp/kkt-peach-lemur/c5g/08-wasm-release.json": "b89afc093e2992bdc85a5940dbf37b1f965c35876fbe31a82f89f1187930064b",
+    "/private/tmp/kkt-peach-lemur/c5g/04-impl-compare.log": "e7453c6dc500aaaa1021f84f9211ae0f9d8c309ea7dae88221bcde70770438f7",
+    "/private/tmp/kkt-peach-lemur/c5g/06-private-fresh-ref.log": "8ca386239fc022a8aa4f4492d2c775809b31484f6d35d53b681eb417ae6df131",
+    "/private/tmp/kkt-peach-lemur/c5g/finalize.py": "e6aa627e56ec36c528b0f127396318c5172e40a79b32fcfc9ca1793a11e1cf9a",
+    "/private/tmp/kkt-peach-lemur/c5g/02-fork-fresh-refs.log": "45055825dc76529a4a58c5c52e22c652b3698b7438ccb130b341c012a433f55d",
+    "/private/tmp/kkt-peach-lemur/c5g/10-pinned-plan.log": "d8f95d6c48d49c5025641416469b0244ac873796f8b99955b816a1a7677fe750",
+    "/private/tmp/kkt-peach-lemur/c5g/runtime-scope.json": "2f6e950760d862f9e2612e65119d10744130d197a518262cdf512ed9ba0997c6",
+    "/private/tmp/kkt-peach-lemur/c5g/05-local-impl-compare.log": "c529b21ccd5b8b7407c57622f4b1dea00b70f40a75167d144f3bb8a9cd12c527",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-05.log": "fb4cbe0974b46852ec5ce7db29dcdc6456579be53301ca34cf34fc395911e2d9",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-04.log": "2e47ba3913a710a02265cf7f1c06414f8ae860cb388afa9d2d7c3f655e84e0f1",
+    "/private/tmp/kkt-peach-lemur/c5g/fresh-metadata.json": "eb486b53127527885e2b43d5af0c8d11bf4191fe403f2659f9344490f7eb10f9",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-06.log": "c27ad0be4575c48423f3975bc7a810807f18ce8211540a6bf2a08b9b5c66d180",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-03.log": "c32847e8aa0eeb0e3caea25fd405059db505ce4474a90afdf9cf03ec987671a0",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-02.log": "45055825dc76529a4a58c5c52e22c652b3698b7438ccb130b341c012a433f55d",
+    "/private/tmp/kkt-peach-lemur/c5g/fresh-metadata.py": "50f79eae472928c06a9e45b73fd8e57bd8a4aa931ff7deff097da15e27ec283f",
+    "/private/tmp/kkt-peach-lemur/c5g/03-heads-localrefs.log": "8e6f0627d30ac379b595d929587b91a85c157915adcacb3bef99df9d15a9c052",
+    "/private/tmp/kkt-peach-lemur/c5g/scope.py": "de7f5f93ccb1396b0c106655d866f13b95717280f54a00308487430c7751a122",
+    "/private/tmp/kkt-peach-lemur/c5g/01-fresh-refs.log": "35bb04fb91fd49aa14151ee5c3cd003954cf877c37c04f402a65378f083e2cce",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-00.log": "1db017541aa37e835f6a99162c17c76a4b3328a9475f5a8c7c3071eacc30b8c8",
+    "/private/tmp/kkt-peach-lemur/c5g/metadata-01.log": "58a7ca2d3d1219c4b806afb2ba1410d4c0d5e23f696e82ef6d928b422fbc08ae"
+  },
+  "functionalVerdictTable": [
+    {
+      "scope": "Original measured viewer74afd / actual viewer a40 + documented Task3 followups",
+      "impl": "YES",
+      "plugins": "YES"
+    },
+    {
+      "scope": "Original runtime cff0077 target",
+      "impl": "YES",
+      "plugins": "YES"
+    },
+    {
+      "scope": "D1 runtime28b8 structurePosition: explicitly identified in original plan; plan decision, not newer-main drift",
+      "impl": "NO",
+      "plugins": "YES"
+    },
+    {
+      "scope": "Latest approved original-scope C4/C5 feature/parity/vector/release-pin closure",
+      "impl": "NO",
+      "plugins": "YES source integration; stable-source Apple default validation pending"
+    }
+  ],
+  "supersedes": {
+    "oldReport": "/private/tmp/kkt-peach-lemur/c5g/report.md",
+    "oldReportSHA256": "54c6b85e64ea44ed0773cc3592a0778f884e2a7e7a9981e9bacd60c8e865c3bd",
+    "oldResult": "/private/tmp/kkt-peach-lemur/c5g/result.json",
+    "oldResultSHA256": "3a86621cec3bb0e943022bd3df6a7b12212a2c61451fc6db303c95f8aca04000",
+    "scope": "Consumer validation classification corrected; branch and feature facts unchanged"
+  },
+  "timingProofs": [
+    {
+      "path": "/private/tmp/kkt-peach-lemur/c5f/source-timing-audit/result.json",
+      "sha256": "a13cb52be65d4104ed380a5aa942aff38239979dedba945ef02e36a281c8297d"
+    },
+    {
+      "path": "/private/tmp/kkt-peach-lemur/c5f/interference-disposition.json",
+      "sha256": "7885675372db9f99506b08b65d08dcd595fbbe489dd116cf6f109bf55da9d5f9"
+    },
+    {
+      "path": "/private/tmp/kkt-peach-lemur/c5f-final-review/source-interference-review.json",
+      "sha256": "79fd52214fb579cbd2f85cd0052cf5d452467966096529c6683a8f3d10802a5f"
+    }
+  ]
+}

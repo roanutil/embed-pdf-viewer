@@ -1,0 +1,82 @@
+[
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "rev-parse",
+      "cff0077cf"
+    ],
+    "exit": 0,
+    "stdout": "cff0077cff2493f89f252d1f2f039ca35b6d5c95\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "merge-base",
+      "--is-ancestor",
+      "cff0077cff2493f89f252d1f2f039ca35b6d5c95",
+      "8b1e69abdef4cb7c5d6c669c96a162533b2350ef"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "merge-base",
+      "--is-ancestor",
+      "cff0077cff2493f89f252d1f2f039ca35b6d5c95",
+      "3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "rev-parse",
+      "28b8b808f"
+    ],
+    "exit": 0,
+    "stdout": "28b8b808f52d544b17a973199410cda0cc43530f\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "merge-base",
+      "--is-ancestor",
+      "28b8b808f52d544b17a973199410cda0cc43530f",
+      "8b1e69abdef4cb7c5d6c669c96a162533b2350ef"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "-C",
+      "/Users/andrew/repos/embed-pdf-runtime",
+      "merge-base",
+      "--is-ancestor",
+      "28b8b808f52d544b17a973199410cda0cc43530f",
+      "3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,1563 @@
+> 8fa01cc1e Merge devcontainer lifecycle updates into plugins
+> 57a125dd7 Expose canonical iOS and macOS Swift package with matching engine
+> 5b0f080ff Merge Align visibility and macOS support into canonical engine
+> 75834b99b feat(apple): enable macOS package consumers
+> 3ee6c413d fix(apple): map Rust targets to Clang binding triples
+> c15b9671e build: reconcile canonical Apple native graph with macOS support
+> 1542f3a0e build(apple): package universal macOS binding frameworks
+> d3c1f0e4f Add visibility-aware tiled page UI with model-owned render lifetime
+> f28ed4ea4 Pin Apple engine to reviewed 3816be131b65bdee release
+> 9deb7e29a Retain kernel owner in combined native lock test
+> eb75fb300 Verify combined native app state and command locks
+> 46fce62f3 Merge C5d native command app state
+> 88546a3e7 Merge C5c form focus, zoom and command locks
+> 6a740e1e9 Pin published base Apple engine
+> 41ccb3bed Carry app state through native command callbacks
+> 385f679a5 test: await facade results before synchronous assertions
+> 920a52876 Refuse omitted writers after releasing a step leader
+> 2759f5e83 Verify serialized lock ownership by its immutable token
+> 97200efec Keep process inspection outside the managed writer group
+> b3fed260d Serialize publisher ownership and drain every payload writer
+> 12a074ef3 refactor: organize port declarations and strengthen focus checks
+> fad5ef3f9 perf: share memoized form keyboard order
+> c04ec59e8 feat: port form cursor, tab order and setting lock parity
+> 29fd6e1e3 Describe absent command hooks through their resolution defaults
+> 4bcac6f75 Require every committed binding in the caught-up runtime
+> 3337568b1 Merge verified publish recovery guards
+> 834707fec Record the round 7 publish recovery fixes
+> 2be34639d test: cover form cursor, command locks and zoom parity
+> 6c4ca1c96 Lock the publish run, identify process groups by start time, and make the pack reproducible
+> 0064ec058 Record the round 6 fixes in the impl doc
+> 0ebaf01c9 Merge commit 'a68c9d185d07ea39498433836c0915695354da1e' into research/catchup-2026-11-combined
+> ffaac0abc Format the merged assertAllBound call
+> a68c9d185 Route upstream sync through implementation and plugins (#23)
+> 73f8886b7 Merge research/catchup-2026-11-c5b into the combined catch-up branch
+> 82695d5e4 Merge research/catchup-2026-11-c5a into the combined catch-up branch
+> 2e5bbedfb Handle SIGHUP, wait for the whole process group, and refuse on an unknown release state
+> 1b45692fe Record the round 5 fixes in the impl doc
+> 1a6b1c80b Add managed and viewer parity gate (#22)
+> 9ea74337a Restore a payload that was absent, stop a step with its whole process group, and tell a published run from an interrupted swap
+> 31b8ddbee Point the original archive rule forward to the review rounds, and record round 4
+> 4cefbb3e3 Check the archive target, survive a killed publish, and treat a half-made release as unpublished
+> 097219f38 Split the round 2 fixes out of the round 1 paragraph in the impl doc
+> 08ea6f36e Pin build-target.sh at both ends, tie the staging files to the archive, and roll the payload back on failure
+> 8fb3b25b4 Say what regenerating the sixteen suites would add, as the renders show
+> 79e871c57 Test the harness refusal of an unknown lock key and say it comes first
+> 5b845642b Describe the pinned build-target.sh blob and the trusted emsdk field in the impl doc
+> aca5651dd Pin build-target.sh by blob, check the archive emsdk, and read the pin scripts at the pin
+> 47df81d67 Pin that a document program wins over an engine font of the same name
+> 13c231667 Name every suite still recorded before structurePosition, and why
+> dc8ef66ad Give a spawn failure the fetch hint too, and name the test for headers
+> dbed1512a Describe the zoom tools in the stage README and correct the C5b record
+> 88b78c89d Pin the stage locks, limits and box threshold, and add can_zoom_in and can_zoom_out to the FFI
+> 85a3d0336 Leave the payload alone when a publish refuses
+> ba6373241 Record a page list with label sections in the metadata vectors
+> 72690867b Let build-target.sh change between the archive and the pin when its emsdk matches
+> 045f404a2 Record C5b clippy results and the two accepted lock divergences
+> dd12d2a09 Record the C5a review round 1 checks
+> 6e1c98ead Record C5a review round 1 in the impl doc
+> 70068a005 Give eighteen more plugin vectors structurePosition
+> d4086d937 Record a tagged widget's structurePosition in the form snapshot
+> 5cdf215da Say what the gate checks: what the runtime's headers declare
+> 0cce8991d Record C5a: the fork merge of 28b8b808f, the libraries, the gate and the vectors
+> f63a2263f Give the annotation plugin vectors structurePosition, and take upstream's export hashes
+> bb4d814d9 Record C5b: the stage marquee zoom, zoom limits and locks, and the regenerated stage suites
+> 2bf08c58d Read a tagged page's structure positions in the annotation vectors
+> 9f73fe03a Regenerate the vectors the old runtime could not, and drop the labels shim
+> df0dcfd04 Regenerate search-stage and the stage-recording suites
+> d53ad0bf4 Port the stage's marquee zoom, zoom limits and settings locks
+> 1a9c53fb4 Give stage-core the zoom limits
+> a7fa81cb2 Record the round 1 fixes, the accepted app_state exception, and drop the simulator id
+> a1205b61f Check the fork stamp against its files, and narrow what the pin may change
+> a77a2e98a Let ctx.get_page take a page index as well as a ref
+> 389049cfa Say that the commands app state is JSON only
+> 14ea1bec7 Test the commands app state and the wake after every run
+> 69666029f Read document programs in the font vectors before any engine font is registered
+> b6b2acfe9 Read where each annotation sits in the structure tree
+> 97c6f7086 Refuse a payload whose runtime has 28b8b808f but lacks a binding
+> 6529e8824 Pin runtime-src to the fork merge of upstream 28b8b808f
+> 50703e99b Merge the C5 publish-script fixes (d98a63e76) into C5a
+> 8d29326f9 Record the two publish-script fixes and the clean payload dry run
+> d98a63e76 Define FORK_TARGET before the payload half reads it
+> e4c67731d Check the payload against the committed bindings, and say where its PDFium came from
+> 509d2df20 Record C5: the payload, the font vectors, the commands port and the Apple engine
+> 1544594da Revert "Add the built-in zoom tool, from upstream a1ee5683f"
+> 4457cb2c6 Await canRenderThumbnail before comparing it in the Swift render test
+> 67c31594c Merge plugins c3d91acc8 (relocated native .NET packaging) into the C5 branch
+> bdf63e39d Pin the five font kinds against the TypeScript oracle
+> 67b45d349 Give commands the app state setting, and count a throwing derivation as no
+> 575b0df1e Add the built-in zoom tool, from upstream a1ee5683f
+> 376363cea Regenerate the metadata page lists with labels and drop their shim
+> 83346568c Match the page predictions and settings merge to the TypeScript in five places
+> c3d91acc8 Add relocated native .NET packaging
+> e43b45dfa Give each render request its own doc comment, and record the page view port
+> 5d84a4abf Port the page prediction conformance and the page-view tests
+> 75f6adb59 Refuse a fractional blank-insert count at the reserve
+> fa7958400 Compare page views and settings by value, and match the page predictions
+> 2e09cb5fd Read a page list answered without labels as one with none
+> 399ddc3a6 Record E3 and E4 as accepted, and the native render-rights change
+> f0749104b Give thumbnails their own right in the render plugin, and draw pending pages
+> 46c23b702 Stage page edits with their undo and duplicate as one pages.copy
+> 8eb3ac189 Show pending page edits in the kernel's page view
+> c1cb361e3 Import the renamed plugin models and give the fake engines page label sections
+> 58cd3ef16 Merge the font registrar, font kinds and write answers into the catch-up branch
+> f8e959eab Merge the non-font runtime calls and pages.copy into the catch-up branch
+> 948a3051e Merge the scope parser, error codes and render gate into the catch-up branch
+> 1cbc5e58a Mark the pre-labels vector shim temporary
+> f2355e753 Copy pages with pages.copy
+> 319def636 Guard native renders by picture kind and allow plugin permissions
+> d986b6be4 Give thumbnails their own viewport and right in the render path
+> b66239699 Record the strict run types of document.fonts.resolve as kept
+> 8a88f6cc7 Report missing characters and font changes on writes, last resort at host construction
+> ab7c069c9 Keep the XMP packet in step with metadata updates
+> 678c9ffbd Count the five font kinds in the page-space boundary test
+> 84cbe53b1 Expect doc.render.thumbnail in the all-bits expansion
+> 048c074a9 Read page labels as sections and move them with page edits
+> 278dd6516 Give the five font kinds operation-matrix rows
+> 112fbeb6e Route the five font kinds upstream added
+> 7b93e153c Port the font registrar and document font reader to the Rust engine
+> 7be0f741f Match the engine error codes to EngineErrorCode.ts
+> 1c78c4afd Port the plugin permissions and thumbnail scope to the Rust parser
+> 6349059a5 Bring form fields along on page insert and extract
+> 54410bd38 Bind the page import, page label section and XMP packet calls
+> 91b267986 Merge the .NET engine facade into the catch-up merge
+> 62bbfda9f Merge research/multi-platform-rust-core-impl into plugins
+> 91fcaccc5 Add the typed asynchronous .NET engine facade
+> df02a481a test(dotnet): record pinned facade validation
+> 849d3246a feat(dotnet): add typed asynchronous engine facade
+> 60cb3ccbc Add checked native document reads
+> 8159b0831 Record combined native read and helper validation
+> 8986d1353 Remove unused error import after helper integration
+> 79640ceec Merge native helper exports into document read adapter
+> 34dd87a6a feat: implement native C ABI pure geometry and text helpers
+> 0a343f3f3 Record native read adapter validation on Linux arm64
+> ee3b16210 Retain native creation budgets and manual build guidance
+> 0ed991722 Expose bounded native document reads and cooperative cancellation
+> 80c472f13 Preserve native completions until result handoff succeeds
+> 698a235c2 Merge pull request #17 from roanutil/feat/native-capi-lifecycle
+> a952b2027 Record Linux arm64 startup-font test validation
+> ddb4b7a8e Test startup-font unwind and aggregate retained-byte refusal
+> 1197ca1ad Record Linux arm64 native lifecycle validation
+> a797df9f0 Add checked native C ABI lifecycle and owner-thread jobs
+> 1454eb541 Merge pull request #15 from roanutil/docs/dotnet-native-binding-design
+> efbc12bd9 docs: describe the .NET binding with neutral consumer contracts
+> 05b8f795a docs: require manual binding validation under the CI hold
+> 665579b04 docs: design native .NET engine binding and delivery slices
+> 3dec6b60b chore(devcontainer): add pinned .NET 10 SDK
+> 5f1102074 test(web): track the annotation UUID host gap separately
+> 3cd5f6984 test(web): document complete UUID override nesting
+> aabd81693 test(web): verify browser UUID entropy and document source lifetime
+> 53489778e chore(rust-viewer): prepare hackathon.3 evaluation bundle
+> e5d05b328 test(web): cover annotation writes and shared runtime UUID lifetime
+> c1c0ab6f4 fix(web): supply browser time and entropy for change UUIDs
+> 0ad0b74c2 Version the tip's Rust viewer bundle apart from the pre-merge one
+> 19909b46c Drive the eval app's top bar through the current viewer handle
+> 5204e8e83 Describe the annotation capability's nouns with their methods
+> c9b151418 Hand the i18n translator to live callers
+> 9b444a081 Carry the viewer settings across the wasm boundary
+> 6e68e596c Answer the engine bridge's reads the engine API dropped
+> a459dda41 Ask the catch-up's live factories for the renamed Rust plugins
+> 4d7e0891a Add a self-contained Rust viewer bundle for tarball installs
+> f9204e3a1 Route history, outline and attachment to their Rust plugins
+> a0c89596d Keep the devcontainer toolchain on PATH in login shells
+> c0f23ad77 Equip the devcontainer to build the Rust kernel's wasm
+> 5620f4ab3 docs: record verification of apple-engine-546d8c97ab7c9eed
+> 1a0943917 Pin the Swift package to apple-engine-546d8c97ab7c9eed
+> 6a153a205 Keep the seeded-deps sync skip for the fork build
+> 0ef9cdc18 Run one tile poller per page model
+> e513b50ad Pin the Swift package to apple-engine-c862f03a668726e9
+> 2f4e099ef Pin runtime-src to 5cc1d8019, the rebased static macOS libLTO patch
+> 731cfc6ed Merge research/multi-platform-rust-core-impl-plugins into align/visibility-render-resolution
+> 9fa405bb7 Pin the Swift package to apple-engine-3cf9c87caaf5b2de
+> 2d8b28c14 Wait for the stage to settle before the bracket test reads the camera
+> 121fde602 Hash the five crates the catch-up added into the iOS engine
+> 49b09030c Merge research/catchup-plugins into research/multi-platform-rust-core-impl-plugins
+> aaddb321a Keep the staged meta Rc when dirty does not change
+> f5443032b Fix Task 14 doc order and stale mutation claims after the final review
+> eefa3e3e0 Record Task 14's in-diff mutation figures after the 14.8b survivor triage
+> 50afe7a34 Pin length octets that end the buffer, the asn1js walk's last killable edge
+> d1acc8917 docs: complete Apple package execution and download verification
+> b52849cd3 release: pin the verified iOS and macOS engine
+> 9f4a3df23 docs: record Apple build verification and pending release approval
+> d7fcaf278 ci: verify source and packaged engines on iOS and macOS
+> 17e6593db fix: build EmbedPDFUI on native macOS
+> 5b1ffc666 feat: package a universal macOS Swift engine
+> 41b0be8da build: assemble iOS and universal macOS FFI frameworks
+> ff1b7f60b Pin asn1js's limits and the walk's remaining refusal edges against asn1js 3.0.10
+> e021f1e52 Pin that a download waits for a scale change on its way
+> fff451f4e Pin validate's page order, the widget and selection memos, and widgetNamedBy
+> 9b9b767d1 Count the trust port in the signature port table's retention test
+> 1a1909ff6 Count families in the command table's retention test
+> 76e9295d8 Pin the native prompt for a probe that does not read
+> fe9d8ffc3 Pin the measure's truthy y and the password prompt's user rule
+> 387cd0119 Pin the kernel's hold, refusal, settings, mirror memo and burst behaviour that Task 14's mutants survived
+> 6afb18c1c build: validate cached Apple static archives
+> 71da5b3c7 fix: pin complete Xcode linker recipe for macOS host tools
+> bc7c21f68 build: pin macOS static recipe with native Xcode linker
+> 69bd31756 fix: use static macOS PDFium patch dispatch
+> f53b98da8 build: add static macOS fork inputs for Apple engine
+> 99b3861d4 WIP: document swift package
+> 08109ef01 dedupe apple platforms gitignore
+> d5fe35338 update apple platforms gitignore
+> d9c595e27 Name the core-wasm typecheck and epdf-web export failures as left for the user, and say each README's figures are not re-run once
+> ac99b17b8 Bring the status docs and crate READMEs to the state after Task 14.7
+> 172f5369d Drop the Swift wrappers with no predecessor, and tie the measurement ref to its line
+> e221fd68c Say createAssetFromAnnotations exports through the engine, and record Swift migrated
+> 714bc6b1e Name the signature ffi inputs' signer facts signer, as the TypeScript does
+> 4e9a42100 Answer createFromSelection's created refs from its { annotations } result
+> d0eef21c9 Migrate the Swift package to the plugin ffi shapes the catch-up landed
+> 00cfc02bf Clear the epdf-kernel clippy warnings and the ts-rs deserialize_with warning
+> 3fd308849 Update M35 to M37 for Task 14.5 fix round 1
+> 868a998b6 Release settings-table entries on reset and when a stamp engine's hold ends, and in the commands table
+> 5203aa30e Hold each document's meta behind an Rc and compare it by identity in the form's validate memo
+> b6ec53fd3 Share each page mirror entry's page behind an Rc, and say what a write copies
+> b5c5963b1 Register M35 to M39, the M22-family performance carries
+> 47745bb27 Read the page mirror cell's last key with next_back
+> 7b1fd8a60 Copy the outline tree once per change that changes it, and edit the copy in place
+> ccfe86dac Hand out the form's own fields and rows from its reads, and memoize them as read/fields.ts does
+> f6d95fc92 Write the form's fields cell as text from its shared parts, once per shown form
+> 2f61c24ba Release a settings table's port, loader or engine once no stored settings name it
+> 29abee459 Keep a page mirror's reads by pointer in its store cell and serialise them at dump time
+> b247dc301 Read a constructed string as bytes, as asn1js's HexBlock does, and pin the walk's refusals
+> 568dba17e Accept and refuse a CMS as asn1js.fromBER does, its speculative node counting included
+> 577185b0b Register the text layout's two kept differences and pin the backwards line
+> 69f8d3207 Stamp an import whose attribution is any value but 'restore', and name the wrong-password test for what it checks
+> 8832b14b8 Treat an empty password as none, as loadFailure does
+> e91a87451 Bring the register lines that name 14.3's divergences up to date
+> 30d23d0b2 Answer the TypeScript's open failure, password prompt and create checks on the native host
+> bb9181bd9 Refuse a creation draft count that is not a whole u32 instead of clamping it
+> 0198ff2e0 Read a malformed measure and absent caption members alike in the engine and annotation-core
+> aa5e1bdf1 Place a key named twice twice in the engine's reorder_part, and cross-check it
+> 964be62e7 Read a text run that claims past the glyphs without panicking, as the TypeScript's layout reads it
+> b3cd335f1 Format the epdf-engine and epdf-ffi files rustfmt had left
+> 1d1ba44cc Bring the register lines that name 14.2 carries up to date
+> 4a70559da Use the kernel ctx.watch in annotation, i18n, measurement, selection and view-manager
+> a32a66d51 Read form numbers through the kernel's string_to_number
+> 69f5e6a93 Say the web host imports stamps on a local engine since Task 14.1
+> 2dff7f9b0 Run every kernel watch through one ctx.watch body
+> 9c2a84ac4 Build the typed PluginErrorInfo from the one toPluginErrorInfo converter
+> 8a76c99e9 Write whole numbers above 2^53 as JSON.stringify does in json_number
+> f84e523d2 Read an IndexCache miss as the confirmed form in store dumps too, as index() does
+> ffba4b537 Settle the mirror's page reloads and settled() on the TypeScript's turns, and pin page loads and when_settled
+> c2e5e914b Abort a settle's flushes with the platform AbortError, as settle.ts does
+> a7e5baa95 Move to_plugin_error_info, string_to_number and the JSON number writer into the kernel
+> 8a24004ef Add the engine font list to the kernel Engine and read it in the annotation font lookup
+> 13b945502 Say epdf-web's JsEngine forwards is_local since Task 14.1
+> f84b9a5b5 Add ctx.watch to the kernel controller context and use it in stage and stamp
+> 75052dbb2 Give the kernel SerialQueue its signal option and idle(), and drop the plugins' local wrappers
+> 9a2ff3217 Forward the web engine bridge's local brand, object-number pool and call facts into epdf-web
+> 4a0b9c126 Refuse a malformed reserved range instead of under-filling the pool
+> b5356141c Say the web host's local-engine override waits on Task 14
+> 25dfb0d50 Bring the 13.33 notes up to date and list the epdf-ffi migration
+> 517909ad5 Restore the viewer host's narrowed tests and check the object-number pool
+> 63ddf0bc1 Pin the print cancellation, scope views and trigger failure paths
+> da4cd5804 Decode link targets in page space and align the ffi error codes
+> 842cc4217 Refresh the plugin conformance coverage after the 13.x ports
+> bff007bb0 Wire the new crates into epdf-web and record the 13.33 dispositions
+> efea678ca Run the viewer host as upstream's local engine on the current kernel
+> dffbc0802 Build epdf-ffi and every plugin's uniffi exports on the re-ported crates
+> 4a25a91ba Give the kernel the print API and the documents view in a document's scope
+> 1d6e00b03 Meter the page-file download and record the attachment repairs
+> 89e45135d Give annotation downloadResource its async function's turn
+> 87bb20dc5 Settle whenSettled on the turn awaiting Promise.allSettled takes
+> e0da62897 Record the attachment port's dispositions
+> 1f064d9e8 Port epdf-plugin-attachment on the kernel mirror and change queue
+> b3c6b44bc Generate the attachment plugin's conformance vectors
+> d7fcb0a8f Converge the outline colour rule and pin read identity
+> d837ae986 Meter the ready ensureLoaded in the outline vectors again
+> 71426ac73 Meter a promise that was already settled when it was tracked
+> efe6d89d8 Record the outline port's dispositions
+> 2ce6061d0 Port epdf-plugin-outline on the kernel mirror and change queue
+> 40dd48413 Generate the outline plugin's conformance vectors
+> 298701351 Record the view-manager port's dispositions
+> b71b44547 Append on an absent tab index and read the watch baseline after sync
+> c386a7531 Resolve a fake rawScope only where the engine's scope rules build
+> c022c0ada Port view-manager to the current state-transition controller
+> 3694f2094 Pin the close-time drop of a document's workspace views
+> 9022d1590 Register the commands settings identity divergence and the unscoped documents read
+> 497bd50e0 Drop a document's workspace views on rekey and close
+> 3d5ec7259 Wire the commands plugin to the kernel's resolvesAnyCapability and inScope
+> 56901194f Give plugins resolvesAnyCapability and a workspace capability's inScope view
+> 5b269ed7f Re-port the commands plugin onto the kernel settings store and current TS
+> 112d1e65e Share the snapshot's menu array and record the shell decode divergence
+> b8e99e473 Record the shell port's dispositions
+> 0c07e36ff Re-port the shell plugin onto named transitions and kernel event sources
+> 18e34bbf7 Hold the i18n memo inputs, report undecodable settings, commit the script generator
+> 75ee5215d Re-port the i18n plugin onto the kernel's settings store and named transitions
+> a8d36cf6b List metadata's changed keys in Object.keys order and register its no-handle refusals
+> cc92a4d58 Record the metadata port's dispositions
+> 5b5528f5c Re-port the metadata plugin onto the kernel's lazy mirrors
+> 48a952b10 Call the signature key comparison what it is
+> 489c851f8 Settle the signature review's findings
+> 1dace1a32 Read the test kernel's document id from the current open answer
+> ff6877e3f Record the signature port's dispositions
+> 690902585 Pin the signature port's behaviour beyond the traces
+> 65edd9324 Re-port the signature plugin onto the current kernel
+> 90cb8594b Add a SwiftUI page view on the tile plane
+> e4c969f01 Render off-screen pages as placeholders
+> 735f6e492 Pin the Swift package to apple-engine-03b4f75a0a9a8493
+> cf03ccde3 Register the stamp prototype-key ids and the web host's is_local carry
+> 968fae956 Settle the stamp review's minor findings
+> 059baa17a State the minimum Xcode for the prebuilt iOS engine
+> 1dbb3a6ba Zip the iOS engine without AppleDouble entries and test the zip itself
+> a9d363939 Hash the plugin crates and the binding generator in the iOS engine hash
+> e3d01dc1e Use a local-branded kernel engine as the stamp asset engine
+> 7557d8a45 Let an engine say it is local, as isLocalEngine reads the brand
+> 64a3ea3b3 Register the stamp port's divergence dispositions
+> e8fb49b66 Read a missing library page ref as the TypeScript's TypeError
+> d7c483648 Strip build paths from the published iOS engine and validate before publishing
+> 4993938a7 Migrate the stamp ffi to the current verbs by hand
+> 60f44eb5a Pin the stamp plugin's behaviour beyond the vectors
+> 6aa2f75fc Port the stamp plugin to the current TypeScript
+> f553ea4a7 Give the form harness's diagnostics plugins no state slice
+> 1c8598947 Leave the record identity tag out of the annotation records dump
+> 02b5bba72 Publish the prebuilt iOS engine from the payload script
+> 30aed7865 Keep gh and setup failures out of the stale-pin exit codes
+> ae30a82ba Add a stale-pin check for the prebuilt iOS engine
+> 291a5aa8f Freeze the generated public types in the engine framework
+> 2ec617653 Choose the engine source at manifest evaluation
+> 7290e4802 Package the generated Swift as a binary EmbedPDFBindings framework
+> 7ff9c11d0 Settle the redaction review's findings
+> 822b1c165 Let buildFork build the iOS device and simulator targets
+> 840198fc3 Resolve a fake document's rawScope through the shipping scope rules
+> 0dc4f69a3 Hash the iOS engine inputs and share the linked-crate walk
+> 7d51a21cd Register the redaction port's divergence dispositions
+> c5dbe2d07 Port the redaction plugin to the current TypeScript
+> 3cc1646dc Plan the downloadable iOS engine binary
+> ec5c72d13 Design a downloadable iOS engine binary for the Swift package
+> 1b0fdef2d Settle the measurement review's minor findings
+> 83fb65435 Give every fake page a measure service, as the TypeScript fake does
+> 2cf0ac724 Drop the measurement vectors' member-order allowances
+> fe6bb461b Port the measurement plugin to the current TypeScript
+> 1d73edacb Report an unreadable link destination through the kernel's report_error
+> 96c419522 Let a plugin hand a Rust-only failure to the kernel's report
+> 824492f89 Settle a mirror refresh after its finally, as the TypeScript chains it
+> 9c69ae3ad Settle the link review's minor findings
+> aeb5a1da0 Pin the link plugin's fresh-read turns to the TypeScript's
+> 6e678f93b Settle a page load after its finally, as the TypeScript chains it
+> 0674083d8 Record the link port's divergence dispositions
+> 44713dc8c Drop the link vectors' member-order allowances
+> 94bf2b5f6 Port the link plugin to the current TypeScript
+> d4bac1b31 Print a behavior's matches and engaged as refs in the annotation harness
+> f342368e6 Fix the search review's minor findings
+> 20cd80308 Hand a guarded call the lifetime's JavaScript abort reason
+> cc0d3d79a Use the kernel's cancellable for search's slices
+> 4ad664efd Keep a lane's abort reason as the JavaScript value it was given
+> 2c207959e Record the search port in its README and the register
+> 199f812f8 Drop the search vectors' member-order allowances
+> a7b9a1eb6 Re-port the search plugin onto the current kernel
+> 14975f147 Cite contract.ts for page-edit's signal rule
+> 63d780766 Record page-edit's turns and replay in its README and the register
+> 98114d6e1 Give page-edit's awaits the TypeScript's turns
+> 9584ec989 Carry NaN and Infinity page-edit arguments as $number
+> b2d42cc9f Record the page-edit port in its README and the register
+> 19285e760 Re-port the page-edit plugin onto the change queue
+> 0336f98a6 Describe the fields mirror cell in the form README and register
+> 93182535a Show the whole FieldIndex in the fields mirror's store cell
+> 640a17350 Serialise a mirror's store cell only when the store is dumped
+> 8affdaa0f Record the form fix round in the README and register
+> b5cdc7e98 Restore the five dropped form ffi tests
+> 704544e66 Fix the form review's minor findings
+> e40194e4a Name every file the fonts build script writes
+> aab6e8957 Share the form snapshot across folds, predictions and fills
+> 526059c29 Pass a permission refusal's details through as TypeScript does
+> 1ff58faa4 Keep a permission refusal's details whole in toPluginError
+> 55d2d0f71 Record the form re-port in the register
+> 194ddec18 Re-port the form plugin onto the current kernel
+> a5aca407e Expose the annotation plugin's lend and getSettings
+> 46f5e56a5 Keep the standard font programs apart from their metrics
+> 1e980caef Name the tools and comments hooks noun-first
+> 9a948f241 Record the annotation fix round in its README and the register
+> fce5ad6d0 Report swallowed annotation errors and close review minors
+> 9a2f735b9 Expose the annotation hooks and verbs, and drop lost numbers
+> dc45513a4 Trim only JavaScript white space when a cursor reads as a number
+> f48e45efa Let a document handle report lost object numbers
+> 6637aa26c Record the cursor repair in the annotation README and register
+> 99cb013fc Compare a mirror's load cursor as JavaScript does
+> 23f21d5b8 Record the annotation re-port in its README and the register
+> 7a2089481 Migrate the annotation ffi handles by hand
+> 888500040 Replay the annotation markup, hover and tools vectors
+> 11a53e776 Replay the annotation CRUD, grouping, comments and API vectors
+> 0d7390135 Replay the model, store and sync vectors against the annotation port
+> 1a81d44e2 Re-port the annotation plugin onto the current kernel
+> 0e78eb847 Correct the render migration map and widen two register entries
+> 9235a2693 Ask the engine with render's call facts and warn on unreadable settings
+> 20ae16ed9 Carry an engine call's priority and view through the document handle
+> a7b06b37a Record the render re-port in its README and the register
+> 00748f79d Re-port the render plugin onto the current kernel and settings
+> f51176656 Move the selection migration map into its README
+> d1aa78d91 Count registry decodes for M22 and report malformed settings
+> c01896392 Drop the session event fan-out and pin the mirror subscription
+> b436cf6ad Bound the selection select-all by its growth, not a budget
+> 9ce2d9152 Subscribe each mirror to the guarded document handle
+> f87717776 Record the selection re-port in its README and the register
+> dd976fedb Drop the selection member-order allowances
+> 20075f5c0 Cross-check the selection text layout against the engine's
+> f6aebe24e Re-port the selection plugin onto the page-space text layout
+> e8d8a8002 Record the stage fix round in its README and the register
+> bfa044509 Restore the stage's M27 Result tests and drop its last panics
+> 34e081e24 Tell the engine a lens's working set through the document handle
+> 7f21585a2 Describe the stage re-port and register its dispositions
+> 6ccf16c09 Drop the stage member-order allowances
+> a9e731229 Port epdf-plugin-stage to the current create, state and clock contract
+> 66eaa37fc Pin the kernel's close order and narrow the history crate's surface
+> 36dcfaef3 Close a session's change queue in its scope teardown only
+> 99a060614 Port epdf-plugin-history on the kernel's change queue
+> 61942d269 Generate the history plugin's conformance vectors
+> 486ff8041 Replace a stored identity whole, as the TypeScript settings merge does
+> 51e9e0814 Describe the actions re-port and register its divergences
+> 49838de07 Test M14, the form-pipeline print and scriptless realms on actions
+> 91bfe2ae2 Move the actions uniffi surface to the current capability
+> eb2f297fb Port epdf-plugin-actions to the current settings and create contract
+> b99113712 Register the interaction settings-identity divergence
+> 7a6408602 Drop the interaction member-order allowances
+> 3d370d1e6 Prune interaction settings tools on every store change
+> 9a9ce405a Record typed slices' state changes through their own JSON
+> d83e42001 Describe the interaction re-port in its README
+> 145c5c1c3 Port epdf-plugin-interaction to the current create and settings contract
+> 65195cdcb Pin and register epdf-ui-core's layout divergences
+> 94936ec38 Port epdf-ui-core to the current layout, schema and shortcuts
+> 10d5d8ffa Give epdf-ui-core's test binaries the libembedpdf rpath
+> a53723b05 Record the CMS-parse encoding divergence and carry its fix to Task 14
+> 35d64afa6 Refuse a TSTInfo past asn1js's 10,000-node limit
+> e024ce94a Describe the TSTInfo reader and the RSA limit accurately
+> d3fef7de3 Read a TSTInfo exactly as pkijs and asn1js do
+> 584463793 Note document timestamps and stale mutation counts in the signature-core README
+> e288952dc Port current sign, verdict and document timestamps to signature-core
+> 0ff1649c0 Give signature-core's test binaries the libembedpdf rpath
+> 725ca47cc Tighten outcome exceptions and correct the M13 realm comment
+> ebc2102ef Pin the regenerated prelude's entry point and full acrojs replay
+> 3e209a867 Compare a kept divergence through a named outcome exception
+> d87c90ce6 Ship the current AcroJS prelude
+> 9e824a8b2 Match current acrojs identity, field view and host driver
+> 693f65023 Give acrojs tests the shared libembedpdf rpath
+> ae37d039d Hold a cloud outline to the curl budget and register 13.7's refusals
+> d08edcc9c Document annotation-core's kept bounds and the kind-facts rustfmt step
+> 7da96b7f6 Record prototype-key kind names as a Rust-only divergence
+> 6e1038264 Drop the core/annotation member-order allowances the re-port no longer needs
+> 2abdce6c8 Match the TypeScript on measure markers, absent cursors and fitR refusals
+> ea25c5d9b Restore the M20 squiggle bound and bound a cloud outline's points
+> 9975e4ca8 Throw the TypeScript's TypeError from edit_up and restore Draft::is_create
+> c71be8933 Take form-core's SceneNode and Paint from epdf-annotation-core
+> 95a3f89b7 Re-port epdf-annotation-core to the current packages/core/annotation
+> cf848625d Assert both axes of NaN stage-core viewport results
+> cad3753f9 Link the stage-core replay through the harness rpath and pin its edge inputs
+> 35579e753 Read an absent appearance state as on and bound to_fixed's digits
+> ddd94cc1a Port packages/core/form as epdf-form-core with its painter vectors
+> 364045a10 Document epdf-fonts and find its data from the nearest ancestor
+> 7f073cc25 Port packages/core/fonts as epdf-fonts with its vector suite
+> b2ae6d4d1 Test lib_root from nested crates and rpath geometry only with its harness
+> d23222a68 Find the libpdfium root from nested crates and skip wasm32 rpaths
+> 9f26afbca Port epdf-geometry to named quad corners and page space
+> b336b010f Keep the engine off wasm32 and align unlock and probe details with TS
+> 5def63296 Port the replay harness to current schema-2 traces
+> 59875309f Fix kernel session cancellation, settled downloads and state events
+> 260d02304 Port kernel mirrors, pending changes and current lifecycle contracts
+> 63f1219c7 docs: correct plugin catch-up source references
+> a92660df2 docs: expand plugin catch-up into dependency-ordered crate tasks
+> fc5ecbd33 test: regenerate current plugin conformance vectors
+> b029e3d78 test(conformance): migrate signature scenarios to current fixtures
+> 1d65d8dea test(plugin-conformance): finish current generator migration
+> 107ac347b test(conformance): migrate view manager transitions and lifecycle replay
+> e4f60a199 test(conformance): migrate shell state and focus replay inputs
+> fcf0350e0 test(conformance): migrate i18n inputs and preserve every occurrence
+> ca63bf57a test(conformance): verify page edit registry and request identity
+> ccc6ea560 test(conformance): migrate current page edit scenarios
+> fe4e8b817 Migrate metadata conformance to lazy standard and custom mirrors
+> 7a9d07f4d test(conformance): preserve loaded pages in link cache cases
+> 4b3ad039e test(conformance): migrate links to current mirrors and activation contracts
+> df620089c test(conformance): migrate commands to current settings and capabilities
+> 417838c18 test(conformance): prove script outputs and hover pair barrier
+> bd8ca8b11 test(conformance): migrate actions scripting and hover inputs
+> 2f9e038a2 test(conformance): migrate actions triggers and lifecycle inputs
+> 04c8e8611 test(conformance): migrate actions dispatcher and submit inputs
+> ac71d1108 test(conformance): migrate AcroJS host and current inputs
+> 79b16091b test(conformance): assert stamp arm success and refusal cleanup
+> 793058c97 test(conformance): migrate stamp placement and account B3 inputs
+> 35c7adebf test(conformance): assert imported stamp ownership and cleanup
+> 2e366e6b4 test(conformance): migrate stamp asset and mutation APIs
+> 1c122e2c8 test(conformance): preserve complete stamp metadata snapshots
+> dac9c281f test(conformance): migrate stamp foundation and library inputs
+> eb80f0e8b test(conformance): typecheck complete redaction search answer
+> 7213fe883 test(conformance): migrate redaction to current plugin contracts
+> 87f903544 Migrate measurement conformance to current scale contracts
+> d8034e3f6 Preserve enabled scripting for the lazy default realm
+> d31c7105e Migrate current form scripting and action conformance cases
+> c85d40a5a Correct form reset confirmations and created widget appearance
+> fcbfb6075 Migrate current form fill and design conformance scenarios
+> 2334ab231 Migrate pure form conformance oracle and isolate current fixtures
+> 056b91b73 Migrate remaining live annotation conformance scenarios
+> bbbdb2678 Restore annotation fixture hooks after early setup failures
+> 86f7d82dc Migrate live annotation API and mirror lifecycle oracle
+> 4a48f7acf Fix annotation conformance writable drafts and field coverage
+> f41605068 Migrate annotation pure conformance to current record contracts
+> 0d4199872 Fix conformance search permissions and stage action semantics
+> 12ea964b0 Migrate selection search and stage conformance to current contracts
+> 6bba125f9 Fix annotation conformance inert ids and link defaults
+> 693a5dc3d Migrate annotation conformance inputs to current core contracts
+> b4fb46c5c Fix conformance handle isolation and unlock refresh
+> f7b082c93 Migrate plugin conformance runtime to current kernel contract
+> d9febc9de Deduplicate all annotation conformance subtypes
+> 4db82415e fix plugin conformance annotation generators
+> 023feb524 Record the plugin staleness probe after the generators import
+> 295d3a802 Import the annotation-pure and annotation-repository suites
+> c1334d32f Import the ui-core suite from upstream's module layout
+> 883bb9770 Import the stamp and signature-plugin suites from upstream's module layout
+> 28ff28bd0 Import the commands and form-core suites from upstream's module layout
+> cc9a91c0f Import the kernel-utils, i18n, link, measurement and redaction suites
+> 11a13fef6 Cast the old reducer actions through unknown
+> 481349e86 Import the core-geometry suite from upstream's module layout
+> 6f87bd915 Reach upstream's per-action transitions from the reducer suites
+> 14bf6dfb9 Import the selection suite from upstream's module layout
+> efe584fcc Import the six annotation-core suites from upstream's module layout
+> 9bb50a3c1 Import the interaction suite from upstream's module layout
+> 2ea138c02 Close the high-heap test's Rust documents in the full job envelope
+> 9ba9aed7a Leave PDFium's teardown to JS on wasm32
+> c3cd3fa0d Compare the Rust and TypeScript geometry readers through text.layout()
+> a413cb91e Send the Rust session rehearsal's requests with an effect and a jobId
+> bcbce79d6 Send the high-heap test's dispatcher requests in the full job envelope
+> d81606dc9 Read the Rust core's returned addresses unsigned, so a buffer above 2 GiB decodes
+> e0f9c7abe Read the effect without holding it to the kind's, and pin a filled authority's scope
+> de296ac32 Require the job envelope upstream requires: jobId, effect, opId and authority
+> 19eadb864 Note the keyed read answers and the new event name in the operations matrix
+> 954ca5a75 Close the routing lists: every kind routes, and every retired kind is unknown
+> 9ef81c7cf Drop the plain fat-memory session kind and the branches only it reached
+> 6500a25df Take an insert's source as a payload only, keep a link's left-out axis out, and answer a dropped import with its result alone
+> ac2eb9da5 Render as upstream reads its options, encodes, fails and nests appearances
+> 55acc78bc Answer the metadata, actions and signature byte reads keyed as upstream
+> 69ddead3b Publish events under upstream's names, each stamped with its write's tx
+> e10058b04 Speak upstream's error codes: PayloadTooLarge and ObjectNumberUnavailable in, InvalidReference and WeakAnnotationSessionConflict out
+> bfaee62e5 Render print pictures and form fields in slices, answered as upstream nests them
+> 9de715e9d Count a repair after its commit, and check signings only for transacted writes
+> 2bbab860b Note close answers and the page residency in OPERATIONS
+> a7d4e8a1e Save an unchanged layer's delta as empty, and test numbered creates
+> cd9f251e6 Keep parsed pages within a byte budget across a host's sessions
+> 59c3fbd62 Undo updates and attachments from the fork's captures
+> 7ee93fff7 Park every open that fails on its password
+> c30ca9e9c Run every write as one layer transaction
+> 9e6ec93a8 Answer close and layer.close with the tag alone
+> 85133eb4d Port upstream's signature rule and edge resolver tests
+> e2d5e7ef1 Sign, cancel and draw signature looks in upstream's shapes
+> 3e1a8bb7f Write measurements and read scales in upstream's shapes
+> 194c4119b Answer outline.read under its key, read flags as upstream's writer does
+> bac841b53 Read the outline and write it through document.apply
+> 7b4419278 Take back a refused redaction or page flatten in a layer transaction
+> 48de63802 Apply redactions with the v3 scope and answer MutationMeta
+> 291672c2c Port R5 and the turned-shape frame check of the transfer round trips
+> b233fa558 Route the kernel's form data through bundles, and mark transfer routed
+> 22c513a2e Export and import annotation and form bundles
+> c3f98218d Check widget script rights per event, refuse unreadable recorded actions
+> e117157e9 Run form fields and widgets as one-op changes, and write /DV
+> f25515d3e Give every Forbidden refusal PermissionDenied's details, and prove form rollback byte for byte
+> 798f2f830 Run form values and resets as document.apply ops, and retire forms.applyEffects
+> 3179b9d80 Run page structure as document.apply ops, and names and extract in upstream's shapes
+> 2e49ba555 Keep a layer's base alive for as long as its document
+> be81f37e1 Open open.fatMem bytes as a fresh layer over a private base
+> f13af413b Pin the amended fork fix, and check the page 12 render draws something
+> c71c21859 Pin the fork fix for the layer tiling-pattern crash, and render report.pdf page 12 through a layer
+> 6fb2512fc Note in 8.18 that flatten_corpus owns the flatten cases
+> 03a18c65d Plan 8.32, the fork fix for the layer tiling-pattern crash
+> b3a652103 Flatten and export annotations by upstream's refs, and answer flatten with MutationMeta
+> 67b8859e0 Refuse a plain session's change that deletes beside other writes, and drop the old delete and move events
+> 3676cd7cf Note 8.16's plain-session guard and page promotion in 8.29
+> 48db59eca Delete an annotation with its thread and bring it all back on undo, and reorder annotations beside a neighbour
+> 156f619ca Compare expectations by value, take a file read back on update, and give the kernel's boxes their /RD inset
+> a40eb2d7a Update annotations from upstream's v3 patch, resolved against the annotation, as a single verb and a change op
+> 7817453b2 Accept an unmeasured line caption on create, claim object numbers once per change, and give a popup's parent back when its create is taken back
+> 88cdf8ce0 Create annotations from upstream's v3 page-space draft, as a single verb and a change op
+> d29378a26 Read a scale viewport with no scale as 1, prove the appearance render writes nothing, and save exported drawings through one helper
+> 523da4872 Render every appearance mode and state, draw a missing /AP in memory, render turned box kinds upright, and read a stamp's appearance
+> 998622c2b Read a gray or CMYK colour as sRGB, pin the field spaces to upstream's table, and refuse an unnameable page
+> 0d457bb39 List annotations in upstream's record, in page space, and name promoted ones by their birth
+> 2090bb2fd Respell form records only in form answers, and hand the kernel each field's real raw flags
+> 86c217dc0 Read the form in upstream's shape, with every widget row, in page space at the host boundary
+> 6fa66e933 Refuse an unknown search mode, and port the search conformance cases
+> b45de0510 Search with upstream's flat request and ranges, and answer page space at the host boundary
+> 94b00706e Lay out text in page space, as upstream's createTextLayout does
+> 878f58585 Answer page geometry in upstream's names, and in page space at the host boundary
+> cbf73a1bf Refuse an invalid piece info patch value as InvalidArg, as upstream validates it
+> b1ee2b8b7 Give upstream's attachment undo to 8.30
+> f9978b386 Run attachment writes as change ops, and answer piece info writes as upstream
+> 1b196d3d8 Port upstream's fields: collab scopes, and replay the regenerated scope corpus
+> 4a05fbf18 List upstream's 27 capabilities in the scope corpus, and record field scopes
+> abd5e9dce Read the PDF bits once, as upstream's materializePdfPermissions, and answer the security kinds under security
+> 79e4da2f7 Answer applyChanges without events, keep patch key order, and end undo on final changes
+> f3491520a Run metadata writes as changes, and route document.apply and applyChanges
+> cca6c5b9a Regenerate the metadata patch DTOs from dto.rs
+> 192df22f8 Keep a date's offset both ways, and split the custom keys into their own patch
+> 3843a29cc Read a page's visible box through the session's index, and say set_scale calibrates on pageBoxesOf's crop
+> dbb96d775 Carry 8.4's review notes into 8.14, 8.18, 8.20, 8.24 and 8.26
+> 7c65ac5a6 Plan 8.31 for render parity 8.4 left
+> 63380c1e2 Answer page space at the host boundary, and read page boxes by pageBoxesOf
+> 0f21e0e70 Note the locked-open protection field in 8.30
+> 853ea5f13 Refuse a fat-memory reserve before the open, and raise the floor after the signing check
+> 374cd7cce Plan 8.29 and 8.30 for the session gaps 8.3 left
+> 61fb035b3 Route objectNumbers.reserve and pages.workingSet, and answer the session kinds as upstream does
+> 08cf78e11 Give baseIndex promotion to 8.12 and the error-code set to 8.27
+> dab323e1a Read upstream's wire envelope and refs, and park the removed kinds
+> 5d0ad0c9e Say only what the flatten vector records, and why the export case moved
+> fc9cdf401 File signatures.prepare and complete after-first-write again
+> 11f19a7ca Report what Task 8.1 recovered from research/catchup-plugins
+> 95d371d61 Correct the matrix notes and rows Task 4a carried
+> 0ce43e7ec Set the 19 recovered kinds' Rust status in the operation matrix
+> b8bb19cb3 Regenerate scope resolution with doc.sign in the closed set
+> 2268565ee Regenerate signature protection with upstream's protected capabilities
+> b594ad822 Record the PageRefs sent to pages.extract as sources
+> 87711ea88 Re-add the ignoreWhitespace slice cases to the search vectors
+> 4d9df5c00 Re-add the annotation flatten and export cases to pages-mutate
+> b134eb622 Address the Task 7 review: legacy path, Needs edges, Task 9 worktree
+> 7d85e245e Redo the engine re-port split as Tasks 8.1 to 8.28 on this branch
+> 253bca66b Check a script print's policy row on the adapter path only
+> ec3a3835d Drop the extra -O2 from the wasm link
+> 7a7c94f3e Test that a gesture ends when its record leaves the view
+> 78286ad6c Revert "Clear an edit draft whose annotation went mid-gesture"
+> 25e810a14 Record that upstream's forget covers H3
+> 5462de7d9 Gate a script's print() on the print policy row again
+> 574eedae2 Clear an edit draft whose annotation went mid-gesture
+> b156f9e06 Merge research/catchup-impl into research/catchup-plugins
+> 0162f1b22 Skip the runtime fetch when the source's runtime commit is already present
+> 627beed31 Run the engine re-port on the plugins branch, after the impl merge
+> c7c37df6c Break the engine re-port into Tasks 8.1 to 8.24
+> c2602e40e Let the sync script merge any source branch, not only upstream main
+> dfd2937d4 Break the catch-up plan into numbered tasks on integration branches
+> 1c0c5d05f Record the catch-up decisions on H3, M14 and the new packages
+> acb5bb84f Plan the catch-up to upstream main and fix the staleness probe
+> cdfbb677d Merge upstream without the commit-graph to dodge a merge-ort submodule bug
+> faabbd217 Pin runtime-src to the fork and script the upstream sync
+> 717df4686 Point the start-here build section at fetch:payload
+> 238388e62 Run gh release create without trimming its inherited output
+> d524ec9e9 Read submodule status untrimmed so a matching commit passes
+> 9eedf417f Point the submodule hint at the fork URL, not a fetch in an empty dir
+> 8ede41c21 Publish Rust-core engine payloads to the runtime fork
+> c8fa2396a Merge branch 'research/viewer-perf-compare' into research/engine-payload-release
+> b5db930c7 Export buildFork and linkRustCore for the payload publish script
+> 897bd3586 Rename the annotation read record to AnnotationRecord
+> 6c1010c84 Rename the public PDFDocument alias to DocumentInfo
+> 1a69c0909 Resolve i18n in every_plugin_builds_together; re-measure the archive
+> 460dff68f Measure a 120 Hz drag through StageReaderModel; it keeps up
+> 157c6a7e1 Keep a manual-bridge cancel that arrives before the call has its id
+> 9c0e38d66 Show libtool's warnings, honour CARGO_TARGET_DIR, stop doubling PDFium
+> a77451037 Test that every cancellable member honours a cancelled task
+> 17e8ff483 Make the Swift capabilities agree on status, documents, lifetime and .end
+> 4f7dcb05a Say what Shell.surface answers for an Object.prototype name
+> 3a56c400f Refuse command args that aren't UTF-8, as execute's doc says
+> c48ae8b69 Throw for malformed DER and out-of-range selections instead of trapping
+> e2720525f Give every Swift-visible error code the plugin vocabulary
+> b1d5c9232 Note where the Swift plans name code that has since changed
+> 6fa70f19b Fix the epdf-ffi drop-abort flake, clippy's collapsible ifs, a test warning
+> 221fb1477 Spell the rewrite save mode as TypeScript's PdfSaveMode does
+> 23e2d990b Sign asynchronously so a Keychain prompt never stalls the kernel thread
+> 4bca671a4 Keep a Swift error's code when a completion fails
+> 6406fcda0 Export the kernel's document save to Swift as PDFViewer.save
+> 1959cedc0 Answer stamps.persist with a Registration that survives being dropped
+> c8c0f1720 Carry the open failure's error record and the locked event's passwordProvided
+> 991031edd Refuse an unknown request kind as WorkerHost does
+> 7d52137b8 Count 84 WorkerRequest kinds in the plan's operation matrix line
+> 87b61b533 Answer a no-op forms.applyEffects as {result, mutationSequence}
+> c1e6330a6 Answer a failed request with name "EngineError", as serializeError does
+> a2b884473 Count a field delete's widget cascade as no extra mutation
+> 1c82e6d0c Resolve pieceInfo writes void, as the TypeScript does
+> 468022a67 Carry a failed page's error as a SerializedEngineError
+> 06993dcf7 Answer form writes with the TypeScript's meta, sequence and cascade
+> 7566552a2 Answer fonts.* on the Rust wire as the TypeScript worker does
+> 517d0123d Hand the host's signing notices to native listeners
+> 6cbcaa8a5 Publish the TypeScript's document event payloads from the Rust host
+> 6a9c17b60 Answer the rendered page on document.renderPageFile
+> e3d45fc3a Take a widget link's widget as its AnnotationRef
+> 3baec217b Speak PageRef on the Rust worker wire, as the TypeScript does
+> 71775a1e4 Give the engine one PageRef type for the worker wire
+> dd2e1c290 Add the 19 new worker kinds to the operation matrix
+> 94836c1c4 Regenerate the wire vector for the 84-kind worker protocol
+> 5efaf80c3 Port signatures.finalizeCandidate to Rust
+> 93ee01678 Port annotations.flatten and annotations.exportAppearance to Rust
+> 86e20c356 Route document.setFontSettings and fonts.authorizeEditing in Rust
+> 818eba296 Box FreeText rich text so the annotation enums stay small
+> 3b795d4ac Read and write FreeText rich text through the fork in Rust
+> 347f806ae Port the FreeText rich-text wire and font identities to Rust
+> 82fc580e9 Regenerate the search slice-protocol vector for ignoreWhitespace
+> 29fe12ddb Port the ignoreWhitespace search flag to the Rust engine
+> 5af0fd231 Merge research/vecgen-rest
+> aee96dbac Merge research/vecgen-annot
+> 3b1f065c7 Merge research/vecgen-forms
+> 5a3b75400 Convert redaction scopes to PageRef at the generator's edge
+> cc3ea8527 Address pages by PageRef in the annotation update generator
+> 672f185f6 Open the page holder by its ref in the files-write generator
+> fb1e125d0 Read the first page by its ref in the piece-info generator
+> 7b91ad1cf Address pages by PageRef in the annotation create generator
+> 43feeec45 Flatten changed widgets back to the wire in the form-effects generator
+> 78745772a Address pages and widgets by ref in the form-field generator
+> 0b42f996e Address the page by PageRef in the annotation move generator
+> 9a275186c Key the save round trip's pages by PageRef
+> e2bcada08 Address the page by PageRef in the annotation delete generator
+> b7573c3a6 Address extracted pages by PageRef in the extract generator
+> b4697879a Address the page by PageRef in the annotation appearance generator
+> 953ac1a76 Flatten form widgets back to the wire in the forms generators
+> 28adb8b95 Read the geometry corpus through PageRef
+> 804511a62 Flatten PageRefs in the annotation read generator
+> a35d60373 Convert PageRefs back to the wire in two vector generators
+> 2b898166c Merge research/swift-plugins: Swift wrappers for every Rust plugin
+> 6d0929e80 Close out the Swift plugins: every plugin together, status and size
+> 8ee6618a2 Merge research/swift-signature (plan 16) into research/swift-plugins
+> 138d6e38e Enforce signature protection and the signature read gates natively
+> c7ebec54c Document native signatures and clear clippy for the signature crates
+> 751684b4f Add SignatureCapability, a Keychain signer and app trust anchors to the Swift package
+> 4718851ef Add signature to ViewerHost with host-level signer and trust slots
+> 47940f726 Export signing through uniffi with Swift signer and trust ports
+> a7799aaee Export the signature plugin's reads and validation through uniffi
+> ced20c9d2 Map the signature paths in the native engine
+> 8480e5c91 Prepare, complete and abort signatures, and draw visual fills, in the Rust engine
+> 4c3fa2ecb Analyze changes after a signature in the Rust engine
+> 9aa382e56 Tick plan 09 in the umbrella
+> 087d6fcfa Merge the stamp Swift wrapper (plan 09)
+> dac7e8c7d Keep the asset engine's documents apart from the viewer's
+> da3297cf3 Read signatures, revisions and document protection in the Rust engine
+> 85d1a02a8 List the stamp exports in the README and mark them delivered in the spec
+> c4a73f4ad Add StampCapability and a file-backed library store to the Swift package
+> a4ed2b228 Enforce document scopes natively and keep a locked document open until unlocked
+> 8ab5273a1 Tick plan 08 in the umbrella
+> 72becfe1b Add stamp to ViewerHost with a lazily started asset engine
+> 8e3748cc9 Merge the measurement Swift wrapper (plan 08)
+> af5cf65d7 Export the stamp plugin through uniffi
+> d8027c034 Refuse a scale write with no measure instead of clearing
+> ed9080b91 Bind the fork's signature, checkpoint and digest headers
+> 72ffaf732 Add a native asset engine for stamp libraries
+> fdb641e5b Tick plan 06 in the umbrella
+> 1ed30851a List the measurement exports in the README and mark Appendix A delivered
+> 8f7342835 Add MeasurementCapability to the Swift package
+> 9889fad90 Merge the form Swift wrapper (plan 06)
+> 457cdc82d Read and write named pages in the Rust engine
+> c58d8f0e0 Publish a form effects batch as form.effectsApplied
+> e0f551323 Bind the fork's named-page registry in pdfium-sys
+> 609803150 Tick plan 07 in the umbrella
+> 87ede6730 List the form slice in the README and the spec
+> 82145cd59 Merge the redaction Swift wrapper (plan 07)
+> 893c2b449 Read a failed page's error in either spelling and stop clamping counts
+> 760f92fee Add EmbedPDF's FormCapability
+> cf2a5ed7f Map page.measure and add measurement to ViewerHost
+> ca00e618a List the redaction slice in the README and the spec
+> 871e75042 Export the measurement plugin through uniffi as MeasurementHandle
+> add133645 Add EmbedPDF's RedactionCapability
+> 71bde14b1 Install the form plugin in the viewer host
+> 635f7d303 Read and write measurement viewports in the Rust engine
+> 7059600db Map the form engine paths onto the native host
+> 552a76f6f Install the redaction plugin in the viewer host
+> 64990c8be Map redaction.apply onto the native host
+> ee69c6077 Export the form plugin through uniffi
+> e101264ca Decode a remote redaction.applied event as the spread result it is
+> 89e559e02 Export the redaction plugin through uniffi
+> cfc47889e Bind the fork's measurement viewports in pdfium-sys
+> 371eecd5b Add the shared form records to epdf-ffi
+> 226798be8 Tick plan 05 in the umbrella
+> e0980d2e2 Merge the annotation Swift wrapper (plan 05)
+> 33521ddae Flatten refs inside annotation drafts and patches; index create failures
+> 8f465ea83 List the annotation slice in the README and the spec
+> 780e605a8 Add EmbedPDF's AnnotationCapability
+> 176d667f6 Install the annotation plugin in the viewer host
+> d3b32f370 Map the annotation engine paths onto the native host
+> cb14d6bb3 Add the annotation file-picker port
+> 17ec3262c Export the annotation drafts and threads handles
+> 14a9d83d8 Export the annotation selection and tools handles
+> 2edc3947d Export the annotation plugin's reads, writes and events through uniffi
+> 96021e79e Add the shared annotation records to epdf-ffi
+> e2c36f537 Tick plan 04 in the umbrella
+> 398fb2bb3 Merge the link Swift wrapper (plan 04)
+> dbe242723 List link in the Swift README and mark it delivered in the spec
+> 412508319 Treat a drag that ends on the pressed link as a drag, not a tap
+> 198448ae4 Activate a link named by id with its page in the action context
+> a954b525c Add the Swift link capability
+> 03bf4d896 Keep the link tap handler from holding the hub that holds it
+> 35ad21374 Test that a named NextPage action moves the stage
+> 805436052 Test links through the native engine, the stage, actions and a tap
+> a940a6587 Let a native reader take link taps from the pointer hub
+> a1eb3fd2b Nest every page an annotation read names, not only refs
+> ce8ab4012 Wire the link plugin into the viewer host
+> d1ba8ee33 Export the link plugin through uniffi
+> 1d7fef829 Map page.annotations.list to the native engine's listRawPage, refs nested
+> d73b769aa Add the shared annotation-core link records to epdf-ffi
+> 96b250be5 Tick plan 02 in the umbrella
+> 25ac53dc4 Merge the stage Swift wrapper (plan 02)
+> a82b2d604 Tick plan 02's definition of done
+> ffb7117d4 Cap the reader's page render scale and let double taps through
+> 91288c9ed Keep the reader's gesture bracket in order
+> d5c2685a2 Cancel the stage's frames when its document closes
+> 8cc76b57c Tick plan 03 in the umbrella
+> 04ee8846b Merge the selection Swift wrapper (plan 03)
+> 27344278d Tick plan 15 in the umbrella
+> b773a3c68 Pin a mid-read cancel and an uncaptured off-text drag
+> f950dcfa1 Merge the actions Swift wrapper (plan 15)
+> 198f1a441 Start a script's time budget when its block starts, not when it's queued
+> 1e7a3bea2 List stage in the Swift README and mark the spec entries delivered
+> c0bb5607f List selection in the Swift README and mark it delivered
+> b61726cc5 Add a SwiftUI scrolling reader over the stage to EmbedPDFUI
+> 2ff24437e Test the Swift stage capability and render's viewport members
+> 1e22925c4 Test the Swift selection capability
+> 5eaa384fc Add the Swift selection capability
+> 73434e05f Wire the selection plugin into the viewer host
+> 2e2151ed8 Export the selection plugin through uniffi
+> e336fe5cf Mirror the selection plugin's records for uniffi
+> 581682818 Tick plan 14 in the umbrella
+> ff4d6aa86 Merge the commands Swift wrapper (plan 14)
+> 9f001c787 Document what a registered command handler keeps alive
+> 161d2a113 Add the Swift stage capability and render's viewport members
+> ddac3b115 Document the Swift actions capability and mark the spec entry delivered
+> 438bb1225 Pass the actions observer sink without a type annotation clippy flags
+> 270050d48 Wire the stage plugin into the viewer host
+> b7c56b7a2 Add a JavaScriptCore ScriptEngine for PDF JavaScript
+> 3aa065e32 Document the commands Swift capability
+> 1e294d5d6 Add EmbedPDF's ActionsCapability
+> df793b8cd Export render's viewport members and a view-demand handle
+> a7459d6f3 Relay the stage plugin's events through uniffi
+> 4ad3adff3 Add EmbedPDF's CommandsCapability and a closure-backed CommandHandler
+> a29c17374 Run PDF JavaScript through a foreign ScriptEngine behind a Rust sandbox
+> e16c7df08 Export the stage plugin's handle with a kernel-timer frame scheduler
+> d191331cb Mirror the stage plugin's records for uniffi
+> 0b303753d Install the commands plugin from ViewerConfig and expose ViewerHost.commands
+> 3fd8b24cd Add the shared view records to epdf-ffi
+> e157891b6 Install the actions plugin from ViewerConfig and expose ViewerHost.actions
+> 05bbf309e Export the commands plugin through uniffi
+> 0e170634f Map actions.read in the native engine
+> 1429da68a Tick plan 01 in the umbrella
+> fa747fb60 Add the commands plugin's uniffi definitions and the CommandRunner port
+> 4451b5374 Add the actions plugin's executor, UI, submit and verb ports as foreign traits
+> d391c47aa Compare I18nConfig, not ViewerConfig, in the i18n equality test
+> 4feac8946 Export the actions plugin's dispatcher through uniffi
+> 8ceb1bdf0 Merge the interaction and feedback Swift wrappers (plan 01)
+> 965b0e61d Tick plan 13 in the umbrella
+> c33f3c859 Document what a registered handler keeps alive, and fix the latency note
+> ed1f769c6 Merge the i18n Swift wrapper (plan 13)
+> d9d5493d8 Compare I18nConfig's loader by presence, not identity
+> 59ffc9f6f Tick plan 11 in the umbrella
+> 658bc62f5 Merge the view-manager Swift wrapper (plan 11)
+> 01bf51399 Say which view-manager members take ids the plugin doesn't know
+> 01dec27fb List view-manager in the Apple README and mark the spec entry delivered
+> 52c3d69e6 Clear the clippy findings in the view-manager exports
+> 01116497e Add the Swift view-manager capability
+> 0594225c6 Wire the view-manager plugin into the viewer host
+> 43789df95 Export the view-manager plugin through uniffi
+> 1994804a3 Document the i18n Swift capability
+> 4525df4e7 Add EmbedPDF's I18nCapability and a bundle-backed locale loader
+> 9f3445d91 Tick plan 10 in the umbrella
+> 9da077ba7 Let go of a handler once its registration unregisters
+> e0e5ebf6d Install the i18n plugin from ViewerConfig and expose ViewerHost.i18n
+> 5846a9831 Merge the page-edit Swift wrapper (plan 10)
+> cb0991e8d Export the i18n plugin through uniffi with a foreign LocaleLoader
+> 1dd42cf32 Let go of an extracted PDF when the insert after it can't be placed
+> c8b9b494c Add the i18n plugin's uniffi records
+> 789d08999 List interaction in the Swift README and mark the spec entry delivered
+> 68d226755 List page-edit in the Apple README and mark the spec entry delivered
+> e60ea5796 Tick plan 12 in the umbrella
+> 50f73fe5f Measure dispatchPointer's round trip at 120 Hz
+> a076d4837 Add the Swift page-edit capability
+> cb501ed39 Test the Swift interaction and feedback capabilities
+> 809748d34 Merge the shell Swift wrapper (plan 12)
+> 8d3cd44fc Pin the shell's exclusive-open event order to JavaScript property order
+> 3373eccdf Add Swift interaction and feedback capabilities
+> 4c3435316 List shell in the Apple README and mark it delivered in the spec
+> bf31de7d2 Wire the page-edit plugin into the viewer host
+> 3ffebadcd Add the Swift shell capability
+> 811724caa Wire the interaction and feedback plugins into the viewer host
+> 0f6b27c50 Map the six page-edit engine paths and keep the native page list live
+> 381a6de8d Wire the shell plugin into the viewer host
+> c5696dd4d Export the feedback plugin with a foreign PlatformFeedback provider
+> 5734bb1aa Export the interaction plugin through uniffi with a foreign handler trait
+> 52e5d0c8f Map the shell handle's unit calls instead of wrapping them in Ok
+> 017e0a7b3 Export the shell plugin through uniffi, with props as JSON text
+> 0d96a20d2 Export the page-edit plugin through uniffi
+> 0a7b2acc7 Add the pointer records to epdf-ffi
+> 9ea9f15ce Record why the shell plugin ships to Swift
+> 40659713e Add the reported-error stream, Registration and a shared fixture list to the Swift package
+> 72f7ca979 Build the darwin and iOS PDFium slices from a fork with the measure, named-page and signature headers
+> 9eeca0060 Share the native translator's path list, number helpers and Bytes opens
+> 5949b0f63 Move PageInfo into epdf-ffi so plugins can return it
+> bf7625143 Add ForeignSettle, HostError, RegistrationHandle and the mirror helpers to epdf-ffi, and make KernelBound cloneable
+> c7a980838 Add the README's plugin table
+> e9367b593 Add the Swift plugin wrapper plans: an umbrella and sixteen per-plugin plans
+> 1a56bf8e9 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 198a1b536 Default runs to four arms: main, main-aa, plugins-base, plugins-next
+> b5e82a190 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> ba18fe3c9 Format the member-order allow-list script
+> ab7b2d2ab Add a script that rebuilds the member-order allow-list
+> 65b7da583 Add the profiling scripts and a run summary to the harness
+> 6d25b2851 Record the member-order work in the review status
+> 8cf572cf5 Compare object member order by default, with an allow-list
+> 9f5fd252f Write withUnit, withAreaUnit and withPrecision formats in their TS order
+> d41ef4ee1 Write the link slice's items in source.ts member order
+> 306a293cd Drop member-order tracking from script events and submit requests
+> fa5b5708f Merge branch 'research/order-annotation' into research/order-all
+> a16278bcc Merge branch 'research/order-form' into research/order-all
+> 35b343856 Merge branch 'research/order-stage' into research/order-all
+> e94ef6188 Order CommentPermissions as getPermissions writes it
+> 60ae3d6e6 Keep the annotation model's byId and preview pages in insertion order
+> 58c4e4603 Print stage state, page transforms and /XYZ reveals in TypeScript order
+> bb4e00760 Write the render tile target in pageRectToPdf's member order
+> be3ea170b Keep the kernel's state maps and origins in TypeScript member order
+> 15e576f2b Reorder annotation struct fields to the TypeScript literal order
+> 8f1565ff4 Serialize Annot in the member order of the TypeScript that built it
+> 8c75213f4 Keep the annotation model's tool defaults in insertion order
+> 596d75f8a Serialize stage-core cameras in the order each TS producer builds them
+> b5942dfc5 Serialize pageRectToPdf and edgesOfQuad results in TS member order
+> bb31857e7 Keep a submit request's member order as it arrived
+> 010cb6ace Keep a script event's member order as it arrived
+> 31e7b926d Match the stamp slice and library member order to the TypeScript
+> 8fa954608 Keep the form model's maps in JavaScript key order
+> 045b0b447 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 1fadc7c41 Record the plugins-tip7 run after the review fixes
+> aca9e243f Add the plugins-tip7 arm, after the review fixes
+> 9d6c2eca1 Record which Low review findings are fixed, and how
+> f2e9b555b Move the plan and status docs back to the repo root
+> ec3870988 Regenerate coverage.json after merging the Low-finding fixes
+> 4f444d9c6 Merge branch 'research/lows-tooling' into research/lows-all
+> 6904451f3 Merge branch 'research/lows-annotation' into research/lows-all
+> e32c3cb7d Merge branch 'research/lows-ffi' into research/lows-all
+> 847db6ebe Merge branch 'research/lows-kernel' into research/lows-all
+> ce74f85b7 Merge branch 'research/lows-selection' into research/lows-all
+> c45f3d808 Add hostile-length CMS tests and a no-harness build check
+> 343fc063e Refuse a record with no ref instead of keying it ""
+> 873ae8fb1 Verify RSA signatures up to WebCrypto's 16384-bit modulus
+> b85c0a9cd Add vectors for messages mid-gesture and bounded path output
+> c601d69ef Make the form's auto_name linear in the field count
+> ec8ee2ba4 Order form import and export values the way a JS object iterates
+> 61339677b Remove the redundant crates/plugins/.gitkeep
+> 91344f785 Move the root-level plan and status docs into docs/research
+> fe68a8ca7 Test tryCapability while destroying, and a Rust PluginError's class
+> 4c2c8527b Replace committed personal hostnames with user@remote-host
+> 269207f05 Correct three comments in the wasm shim's proxy
+> 38934ad99 Keep a self-referencing error's own name and message across the bridge
+> 438dc9706 Announce draftChanged when a step builds a new draft
+> 800a4cb77 Forget a JS function the kernel never made a callback from
+> 784da6599 Correct the arm count in the perf-compare README
+> 1ce6fabf1 Look up a wasm token by name without adding one
+> 7c0446edf Correct the plugin status doc: P6 ships, and there are 19 plugins
+> fa771b30d Resolve the wasm kernel's documents through its capability
+> 5b713eb40 Drop the replay runner's dead code, and read Run.unmatched
+> 40e81c5a6 Note in the actions README that can_dispatch answers false for not-ready
+> 656c481d5 Release a script realm's sandbox when its last handle drops
+> e42653389 List ported files the generators never load in coverage.json
+> eee8ee38a Leave an undefined fontSize out and throw on a missing fontColor
+> 375aa71f7 Answer invalid-input for a null manual-bridge handle
+> 347b49e86 Build the stamp suite's plugin from stampPlugin(), not a copy
+> cf73829d9 Detach suite console shims from a case when it ends
+> 9b1a52698 Drain the manual bridge's abort table before the kernel thread exits
+> b6e69bfab Drop a refused kernel job outside the sender lock
+> 4b23b458b Refuse a plugin factory name registered twice
+> 357358e37 Sort as V8 does where a comparator can answer NaN
+> 4c116cd6a Refuse answers whose $ tags the Rust runner would replay raw
+> 89fc48978 Read missing ui-core harness arguments as null instead of panicking
+> b6cb471b5 Silence the unused-variant warning in the initial_state test
+> e4e5148d1 Make task ids unique across threads, and date the mutation notes
+> 0a45ee495 Convert a plugin remover into an Unsubscribe
+> 844251966 Drop a ready document's open source, keeping its host hold
+> 3045b8144 Give command definitions a weak capability and a weak remover
+> 2a1639501 Forward the probe's abort reason, and pin it in a vector
+> a58afe87d Clamp an interval's period to at least 1 ms
+> 5a81da047 Refuse a typed plugin with a reducer but no initial_state
+> b4997ffeb Record the vectors' ICU version, and check it in vectors:check
+> 0695bc428 Stop tiles_in_rect looping forever on a zero tile span
+> 013f02bf9 Declare serde_json preserve_order in i18n, shell, ui-core and commands
+> 61d325d25 Use ui-core's MenuTarget for the commands' get_menu_target
+> 884d18d16 Abort a cancelled lane run before forgetting it, as lanes.ts does
+> aa913bc4e Type rotateSelectionBy's delta as a quarter turn
+> 1bd756fb3 Keep an unparseable page row in place in the stage registry
+> 1d25e8e90 Tell non-Error throws apart, and add an opt-in member-order check
+> 0371bee7c Skip an abort listener an earlier listener removed
+> 66719af32 Settle the selection's Promise.all at once on empty input
+> 4619c7df5 Remove the renderAppearances abort listener once the task settles
+> c0ef4b3d7 Add SelectionRangeInput::span for a search hit's float fields
+> 1d7d1d547 Treat an undefined password or render policy as absent
+> 74045ce86 Correct the order pages_with_hits documents
+> 093e457e9 Throw from the goto executor for a destination-less node, as TS does
+> 6a6332e26 Let the link label accept a whole link, as getLabel does
+> cc804f408 Ask the draft whether it is a creation draft instead of serializing it
+> 6567eb1eb Reject a throwing open thunk without racing it through engineCall
+> b45d256f8 Read an action's type once per dispatch, and never panic reading it
+> d383ee3a7 Saturate the selection's span end and focus arithmetic
+> 3e08ee2d7 Skip glyphs a selection run claims past the end of the layout
+> 4ed4566cd Release the stage's view providers and rules at close
+> daa86f9a9 Cost a lengthless bytes handle by its pixels, not NaN
+> 4bb490cb5 Drop a raster fetch's abort listeners once it settles
+> f02a66ee3 Keep the pages beside a malformed selection registry row
+> bd1d603f0 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> a90b0f725 Record the rustReads-with-the-Rust-kernel result, left off
+> f0ca236d0 Allow rustReads with the Rust kernel, and add the plugins-rustreads arm
+> e35d82ddd Record which review findings are fixed, and how
+> f4569afc1 Merge branch 'research/mediums-boundary' into research/mediums-all
+> 304578a4c Give the release test's stand-in kernel a status
+> 28e86ab44 Merge branch 'research/mediums-boundary' into research/mediums-all
+> 4572f45bc Give init-only JS plugins the full context and the start() timing
+> 1e22e8978 Merge branch 'research/mediums-plugins' into research/mediums-all
+> 5f4777ef7 Answer the Kernel contract after destroy or a failed start
+> 44537a248 Merge branch 'research/mediums-annotation' into research/mediums-all
+> ddd07c641 Merge branch 'research/mediums-harness' into research/mediums-all
+> 545ef5184 Adopt an AbortablePromise on await, and only a subclass
+> e8205de75 Fail a selection text read that a content change overtakes
+> 5d05a8e45 Decode the selection registry once per page list
+> 101997143 Join the operation and start in the turns close and destroy take
+> 0f74cd1f5 Settle open and its operation on the TypeScript's turns
+> 7ee92d1ed Share the form snapshot across model updates
+> 4965e0519 Return the stage's TypeError instead of panicking on a NaN camera
+> 26e0aa3b0 Bound the work a cloudy border or squiggle may ask for
+> 8e3cecfb1 Memoize the comment thread index and hash its lookups
+> d34708034 Add the @embedpdf/react changeset for the toolbar and usePages changes
+> e477f965c Exit on signals in scripts/mutants.sh and exec cargo-mutants
+> 33ca050b8 Document wasm-opt and check for it before the wasm build
+> 43d450a2b Fail vectors:check on orphaned and unreplayed vector files
+> 8aad6ae39 Drop tasks that wait on a promise nothing can settle
+> fa2ba2f00 Stop an empty render ladder or tile pyramid from panicking
+> 99a15c59b Use hash sets for annotation-core membership tests
+> 5b52413b1 Compare safe integers exactly in conformance vectors
+> 965d22aa0 Share annotation-core's annotation table between steps
+> 4e36f5db1 Close a document whose open lost the abort race
+> f0b535982 Free a tile's slot when its fetch is refused synchronously
+> 81c9e0805 Add the signature plugin's public event hooks
+> 22ca510e6 Release a script realm built after the host is disposed
+> 27458d954 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 4eca9e0e9 Decide against rustc-hash (item 13) in FINDINGS.md
+> c16ada284 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 486ac67df Split the round trip's remaining cost in FINDINGS.md
+> 5b7bf0b4b Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 82bced756 Record the result-text change, kept
+> 910980671 Merge branch 'research/rust-kernel-result-text' into research/multi-platform-rust-core-impl-plugins
+> 627fdd996 Show the source commit in the eval app's top bar
+> acc7ae4bb Link the hosted eval build from the start-here page
+> 95edd164e Count the merged plain-arguments change in the start-here page
+> 3194d6014 Add a start-here page for the Rust port
+> 59d7fc7b1 Keep multiplatform-plan.md as the only plan
+> 9b1e0f9bc Add the result-text arm
+> 34644a2b4 Write a live call's outcome straight to JSON text
+> d00dbacb3 Add rustReads with the Rust kernel, and result writing, to the open list
+> b17c2e497 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> cb544d59b Merge branch 'research/rust-kernel-plain-args' into research/multi-platform-rust-core-impl-plugins
+> c5f41fe9d Read page geometry through the Rust engine core in the eval app
+> e9ec8a215 Record the profile of plugins-tip6 and the plain-arguments result, kept
+> bbc7a7d3f Use relative paths for local runtime pins and in the fork plans
+> f4924fc13 Add a production build to the Rust kernel eval app
+> c2d75b4c7 Add the plain-arguments arm
+> 45c920b26 Skip the canonical copy of a kernel call's plain arguments
+> 178de54a8 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> f4df384e2 Record the plugins-tip6 desktop run
+> 18a99cb32 Add the plugins-tip6 arm
+> faa2c6189 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> e4e1d64b6 Record the geometry-decode result, kept
+> a14b6502d Merge branch 'research/rust-kernel-geometry-decode' into research/multi-platform-rust-core-impl-plugins
+> d57b2a062 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 1e9ad2494 Record the coalesced-notify result, kept, and the animation-frame variant, dropped
+> 932bf52f1 Add the animation-frame flush arm
+> 61027635d Add the plugins-tip5, geometry-decode and coalesced-notify arms
+> c0fcd2746 Notify store listeners at most once a frame on the Rust kernel
+> e5e1c8d65 Read page geometry runs in one pass, without a Value per run
+> a8252d0ea Update the web eval note for release_closed_sessions' new default
+> 6b7584167 Record coverage with the review fixes' vectors
+> c47e310f2 Require a reason on every scenario case that skips the state snapshot
+> 203a5f5e4 List the lines only unsnapshotted cases reach in coverage.json
+> d15ef217c Catch panics in the kernel thread's drains as well as its jobs
+> 19835b20d Rebuild PluginError and CancelledError from Rust rejections
+> f87b4ab00 Forget a bridged document once its close settles
+> 19a614a9a Release a closed session's capabilities by default
+> 7d53dae0c Refuse non-allowlisted URI schemes before open_uri
+> 0bef57fe5 Gate a script's print() on the print policy row
+> d365c22a7 Measure the form script transaction budget on a monotonic host clock
+> 046d47578 Carry an in-flight draft across the Created id swap
+> 7d0c4aa1d Refuse out-of-range RSA-PSS salt lengths before calling rsa
+> 24e77c1a3 Cap BER nesting depth in the signature DER reader
+> dd25f4934 Add a whole-branch review of the plugins branch against impl
+> e07c025c6 Record the host-bytes result, kept
+> 8dad2d808 Add the plugins-tip4 and host-bytes arms
+> 81899a80a Hold the bytes a source function produces as a host handle too
+> db0bc2fd8 Pass an opened document's bytes as a host handle, not base64
+> 7455a5294 Merge branch 'research/rust-kernel-bridge-encode' into research/multi-platform-rust-core-impl-plugins
+> eb4204257 Record the bridge-encode result, kept
+> ea3c9dae2 Read search hits through Borrow now that listHits returns shared hits
+> ce6d00427 Merge branch 'worktree-swift-package-plan' into research/multi-platform-rust-core-impl-plugins
+> 2884c2bd9 Add a Nutrient copy of the demo app for profiling comparisons
+> f824a6832 Add the plugins-fixes and bridge-encode arms
+> ecbf128a0 Merge branch 'docs/manual-testing-plan' into research/multi-platform-rust-core-impl-plugins
+> 57f627ed5 Write plain engine answers with JSON.stringify, without the canonical copy
+> 762bd60ae Add Rust kernel manual test script and verified findings
+> adda0bbea Pre-bundle the JSX dev runtime and QuickJS in the eval dev server
+> ca6d809a7 Answer the active search hit as its entry in listHits on the Rust kernel
+> fce880492 Give the annotation capability its comments and links objects
+> 55c0fedf9 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 572182a27 Bring FINDINGS.md's open list up to date, with items 13 to 15
+> c8e53c523 Merge research/viewer-perf-compare into research/multi-platform-rust-core-impl-plugins
+> cdcf92fd2 Record the promise-move and typed-answer results, both kept
+> 49b9a62b6 Add signposts and a profiling scenario for the demo app
+> 6d2f12ef5 Generate the demo app's project with Tuist instead of XcodeGen
+> 663a93ec7 Add the promise-move and typed-answer kernel arms
+> b88217027 Read page geometry and text from the engine's answer text, without a Value
+> 19f07e077 Move a settled promise's result instead of cloning it where nothing else reads it
+> 914d0e6ca Add a SwiftUI demo app over the Swift package
+> 65bad378f Record where the plugins tip's main thread goes on jump and open
+> 2686c067b Publish the six-arm R=10 run on the Mac mini with the large flows
+> da586b19f End a trace a failed flow leaves open
+> bc143a4a1 Record that two runs can't share the Mac mini; stop waiting on a refused ssh
+> 286cf76e6 Let two runs share a host, and a check of whether they can
+> d73e784a6 Source the hop numbers in the bridge benchmark writeup
+> ea2be6845 Keep the manual-bridge feature out of the workspace build
+> 80ab66f5c Answer queued engine calls as shut down once the session joins
+> 22569b77c Document that PDFViewer.unlock cannot succeed before plan B4
+> 3ef6934f9 Drop a page render that lands after its task was cancelled
+> 2edefdb79 Report each tab's status and open error in DocumentInfo
+> f6b81f8fa Join the engine thread when the session drops
+> 44dc1f927 Catch the kernel clock up before each job and survive a panicking job
+> 71358fd83 Qualify the bridge benchmark lead and attach the raw numbers
+> 7e9491152 Measure a hand-written C bridge against uniffi for search and render
+> 459bbe779 Select Xcode 26 and the pinned Rust toolchain in the Apple job
+> 39d0a6dc3 Test the uniffi plugin exports in CI and add a manual Apple job
+> 535cb363f Key the page view's task on page and resync the search model on subscribe
+> db813a28c Add EmbedPDFUI's search model and page image view
+> b2d5f6f22 Update react manual testing script for testing rust impl
+> c441ff472 react manual testing script
+> f4a9a0844 Drop what foreign handles still hold before the kernel thread exits
+> 8a88acc88 Export the render plugin through uniffi with CGImage output
+> 57c8598b0 Export the search plugin through uniffi
+> 7e3d57b49 Share ResourceStatus, end metadata streams at close, label the cancel helper
+> 567b20f3b Wire the metadata plugin into the viewer host and the Swift package
+> 9bd14c580 Export the metadata plugin through uniffi, with call cancellation
+> 003668b30 Add zoomLarge, selectLarge and annotateLarge
+> 51e305f06 Finish the viewer's streams on destroy and document the public import
+> 62c4eb374 Add EmbedPDF's viewer facade
+> 75a39ede9 Clear stale bindings before regenerating and ignore Package.resolved
+> a6da98a24 Record shared search hits and why the panel stays as it is
+> 21c0e939d Package epdf-viewer-host as the Swift package's binary
+> 3c20b8a11 Detach rather than join when the kernel thread shuts itself down
+> 47311f003 Export ViewerHost: documents and lifecycle
+> c45b8a768 Add the plugins-sharedhits arm
+> b450a9909 Share search hits instead of copying them per page of results
+> 63382c5b0 Decode the native engine's answers the way the host sends them
+> 57617919c Run the kernel's engine over PDFium in epdf-viewer-host
+> 12b91e7d3 Abort a promise whose future is dropped before the kernel job runs
+> 5bef6186d Add epdf-ffi: the kernel thread and handles that reach it
+> 88d468c61 Plan the Swift package over typed uniffi plugin exports
+> dce59fa9d Add the plugins-tip3 arm: lazy state and the glyph view together
+> 373b7f73b Merge branch 'research/rust-kernel-glyph-view' into research/multi-platform-rust-core-impl-plugins
+> c25b929a3 Record the glyph view and the Rust kernel's search fixes
+> 898be39d2 Add the plugins-lazy arm
+> f83e60654 Look each page up once per search slice, not twice per match
+> 36ae29149 Read a state slice only when something reads it
+> 92190f9e0 Add searchLarge and the glyph-view arms
+> 16f128278 Read each glyph's geometry through one view of its struct
+> 3e048e15f Record the measurement slice's text writer and coldScroll
+> 32745220c Add coldScroll: the 60-wheel scroll on a document just opened
+> d7f1b1067 Add arms for the slice text writer and its base
+> d9c5e4a58 Write the measurement slice's text a page at a time
+> 65ecde530 Leave preact/compat's aliases alone on the research branches
+> 69720d9bb Record one copy of preact/compat
+> ceec6132a Compare dedupeCompat in the gate's arm identity
+> a575675b4 Add a dedupeCompat arm switch and compat arms for main, impl and plugins
+> 846e47869 Record why staged_meta stays as it is
+> bcebb9e95 Record that the four Rust-core failures were test bugs
+> 4f9ceee9c Read the security state and page refs the way the engine API has them
+> ab1d0c687 Note -O2 merged with assertions kept
+> fa97fb3e8 Read a C bool result as a boolean whatever the build
+> f625ccfe4 Link the engine with -O2
+> 322353281 Record -O2 and assertions measured apart
+> 68875083c Add -O2-only engine arms
+> 9b3742dac Record the rebased engine-link measurement and the remaining test failures
+> 54e819567 Point the fixed and engine-link arms at the rebased branches
+> c92019192 Regenerate the PDFium bindings for the new runtime pin
+> f49e36624 Check the linked engine against its bindings at build time
+> 758c095c2 Record the optimized engine link and what it exposed
+> 45be8d3d5 Pin the runtime fork at runtime main plus the viewer's build changes
+> dea3e7e77 Link the engine without BigInt integration
+> 87a569bdf Add arms for the optimized engine link on impl and plugins
+> a5b2a248f Note wasm-opt merged and LTO dropped
+> 4d4fde391 Record LTO and wasm-opt in the plugins build, measured apart
+> 0569b6daa Add arms for LTO and wasm-opt in the plugins build, each on its own
+> e981e0cb9 Run wasm-opt -O3 on the kernel's wasm-bindgen output
+> 72e9618c1 List what FINDINGS.md hasn't tried yet
+> 65f00ac48 Record the toolbar gate on the TypeScript kernel
+> 496088649 Publish the eight-arm R=10 run with mainJsMs
+> 2be8c88cb Add impl-gate: the toolbar gate on the TypeScript kernel
+> 51130b042 Merge branch 'research/viewer-perf-compare' into research/multi-platform-rust-core-impl-plugins
+> 416ee81b8 Merge branch 'research/rust-kernel-bump' into research/multi-platform-rust-core-impl-plugins
+> 364990a39 Record the read-set prototype and the trace's cost
+> 963fe6919 Keep the remote awake without display assertions; bound the trace calls
+> 2fdf71f98 Add the plugins-reads arm
+> e9b3f57f6 Measure main-thread JavaScript from a trace, microtasks included
+> eb04459f2 Record the cache fix without item 3
+> 9517f6427 Repoint plugins-bump past the item 3 revert; explain the script-time rise
+> dd1b86fcc Revert the listOpenSurfaces predicates
+> 993b28ff5 Add per-item and wire-cache arms, and their measurements
+> eba60e600 Drop cached answers when the store's revision can't be read
+> 99669ec8c Keep the wire's cached answers while the store's revision holds
+> 8d21589dc Add the toolbar prototype arm and run remote timing detached
+> e4d533d18 Render the toolbar only when a command it shows changes
+> 267af66b7 Report plugins-getstate against main and plugins-lto
+> 683e0c930 Merge branch 'research/rust-kernel-wire' into research/multi-platform-rust-core-impl-plugins
+> 1c8004c56 Add a plugins-getstate arm for the per-slice state read
+> 776f0c265 Read only the parts of the kernel state that changed
+> 579304f75 Time perf runs on another machine over SSH
+> da947a564 Cut per-call waste on the kernel wire
+> ad2d6f1bb Merge branch 'research/rust-kernel-state-cache' into research/multi-platform-rust-core-impl-plugins
+> be8c60f3c Merge research/viewer-perf-compare into research/multi-platform-rust-core-impl-plugins
+> 04ff546ab Publish the seven-arm viewer perf comparison with the kernel fixes
+> 61e6fd907 Report plugins-fix-zoom against main and plugins-lto
+> d27dedc0f Add a plugins-fix-zoom arm for the zoom fixes
+> 8cef92c76 Render baked annotation appearances at HIGH priority, like page tiles
+> be26ed588 Build the tile key suffix once per pass over a page's tiles
+> e13b09f75 Resolve each toolbar command once per render, and skip re-parsing an unchanged answer
+> cdebc3b6e Add a plugins-fix-leak arm for the settled-promise abort fix
+> 2ed312446 Drop a promise's abort function once it settles
+> 7d4bd2fb8 Add a plugins-fix34 arm for the page-registry and measurement prototype
+> 2b07fb371 Share the page registry, and stop measurement's reconcile being O(pages²)
+> 29d271020 Add a plugins-fix arm for the kernel state-cache prototype
+> e0f33b1c4 Serialize the kernel state once per change, and notify once per call
+> fe3cbe096 Record where the Rust kernel's time goes and what to fix first
+> 79a9695ef Add a plugins-lto arm that builds the wire kernel with LTO
+> 90e783cab Publish the first viewer perf comparison
+> 0c56a0e24 Run the viewer perf comparison with one command
+> 8f612e74a Report perf ratios per pair with bootstrap intervals and a noise band
+> c2e999cfb Gate every perf arm on the same answers, then run interleaved rounds
+> e6834aacd Add the perf server, page probe, CDP helpers and fixtures
+> d31127683 Build one viewer entry into every perf arm
+> e871465d0 Build each perf worktree with its branch recipe, cached by sha
+> a9319ade2 Move the research pins to the Rust /Name fix
+> bef223d9d Merge research/multi-platform-rust-core-impl into research/multi-platform-rust-core-impl-plugins
+> c1fc5461e Check toolchains and materialize pinned worktrees for perf runs
+> 82dae09d6 Add the bootstrap ratio and noise-band verdict for perf reports
+> 400575787 Pin the three branches the viewer perf comparison builds
+> cb56c4fe5 fixes
+> dc6a10917 Fix four review findings in the viewer perf plan
+> fec914c3f Fix five review findings in the viewer perf plan
+> 6ffe27fd6 Explain the kernel, the engine and each arm in the perf plan
+> 370717788 Move the viewer perf comparison plan to the repository root
+> 8172ca483 Plan a repeatable perf comparison of the viewer across the Rust branches
+> 17296a726 Merge research/web-eval-memory: bound memory in the Rust kernel web eval build
+> 8067b683d Release the host values of an engine answer that lost to an abort
+> 8da678a1e Release baked appearance images once the wire decodes them
+> 1579e12b5 Move the Import PDF fix out of the list of what still grows
+> 1897ff026 Keep a picked File's name and type in callback answers
+> f303fafb5 Read Blob arguments to bytes before they cross to Rust
+> 7ddee8086 Record the stamp paths without a release test and the broken Import PDF button
+> 26f5acf19 Release stamp preview renders once their bytes are copied
+> d4b8f7d6f Fix final review findings on interaction unregister and release_ref
+> 1c9d8ffc8 Record the eval build's memory after the release work
+> 3d4199d10 Fix review findings on closing sessions and destroying kernels
+> 7400c78d5 Drop closed documents and destroyed kernels
+> 325875e0a Release JavaScript callbacks the Rust side has dropped
+> 3732899d5 Release refs JavaScript has dropped
+> 6ae42d8ad Hand each promise to JavaScript once
+> 432f58152 Log releaseImage failures and cover two release-timing gaps
+> ba43af697 Release a rendered image when the Rust side drops it
+> f837b238d Share one host table and one $hostBytes resolver across every kernel
+> 4c98a9c17 Make a rendered image's bytes resolvable on demand, not dropped
+> 14888c0b7 Keep rendered image bytes on the JavaScript side
+> 6d67c1816 Make kernelCounts fail loudly and add a real wasm memory counter
+> 8f379f968 Count what the Rust kernel eval build holds
+> cc1266800 Plan bounding memory in the Rust kernel web eval build
+> c6d55ea81 Say what a panic does to the web runtime's entry count
+> bf02e2d90 Document the eval build's known gaps, its scripts and how to run its tests
+> 727692579 Hand the annotation host's consoleError a live Error, and fix the target count
+> 42ebac1ed Keep the eval build out of turbo's test and dev, and typecheck without wasm/
+> 4cad0f5f3 Do not cache a call that changed the store, and clear the cache on callJs
+> 1fccafe8f Name the sandbox member in the promise refusal, and fix its budget comment
+> 59feb1adf Report Rust panics to the console before the abort
+> 9053e3391 Leave a nested export's drain to the outermost entry
+> dd6688d60 Correct the format-script finding in the eval record
+> 1f89bbca6 Record the Rust plugin eval pass
+> a4a6f8ed8 Report kernel errors to the console as live Errors, as the TypeScript does
+> 86ebbb78c Read a KeyboardEvent's stroke members before matchStroke crosses to Rust
+> 66927472f Run form scripts through QuickJS in the Rust eval build
+> 2c1294f40 Make the Rust kernel eval app runnable from a fresh worktree
+> 19bff41f0 Add the Rust kernel eval app
+> 4c12975ec Pass browser host inputs through the stage, render and annotation adapters
+> 4bd96a5bf Keep the core-wasm shim's answers and state slices stable across calls
+> fe4ea070c Tighten the core-wasm shim's cache and error paths
+> 17d1d9597 Add the private Kernel shim over the Rust plugin crates
+> feb9d8f0e Give live callers resolvable command ctx markers and the remaining kernel exports
+> 822903955 Export the Rust kernel to JavaScript through the harness adapters
+> 08f06f7fd Tighten the engine bridge's post-close and error paths
+> 7a3554f97 Bridge the Rust kernel's engine contract to @embedpdf/engine
+> 7e5dcb3fc Keep a nested entry from turning the web runtime's clock back
+> 6474f50c9 Follow wall time and surface JS conversion errors in the web runtime
+> de500f384 Drive the kernel runtime from browser timers
+> cb57d4789 Share the Harness constructor between scripted and live
+> 3514948a4 Let the conformance harness call live callbacks
+> 7157d8245 Link every plugin crate for wasm32-unknown-unknown
+> 5db42f741 Plan the web eval build over the Rust plugin crates
+> 3fbfd67fa Record the v3 catch-up in the status and rebase documents
+> 62f3fe089 Merge rebase/mutants-i: annotation mutation triage
+> 6daedc74f Record the annotation mutation run under v3
+> baad1341e Kill annotation survivors in the selection and text writes
+> 953521c0c Kill annotation survivors in the create, draft and pointer writes
+> 7acfc7117 Kill annotation survivors in the tool handlers and registry
+> 5249d6927 Kill annotation survivors in the services
+> ec6da7f57 Kill annotation survivors in the reads, rich text and value
+> 43786b509 Kill annotation survivors in binary, comments and create_input
+> 99592f94b Describe what scripted-activation-matches-refs pins under v3
+> a3ee6be11 Merge rebase/mutants-h: form mutation triage
+> f4e585fec Kill 20 of epdf-plugin-form's 29 mutation survivors
+> 2696126d1 Regenerate coverage.json after the mutation triage merges
+> 1e80592ec Merge rebase/mutants-g: annotation-core mutation triage
+> ea02afe0f Record epdf-annotation-core's v3 mutation run
+> be31d3c25 Kill 47 survivors in measurement.rs and measurement_shape.rs
+> b783dbe23 Kill 24 of measure.rs's 41 surviving mutants
+> 70de35226 Kill 25 annotation-core survivors in hit, types, update, view and richtext
+> 1c1a27fcb Merge rebase/mutants-f: stamp mutation triage
+> c6f317fe4 Triage the stamp crate's mutation survivors
+> 9a1ee2a4a Merge rebase/mutants-e: kernel mutation triage
+> 76ae3b597 Triage the kernel's mutation survivors
+> 17fddce20 Record the verdict.rs mutation rerun in signature-core's README
+> bb4a5983f Merge rebase/mutants-d: mutation triage for stage and the signature plugin
+> 74858f212 Triage the signature crate's mutation survivors
+> 83cc067f2 Triage the stage crate's mutation survivors against v3
+> 9065a7ac5 Register every suite's factories before emit-one writes the named ones
+> d83aa88e8 Merge rebase/mutants-c: mutation triage for redaction, link, actions and measurement
+> a7a271e9c Kill 24 of measurement's 27 surviving mutants
+> 4ba03d073 Kill actions' tree-lookup and empty-commit mutants
+> 8dbfe228a Kill link's hit-test and activateAt mutants
+> 9cc588481 Merge rebase/mutants-b: signature-core mutation triage, five port bugs and a cycle guard
+> 7d3f9d2e9 Refuse certificate issuer cycles and print numbers as JavaScript does
+> 594580bc3 Record redaction's v3 mutation numbers
+> 73eb432a4 Triage signature-core's surviving mutants and fix five port bugs
+> 688b17131 Regenerate coverage.json after the first mutation triage
+> f8068cb9f Merge rebase/mutants-a: mutation triage for eleven crates
+> 21bf96b64 Kill sixteen of selection's surviving mutants
+> cefc8c79c Kill render's reachable origin and thumbnail-signal mutants
+> 12e8e51bc Kill geometry's sign mutants with a unit test
+> 158ba8c29 Kill search's cancelled-branch mutant
+> 11a58b834 Count the new page-edit, metadata and view-manager cases in their READMEs
+> ca56323c8 Record interaction's v3 mutation numbers
+> 4b2b3c05e Record i18n's v3 mutation numbers
+> acf45c449 Kill view-manager's reachable record mutants
+> 13c98b719 Record commands' v3 mutation numbers
+> e18128d75 Record shell's v3 mutation numbers
+> 5e51511da Kill metadata's reachable strict_equals mutants
+> e32d3d638 Kill page-edit's surviving mutants and fix its index message
+> e4fbba208 Regenerate coverage.json with every crate on v3
+> 86e986bf0 Merge rebase/signature: port the signature plugin to epdf-plugin-signature
+> 06c34a0ed Record the signature port's vectors, coverage and pins
+> d312da949 Port the signature plugin to Rust
+> 66c1e2e35 Generate vectors for the signature plugin
+> afb842b48 Merge rebase/form-stamp: form and stamp on the v3 controller shape
+> a30365e79 Record the v3 form and stamp ports' vectors, coverage and pins
+> c77827a50 Reach the stamp plugin's remaining reachable branches
+> 1e178e3b4 Regenerate coverage.json after the redaction/link and measurement merges
+> 0a13966c6 Merge rebase/measurement: port the measurement plugin to epdf-plugin-measurement
+> 75b378c4e Document epdf-plugin-measurement
+> 2270703e3 Port and reach the stamp plugin's persistence helpers
+> fed14d2b6 Port packages/plugin/measurement to epdf-plugin-measurement
+> e8a9bb30b Move epdf-plugin-stamp to the v3 controller shape
+> beee89103 Answer pages and page.annotations members as the TypeScript fake does
+> d0a541d4e Generate conformance vectors for the measurement plugin
+> 36b1e4cdc Reach the rest of the v3 stamp plugin from its generators
+> e2950ef89 Move epdf-plugin-form to the v3 controller shape
+> 7b434f4ec Leave sessionId out of origin_of when the event carries none
+> 9cbe5c12d Merge rebase/redaction-link: redaction and link on the v3 controller shape
+> fab8bb3df Move epdf-plugin-link to the v3 controller shape
+> dcbf676c9 Move epdf-plugin-redaction to the v3 controller shape
+> f1a667a95 Reach the rest of the v3 form plugin from its generators
+> a753742ad Regenerate coverage.json after the annotation merge
+> fac52d614 Merge rebase/annotation: epdf-plugin-annotation on the v3 controller shape
+> 61819b514 Record the v3 annotation port's vectors, coverage and pins
+> d2ab43510 Move epdf-plugin-annotation to the v3 controller shape
+> 44385e5fb Move the annotation repository and pure modules to the v3 shapes
+> d1377dcb7 Regenerate coverage.json after the selection and stage/search merges
+> 0c13efd03 Reach the v3 annotation surface from the generators
+> 2c07a66bd Merge rebase/stage-search: stage and search on the v3 controller shape
+> 19db64303 Reach the v3 search surface from the generators and record it
+> fc12ea2a9 Move epdf-plugin-search to the v3 controller shape
+> 39966ad1d Reach the v3 stage surface from the generators and record it
+> f253df402 Merge rebase/selection: epdf-plugin-selection on the v3 controller shape
+> 0dd868ab1 Record the v3 selection port's vectors, coverage and open mutants
+> 38b7a3f66 Move epdf-plugin-stage to the v3 controller shape
+> 91eaa35de Move epdf-plugin-selection to the v3 controller shape
+> 45cff7cab Drive the selection generators through the v3 surface
+> 1c816e792 Regenerate coverage.json after the render and interaction/actions merges
+> 124d5583a Read the commands plugin's initial state as a value or a thunk
+> 93fb91a31 Merge rebase/interaction-actions: interaction and actions on the v3 contract
+> 72a58b13e Merge rebase/render: epdf-plugin-render on the v3 controller shape
+> f2eae3b5c Record the v3 render port's vectors, coverage and pins
+> 7ec445c89 Port the actions plugin to the v3 controller contract
+> 64db2753b Move epdf-plugin-render to the v3 controller shape
+> 7191039f3 Reach the v3 render controller's public doors from the vectors
+> 65d283248 Regenerate coverage.json after the annotation-core merge
+> c5fc17081 Merge rebase/annotation-core: geometry and annotation-core on the current TypeScript
+> ec35f9bfd Reach the new annotation TypeScript from the vectors
+> cc8dc31de Port the interaction plugin to the v3 controller contract
+> 16ebd847f Move epdf-annotation-core to pages addressed by PageRef
+> 4e0c0a17c Regenerate coverage.json after the small-plugins merge
+> 2d69c87c6 Merge rebase/small-plugins: harness mirror and six plugin crates on v3
+> 703a39a27 Port the commands plugin to the v3 controller contract
+> c3648bd36 Port the view-manager plugin to the v3 controller contract
+> 366008902 Port the page-edit plugin to the v3 controller contract
+> fc34c51cf Port the geometry rect helpers and page space to epdf-geometry
+> 7672f2bc1 Port the shell plugin to the v3 controller contract
+> 7b33a629b Regenerate coverage.json after the kernel, generators and signature merges
+> 7b8789d2f Merge rebase/core-signature: port core/signature to epdf-signature-core
+> 03bf9e6e4 Port packages/core/signature to epdf-signature-core
+> 43691631d Pin the chain engine's policy half and document the signature fixtures
+> 6eaa7d728 Port the i18n plugin to the v3 controller contract
+> d27044377 Port the metadata plugin to the v3 controller contract
+> 8e9643614 Mirror the generators' fake-engine changes in the Rust harness
+> 77bd034ee Merge rebase/generators: every suite reaches the v3 TypeScript
+> 511e1d047 Reach the v3 stamp plugin from its generators
+> cb74196a2 Generate core/signature vectors
+> 4c9220885 Reach the v3 link plugin from its generator
+> f72ea7cea Reach the v3 redaction plugin from its generator
+> 8c1386ced Reach the v3 form plugin from its generators
+> ea1706b39 Address pages by PageRef in the annotation markup, tools and comments suites
+> e17a7084d Build only fake-engine refusals as PermissionDenied instances
+> 3728d1750 Merge branch 'research/multi-platform-rust-core-impl-plugins' into rebase/generators
+> ba795dfac Reach the v3 annotation plugin and core from their generators
+> 610cfd1d3 Merge rebase/kernel: the v3 kernel port
+> c8c907e00 Cover a controller reading pages before its document is published
+> 52ffa1889 Port the v3 kernel contract to epdf-kernel
+> d6c1f8b45 Reach the v3 selection plugin from its generators
+> c8e6992bf Reach the v3 search plugin from its generators
+> 076d818a8 Reach the v3 render plugin from its generators
+> 7f5b77303 Reach the v3 stage plugin from its generators
+> e1739468a Pin the v3 kernel contract in the kernel vectors
+> 2d1813be0 Reach the v3 page-edit plugin from its generator
+> 7d792b5ed Reach the v3 metadata plugin from its generator
+> e320d39b4 Reach the v3 view-manager plugin from its generator
+> 1fd31b148 Reach the v3 i18n, shell and commands plugins from their generators
+> 064799a7d Reach the v3 interaction and actions plugins from their generators
+> 7ebd9b9b2 Move the conformance harness onto the v3 kernel contract
+> 807f9f718 Merge research/multi-platform-rust-core-impl into the plugin port
+> aca75ef83 Record what merging the current TypeScript would break
+> 9022e3d61 Finish the annotation crates' mutation runs, and record the port
+> 9136a2441 Regenerate coverage.json after the mutation cases
+> 6d2af14d3 Format the sniffBinaryMetadata harness entry
+> a16c67c39 Record the annotation plugin's final mutation run
+> 90fe00741 Pin linkItemsOn's fall-back to the engine's last target
+> d5e46e48c Pin capability bookkeeping the vectors left loose
+> 756b9f2a3 Pin stamp sizing, previews and upright placement
+> 535116596 Pin the view-dependent capability paths the vectors never varied
+> 34b9f793e Re-run the nine files the annotation port's first pass covered
+> 5c41e6d14 Kill 7 of the repository's 13 surviving mutants
+> 455a9279d Kill 17 of binary.rs's 21 surviving mutants
+> 2c212f495 Document the stamp port and record its coverage
+> 3e5747765 Kill 11 of tools.rs's 17 surviving mutants
+> 0d7416fad Kill 18 of handler.rs's 28 surviving mutants
+> dc8dd21f3 Record the annotation core's final mutation run
+> 6d46dbd4e Pin the stamp paths the first mutation run found
+> 0548d8fbc Port the stamp plugin to Rust
+> 4fddc8fcd Generate the stamp plugin's conformance vectors
+> ddf5fdcfb Let a fake document lack pages.flatten and pages.extract
+> 0a3f49971 Merge the form port
+> d7a6d67d1 Document the form port and record its coverage
+> d74712903 Pin a recalculation anchor outside /CO and a rejection's diagnostics
+> 23180eb2c Pin ref matching, the one-point box and rootless activation
+> f36c77e27 Pin the scripting paths its mutation survivors found
+> 25e708a73 Kill 7 of cloudy.rs's 39 surviving mutants
+> fb78433fe Pin the place handler's priority and its strict click threshold
+> 5110a399b Kill 21 of geometry.rs's 35 surviving mutants
+> 1ce6b1fef Announce a queued mutation run once, not every poll
+> 272d1b4dc Cover a pointer cancel inside the ink grouping window
+> d8a88034e Match numberless object-number targets as Set#has does
+> 5e56578e1 Record the link port's coverage
+> d5dc9a033 Document the link crate
+> e11792119 Skip index holes a past-the-end writeDone leaves
+> 86594ae1c Pin that link activation reveals smoothly
+> 3e7139445 Kill the value.rs mutation survivors
+> 473e6d227 Drop js_string's unreachable undefined arm
+> a796f8065 Pin how queued design verbs interleave with page reloads
+> 5047301d4 Port the link plugin to Rust
+> c1bca998a Print sibling behaviors as the object their plugin wrote
+> abb9c61fd Port the form plugin to Rust
+> 060c21ee6 Let LinkNavItem deserialize
+> e804d7d88 Record the redaction port's coverage
+> 3b562b327 Document the redaction crate
+> 1d0efa350 Generate the form plugin's conformance vectors
+> f1b1767f4 Kill the redaction capability's surviving mutants
+> 287aa1475 Port the redaction plugin to Rust
+> 5c6ad7125 Let a fake document lack the optional forms.applyEffects
+> 630a5c428 Record the annotation port's coverage and partial mutation results
+> 639d50f19 Merge branch 'research/plugins-annotation' into research/multi-platform-rust-core-impl-plugins
+> 4ccc629f6 Merge the annotation-core port
+> 277c948c6 Queue mutation runs first come, first served
+> 10d70585f Queue mutation runs first come, first served
+> 7a44a9a57 Queue mutation runs first come, first served
+> 90be0fb5a Pin the move click threshold, hover survival and skewed quads
+> f3afa847d Cover IdSet's plain-array form in a unit test
+> c9061b17f Pin comment-thread /NM keys and reply ordering
+> 22cd25075 Record core/annotation coverage under the generators
+> d353f598a Run cargo-mutants one at a time, throttled
+> de87980cc Run cargo-mutants one at a time, throttled
+> 91fb473b4 Run cargo-mutants one at a time, throttled
+> 896f697e1 Satisfy clippy and tsc for the annotation port
+> d9298f211 Close the reachable annotation coverage gaps
+> 71f1015d6 Replay annotation hover, the hover feed and the permission twins
+> 84f73b5ee Close mutation misses in epdf-annotation-core with new cases
+> ced987256 Replay annotation markup from the selection plugin
+> 99089172b Replay annotation tools and the pointer handlers
+> a6f878fec Replay annotation grouping and the grouped Replace Text create
+> 0adcbe899 Replay annotation comments, attached links and script commits
+> 78f07c6fe Print actions and state as canonical JSON, NaN included
+> 90c572d94 Replay the annotation data API and the optimistic effects
+> 4f2429f82 Merge the rest of the stage port
+> 38bc5cd80 Replay annotation hydration and the document event stream
+> 9aad0e34c Port the annotation plugin's pure modules and pin them
+> 139b9efbf Record packages/plugin/stage coverage under the generators
+> 4bc6e4cf3 Document epdf-plugin-stage's API, host inputs, gaps and mutants
+> fd54cc2fe Add stage cases for the second mutation run's misses
+> 38fa2a491 Merge the search port, with the stage port it builds on
+> 669c167a0 Record packages/plugin/search coverage under the generators
+> 319499f99 Document epdf-plugin-search's coverage, shim and mutation results
+> 9be702a64 Merge commit '89c20154e' into research/plugins-annotation
+> 5e6d00916 Pin goTo's wrap below twice the hit count
+> 9855c1579 Add stage cases for the mutants the first vectors missed
+> c861d67d0 Port packages/plugin/search to epdf-plugin-search
+> 0edfa9b2f Generate packages/plugin/search conformance vectors
+> ee9f88fdd Merge the selection port
+> d2113b8d3 Record interaction and selection coverage under the generators
+> 23851b70c Pin the selection text layout harder, and document the crate
+> a39af9d62 Port packages/plugin/stage to epdf-plugin-stage
+> f14b89641 Pin the stage errors a typed port can express
+> cd6b7f739 Generate packages/plugin/stage conformance vectors
+> 3739521a6 Merge the interaction port
+> 9ffe3dcde Merge the render port
+> b76656e05 Record packages/plugin/render coverage under the generators
+> dcb10c5eb Document epdf-plugin-render's coverage, shims and mutation results
+> 89c20154e Port core/annotation to Rust as epdf-annotation-core
+> d4ebd1a2a Generate core/annotation vectors from the TypeScript
+> 8095a71b1 Merge the commands port
+> 04e9e9afd Add render cases for the mutants the first run missed
+> a59899286 Record coverage for plugin-commands
+> 8e9cdd3f3 Document the epdf-plugin-commands port
+> 8d3c3b873 Close the mutation gaps in epdf-plugin-commands
+> 5bf5f7187 Port packages/plugin/selection to Rust as epdf-plugin-selection
+> 5c360d04b Document epdf-plugin-interaction: coverage, handler API, mutants
+> 9b61ea15d Generate selection vectors from packages/plugin/selection
+> 7fadb39bb Port packages/plugin/render to Rust as epdf-plugin-render
+> b0f104e67 Generate the render plugin's conformance vectors
+> 43f66ba17 Port plugin-commands to epdf-plugin-commands
+> 72626206b Generate conformance vectors for plugin-commands
+> 674c6115c Port packages/plugin/interaction to Rust as epdf-plugin-interaction
+> 1878af7c4 Merge the actions and acrojs ports
+> 88fa8026f Record coverage with the acrojs and actions generators
+> 25ab26d17 Document both ports: coverage gaps, host inputs and survivors
+> 70429b8a6 Kill the surviving mutants in both ports
+> 53085724f Merge the i18n, shell, page-edit and view-manager ports
+> ca7706c69 Generate interaction vectors from packages/plugin/interaction
+> bc6429adb Record coverage for the four P1 plugin packages
+> 91554fa03 Document the i18n, shell, page-edit and view-manager ports
+> b674ed78b Close the mutation gaps in the four P1 ports
+> 832109fd3 Merge the geometry and stage-core ports
+> 255b5da58 Port core/stage to Rust as epdf-stage-core, and replay its vectors
+> 2addae23a Port core/geometry to Rust, and replay its vectors
+> f816db775 Merge the ui-core port
+> 5de3b3899 Port the actions plugin over a scripted sandbox
+> 5a24d6dc9 Port the acrojs host bridge, and ship the prelude as data
+> d257fce91 Record core/ui coverage under the generators
+> f248e0cd7 Document the epdf-ui-core port
+> 64389725f Kill the ui-core mutants the first run missed
+> c47e129da Port the view-manager plugin
+> 60684fcee Port the page-edit plugin
+> fd34ee519 Port the shell plugin
+> 55b2ff78e Port the i18n plugin, with Intl.PluralRules as data
+> c3762f38b Make forms.submit an optional fake-engine member
+> 3dbd19149 Adopt a queued operation's promise the way then() does
+> bd168cfbe Port packages/core/ui to Rust as epdf-ui-core
+> f7d43e43d Generate core/ui vectors from the shipping TypeScript
+> 5985bf7ef Kill the kernel's surviving mutants, or say why they live
+> c862c6970 Run the plugin-layer replay and the vector checks in CI
+> c0bd3f750 Carry non-finite numbers through function suites
+> 2c0944ee8 Parse conformance vectors in document order
+> c2144b81c Pin the generators' time zone to UTC
+> f7ab29d60 Reach the rest of the kernel, and pin its pure helpers
+> a3cee599a Port the metadata plugin, as the pattern every port follows
+> ada44185b Port the kernel to Rust, and replay its vectors
+> f2a261beb Generate kernel vectors from the shipping TypeScript
+> e0569574a Plan the plugin layer's port to Rust

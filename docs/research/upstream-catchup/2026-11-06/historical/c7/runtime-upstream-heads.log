@@ -1,0 +1,9 @@
+ref: refs/heads/embedpdf/main	HEAD
+eeac787c02fac7b40c74c91bbff0ffb5f59ff97e	HEAD
+09385a2ae13480ccb9ea191bafc7cc5297059c1e	refs/heads/embedpdf/feature/digital-signature
+605f21fa1f5c51572d4b2c061237a3a3688fb989	refs/heads/embedpdf/feature/markup-rich-text
+05dd81a53901331f90845916776389aaa9287ad4	refs/heads/embedpdf/feature/measure
+bba2cd79b8e166313834daa41feb35bba6383072	refs/heads/embedpdf/feature/set-subtype
+eeac787c02fac7b40c74c91bbff0ffb5f59ff97e	refs/heads/embedpdf/main
+8b26ac01d195e8a6df7b18134412d3f41c4e1117	refs/heads/embedpdf/v2
+3fe8d0814a101347702dbf2c67cc8257101a1680	refs/heads/pdfium/main

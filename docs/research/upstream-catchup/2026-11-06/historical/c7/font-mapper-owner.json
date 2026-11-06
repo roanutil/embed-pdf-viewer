@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "git",
+    "--git-dir",
+    "/tmp/embedpdf-c7-viewer-metadata.git",
+    "show",
+    "f28ed4ea4aa46c8e69676558993b103d68b19e08:crates/epdf-engine/src/features/fonts/list.rs"
+  ],
+  "exit": 0,
+  "lines": [
+    "14 use crate::features::annotation::rich_text::{family_key, standard_family};",
+    "86     pub fallbacks: Vec<String>,",
+    "242 /// `isStandardStandIn`: a document font that is a standard font the PDF only",
+    "244 fn is_standard_stand_in(font: &DocumentFontFacts) -> bool {",
+    "245     standard_family(&family_key(&font.face.family_name)).is_some()",
+    "257         .find(|candidate| candidate.name == name && !is_standard_stand_in(candidate))?;",
+    "350 /// `DocumentFontReader.ts`): every document font but a standard font's",
+    "361         .filter(|font| !is_standard_stand_in(font) && !is_last_resort(font))",
+    "442     fn a_standard_font_the_pdf_only_names_is_not_a_document_program() {"
+  ]
+}

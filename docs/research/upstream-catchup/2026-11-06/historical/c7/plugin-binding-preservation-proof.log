@@ -1,0 +1,366 @@
+62bbfda9f60577eadd1f0b4f51aab8dd8a8c9912 Merge research/multi-platform-rust-core-impl into plugins
+50786828f2186078f174fa020ad2d7f7460e258e Merge upstream main a40d63a19 into impl
+253bca66b21785a21d37576f6c093d21f62e2bc0 Check a script print's policy row on the adapter path only
+7a7c94f3eb9e0c1999f9d36558bc32423faf5d9b Test that a gesture ends when its record leaves the view
+5462de7d9912e6cee370319c6c7d5a530888592e Gate a script's print() on the print policy row again
+b156f9e06c7e268d99c5a882e8efe153aaa4a287 Merge research/catchup-impl into research/catchup-plugins
+5097f554705af892332b39821764e7b4eb233ce6 Merge upstream main b456ee4fd into research/catchup-impl
+0bef57fe5aa41dceb015b1aff141040b39717d26 Gate a script's print() on the print policy row
+ca6d809a75773105878a3899c197a5dabcf0dd45 Answer the active search hit as its entry in listHits on the Rust kernel
+27801926782369a067b2f9116b81a4c3ec5bcf03 Merge main into research/multi-platform-rust-core-impl
+diff --git a/packages/engine/core/src/pageSpace/helpers.ts b/packages/engine/core/src/pageSpace/helpers.ts
+index a7994e038..1a1868ce2 100644
+--- a/packages/engine/core/src/pageSpace/helpers.ts
++++ b/packages/engine/core/src/pageSpace/helpers.ts
+@@ -294,10 +294,10 @@ const mirrorEveryPage: VisibleBoxOf = () => MIRROR;
+  * follows its points and scale. Values `patch` gives come back as given.
+  *
+  * Throws `InvalidArg` for what the engine refuses without its schemas: a
+- * field the kind doesn't declare, a changed subtype or name, a rect with a
+- * new shape or that isn't finite, and where nothing can follow. The engine
+- * checks the values against the kind's schema when the update reaches it,
+- * and refuses there what this lets through.
++ * field the kind doesn't declare, a subtype the annotation can't become, a
++ * changed name, a rect with a new shape or that isn't finite, and where
++ * nothing can follow. The engine checks the values against the kind's schema
++ * when the update reaches it, and refuses there what this lets through.
+  */
+ export function resolveAnnotationPatch(
+   current: Annotation,
+diff --git a/packages/engine/services/src/features/destinations/readDestination.ts b/packages/engine/services/src/features/destinations/readDestination.ts
+index f04c47407..5bc989eb6 100644
+--- a/packages/engine/services/src/features/destinations/readDestination.ts
++++ b/packages/engine/services/src/features/destinations/readDestination.ts
+@@ -3,7 +3,7 @@ import { toPageRef } from '@embedpdf/engine-core/runtime';
+ import type { PdfFunctions, PdfRuntimeMemory, Ptr } from '@embedpdf/engine-runtime';
+ 
+ import { withScratchN } from '../../runtime/memory/scratch';
+-import { F32_BYTES, I32_BYTES, readF32, readI32 } from '../../runtime/memory/structs';
++import { F32_BYTES, readF32, readI32 } from '../../runtime/memory/structs';
+ import { U64_BYTES } from '../../runtime/memory/u64';
+ import { DEST_VIEW } from './destinationViewCodes';
+ 
+@@ -50,8 +50,13 @@ export function readDestination(
+     i < view.params.length && (nulls & (1 << i)) === 0 ? view.params[i]! : null;
+ 
+   switch (view.code) {
+-    case DEST_VIEW.xyz:
+-      return { kind: 'xyz', page, ...readXyzLocation(fn, mem, destPtr) };
++    case DEST_VIEW.xyz: {
++      // `/XYZ left top zoom`, read like every other view, so a short array
++      // keeps the params it has. A zoom of 0 means the same as null and reads
++      // as null, the one form `createDestination` writes.
++      const zoom = at(2);
++      return { kind: 'xyz', page, left: at(0), top: at(1), zoom: zoom === 0 ? null : zoom };
++    }
+     case DEST_VIEW.fit:
+       return { kind: 'fit', page };
+     case DEST_VIEW.fitH:
+@@ -81,26 +86,3 @@ export function readDestination(
+       return null;
+   }
+ }
+-
+-/** `/XYZ` null-aware axes via `FPDFDest_GetLocationInPage` (FPDF_BOOL is 4 bytes). */
+-function readXyzLocation(
+-  fn: PdfFunctions,
+-  mem: PdfRuntimeMemory,
+-  destPtr: Ptr,
+-): { left: number | null; top: number | null; zoom: number | null } {
+-  return withScratchN(
+-    mem,
+-    [I32_BYTES, I32_BYTES, I32_BYTES, F32_BYTES, F32_BYTES, F32_BYTES],
+-    ([hasLeft, hasTop, hasZoom, left, top, zoom]) => {
+-      if (!fn.FPDFDest_GetLocationInPage(destPtr, hasLeft, hasTop, hasZoom, left, top, zoom)) {
+-        // Unreadable location: every axis "retains current" — still a valid /XYZ.
+-        return { left: null, top: null, zoom: null };
+-      }
+-      return {
+-        left: readI32(mem, hasLeft) ? readF32(mem, left) : null,
+-        top: readI32(mem, hasTop) ? readF32(mem, top) : null,
+-        zoom: readI32(mem, hasZoom) ? readF32(mem, zoom) : null,
+-      };
+-    },
+-  );
+-}
+diff --git a/packages/plugin/actions/src/lifecycle/document-events.ts b/packages/plugin/actions/src/lifecycle/document-events.ts
+index f940c62af..2982caf38 100644
+--- a/packages/plugin/actions/src/lifecycle/document-events.ts
++++ b/packages/plugin/actions/src/lifecycle/document-events.ts
+@@ -33,7 +33,6 @@ export function createDocumentEvents(
+     | 'documentPrint'
+     | 'printLatch'
+     | 'settings'
+-    | 'policy'
+   >,
+   {
+     ensureOpenSequenceBeforeDocEvent,
+@@ -47,7 +46,6 @@ export function createDocumentEvents(
+   const { allowsPrint } = services.authority;
+   const { documentPrint } = services;
+   const printLatch = services.printLatch;
+-  const currentPolicy = services.policy.current;
+ 
+   /**
+    * Run one catalog lifecycle tree inside the current queue operation, shared
+@@ -136,19 +134,6 @@ export function createDocumentEvents(
+       );
+       return { status: 'executed' };
+     }
+-    // A script's print() is not a dispatched node, so the print row has not
+-    // been consulted yet; the dispatch path (no uiContext) already was. The
+-    // printer path above refuses every non-user request itself.
+-    if (uiContext) {
+-      const decision = currentPolicy().print[uiContext.origin];
+-      if (decision === 'block' || decision === 'report') {
+-        diagnose({
+-          code: 'blocked',
+-          message: `print: policy '${decision}' for origin '${uiContext.origin}'`,
+-        });
+-        return { status: 'blocked', detail: `policy '${decision}'` };
+-      }
+-    }
+     if (!ports.uiAdapter) {
+       diagnose({ code: 'no-adapter', message: 'print: no UI adapter installed' });
+       return { status: 'no-executor', detail: 'no UI adapter installed' };
+diff --git a/packages/plugin/actions/test/script-print-policy.test.ts b/packages/plugin/actions/test/script-print-policy.test.ts
+deleted file mode 100644
+index 567dbb94f..000000000
+--- a/packages/plugin/actions/test/script-print-policy.test.ts
++++ /dev/null
+@@ -1,76 +0,0 @@
+-/**
+- * A script's `print()` reaches the print door with the dispatch's origin
+- * (`uiContext`). The kernel's printer refuses every request that isn't the
+- * user's. Without a printer, the print policy row for that origin decides
+- * before the adapter is called.
+- */
+-import { describe, expect, it, vi } from 'vitest';
+-
+-import type { ActionDiagnostic, ActionOrigin, ActionPolicy } from '../src/contract';
+-import { ACTIONS_DEFAULTS } from '../src/contract';
+-import { createDocumentEvents } from '../src/lifecycle/document-events';
+-import type { ActionsServices } from '../src/services';
+-
+-function printDoor(options: { printer: boolean; print: ActionPolicy['print'] }) {
+-  const adapterPrint = vi.fn();
+-  const kernelPrint = vi.fn(async () => {});
+-  const services = {
+-    events: { reportDiagnostic: vi.fn() },
+-    catalog: { readDocumentActions: async () => null, DOC_EVENT_TREES: {} },
+-    queue: { enqueue: <T>(run: () => T) => run(), budget: { scriptNodes: 0 } },
+-    ports: { slots: { uiAdapter: { openUri: vi.fn(), print: adapterPrint } } },
+-    authority: { allowsPrint: () => true },
+-    documentPrint: { available: () => options.printer, start: kernelPrint },
+-    printLatch: { active: false },
+-    settings: { get: () => ({ triggers: { document: false } }) },
+-    policy: { current: () => ({ ...ACTIONS_DEFAULTS.policy, print: options.print }) },
+-  } as unknown as ActionsServices;
+-  const events = createDocumentEvents(
+-    services,
+-    { ensureOpenSequenceBeforeDocEvent: async () => {} },
+-    { runAndEmit: vi.fn() } as never,
+-  );
+-  const fire = async (origin: ActionOrigin) => {
+-    const diagnostics: ActionDiagnostic[] = [];
+-    const outcome = await events.firePrintThroughAdapter({ origin, phase: 'user' }, (diagnostic) =>
+-      diagnostics.push(diagnostic),
+-    );
+-    return { outcome, diagnostics };
+-  };
+-  return { fire, adapterPrint, kernelPrint };
+-}
+-
+-const BLOCK_ALL = { user: 'block', hover: 'block', lifecycle: 'block' } as const;
+-
+-describe("a script's print() and the print policy row", () => {
+-  it('without a printer, a blocking row stops it before the adapter', async () => {
+-    const door = printDoor({ printer: false, print: BLOCK_ALL });
+-    const { outcome, diagnostics } = await door.fire('hover');
+-    expect(outcome).toEqual({ status: 'blocked', detail: "policy 'block'" });
+-    expect(diagnostics).toEqual([
+-      { code: 'blocked', message: "print: policy 'block' for origin 'hover'" },
+-    ]);
+-    expect(door.adapterPrint).not.toHaveBeenCalled();
+-  });
+-
+-  it('without a printer, an adapter row lets it through', async () => {
+-    const door = printDoor({
+-      printer: false,
+-      print: { user: 'adapter', hover: 'adapter', lifecycle: 'adapter' },
+-    });
+-    const { outcome } = await door.fire('hover');
+-    expect(outcome).toEqual({ status: 'executed' });
+-    expect(door.adapterPrint).toHaveBeenCalledTimes(1);
+-  });
+-
+-  it("with the kernel's printer, the refusal is the printer path's own", async () => {
+-    const door = printDoor({ printer: true, print: BLOCK_ALL });
+-    const { outcome, diagnostics } = await door.fire('hover');
+-    expect(outcome).toEqual({ status: 'blocked', detail: 'hover print request' });
+-    expect(diagnostics).toEqual([
+-      { code: 'blocked', message: 'print: a hover request never prints' },
+-    ]);
+-    expect(door.kernelPrint).not.toHaveBeenCalled();
+-    expect(door.adapterPrint).not.toHaveBeenCalled();
+-  });
+-});
+diff --git a/packages/plugin/search/test/search.test.ts b/packages/plugin/search/test/search.test.ts
+index fde5d1888..03f3373fd 100644
+--- a/packages/plugin/search/test/search.test.ts
++++ b/packages/plugin/search/test/search.test.ts
+@@ -225,9 +225,6 @@ describe('search session', () => {
+     expect(api.getHitCount(toPageRef(5))).toBe(2);
+     expect(api.listPagesWithHits().map((page) => page.objectNumber)).toEqual([5, 7]);
+     expect(api.getActiveHitIndex()).toBe(0);
+-    // One hit object: the active hit is the entry `listHits` holds.
+-    expect(api.listHits({ page: toPageRef(5) })).toContain(api.getActiveHit());
+-    expect(api.listHits({ page: toPageRef(5) })).toContain(api.nextHit());
+     await kernel.destroy();
+   });
+ 
+
+    /// `getEditingId()`.
+    pub fn get_editing_id(&self) -> Option<Id> {
+        self.model().editing.clone()
+    }
+
+    /// `draftContents(ref, text)`.
+    pub fn draft_contents(&self, reference: &Value, text: &str) -> Result<(), epdf_kernel::Error> {
+        let id = key_or_none(reference);
+        self.type_text(&id, json!({ "type": "setText", "id": id, "text": text })).map(|_| ())
+    }
+
+    /// `draftRichText(ref, doc)`.
+    pub fn draft_rich_text(
+        &self,
+        reference: &Value,
+        paragraphs: Value,
+    ) -> Result<(), epdf_kernel::Error> {
+        let id = key_or_none(reference);
+        self.type_text(
+            &id,
+            json!({ "type": "setRichText", "id": id, "doc": { "paragraphs": paragraphs } }),
+        )
+        .map(|_| ())
+    }
+
+    /// `setTextSelection(ref, range)`.
+    pub fn set_text_selection(&self, reference: &Value, range: Option<(f64, f64)>) {
+        let id = key_or_none(reference);
+        let previous = self.state().text_selection.clone();
+        let next = range.map(|(start, end)| TextSelection { id, start, end });
+dotnet-parity
+plugin-conformance
+plugins {
+    id("com.android.library")
+}
+
+android {
+    namespace = "com.embedpdf"
+    compileSdk = 36
+
+    defaultConfig {
+        // Matches API in build-aar.sh. A lower floor here than the one the .so
+        // was linked against would ship a library that fails to resolve
+        // symbols on old devices rather than refusing to install.
+        minSdk = 24
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+    }
+
+    // The .so files and the generated Kotlin are produced by build-aar.sh and
+    // are not in the repository, so the source sets point at where it puts
+    // them rather than at the Gradle defaults.
+    sourceSets {
+        getByName("main") {
+            kotlin.srcDir("src/main/kotlin")
+            jniLibs.srcDir("src/main/jniLibs")
+        }
+        getByName("androidTest") {
+            kotlin.srcDir("src/androidTest/kotlin")
+            assets.srcDir("src/androidTest/assets")
+        }
+    }
+
+    packaging {
+        jniLibs {
+// swift-tools-version: 6.2
+
+import PackageDescription
+
+// Where the engine comes from. Written by the engine release scripts: the
+// release tag on embed-pdf-runtime and the SHA-256 of its
+// EmbedPDFBindings.xcframework.zip. Both are "unpublished" until the first
+// publish.
+let engineRelease = "apple-engine-3816be131b65bdee"
+let engineChecksum = "88cfb206b6d3fd74e017062411bbd6a5133616882e52df299754aa9487c0a116"
+
+let package = Package(
+  name: "EmbedPDF",
+  platforms: [
+    .iOS(.v17),
+  ],
+  products: [
+    .library(name: "EmbedPDF", targets: ["EmbedPDF"]),
+    .library(name: "EmbedPDFUI", targets: ["EmbedPDFUI"]),
+  ],
+  dependencies: [
+    .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.3.0"),
+  ],
+  targets: [
+    .binaryTarget(name: "EmbedPDFFFI", path: "EmbedPDFFFI.xcframework"),
+    .target(
+      name: "EmbedPDFBindings",
+      dependencies: [
+        "EmbedPDFFFI",
+      ],
+      swiftSettings: [
+        .swiftLanguageMode(.v5),
+      ],
+      linkerSettings: [
+        .linkedLibrary("c++"),
+        .linkedFramework("CoreFoundation"),
+        .linkedFramework("CoreGraphics"),
+      ]
+    ),
+    .target(
+      name: "EmbedPDF",
+      dependencies: [
+        "EmbedPDFBindings",
+      ]
+    ),
+    .target(
+      name: "EmbedPDFUI",
+      dependencies: [
+        "EmbedPDF",
+      ]
+    ),
+    .testTarget(
+      name: "EmbedPDFBindingsSmokeTests",
+      dependencies: [
+        "EmbedPDFBindings",
+      ],
+      resources: [
+        .copy("Fixtures"),
+      ]
+    ),
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>EmbedPDF.Engine</AssemblyName>
+    <RootNamespace>EmbedPDF.Engine</RootNamespace>
+    <PackageId>EmbedPDF.Engine</PackageId>
+    <Version>0.0.0-local</Version>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Description>Native PDF engine binding. Platform validation and live viewer parity are required before production use.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="EmbedPDF.Tests" />
+    <None Include="$(EpdfNativeAssets)/**/*" Pack="true" PackagePath="runtimes/" Condition="'$(EpdfNativeAssets)' != ''" />
+  </ItemGroup>
+  <Target Name="RequireNativeAssets" BeforeTargets="GenerateNuspec">
+    <Error Condition="'$(EpdfNativeAssets)' == ''" Text="Native assets are required. Use platforms/dotnet/pack.sh with checksum-verified RID inputs." />
+  </Target>
+</Project>

@@ -1,0 +1,7 @@
+sh: 4: /home/node/.local/share/swiftly/env.sh: [[: not found
+fork	https://github.com/roanutil/embed-pdf-viewer.git (fetch)
+fork	https://github.com/roanutil/embed-pdf-viewer.git (push)
+origin	https://github.com/embedpdf/embed-pdf-viewer.git (fetch)
+origin	https://github.com/embedpdf/embed-pdf-viewer.git (push)
+private-fork	https://github.com/roanutil/embed-pdf-viewer-private.git (fetch)
+private-fork	https://github.com/roanutil/embed-pdf-viewer-private.git (push)

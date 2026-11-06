@@ -1,0 +1,90 @@
+{
+  "utc": "2026-11-04T05:26:47.984907+00:00",
+  "commands": [
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "embedpdf-c5-combined",
+        "--format",
+        "{{.Image}}"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-00.log",
+      "sha256": "1db017541aa37e835f6a99162c17c76a4b3328a9475f5a8c7c3071eacc30b8c8"
+    },
+    {
+      "argv": [
+        "docker",
+        "exec",
+        "embedpdf-c5-combined",
+        "git",
+        "-C",
+        "/workspaces/embed-pdf-viewer",
+        "remote",
+        "-v"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-01.log",
+      "sha256": "58a7ca2d3d1219c4b806afb2ba1410d4c0d5e23f696e82ef6d928b422fbc08ae"
+    },
+    {
+      "argv": [
+        "docker",
+        "exec",
+        "embedpdf-c5-combined",
+        "git",
+        "-C",
+        "/workspaces/embed-pdf-viewer",
+        "ls-remote",
+        "fork",
+        "refs/heads/research/catchup-2026-11-combined",
+        "refs/heads/research/multi-platform-rust-core-impl",
+        "refs/heads/research/multi-platform-rust-core-impl-plugins"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-02.log",
+      "sha256": "45055825dc76529a4a58c5c52e22c652b3698b7438ccb130b341c012a433f55d"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/bin/gh",
+        "api",
+        "repos/roanutil/embed-pdf-viewer-private/git/ref/heads/research/multi-platform-rust-core-impl"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-03.log",
+      "sha256": "c32847e8aa0eeb0e3caea25fd405059db505ce4474a90afdf9cf03ec987671a0"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/bin/gh",
+        "api",
+        "repos/roanutil/embed-pdf-viewer-private/git/ref/heads/research/multi-platform-rust-core-impl-plugins"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-04.log",
+      "sha256": "2e47ba3913a710a02265cf7f1c06414f8ae860cb388afa9d2d7c3f655e84e0f1"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/bin/gh",
+        "api",
+        "repos/roanutil/embed-pdf-runtime/git/ref/tags/apple-engine-3816be131b65bdee"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-05.log",
+      "sha256": "fb4cbe0974b46852ec5ce7db29dcdc6456579be53301ca34cf34fc395911e2d9"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/bin/gh",
+        "api",
+        "repos/roanutil/embed-pdf-runtime/git/ref/tags/runtime-payloads-e352d80f0a7c2851"
+      ],
+      "exit": 0,
+      "log": "/private/tmp/kkt-peach-lemur/c5g/metadata-06.log",
+      "sha256": "c27ad0be4575c48423f3975bc7a810807f18ce8211540a6bf2a08b9b5c66d180"
+    }
+  ]
+}

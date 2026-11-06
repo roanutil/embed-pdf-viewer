@@ -1,0 +1,270 @@
+crates/plugins/stage/src/contract.rs:177:pub struct StageSettings {
+crates/plugins/stage/src/contract.rs:234:pub struct StageSettingsLock {
+crates/plugins/stage/src/contract.rs:299:pub struct StageSettingsPatch {
+crates/plugins/stage/src/contract.rs:773:pub struct StageSettingsChangedEvent {
+crates/plugins/stage/src/ffi.rs:256:pub struct StageSettings {
+crates/plugins/stage/src/ffi.rs:354:pub struct StageSettingsPatch {
+crates/plugins/stage/src/ffi.rs:1064:        self.read(|c| c.list_current_item_pages().iter().map(page_info).collect()).await
+crates/plugins/stage/src/ffi.rs:1564:pub struct StageSettingsChangedEvent {
+crates/plugins/annotation/src/rich_text.rs:149:pub fn face_for_font(font: &str, fonts: FontLookup) -> Face {
+crates/plugins/annotation/src/rich_text.rs:168:pub fn font_for_face(face: &Face, fonts: FontLookup) -> String {
+crates/plugins/annotation/src/rich_text.rs:206:pub fn css_font_family_for_face(family: &str, fonts: FontLookup) -> String {
+crates/plugins/annotation/src/rich_text.rs:260:pub fn body_from_text_style(style: &TextStyle, fonts: FontLookup) -> Object {
+crates/plugins/annotation/src/rich_text.rs:312:pub fn rich_doc_of(annotation: &Object, fonts: FontLookup) -> RichTextDocument {
+crates/plugins/annotation/src/rich_text.rs:348:pub fn text_commit_patch(annotation: &Object, paragraphs: &[Value], fonts: FontLookup) -> Value {
+crates/plugins/annotation/src/rich_text.rs:388:pub fn run_delta_for_fields(patch: &Object, fonts: FontLookup) -> (Object, Object) {
+crates/plugins/render/src/contract.rs:188:pub struct RenderPageOptions {
+crates/plugins/render/src/ffi.rs:76:pub struct RenderPageOptions {
+crates/plugins/annotation/src:
+binary.rs
+comments
+connect.rs
+console.rs
+contract.rs
+controller.rs
+engine.rs
+ffi
+harness
+host_contract.rs
+js.rs
+lib.rs
+model.rs
+promise.rs
+read
+rich_text.rs
+services
+sync
+text_item.rs
+tools
+write
+
+crates/plugins/commands/src:
+availability.rs
+contract.rs
+controller.rs
+ffi.rs
+harness.rs
+lib.rs
+registry.rs
+settings.rs
+turning_off.rs
+
+crates/plugins/fonts/src:
+base64.rs
+css.rs
+font.rs
+harness.rs
+lib.rs
+metrics.rs
+programs.rs
+
+crates/plugins/render/src:
+appearance_store.rs
+contract.rs
+controller.rs
+ffi.rs
+harness.rs
+host_contract.rs
+invalidation.rs
+js.rs
+lib.rs
+model.rs
+paint_plan.rs
+policy.rs
+raster_store.rs
+strategy.rs
+tile_manager.rs
+tiles.rs
+
+crates/plugins/stage/src:
+camera
+connect.rs
+contract.rs
+controller.rs
+destination.rs
+ffi.rs
+harness.rs
+host_contract.rs
+lib.rs
+model.rs
+motion.rs
+navigation
+prelude.rs
+read
+responsive.rs
+scroll_handler.rs
+services
+settings
+settings.rs
+state.rs
+token.rs
+view
+working_set.rs
+zoom_drag_handler.rs
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift:98:  public func snapshot() async throws(PDFError) -> ShellSnapshot {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift:99:    try await bridged { try await handle.snapshot() }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift:102:  public func applySnapshot(_ snapshot: ShellSnapshot) async throws(PDFError) {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift:103:    try await bridged { try await handle.applySnapshot(snapshot: snapshot) }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Metadata.swift:21:  public func snapshot() async throws(PDFError) -> DocumentMetadata? {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Metadata.swift:22:    try await bridged { try await handle.snapshot() }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Metadata.swift:41:  /// Returns once the confirmed change has reached the snapshot and `events`.
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift:109:  public func nextPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.nextPage(options: options) } }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:67:  public func renderPage(_ page: PageRef, options: RenderPageOptions = RenderPageOptions())
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:70:    try await measured("renderPage") { () async throws(PDFError) in
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:71:      let image = try await measured("renderPage.rust") { () async throws(PDFError) in
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:73:          try await handle.renderPage(page: page, options: options, cancel: token)
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:76:      return try measured("renderPage.cgImage") { () throws(PDFError) in try RenderedPage(image) }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:82:  /// `permission-denied` without it, otherwise like `renderPage`.
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:96:  public func renderPages(
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift:101:      try await handle.renderPages(
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift:76:  public func snapshot() async throws(PDFError) -> SelectionSnapshot {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift:77:    try await bridged { try await handle.snapshot() }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift:76:  public func snapshot() async throws(PDFError) -> FormSnapshot? {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift:77:    try await bridged { try await handle.snapshot() }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift:75:  /// The last snapshot read, `nil` before the first.
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift:76:  public func snapshot() async throws(PDFError) -> SignatureSnapshot? {
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift:77:    try await bridged { try await handle.snapshot() }
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift:150:  /// Re-read the snapshot. `nil` when the engine has no signatures.
+diff --git a/packages/engine/core/src/annotation/base.schema.ts b/packages/engine/core/src/annotation/base.schema.ts
+index ef4c51e21..c9fd33f32 100644
+--- a/packages/engine/core/src/annotation/base.schema.ts
++++ b/packages/engine/core/src/annotation/base.schema.ts
+@@ -58,6 +58,13 @@ export const WidgetCheckStyleSchema: z.ZodType<WidgetCheckStyle> = z.enum([
+ /** What a write takes for a border that isn't a widget's. */
+ export const DrawnBorderStyleSchema: z.ZodType<DrawnBorderStyle> = z.enum(['solid', 'dashed']);
+ 
++/**
++ * A dash pattern a write sets: lengths of line, then gap, at least one. An
++ * empty pattern draws a solid line (ISO 32000 8.4.3.6), which is
++ * `borderStyle: 'solid'`, so a write refuses it; a read never returns one.
++ */
++export const DashArrayWriteSchema: z.ZodType<number[]> = z.array(z.number().nonnegative()).min(1);
++
+ export const LineEndingSchema: z.ZodType<LineEnding> = z.enum([
+   'none',
+   'square',
+diff --git a/packages/engine/core/src/dto/DocumentFonts.ts b/packages/engine/core/src/dto/DocumentFonts.ts
+index a096bc95f..87161dfdc 100644
+--- a/packages/engine/core/src/dto/DocumentFonts.ts
++++ b/packages/engine/core/src/dto/DocumentFonts.ts
+@@ -134,6 +134,11 @@ export interface ResolvedFontRun {
+   substituted: boolean;
+   /** The program's display hash; `null` when a browser can't get one. */
+   program: string | null;
+-  /** The fallback fonts' display hashes, in the order the engine tries them for this run's style. */
++  /**
++   * The display hashes of the fonts that draw what the run's font lacks, in
++   * the order the engine tries them: the fallback fonts for this run's style,
++   * then the standard font that stands in for its font (Helvetica for most;
++   * absent when the run is drawn in it), so Latin is never missing.
++   */
+   fallbacks: string[];
+ }
+diff --git a/packages/plugin/fonts/src/controller.ts b/packages/plugin/fonts/src/controller.ts
+index c3699d67d..bb8eaf710 100644
+--- a/packages/plugin/fonts/src/controller.ts
++++ b/packages/plugin/fonts/src/controller.ts
+@@ -3,7 +3,6 @@ import {
+   fontProgramFamily,
+   LAST_RESORT_HASH,
+   lastResortFontProgram,
+-  standardFontForFace,
+   standardFontOf,
+   standardFontOfProgramFamily,
+   standardFontProgram,
+@@ -13,6 +12,7 @@ import {
+ import {
+   isStandardFontName,
+   standardFamilyOf,
++  standardFontForFace,
+   STANDARD_FACES,
+   type Font,
+   type FontList,
+@@ -220,12 +220,8 @@ export function createFontsController(ctx: PluginContext<void>) {
+       .catch(() => {});
+   };
+ 
+-  /**
+-   * The fallbacks text in `style` draws with, in the order the engine tries them for it (a bold
+-   * run tries the bold ones first). The engine says, once per style, after the asker's turn; the
+-   * list's order until it has.
+-   */
+-  const fallbacksFor = (style: { weight: number; italic: boolean }): readonly string[] => {
++  /** The engine's fallback fonts for a style, in its order. */
++  const styleFallbacksFor = (style: { weight: number; italic: boolean }): readonly string[] => {
+     const current = list.get();
+     const key = `${style.weight}|${style.italic}`;
+     const known = styleFallbacks.get(key);
+@@ -253,6 +249,21 @@ export function createFontsController(ctx: PluginContext<void>) {
+     return fallbackHashes(current);
+   };
+ 
++  /**
++   * The fallbacks text in `face` draws with, in the order the engine tries them for its style (a
++   * bold run tries the bold ones first), then the standard font that stands in for the face, which
++   * the engine draws Latin the face lacks in. The engine says the order once per style, after the
++   * asker's turn; the list's order until it has.
++   */
++  const fallbacksFor = (face: {
++    family: string;
++    weight: number;
++    italic: boolean;
++  }): readonly string[] => [
++    ...styleFallbacksFor(face),
++    standardFontProgram(standardFontForFace(face)).hash,
++  ];
++
+   const cached = (key: string, build: () => FontCss): FontCss => {
+     let known = css.get(key);
+     if (!known) {
+@@ -301,7 +312,12 @@ export function createFontsController(ctx: PluginContext<void>) {
+         standardFontForFace({ family: font.familyName, weight: font.weight, italic: font.italic }),
+       );
+     }
+-    return cssOf(mountable, font, fallbacksFor(font), tailOf(font, null));
++    return cssOf(
++      mountable,
++      font,
++      fallbacksFor({ family: font.familyName, weight: font.weight, italic: font.italic }),
++      tailOf(font, null),
++    );
+   };
+ 
+   const api: FontsCapability = {
+diff --git a/packages/plugin/fonts/src/paint.ts b/packages/plugin/fonts/src/paint.ts
+index 2f7229b17..a0842c78d 100644
+--- a/packages/plugin/fonts/src/paint.ts
++++ b/packages/plugin/fonts/src/paint.ts
+@@ -7,7 +7,11 @@
+  * once it's mounted (`ctx.measurer`).
+  */
+ import type { HostTextMeasurer } from '@embedpdf/core';
+-import type { MountableFontProgram } from '@embedpdf/core-fonts';
++import {
++  fontProgramFamily,
++  standardFontOfProgramFamily,
++  type MountableFontProgram,
++} from '@embedpdf/core-fonts';
+ import {
+   coversGrapheme,
+   defaultPaintFonts,
+@@ -89,12 +93,18 @@ export function createPaintFonts(sources: PaintFontSources) {
+     return programPaintFont(info, program, (text, rtl) => measure.width(program, text, rtl));
+   };
+ 
++  /** A fallback: the standard font the list ends with is drawn as the engine writes it, through its encoding. */
++  const fallbackFont = async (measure: HostTextMeasurer, hash: string): Promise<PaintFont> => {
++    const standard = standardFontOfProgramFamily(fontProgramFamily(hash));
++    return standard ? standardPaintFont(standard) : programFont(measure, hash);
++  };
++
+   /** The fonts a box in `font` draws with: its style's fallbacks, whatever its text. */
+   const find = async (measure: HostTextMeasurer, font: FontName): Promise<PaintFonts> => {
+     await sources.loadList();
+     const resolution = await sources.resolve({ runs: [{ text: ' ', fontFamily: font }] });
+     const run = resolution.runs[0]!;
+-    const fallbacks = Promise.all(run.fallbacks.map((hash) => programFont(measure, hash)));
++    const fallbacks = Promise.all(run.fallbacks.map((hash) => fallbackFont(measure, hash)));
+     const face = isStandardFontName(run.font)
+       ? standardPaintFont(run.font)
+       : run.program

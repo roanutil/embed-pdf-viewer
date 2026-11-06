@@ -1,0 +1,426 @@
+}
+
+impl From<PageRef> for PageArg {
+    fn from(page: PageRef) -> Self {
+        PageArg::Ref(page)
+    }
+}
+
+impl From<usize> for PageArg {
+    fn from(index: usize) -> Self {
+        PageArg::Index(index as f64)
+    }
+}
+
+impl Serialize for PageArg {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            PageArg::Ref(page) => page.to_json().serialize(s),
+            PageArg::Index(index) => index.serialize(s),
+        }
+    }
+}
+
+// ── the raster vocabulary ─────────────────────────────────────────────────────
+
+/// `PageLayerOptions`: what a picture draws beside the page content. An
+/// option left out draws what the user may read: the annotations with
+/// `doc.annotate.read`, the form fields with `doc.forms.read`, and no form
+/// fields when `include_annotations` is `false`. `true` for something the
+/// user may not read is refused (`permission-denied`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PageLayerOptions {
+    /// Draw the annotations (form fields' widgets excepted).
+    pub include_annotations: Option<bool>,
+    /// Draw the form fields, each in the state its field shows.
+    pub include_form_fields: Option<bool>,
+}
+
+/// `PageImage`: an encoded page image.
+pub type PageImage = PageImageHandle;
+
+/// `RenderPageOptions`.
+#[derive(Clone, Default)]
+pub struct RenderPageOptions {
+    /// Exact output width in device pixels (height keeps the aspect).
+    pub width: Option<f64>,
+    /// Device pixels per PDF point; ignored when `width` is given. `None` is 1.
+    pub scale: Option<f64>,
+    pub layers: PageLayerOptions,
+    /// Per-call encode overrides; default to the plugin's strategy.
+    pub format: Option<RenderFormat>,
+    pub quality: Option<f64>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `RenderThumbnailOptions`: the page's thumbnail is the whole page at the
+/// engine's thumbnail size, so it takes no size.
+#[derive(Clone, Default)]
+pub struct RenderThumbnailOptions {
+    pub layers: PageLayerOptions,
+    /// Per-call encode overrides; default to the plugin's strategy.
+    pub format: Option<RenderFormat>,
+    pub quality: Option<f64>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `RenderPagesOptions`: a batch's per-page options and its pool size.
+#[derive(Clone, Default)]
+pub struct RenderPagesOptions {
+    pub page: RenderPageOptions,
+    /// Renders in flight at once; `None` is 4, and anything below 1 is 1.
+    pub concurrency: Option<f64>,
+}
+
+/// `PageRender`: one entry of a batch render.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PageRender {
+    #[serde(serialize_with = "ser_page")]
+    pub page: PageRef,
+    pub image: PageImage,
+}
+
+/// One failed entry of a batch render: the page as it was given, and why.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PageRenderFailure {
+    #[serde(rename = "ref")]
+    pub page: PageArg,
+    pub error: PluginErrorInfo,
+}
+
+/// `BatchResult<PageRender, PageRef | number>`. Render batches skip
+pub struct RenderedImage {
+    pub width: u32,
+    pub height: u32,
+    /// Bytes per row. At least `width * 4`; address rows by it.
+    pub stride: u32,
+    /// Device pixels per PDF point across the page's width: `width` over
+    /// the page's width in points.
+    pub scale: f64,
+    pub format: RenderPixelFormat,
+    /// `stride * height` bytes.
+    pub pixels: Vec<u8>,
+}
+
+/// `RenderPageOptions`, without the encode overrides (`format`, `quality`):
+/// a native raster is raw pixels, never encoded.
+#[derive(Clone, Copy, Debug, Default, PartialEq, uniffi::Record)]
+pub struct RenderPageOptions {
+    /// Exact output width in device pixels; the height keeps the aspect.
+    #[uniffi(default = None)]
+    pub width: Option<f64>,
+    /// Device pixels per PDF point; ignored when `width` is given. `None`
+    /// is 1.
+    #[uniffi(default = None)]
+    pub scale: Option<f64>,
+    /// Draw the annotations; `None` draws them when the session may read
+    /// them (`doc.annotate.read`).
+    #[uniffi(default = None)]
+    pub include_annotations: Option<bool>,
+    /// Draw the form fields; `None` draws them when the session may read
+    /// them (`doc.forms.read`) and annotations are not turned off.
+    #[uniffi(default = None)]
+    pub include_form_fields: Option<bool>,
+}
+
+fn layers(
+    include_annotations: Option<bool>,
+    include_form_fields: Option<bool>,
+) -> PageLayerOptions {
+    PageLayerOptions { include_annotations, include_form_fields }
+}
+
+/// The base plane's render points: the exact demand, or a ladder of widths.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum RenderQuantize {
+    Exact,
+    Ladder { widths: Vec<f64> },
+}
+
+/// `FullPageOptions`: the base plane's pixel budget and render points.
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
+pub struct RenderFullPageOptions {
+    /// `None` is 640 device pixels.
+    #[uniffi(default = None)]
+pub struct StageSettings {
+    pub flow: FlowMode,
+    pub layout: LayoutKind,
+    pub spread: SpreadMode,
+    pub sizing: SizingMode,
+    pub columns: GridColumns,
+    pub bounded: bool,
+    pub padding: f64,
+    pub gap: Gap,
+    pub page_frame: PageFrame,
+    pub direction: Direction,
+    pub fit_align: Alignment,
+    pub arrival_align: ArrivalAlignment,
+    pub zoom_align: AlignmentValue,
+    pub anchor_align: AlignmentValue,
+    pub view_rotation: PageRotation,
+    pub zoom: ZoomSpec,
+    /// The zoom range this view allows, as levels like `camera.zoom` (1 is
+    /// 100%). Every zoom stays inside it: the buttons, a pinch or wheel,
+    /// `zoom_to`, a reveal, and the fit modes, which stop at a limit rather
+    /// than fit. A marquee box is the exception: it clamps only to 0.05 to
+    /// 64, as the TypeScript's `zoom-drag.ts` does. Within 0.05 to 64; a
+    /// `min_zoom` above `max_zoom` counts as `max_zoom`.
+    pub min_zoom: f64,
+    /// See [`StageSettings::min_zoom`].
+    pub max_zoom: f64,
+    pub scroll_behavior: ScrollBehaviorKind,
+    /// Whether this view's pointer input reaches the interaction hub.
+    pub interaction: bool,
+    /// With `interaction`: a drag between pages pans whatever the tool.
+    pub pan_fallback: bool,
+    /// Whether a pinch or a zoom wheel zooms this view.
+    pub zoom_gestures: bool,
+    /// The look of the box the `zoom` tool drags. A color left `None`
+    /// follows the viewer's accent.
+    pub zoom_box: ZoomBoxLook,
+    pub view_units_per_point: f64,
+}
+
+/// The colors of the zoom tool's box: see [`StageSettings::zoom_box`].
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ZoomBoxLook {
+    /// Inside the box; `None` (`null`) is the viewer's accent at 8%.
+    pub fill: Option<String>,
+    /// Its dashed edge; `None` (`null`) is the viewer's accent.
+    pub stroke: Option<String>,
+}
+
+pub use epdf_kernel::settings::SettingLock;
+
+/// Settings held at a value for one document: they keep it over every
+/// other writer (`update_settings`, the responsive rules, a restored view
+/// state, `reset_settings`) until the release `lock_settings` returns is
+/// called. Those still change the settings underneath, so the user's own
+/// choice is back when the lock goes. Every setting but `zoom`, which
+/// gestures set too.
+crates/plugins/annotation/src/write/selection.rs:110:    pub fn toggle_format(&self, format: &str, signal: Option<AbortSignal>) -> Promise<()> {
+crates/plugins/annotation/src/write/text_editing.rs:19:use crate::model::set_text_selection;
+crates/plugins/annotation/src/write/text_editing.rs:137:            self.update_state(|s| set_text_selection(s, None));
+crates/plugins/annotation/src/write/text_editing.rs:168:    pub fn draft_rich_text(
+crates/plugins/annotation/src/write/text_editing.rs:182:    pub fn set_text_selection(&self, reference: &Value, range: Option<(f64, f64)>) {
+crates/plugins/annotation/src/write/text_editing.rs:195:        self.update_state(|s| set_text_selection(s, next));
+crates/plugins/annotation/src/harness/mod.rs:635:        ("text", "toggleFormat") => promise_unit(a.toggle_format(&text(args, 0), None)),
+crates/plugins/annotation/src/harness/mod.rs:833:        "draftRichText" => unit(a.draft_rich_text(
+crates/plugins/annotation/src/harness/mod.rs:844:            a.set_text_selection(&value(args, 0), range);
+crates/plugins/annotation/src/ffi/selection.rs:191:                move |c| Ok(open(c)?.toggle_format(format.as_str(), None)),
+crates/plugins/annotation/src/ffi/drafts.rs:206:    pub async fn set_text_selection(
+crates/plugins/annotation/src/ffi/drafts.rs:215:                open(c)?.set_text_selection(&ref_json(&annotation_ref)?, range);
+crates/plugins/annotation/src/harness/functions.rs:30:    AnnotationState, GhostPointer, initial_annotation_state, set_ghost_at, set_text_selection,
+crates/plugins/annotation/src/harness/functions.rs:195:fn set_text_selection_fn(args: &[Value]) -> Result<Value, Error> {
+crates/plugins/annotation/src/harness/functions.rs:204:    Ok(set_text_selection(&state, selection).to_json())
+crates/plugins/annotation/src/harness/functions.rs:411:        ("setTextSelection", set_text_selection_fn),
+crates/plugins/fonts/src/css.rs:7:use crate::{FontStyle, StandardFamily, StandardFont, standard_font_program};
+crates/plugins/fonts/src/css.rs:28:pub fn standard_font_css(font: StandardFont) -> StandardFontCss {
+crates/plugins/fonts/src/css.rs:29:    let program = standard_font_program(font);
+crates/plugins/fonts/src/lib.rs:13://! | `standardFontMetrics(font)` | [`standard_font_metrics`] |
+crates/plugins/fonts/src/lib.rs:14://! | `standardFontProgram(font)` | [`standard_font_program`] |
+crates/plugins/fonts/src/lib.rs:16://! | `standardFontCss(font)` | [`standard_font_css`] |
+crates/plugins/fonts/src/lib.rs:30:pub use css::{StandardFontCss, standard_font_css};
+crates/plugins/fonts/src/lib.rs:32:pub use metrics::{StandardFontMetrics, standard_font_metrics};
+crates/plugins/fonts/src/lib.rs:33:pub use programs::{FontProgram, font_program_family, standard_font_program};
+crates/plugins/fonts/src/font.rs:88:    pub fn as_str(self) -> &'static str {
+crates/plugins/fonts/src/font.rs:108:    pub fn from_name(name: &str) -> Option<StandardFont> {
+crates/plugins/fonts/src/font.rs:113:    pub fn face(self) -> StandardFace {
+platforms/dotnet/package-manifest.schema.json
+platforms/apple/package-engine-framework.sh
+platforms/dotnet/pack.sh
+platforms/dotnet/EmbedPDF.Parity/EmbedPDF.Parity.csproj
+platforms/dotnet/EmbedPDF.Parity/DecimalParity.cs
+platforms/dotnet/EmbedPDF.Parity/NativeSnapshot.cs
+platforms/dotnet/EmbedPDF.Parity/Program.cs
+platforms/dotnet/packaging/schema.py
+platforms/dotnet/packaging/fonts.json
+platforms/dotnet/packaging/Smoke.cs
+platforms/dotnet/packaging/README.md
+platforms/dotnet/packaging/test_package.py
+platforms/dotnet/packaging/package.py
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Feedback.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Search.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/I18n.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/JavaScriptCoreEngine.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/ViewManager.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Link.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Measurement.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/KeychainSigner.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/PageEdit.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stamp.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift
+platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Metadata.swift
+[package]
+name = "epdf-plugin-render"
+[lib]
+[features]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`.
+uniffi = ["dep:uniffi", "dep:epdf-ffi"]
+[dependencies]
+uniffi = { version = "=0.32.0", optional = true }
+[build-dependencies]
+[dev-dependencies]
+[[test]]
+name = "conformance"
+[[test]]
+name = "api"
+[[test]]
+name = "behavior"
+[package]
+name = "epdf-plugin-stage"
+[lib]
+[features]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`.
+uniffi = ["dep:uniffi", "dep:epdf-ffi"]
+[dependencies]
+uniffi = { version = "=0.32.0", optional = true }
+[dev-dependencies]
+[[test]]
+name = "conformance"
+[[test]]
+name = "api"
+[[test]]
+name = "zoom_tools"
+[[test]]
+name = "ffi"
+required-features = ["uniffi"]
+[build-dependencies]
+[package]
+name = "epdf-plugin-annotation"
+[lib]
+[features]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`.
+uniffi = ["dep:uniffi", "dep:epdf-ffi", "dep:async-trait", "dep:futures"]
+[dependencies]
+uniffi = { version = "=0.32.0", optional = true }
+[build-dependencies]
+[dev-dependencies]
+[[test]]
+name = "conformance"
+[[test]]
+name = "behavior"
+[[test]]
+name = "ffi"
+required-features = ["uniffi"]
+[package]
+name = "epdf-plugin-commands"
+[lib]
+[features]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`.
+uniffi = ["dep:uniffi", "dep:epdf-ffi"]
+[dependencies]
+uniffi = { version = "=0.32.0", optional = true }
+[build-dependencies]
+[dev-dependencies]
+[[test]]
+name = "conformance"
+[[test]]
+name = "behavior"
+[[test]]
+name = "teardown"
+[[test]]
+name = "ffi"
+required-features = ["uniffi"]
+[package]
+name = "epdf-annotation-core"
+[lib]
+[features]
+[dependencies]
+[build-dependencies]
+# epdf-engine links PDFium, and this crate builds for wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+[package]
+name = "epdf-fonts"
+[lib]
+[features]
+[dependencies]
+[build-dependencies]
+[dev-dependencies]
+{
+  "name": "embedpdf",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.34.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "build:website": "pnpm --filter @embedpdf/website run search:index:build && turbo run build --filter=@embedpdf/website...",
+    "build:cloudpdf-website": "turbo run build --filter=@cloudpdf/website...",
+    "build:fresh": "pnpm clean && turbo run build",
+    "clean": "turbo run clean && rimraf .turbo/cache",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,jsx,json,css,md}\"",
+    "build:cloudpdf": "turbo run build --filter=\"./cloudpdf/**\" --filter=\"!@cloudpdf/website\"",
+    "build:release": "turbo run build --filter=\"./packages/**\" && pnpm run build:cloudpdf",
+    "verify:consume": "pnpm --filter @embedpdf/tooling-consume-fixtures run verify",
+    "bootstrap:package": "node scripts/bootstrap-package.mjs",
+    "verify:engine-runtime-packages": "pnpm --filter @embedpdf/engine-runtime run verify:packages",
+    "check:plugin-boundaries": "node tooling/build/src/check-plugin-boundaries.mjs",
+    "check:comments": "node scripts/check-comments.mjs",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "changeset": "changeset",
+    "cloudpdf:sdk:generate": "node fern/scripts/generate-sdks.mjs --only typescript --force",
+    "api:sync": "node fern/scripts/generate-sdks.mjs && pnpm --filter @cloudpdf/website api:snippets && pnpm --filter @cloudpdf/website api:pages && pnpm --filter @cloudpdf/website api:check",
+    "ci:version": "changeset version && pnpm --filter @cloudpdf/contract emit:openapi && pnpm run cloudpdf:sdk:generate && pnpm --filter @cloudpdf/website api:metadata && pnpm --filter @cloudpdf/website api:pages",
+    "ci:publish": "node scripts/assert-publish-phase.mjs && node fern/scripts/validate-sdk.mjs typescript && pnpm publish -r --access public --tag next --publish-branch main --report-summary",
+    "test:viewer:e2e": "pnpm --filter @embedpdf/tooling-viewer-e2e test:e2e",
+    "test:viewer:perf": "pnpm --filter @embedpdf/tooling-viewer-e2e test:perf",
+    "check:network-literals": "node tooling/build/src/check-network-literals.mjs",
+    "api:snapshot": "node tooling/build/src/api-snapshot.mjs",
+    "api:check": "node tooling/build/src/api-snapshot.mjs --check"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.6",
+    "@changesets/get-github-info": "^0.6.0",
+    "@next/eslint-plugin-next": "^15.5.12",
+    "@roarr/cli": "^5.12.4",
+    "@types/node": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "concurrently": "^9.2.0",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.4.0",
+    "glob": "^13.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "prettier-plugin-svelte": "^3.4.1",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "rimraf": "latest",
+    "turbo": "latest",
+    "turbowatch": "^2.29.4",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,json,css,md,vue,svelte}": "prettier --write"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/node": "^22.0.0"
+    },
+    "patchedDependencies": {
+      "@changesets/assemble-release-plan@6.0.9": "patches/@changesets__assemble-release-plan@6.0.9.patch"
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

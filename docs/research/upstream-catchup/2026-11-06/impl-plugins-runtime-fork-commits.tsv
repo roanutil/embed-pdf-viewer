@@ -1,0 +1,12 @@
+82f2dfabe2542208c783d49e210ed87f214ac0c3	build: add canonical macOS static PDFium targets
+3c55b7a1c0bf956231392a573e87f28dd6d6667d	Merge upstream 28b8b808f into the fork
+8b1e69abdef4cb7c5d6c669c96a162533b2350ef	Tidy the layer-seam ledger entry after the cff0077cf merge
+06263efda255e630ef4cec54cd0d3b951bfc3335	Check in the target-args goldens
+68d6e72ecdbac468afff8ffd7eb11dfe60cf5ae4	Correct the wasm libyuv note in target-args.sh
+9d18384078c32ae5a8de2ab04169a0822697c3e5	Pin the emsdk version per wasm target
+6dfc036978f78baf71663f2554f998f28c490a6f	Merge upstream cff0077cf into the fork
+926c126b24a471ff0b0b8f38ea73d66cf96cfb5d	Keep a layer's tiling patterns and Type3 fonts layer-local, fixing the null image-cache read
+1d23fe9e985e4fc50e9c2ea78703552be91cf59e	Merge embedpdf/runtime 1461b0c51 into research/multi-platform-rust-core
+7c7b600b1dfcef78bbedb25e79e5c46bf9f3e150	Merge remote-tracking branch 'origin/embedpdf/main' into research/multi-platform-rust-core
+d045f389de885dd616e03077301df5ef5aa8c84e	Merge commit 'f5ca81379' into research/multi-platform-rust-core
+ca1932c4afd3414a280cd3afb6cabd8d0e15cf48	Changes needed for embed-pdf-viewer/

@@ -1,0 +1,121 @@
+{
+  "scope": "C7d requested documentation-only refinement; no C7 implementation authorized",
+  "authority": [
+    1039,
+    1040,
+    1041
+  ],
+  "utc": "2026-11-04T22:26:39.852064+00:00",
+  "baseline": {
+    "originalMeasuredUpstream": "74afd55753ee7e6b34c57e3dc2e1a683b4c5a23b",
+    "actualCompletedUpstream": "a40d63a199f2d483fd27c9ad439f0d5efbc195aa",
+    "actualMergeCommit": "50786828f2186078f174fa020ad2d7f7460e258e",
+    "privateStartingPoint": "f28ed4ea4aa46c8e69676558993b103d68b19e08",
+    "targetViewer": "4ad8986099314b9587df423c802db103a21d665d",
+    "runtimeA": "f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185",
+    "optionalRuntimeB": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e"
+  },
+  "historicalPlanBinding": {
+    "historicalPath": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.md",
+    "historicalSHA256": "bcf94c0cee6b9f98d90e5375bb5c32d866b9cec3ca398fb0fca7e0a98da18fb0",
+    "byteExactImmutableSnapshot": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.original-bcf94c0cee6b9f98.md",
+    "snapshotSHA256": "bcf94c0cee6b9f98d90e5375bb5c32d866b9cec3ca398fb0fca7e0a98da18fb0",
+    "explanation": "Historical original seals refer to old bytes now retained at snapshot; they do not bind the current live file."
+  },
+  "currentPlan": {
+    "livePath": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.md",
+    "liveSHA256": "02a116ee49861681c40e75fd1fc6bb610085af1ac1bde5a9e53176e67e663599",
+    "immutableVersionPath": "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.c7d-02a116ee49861681.md",
+    "versionSHA256": "02a116ee49861681c40e75fd1fc6bb610085af1ac1bde5a9e53176e67e663599"
+  },
+  "originalCompletedHandoff": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/completed-handoff.json",
+    "sha256": "9daf1ff0afb2ff5b086f487280c401ea12aa32eecaa5d2011d5a5e9d41b896d2",
+    "unchanged": true
+  },
+  "freezeCopies": {
+    "indexPath": "/private/tmp/kkt-peach-lemur/session-freeze-2026-11-04/frozen-copies-index.json",
+    "sha256": "6e7dd5831a704b556fe02031f21a76550c1ed53efb6203dce250d6acefb1a919",
+    "files": 53,
+    "allCopiesHashVerified": true,
+    "unchanged": true,
+    "pathCorrection": "Index resides at session-freeze-2026-11-04/frozen-copies-index.json; entries point inside immutable-copies/."
+  },
+  "actualDiff": {
+    "path": "/private/tmp/kkt-peach-lemur/c7/c7d-documentation.diff",
+    "sha256": "a6ff66cd769874663a281ccf5e116479811ebf30a3f54ec1795c38f4ac1664fe",
+    "change": "One inserted near-top section only; removing it reproduces original bytes."
+  },
+  "evidence": {
+    "/private/tmp/kkt-peach-lemur/c5g/final-result.json": "8919b8e079a8f9f86a22e6b5115b53c9d6b6e4681eb0411d1033d1e514f0db76",
+    "/private/tmp/kkt-peach-lemur/c5g/scope-audit.json": "b1106965382f34aec2f3a490fe42a1113c7fad9f583c28ff78e130fb73e9d9b6",
+    "/private/tmp/kkt-peach-lemur/c5h/completed-handoff.json": "5ea968bf6df24deaf318e2fcb9d8ff170f4ed52ad963e92a9d78d55698c3a75d",
+    "/private/tmp/kkt-peach-lemur/c7/inventory-read-result.json": "80302f202673f92d3e77e5b14ae6511e10ccc11c141c1be3d48c0d687acc4d0d",
+    "/private/tmp/kkt-peach-lemur/c7/pinned-targets.json": "4fa4d186cbb2cb794e9b7fabcd689084d799f711391e74f844d287fc49e59c51",
+    "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.md": "e72edeb1baa0959c19d108e6a7a6b060deacd78bf3b970c30ee8f4b251bb7446",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.md": "cd45a0fd030c3136f8f3242f8f3afb5006f08458fef13e21291f849306ffaa4f"
+  },
+  "otherRetainedC7FilesUnchanged": {
+    "/private/tmp/kkt-peach-lemur/c7/acceptance-owner-read.json": "c8aa896b66f08d29bca0c7b8b54d956cc02b839001aa7c3889ef0dfc8343269d",
+    "/private/tmp/kkt-peach-lemur/c7/core-command-index.json": "f541d15bc7e28cd1e9aabc4887b42687d61c5ba621b891b816c823aa1fdb106e",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-detail-proof.log": "69753b0b211c947b47ad48394dc632df86bc72f8205ea88cee842b8cf773cdf7",
+    "/private/tmp/kkt-peach-lemur/c7/export-and-rust-result.json": "7490c749f90b256f71fc2fa1598dafbaa6474250b3ee6fbfaa8eb7d00de0692e",
+    "/private/tmp/kkt-peach-lemur/c7/font-resolution-location.log": "f5ccf58d54aa61a5535ad272e4eeac03990cacaeab43bad34e184676de098313",
+    "/private/tmp/kkt-peach-lemur/c7/fork-preservation-and-final-guard.json": "d3e9099f850e5602fafed5948f27610d5e595fba1211735c952bbaa870924c6c",
+    "/private/tmp/kkt-peach-lemur/c7/planning-handoff.json": "f69ff3b59165ac5b4053067b1067a02c4021166802ce66d6127377f25f78bd59",
+    "/private/tmp/kkt-peach-lemur/c7/coverage-read-result.json": "9f29abfc2a09e2c3428ec42da9bd5bcb398082c8d23655c683bcb6c4cadeadde",
+    "/private/tmp/kkt-peach-lemur/c7/completed-handoff.json": "9daf1ff0afb2ff5b086f487280c401ea12aa32eecaa5d2011d5a5e9d41b896d2",
+    "/private/tmp/kkt-peach-lemur/c7/scope-and-plan.original-bcf94c0cee6b9f98.md": "bcf94c0cee6b9f98d90e5375bb5c32d866b9cec3ca398fb0fca7e0a98da18fb0",
+    "/private/tmp/kkt-peach-lemur/c7/write-plugin-inventory.py": "65af4dc2a398e360c5ca0362ad7f9dd1ecfef2ef6190e82e30298967f437578b",
+    "/private/tmp/kkt-peach-lemur/c7/font-mapper-owner.json": "d8b385de8fe7e5cea29a09fff0ca5dcb095a5db095ba99b46107730bfcec1439",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-package-proof.log": "fc37be5b488063ed36ac43201ac99927e9ebc66586c5f4b1fd5bd1262bf780ab",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-command-index.md": "eee764932381e1e2c8070c8fae9c798aa21d4bb0739e4f576f4be4f18f2d0e5c",
+    "/private/tmp/kkt-peach-lemur/c7/api-pins.json": "f1db668b16ddfb335b482834521e8efdfbe70361a094cccf240b16a61e5d5079",
+    "/private/tmp/kkt-peach-lemur/c7/scope.json": "f6ef0b0aeea46969d33c2ee6ca3cabe6f11fd49270341dbefcc21b145ace1744",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-exact-commits.log": "c2fbc853bf36bf800b293f878f406daeceac6f1008a9392ecf49670b97bedb7a",
+    "/private/tmp/kkt-peach-lemur/c7/core-detail-read-result.json": "42610005a325ca995536f0e733f9eb3a24a939aa1c62216706e6a4bb49a5f78a",
+    "/private/tmp/kkt-peach-lemur/c7/export-and-rust-read.py": "3399f88194a72444104aaa2cf2ec6e26229504365b8a976528b64256f6d514bd",
+    "/private/tmp/kkt-peach-lemur/c7/core-detail-read.py": "a19a908b294367e6d96f1ae934ed64fd635dcb9ca9f2c31dee21963067b0138f",
+    "/private/tmp/kkt-peach-lemur/c7/proof-index.json": "15111ddcbd61110bbc6e0748ffb6ea42171703fd37d03cee0a733ee1df0eb487",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-first-delta.log": "df04c494f55acda8fea66efa071585be0867d5f4bf9bf6f9facdcfd17e2f1856",
+    "/private/tmp/kkt-peach-lemur/c7/independent-plan-review.md": "154910755c707f6054dbf4c40750d09bb390ab94d4decdc04374cf7be3c3ae2c",
+    "/private/tmp/kkt-peach-lemur/c7/independent-initial-proof-checks.json": "8743216a434ccf41758757bb40831d2b57a2bd6d3b84876cf3c50817a9bd86dd",
+    "/private/tmp/kkt-peach-lemur/c7/runtime-upstream-heads.log": "802de66adcbb99fd3b8b52a214214b0239f5215909bc745b9210df9a64193ba5",
+    "/private/tmp/kkt-peach-lemur/c7/review-evidence-table.md": "2c1f493e255b39e0bcd75b2bc48ec9890200805390a52108d4970368fae932fd",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-contracts.log": "bd38ce3d8fdde847150e7e8c8f0eb72c3b16fbe26dba4ea5b08363a9a72fe2b4",
+    "/private/tmp/kkt-peach-lemur/c7/metadata-export-manifest.json": "f5a6015a27e96fbf6b4336aa2f1fb1dd1261f0fe85d770c65113919260b50a0a",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-command-index.json": "dbe757c7e70cd30e2ab50f5fc4515868722a33705c49a5b7b5474ca3da60bc68",
+    "/private/tmp/kkt-peach-lemur/c7/font-fallback-detail.json": "d26a994a50a6d4248b4fb03b7e85c6038e5e8b4606872ea99fa6d1d93097b81f",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-preservation-proof.log": "9978bb2d90e0bad4721a9cd1927f50a6a7cd95778b968e0f3004128054afbf7b",
+    "/private/tmp/kkt-peach-lemur/c7/coverage-read.py": "e4734efaf45567fab85ee524d795183a3a76b29de5d7c9cbecfd0e1e996f5cd8",
+    "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.json": "4ab0faedfc25fc28ceb1dbf67c2be1fa484ccf695bf5147fe2d528056260d845",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.json": "b3377d1e9e2226bd066ffd228556baea202abba81659b477167f455f68a1946e",
+    "/private/tmp/kkt-peach-lemur/c7/conventions-read.log": "17e345c9ec3f746badfbbec49c3f0c978ccbc08a486d6f57f34450ec0a4e49ec",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-summary.log": "17cdde05ba00d3e26de7b98ee10003818dfd6f321285e543e9a0572e52b31118",
+    "/private/tmp/kkt-peach-lemur/c7/initial-canonical-refs.json": "3a9e9139f0c5fb1e62d64a7479f06ed8a84dbfa3dc96e58c5b73ddc9ed7ca183",
+    "/private/tmp/kkt-peach-lemur/c7/write-plugin-command-index.py": "2003c8a90ac47f5c06a3d96cddbb589062a90c0125a845316912110ec762cf05",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-inventory.md": "cd45a0fd030c3136f8f3242f8f3afb5006f08458fef13e21291f849306ffaa4f",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-payload-proof.log": "cf2147731b899229d4e18399b250ff05e5fd73c2e8c5be249e1e9a0ea38cd306",
+    "/private/tmp/kkt-peach-lemur/c7/fetch-metadata-result.json": "690e5536c2c3b29dfba2f5c51e625b7a53e0bc8f8c9128bdb499063cfb243339",
+    "/private/tmp/kkt-peach-lemur/c7/approved-image.log": "9147faf245b0213cf79fadb6978b9dcda8d7936fd82f476e9066703f01db994b",
+    "/private/tmp/kkt-peach-lemur/c7/api-pin-code.py": "e40c0022516383e203dd5bf971a627bede6ee30e7cadad67d5723f4b7f483a4e",
+    "/private/tmp/kkt-peach-lemur/c7/core-runtime-inventory.md": "e72edeb1baa0959c19d108e6a7a6b060deacd78bf3b970c30ee8f4b251bb7446",
+    "/private/tmp/kkt-peach-lemur/c7/fetch-metadata.py": "1e95a781b52cda8002969111285db8ac14f6c6e0307f7bcc4fc5d54f0ad227b6",
+    "/private/tmp/kkt-peach-lemur/c7/pinned-targets.json": "4fa4d186cbb2cb794e9b7fabcd689084d799f711391e74f844d287fc49e59c51",
+    "/private/tmp/kkt-peach-lemur/c7/inventory-read.py": "5fcde0c0d6967ed2a333b53b04460a8771464025c6c179ffe90ae747d6355390",
+    "/private/tmp/kkt-peach-lemur/c7/independent-plan-proof-record.json": "bae28cfd32933d7d08ee7c30973587e1bf0dd2026cc0c5a767c9239761b21ca4",
+    "/private/tmp/kkt-peach-lemur/c7/inventory-read-result.json": "80302f202673f92d3e77e5b14ae6511e10ccc11c141c1be3d48c0d687acc4d0d",
+    "/private/tmp/kkt-peach-lemur/c7/write-core-inventory.py": "d5577225e66e4b945b2cffa7cdc69fc317f2a9083dee24548ab48cb0c0037413",
+    "/private/tmp/kkt-peach-lemur/c7/dash-schema-proof.json": "fc9a93f9542d690934610176f5131d41e650f8f37fbfd846f5939a9bdfb6d817",
+    "/private/tmp/kkt-peach-lemur/c7/rust-owning-snippets.json": "655d36b18c4ee44c2afefd4b1d8d63397420f6b338ad9f5545e7f08a262565ac",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-native-contract-proof.log": "a747f785b253821e956edb00cea9f6c7e62f897064a8934bbd6a980708bd97f9",
+    "/private/tmp/kkt-peach-lemur/c7/plugin-binding-baseline-surfaces.log": "fbadbc010ed075098f6ec95e098d8e9b7f1528c49e91e2e06517966f283fc8b3"
+  },
+  "verification": "Baseline original-target/source record agrees with retained C7 merge-base+interval history; all53 immutable freeze copies checked; other root C7 files retained; original/full current snapshot hashes match; section-only diff confirmed. No Git/source/API reads needed beyond retained recorded evidence.",
+  "noExecution": [
+    "No repository/worktree/source edits, checkout, clone, download or ref mutation",
+    "No build, software test, heavy ticket, publisher or API mutation",
+    "J10/AI4 source/resources untouched"
+  ],
+  "nextAction": "Read the near-top feature delta and keep runtime A/B and all implementation recommendations explicitly planned."
+}

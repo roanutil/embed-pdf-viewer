@@ -1,0 +1,4 @@
+f28ed4ea4aa46c8e69676558993b103d68b19e08:crates/pdfium/src/document_fonts.rs:126:pub struct ResolvedFontRun {
+f28ed4ea4aa46c8e69676558993b103d68b19e08:crates/pdfium/src/document_fonts.rs:149:    pub runs: Vec<ResolvedFontRun>,
+f28ed4ea4aa46c8e69676558993b103d68b19e08:crates/pdfium/src/document_fonts.rs:409:            resolved.push(ResolvedFontRun {
+f28ed4ea4aa46c8e69676558993b103d68b19e08:crates/pdfium/src/lib.rs:63:    FontSource, ResolvedFontRun,

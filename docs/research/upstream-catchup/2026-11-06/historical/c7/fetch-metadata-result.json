@@ -1,0 +1,159 @@
+{
+  "state": "PASS",
+  "utc": "2026-11-04T13:26:10.717926+00:00",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/workspaces/embed-pdf-viewer",
+        "rev-parse",
+        "--git-common-dir"
+      ],
+      "exit": 0,
+      "stdout": "/Users/andrew/repos/embed-pdf-viewer/.git\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "init",
+        "--bare",
+        "/tmp/embedpdf-c7-viewer-metadata.git"
+      ],
+      "exit": 0,
+      "stdout": "Initialized empty Git repository in /tmp/embedpdf-c7-viewer-metadata.git/\n",
+      "stderr": "hint: Using 'master' as the name for the initial branch. This default branch name\nhint: is subject to change. To configure the initial branch name to use in all\nhint: of your new repositories, which will suppress this warning, call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\n"
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-viewer-metadata.git",
+        "update-ref",
+        "refs/c7/reviewed",
+        "f28ed4ea4aa46c8e69676558993b103d68b19e08"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-viewer-metadata.git",
+        "fetch",
+        "--no-tags",
+        "https://github.com/embedpdf/embed-pdf-viewer.git",
+        "4ad8986099314b9587df423c802db103a21d665d:refs/c7/upstream"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "From https://github.com/embedpdf/embed-pdf-viewer\n * [new ref]               4ad8986099314b9587df423c802db103a21d665d -> refs/c7/upstream\n"
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-viewer-metadata.git",
+        "show",
+        "-s",
+        "--format=%H%n%cI%n%aI%n%s",
+        "4ad8986099314b9587df423c802db103a21d665d"
+      ],
+      "exit": 0,
+      "stdout": "4ad8986099314b9587df423c802db103a21d665d\n2026-11-04T15:23:43+02:00\n2026-11-04T15:23:43+02:00\nMerge pull request #980 from embedpdf/feature/snapshot-tool\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-viewer-metadata.git",
+        "ls-tree",
+        "4ad8986099314b9587df423c802db103a21d665d",
+        "packages/engine/runtime/runtime-src"
+      ],
+      "exit": 0,
+      "stdout": "160000 commit f1ba46f0dc3dc5f9b055a7311dda0c13ecc0f185\tpackages/engine/runtime/runtime-src\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-viewer-metadata.git",
+        "show",
+        "4ad8986099314b9587df423c802db103a21d665d:.gitmodules"
+      ],
+      "exit": 0,
+      "stdout": "[submodule \"packages/engine/runtime/runtime-src\"]\n\tpath = packages/engine/runtime/runtime-src\n\turl = https://github.com/embedpdf/runtime.git\n\tbranch = embedpdf/main\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "/Users/andrew/repos/embed-pdf-runtime",
+        "rev-parse",
+        "--git-common-dir"
+      ],
+      "exit": 0,
+      "stdout": ".git\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "init",
+        "--bare",
+        "/tmp/embedpdf-c7-runtime-metadata.git"
+      ],
+      "exit": 0,
+      "stdout": "Initialized empty Git repository in /tmp/embedpdf-c7-runtime-metadata.git/\n",
+      "stderr": "hint: Using 'master' as the name for the initial branch. This default branch name\nhint: is subject to change. To configure the initial branch name to use in all\nhint: of your new repositories, which will suppress this warning, call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\n"
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-runtime-metadata.git",
+        "update-ref",
+        "refs/c7/reviewed",
+        "3c55b7a1c0bf956231392a573e87f28dd6d6667d"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-runtime-metadata.git",
+        "fetch",
+        "--no-tags",
+        "https://github.com/embedpdf/runtime.git",
+        "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e:refs/c7/upstream"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "From https://github.com/embedpdf/runtime\n * [new ref]             eeac787c02fac7b40c74c91bbff0ffb5f59ff97e -> refs/c7/upstream\n"
+    },
+    {
+      "argv": [
+        "git",
+        "--git-dir",
+        "/tmp/embedpdf-c7-runtime-metadata.git",
+        "show",
+        "-s",
+        "--format=%H%n%cI%n%aI%n%s",
+        "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e"
+      ],
+      "exit": 0,
+      "stdout": "eeac787c02fac7b40c74c91bbff0ffb5f59ff97e\n2026-11-04T14:16:48+02:00\n2026-11-04T14:16:48+02:00\nMerge pull request #113 from embedpdf/embedpdf/fix/comment-reads-over-reader-defaults\n",
+      "stderr": ""
+    }
+  ]
+}

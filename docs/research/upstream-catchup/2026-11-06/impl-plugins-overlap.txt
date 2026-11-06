@@ -1,0 +1,9 @@
+.agents/skills/embedpdf-conventions/SKILL.md       |  1 +
+ .github/workflows/release.yml                      | 40 ++++++++++++++++++++++
+ packages/engine/main/src/index.ts                  | 40 ++++++++++++----------
+ packages/engine/runtime/runtime-src                |  2 +-
+ .../engine/services/src/worker-host/WorkerHost.ts  | 10 +++---
+ .../actions/src/lifecycle/document-events.ts       |  2 +-
+ packages/plugin/search/test/search.test.ts         | 39 ++++++++++++++++-----
+ pnpm-lock.yaml                                     |  9 +++++
+ 8 files changed, 109 insertions(+), 34 deletions(-)

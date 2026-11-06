@@ -1,0 +1,624 @@
+crates/plugins/annotation-core/src/view.rs
+crates/plugins/annotation-core/src/helvetica.rs
+crates/plugins/annotation-core/src/font_css.rs
+crates/plugins/annotation-core/src/scene.rs
+crates/plugins/annotation-core/src/harness.rs
+crates/plugins/annotation-core/src/links.rs
+crates/plugins/annotation-core/src/endings.rs
+crates/plugins/annotation-core/src/hit.rs
+crates/plugins/annotation-core/src/appearance.rs
+crates/plugins/annotation-core/src/richtext.rs
+crates/plugins/annotation-core/src/json.rs
+crates/plugins/annotation-core/src/plane.rs
+crates/plugins/annotation-core/src/painted.rs
+crates/plugins/annotation-core/src/ink.rs
+crates/plugins/annotation-core/src/frame.rs
+crates/plugins/annotation-core/src/props.rs
+crates/plugins/annotation-core/src/selection.rs
+crates/plugins/annotation-core/src/placement.rs
+crates/plugins/annotation-core/src/cloudy.rs
+crates/plugins/annotation-core/src/geometry.rs
+crates/plugins/annotation-core/src/group.rs
+crates/plugins/annotation-core/src/record.rs
+crates/plugins/annotation-core/src/lib.rs
+crates/plugins/annotation-core/src/error.rs
+crates/plugins/annotation-core/src/js.rs
+README.md
+fixtures
+historical
+node_modules
+package.json
+src
+test
+tsconfig.json
+vectors
+README.md
+fixtures
+manifest.json
+run.mjs
+README.md
+build-aar.sh
+embedpdf
+test-command-context.sh
+tests
+EmbedPDF
+EmbedPDFDemo
+NutrientDemo
+README.md
+apple-engine-hash.sh
+build-xcframework.sh
+check-apple-engine.sh
+package-engine-framework.sh
+diff --git a/packages/engine/core/src/annotation/kinds/shared-fields.ts b/packages/engine/core/src/annotation/kinds/shared-fields.ts
+index bae36bc2a..0c20c8849 100644
+--- a/packages/engine/core/src/annotation/kinds/shared-fields.ts
++++ b/packages/engine/core/src/annotation/kinds/shared-fields.ts
+@@ -8,6 +8,7 @@ import {
+   PdfMeasureWriteSchema,
+ } from '../../dto/Measure.schema';
+ import { FileAnnotationActionsSchema } from '../../dto/PdfAction.schema';
++import { RichTextDocumentInputSchema, RichTextDocumentSchema } from '../../dto/RichText.schema';
+ import {
+   PdfPointSchema,
+   PdfQuadSchema,
+@@ -17,6 +18,7 @@ import {
+ import { PageRefSchema } from '../../identity/PageRef.schema';
+ import {
+   AnnotationBorderStyleSchema,
++  DashArrayWriteSchema,
+   DrawnBorderStyleSchema,
+   AnnotationRefSchema,
+   BlendModeSchema,
+@@ -103,6 +105,22 @@ export const annotationBaseFields = {
+   actions: field.preserved(FileAnnotationActionsSchema).nullable().space('actions'),
+ };
+ 
++/** Fields every markup kind has (ISO 32000-2 Table 171): the base, and its comment's rich text. */
++export const markupBaseFields = {
++  ...annotationBaseFields,
++  /**
++   * `/RC`: the comment as rich text, what its popup shows (ISO 32000-2 §12.5.6.2), with
++   * `contents` its plain projection; `null` when the comment is plain text. A comment draws
++   * nothing: only a free text's rich text is its appearance, and free text declares its own.
++   */
++  richText: field
++    .data(RichTextDocumentSchema)
++    .writes(RichTextDocumentInputSchema)
++    .nullable()
++    .optional()
++    .space('length'),
++};
++
+ // ── style ──
+ 
+ export const colorStyleFields = {
+@@ -112,6 +130,12 @@ export const colorStyleFields = {
+ 
+ export const geometryStyleFields = {
+   ...colorStyleFields,
++  /**
++   * `/C`, the stroke. `null` draws none and keeps `strokeWidth`: `/C []`, ISO 32000's "no
++   * colour". A file's `/C` left out reads as `null` too, as Acrobat draws it.
++   */
++  color: field.data(ColorSchema).nullable().optional(),
++  /** Still places the outline, sizes line endings and clouds when `color` is `null`. */
+   strokeWidth: field.data(z.number().nonnegative()).optional(),
+   /** `beveled` and `inset` are read from other apps' files and kept; only widgets draw them. */
+   borderStyle: field
+@@ -119,7 +143,11 @@ export const geometryStyleFields = {
+     .writes(DrawnBorderStyleSchema)
+     .readBack()
+     .optional(),
+-  dashArray: field.data(z.array(z.number().nonnegative())).nullable().optional(),
++  dashArray: field
++    .data(z.array(z.number().nonnegative()))
++    .writes(DashArrayWriteSchema)
++    .nullable()
++    .optional(),
+ };
+ 
+ export const filledStyleFields = {
+@@ -184,7 +212,7 @@ export const widgetBoxFields = {
+ // ── families ──
+ 
+ export const textMarkupFields = {
+-  ...annotationBaseFields,
++  ...markupBaseFields,
+   ...colorStyleFields,
+   /** The box around the quads. */
+   ...drawnRectFields,
+@@ -192,14 +220,14 @@ export const textMarkupFields = {
+ };
+ 
+ export const shapeFields = {
+-  ...annotationBaseFields,
++  ...markupBaseFields,
+   ...filledStyleFields,
+   ...boxFields,
+   cloudyIntensity: field.data(z.number().positive()).nullable().optional(),
+ };
+ 
+ export const vertexFields = {
+-  ...annotationBaseFields,
++  ...markupBaseFields,
+   ...filledStyleFields,
+   ...drawnRectFields,
+   vertices: field.data(z.array(PdfPointSchema)).space('points'),
+diff --git a/packages/plugin/annotation/src/read/properties.ts b/packages/plugin/annotation/src/read/properties.ts
+index 881701ab2..438e815aa 100644
+--- a/packages/plugin/annotation/src/read/properties.ts
++++ b/packages/plugin/annotation/src/read/properties.ts
+@@ -1,16 +1,24 @@
+ import {
++  type AnnotationProperty,
+   isEditableByHand,
+-  kindOf,
+   linkOf,
+   type Model,
+   type ModelAnnotation,
+   richDocOf,
+-  sharedProperties,
++  richTextLength,
++  selectionProperties,
+   textOf,
+ } from '@embedpdf/core-annotation';
+ 
+ import type { AnnotationProperties } from '../contract';
+-import { RANGE_KEYS, rangeProps, type TextSelection } from '../rich-text';
++import {
++  caretProps,
++  RANGE_KEYS,
++  rangeProps,
++  type EditorSelection,
++  type TextProps,
++  type TextSelection,
++} from '../rich-text';
+ import type { AnnotationContext, AnnotationServices } from '../services';
+ import { propertyValue, propertyValues, type PropertySources } from './property-values';
+ 
+@@ -24,12 +32,26 @@ export function createPropertyReads(
+   ctx: Pick<AnnotationContext, 'state'>,
+   { store, fonts }: Pick<AnnotationServices, 'store' | 'fonts'>,
+ ) {
++  /** The editor's selection inside the annotation being edited, or null (no
++   *  editor selection, or one left behind by a previous edit). */
++  const editorSelection = (model: Model): EditorSelection | null => {
++    const ts = ctx.state.get().textSelection;
++    return ts && model.editing === ts.id && model.byId[ts.id] ? ts : null;
++  };
++
+   /** The editor's text range inside the annotation being edited, or null
+-   *  (no editor selection, a bare caret, or a selection left behind by a
+-   *  previous edit). The one condition that routes the range properties to runs. */
++   *  (no editor selection, or a bare caret). The one condition that routes
++   *  the range properties to runs. */
+   const activeTextRange = (model: Model): TextSelection | null => {
+-    const ts = ctx.state.get().textSelection;
+-    return ts && model.editing === ts.id && ts.end > ts.start && model.byId[ts.id] ? ts : null;
++    const ts = editorSelection(model);
++    return ts && ts.end > ts.start ? ts : null;
++  };
++
++  /** The editor's caret inside the annotation being edited, or null. The
++   *  range properties there are the text typed next. */
++  const activeCaret = (model: Model): EditorSelection | null => {
++    const ts = editorSelection(model);
++    return ts && ts.end === ts.start ? ts : null;
+   };
+ 
+   /** What a panel reads of one member: its fields, its text as shown, and its link. */
+@@ -45,45 +67,69 @@ export function createPropertyReads(
+     };
+   };
+ 
+-  let cache: { model: Model; range: TextSelection | null; v: AnnotationProperties } | null = null;
++  /**
++   * What a free text's range properties read: the text the next change
++   * styles. The editor's range, the text typed next at its caret, else all of
++   * the box's text. `null` for any other kind.
++   */
++  const textPropsOf = (model: Model, record: ModelAnnotation): TextProps | null => {
++    if (record.annotation.subtype !== 'free-text') return null;
++    const doc = richDocOf(record.annotation, fonts);
++    const ts = editorSelection(model);
++    if (ts?.id !== record.id) return rangeProps(doc, { start: 0, end: richTextLength(doc) }, fonts);
++    if (ts.end > ts.start) return rangeProps(doc, ts, fonts);
++    return caretProps(doc, ts.start, ts.typing, fonts);
++  };
++
++  let cache: {
++    model: Model;
++    selection: EditorSelection | null;
++    v: AnnotationProperties;
++  } | null = null;
+   const selectionPropertiesOf = (): AnnotationProperties => {
+     const model = store.model();
+-    const range = activeTextRange(model);
+-    if (cache && cache.model === model && cache.range === range) return cache.v;
++    const selection = editorSelection(model);
++    if (cache && cache.model === model && cache.selection === selection) return cache.v;
+     const members = model.selected
+       .map((id) => model.byId[id])
+       .filter(
+         (record): record is ModelAnnotation =>
+           !!record && isEditableByHand(model, record.annotation),
+       );
+-    const properties = sharedProperties(members.map((record) => kindOf(record.annotation)));
++    const properties = selectionProperties(
++      model,
++      members.map((record) => record.annotation),
++    );
+     const sources = members.map((record) => sourcesOf(model, record));
++    // A free text's range properties are its text's: what the next change
++    // styles reads back, resolved against the body, the same values
++    // `selection.update` would restyle.
++    const texts = members.map((record) => textPropsOf(model, record));
++    const valueOf = (spec: AnnotationProperty, index: number): unknown => {
++      const text = texts[index];
++      return text && RANGE_KEYS.includes(spec.key)
++        ? text.values[spec.key]
++        : propertyValue(spec, sources[index]!);
++    };
+     const values = sources.length ? propertyValues(properties, sources[0]!) : {};
+     const mixed: string[] = [];
+     for (const spec of properties) {
+-      const first = JSON.stringify(propertyValue(spec, sources[0]!));
+-      if (sources.some((source) => JSON.stringify(propertyValue(spec, source)) !== first))
++      const ofText = RANGE_KEYS.includes(spec.key);
++      if (ofText && texts[0]) values[spec.key] = texts[0].values[spec.key];
++      const first = JSON.stringify(valueOf(spec, 0));
++      if (
++        sources.some((_, index) => JSON.stringify(valueOf(spec, index)) !== first) ||
++        (ofText && texts.some((text) => text?.mixed.includes(spec.key)))
++      ) {
+         mixed.push(spec.key);
+-    }
+-    // While the editor holds a range in the (sole) selected free text, the
+-    // range properties report the runs it covers, resolved against the body:
+-    // the same values `selection.update` would restyle.
+-    if (range && members.length === 1 && members[0]!.id === range.id) {
+-      const rp = rangeProps(richDocOf(members[0]!.annotation, fonts), range, fonts);
+-      for (const spec of properties) {
+-        if (!RANGE_KEYS.includes(spec.key)) continue;
+-        values[spec.key] = rp.values[spec.key];
+-        const index = mixed.indexOf(spec.key);
+-        if (index >= 0) mixed.splice(index, 1);
+-        if (rp.mixed.includes(spec.key)) mixed.push(spec.key);
+       }
+     }
+     const result: AnnotationProperties = { properties, values, mixed };
+-    cache = { model, range, v: result };
++    cache = { model, selection, v: result };
+     return result;
+   };
+ 
+-  return { activeTextRange, selectionPropertiesOf };
++  return { activeTextRange, activeCaret, selectionPropertiesOf };
+ }
+ 
+ export type PropertyReads = ReturnType<typeof createPropertyReads>;
+diff --git a/packages/plugin/annotation/src/read/text-fonts.ts b/packages/plugin/annotation/src/read/text-fonts.ts
+index b108ebdb4..e76b61397 100644
+--- a/packages/plugin/annotation/src/read/text-fonts.ts
++++ b/packages/plugin/annotation/src/read/text-fonts.ts
+@@ -3,8 +3,10 @@
+  * program the engine writes with. A box someone types in is resolved the way
+  * its write will be (the fonts plugin's `resolve`, with the box, so its own
+  * font counts): when the edit starts, and again after a pause in typing once
+- * the text has a character it wasn't resolved with. Any other box is drawn in
+- * the fonts its names say. Without the fonts plugin, a box is drawn in the
++ * the text has a character it wasn't resolved with. An answer holds for the
++ * faces it was asked about: a box restyled since (another font, a bold word)
++ * is asked again, and drawn in the fonts its names say until it is answered.
++ * Any other box is drawn in the fonts its names say. Without the fonts plugin, a box is drawn in the
+  * standard font the engine falls back to for its font or face, in that
+  * font's built-in program (`@embedpdf/core-fonts`).
+  */
+@@ -14,22 +16,20 @@ import {
+   textOf,
+   type FontLookup,
+   type Id,
++  type Model,
++  type ModelAnnotation,
+   type TextStyle,
+ } from '@embedpdf/core-annotation';
++import { standardFontCss, standardFontOf, standardFontOfProgramFamily } from '@embedpdf/core-fonts';
+ import {
+   STANDARD_FACES,
+   faceForFontName,
+   familyKey,
++  standardFontForFace,
+   type FontResolveRun,
+   type ResolvedFontRun,
+   type RichTextBody,
+ } from '@embedpdf/engine-core/runtime';
+-import {
+-  standardFontCss,
+-  standardFontForFace,
+-  standardFontOf,
+-  standardFontOfProgramFamily,
+-} from '@embedpdf/core-fonts';
+ import { FontsToken, type FontCss, type FontsCapability } from '@embedpdf/plugin-fonts/contract';
+ 
+ import type { AnnotationContext } from '../services/context';
+@@ -68,20 +68,30 @@ export interface TextFonts {
+ }
+ 
+ export function createTextFonts(
+-  ctx: Pick<AnnotationContext, 'tryGet' | 'clock' | 'notify' | 'state'>,
++  ctx: Pick<AnnotationContext, 'tryGet' | 'clock' | 'notify' | 'state' | 'watch'>,
+   store: Pick<AnnotationStore, 'model'>,
+   lookup: FontLookup,
+ ): TextFonts {
+   const fonts = (): FontsCapability | null => ctx.tryGet(FontsToken);
+ 
+   /**
+-   * What the engine answered per box: the run each face its text was resolved with drew in, its
+-   * CSS asked for on each read (it changes as the programs reach the browser).
++   * What the engine answered per box: the faces it was asked about, the record it was asked for
++   * (a newer one with the same faces keeps the answer), and the run each face drew in, its CSS
++   * asked for on each read (it changes as the programs reach the browser).
+    */
+-  const answers = new Map<Id, ReadonlyMap<string, ResolvedFontRun>>();
++  const answers = new Map<
++    Id,
++    {
++      readonly faces: string;
++      readonly record: ModelAnnotation;
++      readonly byFace: ReadonlyMap<string, ResolvedFontRun>;
++    }
++  >();
+   /** The box being typed in, and the characters its last resolve asked about. */
++  let editing: Id | null = null;
+   let asked: { readonly id: Id; readonly codePoints: Set<number> } | null = null;
+-  let resolving: AbortController | null = null;
++  /** Each box's resolve in flight: a newer one for the same box replaces it. */
++  const resolving = new Map<Id, AbortController>();
+   let cancelPause = () => {};
+   let answered = 0;
+   let token: { list: unknown; answered: number; epoch: number } = {
+@@ -98,17 +108,15 @@ export function createTextFonts(
+     return (face.weight ?? 400) === body.weight && (face.italic ?? false) === body.italic;
+   };
+ 
+-  /** Ask the engine what the box's text will be drawn in, and keep the answer. */
+-  const resolveBox = async (id: Id): Promise<void> => {
+-    const api = fonts();
+-    const record = store.model().byId[id];
+-    const style = record && textOf(record.annotation);
+-    if (!api || !record || !style || record.annotation.subtype !== 'free-text') return;
+-    // A box not written yet has no font of its own to count.
+-    const ref = refOf(record) ?? undefined;
++  /**
++   * What the engine is asked about a box's text: the body first, then every run, unstyled ones by
++   * the box's font, the rest by face; `faces` names the faces asked, whatever the text.
++   */
++  const questionOf = (record: ModelAnnotation) => {
++    const style = textOf(record.annotation);
++    if (!style || record.annotation.subtype !== 'free-text') return null;
+     const doc = richDocOf(record.annotation, lookup);
+     const body = doc.body;
+-    // The body first, then every run: unstyled ones by the box's font, the rest by face.
+     const faces: string[] = [BODY];
+     const runs: FontResolveRun[] = [bodyRun(style, body, bodyIsItsFont(style, body))];
+     let text = '';
+@@ -130,10 +138,24 @@ export function createTextFonts(
+         runs.push({ text: run.text, ...face });
+       }
+     }
+-    asked = { id, codePoints: new Set(codePointsOf(text)) };
+-    resolving?.abort();
++    // The body run has no text of its own: it and the faces are the question, whatever is typed.
++    const key = JSON.stringify({ body: runs[0], faces: [...new Set(faces)].sort() });
++    return { body, runs, faces, text, key };
++  };
++
++  /** Ask the engine what the box's text will be drawn in, and keep the answer. */
++  const resolveBox = async (id: Id): Promise<void> => {
++    const api = fonts();
++    const record = store.model().byId[id];
++    const question = api && record && questionOf(record);
++    if (!api || !record || !question) return;
++    const { body, runs, faces, text, key } = question;
++    // A box not written yet has no font of its own to count.
++    const ref = refOf(record) ?? undefined;
++    if (id === editing) asked = { id, codePoints: new Set(codePointsOf(text)) };
++    resolving.get(id)?.abort();
+     const request = new AbortController();
+-    resolving = request;
++    resolving.set(id, request);
+     try {
+       // The list names the programs' styles and the system families after them.
+       await api.ensureLoaded();
+@@ -141,7 +163,8 @@ export function createTextFonts(
+         { ...(ref ? { annotation: ref } : {}), runs },
+         { signal: request.signal },
+       );
+-      if (resolving !== request) return;
++      if (resolving.get(id) !== request) return;
++      resolving.delete(id);
+       const byFace = new Map<string, ResolvedFontRun>();
+       answer.runs.forEach((run, index) => {
+         const face = faces[index]!;
+@@ -149,7 +172,7 @@ export function createTextFonts(
+       });
+       // A run that names the body's own face is drawn as the body is.
+       if (!byFace.has(faceKey(body))) byFace.set(faceKey(body), byFace.get(BODY)!);
+-      answers.set(id, byFace);
++      answers.set(id, { faces: key, record, byFace });
+       answered++;
+       ctx.notify();
+     } catch {
+@@ -157,8 +180,35 @@ export function createTextFonts(
+     }
+   };
+ 
++  /**
++   * Drop the answers the model moved on from: a box deleted, or restyled so its faces aren't the
++   * ones asked about, which is asked again (typing keeps the faces, and the answer). The model is
++   * watched, not this plugin's state: a change that shows before the engine answers it, as a
++   * format on a whole box does, changes the view alone.
++   */
++  const dropStaleAnswers = (model: Model) => {
++    let dropped = false;
++    for (const [id, answer] of answers) {
++      const record = model.byId[id];
++      if (record === answer.record) continue;
++      const question = record && questionOf(record);
++      if (question && question.key === answer.faces) {
++        answers.set(id, { ...answer, record });
++        continue;
++      }
++      answers.delete(id);
++      dropped = true;
++      if (question) void resolveBox(id);
++    }
++    if (dropped) {
++      answered++;
++      ctx.notify();
++    }
++  };
++
++  ctx.watch(store.model, dropStaleAnswers);
++
+   // Resolve the box someone starts typing in.
+-  let editing: Id | null = null;
+   ctx.state.onChange(() => {
+     const next = store.model().editing;
+     if (next === editing) return;
+@@ -177,14 +227,14 @@ export function createTextFonts(
+           byFont ? standardFontOf(style.fontFamily) : standardFontForFace(body),
+         );
+       }
+-      const run = answers.get(id)?.get(BODY);
++      const run = answers.get(id)?.byFace.get(BODY);
+       if (run) return api.getRunCss(run);
+       return byFont ? api.getFontCss(style.fontFamily) : api.getFaceCss(body);
+     },
+     faceCss: (id, face) => {
+       const api = fonts();
+       if (!api) return standardFontCss(standardFontForFace(face));
+-      const run = id !== null ? answers.get(id)?.get(faceKey(face)) : undefined;
++      const run = id !== null ? answers.get(id)?.byFace.get(faceKey(face)) : undefined;
+       return run ? api.getRunCss(run) : api.getFaceCss(face);
+     },
+     familyOfCss: (cssFamily) => {
+diff --git a/packages/plugin/annotation/src/write/selection.ts b/packages/plugin/annotation/src/write/selection.ts
+index b4b998282..e66686817 100644
+--- a/packages/plugin/annotation/src/write/selection.ts
++++ b/packages/plugin/annotation/src/write/selection.ts
+@@ -22,11 +22,11 @@ import {
+   type PdfLinkTarget,
+ } from '@embedpdf/engine-core/runtime';
+ 
+-import type { AnnotationContext } from '../services';
+ import type { AnnotationReads } from '../read/annotations';
+ import type { ChromeReads } from '../read/chrome';
+ import type { PropertyReads } from '../read/properties';
+ import { runDeltaForFields, type TextFormat } from '../rich-text';
++import type { AnnotationContext } from '../services';
+ import type { AnnotationServices } from '../services';
+ import { appliedOrThrow, batchResultOf, throwIfFailed } from './outcomes';
+ import type { TextEditing } from './text-editing';
+@@ -47,9 +47,9 @@ export function createSelectionWrites(
+     lending,
+   }: Pick<AnnotationServices, 'store' | 'authority' | 'fonts' | 'behaviors' | 'lending'>,
+   annotations: Pick<AnnotationReads, 'selectedRecords' | 'listSelected'>,
+-  properties: Pick<PropertyReads, 'activeTextRange' | 'selectionPropertiesOf'>,
++  properties: Pick<PropertyReads, 'activeTextRange' | 'activeCaret' | 'selectionPropertiesOf'>,
+   chrome: Pick<ChromeReads, 'selectionAnchor' | 'rotationAnchor'>,
+-  text: Pick<TextEditing, 'type'>,
++  text: Pick<TextEditing, 'type' | 'styleTyping'>,
+ ) {
+   const selectedRefs = () => refsOfIn(store.model(), store.model().selected);
+ 
+@@ -69,28 +69,31 @@ export function createSelectionWrites(
+    * member takes the fields its kind has, and the change shows at once, as
+    * one change. While the text editor holds a range, the font, size, colour
+    * and formats restyle the runs it covers (a delta over the body, through
+-   * the pure run algebra) as part of the typing, and the rest goes to the
+-   * annotation: its change sends the typing first, so the body it writes is
+-   * the latest.
++   * the pure run algebra) as part of the typing; at its caret they are the
++   * style of the text typed next, and nothing is written. The rest goes to
++   * the annotation: its change sends the typing first, so the body it writes
++   * is the latest.
+    */
+   const restyle = (patch: FieldValues | ((annotation: Annotation) => FieldValues)): Commit[] => {
+     const model = store.model();
+-    const range = properties.activeTextRange(model);
++    const editor = properties.activeTextRange(model) ?? properties.activeCaret(model);
+     const commits: Commit[] = [];
+     const patches: Record<Id, FieldValues> = {};
+     for (const id of model.selected) {
+       const record = model.byId[id];
+       if (!record) continue;
+       const own = typeof patch === 'function' ? patch(record.annotation) : patch;
+-      if (range?.id !== id) {
++      if (editor?.id !== id) {
+         patches[id] = own;
+         continue;
+       }
+       const { delta, rest } = runDeltaForFields(own, fonts);
+-      if (Object.keys(delta).length) {
++      if (Object.keys(delta).length && editor.start === editor.end) {
++        text.styleTyping(id, delta);
++      } else if (Object.keys(delta).length) {
+         const next = applyStyleToRange(
+           { paragraphs: richDocOf(record.annotation, fonts).paragraphs },
+-          range,
++          editor,
+           delta,
+         );
+         commits.push(text.type(id, { type: 'setRichText', id, doc: next }));
+@@ -109,13 +112,16 @@ export function createSelectionWrites(
+   };
+ 
+   /**
+-   * Bold, italic or underline on or off: the words selected while typing, or
+-   * the whole of each selected text box once the text being typed has landed.
++   * Bold, italic or underline on or off: the words selected while typing, the
++   * text typed next at the caret, or all the text of each selected box once
++   * the text being typed has landed. On, unless all of it already has it.
+    */
+   const toggleFormat = async (format: TextFormat, options: OperationOptions = {}) => {
+-    const on = properties.selectionPropertiesOf().values[format] !== true;
+-    const range = properties.activeTextRange(store.model());
+-    const commits = range
++    const { values, mixed } = properties.selectionPropertiesOf();
++    const on = values[format] !== true || mixed.includes(format);
++    const model = store.model();
++    const editor = properties.activeTextRange(model) ?? properties.activeCaret(model);
++    const commits = editor
+       ? restyle({ [format]: on })
+       : [store.commit({ type: 'setTextFormat', format, on })];
+     const outcomes = await ctx.cancellable(
+diff --git a/packages/plugin/render/src/host-contract.ts b/packages/plugin/render/src/host-contract.ts
+index c5a265d10..761808d2e 100644
+--- a/packages/plugin/render/src/host-contract.ts
++++ b/packages/plugin/render/src/host-contract.ts
+@@ -17,6 +17,7 @@ import {
+   type PageRenderViewport,
+   type PluginErrorInfo,
+ } from '@embedpdf/core';
++import type { Rect } from '@embedpdf/core-geometry';
+ import {
+   RenderToken as PublicRenderToken,
+   type PageImage,
+@@ -176,6 +177,13 @@ export interface RenderHostCapability extends RenderCapability {
+   /** A base raster resolved / failed (the conforming and exact doors alike). */
+   readonly onRenderCompleted: EventHook<RenderCompletedEvent>;
+   readonly onRenderFailed: EventHook<RenderFailedEvent>;
++  /**
++   * The snapshot tool's box on `page`, in page space, for a page layer to
++   * draw: while it is dragged and while it is held. Null on every other page,
++   * and for a drag still too small to be a box. The same object while it
++   * doesn't change.
++   */
++  getSnapshotBox(page: PageRef): Rect | null;
+ }
+ 
+ export const RenderToken = createHostToken<RenderHostCapability>(PublicRenderToken);
+794
+Counter({'packages/plugin/stage': 9, 'packages/plugin/annotation': 8, 'packages/plugin/i18n': 8, 'packages/plugin/render': 6, 'packages/plugin/commands': 3, 'packages/plugin/fonts': 2})
+native paths 0
