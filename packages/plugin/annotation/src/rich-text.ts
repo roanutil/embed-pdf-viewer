@@ -274,3 +274,5 @@ function runProps(
   read('underline', (style) => (style.decoration ?? []).includes('underline'));
   return { values, mixed };
 }
+
+export { familyKey } from '@embedpdf/engine-core/runtime';

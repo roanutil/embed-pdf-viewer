@@ -22,3 +22,5 @@ export {
   type StandardFontCss,
 } from './standard/css';
 export { BUILT_IN_PROGRAMS, builtInProgramInfo, loadBuiltInProgram } from './built-in';
+
+export type { FontProgram } from '@embedpdf/engine-core/runtime';

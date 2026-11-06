@@ -187,3 +187,7 @@ Needs your approval (a TypeScript change, or a loss of test coverage):
    I recommend (a) for the internal helpers the cases need, and (b) for any whose function no longer exists at all.
 
 Still open (about 100 errors, to be worked file by file): event-model fixtures that build `layout` on `pages.*` events, the `goToPage` trigger `page` field (now `pageIndex`), permission flags in callers that still pass bits, and assorted settings and argument renames. Vector regeneration waits until typecheck is clean, and then each changed vector needs the same review as before.
+
+## Export decisions applied (2026-11-06)
+
+Approved: export the symbols the plugin-conformance tooling imports. Applied as re-exports, with no change to implementation: `familyKey` (plugin/annotation rich-text), `interpolate` (plugin/i18n translate), `FontProgram` (core/fonts index). Remaining missing names are not defined anywhere in the packages: `layoutFontOf`, `layoutVariableText`, `VariableTextOptions`, `layout/breaks` (form), `PageGeom` (stage), `CommandDef` (commands). These need a decision: drop the tooling cases that use them, or name the replacement.

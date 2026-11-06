@@ -91,3 +91,5 @@ export function translate(
     return { text: interpolate(options.fallback, options.params), found: false };
   return { text: key, found: false };
 }
+
+export { interpolate } from './contract';
