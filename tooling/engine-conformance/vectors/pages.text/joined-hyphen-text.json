@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.text",
+  "case": "joined-hyphen-text",
+  "fixture": "packages/engine/main/test/fixtures/search_cross_run_bug.pdf",
+  "covers": "A real line-end hyphen joined by PDFium with a U+FFFE marker: cleaned text omits the marker while selection keeps its character slot.",
+  "pages": [
+  {"index":0,"pageObjectNumber":7,"snapshot":{"text":"EmbedPDF plugin-search: cross-run boundary bug\nThe phrase \"combination locks of the containers concerned\" spans two PDF text runs because the word \n\"containers\" is hyphenated across a line break. searchAllPages() returns 0 results for this phrase. The same \nsearch in the default Adobe Acrobat Reader works as expected and finds the result.\nSection 3.1 Special provisions relating to valuables\nIf the total value of the insured items exceeds CHF 100,000, the insurer is liable for more than this amount only \nif the items are worn or continuously supervised in person, or are stored in a locked security container (vault \nbuilt into the wall or safe weighing over 100 kg).\nThe keys or codes for the combination locks of the containers concerned must be kept safely in another room or carried by the persons in charge of them.\nHow to reproduce\n1. Open this PDF in the EmbedPDF viewer.\n2. Run: search.forDocument(id).startSearch()\n then: searchAllPages(\"combination locks of the containers concerned\")\n3. Observed: 0 results.\n4. Expected: 1 result on this page.\nNote: searching for the same phrase in Adobe Acrobat Reader finds the result correctly, confirming this is a bug in pluginsearch and not a PDF issue.\nThe run boundary sits between \"con-\" (run A, charIndex N) and \"tainers\" (run B, charIndex N+4). The selection plugin \nalready handles this correctly by operating on character indices. The search plugin should join adjacent runs on the same \npage before matching.","charCount":1492,"charMap":[[47,46],[149,147],[260,257],[344,340],[398,393],[514,508],[628,621],[680,672],[736,727],[835,825],[853,842],[895,883],[941,928],[1013,999],[1038,1023],[1075,1059],[1199,1182],[1227,1209],[1346,1327],[1470,1450]]}}
+  ]
+}

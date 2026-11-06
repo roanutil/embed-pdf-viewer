@@ -48,6 +48,14 @@ export interface CorpusCase {
 
 export const CORPUS: readonly CorpusCase[] = [
   {
+    name: 'joined-hyphen-text',
+    fixture: 'packages/engine/main/test/fixtures/search_cross_run_bug.pdf',
+    covers:
+      'A real line-end hyphen joined by PDFium with a U+FFFE marker: cleaned text omits the marker while selection keeps its character slot.',
+    pages: 'all',
+    operations: ['pages.text'],
+  },
+  {
     name: 'embedded-orientations',
     fixture: 'tooling/engine-conformance/fixtures/embedded_orientations.pdf',
     covers:
@@ -79,7 +87,7 @@ export const CORPUS: readonly CorpusCase[] = [
     name: 'non-identity-text',
     fixture: 'tooling/engine-conformance/fixtures/non_identity_text.pdf',
     covers:
-      "A page whose character list and text are different sizes: a Type0 font whose /ToUnicode maps one CID to a supplementary code point and leaves .notdef unmapped, so one character contributes two text units and another contributes none. Every other fixture here has an identity map, which left the translation pinned only against hand-built snapshots.",
+      'A page whose character list and text are different sizes: a Type0 font whose /ToUnicode maps one CID to a supplementary code point and leaves .notdef unmapped, so one character contributes two text units and another contributes none. Every other fixture here has an identity map, which left the translation pinned only against hand-built snapshots.',
     pages: 'all',
     operations: ['pages.geometry', 'pages.text'],
   },

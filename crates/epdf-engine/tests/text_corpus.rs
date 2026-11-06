@@ -11,7 +11,8 @@
 use epdf_engine::access::{DocumentAccess, OwnedDocument, PageAccess};
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::text::charmap::{
-    CharMapAnchor, PageTextSnapshot, char_map_violation, slice_text_by_chars,
+    CharMapAnchor, PageTextSnapshot, char_map_violation, char_range_for_text_offsets,
+    slice_text_by_chars,
 };
 use epdf_engine::features::text::reader::read_page_text;
 use epdf_engine::identity::PageObjectNumber;
@@ -172,4 +173,34 @@ fn text_reads_normalize_line_breaks_without_moving_character_slots() {
         }
     }
     panic!("the corpus has no extracted CRLF page for the reader regression");
+}
+
+#[test]
+fn a_joined_line_end_hyphen_is_not_copied_but_keeps_its_character_slot() {
+    let case = test_support::corpus::load("pages.text")
+        .into_iter()
+        .find(|case| case.case_name == "joined-hyphen-text")
+        .expect("joined hyphen corpus case");
+    let document = document(&case);
+    let number = PageObjectNumber::new(case.pages[0].page_object_number).expect("number");
+    let page = document.page(number).expect("page");
+    let raw_text = page.view().text().expect("raw text page").text_full().expect("raw text");
+    assert!(
+        raw_text.contains('\u{fffe}'),
+        "the fixture no longer exercises PDFium's hyphen marker"
+    );
+    let actual = read_page_text(&page, &CancelToken::never()).expect("text");
+    let phrase = "combination locks of the containers concerned must";
+    let offset = actual.text.find(phrase).expect("the joined occurrence reads whole");
+    let start = actual.text[..offset].encode_utf16().count() as u32;
+    let end = start + phrase.encode_utf16().count() as u32;
+    let range = char_range_for_text_offsets(&actual, start, end);
+    assert!(!actual.text.contains('\u{fffe}'), "PDFium's hyphen marker leaked");
+    assert!(!actual.text.contains('\r'), "PDFium's CRLF leaked");
+    assert_eq!(
+        range.end - range.start,
+        phrase.len() as u32 + 1,
+        "the joined hyphen's character slot moved"
+    );
+    assert_eq!(slice_text_by_chars(&actual, range.start, range.end), phrase);
 }
