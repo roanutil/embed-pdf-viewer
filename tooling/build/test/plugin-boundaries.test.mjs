@@ -68,7 +68,9 @@ test('rejects bare sibling roots in plugin and framework source', (t) => {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const messages = checkPluginBoundaries({ repoRoot: root }).map((item) => item.message);
   assert.equal(messages.length, 2);
-  assert(messages.some((message) => message.includes('plugin source imports implementation entry')));
+  assert(
+    messages.some((message) => message.includes('plugin source imports implementation entry')),
+  );
   assert(messages.some((message) => message.includes('framework source imports sibling')));
 });
 
@@ -168,7 +170,54 @@ test('checks CloudPDF’s plugin and framework groups as EmbedPDF’s', (t) => {
   const violations = checkPluginBoundaries({ repoRoot: root });
   const shown = violations.map((item) => `${path.relative(root, item.file)}: ${item.message}`);
   assert.equal(shown.length, 3, shown.join('\n'));
-  assert(shown.some((line) => line.startsWith('cloudpdf/plugin/delta/package.json: plugin packages must export "./contract"')));
-  assert(shown.some((line) => line.startsWith('cloudpdf/plugin/gamma/src/gamma.plugin.ts: plugin source imports implementation entry "@embedpdf/plugin-alpha"')));
-  assert(shown.some((line) => line.startsWith('cloudpdf/framework/web/src/player.ts: framework source imports sibling implementation entry "@cloudpdf/plugin-gamma"')));
+  assert(
+    shown.some((line) =>
+      line.startsWith(
+        'cloudpdf/plugin/delta/package.json: plugin packages must export "./contract"',
+      ),
+    ),
+  );
+  assert(
+    shown.some((line) =>
+      line.startsWith(
+        'cloudpdf/plugin/gamma/src/gamma.plugin.ts: plugin source imports implementation entry "@embedpdf/plugin-alpha"',
+      ),
+    ),
+  );
+  assert(
+    shown.some((line) =>
+      line.startsWith(
+        'cloudpdf/framework/web/src/player.ts: framework source imports sibling implementation entry "@cloudpdf/plugin-gamma"',
+      ),
+    ),
+  );
+});
+
+test('accepts consumer factory type imports without loading an implementation', (t) => {
+  const root = fixture({
+    ...pluginFiles('alpha'),
+    'packages/native-bridge/src/factory.ts':
+      `import type { alphaPlugin as Factory } from '@embedpdf/plugin-alpha';\n` +
+      `export const nativeFactory: typeof Factory = () => ({ native: true });\n`,
+    'examples/factory-type.ts':
+      `import { type alphaPlugin } from '@embedpdf/plugin-alpha';\n` +
+      `export type Factory = typeof alphaPlugin;\n`,
+  });
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  assert.deepEqual(checkPluginBoundaries({ repoRoot: root }), []);
+});
+
+test('rejects ordinary consumer root types named like plugin interfaces', (t) => {
+  const root = fixture({
+    ...pluginFiles('alpha', {
+      'packages/plugin/alpha/src/contract.ts': `export { alphaToken } from './types';\nexport interface AlphaPlugin { id: string }\n`,
+    }),
+    'examples/control.ts':
+      `import type { AlphaPlugin } from '@embedpdf/plugin-alpha';\n` +
+      `export const control: AlphaPlugin | null = null;\n`,
+  });
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const violations = checkPluginBoundaries({ repoRoot: root });
+  assert.equal(violations.length, 1);
+  assert.match(violations[0].message, /without opting in via its plugin factory/);
 });

@@ -68,6 +68,21 @@ function importIsTypeOnly(node) {
   );
 }
 
+/** A native factory bridge may name a factory's type without loading its implementation. */
+function factoryTypeImport(reference) {
+  const statement = reference.node.parent;
+  if (!reference.typeOnly || !ts.isImportDeclaration(statement)) return false;
+  const bindings = statement.importClause?.namedBindings;
+  return (
+    bindings &&
+    ts.isNamedImports(bindings) &&
+    bindings.elements.length > 0 &&
+    bindings.elements.every((element) =>
+      /^[a-z][A-Za-z0-9]*Plugin$/.test((element.propertyName ?? element.name).text),
+    )
+  );
+}
+
 function exportIsTypeOnly(node) {
   if (node.isTypeOnly) return true;
   return (
@@ -124,7 +139,10 @@ function resolveRelative(fromFile, specifier) {
     candidates.push(...SOURCE_EXTENSIONS.map((suffix) => `${unresolved}${suffix}`));
     candidates.push(...SOURCE_EXTENSIONS.map((suffix) => path.join(unresolved, `index${suffix}`)));
   }
-  return candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) ?? null;
+  return (
+    candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) ??
+    null
+  );
 }
 
 function runtimeRootReexports(source) {
@@ -201,7 +219,8 @@ function folderEntryOwnedRoots(frameworkRoot) {
 }
 
 function publicContractChecks(repoRoot, violations) {
-  for (const pluginRoot of groupRoots(repoRoot, 'plugin')) contractChecksUnder(pluginRoot, violations);
+  for (const pluginRoot of groupRoots(repoRoot, 'plugin'))
+    contractChecksUnder(pluginRoot, violations);
 }
 
 function contractChecksUnder(pluginRoot, violations) {
@@ -248,7 +267,8 @@ function contractChecksUnder(pluginRoot, violations) {
         file: indexFile,
         line: 1,
         column: 1,
-        message: 'plugin implementation entry must re-export "./contract" to preserve its public API',
+        message:
+          'plugin implementation entry must re-export "./contract" to preserve its public API',
       });
     }
 
@@ -296,7 +316,8 @@ function checkContractClosure(entryFile, violations) {
         file: entryFile,
         line,
         column,
-        message: 'contract entries must re-export or narrow the package token, never create a second token',
+        message:
+          'contract entries must re-export or narrow the package token, never create a second token',
       });
     }
     ts.forEachChild(node, inspectTokenFactory);
@@ -387,7 +408,8 @@ function importBoundaryChecks(repoRoot, violations) {
       for (const reference of moduleReferences(source)) {
         const match = PLUGIN_PACKAGE.exec(reference.specifier);
         if (!match || (match[2] && match[2] !== 'internal')) continue;
-        if (!match[2] && implementationOptIns.has(match[1])) continue;
+        if (!match[2] && (implementationOptIns.has(match[1]) || factoryTypeImport(reference)))
+          continue;
         const { line, column } = position(source, reference.node);
         violations.push({
           file,
@@ -406,7 +428,9 @@ export function checkPluginBoundaries({ repoRoot = process.cwd() } = {}) {
   importBoundaryChecks(repoRoot, violations);
   return violations.sort(
     (a, b) =>
-      a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column ||
+      a.file.localeCompare(b.file) ||
+      a.line - b.line ||
+      a.column - b.column ||
       a.message.localeCompare(b.message),
   );
 }
@@ -425,7 +449,9 @@ if (isCli) {
   const repoRoot = process.cwd();
   const violations = checkPluginBoundaries({ repoRoot });
   if (violations.length > 0) {
-    console.error(`Plugin boundary check failed (${violations.length}):\n${formatViolations(violations, repoRoot)}`);
+    console.error(
+      `Plugin boundary check failed (${violations.length}):\n${formatViolations(violations, repoRoot)}`,
+    );
     process.exitCode = 1;
   } else {
     console.log('Plugin boundary check passed.');

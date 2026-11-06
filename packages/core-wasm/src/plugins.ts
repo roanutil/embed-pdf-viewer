@@ -31,7 +31,7 @@ import type { searchPlugin as SearchPlugin } from '@embedpdf/plugin-search';
 import type { selectionPlugin as SelectionPlugin } from '@embedpdf/plugin-selection';
 import type { shellPlugin as ShellPlugin } from '@embedpdf/plugin-shell';
 import type { signaturePlugin as SignaturePlugin } from '@embedpdf/plugin-signature';
-import type { Scheduler, stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
+import type { stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
 import type { stampPlugin as StampPlugin } from '@embedpdf/plugin-stamp';
 import type { viewManagerPlugin as ViewManagerPlugin } from '@embedpdf/plugin-view-manager';
 import { createSandboxBridge } from './sandbox';
@@ -61,8 +61,13 @@ type Def<F extends (...args: never[]) => unknown> = ReturnType<F>;
  * frameless, render schedules on the kernel's clock, and annotation ids
  * count up from the same first id every session.
  */
+interface StageFrameScheduler {
+  raf(callback: (time: number) => void): number;
+  caf(handle: number): void;
+}
+
 export interface Hosts {
-  scheduler?: Scheduler;
+  scheduler?: StageFrameScheduler;
   render?: {
     requestFrame?: (frame: () => void) => void;
     warn?: (message: string) => void;
@@ -87,7 +92,14 @@ export function setHosts(next: Hosts): void {
  * hosts' one, is the adapter's live `scheduler: {raf, caf}`.
  */
 export const stagePlugin: typeof StagePlugin = (options = {}) => {
-  const { id = 'stage', token, scheduler = hosts.scheduler, ...settings } = options;
+  const {
+    id = 'stage',
+    token,
+    scheduler = hosts.scheduler,
+    ...settings
+  } = options as typeof options & {
+    scheduler?: StageFrameScheduler;
+  };
   const tokenName = token?.name ?? 'stage';
   if (id !== tokenName) {
     throw new Error(
@@ -140,7 +152,8 @@ export const actionsPlugin: typeof ActionsPlugin = (config) => {
 export const formPlugin: typeof FormPlugin = (config = {}) => rust('form-current', config);
 export const signaturePlugin: typeof SignaturePlugin = (config = {}) => rust('signature', config);
 export const linkPlugin: typeof LinkPlugin = () => rust('link');
-export const redactionPlugin: typeof RedactionPlugin = (config = {}) => rust('redaction-current', config);
+export const redactionPlugin: typeof RedactionPlugin = (config = {}) =>
+  rust('redaction-current', config);
 export const measurementPlugin: typeof MeasurementPlugin = (config = {}) =>
   rust('measurement-current', config);
 export const searchPlugin: typeof SearchPlugin = (config) => rust('search', config);

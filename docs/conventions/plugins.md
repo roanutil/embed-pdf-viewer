@@ -178,6 +178,8 @@ The source rules are mechanical:
    `/internal` re-export or widen the same token; `createCapabilityToken` is
    never called twice.
 
+Native implementation bridges may import plugin factory types from the root entry with type-only imports. Other consumer types come from the contract entry; a factory type reference does not load its TypeScript implementation.
+
 `pnpm check:plugin-boundaries` checks these rules locally and in CI.
 
 ## The controller
