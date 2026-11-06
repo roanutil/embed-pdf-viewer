@@ -158,7 +158,7 @@ fn widgets_live_the_full_form_loop() {
     // do.
     let row = doc.row(&widget).expect("a widget row");
     assert_eq!(row["field"], reference);
-    assert_eq!(row["fieldFamily"], "text");
+    assert_eq!(row["fieldKind"], "text");
     close(&row["rect"], &rect);
     assert_eq!(row["interiorColor"], "#f6f8fa");
     let annotations = doc.ok(json!({ "kind": "annotations.list", "pages": [page_ref(PAGE)] }));
@@ -405,7 +405,7 @@ fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
     let widget = field["widgets"][0]["ref"].clone();
     let row = doc.row(&widget).unwrap();
     assert_eq!(
-        (&row["fieldFamily"], &row["caption"], &row["interiorColor"], &row["hasAppearance"]),
+        (&row["fieldKind"], &row["caption"], &row["interiorColor"], &row["hasAppearance"]),
         (&json!("pushbutton"), &json!("Clear form"), &json!("#f6f8fa"), &json!(true))
     );
     assert_eq!(row["actions"]["activate"]["root"]["type"], "reset-form", "{row}");
@@ -459,7 +459,7 @@ fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|w| w["fieldFamily"] == "checkbox")
+        .find(|w| w["fieldKind"] == "checkbox")
         .cloned()
         .unwrap();
     assert_eq!(checkbox["caption"], Value::Null);

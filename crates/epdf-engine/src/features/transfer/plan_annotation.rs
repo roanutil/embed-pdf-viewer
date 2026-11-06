@@ -823,12 +823,12 @@ mod tests {
             3,
             10,
             json!({ "subtype": "widget",
-            "field": { "kind": "objectNumber", "objectNumber": 44 }, "fieldFamily": "text" }),
+            "field": { "kind": "objectNumber", "objectNumber": 44 }, "fieldKind": "text" }),
         );
         let inert = annotation(
             3,
             11,
-            json!({ "subtype": "widget", "field": null, "fieldFamily": "unknown" }),
+            json!({ "subtype": "widget", "field": null, "fieldKind": "unknown" }),
         );
         let planned = plan(&[field.clone(), inert.clone(), annotation(3, 12, json!({}))]);
         assert_eq!(items_of(&planned), [2]);
@@ -843,7 +843,7 @@ mod tests {
 
     #[test]
     fn reports_the_actions_a_copy_leaves_out_and_not_the_one_a_link_target_carries() {
-        let goto = json!({ "incomplete": false, "warningFlags": 0, "warnings": [],
+        let goto = json!({ "incomplete": false, "warnings": [],
             "root": { "type": "goto", "subtype": "GoTo", "next": [],
                 "destination": { "kind": "fit", "page": page(3) } } });
         let target = json!({ "kind": "goto", "destination": { "kind": "fit", "page": page(3) } });

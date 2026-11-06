@@ -241,7 +241,7 @@ fn a_write_that_fails_before_its_commit_leaves_nothing_behind_and_applies_afterw
         &first,
         p,
         "forms.createField",
-        json!({ "kind": "forms.createField", "draft": { "family": "text", "name": "probe",
+        json!({ "kind": "forms.createField", "draft": { "kind": "text", "name": "probe",
             "widgets": [{ "page": first, "rect": rect(160.0) }] } }),
         vec![],
     );
@@ -312,7 +312,7 @@ fn a_write_that_fails_before_its_commit_leaves_nothing_behind_and_applies_afterw
         p,
         "forms.updateField",
         json!({ "kind": "forms.updateField", "ref": fqn("probe"),
-            "patch": { "family": "text", "required": true } }),
+            "patch": { "kind": "text", "required": true } }),
         vec![],
     );
     let added = fails_then_applies(
@@ -335,7 +335,7 @@ fn a_write_that_fails_before_its_commit_leaves_nothing_behind_and_applies_afterw
     );
     call(
         host,
-        json!({ "kind": "forms.createField", "draft": { "family": "signature", "name": "sig",
+        json!({ "kind": "forms.createField", "draft": { "kind": "signature", "name": "sig",
             "widgets": [{ "page": first, "rect": rect(260.0) }] } }),
     );
     fails_then_applies(

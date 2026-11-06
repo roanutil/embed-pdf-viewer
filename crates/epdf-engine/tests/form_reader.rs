@@ -250,7 +250,7 @@ fn a_fields_widget_names_its_row_by_ref_and_the_row_names_its_field() {
     for widget in radio["widgets"].as_array().expect("widgets") {
         let row = rows.iter().find(|row| row["ref"] == widget["ref"]).expect("a row");
         assert_eq!(row["field"], radio["ref"]);
-        assert_eq!(row["fieldFamily"], "radio");
+        assert_eq!(row["fieldKind"], "radio");
         assert_eq!(widget["objectNumber"], widget["ref"]["objectNumber"]);
         assert_eq!(widget["page"], row["page"]);
     }

@@ -50,12 +50,31 @@ use crate::features::annotation::vocabulary::{
 use crate::geom::{CalloutLine, LinePoints, NamedPdfQuad, PdfPoint, PdfRect, normalize_pdf_quad};
 
 /// One annotation, as `annotations.list` answers it (`Annotation<C>`).
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AnnotationRecord {
-    #[serde(flatten)]
     pub base: AnnotationRecordBase,
-    #[serde(flatten)]
     pub kind: AnnotationRecordKind,
+}
+
+/// The record's keys in the order the TypeScript readers build them: the base,
+/// then a markup's `richText` before the `subtype` tag, then the kind's fields.
+/// Key order is part of the bundle text that is hashed, so it has to match.
+impl Serialize for AnnotationRecord {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::Error;
+        let base = serde_json::to_value(&self.base).map_err(S::Error::custom)?;
+        let kind = serde_json::to_value(&self.kind).map_err(S::Error::custom)?;
+        let (Value::Object(mut out), Value::Object(mut kind)) = (base, kind) else {
+            return Err(S::Error::custom("an annotation record is not an object"));
+        };
+        if let Some(rich_text) = kind.shift_remove("richText") {
+            out.insert("richText".to_owned(), rich_text);
+        }
+        for (key, value) in kind {
+            out.insert(key, value);
+        }
+        out.serialize(serializer)
+    }
 }
 
 /// The kind's half of a record.

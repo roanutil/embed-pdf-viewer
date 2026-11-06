@@ -279,7 +279,8 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("caption", D),
             ("checkStyle", D),
             ("field", E),
-            ("fieldFamily", E),
+            ("fieldKind", E),
+            ("hasMark", E),
         ],
         S::Redact => &[
             ("richText", D),

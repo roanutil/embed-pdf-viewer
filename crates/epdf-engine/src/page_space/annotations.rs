@@ -45,11 +45,18 @@ pub enum FieldSpace {
 pub fn field_spaces(subtype: &str) -> &'static [(&'static str, FieldSpace)] {
     use FieldSpace as S;
     match subtype {
-        "highlight" | "underline" | "squiggly" | "strikeout" | "redact" => {
-            &[("rect", S::Box), ("actions", S::Actions), ("quadPoints", S::Quads)]
+        "highlight" | "underline" | "squiggly" | "strikeout" | "redact" => &[
+            ("rect", S::Box),
+            ("actions", S::Actions),
+            ("quadPoints", S::Quads),
+            ("richText", S::Length),
+        ],
+        "widget" => &[("rect", S::Box), ("actions", S::Actions), ("box", S::Box)],
+        "circle" | "square" | "caret" | "stamp" => {
+            &[("rect", S::Box), ("actions", S::Actions), ("box", S::Box), ("richText", S::Length)]
         }
-        "circle" | "square" | "caret" | "stamp" | "widget" => {
-            &[("rect", S::Box), ("actions", S::Actions), ("box", S::Box)]
+        "text" | "file-attachment" => {
+            &[("rect", S::Box), ("actions", S::Actions), ("richText", S::Length)]
         }
         "polygon" | "polyline" => &[
             ("rect", S::Box),
@@ -57,15 +64,22 @@ pub fn field_spaces(subtype: &str) -> &'static [(&'static str, FieldSpace)] {
             ("vertices", S::Points),
             ("captionCenter", S::Point),
             ("measure", S::Measure),
+            ("richText", S::Length),
         ],
         "line" => &[
             ("rect", S::Box),
             ("actions", S::Actions),
             ("linePoints", S::LinePoints),
             ("measure", S::Measure),
+            ("richText", S::Length),
         ],
         "link" => &[("rect", S::Box), ("actions", S::Actions), ("target", S::LinkTarget)],
-        "ink" => &[("rect", S::Box), ("actions", S::Actions), ("inkList", S::Strokes)],
+        "ink" => &[
+            ("rect", S::Box),
+            ("actions", S::Actions),
+            ("inkList", S::Strokes),
+            ("richText", S::Length),
+        ],
         "free-text" => &[
             ("rect", S::Box),
             ("actions", S::Actions),

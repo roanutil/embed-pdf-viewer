@@ -191,6 +191,7 @@ pub struct SignatureDto {
     pub filter: Option<String>,
     pub sub_filter: Option<String>,
     pub byte_range: Option<[u64; 4]>,
+    #[serde(rename = "contentsSizeBytes")]
     pub contents_size: u64,
     pub coverage: Option<SignatureCoverage>,
     pub revision_index: Option<u32>,

@@ -585,7 +585,7 @@ fn every_field_edit_carries_meta() {
         &mut host,
         &mut last,
         json!({ "kind": "forms.createField", "docId": doc, "opId": "create-1",
-                "draft": { "family": "text", "name": "new.plain" } }),
+                "draft": { "kind": "text", "name": "new.plain" } }),
         Vec::new(),
         "forms.created",
     );
@@ -597,7 +597,7 @@ fn every_field_edit_carries_meta() {
         &mut host,
         &mut last,
         json!({ "kind": "forms.updateField", "docId": doc, "opId": "update-1", "ref": text,
-                "patch": { "family": "text", "readOnly": true } }),
+                "patch": { "kind": "text", "readOnly": true } }),
         Vec::new(),
         "forms.updated",
     );

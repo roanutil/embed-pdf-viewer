@@ -269,11 +269,11 @@ fn a_signature_field_is_authored_filled_visually_and_refuses_a_visual_fill_once_
     let artwork = fixture("signature_artwork.pdf");
     let created = sig_call(
         &mut host,
-        json!({ "kind": "forms.createField", "docId": doc, "draft": { "family": "signature",
+        json!({ "kind": "forms.createField", "docId": doc, "draft": { "kind": "signature",
             "name": "sig2", "widgets": [{ "page": page_ref(pon),
                 "rect": { "x": 50, "y": 50, "width": 200, "height": 70 } }] } }),
     );
-    assert_eq!(created["result"]["field"]["family"], json!("signature"), "{created}");
+    assert_eq!(created["result"]["field"]["kind"], json!("signature"), "{created}");
     let listed = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let names: Vec<(Value, Value)> = listed["signatures"]
         .as_array()
@@ -353,7 +353,7 @@ fn a_signature_field_is_authored_filled_visually_and_refuses_a_visual_fill_once_
         json!({ "kind": "forms.setSignatureAppearance", "docId": doc, "ref": fqn("sig2") }),
         artwork,
     );
-    assert_eq!(again["result"]["field"]["family"], json!("signature"), "{again}");
+    assert_eq!(again["result"]["field"]["kind"], json!("signature"), "{again}");
 }
 
 #[test]

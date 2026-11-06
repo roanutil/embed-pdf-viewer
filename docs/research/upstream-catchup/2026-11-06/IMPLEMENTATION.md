@@ -128,3 +128,18 @@ Still open:
 - `files/write.json` and `wire/requests.json` are reverted and have not been decided.
 - Rust widget DTO port for `fieldKind`, `fieldFamily`, `hasMark`.
 - The remaining failures listed above (signature, write transactions, annotation transfer, document events, fonts corpus, outline, protection).
+
+## Checkpoint: widget kind, record order, golden hashes (2026-11-06)
+
+Full `epdf-engine` suite: 1498 passed, 1 failed. The starting commit had 13 failures. The one remaining failure is `the_font_kinds_answer_what_the_typescript_did`, described below.
+
+1. Widget rows emit `fieldKind` and `hasMark` (`joinWidgetFieldNumbers`). `hasMark` is true for a signature field that is signed or has a mark drawn in it (`EPDFForm_GetFieldValueKind` non-zero) and an appearance-fit record. The Rust fixtures move to the TypeScript names.
+2. The markup field spaces include `richText` on every markup kind, matching `markupBaseFields`.
+3. An annotation record serializes `richText` before the `subtype` tag, as the TypeScript readers build it. Without this the export text differs in key order, which changes the hash. `Map::shift_remove` keeps the remaining key order.
+4. The golden export digests in `annotation_transfer.rs` now match the oracle text. `612f68c7…` and `370f5e29…` are the digests in `runAnnotationExportConformance.ts`, which passes on the oracle. The previous Rust goldens were stale. Verified byte-for-byte against the oracle text.
+5. Attachment normalization in the transfer tests uses `sizeBytes` and `md5`.
+6. Action trees built in Rust no longer include `warningFlags`.
+
+Open, not resolved:
+
+- `fonts/wire.json`, the approved regeneration, answers `NotFound` at `document.fonts.program` for a display hash that `document.fonts.list` reports one step earlier. The case's covers text says the program is read from the document. Results are deterministic across three regenerations. `generate-font-vectors.ts`, `services/src/features/fonts/` and the TypeScript source are unchanged since the starting commit. The likely cause is the oracle environment, not a TypeScript change. This regeneration was approved on the premise of a TypeScript change, so it needs your decision: revert it and have Rust match the covers text, or keep the `NotFound` answer and treat it as a TypeScript bug.

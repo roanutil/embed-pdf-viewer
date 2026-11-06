@@ -129,7 +129,7 @@ mod tests {
             "title": "A",
             "target": { "kind": "goto", "destination": goto(4, 280.0) },
             "action": { "root": { "type": "goto", "subtype": "GoTo", "next": [],
-                "destination": goto(3, 280.0) }, "incomplete": false, "warningFlags": 0,
+                "destination": goto(3, 280.0) }, "incomplete": false,
                 "warnings": [] },
             "open": false, "color": null, "bold": false, "italic": false,
         });

@@ -191,7 +191,10 @@ pub struct WidgetAnnotation<C: Coordinates = PdfCoordinates> {
     pub check_style: Option<WidgetCheckStyle>,
     /// The field the widget belongs to, or `None` when it's in none.
     pub field: Option<FormFieldRef>,
-    pub field_family: FormFieldFamily,
+    /// `fieldKind`: the family of the widget's field, `unknown` when it is in none.
+    pub field_kind: FormFieldFamily,
+    /// `hasMark`: a signature field that is signed or has a mark drawn in it.
+    pub has_mark: bool,
 }
 
 /// The one subtype a [`WidgetAnnotation`] has.
@@ -389,7 +392,12 @@ pub fn read_widget_annotation(
         caption: dictionary_read("MK", annotation.mk_text(MK_CAPTION))?,
         check_style: None,
         field: None,
-        field_family: FormFieldFamily::Unknown,
+        field_kind: FormFieldFamily::Unknown,
+        has_mark: annotation
+            .embed_metadata_string("AppearanceFit")
+            .ok()
+            .flatten()
+            .is_some_and(|fit| matches!(fit.as_str(), "contain" | "cover" | "fill")),
     })
 }
 
@@ -405,16 +413,20 @@ pub fn join_widget_field(model: &pdfium::FormModel<'_>, widget: &mut WidgetAnnot
     let Some(field) = field.filter(|field| field.object_number() > 0) else {
         // In no field, or in one stored inline, which no ref can address.
         widget.field = None;
-        widget.field_family = FormFieldFamily::Unknown;
+        widget.field_kind = FormFieldFamily::Unknown;
+        widget.has_mark = false;
         widget.caption = None;
         return;
     };
     widget.field = Some(FormFieldRef::ObjectNumber { field: field.object_number() });
-    widget.field_family = FormFieldFamily::from_code(field.family_code());
-    if matches!(widget.field_family, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
+    widget.field_kind = FormFieldFamily::from_code(field.family_code());
+    // `joinWidgetFieldNumbers`: a mark is a signature that is signed, or drawn into.
+    widget.has_mark = widget.field_kind == FormFieldFamily::Signature
+        && (widget.has_mark || field.value_kind() != 0);
+    if matches!(widget.field_kind, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
         widget.check_style = WidgetCheckStyle::of_caption(widget.caption.as_deref());
     }
-    if widget.field_family != FormFieldFamily::Pushbutton {
+    if widget.field_kind != FormFieldFamily::Pushbutton {
         widget.caption = None;
     }
 }
