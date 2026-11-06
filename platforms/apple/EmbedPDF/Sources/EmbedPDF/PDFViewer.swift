@@ -6,6 +6,7 @@ public final class PDFViewer: Sendable {
   let registry = StreamRegistry()
   private let stateContinuation: AsyncStream<UInt64>.Continuation
   private let errorContinuation: AsyncStream<PDFError>.Continuation
+  private let revisionHub: StateRevisionHub
 
   /// Errors the kernel reports rather than throws: a listener that failed,
   /// a foreign handler that threw (`HostError`). Keeps the newest 16. The
@@ -15,11 +16,18 @@ public final class PDFViewer: Sendable {
   /// Revisions of the viewer's state. The stream supports a single consumer.
   public let stateRevisions: AsyncStream<UInt64>
 
+  /// A fresh subscription installed before this method returns. Read an initial
+  /// snapshot after subscribing; subsequent revisions invalidate that snapshot.
+  /// Revisions coalesce, cancellation affects this consumer only, and the stream
+  /// finishes when the viewer is destroyed.
+  public func observeStateRevisions() -> AsyncStream<UInt64> { revisionHub.stream() }
+
   public init(_ config: ViewerConfig) throws(PDFError) {
     let (stream, continuation) = AsyncStream<UInt64>.makeStream(bufferingPolicy: .bufferingNewest(1))
     let (errors, errorContinuation) = AsyncStream<PDFError>.makeStream(bufferingPolicy: .bufferingNewest(16))
+    let revisions = StateRevisionHub()
     do {
-      host = try ViewerHost(config: config, delegate: StateRelay(continuation, errors: errorContinuation))
+      host = try ViewerHost(config: config, delegate: StateRelay(continuation, revisions: revisions, errors: errorContinuation))
     } catch {
       throw PDFError(error)
     }
@@ -27,6 +35,7 @@ public final class PDFViewer: Sendable {
     stateContinuation = continuation
     reportedErrors = errors
     self.errorContinuation = errorContinuation
+    revisionHub = revisions
   }
 
   public func start() async throws(PDFError) {
@@ -94,6 +103,7 @@ public final class PDFViewer: Sendable {
 
   func finishStreams() {
     registry.finishAll()
+    revisionHub.finish()
     stateContinuation.finish()
     errorContinuation.finish()
   }

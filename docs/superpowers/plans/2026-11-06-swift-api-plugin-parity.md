@@ -189,13 +189,13 @@ newest revision, and finishes on destroy/deinit. Keep the existing public
 Swift relay hub may broadcast the existing delegate notifications without
 adding a second kernel state owner.
 
-- [ ] Add failing tests with two fresh subscribers and the legacy subscriber: both fresh consumers observe a later mutation; cancelling one leaves the other live; destroy finishes all; subscribe after destroy immediately ends. Use bounded timeouts and explicit mutation barriers, never sleeps as proof of delivery. Mutate during
+- [x] Add failing tests with two fresh subscribers and the legacy subscriber: both fresh consumers observe a later mutation; cancelling one leaves the other live; destroy finishes all; subscribe after destroy immediately ends. Use bounded timeouts and explicit mutation barriers, never sleeps as proof of delivery. Mutate during
 the initial snapshot reads to prove the subscriber was installed synchronously
 in the delegate fan-out before those reads; stream construction alone is not
 proof of a registered Rust listener.
-- [ ] Implement fan-out with registry-owned termination, no strong viewer/continuation cycle, and no lock held while invoking external callbacks. Revisions may coalesce; callers query current snapshots and do not count them as events.
-- [ ] Test repeated subscribe/cancel/destroy interleavings and verify the final revision reaches each remaining consumer. Run `EmbedPDFTests/ViewerTests` and existing UI suites to establish legacy compatibility.
-- [ ] Update coverage and public concurrency documentation; commit as `feat(apple): add independent viewer revision streams`.
+- [x] Implement fan-out with registry-owned termination, no strong viewer/continuation cycle, and no lock held while invoking external callbacks. Revisions may coalesce; callers query current snapshots and do not count them as events.
+- [x] Test repeated subscribe/cancel/destroy interleavings and verify the final revision reaches each remaining consumer. Run `EmbedPDFTests/ViewerTests` and existing UI suites to establish legacy compatibility.
+- [x] Update coverage and public concurrency documentation; commit as `feat(apple): add independent viewer revision streams`.
 
 ## Task 6: History controls
 

@@ -137,6 +137,28 @@ which is why `crates/epdf-viewer-host/src/lib.rs` names `extern crate
 epdf_uniffi`. Without that line the bindings come out with no `PdfEngine` and
 the smoke tests don't compile.
 
+## Observing viewer state
+
+`PDFViewer.observeStateRevisions()` returns a new subscription on each call.
+It installs synchronously, keeps the newest revision, and finishes on viewer
+destruction. Subscribe before reading the initial snapshot so a change during
+that read is queued. Revisions invalidate reads; they are not an event log and
+there is no initial revision emission. Cancelling a consuming task cancels only
+that subscription. The existing `stateRevisions` property keeps its original
+single-consumer contract.
+
+```swift
+let revisions = viewer.observeStateRevisions()
+var rows = try await outline.rows()
+for await _ in revisions {
+  rows = try await outline.rows()
+}
+```
+
+Models and views should own the consuming task for their visible lifetime.
+Each panel may subscribe independently; no panel needs to forward revisions to
+another panel.
+
 ## What the generated Swift gives the facade
 
 Records conform to everything the facade needs to re-export them. uniffi 0.32

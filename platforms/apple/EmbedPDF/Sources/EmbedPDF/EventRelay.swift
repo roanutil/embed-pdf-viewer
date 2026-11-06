@@ -18,14 +18,17 @@ extension EventRelay: DocumentEventListener where Event == DocumentEvent {
 final class StateRelay: ViewerDelegate, @unchecked Sendable {
   let continuation: AsyncStream<UInt64>.Continuation
   let errors: AsyncStream<PDFError>.Continuation
+  let revisions: StateRevisionHub
 
-  init(_ continuation: AsyncStream<UInt64>.Continuation, errors: AsyncStream<PDFError>.Continuation) {
+  init(_ continuation: AsyncStream<UInt64>.Continuation, revisions: StateRevisionHub, errors: AsyncStream<PDFError>.Continuation) {
     self.continuation = continuation
     self.errors = errors
+    self.revisions = revisions
   }
 
   func stateChanged(revision: UInt64) {
     continuation.yield(revision)
+    revisions.yield(revision)
   }
 
   func report(error: ViewerError) {
