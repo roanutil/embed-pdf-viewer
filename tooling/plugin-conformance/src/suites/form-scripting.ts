@@ -45,7 +45,7 @@ import type {
   DocumentEvent,
   FormEffect,
   FormFieldValue,
-  FormFieldDTO,
+  FormField,
   FormSnapshot,
   Identity,
   DocumentActionsSnapshot,
@@ -104,7 +104,7 @@ const ACTIONS_READ = (scripts: string[] = ['var lib = 1;']): ResponseSpec => ({
   } satisfies DocumentActionsSnapshot,
 });
 
-const kvcf = (over: NonNullable<FormFieldDTO['actions']>) => ({ actions: over });
+const kvcf = (over: NonNullable<FormField['actions']>) => ({ actions: over });
 const K = (script = 'AFNumber_Keystroke(2)') => tree(js(script));
 
 /** A standalone driver case: the driver over document `a`. */
@@ -502,7 +502,7 @@ const activationCases: ScenarioCase[] = [
   },
 ];
 
-const CODE = (over: NonNullable<FormFieldDTO['actions']> = {}, value = 'old') =>
+const CODE = (over: NonNullable<FormField['actions']> = {}, value = 'old') =>
   text(2, 'code', value, kvcf({ keystroke: K('ks()'), ...over }));
 
 const keystrokeCases: ScenarioCase[] = [
@@ -655,7 +655,7 @@ const keystrokeCases: ScenarioCase[] = [
   },
 ];
 
-const GUARD = (over: NonNullable<FormFieldDTO['actions']> = {}) =>
+const GUARD = (over: NonNullable<FormField['actions']> = {}) =>
   text(2, 'email', '', kvcf({ validate: tree(js('check()')), ...over }));
 
 const validateCases: ScenarioCase[] = [
@@ -1250,7 +1250,7 @@ const capabilityCases: ScenarioCase[] = [
         {
           origin: 'lifecycle',
           source: { kind: 'api' },
-          event: { scope: 'document', name: 'open' },
+          event: { type: 'document', event: 'open' },
         },
       ]),
     ],
@@ -1278,10 +1278,10 @@ const capabilityCases: ScenarioCase[] = [
       [
         row(101, ref(1)),
         row(108, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { activate: tree(js('click()')) },
         }),
-        row(109, ref(8), 1, undefined, { fieldFamily: 'pushbutton' }),
+        row(109, ref(8), 1, undefined, { fieldKind: 'pushbutton' }),
       ],
     ),
     [
@@ -1297,7 +1297,7 @@ const capabilityCases: ScenarioCase[] = [
   formScenario(
     'scripted-activation-matches-refs',
     'Current baseIndex refs and unknown widget numbers are refused before dispatch. An object number with another page has no matching action row on that page and falls back to the form owner.',
-    snapshot([NAME, BUTTON], [row(108, ref(8), 1, undefined, { fieldFamily: 'pushbutton' })]),
+    snapshot([NAME, BUTTON], [row(108, ref(8), 1, undefined, { fieldKind: 'pushbutton' })]),
     [
       call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 3 }]),
       call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 4 }]),
@@ -1310,7 +1310,7 @@ const capabilityCases: ScenarioCase[] = [
   formScenario(
     'a-kindless-address-matches-no-candidate',
     'The surviving no-candidate refusal uses a current baseIndex widget address; malformed removed nm/index addresses remain archived.',
-    snapshot([BUTTON], [row(108, ref(8), 1, undefined, { fieldFamily: 'pushbutton' })]),
+    snapshot([BUTTON], [row(108, ref(8), 1, undefined, { fieldKind: 'pushbutton' })]),
     [call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 0 }])],
     [],
     { builds: [{}] },
@@ -1323,14 +1323,14 @@ const capabilityCases: ScenarioCase[] = [
       [
         row(101, ref(1)),
         row(108, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { activate: tree(js('click()')) },
         }),
         row(109, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { cursorEnter: tree(null) },
         }),
-        row(110, ref(8), 1, undefined, { fieldFamily: 'pushbutton' }),
+        row(110, ref(8), 1, undefined, { fieldKind: 'pushbutton' }),
       ],
     ),
     [

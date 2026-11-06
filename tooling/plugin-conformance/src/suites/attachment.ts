@@ -132,7 +132,7 @@ const att = (name: string, index: number, over: Partial<Attachment> = {}): Attac
   name,
   mimeType: null,
   description: null,
-  size: null,
+  sizeBytes: null,
   checksum: null,
   createdAt: null,
   modifiedAt: null,
@@ -144,24 +144,24 @@ const att = (name: string, index: number, over: Partial<Attachment> = {}): Attac
  * `R` before `n`, `notes (2).txt` before `notes.txt` (a space sorts before a
  * full stop), and the fullwidth `Ｆ` (U+FF26) last.
  */
-const ENV = att('.env', 0, { size: 12 });
+const ENV = att('.env', 0, { sizeBytes: 12 });
 const README = att('README', 1, { mimeType: 'text/plain', description: 'Read me' });
-const NOTES2 = att('notes (2).txt', 2, { mimeType: 'text/plain', size: 3 });
+const NOTES2 = att('notes (2).txt', 2, { mimeType: 'text/plain', sizeBytes: 3 });
 const NOTES = att('notes.txt', 3, {
   mimeType: 'text/plain',
   description: 'The notes',
-  size: 5,
+  sizeBytes: 5,
   checksum: '5d41402abc4b2a76b9719d911017c592',
   createdAt: '2024-01-02T03:04:05Z',
   modifiedAt: '2024-01-02T03:04:06Z',
 });
-const WIDE = att('Ｆ.bin', 4, { mimeType: 'application/octet-stream', size: 2 });
+const WIDE = att('Ｆ.bin', 4, { mimeType: 'application/octet-stream', sizeBytes: 2 });
 const FILES: Attachment[] = [ENV, README, NOTES2, NOTES, WIDE];
 const LIST = { attachments: FILES };
 
 /** The engine's record of a file it attached: name-tree position, checksum and dates. */
 const made = (name: string, index: number, over: Partial<Attachment> = {}): Attachment =>
-  att(name, index, { checksum: 'c0ffee', createdAt: '2025-05-05T00:00:00Z', ...over });
+  att(name, index, { md5: 'c0ffee', createdAt: '2025-05-05T00:00:00Z', ...over });
 
 /** The list's `AttachedFile` for an attachment, as the shipping model builds it. */
 const docFile = (attachment: Attachment): AttachedFile => documentFileOf(attachment);
@@ -178,7 +178,7 @@ const SCAN = fileAttachment(20, {
     name: 'scan.png',
     mimeType: 'image/png',
     description: null,
-    size: 8,
+    sizeBytes: 8,
     checksum: null,
     createdAt: null,
     modifiedAt: null,
@@ -192,7 +192,7 @@ const LOCKED = fileAttachment(21, {
     name: ' ‎page two‪.txt ',
     mimeType: null,
     description: 'On page two',
-    size: null,
+    sizeBytes: null,
     checksum: null,
     createdAt: null,
     modifiedAt: null,
@@ -480,7 +480,7 @@ const cases: ScenarioCase[] = [
               name: 'late.txt',
               mimeType: 'text/plain',
               description: null,
-              size: 1,
+              sizeBytes: 1,
               checksum: null,
               createdAt: null,
               modifiedAt: null,
@@ -530,30 +530,30 @@ const cases: ScenarioCase[] = [
       ...look,
       at('isPending', [docFile(att('notes (3).txt', 0))]),
       ...factsOf(operationAt(1), [
-        created(made('.env (2)', 1, { size: 0 })),
-        created(made('README (2)', 3, { size: 6 })),
+        created(made('.env (2)', 1, { sizeBytes: 0 })),
+        created(made('README (2)', 3, { sizeBytes: 6 })),
         created(
-          made('notes (3).txt', 5, { mimeType: 'text/plain', description: 'Again', size: 5 }),
+          made('notes (3).txt', 5, { mimeType: 'text/plain', description: 'Again', sizeBytes: 5 }),
         ),
-        created(made('notes (4).txt', 6, { mimeType: 'text/plain', size: 1 })),
+        created(made('notes (4).txt', 6, { mimeType: 'text/plain', sizeBytes: 1 })),
       ]).map((event) => emit(event)),
       settle(
         'a1',
         resultOf(operationAt(1), [
-          created(made('.env (2)', 1, { size: 0 })),
-          created(made('README (2)', 3, { size: 6 })),
+          created(made('.env (2)', 1, { sizeBytes: 0 })),
+          created(made('README (2)', 3, { sizeBytes: 6 })),
           created(
-            made('notes (3).txt', 5, { mimeType: 'text/plain', description: 'Again', size: 5 }),
+            made('notes (3).txt', 5, { mimeType: 'text/plain', description: 'Again', sizeBytes: 5 }),
           ),
-          created(made('notes (4).txt', 6, { mimeType: 'text/plain', size: 1 })),
+          created(made('notes (4).txt', 6, { mimeType: 'text/plain', sizeBytes: 1 })),
         ]),
         6,
       ),
       at('list'),
       at('add', [[{ data: bytes('📄'), name: '📄.txt' }]]),
       at('list'),
-      emit(factsOf(operationAt(2), [created(made('📄.txt', 4, { size: 4 }))])[0]),
-      settle('a2', resultOf(operationAt(2), [created(made('📄.txt', 4, { size: 4 }))]), 6),
+      emit(factsOf(operationAt(2), [created(made('📄.txt', 4, { sizeBytes: 4 }))])[0]),
+      settle('a2', resultOf(operationAt(2), [created(made('📄.txt', 4, { sizeBytes: 4 }))]), 6),
       at('list'),
       at('isPending', [docFile(made('📄.txt', 4))]),
     ],
@@ -561,7 +561,7 @@ const cases: ScenarioCase[] = [
   scenario(
     'add-reads-first-and-checks-names',
     'controller.ts:204-210: an add with no files resolves [] and reads nothing; an add before the first read reads the attachments first, since the names in the document decide the free ones; a file without a name (absent, null or empty) rejects invalid-input once the read landed and stages nothing',
-    doc([deferRead('r'), applied(1, created(made('notes (3).txt', 4, { size: 2 })))]),
+    doc([deferRead('r'), applied(1, created(made('notes (3).txt', 4, { sizeBytes: 2 })))]),
     [
       at('add', [[]]),
       at('getStatus'),
@@ -621,7 +621,7 @@ const cases: ScenarioCase[] = [
       read(),
       applied(1, removed('notes.txt')),
       deferApply('undo1'),
-      applied(3, created(made('made.txt', 4, { size: 1 }))),
+      applied(3, created(made('made.txt', 4, { sizeBytes: 1 }))),
       deferApply('undo2'),
     ]),
     [
@@ -677,7 +677,7 @@ const cases: ScenarioCase[] = [
       at('download', [fileLike(att('lost.bin', 0))]),
       at('add', [[{ data: bytes('late'), name: 'late.txt' }]]),
       at('download', [docFile(att('late.txt', 0))]),
-      settle('add', resultOf(operationAt(1), [created(made('late.txt', 4, { size: 4 }))]), 10),
+      settle('add', resultOf(operationAt(1), [created(made('late.txt', 4, { sizeBytes: 4 }))]), 10),
     ],
   ),
   scenario(
@@ -752,7 +752,7 @@ const cases: ScenarioCase[] = [
         read(),
         hydrate(ANNOTATIONS),
         downloads('notes.txt', 'hello'),
-        applied(1, created(made('x.txt', 5, { size: 1 }))),
+        applied(1, created(made('x.txt', 5, { sizeBytes: 1 }))),
       ],
       {
         security: {

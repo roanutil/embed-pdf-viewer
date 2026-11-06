@@ -53,7 +53,7 @@ const unlockedSecurity: DocumentSecurityState = {
   encryption: { state: 'none', requiresPassword: false },
   permissions: {
     known: true,
-    bits: null,
+    flags: null,
     allAllowed: true,
     openedAs: 'none',
     securityHandlerRevision: null,
@@ -628,6 +628,7 @@ const cases: ScenarioCase[] = [
           rotation: 90,
           layout: {
             namedPages: [],
+            labels: [],
             pageCount: 2,
             pages: [{ ...page(1, 0), rotation: 90 }, page(2, 1)],
           },
@@ -1808,6 +1809,7 @@ const v3Cases: ScenarioCase[] = [
           pages: [ref1(2)],
           layout: {
             namedPages: [],
+            labels: [],
             pageCount: 3,
             pages: [
               { ...page(1, 0), ref: { kind: 'objectNumber', objectNumber: 1.5 } },

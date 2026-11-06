@@ -3,7 +3,7 @@ import { formResetFacts } from '@embedpdf/engine-core/runtime';
 import type {
   ChangeResult,
   DocumentEvent,
-  FormFieldDTO,
+  FormField,
   FormFieldRef,
   FormWidget,
   FormMutationMeta,
@@ -105,7 +105,7 @@ export const refused = (message = 'intended refusal', code = 'Refused'): Respons
 });
 export const mutationMeta = (
   n: number,
-  fields: readonly FormFieldDTO[],
+  fields: readonly FormField[],
   widgets: readonly WidgetAnnotation[] = [],
   undoable = true,
 ): FormMutationMeta => ({
@@ -136,7 +136,7 @@ export type Answer = { value: ChangeResult; events: DocumentEvent[] };
 export const fieldAnswer = (
   type: 'forms.create' | 'forms.update' | 'forms.addWidget' | 'forms.removeWidget',
   n: number,
-  field: FormFieldDTO,
+  field: FormField,
   widgets: WidgetAnnotation[] = [],
 ): Answer => {
   const meta = mutationMeta(n, [field], widgets);
@@ -151,7 +151,7 @@ export const fieldAnswer = (
 };
 export const deleteAnswer = (
   n: number,
-  field: FormFieldDTO,
+  field: FormField,
   widgets: WidgetAnnotation[] = [],
 ): Answer => {
   const meta = mutationMeta(n, [field], widgets);
@@ -169,7 +169,7 @@ export const deleteAnswer = (
 };
 export const resetAnswer = (
   n: number,
-  fields: FormFieldDTO[],
+  fields: FormField[],
   widgets: WidgetAnnotation[] = [],
   undoable = true,
 ): Answer => {
@@ -185,12 +185,12 @@ export const resetAnswer = (
 };
 export const valuesAnswer = (
   n: number,
-  fields: FormFieldDTO[],
+  fields: FormField[],
   widgets: WidgetAnnotation[] = [],
   redrawn: FormWidget[] = fields.flatMap((field) => field.widgets),
 ): Answer => {
   const meta = { ...mutationMeta(n, fields, widgets), redrawnWidgets: redrawn };
-  const own = (field: FormFieldDTO) => ({
+  const own = (field: FormField) => ({
     field,
     widgets: widgets.filter(
       (w) => w.field && JSON.stringify(w.field) === JSON.stringify(field.ref),
@@ -218,7 +218,7 @@ export const apply = (answer: Answer, extra: Partial<ResponseSpec> = {}): Respon
   ...extra,
 });
 export const valueFact = (
-  field: FormFieldDTO,
+  field: FormField,
   widgets: WidgetAnnotation[] = [],
   n = 1,
 ): Extract<DocumentEvent, { type: 'forms.valueSet' }> => ({

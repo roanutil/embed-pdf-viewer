@@ -22,7 +22,7 @@ import type {
   ANNOTATION_DEFAULTS,
 } from '../../../packages/plugin/annotation/src/contract';
 import {
-  initialAnnotationState,
+  initialAnnotationModel,
   withSession,
   setGhostAt,
   withSnap,
@@ -368,11 +368,11 @@ test('tool defaults preserve URI, flags and ghost and accept current supported f
 });
 
 test('named transitions preserve identity and settings use actual chrome/snap members', () => {
-  const initial = initialAnnotationState();
+  const initial = initialAnnotationModel();
   assert.equal(withSession(initial, initial.session), initial);
   assert.equal(setGhostAt(initial, null), initial);
   assert.equal(withSnap(initial, initial.session.snap), initial);
-  const state = run<ReturnType<typeof initialAnnotationState>>('withSession/set-model');
+  const state = run<ReturnType<typeof initialAnnotationModel>>('withSession/set-model');
   assert.deepEqual(state.session.objectNumbers, [100001, 100002, 100003, 100004, 100005]);
   assert.equal('byId' in state.session, false);
   const settings = run<typeof ANNOTATION_DEFAULTS>('mergeSettings/configured');

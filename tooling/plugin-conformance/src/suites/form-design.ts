@@ -42,7 +42,7 @@ import {
 const BOX = { x: 10, y: 20, width: 100, height: 24 };
 const place = (page = 1, rect = BOX): WidgetPlacement => ({ page: pr(page), rect });
 const draft = (name = 'text_1', widgets = [place()]): FormFieldDraft => ({
-  family: 'text',
+  kind: 'text',
   name,
   widgets,
 });
@@ -173,14 +173,14 @@ const cases: ScenarioCase[] = [
     [
       call('create', [
         {
-          family: 'radio',
+          kind: 'radio',
           name: 'radio_1',
           widgets: [{ ...place(), exportValue: 'Choice1' }],
         } satisfies FormFieldDraft,
       ]),
       call('create', [
         {
-          family: 'combobox',
+          kind: 'combobox',
           name: 'combobox_1',
           widgets: [place()],
           options: [
@@ -191,7 +191,7 @@ const cases: ScenarioCase[] = [
       ]),
       call('create', [
         {
-          family: 'listbox',
+          kind: 'listbox',
           name: 'listbox_1',
           widgets: [place()],
           options: [
@@ -201,7 +201,7 @@ const cases: ScenarioCase[] = [
         } satisfies FormFieldDraft,
       ]),
       call('create', [
-        { family: 'checkbox', name: 'checkbox_1', widgets: [place()] } satisfies FormFieldDraft,
+        { kind: 'checkbox', name: 'checkbox_1', widgets: [place()] } satisfies FormFieldDraft,
       ]),
       call('list'),
     ],
@@ -209,22 +209,22 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, RADIO, [
-          row(10002, RADIO.ref, 1, BOX, { fieldFamily: 'radio' }),
+          row(10002, RADIO.ref, 1, BOX, { fieldKind: 'radio' }),
         ]),
       ),
       apply(
         fieldAnswer('forms.create', 2, COMBO, [
-          row(10004, COMBO.ref, 1, BOX, { fieldFamily: 'combobox' }),
+          row(10004, COMBO.ref, 1, BOX, { fieldKind: 'combobox' }),
         ]),
       ),
       apply(
         fieldAnswer('forms.create', 3, LIST, [
-          row(10006, LIST.ref, 1, BOX, { fieldFamily: 'listbox' }),
+          row(10006, LIST.ref, 1, BOX, { fieldKind: 'listbox' }),
         ]),
       ),
       apply(
         fieldAnswer('forms.create', 4, CHECK, [
-          row(10008, CHECK.ref, 1, BOX, { fieldFamily: 'checkbox' }),
+          row(10008, CHECK.ref, 1, BOX, { fieldKind: 'checkbox' }),
         ]),
       ),
     ],
@@ -485,14 +485,14 @@ const cases: ScenarioCase[] = [
     [
       call('create', [
         {
-          family: 'combobox',
+          kind: 'combobox',
           name: 'my.choice',
           widgets: [place()],
           options: [{ label: 'A', value: 'a' }],
         } satisfies FormFieldDraft,
       ]),
       call('create', [
-        { family: 'signature', name: 'signature_1', widgets: [place()] } satisfies FormFieldDraft,
+        { kind: 'signature', name: 'signature_1', widgets: [place()] } satisfies FormFieldDraft,
       ]),
       call('list'),
     ],
@@ -506,7 +506,7 @@ const cases: ScenarioCase[] = [
             widgets: [placed(10002)],
             options: [{ label: 'A', value: 'a', selected: false }],
           }),
-          [row(10002, ref(10001), 1, BOX, { fieldFamily: 'combobox' })],
+          [row(10002, ref(10001), 1, BOX, { fieldKind: 'combobox' })],
         ),
       ),
       apply(
@@ -514,7 +514,7 @@ const cases: ScenarioCase[] = [
           'forms.create',
           2,
           signature(10003, 'signature_1', { widgets: [placed(10004)] }),
-          [row(10004, ref(10003), 1, BOX, { fieldFamily: 'signature' })],
+          [row(10004, ref(10003), 1, BOX, { fieldKind: 'signature' })],
         ),
       ),
     ],
@@ -558,7 +558,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 460, y: 0, width: 140, height: 72 },
-              { ...PALETTE_TEXT, fieldFamily: 'listbox' },
+              { ...PALETTE_TEXT, fieldKind: 'listbox' },
             ),
           ],
         ),
@@ -625,7 +625,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 10, y: 10, width: 100, height: 50 },
-              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldKind: 'checkbox' },
             ),
           ],
         ),
@@ -643,7 +643,7 @@ const cases: ScenarioCase[] = [
               ref(10003),
               1,
               { x: 10, y: 10, width: 50, height: 30 },
-              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldKind: 'checkbox' },
             ),
           ],
         ),
@@ -681,7 +681,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 10, y: 10, width: 50, height: 30 },
-              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldKind: 'checkbox' },
             ),
           ],
         ),

@@ -355,6 +355,7 @@ export function assetDoc(pages: PageLayout[], input: AssetDocumentInput = {}): F
   const info = metadata(input.title ?? null);
   const catalog = input.catalog ? pieceInfo(input.catalog) : null;
   const currentLayout: Awaited<ReturnType<LocalDocumentHandle['pages']['list']>> = {
+    labels: [],
     pageCount: pages.length,
     pages,
     namedPages: input.namedPages ?? [],

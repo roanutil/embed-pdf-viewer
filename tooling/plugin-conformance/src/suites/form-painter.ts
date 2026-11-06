@@ -23,7 +23,7 @@
  *
  * A font program in a result prints its `load` as `{"$function": true}`.
  */
-import type { FormFieldDTO, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
+import type { FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
 import { STANDARD_FONTS } from '@embedpdf/engine-core/runtime';
 
 import {
@@ -35,7 +35,7 @@ import {
   widgetScene,
   type ShownValue,
   type VariableTextOptions,
-  type WidgetPlacement,
+  type WidgetScenePlacement,
 } from '../../../../packages/core/form/src/index';
 import { needsBreak } from '../../../../packages/core/form/src/layout/breaks';
 
@@ -55,17 +55,17 @@ const functions = {
   },
   layoutVariableText: (text: string, fontFamily: string, options: VariableTextOptions) =>
     layoutVariableText(text, layoutFontOf(fontFamily)!, options),
-  widgetDrawing: (widget: WidgetAnnotation, field: FormFieldDTO, shown?: ShownValue) =>
+  widgetDrawing: (widget: WidgetAnnotation, field: FormField, shown?: ShownValue) =>
     widgetDrawing(widget, field, shown),
   widgetScene: (
     widget: WidgetAnnotation,
-    field: FormFieldDTO,
+    field: FormField,
     shown: ShownValue,
-    placement: WidgetPlacement,
+    placement: WidgetScenePlacement,
   ) => widgetScene(widgetDrawing(widget, field, shown)!, placement),
-  textEditorLayout: (widget: WidgetAnnotation, field: FormFieldDTO, text: string) =>
+  textEditorLayout: (widget: WidgetAnnotation, field: FormField, text: string) =>
     textEditorLayout(widget, field, text),
-  paints: (family: FormFieldDTO['family']) => paints({ family }),
+  paints: (kind: FormField['family']) => paints({ family }),
   needsBreak: (previous: number, currents: readonly number[]) =>
     currents.map((current) => needsBreak(previous, current)),
 };

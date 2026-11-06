@@ -563,7 +563,7 @@ const hostCases: ScenarioCase[] = [
               annotPages: [0, 2],
               annotsCoverDocument: false,
               fields: [
-                { ref: { kind: 'fqn', name: 't' }, name: 't', family: 'text', value: 'v', defaultValue: null, display: 'visible', readOnly: false, required: true, options: [{ label: 'l', value: 'v' }] },
+                { ref: { kind: 'fqn', name: 't' }, name: 't', kind: 'text', value: 'v', defaultValue: null, display: 'visible', readOnly: false, required: true, options: [{ label: 'l', value: 'v' }] },
               ],
             },
           ),

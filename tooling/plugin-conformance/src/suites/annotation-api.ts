@@ -521,7 +521,7 @@ const cases: ScenarioCase[] = [
               file: {
                 name: 'a.bin',
                 mimeType: 'application/octet-stream',
-                size: 3,
+                sizeBytes: 3,
                 description: null,
                 checksum: null,
                 createdAt: null,

@@ -1,18 +1,18 @@
 /** Current form read records. Inputs are complete engine DTOs before invocation. */
 import {
   formWidget,
-  type FormFieldDTO,
+  type FormField,
   type FormFieldRef,
   type FormSnapshot,
   type FormWidget,
-  type TextFieldDTO,
-  type CheckboxFieldDTO,
-  type RadioFieldDTO,
-  type ComboBoxFieldDTO,
-  type ListBoxFieldDTO,
-  type PushButtonFieldDTO,
-  type SignatureFieldDTO,
-  type UnknownFieldDTO,
+  type TextField,
+  type CheckboxField,
+  type RadioField,
+  type ComboBoxField,
+  type ListBoxField,
+  type PushButtonField,
+  type SignatureField,
+  type UnknownField,
   type WidgetAnnotation,
   type ChangeResult,
   type DocumentEvent,
@@ -71,9 +71,9 @@ export const text = (
   n: number,
   name: string,
   value = '',
-  over: Partial<TextFieldDTO> = {},
+  over: Partial<TextField> = {},
   widgets = [placed(n + 100)],
-): TextFieldDTO => ({
+): TextField => ({
   ...base(n, name, widgets),
   family: 'text',
   value,
@@ -89,8 +89,8 @@ export const checkbox = (
   n: number,
   name: string,
   checked = false,
-  over: Partial<CheckboxFieldDTO> = {},
-): CheckboxFieldDTO => ({
+  over: Partial<CheckboxField> = {},
+): CheckboxField => ({
   ...base(n, name, []),
   family: 'checkbox',
   checked,
@@ -102,9 +102,9 @@ export const checkbox = (
 export const radio = (
   n: number,
   name: string,
-  widgets: RadioFieldDTO['widgets'],
-  over: Partial<RadioFieldDTO> = {},
-): RadioFieldDTO => ({
+  widgets: RadioField['widgets'],
+  over: Partial<RadioField> = {},
+): RadioField => ({
   ...base(n, name, widgets),
   family: 'radio',
   widgets,
@@ -121,8 +121,8 @@ export const combobox = (
   n: number,
   name: string,
   value = '',
-  over: Partial<ComboBoxFieldDTO> = {},
-): ComboBoxFieldDTO => ({
+  over: Partial<ComboBoxField> = {},
+): ComboBoxField => ({
   ...base(n, name, [placed(n + 100)]),
   family: 'combobox',
   value,
@@ -136,8 +136,8 @@ export const listbox = (
   n: number,
   name: string,
   selectedValues: string[] = [],
-  over: Partial<ListBoxFieldDTO> = {},
-): ListBoxFieldDTO => ({
+  over: Partial<ListBoxField> = {},
+): ListBoxField => ({
   ...base(n, name, [placed(n + 100)]),
   family: 'listbox',
   selectedValues,
@@ -154,8 +154,8 @@ export const listbox = (
 export const pushbutton = (
   n: number,
   name: string,
-  over: Partial<PushButtonFieldDTO> = {},
-): PushButtonFieldDTO => ({
+  over: Partial<PushButtonField> = {},
+): PushButtonField => ({
   ...base(n, name, [placed(n + 100)]),
   family: 'pushbutton',
   ...over,
@@ -163,8 +163,8 @@ export const pushbutton = (
 export const signature = (
   n: number,
   name: string,
-  over: Partial<SignatureFieldDTO> = {},
-): SignatureFieldDTO => ({
+  over: Partial<SignatureField> = {},
+): SignatureField => ({
   ...base(n, name, [placed(n + 100)]),
   family: 'signature',
   ...over,
@@ -172,8 +172,8 @@ export const signature = (
 export const unknown = (
   n: number,
   name: string,
-  over: Partial<UnknownFieldDTO> = {},
-): UnknownFieldDTO => ({
+  over: Partial<UnknownField> = {},
+): UnknownField => ({
   ...base(n, name, [placed(n + 100)]),
   family: 'unknown',
   rawValue: '',
@@ -189,7 +189,7 @@ export const row = (
   widget(n, 'text', { ref: objRef(n, page), page: pr(page), field, rect, ...over });
 /** Rows are supplied independently from the field relationship refs. */
 export const snapshot = (
-  fields: FormFieldDTO[],
+  fields: FormField[],
   widgets: WidgetAnnotation[] = [],
   calculationOrder: FormSnapshot['calculationOrder'] = [],
 ): FormSnapshot => ({
@@ -214,7 +214,7 @@ export const call = (method: string, args: readonly unknown[] = [], doc = 'a'): 
 /** A static, typed value-set answer; never examines a runtime request. */
 export function valueSet(
   n: number,
-  field: FormFieldDTO,
+  field: FormField,
   widgets: WidgetAnnotation[] = [],
   ms = 0,
 ): { value: ChangeResult; events: DocumentEvent[] } {

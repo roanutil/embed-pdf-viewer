@@ -297,7 +297,7 @@ const layout: FunctionCase[] = [
   c('linearLayout', 'view-units-uniform', [pg(600, 800), pg(1000, 700)], g(2), { sizing: 'uniform', viewUnitsPerPoint: 96 / 72 }, vprobe),
   c('linearLayout', 'rotations', [pg(600, 800, { rotation: 90 }), pg(600, 800, { rotation: 180 }), pg(600, 800, { rotation: 270 })], g(3), { gap: 16 }, vprobe),
   c('linearLayout', 'rotated-uniform', [pg(600, 800, { rotation: 90 }), pg(700, 500)], g(2), { gap: 16, sizing: 'uniform' }, vprobe),
-  c('linearLayout', 'odd-rotation', [pg(600, 800, { rotation: 45 as S.PageRotation }), pg(600, 800, { rotation: -90 as S.PageRotation })], g(2), {}, vprobe),
+  c('linearLayout', 'odd-rotation', [pg(600, 800, { rotation: 45 as S.Rotation }), pg(600, 800, { rotation: -90 as S.Rotation })], g(2), {}, vprobe),
   c('linearLayout', 'user-unit', [pg(100, 200), pg(100, 200, { userUnit: 5 })], g(2), { gap: 0 }, vprobe),
   c('linearLayout', 'user-unit-view-units', [pg(72, 72, { userUnit: 2 })], g(1), { gap: 0, viewUnitsPerPoint: 96 / 72 }, vprobe),
   c('linearLayout', 'user-unit-null-rotation-null', [pg(72, 72, { userUnit: null as never, rotation: null as never })], g(1), {}, vprobe),

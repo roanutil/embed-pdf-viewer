@@ -623,10 +623,10 @@ test('the unconfigured local defaults succeed and binary cache clears on control
     ],
   ]);
   off();
-  assert.deepEqual(current.readAssetBytes('default-local:Stamp1'), pdf('page-100'));
-  const copy = current.readAssetBytes('default-local:Stamp1')!;
+  assert.deepEqual(current.getAssetBytes('default-local:Stamp1'), pdf('page-100'));
+  const copy = current.getAssetBytes('default-local:Stamp1')!;
   copy.fill(0);
-  assert.deepEqual(current.readAssetBytes('default-local:Stamp1'), pdf('page-100'));
+  assert.deepEqual(current.getAssetBytes('default-local:Stamp1'), pdf('page-100'));
   const exported = await current.exportLibrary('default-local');
   exported.fill(0);
   assert.deepEqual(await current.exportLibrary('default-local'), pdf('canonical'));
@@ -646,7 +646,7 @@ test('the unconfigured local defaults succeed and binary cache clears on control
     ],
   );
   await localContext.dispose();
-  assert.equal(current.readAssetBytes('default-local:Stamp1'), null);
+  assert.equal(current.getAssetBytes('default-local:Stamp1'), null);
   assert.equal(current.getAssetPreview('default-local:Stamp1'), null);
   await assert.rejects(current.exportLibrary('default-local'), {
     code: 'not-found',

@@ -14,7 +14,7 @@ import type { ScriptIdentity } from '../../../../packages/core/acrojs/src/index'
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
 import {
   ActionsToken,
-  type AnnotCommitResult,
+  type AnnotationCommitResult,
   type FormCommitSinkResult,
 } from '../../../../packages/plugin/actions/src/host-contract';
 import type {
@@ -259,17 +259,17 @@ export const forms = (
 export const USER: ActionContext = {
   origin: 'user',
   source: { kind: 'api' },
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 export const HOVER: ActionContext = {
   origin: 'hover',
   source: { kind: 'api' },
-  event: { scope: 'annotation', name: 'cursorEnter' },
+  event: { type: 'annotation', event: 'cursorEnter' },
 };
 export const LIFECYCLE: ActionContext = {
   origin: 'lifecycle',
   source: { kind: 'api' },
-  event: { scope: 'document', name: 'open' },
+  event: { type: 'document', event: 'open' },
 };
 export const FORM_OK = () => ({ returns: { status: 'applied' } satisfies FormCommitSinkResult });
 export const RESOLVED: ActionSubmitRequest = {
@@ -279,7 +279,7 @@ export const RESOLVED: ActionSubmitRequest = {
   flagsRaw: 0,
   entries: [{ name: 'plain', value: 'visible' }],
   origin: 'user',
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 export const resolverEcho = (
   entries = RESOLVED.entries,
@@ -289,12 +289,12 @@ export const resolverEcho = (
   resolves: { ...RESOLVED, entries, ...extra } satisfies ActionSubmitRequest,
 });
 export const activate = (page: number): ActionTrigger => ({
-  scope: 'activate',
+  type: 'activate',
   ref: aref(page, 1),
   page: pr(page),
 });
 export const annotationEvent = (event: PdfAnnotationEventKind, page: number): ActionTrigger => ({
-  scope: 'annotation',
+  type: 'annotation',
   event,
   ref: aref(page, 1),
   page: pr(page),
@@ -302,9 +302,9 @@ export const annotationEvent = (event: PdfAnnotationEventKind, page: number): Ac
 export const pageEvent = (
   event: 'open' | 'close' | 'visible' | 'invisible',
   page: number,
-): ActionTrigger => ({ scope: 'page', event, page: pr(page) });
+): ActionTrigger => ({ type: 'page', event, page: pr(page) });
 export const docEvent = (event: DocumentTriggerEvent): ActionTrigger => ({
-  scope: 'document',
+  type: 'document',
   event,
 });
 
@@ -326,7 +326,7 @@ export const ANNOT_OK = (numbers: number[]) => ({
       annotObjectNumber,
       status: 'applied' as const,
     })),
-  } satisfies AnnotCommitResult,
+  } satisfies AnnotationCommitResult,
 });
 export const formFailure = (error?: string) => ({
   returns: {

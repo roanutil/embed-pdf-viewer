@@ -29,7 +29,7 @@ import {
   HANDLE_HEAD,
   HANDLE_PAD,
   createSelectionHandleDrag,
-  selectionHandleGeom,
+  selectionHandleGeometry,
   selectionPlugin,
 } from '../../../../packages/plugin/selection/src/index';
 import type {
@@ -2391,8 +2391,8 @@ const handleFns = {
   HANDLE_HEAD: () => HANDLE_HEAD,
   HANDLE_BAR: () => HANDLE_BAR,
   HANDLE_PAD: () => HANDLE_PAD,
-  selectionHandleGeom: (view: ViewSpec, ep: SelectionHandleEndpoint, role: 'start' | 'end') =>
-    selectionHandleGeom(viewOf(view), ep, role),
+  selectionHandleGeometry: (view: ViewSpec, ep: SelectionHandleEndpoint, role: 'start' | 'end') =>
+    selectionHandleGeometry(viewOf(view), ep, role),
   handleDrag,
 };
 
@@ -2443,14 +2443,14 @@ const handleCases: FunctionCase[] = [
     ([1, -1] as const).flatMap((advance) =>
       Object.entries(views).flatMap(([name, view]) => [
         fc(
-          'selectionHandleGeom',
+          'selectionHandleGeometry',
           `${name}-upright-${role}-${advance}`,
           view,
           ep(upright, advance),
           role,
         ),
         fc(
-          'selectionHandleGeom',
+          'selectionHandleGeometry',
           `${name}-turned-${role}-${advance}`,
           view,
           ep(turned, advance),
@@ -2459,10 +2459,10 @@ const handleCases: FunctionCase[] = [
       ]),
     ),
   ),
-  fc('selectionHandleGeom', 'degenerate-cell', views.scaled, ep(degenerate, 1), 'start'),
-  fc('selectionHandleGeom', 'no-advance-start', views.scaled, ep(upright, 0 as never), 'start'),
-  fc('selectionHandleGeom', 'no-advance-end', views.scaled, ep(upright, 0 as never), 'end'),
-  fc('selectionHandleGeom', 'half-projected', { matrices: { 1: id2 } }, ep(upright, 1, 2), 'end'),
+  fc('selectionHandleGeometry', 'degenerate-cell', views.scaled, ep(degenerate, 1), 'start'),
+  fc('selectionHandleGeometry', 'no-advance-start', views.scaled, ep(upright, 0 as never), 'start'),
+  fc('selectionHandleGeometry', 'no-advance-end', views.scaled, ep(upright, 0 as never), 'end'),
+  fc('selectionHandleGeometry', 'half-projected', { matrices: { 1: id2 } }, ep(upright, 1, 2), 'end'),
   fc(
     'handleDrag',
     'untouched-press-settles-nothing',

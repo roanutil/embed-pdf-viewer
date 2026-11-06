@@ -320,7 +320,7 @@ const cases: ScenarioCase[] = [
         meta: {
           affectedPages: [pr(1)],
           cacheDelta: null,
-          changed: [],
+          changedRefs: [],
           opId: 'reorder',
           undoable: true,
         },
@@ -333,6 +333,7 @@ const cases: ScenarioCase[] = [
         pages: [pr(1)],
         rotation: 90,
         layout: {
+          labels: [],
           pageCount: 2,
           namedPages: [],
           pages: [layout(0, 1, undefined, 90), layout(1, 2, CROP2)],
@@ -773,6 +774,7 @@ const dropPage = (n: number) =>
     pages: [pr(n)],
     origin: REMOTE,
     layout: {
+      labels: [],
       pageCount: 2,
       namedPages: [],
       pages: [1, 2, 3]

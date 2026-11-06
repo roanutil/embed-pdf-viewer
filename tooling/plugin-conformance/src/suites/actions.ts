@@ -1049,7 +1049,7 @@ const activateCurrent = (
   ref: AnnotationRef,
   source?: ActionSource,
 ): ActionTrigger => ({
-  scope: 'activate',
+  type: 'activate',
   page: current.pr(page),
   ref,
   ...(source ? { source } : {}),
@@ -1060,7 +1060,7 @@ const annotationCurrent = (
   ref: AnnotationRef,
   source?: ActionSource,
 ): ActionTrigger => ({
-  scope: 'annotation',
+  type: 'annotation',
   event,
   page: current.pr(page),
   ref,
@@ -2116,7 +2116,7 @@ const scriptEngine = (
   });
 const widgetCtx = (
   field: FormFieldRef,
-  event: ActionContext['event'] = { scope: 'activate' },
+  event: ActionContext['event'] = { type: 'activate' },
 ): ActionContext => ({
   origin: 'user',
   source: { kind: 'widget', field, annotation: current.aref(1, 41), page: current.pr(1) },
@@ -2409,97 +2409,97 @@ const scriptCases: ScenarioCase[] = [
       ...(
         [
           widgetCtx({ kind: 'objectNumber', objectNumber: 101 }),
-          widgetCtx({ kind: 'fqn', name: 'name' }, { scope: 'annotation', name: 'focus' }),
+          widgetCtx({ kind: 'fqn', name: 'name' }, { type: 'annotation', event: 'focus' }),
           widgetCtx({ kind: 'fqn', name: 'ghost' }),
           widgetCtx({ kind: 'objectNumber', objectNumber: 102 }),
           widgetCtx({ kind: 'fqn', name: 'empty' }),
           {
             origin: 'hover',
             source: { kind: 'link', annotation: current.aref(1, 7), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'cursorEnter' },
+            event: { type: 'annotation', event: 'cursorEnter' },
           },
           {
             origin: 'hover',
             source: { kind: 'link', annotation: current.aref(2, 7), page: current.pr(2) },
-            event: { scope: 'annotation', name: 'cursorEnter' },
+            event: { type: 'annotation', event: 'cursorEnter' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(2, 6), page: current.pr(2) },
-            event: { scope: 'annotation', name: 'mouseDown' },
+            event: { type: 'annotation', event: 'mouseDown' },
           },
           {
             origin: 'hover',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'cursorExit' },
+            event: { type: 'annotation', event: 'cursorExit' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'mouseDown' },
+            event: { type: 'annotation', event: 'mouseDown' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'mouseUp' },
+            event: { type: 'annotation', event: 'mouseUp' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'blur' },
+            event: { type: 'annotation', event: 'blur' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'open' },
+            event: { type: 'page', event: 'open' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'close' },
+            event: { type: 'page', event: 'close' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'visible' },
+            event: { type: 'page', event: 'visible' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'invisible' },
+            event: { type: 'page', event: 'invisible' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'open' },
+            event: { type: 'document', event: 'open' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-save' },
+            event: { type: 'document', event: 'will-save' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'did-save' },
+            event: { type: 'document', event: 'did-save' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-print' },
+            event: { type: 'document', event: 'will-print' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'did-print' },
+            event: { type: 'document', event: 'did-print' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-close' },
+            event: { type: 'document', event: 'will-close' },
           },
-          { origin: 'user', source: { kind: 'link' }, event: { scope: 'activate' } },
-          { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
+          { origin: 'user', source: { kind: 'link' }, event: { type: 'activate' } },
+          { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } },
         ] satisfies ActionContext[]
       ).map((ctx) => cap('execute', current.tree(current.js('probe()')), ctx)),
     ],

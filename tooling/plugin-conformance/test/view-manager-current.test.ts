@@ -368,7 +368,7 @@ test('controller memoization, rename, reconciliation and disposal preserve publi
   let order = ['a', 'pending'];
   const ctx = createTestContext({
     id: 'view-manager',
-    state: model.initialViewManagerState(),
+    state: model.initialViewManagerModel(),
     doc: null,
     capabilities: [[DocumentsToken, { getOrder: () => order }]],
   });

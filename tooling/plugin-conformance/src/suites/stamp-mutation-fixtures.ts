@@ -100,6 +100,7 @@ interface Input {
 export function mutationDoc(pages: PageLayout[], input: Input = {}): FakeDocumentSpec {
   const registry = input.inserted ? [...pages, ...input.inserted] : pages;
   const snapshot: PageListSnapshot = {
+    labels: [],
     pageCount: registry.length,
     pages: registry,
     namedPages: input.namedPages ?? [],
@@ -155,6 +156,7 @@ export function mutationDoc(pages: PageLayout[], input: Input = {}): FakeDocumen
     .filter((p) => !input.deleted?.includes(p.ref.objectNumber))
     .map((p, index) => ({ ...p, index }));
   const layoutAfterDelete: PageListSnapshot = {
+    labels: [],
     pageCount: afterDelete.length,
     pages: afterDelete,
     namedPages: [...names.values()]
@@ -252,7 +254,7 @@ export function appendDoc(
   );
   const answer: AnnotationCreateResult = {
     annotation,
-    meta: { ...mutationMeta([added]), changed: [annotation.ref] },
+    meta: { ...mutationMeta([added]), changedRefs: [annotation.ref] },
   };
   return mutationDoc(pages, {
     inserted: [added],
@@ -305,7 +307,7 @@ export const scratchDoc = (draft: AnnotationDraft, input: { responses?: Response
         pon: 3,
         value: {
           annotation,
-          meta: { ...mutationMeta(SEED), changed: [annotation.ref] },
+          meta: { ...mutationMeta(SEED), changedRefs: [annotation.ref] },
         } satisfies AnnotationCreateResult,
       },
       { path: 'page.annotations.exportAppearance', pon: 3, value: canonical(pdf('mark')) },

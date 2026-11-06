@@ -165,7 +165,7 @@ const cases: ScenarioCase[] = [
         type: 'annotations.reordered',
         page: pr(1),
         order: [objRef(2), objRef(1), objRef(10), objRef(11)],
-        meta: { ...meta, affectedPages: [pr(1)], changed: [objRef(2)] },
+        meta: { ...meta, affectedPages: [pr(1)], changedRefs: [objRef(2)] },
         origin: remote(24),
       }),
       emit(deletedFact([objRef(2)], remote(26))),

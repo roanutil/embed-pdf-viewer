@@ -273,7 +273,7 @@ export const createdFact = (annotation: Annotation, from: EventOrigin = REMOTE):
   meta: {
     affectedPages: [annotation.page],
     cacheDelta: null,
-    changed: [annotation.ref],
+    changedRefs: [annotation.ref],
     opId: 'remote-create',
     undoable: true,
   },
@@ -291,7 +291,7 @@ export const updatedFact = (
   meta: {
     affectedPages: [annotation.page],
     cacheDelta: null,
-    changed: [annotation.ref],
+    changedRefs: [annotation.ref],
     opId: 'remote-update',
     undoable: true,
   },
@@ -307,7 +307,7 @@ export const deletedFact = (
   meta: {
     affectedPages: [refs[0]!.page],
     cacheDelta: null,
-    changed: [...refs],
+    changedRefs: [...refs],
     opId: 'remote-delete',
     undoable: true,
   },
@@ -320,7 +320,7 @@ export const restoredFact = (page: PageRef, annotations: Annotation[] = []): Doc
   meta: {
     affectedPages: [page],
     cacheDelta: null,
-    changed: annotations.map((a) => a.ref),
+    changedRefs: annotations.map((a) => a.ref),
     opId: 'remote-restore',
     undoable: true,
   },

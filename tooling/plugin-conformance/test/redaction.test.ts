@@ -660,7 +660,7 @@ test('all successful annotation answers match the actual authored operation fiel
   }
 });
 test('the actual named transitions preserve object identity on their no-op branches', () => {
-  const idle = model.initialRedactionState(),
+  const idle = model.initialRedactionModel(),
     busy = model.startApply(idle),
     done = model.setLastResult(idle, answer({ pages: [pr(1)] }));
   assert.equal(model.startApply(busy), busy);

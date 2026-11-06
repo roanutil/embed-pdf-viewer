@@ -35,12 +35,12 @@ import {
 const USER = {
   origin: 'user',
   source: { kind: 'api' },
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 } satisfies ActionContext;
 const LIFECYCLE = {
   origin: 'lifecycle',
   source: { kind: 'api' },
-  event: { scope: 'document', name: 'open' },
+  event: { type: 'document', event: 'open' },
 } satisfies ActionContext;
 const C1 = text(1, 'parent.c1', 'one'),
   C2 = text(2, 'parent.c2', 'two'),
@@ -50,7 +50,7 @@ const BUTTON = pushbutton(4, 'button'),
   AGREE = checkbox(6, 'agree', true);
 const FIELDS = [C1, C2, OTHER, BUTTON, SIG, AGREE];
 const ROWS = FIELDS.map((field) =>
-  row(field.widgets[0]!.objectNumber, field.ref, 1, undefined, { fieldFamily: field.family }),
+  row(field.widgets[0]!.objectNumber, field.ref, 1, undefined, { fieldKind: field.family }),
 );
 const FORM = snapshot(FIELDS, ROWS);
 const cleared = [

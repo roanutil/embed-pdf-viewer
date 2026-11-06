@@ -663,8 +663,8 @@ test('current required validation orders missing fields by page and position, an
   const widgets = [
     row(101, ref(1), 2, { x: 20, y: 20, width: 100, height: 24 }),
     row(102, ref(2), 1, { x: 20, y: 20, width: 100, height: 24 }),
-    row(103, ref(3), 1, { x: 5, y: 10, width: 18, height: 18 }, { fieldFamily: 'checkbox' }),
-    row(104, ref(4), 2, { x: 20, y: 50, width: 100, height: 24 }, { fieldFamily: 'signature' }),
+    row(103, ref(3), 1, { x: 5, y: 10, width: 18, height: 18 }, { fieldKind: 'checkbox' }),
+    row(104, ref(4), 2, { x: 20, y: 50, width: 100, height: 24 }, { fieldKind: 'signature' }),
   ];
   const input = scenario(
     'required-validation-host-check',

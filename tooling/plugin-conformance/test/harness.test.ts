@@ -425,7 +425,7 @@ test('successful unlock refreshes state, prompt and PDF-bit authorization before
       encryption: { state: 'encrypted', requiresPassword: true },
       permissions: {
         known: true,
-        bits: 0,
+        flags: 0,
         allAllowed: false,
         openedAs: 'none',
         securityHandlerRevision: 6,
@@ -435,7 +435,7 @@ test('successful unlock refreshes state, prompt and PDF-bit authorization before
     };
     const owner: DocumentSecurityState = {
       ...locked,
-      permissions: { ...locked.permissions, bits: 0xffffffff, allAllowed: true, openedAs: 'owner' },
+      permissions: { ...locked.permissions, flags: 0xffffffff, allAllowed: true, openedAs: 'owner' },
       access: { required: false, reasons: [] },
     };
     const result = { security: owner } satisfies DocumentUnlockResult;

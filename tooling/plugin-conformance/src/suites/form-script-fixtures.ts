@@ -1,7 +1,7 @@
 /** Current scripting host inputs and detached-controller driver. */
 import { definePlugin } from '@embedpdf/core';
 import type {
-  FormFieldDTO,
+  FormField,
   FormFieldRef,
   FormFieldValue,
   FormSnapshot,
@@ -270,7 +270,7 @@ export function act(method: ActionMethod, args: readonly unknown[] = [], doc = '
   return { op: 'call', target: { token: 'actions', doc }, method, args };
 }
 export const list = (
-  fields: FormFieldDTO[],
+  fields: FormField[],
   extra: Partial<ResponseSpec> = {},
   calculationOrder: FormSnapshot['calculationOrder'] = [],
 ): ResponseSpec => ({
@@ -282,7 +282,7 @@ export const list = (
         widget.page && widget.objectNumber > 0
           ? [
               completeRow(widget.objectNumber, field.ref, widget.page.objectNumber, undefined, {
-                fieldFamily: field.family,
+                fieldKind: field.family,
               }),
             ]
           : [],

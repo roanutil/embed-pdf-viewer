@@ -4,7 +4,7 @@ import type {
   SubmitIntent,
 } from '../../../../packages/plugin/actions/src/contract';
 import type {
-  FormFieldDTO,
+  FormField,
   PdfActionTargetRef,
   DocumentEvent,
 } from '@embedpdf/engine-core/runtime';
@@ -88,14 +88,14 @@ const functions = {
   formTools: () => ({ tools: FORM_TOOLS, placeTags: PLACE_TAGS }),
   formToolById: (id: string) => FORM_TOOL_BY_ID.get(id) ?? null,
   resolveFieldSelection: (
-    all: FormFieldDTO[],
+    all: FormField[],
     targets: PdfActionTargetRef[] | null,
     exclude: boolean,
   ) => {
     const { selected, listed } = resolveFieldSelection(all, targets, exclude);
     return { selected, listed: all.map((field) => listed(field)) };
   },
-  buildSubmitEntries: (fields: FormFieldDTO[], intent: SubmitIntent) => {
+  buildSubmitEntries: (fields: FormField[], intent: SubmitIntent) => {
     const diagnostics: ActionDiagnostic[] = [];
     return { entries: buildSubmitEntries(fields, intent, (d) => diagnostics.push(d)), diagnostics };
   },
@@ -171,7 +171,7 @@ const ROWS = [104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 1
   (n, i) => {
     const field = ALL_FIELDS.find((f) => f.widgets.some((w) => w.objectNumber === n));
     return row(n, field?.ref ?? null, 3, box(i * 10, i * 5), {
-      fieldFamily: field?.family ?? 'unknown',
+      fieldKind: field?.family ?? 'unknown',
     });
   },
 );
@@ -210,7 +210,7 @@ const unrelated: DocumentEvent = {
     cacheDelta: null,
     opId: 'unrelated',
     undoable: true,
-    changed: [],
+    changedRefs: [],
   },
 };
 const sel = (name: string, n = 0, over: Partial<ReturnType<typeof text>> = {}) =>

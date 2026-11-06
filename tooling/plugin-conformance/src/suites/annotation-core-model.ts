@@ -495,8 +495,8 @@ const propCases: FunctionCase[] = [
 const anchorFns: Record<string, Fn> = {
   anchorModeOf: an.anchorModeOf,
   anchorOf: an.anchorOf,
-  anchoredGeom: an.anchoredGeom,
-  unanchoredGeom: an.unanchoredGeom,
+  anchoredGeometry: an.anchoredGeometry,
+  unanchoredGeometry: an.unanchoredGeometry,
   anchoredStrokeWidth: an.anchoredStrokeWidth,
   anchoredBox: an.anchoredBox,
 };
@@ -550,7 +550,7 @@ for (const gname of ANCHOR_GEOMS) {
     for (const [vname, view] of VIEWS) {
       if (mname === 'none' && vname !== 'z2-r0') continue;
       anchorCases.push(c('anchoredGeom', `${gname}-${mname}-${vname}`, geom(gname), mode, view));
-      const projected = an.anchoredGeom(geom(gname), mode, view as an.ViewEnv | undefined);
+      const projected = an.anchoredGeometry(geom(gname), mode, view as an.ViewEnv | undefined);
       anchorCases.push(c('unanchoredGeom', `${gname}-${mname}-${vname}`, projected, mode, view));
     }
   }

@@ -149,3 +149,24 @@ Open, not resolved:
 `fonts/wire.json` is back at its committed version (`2b86156d3`). The approved regeneration answered `NotFound` at `document.fonts.program` for a display hash that `document.fonts.list` reports one step earlier. The case's covers text says that program is read from the document. The TypeScript source and generator are unchanged since the starting commit, and three regenerations gave the same answer. The cause is probably the oracle's runtime environment, not a TypeScript change, so the regeneration is not kept.
 
 Open: find why the oracle answers `NotFound` in this environment. Until then, `fonts_wire_corpus` matches the committed vector and passes, and Rust is not changed for this case.
+
+## Plugin conformance tooling: typecheck migration, in progress (2026-11-06)
+
+`tooling/plugin-conformance` typecheck: 464 errors at the start of this step, 340 now. The tooling targets the pre-merge engine API, so this is the catch-up work for plugin contracts, not a starting-commit failure.
+
+Done in this step, all mechanical and each on the lines the compiler flagged:
+
+- Object keys renamed to the current names: `fieldFamily`→`fieldKind`, `size`→`sizeBytes`, `family`→`kind`, `changed`→`changedRefs`, `checksum`→`md5`, `bits`→`flags`.
+- Trigger objects: `scope`→`type`, and `name`→`event` where the trigger carries an event (current `ActionTrigger` shape).
+- Imports and their usages renamed to the names the compiler suggests (`FormFieldDTO`→`FormField`, `SignatureDTO`→`Signature`, `selectionHandleGeom`→`selectionHandleGeometry`, and similar).
+- `labels: []` added to page-list literals that lack it (7 literals).
+
+Still open, grouped by cause:
+
+1. Event `layout` removed from `DocumentEvent`. The `pages.*` event results no longer carry the page layout. About 23 literals and the `layout` branch in `src/fake-engine.ts` depend on it. Decide how the fake derives its page state after a change (re-read from its own table, or apply the operation). This is a fixture-model decision in tooling, not a reference change.
+2. `EventOrigin` fields: `sub`→`subject`, `ts`→`at` (ISO 8601), `serverId` removed, `serverSequence` added. About 14 fixture literals.
+3. `fake-engine.ts` service member tables: new required members on `pages` (`copy`) and `fonts` (`list`, `resolve`, `getProgram`, `downloadProgram`). The table claims implemented members, so each needs an implementation or an explicit decision.
+4. Permission bits: `decodePdfBits` and `permissions.bits` are gone; use `permissionFlagsOf` and `permissions.flags`.
+5. Remaining argument, property and assignment mismatches (about 250), to be worked file by file.
+
+Vector checks (`vectors:check`, `coverage:check`) fail at module load on the same API drift, so they cannot run until the typecheck is clean.

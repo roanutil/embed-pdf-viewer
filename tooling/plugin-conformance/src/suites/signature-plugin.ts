@@ -32,8 +32,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   formWidget as currentFormWidget,
-  type FormFieldDTO,
-  type SignatureDTO,
+  type FormField,
+  type Signature,
   type SignatureCompleteResult,
 } from '@embedpdf/engine-core/runtime';
 
@@ -262,8 +262,8 @@ const dto = (
   index: number,
   n: number,
   name: string,
-  over: Partial<SignatureDTO> = {},
-): SignatureDTO => ({
+  over: Partial<Signature> = {},
+): Signature => ({
   index,
   field: ref(n),
   fieldName: name,
@@ -288,8 +288,8 @@ const signedDto = (
   index: number,
   n: number,
   name: string,
-  over: Partial<SignatureDTO> = {},
-): SignatureDTO =>
+  over: Partial<Signature> = {},
+): Signature =>
   dto(index, n, name, {
     signed: true,
     filter: 'Adobe.PPKLite',
@@ -371,7 +371,7 @@ interface DocOptions {
   readonly allows?: string[] | '*';
   /** Tried before the defaults. */
   readonly responses?: ResponseSpec[];
-  readonly fields?: FormFieldDTO[];
+  readonly fields?: FormField[];
 }
 
 const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({

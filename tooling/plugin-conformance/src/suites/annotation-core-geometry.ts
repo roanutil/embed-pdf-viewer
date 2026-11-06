@@ -459,7 +459,7 @@ const shapeFns: Record<string, Fn> = {
   obbFromGeom: g.obbFromGeom,
   turnPivotOf: g.turnPivotOf,
   geomRotation: g.geomRotation,
-  isRotatableGeom: g.isRotatableGeom,
+  isRotatableGeometry: g.isRotatableGeometry,
   geomHandles: g.geomHandles,
   geomScene: g.geomScene,
   geomTranslate: g.geomTranslate,
