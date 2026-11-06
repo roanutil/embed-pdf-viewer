@@ -14,8 +14,8 @@
     "OAUTH2_FORWARDER_SERVER": "host.docker.internal:${localEnv:OAUTH2_FORWARDER_PORT:18080}",
     "GIT_CREDENTIAL_FORWARDER_SERVER": "host.docker.internal:${localEnv:GIT_CREDENTIAL_FORWARDER_PORT:18081}"
   },
-  "onCreateCommand": "bash /usr/local/share/embedpdf/clone.sh",
-  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "onCreateCommand": "python3 /usr/local/share/embedpdf/clone.py",
+  "postCreateCommand": "python3 .devcontainer/setup.py",
   "forwardPorts": [3000, 5173],
   "customizations": {
     "vscode": {

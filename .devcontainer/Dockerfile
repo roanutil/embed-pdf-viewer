@@ -37,7 +37,7 @@ RUN npm install -g "$(node -p "require('/opt/embedpdf-pins/package.json').packag
 RUN mkdir -p /workspaces/embed-pdf-viewer \
     && chown -R node:node /workspaces \
     && git config --system credential.helper /home/node/.npm-global/bin/git-credential-forwarder-client
-COPY .devcontainer/clone.sh /usr/local/share/embedpdf/clone.sh
+COPY .devcontainer/clone.py /usr/local/share/embedpdf/clone.py
 ENV EMBEDPDF_REPOSITORY=https://github.com/roanutil/embed-pdf-viewer.git \
     EMBEDPDF_BRANCH=research/multi-platform-rust-core-impl \
     EMBEDPDF_WORKSPACE=/workspaces/embed-pdf-viewer \

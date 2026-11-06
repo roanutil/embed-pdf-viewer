@@ -61,8 +61,8 @@ may need a local relay.
 4. Clone the repository and install its dependencies:
 
    ```sh
-   docker exec -it embed-pdf bash -c \
-     'bash /usr/local/share/embedpdf/clone.sh && bash .devcontainer/setup.sh'
+   docker exec -it embed-pdf python3 /usr/local/share/embedpdf/clone.py
+   docker exec -it embed-pdf python3 .devcontainer/setup.py
    ```
 
    First build and setup take approximately **15–30 minutes**, depending on
@@ -75,6 +75,8 @@ may need a local relay.
    ```
 
 The Docker build context includes only container definitions and toolchain pins.
+The clone and setup scripts use Python 3's standard library, with no pip packages.
+Setup invokes the existing package-manager, compiler, and runtime-fetch tools.
 To override pinned image tools, pass build arguments such as
 `--build-arg CODEX_VERSION=VERSION`, `--build-arg CLAUDE_CODE_VERSION=VERSION`,
 `--build-arg OAUTH2_FORWARDER_VERSION=VERSION`, or
@@ -91,7 +93,7 @@ docker exec -it embed-pdf bash
 
 The stopped container retains its home directory, authentication sessions, and
 installed tools; the named volume retains the repository and dependencies.
-After dependency or runtime pin changes, rerun `bash .devcontainer/setup.sh`
+After dependency or runtime pin changes, rerun `python3 .devcontainer/setup.py`
 inside the container. Missing published artifacts fail setup; the fetch scripts
 report the expected release and recovery command.
 
