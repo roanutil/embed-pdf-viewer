@@ -1,10 +1,10 @@
 {
-  "updatedUTC": "2026-11-06T20:13:16.096933+00:00",
+  "updatedUTC": "2026-11-06T21:22:43.046564+00:00",
   "status": "implementation-in-progress",
   "integrationBranch": "research/catchup-2026-11-06",
   "integrationWorktree": "/workspaces/catchup-2026-11-06",
   "viewerTarget": "8297bad8d388eb9c70324c22cb001c59248f95f4",
-  "runtimeForkSource": "196331edea7566e3a77a8f338822b052d339d345",
+  "runtimeForkSource": "1e214deb2869d9233e573666d239bc32ce73f186",
   "runtimeTarget": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
   "inputBranches": {
     "impl": "5a2f25f063054c344ea514c2f6da788ad45052f3",
@@ -18,29 +18,42 @@
     "integerABI": "0e3b1e870"
   },
   "checks": {
-    "typescriptEngineCore": "1080 passed,85files",
+    "typescriptEngineCore": "1080 passed, 85 files",
+    "rustEngineLibrary": "509 passed",
+    "selectedRustIntegrations": "85 passed",
     "boundaryAndIntegerABI": "10 passed",
+    "attachmentCoverageGuard": "3 passed",
     "repositoryPluginBoundaries": "passed",
-    "canonicalWasmABI": "1056 bound functions match",
-    "runtimeSuite": "5 passed,1 skipped: high heap fixture/dist prerequisite",
-    "rustCharmap": "30 passed against provisionalcanonical43",
-    "rustActions": "15 passed against provisionalcanonical43",
-    "xyzOracle": "8cases x4reader entrypoints; native and WASM outputs identical",
-    "textCorpus": "4passed1failed before fullpage-text regeneration; see ledger for latest"
+    "forkWasmABI": "1056 bound functions match",
+    "runtimeSuite": "6 passed, zero skipped; includes actual high heap",
+    "focusedCommandGroups": "13 passed",
+    "remainingConformanceTypecheck": "10 diagnostics; incomplete",
+    "runtimeNative": "498 passed, 6 skipped",
+    "runtimeLayerGate": "361 pass, 1 opt-in skip, 3 unchanged expected failures, zero unexpected failures"
   },
-  "artifactStatus": "Retained-fork release native compiling; canonical43 inputs are provisional only",
+  "artifactStatus": "Final fork native/WASM runtime inputs built and staged; final combined Rust WASM and platform packages pending",
   "logs": {
     "runtimeRelease": "/workspaces/catchup-build-logs/runtime-release-resume.log",
     "runtimeReleaseResult": "/workspaces/catchup-build-logs/runtime-release-resume-result.json",
     "runtimeWasmDeps": "/workspaces/catchup-build-logs/runtime-wasm-deps.log",
-    "viewer": ".superpowers/sdd/upstream-catchup-2026-11-06"
+    "viewer": ".superpowers/sdd/upstream-catchup-2026-11-06",
+    "checkpointReceipt": "execution-evidence/checkpoint-results.json"
   },
   "incomplete": [
-    "Final-fork native/WASM build and native regression acceptance",
     "Remaining engine/shared DTO and plugin behavior migrations",
-    "Current generated bindings and actual platform package consumers",
-    "All merged conformance vector regeneration/expansion/replays",
-    "Final artifact graph/platform matrix and both research-ref closure"
+    "Ten conformance generator typecheck diagnostics and affected broader golden migrations",
+    "Current generated bindings and actual existing platform package consumers",
+    "Remaining conformance vector expansion, regeneration and Rust replays",
+    "Final Rust browser payload/platform matrix and both research-ref closure"
   ],
-  "nextAction": "Inspect release result/log; use exact-source artifact for fresh parity reruns; continue Job3 from remaining invariant rows. Do not redo committed XYZ/clean-text ports."
+  "nextAction": "Continue Job3 contract rows and matching real TS oracle generators; preserve completed ports/runtime inputs. Read IMPLEMENTATION.md remaining matrix.",
+  "sourceCheckpoint": "0a6fa59e23368886d2623cebac10283b0759942e",
+  "wholeCatchupComplete": false,
+  "jobStatus": {
+    "runtime": "initial-linux-arm64-and-wasm-inputs-complete",
+    "viewer": "exact-source-merged",
+    "engine": "initial-ports-verified-broader-migration-in-progress",
+    "pluginsBindings": "pending",
+    "artifactsBothRefs": "pending"
+  }
 }

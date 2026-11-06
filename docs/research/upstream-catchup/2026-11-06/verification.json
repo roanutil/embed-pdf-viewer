@@ -1,15 +1,15 @@
 {
-  "verifiedUTC": "2026-11-06T19:46:49.462987+00:00",
-  "scope": "Planning documents and infrastructure state only; no product tests/builds",
+  "verifiedUTC": "2026-11-06T21:22:54.306665+00:00",
+  "scope": "Document, pin, source-cleanliness and hash checks only; product evidence is in execution-state.json and execution-evidence/",
   "canonicalViewerTarget": "8297bad8d388eb9c70324c22cb001c59248f95f4",
   "viewerSelectedRuntime": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
   "publicBranchTips": {
     "research/multi-platform-rust-core-impl": "5a2f25f063054c344ea514c2f6da788ad45052f3",
     "research/multi-platform-rust-core-impl-plugins": "8fa01cc1ec4d0739af535feec6928e6a81163fd9"
   },
-  "currentMarkdownLinksChecked": 41,
+  "currentMarkdownLinksChecked": 45,
   "historicalFilesByteExact": 91,
-  "hashedFiles": 127,
+  "hashedFiles": 140,
   "secretPatternScan": "No matches for GitHub tokens, AWS access keys, private keys or bearer credentials",
   "checks": [
     {
@@ -121,13 +121,13 @@
         "SHA256SUMS"
       ],
       "exit": 0,
-      "stdout": "127 files verified",
+      "stdout": "140 files verified",
       "stderr": ""
     }
   ],
   "limitations": [
     "C7 historical bare metadata excluded; original host records retained",
-    "Project dependencies and runtime artifacts not provisioned",
+    "Full catch-up and final packaged-consumer acceptance are not established by this document checker",
     "No dotnet installed in current ARM64 image; Android NDK and Apple hosts unavailable here",
     "No product integration/behavior/platform acceptance claimed"
   ]

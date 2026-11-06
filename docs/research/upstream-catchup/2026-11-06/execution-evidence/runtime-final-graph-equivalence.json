@@ -1,0 +1,60 @@
+{
+  "priorSource": "196331edea7566e3a77a8f338822b052d339d345",
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "changedPaths": [
+    "docs/embedpdf/catchup-2026-11-06/PROGRESS.md",
+    "testing/embedpdf_layer_mode_expectations.txt",
+    "testing/embedpdf_layer_mode_writers.txt"
+  ],
+  "cppHeadersBuildPatchInputsChanged": false,
+  "depsChanged": false,
+  "steps": [
+    {
+      "command": [
+        "gn",
+        "gen",
+        "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64"
+      ],
+      "exit": 0,
+      "stdout": "Done. Made 691 targets from 170 files in 82ms",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "ninja",
+        "-C",
+        "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64",
+        "pdfium"
+      ],
+      "exit": 0,
+      "stdout": "ninja: Entering directory `/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64'\nninja: no work to do.",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gn",
+        "gen",
+        "/workspaces/catchup-wasm-build/runtime/out/embedpdf-runtime/wasm32"
+      ],
+      "exit": 0,
+      "stdout": "WARNING at //build/toolchain/wasm/BUILD.gn:40:26: Build argument has no effect.\n    use_allocator_shim = false\n                         ^----\nThe variable \"use_allocator_shim\" was set as a build argument\nbut never appeared in a declare_args() block in any buildfile.\n\nTo view all possible args, run \"gn args --list <out_dir>\"\n\nThe build continued as if that argument was unspecified.\n\nDone. Made 673 targets from 160 files in 138ms",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "ninja",
+        "-C",
+        "/workspaces/catchup-wasm-build/runtime/out/embedpdf-runtime/wasm32",
+        "pdfium"
+      ],
+      "exit": 0,
+      "stdout": "ninja: Entering directory `/workspaces/catchup-wasm-build/runtime/out/embedpdf-runtime/wasm32'\nninja: no work to do.",
+      "stderr": ""
+    }
+  ],
+  "libraryBytesUnchanged": {
+    "linux-arm64": "a3037da6823bb30c286321841ae394b65dddf5898006964f71d974c46aa08888",
+    "wasm32": "a2e28d42fe5fa0e02d6a5d01c2cc108ec5713ca560fd651213e83bcafbd53702"
+  },
+  "ruling": "Reuse identical DEPS/code/header/args inputs for test-registry/documentation-only commit; explicit GN/Ninja no-op verified both graphs before repackaging."
+}

@@ -1,11 +1,11 @@
 import subprocess, json, pathlib, datetime
 
-root = pathlib.Path('/workspaces/embed-pdf-viewer')
+root = pathlib.Path(subprocess.check_output(['git', '-C', str(pathlib.Path(__file__).resolve().parent), 'rev-parse', '--show-toplevel'], text=True).strip())
 out = root / 'docs/research/upstream-catchup/2026-11-06'
 out.mkdir(parents=True, exist_ok=True)
 target = '8297bad8d388eb9c70324c22cb001c59248f95f4'
 old = '4ad8986099314b9587df423c802db103a21d665d'
-runtime = root / '.git/catchup-runtime.git'
+runtime = pathlib.Path(subprocess.check_output(['git', '-C', str(root), 'rev-parse', '--path-format=absolute', '--git-common-dir'], text=True).strip()) / 'catchup-runtime.git'
 def git(*args, repo=root):
     return subprocess.check_output(['git','-C',str(repo),*args],text=True).strip()
 def record(name, *args, repo=root):

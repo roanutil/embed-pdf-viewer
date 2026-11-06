@@ -1,0 +1,238 @@
+{
+  "verifiedUTC": "2026-11-06T21:21:51.245529+00:00",
+  "source": "0a6fa59e23368886d2623cebac10283b0759942e",
+  "viewerTarget": "8297bad8d388eb9c70324c22cb001c59248f95f4",
+  "runtimeFork": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "runtimeTarget": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
+  "initialSlicePassed": true,
+  "wholeCatchupComplete": false,
+  "runtimeWasmScope": "Matching PDFium fork TypeScript oracle only; final combined Rust browser payload and platform package acceptance remain pending",
+  "checks": [
+    {
+      "name": "rust-ports",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "epdf-engine",
+        "--lib",
+        "--test",
+        "action_reader",
+        "--test",
+        "attachment_reader",
+        "--test",
+        "charmap",
+        "--test",
+        "text_corpus",
+        "--test",
+        "annotation_line_breaks",
+        "--test",
+        "annotation_stroke_dash",
+        "--test",
+        "annotation_write",
+        "--test",
+        "write_transactions"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-rust-ports.log",
+      "tail": "e_key_but_empty_contents_stays_present ... ok\ntest all_line_break_spellings_agree_with_rich_text_like_typescript ... ok\ntest rich_text_round_trip_uses_pdf_cr_and_public_lf ... ok\ntest public_contents_reads_agree_with_the_typescript_oracle ... ok\ntest free_text_create_derivation_keeps_normalized_agreement_and_refusal ... ok\ntest parsed_rich_runs_read_public_line_breaks_like_typescript ... ok\ntest rich_engine_json_writes_pdf_line_breaks_like_typescript ... ok\ntest rich_plain_projection_agrees_with_the_typescript_oracle ... ok\ntest free_text_patch_derivation_keeps_normalized_agreement_and_refusal ... ok\n\ntest result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n     Running tests/annotation_stroke_dash.rs (target/debug/deps/annotation_stroke_dash-08dcd337452ae0fe)\n\nrunning 8 tests\ntest imported_missing_stroke_and_empty_dash_read_as_none_and_solid ... ok\ntest null_stroke_retains_width_and_survives_save_reopen ... ok\ntest empty_dash_refuses_before_mutating_other_fields ... ok\ntest omitted_stroke_keeps_default_and_null_patch_can_be_restored ... ok\ntest dashed_borders_state_default_but_null_clears_and_zero_is_valid ... ok\ntest a_null_stroke_paints_fill_without_a_border_and_can_be_restored ... ok\ntest stroke_and_dash_updates_agree_with_typescript ... ok\ntest stroke_and_dash_creates_agree_with_typescript ... ok\n\ntest result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s\n\n     Running tests/annotation_write.rs (target/debug/deps/annotation_write-d0c89c32a40b145b)\n\nrunning 2 tests\ntest a_translation_is_verified_rather_than_claimed ... ok\ntest the_appearance_verdicts_agree_with_the_typescript_engine ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n     Running tests/attachment_reader.rs (target/debug/deps/attachment_reader-b2f2245842788d02)\n\nrunning 5 tests\ntest an_unknown_key_is_not_found_rather_than_an_empty_result ... ok\ntest a_decode_budget_refuses_rather_than_truncating ... ok\ntest a_key_is_the_address_and_a_name_is_not ... ok\ntest a_download_produces_the_same_bytes_or_fails_for_the_same_reason ... ok\ntest the_listing_agrees_with_the_typescript_engine ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n     Running tests/charmap.rs (target/debug/deps/charmap-bcdcdc032b436b0e)\n\nrunning 30 tests\ntest a_tail_projection_beyond_u32_is_a_violation_without_wrapping ... ok\ntest upstream::a_plateau_of_several_zero_width_characters_resolves_to_its_far_edge ... ok\ntest upstream::a_start_is_right_biased_past_leading_zero_width_characters ... ok\ntest upstream::a_step_other_than_zero_or_two_is_malformed ... ok\ntest upstream::a_supplementary_character_advances_by_two ... ok\ntest upstream::a_supplementary_character_arrives_whole ... ok\ntest upstream::a_tail_that_misses_the_text_length_is_malformed ... ok\ntest upstream::an_end_is_left_biased_before_trailing_zero_width_characters ... ok\ntest upstream::an_empty_input_normalizes_to_a_single_boundary_and_never_inverts ... ok\ntest upstream::dropped_characters_advance_the_boundary_but_not_the_offset ... ok\ntest upstream::an_empty_range_slices_to_nothing ... ok\ntest upstream::an_interior_zero_width_character_belongs_to_neither_neighbour ... ok\ntest upstream::an_offset_inside_a_surrogate_pair_covers_the_whole_character ... ok\ntest upstream::anchors_must_strictly_increase_and_stay_on_the_page ... ok\ntest upstream::every_fixture_is_a_valid_map ... ok\ntest upstream::the_full_range_is_always_the_whole_text ... ok\ntest upstream::the_identity_map_is_the_identity_clamped ... ok\ntest upstream::identity_requires_matching_lengths ... ok\ntest upstream::start_and_end_bias_disagree_exactly_on_plateaus ... ok\ntest upstream::dropped_characters_contribute_nothing_to_a_slice ... ok\ntest upstream::the_final_boundary_always_lands_on_the_text_length ... ok\ntest slicing_the_whole_page_returns_the_whole_text ... ok\ntest boundary_text_offsets_agree_with_typescript ... ok\ntest cleaned_page_text_and_its_index_spaces_agree_with_typescript ... ok\ntest every_case_in_the_corpus_is_a_valid_map ... ok\ntest both_bias_rules_agree_with_typescript ... ok\ntest malformed_maps_are_rejected_the_same_way ... ok\ntest every_character_range_slices_to_the_same_text ... ok\ntest every_text_range_maps_to_the_same_character_range ... ok\ntest utf16_lengths_agree_with_javascript ... ok\n\ntest result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n     Running tests/text_corpus.rs (target/debug/deps/text_corpus-9384c062ad5caef3)\n\nrunning 6 tests\ntest a_cancelled_text_read_reports_aborted ... ok\ntest text_reads_normalize_line_breaks_without_moving_character_slots ... ok\ntest a_joined_line_end_hyphen_is_not_copied_but_keeps_its_character_slot ... ok\ntest every_extracted_snapshot_satisfies_the_map_invariants ... ok\ntest slicing_an_extracted_page_by_its_whole_range_returns_its_text ... ok\ntest page_text_agrees_with_the_typescript_engine ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s\n\n     Running tests/write_transactions.rs (target/debug/deps/write_transactions-303164acda61ca22)\n\nrunning 9 tests\ntest the_save_comparison_blanks_the_whole_id_array_and_the_size ... ok\ntest a_parked_signing_refuses_a_write_before_its_floor_is_raised ... ok\ntest a_repair_whose_commit_is_refused_leaves_the_sequence_as_it_was ... ok\ntest a_commit_that_fails_makes_the_session_unusable ... ok\ntest a_commit_past_the_ceiling_is_layer_full_and_leaves_the_document_as_it_was ... ok\ntest a_refused_numbered_create_leaves_its_number_held ... ok\ntest a_write_names_its_layer_artifact_with_the_layers_last_object_number ... ok\ntest a_batch_that_fails_on_a_later_page_leaves_the_earlier_pages_as_they_were ... ok\ntest a_write_that_fails_before_its_commit_leaves_nothing_behind_and_applies_afterwards ... ok\n\ntest result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s\n\n"
+    },
+    {
+      "name": "boundaries",
+      "command": [
+        "pnpm",
+        "check:plugin-boundaries"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-boundaries.log",
+      "tail": "\n> embedpdf@0.0.0 check:plugin-boundaries /workspaces/catchup-2026-11-06\n> node tooling/build/src/check-plugin-boundaries.mjs\n\nPlugin boundary check passed.\n"
+    },
+    {
+      "name": "boundary-abi-tests",
+      "command": [
+        "node",
+        "--test",
+        "tooling/build/test/plugin-boundaries.test.mjs",
+        "packages/engine/runtime/test/generate-functions.test.mjs"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-boundary-abi-tests.log",
+      "tail": "\u2714 keeps fixed-width integer ABI when platform typedefs resolve to long (59.481708ms)\n\u2714 accepts contract imports and explicit framework feature implementation entries (9.719292ms)\n\u2714 rejects bare sibling roots in plugin and framework source (8.649208ms)\n\u2714 rejects sibling internal entries while allowing an owning framework feature (3.729042ms)\n\u2714 requires consumer implementation roots to be explicit plugin-factory opt-ins (2.149959ms)\n\u2714 rejects a second capability token declared by a contract entry (1.897208ms)\n\u2714 rejects implementation modules reachable from a contract entry (1.811208ms)\n\u2714 checks CloudPDF\u2019s plugin and framework groups as EmbedPDF\u2019s (5.566667ms)\n\u2714 accepts consumer factory type imports without loading an implementation (3.054125ms)\n\u2714 rejects ordinary consumer root types named like plugin interfaces (2.075333ms)\n\u2139 tests 10\n\u2139 suites 0\n\u2139 pass 10\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 195.578833\n"
+    },
+    {
+      "name": "coverage-tests",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "test"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-coverage-tests.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ test /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> node --import=tsx --conditions=development --test test/*.test.ts\n\n\u2714 zero-byte downloads count as successful decoding beside a real refusal (0.366ms)\n\u2714 an all-error oracle cannot replace successful attachment fixtures (0.102042ms)\n\u2714 successful downloads cannot erase missing-stream refusal coverage (0.068542ms)\n\u2139 tests 3\n\u2139 suites 0\n\u2139 pass 3\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 82.521167\n"
+    },
+    {
+      "name": "text-vectors",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "vectors:check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-text-vectors.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ vectors:check /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> tsx --conditions=development src/generate-vectors.ts --check\n\n  ok      pages.text/joined-hyphen-text.json\n  ok      pages.geometry/embedded-orientations.json\n  ok      pages.text/embedded-orientations.json\n  ok      pages.geometry/report.json\n  ok      pages.text/report.json\n  ok      pages.geometry/font-size-zero.json\n  ok      pages.text/font-size-zero.json\n  ok      pages.geometry/non-identity-text.json\n  ok      pages.text/non-identity-text.json\n  ok      pages.geometry/reverse-and-gapped-text.json\n  ok      pages.text/reverse-and-gapped-text.json\n  ok      pages.geometry/colors.json\n  ok      pages.text/colors.json\n"
+    },
+    {
+      "name": "charmap-vectors",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "charmap:check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-charmap-vectors.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ charmap:check /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> tsx --conditions=development src/generate-charmap-vectors.ts --check\n\n  ok      text/charmap.json\n"
+    },
+    {
+      "name": "attachment-vectors",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "attachments:check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-attachment-vectors.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ attachments:check /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> tsx --conditions=development src/generate-attachment-vectors.ts --check\n\n  ok      files/attachments.json\n"
+    },
+    {
+      "name": "newline-vectors",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "annotation-line-breaks:check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-newline-vectors.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ annotation-line-breaks:check /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> tsx --conditions=development src/generate-annotation-line-break-vectors.ts --check\n\n  ok      annotation/line-breaks.json\n"
+    },
+    {
+      "name": "xyz-wasm",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsx",
+        "--conditions=development",
+        "src/generate-metadata-vectors.ts",
+        "--xyz-only",
+        "--check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06/tooling/engine-conformance",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-xyz-wasm.log",
+      "tail": "  ok      metadata/destinations-xyz.json\n"
+    },
+    {
+      "name": "xyz-native",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsx",
+        "--conditions=development",
+        "src/generate-metadata-vectors.ts",
+        "--xyz-only",
+        "--runtime=native",
+        "--check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06/tooling/engine-conformance",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-xyz-native.log",
+      "tail": "  ok      metadata/destinations-xyz.json\n"
+    },
+    {
+      "name": "stroke-create",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsx",
+        "--conditions=development",
+        "src/generate-annotation-create-vectors.ts",
+        "--stroke-dash-only",
+        "--check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06/tooling/engine-conformance",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-stroke-create.log",
+      "tail": "  ok      annotation/stroke-dash-create.json\n"
+    },
+    {
+      "name": "stroke-update",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsx",
+        "--conditions=development",
+        "src/generate-annotation-update-vectors.ts",
+        "--stroke-dash-only",
+        "--check"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06/tooling/engine-conformance",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-stroke-update.log",
+      "tail": "  ok      annotation/stroke-dash-update.json\n"
+    },
+    {
+      "name": "runtime-tests",
+      "command": [
+        "node",
+        "--test",
+        "/workspaces/catchup-2026-11-06/packages/engine/runtime/test/generate-functions.test.mjs",
+        "/workspaces/catchup-2026-11-06/packages/engine/runtime/test/parity.test.mjs",
+        "/workspaces/catchup-2026-11-06/packages/engine/runtime/test/runtime-smoke.test.mjs",
+        "/workspaces/catchup-2026-11-06/packages/engine/runtime/test/wasm-high-heap.test.mjs"
+      ],
+      "cwd": "/workspaces/catchup-high-heap-fixtures",
+      "exit": 0,
+      "requiredForInitialSlice": true,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-runtime-tests.log",
+      "tail": "\u2714 keeps fixed-width integer ABI when platform typedefs resolve to long (46.977709ms)\n\u2714 native and wasm runtimes expose the same generated function names (0.552292ms)\n\u2714 pdf-runtime exposes a create function (0.605209ms)\n\u2714 wasm runtime owns memory-backed FPDF_FILEACCESS handles (0.239083ms)\n\u2714 native runtime opens a base document through file-backed FPDF_FILEACCESS (0.6445ms)\n\u2714 wasm runtime reads, renders and writes above 2 GiB as it does below (105.488292ms)\n\u2139 tests 6\n\u2139 suites 0\n\u2139 pass 6\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 140.736917\n"
+    },
+    {
+      "name": "remaining-typecheck",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@embedpdf/tooling-engine-conformance",
+        "typecheck"
+      ],
+      "cwd": "/workspaces/catchup-2026-11-06",
+      "exit": 2,
+      "requiredForInitialSlice": false,
+      "log": "/workspaces/catchup-2026-11-06/.superpowers/sdd/upstream-catchup-2026-11-06/checkpoint-remaining-typecheck.log",
+      "tail": "packages/engine/runtime/npm/darwin-arm64 | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/darwin-x64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"darwin\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/linux-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"glibc\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-arm64   | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n.../engine/runtime/npm/linuxmusl-x64     | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"linux\"],\"libc\":[\"musl\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-arm64  | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"arm64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\npackages/engine/runtime/npm/win32-x64    | \u2009WARN\u2009 Unsupported platform: wanted: {\"cpu\":[\"x64\"],\"os\":[\"win32\"],\"libc\":[\"any\"]} (current: {\"os\":\"linux\",\"cpu\":\"arm64\",\"libc\":\"glibc\"})\n\n> @embedpdf/tooling-engine-conformance@ typecheck /workspaces/catchup-2026-11-06/tooling/engine-conformance\n> tsc --noEmit\n\nsrc/generate-annotation-create-vectors.ts(1046,32): error TS2339: Property 'changed' does not exist on type 'AnnotationListMutationMeta'.\nsrc/generate-annotation-delete-vectors.ts(154,32): error TS2339: Property 'changed' does not exist on type 'AnnotationListMutationMeta'.\nsrc/generate-annotation-move-vectors.ts(166,32): error TS2339: Property 'changed' does not exist on type 'AnnotationListMutationMeta'.\nsrc/generate-annotation-update-vectors.ts(832,32): error TS2339: Property 'changed' does not exist on type 'AnnotationListMutationMeta'.\nsrc/generate-form-write-vectors.ts(304,17): error TS2339: Property 'family' does not exist on type 'FormField<PageCoordinates>'.\n  Property 'family' does not exist on type 'TextField<PageCoordinates>'.\nsrc/generate-scope-vectors.ts(20,31): error TS2307: Cannot find module '../../../packages/engine/core/src/auth/scope/pdf-bits' or its corresponding type declarations.\nsrc/generate-scope-vectors.ts(37,3): error TS2305: Module '\"../../../packages/engine/core/src/auth/scope/types\"' has no exported member 'PdfBits'.\nsrc/generate-security-vectors.ts(18,31): error TS2307: Cannot find module '../../../packages/engine/core/src/auth/scope/pdf-bits' or its corresponding type declarations.\nsrc/generate-security-vectors.ts(20,3): error TS2305: Module '\"../../../packages/engine/core/src/engine/document-security-state\"' has no exported member 'advisoryFromPdfBits'.\nsrc/generate-signature-protection-vectors.ts(23,3): error TS2724: '\"../../../packages/engine/core/src/signature/types\"' has no exported member named 'SignatureDTO'. Did you mean 'Signature'?\n/workspaces/catchup-2026-11-06/tooling/engine-conformance:\n\u2009ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL\u2009 @embedpdf/tooling-engine-conformance@ typecheck: `tsc --noEmit`\nExit status 2\n"
+    }
+  ]
+}

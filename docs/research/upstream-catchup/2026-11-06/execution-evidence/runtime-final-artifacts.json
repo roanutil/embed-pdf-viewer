@@ -1,0 +1,30 @@
+{
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "targets": {
+    "linux-arm64": {
+      "archive": "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime-artifacts/libembedpdf-runtime-linux-arm64-1e214deb2.tar.gz",
+      "archiveSha256": "dd23fed5bece7a9c2107359cd046dce404b2b309eb344fba518a7e972520ebf4",
+      "metadata": {
+        "name": "embedpdf-runtime",
+        "target": "linux-arm64",
+        "sha": "1e214deb2869d9233e573666d239bc32ce73f186",
+        "createdAt": "2026-11-06T20:36:04Z"
+      },
+      "librarySha256": "a3037da6823bb30c286321841ae394b65dddf5898006964f71d974c46aa08888",
+      "argsSha256": "dc6dcfa1dbb96896ee4d9363a0bc2769ba5f20ae3e144a8a93bb93fd5ee164fd"
+    },
+    "wasm32": {
+      "archive": "/workspaces/catchup-wasm-build/runtime/out/embedpdf-runtime-artifacts/libembedpdf-runtime-wasm32-1e214deb2.tar.gz",
+      "archiveSha256": "439b4fcfb7c6b6a475be1320f00bf3b9e01f513adf980989a24210b82819c6f9",
+      "metadata": {
+        "name": "embedpdf-runtime",
+        "target": "wasm32",
+        "sha": "1e214deb2869d9233e573666d239bc32ce73f186",
+        "createdAt": "2026-11-06T20:36:04Z",
+        "emsdkVersion": "3.1.72"
+      },
+      "librarySha256": "a2e28d42fe5fa0e02d6a5d01c2cc108ec5713ca560fd651213e83bcafbd53702",
+      "argsSha256": "58c64e359ae6f2257e20a7e5e6d172a2f69ea04a49f6f3811603232172b8f1f9"
+    }
+  }
+}

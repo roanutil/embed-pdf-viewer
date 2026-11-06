@@ -1,0 +1,150 @@
+{
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "fixedCanonicalRuntime": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
+  "forkBranch": "https://github.com/roanutil/embed-pdf-runtime/tree/catchup/2026-11-06-runtime",
+  "status": "ready for independent runtime/source-artifact review; no release published",
+  "checks": [
+    {
+      "command": [
+        "bash",
+        "scripts/embedpdf-runtime/tests/target-args.test.sh"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-final-target-args.test.sh.log"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/embedpdf-runtime/tests/emsdk-version.test.sh"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-final-emsdk-version.test.sh.log"
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/embedpdf-runtime/check-c-api.py"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-final-check-c-api.py.log"
+    }
+  ],
+  "nativeCounts": [
+    {
+      "file": "/workspaces/catchup-build-logs/runtime-native-final/unit.xml",
+      "tests": 24,
+      "passed": 24,
+      "skipped": 0,
+      "failures": 0
+    },
+    {
+      "file": "/workspaces/catchup-build-logs/runtime-native-final/embedder.xml",
+      "tests": 480,
+      "passed": 474,
+      "skipped": 6,
+      "failures": 0
+    }
+  ],
+  "nativePassed": 498,
+  "nativeSkipped": 6,
+  "nativeFailures": 0,
+  "skips": [
+    {
+      "test": "EPDFAnnotEmbedderTest.WriteA1AcrobatFixtureFromEnv",
+      "reason": "../../../fpdfsdk/epdf_annot_embeddertest.cpp:2533\nset EPDF_A1_FIXTURE_FONT and EPDF_A1_FIXTURE_PATH\n"
+    },
+    {
+      "test": "EPDFSignatureEmbedderTest.EncryptedTwoSignaturesFourRevisions",
+      "reason": "../../../fpdfsdk/epdf_signature_embeddertest.cpp:331\nfixture not available\n"
+    },
+    {
+      "test": "EPDFSignatureEmbedderTest.DiffEncryptedFixture",
+      "reason": "../../../fpdfsdk/epdf_signature_embeddertest.cpp:525\nfixture not available\n"
+    },
+    {
+      "test": "EPDFSignatureEmbedderTest.SignEncryptedDocument",
+      "reason": "../../../fpdfsdk/epdf_signature_embeddertest.cpp:1025\nfixture not available\n"
+    },
+    {
+      "test": "EPDFSignatureEmbedderTest.LayerEncryptedBaseModelMatchesOrdinaryDocument",
+      "reason": "../../../fpdfsdk/epdf_signature_embeddertest.cpp:2201\nfixture not available\n"
+    },
+    {
+      "test": "EPDFSignatureEmbedderTest.LayerEncryptedSigningPreservesExistingSignatures",
+      "reason": "../../../fpdfsdk/epdf_signature_embeddertest.cpp:2229\nfixture not available\n"
+    }
+  ],
+  "requiredCasesConfirmedPassed": [
+    "EPDFAnnotEmbedderTest.SetNoColorWritesAnEmptyColorArray",
+    "EPDFAnnotEmbedderTest.SetSubtypeChangesTheKindInPlace",
+    "EPDFAnnotEmbedderTest.LayerSetSubtypeKeepsTheObjectAndAborts",
+    "EPDFAnnotEmbedderTest.RedactCommentReadsOverTheReadersDefaults",
+    "EPDFInkAppearanceEmbedderTest.DrawsAcrobatsCurves",
+    "EPDFFormEmbedderTest.AttachToSignatureFieldDrawsItsBox",
+    "EPDFFormEmbedderTest.WidgetInNoFieldDrawsItsBox",
+    "EPDFLayerEmbedderTest.LayerDrawsImagesInPatternsAndType3Glyphs",
+    "FPDFViewEmbedderTest.LinearizedDocument",
+    "epdf.CApiTest",
+    "fpdf.CApiTest"
+  ],
+  "independentSaveCheckerTests": 9,
+  "independentlyCheckedSavedPdfs": 49,
+  "independentSaveRecoveryUsed": false,
+  "layerGate": {
+    "exit": 0,
+    "selected": 365,
+    "toolStatusPass": 362,
+    "actualGtestSkipped": [
+      "EPDFAnnotEmbedderTest.WriteA1AcrobatFixtureFromEnv"
+    ],
+    "actualPassed": 361,
+    "preexistingExpectedFailures": [
+      "FPDFViewEmbedderTest.UnSupportedOperationsLoadCustomDocument",
+      "FPDFViewEmbedderTest.DocumentHasValidCrossReferenceTable",
+      "FPDFViewEmbedderTest.LoadDocumentWithEmptyXRefConsistently"
+    ],
+    "unexpectedFailures": 0,
+    "newWriterClassification": {
+      "test": "EPDFAnnotEmbedderTest.ApplyRedactionFallsBackToRectForNonFiniteQuad",
+      "objects": 9,
+      "smoke": "RED -> GREEN; no body/assertion/tolerance change"
+    }
+  },
+  "artifacts": {
+    "linux-arm64": {
+      "archive": "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime-artifacts/libembedpdf-runtime-linux-arm64-1e214deb2.tar.gz",
+      "archiveSha256": "dd23fed5bece7a9c2107359cd046dce404b2b309eb344fba518a7e972520ebf4",
+      "metadata": {
+        "name": "embedpdf-runtime",
+        "target": "linux-arm64",
+        "sha": "1e214deb2869d9233e573666d239bc32ce73f186",
+        "createdAt": "2026-11-06T20:36:04Z"
+      },
+      "librarySha256": "a3037da6823bb30c286321841ae394b65dddf5898006964f71d974c46aa08888",
+      "argsSha256": "dc6dcfa1dbb96896ee4d9363a0bc2769ba5f20ae3e144a8a93bb93fd5ee164fd"
+    },
+    "wasm32": {
+      "archive": "/workspaces/catchup-wasm-build/runtime/out/embedpdf-runtime-artifacts/libembedpdf-runtime-wasm32-1e214deb2.tar.gz",
+      "archiveSha256": "439b4fcfb7c6b6a475be1320f00bf3b9e01f513adf980989a24210b82819c6f9",
+      "metadata": {
+        "name": "embedpdf-runtime",
+        "target": "wasm32",
+        "sha": "1e214deb2869d9233e573666d239bc32ce73f186",
+        "createdAt": "2026-11-06T20:36:04Z",
+        "emsdkVersion": "3.1.72"
+      },
+      "librarySha256": "a2e28d42fe5fa0e02d6a5d01c2cc108ec5713ca560fd651213e83bcafbd53702",
+      "argsSha256": "58c64e359ae6f2257e20a7e5e6d172a2f69ea04a49f6f3811603232172b8f1f9"
+    }
+  },
+  "graphEquivalence": "/workspaces/catchup-build-logs/runtime-final-graph-equivalence.json",
+  "finalNativeReceipt": "/workspaces/catchup-build-logs/runtime-final-acceptance-result.json",
+  "finalLayerReceipt": "/workspaces/catchup-build-logs/runtime-layer-final-result.json",
+  "limitations": [
+    "Final linked viewer/browser WASM module is a downstream job; this supplies static runtime input",
+    "Other native hosts and TSAN/production scaling gate not executed here",
+    "Five encrypted-signature tests require a fixed-byte external ValidSign fixture absent from source; one Acrobat output is opt-in",
+    "Existing WASM GN warning: use_allocator_shim build argument has no effect; build completed and library bytes unchanged"
+  ],
+  "verifiedUTC": "2026-11-06T20:38:29.589264+00:00"
+}

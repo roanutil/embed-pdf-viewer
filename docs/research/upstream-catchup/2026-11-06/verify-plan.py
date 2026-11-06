@@ -1,7 +1,7 @@
 from pathlib import Path
 import json,subprocess,re,hashlib,datetime,ast
 
-root=Path('/workspaces/embed-pdf-viewer')
+root = Path(subprocess.check_output(['git', '-C', str(Path(__file__).resolve().parent), 'rev-parse', '--show-toplevel'], text=True).strip())
 out=root/'docs/research/upstream-catchup/2026-11-06'
 def run(*args,cwd=root):
  p=subprocess.run(list(args),cwd=cwd,text=True,capture_output=True)
@@ -21,7 +21,7 @@ assert result['exit']==0,result
 checks.append(result)
 result=git('rev-parse','refs/catchup/2026-11-06/viewer-target'); assert result['stdout']==p['viewer']['sha']; checks.append(result)
 result=git('ls-tree',p['viewer']['sha'],'packages/engine/runtime/runtime-src'); assert p['runtime']['observedHead'] in result['stdout']; checks.append(result)
-result=git('cat-file','-t',p['runtime']['observedHead'],cwd=root/'.git/catchup-runtime.git'); assert result['stdout']=='commit'; checks.append(result)
+result=git('cat-file','-t',p['runtime']['observedHead'],cwd=Path(git('rev-parse','--path-format=absolute','--git-common-dir')['stdout'])/'catchup-runtime.git'); assert result['stdout']=='commit'; checks.append(result)
 for file in out.glob('*.json'): json.loads(file.read_text())
 for file in out.glob('*.py'): ast.parse(file.read_text())
 historical=json.loads((out/'historical-hashes.json').read_text())
@@ -56,6 +56,6 @@ manifest=''.join(hashlib.sha256(x.read_bytes()).hexdigest()+'  '+str(x.relative_
 result=run('sha256sum','--check','SHA256SUMS',cwd=out); assert result['exit']==0,result
 result['stdout']=str(len(all_files))+' files verified'
 checks.append(result)
-receipt={'verifiedUTC':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Planning documents and infrastructure state only; no product tests/builds','canonicalViewerTarget':p['viewer']['sha'],'viewerSelectedRuntime':p['runtime']['observedHead'],'publicBranchTips':{k:v['sha'] for k,v in p['branches'].items()},'currentMarkdownLinksChecked':links,'historicalFilesByteExact':len(historical),'hashedFiles':len(all_files),'secretPatternScan':'No matches for GitHub tokens, AWS access keys, private keys or bearer credentials','checks':checks,'limitations':['C7 historical bare metadata excluded; original host records retained','Project dependencies and runtime artifacts not provisioned','No dotnet installed in current ARM64 image; Android NDK and Apple hosts unavailable here','No product integration/behavior/platform acceptance claimed']}
+receipt={'verifiedUTC':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Document, pin, source-cleanliness and hash checks only; product evidence is in execution-state.json and execution-evidence/','canonicalViewerTarget':p['viewer']['sha'],'viewerSelectedRuntime':p['runtime']['observedHead'],'publicBranchTips':{k:v['sha'] for k,v in p['branches'].items()},'currentMarkdownLinksChecked':links,'historicalFilesByteExact':len(historical),'hashedFiles':len(all_files),'secretPatternScan':'No matches for GitHub tokens, AWS access keys, private keys or bearer credentials','checks':checks,'limitations':['C7 historical bare metadata excluded; original host records retained','Full catch-up and final packaged-consumer acceptance are not established by this document checker','No dotnet installed in current ARM64 image; Android NDK and Apple hosts unavailable here','No product integration/behavior/platform acceptance claimed']}
 (out/'verification.json').write_text(json.dumps(receipt,indent=2)+'\n')
 print(json.dumps({k:v for k,v in receipt.items() if k!='checks'},indent=2))

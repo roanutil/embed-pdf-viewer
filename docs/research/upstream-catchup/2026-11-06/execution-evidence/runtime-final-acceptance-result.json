@@ -1,0 +1,43 @@
+{
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "steps": [
+    {
+      "command": [
+        "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64/pdfium_unittests",
+        "--gtest_filter=CPDFInkCurvesTest.*:*RichText*.*:*ColorSpace*.*",
+        "--gtest_output=xml:/workspaces/catchup-build-logs/runtime-native-final/unit.xml"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-native-final/step-0.log"
+    },
+    {
+      "command": [
+        "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64/pdfium_embeddertests",
+        "--gtest_filter=EPDFAnnotEmbedderTest.*:EPDFFormEmbedderTest.*:EPDFInkAppearanceEmbedderTest.*:EPDFRichTextLayoutEmbedderTest.*:FPDFViewEmbedderTest.*:EPDFLayer*.*:EPDFRender*.*:EPDFViewEmbedderTest.*:EPDFFontEmbedderTest.*:EPDFSaveEmbedderTest.*:EPDFSignatureEmbedderTest.*:epdf.CApiTest:fpdf.CApiTest",
+        "--gtest_output=xml:/workspaces/catchup-build-logs/runtime-native-final/embedder.xml"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-native-final/step-1.log"
+    },
+    {
+      "command": [
+        "/workspaces/catchup-build-tools/save-check/bin/python",
+        "testing/tools/check_saved_pdfs_test.py"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-native-final/step-2.log"
+    },
+    {
+      "command": [
+        "/workspaces/catchup-build-tools/save-check/bin/python",
+        "testing/tools/check_saved_pdfs.py",
+        "/workspaces/catchup-build-logs/runtime-native-final/saved-pdfs"
+      ],
+      "exit": 0,
+      "log": "/workspaces/catchup-build-logs/runtime-native-final/step-3.log"
+    }
+  ],
+  "savedPdfCount": 49,
+  "exit": 0,
+  "finishedUTC": "2026-11-06T20:36:57.289473+00:00"
+}

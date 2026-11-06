@@ -1,0 +1,11 @@
+{
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "remote": "1e214deb2869d9233e573666d239bc32ce73f186\trefs/heads/catchup/2026-11-06-runtime",
+  "worktreeStatus": {
+    "/workspaces/catchup-runtime-2026-11-06": "M BUILD.gn\n?? BUILD.gn.orig",
+    "/workspaces/catchup-wasm-build/runtime": "?? third_party/emsdk"
+  },
+  "nativeTrackedChange": "exact official shared-library.patch; dry-run reverse exit0",
+  "wasmTrackedChanges": [],
+  "hostCheckout": "untouched by runtime agent"
+}

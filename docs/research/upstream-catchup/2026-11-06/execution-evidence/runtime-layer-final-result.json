@@ -1,0 +1,16 @@
+{
+  "source": "1e214deb2869d9233e573666d239bc32ce73f186",
+  "command": [
+    "python3",
+    "testing/tools/run_layer_mode.py",
+    "/workspaces/catchup-runtime-2026-11-06/out/embedpdf-runtime/linux-arm64",
+    "--jobs",
+    "2",
+    "--filter",
+    "EPDFAnnotEmbedderTest.*:EPDFFormEmbedderTest.*:EPDFInkAppearanceEmbedderTest.*:EPDFRichTextLayoutEmbedderTest.*:EPDFFontEmbedderTest.*:EPDFViewEmbedderTest.*:FPDFViewEmbedderTest.*",
+    "--out",
+    "/workspaces/catchup-build-logs/runtime-layer-final"
+  ],
+  "exit": 0,
+  "finishedUTC": "2026-11-06T20:37:02.710498+00:00"
+}
