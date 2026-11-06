@@ -139,3 +139,7 @@ Both public research refs contain exact `8297bad8d388eb9c70324c22cb001c59248f95f
 This document is planning complete only when its pin/path/link/hash checks pass; product completion remains unclaimed. The former independent C7 review of 0/0/0 applies only to historical C7. This refresh has a plugin-scope review and self-review, not a new whole-plan independent 0/0/0 certification.
 
 Next action (under two minutes): review the target and runtime table, then the shared-closure recommendation before authorizing Job 1.
+
+## Execution addendum
+
+Implementation was authorized after the planning checkpoint. [IMPLEMENTATION.md](IMPLEMENTATION.md) is the live versioned ledger. [PARITY-AND-PLATFORMS.md](PARITY-AND-PLATFORMS.md) makes current platform packages and maintained/expanded TS→Rust vectors mandatory acceptance gates across Jobs3–5. Original planning-only status and historical verification describe the earlier planning phase.
