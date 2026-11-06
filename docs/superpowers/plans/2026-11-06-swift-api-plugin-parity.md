@@ -114,12 +114,12 @@ existing defaults/validation. `events` is `AsyncStream<HistoryEvent>` with
 undone, undoFailed, and settingsChanged cases, retaining labels, redo, skipped
 count, refusal reason, and structured error.
 
-- [ ] Add failing Rust handle/host tests for absent plugin (`unsupported`), independent document histories, settings, an annotation edit then undo/redo, skipped/refused outcomes, and completion-event ordering, including empty-history no-ops that emit no
+- [x] Add failing Rust handle/host tests for absent plugin (`unsupported`), independent document histories, settings, an annotation edit then undo/redo, skipped/refused outcomes, and completion-event ordering, including empty-history no-ops that emit no
 completion event. Add Swift tests for accessor, labels, error codes, and event termination.
-- [ ] Export typed boundary records, listener and handle via `KernelBound`. Reuse `ViewerConfig.history`; it already installs the plugin. Delegate synchronous undo/redo submissions without treating their return as engine confirmation. Own subscriptions through the bound instance.
-- [ ] Add the Swift wrapper and relay using `StreamRegistry`. No cancellation token is needed for synchronous submission; pending engine work and completion keep their existing Rust semantics. Test close/destroy and a subscription created after close.
-- [ ] Run `cargo test -p epdf-plugin-history -p epdf-viewer-host`, regenerate Apple bindings, and run `EmbedPDFTests/HistoryTests`. Require both accepted submission and eventual confirmation tests to pass; update coverage entries.
-- [ ] Commit as `feat(apple): expose document history capability`.
+- [x] Export typed boundary records, listener and handle via `KernelBound`. Reuse `ViewerConfig.history`; it already installs the plugin. Delegate synchronous undo/redo submissions without treating their return as engine confirmation. Own subscriptions through the bound instance.
+- [x] Add the Swift wrapper and relay using `StreamRegistry`. No cancellation token is needed for synchronous submission; pending engine work and completion keep their existing Rust semantics. Test close/destroy and a subscription created after close.
+- [x] Run `cargo test -p epdf-plugin-history -p epdf-viewer-host`, regenerate Apple bindings, and run `EmbedPDFTests/HistoryTests`. Require both accepted submission and eventual confirmation tests to pass; update coverage entries.
+- [x] Commit as `feat(apple): expose document history capability`.
 
 ## Task 3: Outline capability
 

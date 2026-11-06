@@ -661,10 +661,13 @@ name = "epdf-plugin-history"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-ffi",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

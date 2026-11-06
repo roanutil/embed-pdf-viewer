@@ -25,7 +25,7 @@ epdf-plugin-actions = { path = "../plugins/actions", default-features = false, f
 epdf-plugin-annotation = { path = "../plugins/annotation", default-features = false, features = ["uniffi"] }
 epdf-plugin-attachment = { path = "../plugins/attachment", default-features = false }
 epdf-plugin-form = { path = "../plugins/form", default-features = false, features = ["uniffi"] }
-epdf-plugin-history = { path = "../plugins/history", default-features = false }
+epdf-plugin-history = { path = "../plugins/history", default-features = false, features = ["uniffi"] }
 epdf-plugin-commands = { path = "../plugins/commands", default-features = false, features = ["uniffi"] }
 epdf-plugin-i18n = { path = "../plugins/i18n", default-features = false, features = ["uniffi"] }
 epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }

@@ -580,6 +580,19 @@ impl ViewerHost {
         .await
     }
 
+    /// Undo and redo for one open document's staged changes.
+    pub async fn history(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<epdf_plugin_history::ffi::HistoryHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = capability(&s.kernel, &epdf_plugin_history::HISTORY, Some(&document_id))?;
+            Ok(epdf_plugin_history::ffi::HistoryHandle::new(cap, post))
+        })
+        .await
+    }
+
     /// The action engine of an open document. Needs `ViewerConfig.actions`.
     pub async fn actions(&self, document_id: String) -> Result<Arc<ActionsHandle>, ViewerError> {
         let post = self.post.clone();

@@ -3131,112 +3131,203 @@
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "get_settings",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "settings_json",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "update_settings",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "update_settings_json",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "reset_settings",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "on_settings_changed",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "on_settings_changed_json",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "undo",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "undo"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "undo"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "redo",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "redo"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "redo"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "can_undo",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "can_undo"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "canUndo"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "can_redo",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "can_redo"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "canRedo"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "get_undo_label",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "undo_label"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "undoLabel"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "get_redo_label",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "redo_label"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "redoLabel"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "clear",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "clear"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "clear"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "on_undone",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "history",
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "on_undo_failed",
-      "pending": "Tasks 2\u20134 add complete typed capability"
+      "export": {
+        "path": "crates/plugins/history/src/ffi.rs",
+        "symbol": "subscribe"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/History.swift",
+        "symbol": "events"
+      }
     },
     {
       "crate": "i18n",
