@@ -1,0 +1,46 @@
+{
+  "updatedUTC": "2026-11-06T20:13:16.096933+00:00",
+  "status": "implementation-in-progress",
+  "integrationBranch": "research/catchup-2026-11-06",
+  "integrationWorktree": "/workspaces/catchup-2026-11-06",
+  "viewerTarget": "8297bad8d388eb9c70324c22cb001c59248f95f4",
+  "runtimeForkSource": "196331edea7566e3a77a8f338822b052d339d345",
+  "runtimeTarget": "4346c5131cd009c4086fdce13bde7fd43fbd4ce0",
+  "inputBranches": {
+    "impl": "5a2f25f063054c344ea514c2f6da788ad45052f3",
+    "impl-plugins": "8fa01cc1ec4d0739af535feec6928e6a81163fd9"
+  },
+  "sourceCommits": {
+    "viewerMerge": "bdebee29c",
+    "cleanText": "8f7054241ed6f22521befe75be989604f9a720c3",
+    "xyz": "cccf2da64be7403d3f7283d0f958ef7561396ce0",
+    "factoryBridge": "dd9fd4a2b",
+    "integerABI": "0e3b1e870"
+  },
+  "checks": {
+    "typescriptEngineCore": "1080 passed,85files",
+    "boundaryAndIntegerABI": "10 passed",
+    "repositoryPluginBoundaries": "passed",
+    "canonicalWasmABI": "1056 bound functions match",
+    "runtimeSuite": "5 passed,1 skipped: high heap fixture/dist prerequisite",
+    "rustCharmap": "30 passed against provisionalcanonical43",
+    "rustActions": "15 passed against provisionalcanonical43",
+    "xyzOracle": "8cases x4reader entrypoints; native and WASM outputs identical",
+    "textCorpus": "4passed1failed before fullpage-text regeneration; see ledger for latest"
+  },
+  "artifactStatus": "Retained-fork release native compiling; canonical43 inputs are provisional only",
+  "logs": {
+    "runtimeRelease": "/workspaces/catchup-build-logs/runtime-release-resume.log",
+    "runtimeReleaseResult": "/workspaces/catchup-build-logs/runtime-release-resume-result.json",
+    "runtimeWasmDeps": "/workspaces/catchup-build-logs/runtime-wasm-deps.log",
+    "viewer": ".superpowers/sdd/upstream-catchup-2026-11-06"
+  },
+  "incomplete": [
+    "Final-fork native/WASM build and native regression acceptance",
+    "Remaining engine/shared DTO and plugin behavior migrations",
+    "Current generated bindings and actual platform package consumers",
+    "All merged conformance vector regeneration/expansion/replays",
+    "Final artifact graph/platform matrix and both research-ref closure"
+  ],
+  "nextAction": "Inspect release result/log; use exact-source artifact for fresh parity reruns; continue Job3 from remaining invariant rows. Do not redo committed XYZ/clean-text ports."
+}

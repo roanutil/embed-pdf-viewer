@@ -1,5 +1,7 @@
 # Catch up both Rust branches to frozen upstream main
 
+**Implementation is in progress.** Read [IMPLEMENTATION.md](IMPLEMENTATION.md), [execution-state.json](execution-state.json) and [RESUME.md](RESUME.md) for the live checkpoint. Platform packages and expanded TS/Rust vectors are mandatory gates in [PARITY-AND-PLATFORMS.md](PARITY-AND-PLATFORMS.md).
+
 Read [scope-and-plan.md](scope-and-plan.md). This replaces C7 as the current plan.
 
 | Identity | Frozen value |

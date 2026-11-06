@@ -1,0 +1,10 @@
+{
+  "source": "196331edea7566e3a77a8f338822b052d339d345",
+  "graph": "out/embedpdf-runtime/linux-arm64",
+  "ruling": "Use matching release graph instead of separate debug rebuild; tests cover actual shipped flags and reuse1353 actions.",
+  "unitFilter": "CPDFInkCurvesTest.*:*RichText*.*:*ColorSpace*.*",
+  "embedderFilter": "EPDFAnnotEmbedderTest.*:EPDFFormEmbedderTest.*:EPDFInkAppearanceEmbedderTest.*:EPDFRichTextLayoutEmbedderTest.*:FPDFViewEmbedderTest.*:EPDFLayer*.*:EPDFRender*.*:EPDFViewEmbedderTest.*:EPDFFontEmbedderTest.*:epdf.CApiTest:fpdf.CApiTest",
+  "saveChecker": "pikepdf10.10.0",
+  "driver": "/workspaces/catchup-build-tools/run-runtime-release-acceptance.py",
+  "status": "prepared; start after release library delivery"
+}
