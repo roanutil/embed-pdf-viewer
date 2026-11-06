@@ -108,6 +108,10 @@ function classifyType(ctype, isReturn = false) {
     return { ts: 'bigint', wasm: abi('i64', 'bigint'), native: abi('i64', 'bigint') };
   }
 
+  if (/\b(size_t|ptrdiff_t)\b/.test(raw) && !/\*/.test(raw)) {
+    return { ts: 'number', wasm: abi('i32', 'number'), native: abi('i64', 'number') };
+  }
+
   const clean = fullyResolveTypedefs(raw);
 
   // Pointers (the canonical form embeds the `*` regardless of whether the
@@ -129,9 +133,6 @@ function classifyType(ctype, isReturn = false) {
   }
   if (/\b(int64_t|uint64_t|long long)\b/.test(clean)) {
     return { ts: 'bigint', wasm: abi('i64', 'bigint'), native: abi('i64', 'bigint') };
-  }
-  if (/\b(size_t|ptrdiff_t)\b/.test(clean)) {
-    return { ts: 'number', wasm: abi('i32', 'number'), native: abi('i64', 'number') };
   }
 
   // Anything else that resolves to an integer/enum (`int`, `unsigned int`,

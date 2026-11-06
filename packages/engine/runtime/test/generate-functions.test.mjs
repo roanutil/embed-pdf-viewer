@@ -16,9 +16,13 @@ test('keeps fixed-width integer ABI when platform typedefs resolve to long', (t)
     `
     typedef unsigned long uint64_t;
     typedef long int64_t;
+    typedef unsigned long size_t;
+    typedef long ptrdiff_t;
     uint64_t EPDFTest_Unsigned(uint64_t value);
     int64_t EPDFTest_Signed(int64_t value);
     unsigned long EPDFTest_Flags(unsigned long value);
+    size_t EPDFTest_Size(size_t value);
+    ptrdiff_t EPDFTest_Difference(ptrdiff_t value);
   `,
   );
   fs.copyFileSync(
@@ -35,6 +39,14 @@ test('keeps fixed-width integer ABI when platform typedefs resolve to long', (t)
       assert.equal(value.ts, 'bigint', name);
       assert.deepEqual(value.wasm, { kind: 'i64', cwrap: 'bigint' }, name);
       assert.deepEqual(value.native, { kind: 'i64', cwrap: 'bigint' }, name);
+    }
+  }
+  for (const name of ['EPDFTest_Size', 'EPDFTest_Difference']) {
+    const fn = functions.find((fn) => fn.name === name);
+    for (const value of [fn.result, fn.params[0]]) {
+      assert.equal(value.ts, 'number', name);
+      assert.deepEqual(value.wasm, { kind: 'i32', cwrap: 'number' }, name);
+      assert.deepEqual(value.native, { kind: 'i64', cwrap: 'number' }, name);
     }
   }
   const flags = functions.find((fn) => fn.name === 'EPDFTest_Flags');

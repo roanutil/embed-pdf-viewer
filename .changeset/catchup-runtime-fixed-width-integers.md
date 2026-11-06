@@ -2,4 +2,4 @@
 '@embedpdf/engine-runtime': patch
 ---
 
-Preserve 64-bit integer arguments and return values when generating runtime bindings on Linux.
+Preserve fixed-width 64-bit integers and native pointer-sized lengths when generating runtime bindings on Linux.
