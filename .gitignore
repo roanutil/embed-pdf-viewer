@@ -43,3 +43,7 @@ tooling/bundler-matrix/apps/*/.angular
 tooling/bundler-matrix/apps/*/.parcel-cache
 tooling/bundler-matrix/apps/*/out-tsc
 tooling/bundler-matrix/results.json
+
+# Local performance comparison workspaces and results.
+/perf-compare/.work/
+/perf-compare/results/

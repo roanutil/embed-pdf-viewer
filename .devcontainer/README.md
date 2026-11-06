@@ -1,19 +1,114 @@
 # EmbedPDF development container
 
-Open this repository with VS Code's **Dev Containers: Reopen in Container** command.
-The container bind-mounts this local repository at `/workspaces/embed-pdf-viewer`;
-it does not clone the repository. Edits are immediately visible on the host.
-Setup also writes dependencies and generated files into this checkout.
-`pnpm-workspace.yaml` retains macOS and Linux optional binaries for the current
-CPU, so tools such as esbuild and Rollup work from either side of the bind mount.
-After pulling this configuration into an existing checkout, run
-`pnpm install --frozen-lockfile` once to install the additional platform packages.
-Native addons compiled in place (such as better-sqlite3) may still require a
-rebuild when switching operating systems; this setting covers optional binaries.
+Use Docker directly with any editor or terminal. The compiler toolchains, coding
+agents, browser authentication, and Git credential forwarding work independently
+of VS Code. An editor integration can automate setup and port forwarding; the
+commands below perform those steps explicitly.
+
+The container clones `https://github.com/roanutil/embed-pdf-viewer.git`, branch
+`research/multi-platform-rust-core-impl`, into `/workspaces/embed-pdf-viewer`
+inside the Docker volume `embedpdf-workspace`. The host repository is not mounted.
+Dependencies, generated files, commits, and edits stay in that volume across
+container rebuilds. Push commits to share them with another checkout. Removing
+the volume deletes the internal checkout, including unpushed work.
+
+The image contains the clone script, so initial creation works before the
+repository exists in the volume. Existing clones are reused without pulling,
+resetting, or switching branches. Pass `-e EMBEDPDF_REPOSITORY=URL` and
+`-e EMBEDPDF_BRANCH=BRANCH` to `docker run` to select a different initial clone; those
+settings do not change an existing clone. Container configuration and toolchain
+pins used to build the image still come from the host checkout. To rebuild with
+configuration changes made inside the container, push and pull them onto the host.
 
 The existing `packages/engine/runtime/Dockerfile` builds PDFium and
 `cloudpdf/server/Dockerfile` packages the server. This container supports development
 of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
+
+## Start with Docker
+
+Run these commands on the host from the repository root. Docker Desktop supplies
+`host.docker.internal` on macOS and Windows. On Linux Docker Engine, add
+`--add-host=host.docker.internal:host-gateway` to `docker run` and ensure the host
+forwarders are reachable through that address; their default loopback listeners
+may need a local relay.
+
+1. Build the image:
+
+   ```sh
+   docker build -f .devcontainer/Dockerfile -t embedpdf-dev .
+   ```
+
+2. Start each host forwarder in its own terminal and leave both running:
+
+   ```sh
+   OAUTH2_FORWARDER_PORT=18080 mise exec -- o2f-server
+   ```
+
+   ```sh
+   GIT_CREDENTIAL_FORWARDER_PORT=18081 mise exec -- gcf-server
+   ```
+
+3. Create a persistent container with the repository volume and local viewer ports:
+
+   ```sh
+   docker run -d --init --name embed-pdf --user node \
+     --mount type=volume,source=embedpdf-workspace,target=/workspaces \
+     --publish 127.0.0.1:3000:3000 \
+     --publish 127.0.0.1:5173:5173 \
+     --workdir /workspaces/embed-pdf-viewer embedpdf-dev
+   ```
+
+4. Clone the repository and install its dependencies:
+
+   ```sh
+   docker exec -it embed-pdf bash -c \
+     'bash /usr/local/share/embedpdf/clone.sh && bash .devcontainer/setup.sh'
+   ```
+
+   First build and setup take approximately **15–30 minutes**, depending on
+   downloads and emulation. The clone script preserves an existing checkout.
+
+5. Open a development shell:
+
+   ```sh
+   docker exec -it embed-pdf bash
+   ```
+
+The Docker build context includes only container definitions and toolchain pins.
+To override pinned image tools, pass build arguments such as
+`--build-arg CODEX_VERSION=VERSION`, `--build-arg CLAUDE_CODE_VERSION=VERSION`,
+`--build-arg OAUTH2_FORWARDER_VERSION=VERSION`, or
+`--build-arg GIT_CREDENTIAL_FORWARDER_VERSION=VERSION` to `docker build`.
+
+## Stop, resume, and rebuild
+
+Stop the container with `docker stop embed-pdf`. Resume it and open a shell with:
+
+```sh
+docker start embed-pdf
+docker exec -it embed-pdf bash
+```
+
+The stopped container retains its home directory, authentication sessions, and
+installed tools; the named volume retains the repository and dependencies.
+After dependency or runtime pin changes, rerun `bash .devcontainer/setup.sh`
+inside the container. Missing published artifacts fail setup; the fetch scripts
+report the expected release and recovery command.
+
+After changing image toolchain pins, rebuild the image, stop and remove the old
+container, then repeat creation and setup. Removing the container discards its
+home directory and authentication sessions; push work and save any files outside
+`/workspaces` that you want to keep before removing it. Keep `embedpdf-workspace`
+to preserve the repository.
+
+## Editor integration
+
+The optional `devcontainer.json` lets a compatible editor run cloning and setup
+as lifecycle hooks and forward ports 3000 and 5173. Its VS Code customization
+installs suggested editor extensions. Plain Docker does not read that file;
+use the commands above for setup, ports, and environment overrides. See the
+[Dev Container specification](https://github.com/devcontainers/spec/blob/main/docs/specs/devcontainerjson-reference.md)
+for these editor and lifecycle settings.
 
 ## Included tools
 
@@ -28,6 +123,7 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 | swiftly / Swift toolchain                                 | 1.1.4 / 6.3.1; `swiftly` manages further toolchains  |
 | Git, Git LFS, GitHub CLI, ripgrep, jq, ShellCheck         | Debian packages                                      |
 | Codex / Claude Code                                       | Latest at image build; overridable build arguments   |
+| OAuth2 / Git credential forwarding clients                | oauth2-forwarder 1.9.4 / git-credential-forwarder 1.8.0 |
 | Chromium, Firefox, WebKit                                 | Workspace Playwright version; installed during setup |
 
 Docker selects the host architecture: **linux/arm64** on Apple Silicon and ARM64
@@ -40,7 +136,7 @@ Binaryen and the native PDFium artifact are selected to match it.
 `swiftly install 6.2.1 --use`, `swiftly list-available`, and `swiftly use` switch
 toolchains without a rebuild, and `swiftly` reads a `.swift-version` file if the
 working directory has one. Toolchains land in `/home/node/.local/share/swiftly`,
-which lives in the image rather than the bind mount, so a container rebuild discards
+which lives in the image rather than the workspace volume, so a container rebuild discards
 anything installed after the build. To change the pin permanently, edit
 `SWIFT_VERSION` in `.devcontainer/Dockerfile`.
 
@@ -59,14 +155,6 @@ engine, WASM toolchain, and both coding CLIs. Android compilation requires an
 amd64 environment; Android Studio, an emulator, and the Android application SDK
 are not included. iOS compilation still requires macOS/Xcode.
 
-First creation downloads the toolchains, installs frozen pnpm dependencies, fetches
-the pinned Linux PDFium and WASM artifacts, builds the four engine packages, and
-installs browsers. Allow approximately **15–30 minutes**, depending on downloads
-and emulation. Later opens reuse the image and installed dependencies. Rebuild the
-container after changing toolchain pins; rerun `bash .devcontainer/setup.sh` after
-changing dependency or runtime pins. Missing published artifacts fail setup and
-the existing fetch scripts report the expected release and recovery command.
-
 ## Use
 
 ```sh
@@ -75,29 +163,28 @@ pnpm --filter @embedpdf/engine test
 pnpm exec tsx --conditions=development tooling/engine-parity/read-geometry.ts packages/engine/main/test/fixtures/rotated_text.pdf 0
 ```
 
-Run `codex` and `claude` in the container terminal to authenticate. Credentials
-are not copied into the image or mounted from the host; authenticate again after
-recreating the container. Both tools run as the unprivileged `node` user with their
-normal approval behavior. The user has sudo for installing development packages.
-Installation follows the official [Codex CLI](https://developers.openai.com/codex/cli/)
-and [Claude Code npm installation](https://code.claude.com/docs/en/setup#install-with-npm)
-instructions. To pin the agents, add `CODEX_VERSION` and `CLAUDE_CODE_VERSION` under
-`build.args` in `devcontainer.json`.
+## Host authentication forwarding
 
-For viewer development, bind the dev server to `0.0.0.0`; ports 3000 and 5173 are
-forwarded. Viewer E2E requires the viewer build described in
+The image includes `o2f-client`, `o2f-browser`, and `gcf-client`, matching the
+versions installed via mise on the host. `BROWSER=o2f-browser` forwards browser
+login requests, and a system Git credential helper forwards HTTPS credentials.
+These follow the [OAuth2 forwarder](https://github.com/sam-mfb/oauth2-forwarder)
+and [Git credential forwarder](https://github.com/sam-mfb/git-credential-forwarder)
+client setup instructions.
+
+The startup commands above run the servers on ports 18080 and 18081. The image
+connects to `host.docker.internal:18080` and `host.docker.internal:18081` by default.
+For custom ports, start the host servers with the desired values and pass
+`-e OAUTH2_FORWARDER_SERVER=host.docker.internal:PORT` and
+`-e GIT_CREDENTIAL_FORWARDER_SERVER=host.docker.internal:PORT` to `docker run`.
+No host socket mounts are required.
+
+Run `codex` and `claude` in the container terminal to authenticate. Their local
+sessions live in the container user's home and must be recreated after a rebuild.
+The forwarders use the host browser and Git credential manager without copying
+host credentials into the image. The `node` user has sudo for development tools.
+Use the build arguments described above to pin the agents or forwarding tools.
+
+For viewer development, bind the dev server to `0.0.0.0`; the Docker command above
+publishes ports 3000 and 5173 on the host loopback interface. Viewer E2E requires the viewer build described in
 [`tooling/viewer-e2e/README.md`](../tooling/viewer-e2e/README.md).
-
-## Build without VS Code
-
-From the repository root:
-
-```sh
-docker build -f .devcontainer/Dockerfile -t embedpdf-dev .
-docker run --rm -it --init --name embed-pdf \
-  --mount "type=bind,source=$(pwd),target=/workspaces/embed-pdf-viewer" \
-  --workdir /workspaces/embed-pdf-viewer embedpdf-dev bash
-```
-
-Run `bash .devcontainer/setup.sh` in that shell to prepare the mounted checkout.
-The Docker build context includes only container definitions and toolchain pins.

@@ -5,7 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # Public dependencies need no publishing token; preserve one if supplied.
 export NPM_TOKEN="${NPM_TOKEN:-}"
 
-# Lifecycle hooks have no interactive terminal; allow pnpm to reconcile host modules.
+# Lifecycle hooks have no interactive terminal; keep dependency installation noninteractive.
 CI=true pnpm install --frozen-lockfile
 
 # Rust links the pinned fork directly; the TS reference uses the finished WASM payload.

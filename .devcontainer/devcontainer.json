@@ -1,6 +1,6 @@
 {
   "name": "EmbedPDF TypeScript + Rust",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/embed-pdf-viewer,type=bind,consistency=cached",
+  "workspaceMount": "source=embedpdf-workspace,target=/workspaces,type=volume",
   "workspaceFolder": "/workspaces/embed-pdf-viewer",
   "build": {
     "dockerfile": "Dockerfile",
@@ -10,8 +10,11 @@
   "runArgs": ["--name", "embed-pdf"],
   "init": true,
   "containerEnv": {
-    "NPM_TOKEN": ""
+    "NPM_TOKEN": "",
+    "OAUTH2_FORWARDER_SERVER": "host.docker.internal:${localEnv:OAUTH2_FORWARDER_PORT:18080}",
+    "GIT_CREDENTIAL_FORWARDER_SERVER": "host.docker.internal:${localEnv:GIT_CREDENTIAL_FORWARDER_PORT:18081}"
   },
+  "onCreateCommand": "bash /usr/local/share/embedpdf/clone.sh",
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "forwardPorts": [3000, 5173],
   "customizations": {

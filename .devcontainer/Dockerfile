@@ -14,6 +14,8 @@ ARG SWIFT_VERSION=6.3.1
 ARG SWIFT_PLATFORM=debian12
 ARG CODEX_VERSION=latest
 ARG CLAUDE_CODE_VERSION=latest
+ARG OAUTH2_FORWARDER_VERSION=1.9.4
+ARG GIT_CREDENTIAL_FORWARDER_VERSION=1.8.0
 
 RUN case "$TARGETARCH" in amd64|arm64) ;; *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
     && apt-get update \
@@ -30,6 +32,18 @@ RUN case "$TARGETARCH" in amd64|arm64) ;; *) echo "Unsupported architecture: $TA
 # Read the package-manager and Rust pins from the checkout at image build time.
 COPY package.json rust-toolchain.toml /opt/embedpdf-pins/
 RUN npm install -g "$(node -p "require('/opt/embedpdf-pins/package.json').packageManager")"
+
+# Seed a Docker-managed volume with writable directories, never a host checkout.
+RUN mkdir -p /workspaces/embed-pdf-viewer \
+    && chown -R node:node /workspaces \
+    && git config --system credential.helper /home/node/.npm-global/bin/git-credential-forwarder-client
+COPY .devcontainer/clone.sh /usr/local/share/embedpdf/clone.sh
+ENV EMBEDPDF_REPOSITORY=https://github.com/roanutil/embed-pdf-viewer.git \
+    EMBEDPDF_BRANCH=research/multi-platform-rust-core-impl \
+    EMBEDPDF_WORKSPACE=/workspaces/embed-pdf-viewer \
+    OAUTH2_FORWARDER_SERVER=host.docker.internal:18080 \
+    GIT_CREDENTIAL_FORWARDER_SERVER=host.docker.internal:18081 \
+    BROWSER=o2f-browser
 
 RUN git clone --depth 1 --branch "$EMSDK_VERSION" https://github.com/emscripten-core/emsdk.git /opt/emsdk \
     && /opt/emsdk/emsdk install "$EMSDK_VERSION" \
@@ -90,8 +104,14 @@ RUN case "$TARGETARCH" in amd64) swiftly_arch=x86_64 ;; arm64) swiftly_arch=aarc
 # Installed as the development user so both CLIs can be upgraded without sudo.
 ENV PATH="/opt/binaryen/bin:${PATH}"
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+       "oauth2-forwarder@${OAUTH2_FORWARDER_VERSION}" "git-credential-forwarder@${GIT_CREDENTIAL_FORWARDER_VERSION}" \
+    && o2f-client --version && gcf-client --version \
     && codex --version && claude --version \
     && rustc --version && swift --version && pnpm --version && emcc --version \
     && wasm-opt --version | grep -F "version ${BINARYEN_VERSION}"
+
+# Login shells reset PATH; retain the npm clients and browser helper there too.
+RUN printf '%s\n' 'export PATH="/home/node/.npm-global/bin:$PATH"' \
+    | sudo tee /etc/profile.d/embedpdf-forwarders.sh >/dev/null
 
 CMD ["sleep", "infinity"]

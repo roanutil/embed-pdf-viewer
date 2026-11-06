@@ -1,6 +1,11 @@
 # Build inputs and outputs, all of them reproducible by build-xcframework.sh.
 .build/
+.swiftpm/
 EmbedPDF/EmbedPDFFFI.xcframework/
+EmbedPDF/EmbedPDFBindings.xcframework/
+EmbedPDF/Sources/EmbedPDFBindings/
+EmbedPDF/Package.resolved
 EmbedPDF/Sources/EmbedPDF/*.swift
 EmbedPDF/Package.swift
 EmbedPDF/Tests/EmbedPDFSmokeTests/Fixtures/
+EmbedPDF/Tests/*/Fixtures/
