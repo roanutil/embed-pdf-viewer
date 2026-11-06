@@ -1,76 +1,99 @@
 # Catch-up guide
 
-This guide tells an agent how to continue the upstream catch-up the way the user wants it run. It records decisions as the user gives them. Update it when feedback changes an approach. Keep the ledger (`IMPLEMENTATION.md`) for progress and evidence; keep this file for method.
+This guide describes how to bring a research branch up to a pinned upstream target. It is a method, not a record. Progress, decisions and evidence for one catch-up belong in that catch-up's ledger.
 
-## Scope and where work happens
+## Before you start
 
-- All work runs in the devcontainer `embed-pdf`, in the checkout `/workspaces/catchup-2026-11-06` on branch `research/catchup-2026-11-06`. Do not edit the host repository for catch-up work.
-- Fixed targets stay fixed: viewer `8297bad8d388eb9c70324c22cb001c59248f95f4`, runtime `4346c5131cd009c4086fdce13bde7fd43fbd4ce0`. Public baselines for final acceptance: impl `5a2f25f063054c344ea514c2f6da788ad45052f3`, plugins `8fa01cc1ec4d0739af535feec6928e6a81163fd9`.
-- Read first: `scope-and-plan.md`, `PARITY-AND-PLATFORMS.md`, `IMPLEMENTATION.md`, `execution-state.json`.
+1. Fix the targets. Record the upstream commits you are catching up to, for the viewer and any runtime it depends on. Do not move them while the catch-up runs. If upstream moves, the targets stay pinned and you plan a separate step.
+2. Record the starting points of every branch the catch-up touches, so you can later prove a result against them.
+3. Read the plan, the parity rules for platform packages, and the ledger. Check `git status` and `git log` before doing anything. Do not repeat a task whose evidence is already committed.
+
+## Where work happens
+
+- Use one checkout that the work owns, and say which one it is in the ledger. Do not edit an unrelated checkout.
+- Keep long builds and test runs in the container or environment the project defines. Pin the runtime library path for tests that load native code, and record that path.
+- Use a separate worktree for the baseline (see below). Link any generated build outputs it needs rather than rebuilding them.
 
 ## Commits and pushes
 
-- Commit bounded work with the evidence in the message or the ledger. Push each commit to the user's fork only (`origin` = `roanutil/embed-pdf-viewer`). Never push to canonical upstream.
-- Pushing needs the git credential forwarder. The user runs it on the host on port 10895. Push with:
-  `GIT_CREDENTIAL_FORWARDER_SERVER=host.docker.internal:10895 git push origin research/catchup-2026-11-06`
-- Do not start the host forwarder yourself. That was denied once.
-- No Claude attribution in commits, PRs or releases in this repository (user rule). Use the existing git identity.
-- Do not stash. Do not reset or clean a worktree that holds work.
+- Commit bounded steps. Each commit states what changed and the evidence for it: test counts, the failing names that remain, and the source the change follows.
+- Push each commit to the fork that the user owns. Never push to the canonical upstream.
+- Credentials for pushing come from the user's host. Do not start, configure or work around the host credential path yourself. If a push fails, report it.
+- Follow the repository's attribution rules for commit messages.
+- Do not stash. Do not reset or clean a worktree that holds uncommitted work.
 
-## Conformance vectors: the rule
+## Baseline first
 
-Vectors are the TypeScript oracle's output. Change a committed vector only when the TypeScript behavior legitimately changed.
+Before you change code, measure the starting point:
 
-1. When a conformance replay fails, investigate it without asking. Work through these in order:
-   - Did the TypeScript source change? Check `git log` and `git diff` for the relevant files between the starting commit `2b86156d3` and `HEAD`, and check the commit that introduced each renamed key or new field. A committed vector written before that commit is stale.
-   - Is it a runtime bug in Rust? Read the Rust path and find the first divergent value.
-   - Is it flakiness? Regenerate the group twice and compare hashes. Run the replay twice.
-2. If the TypeScript changed legitimately, regenerate the group from the oracle (`pnpm run <name>` in `tooling/engine-conformance`, names in its `package.json`) and review the semantic diff, ignoring `covers` text. Fix the Rust side to match.
-3. If it is a runtime bug, fix Rust. If it is flakiness, fix the flaky path.
-4. Do not regenerate a vector only to turn a replay green when the change is not a legitimate TypeScript change. Do not restore a stale key to make Rust pass.
-5. Only bring the user cases you could not place. Label each one: TypeScript bug, runtime bug, flakiness, or something else, and say what you checked. Anything that needs an exception (Rust deviating from TypeScript, or changing TypeScript) needs the user's approval.
-6. When you regenerate a vector, check that the generator input matches the current TypeScript API. A generator that sends a removed key (for example `family` where the draft now takes `kind`) is a stale generator. Fix the generator input, not the oracle.
+1. Create a worktree at the starting commit.
+2. Link the same generated outputs the main checkout uses.
+3. Run the full test suite there and save the list of failing tests by name.
 
-## Known renames and their evidence
+Then run the same suite on the current tree and diff the lists. A failure that is in both lists is old. A failure only in the current tree is new. Do not judge a failure without this comparison.
 
-| Change | Evidence |
-|---|---|
-| Annotation mutation meta `changed` → `changedRefs` | TS `AnnotationListMutationMeta`; Rust `AnnotationMutationMeta.changed_refs` |
-| Permission bits `PdfBits` → `PdfPermissionFlags` (`permissionFlags` on grants, `flags` on state), advisory removed | `a780243ba` |
-| Form `family` → `kind` (fields, drafts, patches) | `c4b286a69`; `FormFieldDraftBase` and `FormFieldPatchSchema` |
-| Widget `fieldFamily` → `fieldKind`, new `hasMark` | `c4b286a69`; `joinWidgetFieldNumbers` |
-| Signature `contentsSize` → `contentsSizeBytes` | TS `worker-protocol.ts` |
-| Attachment `size` → `sizeBytes`, `checksum` → `md5` | `26a686502` |
-| Display hash `displayHash` → `displaySha256` | `26a686502` |
-| Action tree drops `warningFlags` | `ActionModelReader` returns `{ root, incomplete, warnings }` |
-| Markup comment `richText` on every markup kind (`null` without `/RC`) | `markupBaseFields` |
-| Line `captionEnabled` is `false` without `/Cap` | `readLine` |
-| Empty `nm` is not stamped or written | `writeAnnotationBase` truthiness |
-| Page text is LF after cleaning, not CRLF | viewer text cleaning; ledger notes |
+## Conformance vectors
 
-## Debugging patterns that worked
+Vectors record the output of the reference implementation (the TypeScript oracle). A committed vector changes only when that reference behavior legitimately changed.
 
-- Baseline first. Build a worktree at the starting commit, link the runtime build (`packages/engine/runtime/build` → the main checkout's build), and run the full suite with `LD_LIBRARY_PATH=<runtime>/lib`. Diff failing tests by panic location against the current tree. Without this you cannot separate old failures from new ones.
-- Run replays with `cargo test -q --test <name>`. Set `LD_LIBRARY_PATH` to the runtime lib first, or they fail to load `libembedpdf.so`.
-- Compare JSON semantically. Walk both trees, ignore `covers`, and list added, removed and changed paths. Do not diff raw text; key order and line breaks produce noise.
-- Use the generator, not hand edits, to change a vector. Regenerate, then compare with `git show HEAD:<path>`.
-- For shell edits in the container, write a Python script on the host with the Write tool, `docker cp` it in, and run it. Inline quoting through `docker exec bash -lc '...'` breaks on apostrophes and backticks.
-- `cargo fmt -p epdf-engine` after Rust edits.
+When a conformance replay fails, investigate in this order before you ask anyone:
 
-## Things that cost time
+1. Did the reference change? Look at the history of the reference source and of the generator between the starting commit and now. A vector written before a relevant reference change is stale, and regenerating it is correct.
+2. Is it a bug in the port? Read the port's path, find the first value that differs, and compare it against the reference output.
+3. Is it flakiness or environment? Regenerate the group twice and compare hashes. Run the replay twice. A result that depends on the environment is not a reference change.
 
-- A `docker exec` with a heredoc or nested quotes silently splits the command. Use scratch files.
-- Background commands that wait on a file need `run_in_background` with an until-loop; do not sleep in the foreground.
-- Do not treat the Rust test `captionEnabled` or `nm` expectations as vector truth. Check the TypeScript path first.
+If the reference changed, regenerate the group from the oracle, then review the semantic difference. Ignore text that is not behavior (such as descriptions). Fix the port to match.
 
-## Status log
+Do not regenerate a vector to make a replay pass unless the reference changed. Do not restore an old key to make a port pass.
 
-Keep the current status in `IMPLEMENTATION.md`. Add a dated section per checkpoint with: the pass/fail counts from the full suite, the list of failures that remain and their category, and the commits.
+A regenerated answer that contradicts the case's own description is a signal, not a result. Check the description before you accept it.
 
-## Added after the forms and transfer checkpoint
+Generators can be stale too. A generator that sends a removed or renamed input produces a failure that looks like behavior. Check that the generator's inputs match the current reference API, and fix the generator, not the reference.
 
-- Golden hashes in Rust tests can be stale. Check them against the TypeScript test that holds the same digest (`packages/engine/core/src/conformance/runAnnotationExportConformance.ts`). Run that test with `npx vitest run test/annotation-export.test.ts -t "same file"` from `packages/engine/main`. To get the oracle text, add a temporary write to the conformance file, run it, then `git checkout` the file. Verify with `sha256sum` before you change a Rust golden.
-- Key order is part of hashed text. `serde_json::Map::remove` swaps the last entry into the removed slot when `preserve_order` is on. Use `shift_remove`.
-- Compare JSON with order and without it. A byte-level diff of the first mismatch finds ordering bugs quickly.
-- A replay can match a vector that disagrees with its own `covers` text. Check the covers text before you accept a regenerated answer.
-- The approved reason for a vector change has to be a TypeScript source change. Check `git log` on the TypeScript files and the generator. If neither changed, the cause is in the oracle environment, so raise it before you regenerate.
+When you cannot place a failure after these steps, bring it to the user with one of these labels: reference bug, port bug, flakiness, environment, or something else. Say what you checked.
+
+Anything that needs an exception (the port deliberately deviating from the reference, or a change to the reference) needs the user's approval before it lands.
+
+## Renames and new fields
+
+Upstream renames keys and adds fields. For each one:
+
+- Find the upstream commit that introduced it.
+- Check whether that commit is in the starting commit. If it is, any vector written before it is stale.
+- Check the reference source for the new name before you change the port.
+- Expect test fixtures and expected values in the port's own tests to carry the old names. Update them to the reference names.
+
+## Golden values
+
+A golden digest in a port's tests is only as good as its source. Before you trust one:
+
+- Find the reference test that holds the same digest.
+- Run that reference test, and dump the exact text it hashes, using a temporary change that you revert afterwards.
+- Confirm the digest with `sha256sum` over that text before you change the golden.
+
+Hashed text depends on key order, so a port that orders keys differently from the reference fails even when every value matches. Compare orders as well as values.
+
+## Debugging patterns
+
+- Run one replay with `cargo test -q --test <name>`, with the runtime library path set.
+- Compare JSON semantically. Walk both trees, skip description fields, and list added, removed and changed paths. Also compare key order when a hash is involved.
+- Find the first byte that differs in two texts. It usually points straight at the cause.
+- When a removal from an ordered map reorders the rest, use an order-preserving removal.
+- Change vectors through their generator, then compare with the committed version.
+- For multi-line edits in a container, write the script to a file on the host, copy it in, and run it. Inline quoting breaks on apostrophes and backticks.
+- Format the code after each edit set.
+
+## Pitfalls
+
+- A command that waits on a file must not sleep in the foreground. Use a background wait that notifies on completion.
+- Files copied into a container can be owned by root. Fix ownership before appending to them.
+- A test that passed at the starting commit and fails now is a regression until shown otherwise, even if the failure looks like a test expectation.
+
+## Finishing
+
+A catch-up is finished when:
+
+- The full suite passes, or each remaining failure is recorded with its category and the decision made on it.
+- Every changed vector traces to a reference change.
+- Every platform package and consumer the change touches is current, per the parity rules.
+- The fork holds the final commits, and the ledger records the evidence.
