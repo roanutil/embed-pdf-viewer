@@ -250,7 +250,7 @@ test('hover compares stable object and base-index addresses and preserves curren
           tree: {
             root: { type: 'named', subtype: 'Named', name, next: [] },
             incomplete: false,
-            warningFlags: 0,
+           
             warnings: [],
           },
           result: {

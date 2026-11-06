@@ -98,7 +98,7 @@ registerPlugin('signals', {
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 const pr = (pon: number) => ({ kind: 'objectNumber', objectNumber: pon });
-const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+const LOCAL = { kind: 'local', sessionId: 's1', subject: null };
 const widget = (annotObjectNumber: number, pon: number) => ({
   ref: { kind: 'objectNumber', page: pr(pon), annotObjectNumber },
   annotObjectNumber,
@@ -682,7 +682,7 @@ const capabilityCases: ScenarioCase[] = [
       start,
       open(),
       emit({ type: 'annotations.created', page: pr(22), origin: LOCAL }),
-      emit({ type: 'annotations.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotations.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', subject: 'alice', at: new Date(1).toISOString(), serverSequence: 7 } }),
       emit({ type: 'annotations.deleted', page: pr(11), origin: LOCAL }),
       emit({ type: 'annotations.reordered', page: pr(33), origin: LOCAL }),
       emit({ type: 'forms.valueSet',
@@ -929,7 +929,7 @@ const capabilityCases: ScenarioCase[] = [
       v3('onRenderFailed', { $fn: 'failed', returns: null }),
       cap('invalidate', { pons: [22], scope: 'annotations' }),
       cap('invalidate'),
-      emit({ type: 'annotations.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotations.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', subject: 'alice', at: new Date(1).toISOString(), serverSequence: 7 } }),
       emit({ type: 'forms.repaired' }),
       // A falsy origin is no origin; any other value goes through originOf. (A non-empty string
       // would too, but originOf reads its `sub`, String.prototype.sub, as the actor.)

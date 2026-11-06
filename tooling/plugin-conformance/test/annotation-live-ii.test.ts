@@ -184,7 +184,7 @@ test('every owned mutation has exact current ops, result kind, refs, schema fiel
         assert.equal(item.type, op.type, `${name}:${index} op kind`);
         assert.ok('origin' in event && 'meta' in event, name);
         assert.deepEqual(
-          event.origin.tx,
+          event.origin.transaction,
           { id: args[1].opId, index: i, count: answer.items.length },
           name,
         );

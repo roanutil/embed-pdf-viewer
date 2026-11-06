@@ -305,9 +305,9 @@ test('layout mapping preserves pre-settlement events, error/abort paths and the 
     origin: {
       kind: 'local' as const,
       sessionId: 'layout-session',
-      sub: null,
-      ts: 0,
-      serverId: null,
+      subject: null,
+      at: '1970-01-01T00:00:00.000Z',
+      serverSequence: null,
     },
     layout: { pageCount: 1, pages: [page], namedPages: [] },
     meta: { affectedPages: [], cacheDelta: null, opId: 'layout-event', undoable: true },

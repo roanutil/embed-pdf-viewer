@@ -48,7 +48,7 @@ const UNSNAPSHOTTED = {
 
 // ── the v3 surface ────────────────────────────────────────────────────────────
 
-const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
+const LOCAL = { kind: 'local' as const, sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null };
 
 /** v2 stage method → v3 name. */
 const RENAMED: Readonly<Record<string, string>> = {
@@ -1962,7 +1962,7 @@ const act = (method: string, ...args: unknown[]): Step => ({
   method,
   args,
 });
-const tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
+const tree = (root: unknown) => ({ root, incomplete: false, warnings: [] });
 const goto = (destination: PageDestination) => ({
   type: 'goto',
   subtype: 'GoTo',

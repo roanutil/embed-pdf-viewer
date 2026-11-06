@@ -133,7 +133,7 @@ export const engineWith = (over: Partial<FakeDocumentSpec> = {}) => ({
 export const tree = (root: PdfActionNode | null, incomplete = false): PdfActionTree => ({
   root,
   incomplete,
-  warningFlags: 0,
+ 
   warnings: incomplete ? ['incomplete'] : [],
 });
 export const js = (script: string, next: PdfActionNode[] = []): PdfActionNode => ({
@@ -198,7 +198,7 @@ export const bare = (type: BareType, filePath = '', next: PdfActionNode[] = []):
 export const malformedTree = (type: 'print' | 'bogus') => ({
   root: { type, subtype: type, next: [] },
   incomplete: false,
-  warningFlags: 0,
+ 
   warnings: [],
 });
 export const byName = (name: string): PdfActionTargetRef => ({ kind: 'name', name });

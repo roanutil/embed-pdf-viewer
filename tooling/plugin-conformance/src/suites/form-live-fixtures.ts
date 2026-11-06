@@ -141,7 +141,7 @@ export const fieldAnswer = (
 ): Answer => {
   const meta = mutationMeta(n, [field], widgets);
   const item = { field, widgets, meta };
-  const origin = { ...LOCAL, tx: { id: meta.opId, index: 0, count: 1 } };
+  const origin = { ...LOCAL, transaction: { id: meta.opId, index: 0, count: 1 } };
   const events: DocumentEvent[] = [];
   if (type === 'forms.create') events.push({ type: 'forms.created', ...item, origin });
   if (type === 'forms.update') events.push({ type: 'forms.updated', ...item, origin });
@@ -162,7 +162,7 @@ export const deleteAnswer = (
         type: 'forms.deleted',
         deleted: field.ref,
         meta,
-        origin: { ...LOCAL, tx: { id: meta.opId, index: 0, count: 1 } },
+        origin: { ...LOCAL, transaction: { id: meta.opId, index: 0, count: 1 } },
       },
     ],
   };
@@ -179,7 +179,7 @@ export const resetAnswer = (
     events: formResetFacts({ fields, widgets, meta }).map((fact, index) => ({
       type: 'forms.valueSet',
       ...fact,
-      origin: { ...LOCAL, tx: { id: meta.opId, index, count: fields.length } },
+      origin: { ...LOCAL, transaction: { id: meta.opId, index, count: fields.length } },
     })),
   };
 };
@@ -207,7 +207,7 @@ export const valuesAnswer = (
     events: fields.map((field, index) => ({
       type: 'forms.valueSet',
       ...own(field),
-      origin: { ...LOCAL, tx: { id: meta.opId, index, count: fields.length } },
+      origin: { ...LOCAL, transaction: { id: meta.opId, index, count: fields.length } },
     })),
   };
 };

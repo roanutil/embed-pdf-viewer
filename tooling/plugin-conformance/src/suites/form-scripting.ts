@@ -439,7 +439,7 @@ const activationCases: ScenarioCase[] = [
             run: [
               out({
                 formEffects: [setValue(1, textValue('Mouse Up:Field'))],
-                uiEffects: [alert('Summary ready'), { kind: 'gotoPage', page: 1 }],
+                uiEffects: [alert('Summary ready'), { type: 'gotoPage', page: 1 }],
               }),
             ],
           },
@@ -1103,7 +1103,7 @@ const sharedAnswer = {
   events: sharedValues.events
     .map((event, index) => ({
       ...event,
-      origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 3 } },
+      origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 3 } },
     }))
     .concat([
       {
@@ -1111,7 +1111,7 @@ const sharedAnswer = {
         field: sharedFields[1]!,
         widgets: [row(103, ref(3))],
         meta: appearanceMeta,
-        origin: { ...LOCAL, tx: { id: operationAt(1), index: 2, count: 3 } },
+        origin: { ...LOCAL, transaction: { id: operationAt(1), index: 2, count: 3 } },
       },
     ] satisfies DocumentEvent[]),
 };
@@ -1128,7 +1128,7 @@ const resetCalculationAnswer = {
   },
   events: [...resetBase.events, ...resetCalculated.events].map((event, index) => ({
     ...event,
-    origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 2 } },
+    origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 2 } },
   })),
 };
 const observe: Step[] = [
@@ -1261,10 +1261,10 @@ const capabilityCases: ScenarioCase[] = [
           run: [
             out({
               formEffects: [setValue(4, textValue('0'))],
-              uiEffects: [alert('recalculated'), { kind: 'print' }],
+              uiEffects: [alert('recalculated'), { type: 'print' }],
             }),
             budgetFault('recalc budget'),
-            out({ uiEffects: [{ kind: 'print' }] }),
+            out({ uiEffects: [{ type: 'print' }] }),
           ],
         },
       ],

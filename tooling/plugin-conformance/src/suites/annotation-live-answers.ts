@@ -300,7 +300,7 @@ export const LIVE_ANSWERS: Readonly<Record<string, ResponseSpec[]>> = {
                 activate: {
                   root: { type: 'uri', subtype: 'URI', uri: 'https://a', isMap: false, next: [] },
                   incomplete: false,
-                  warningFlags: 0,
+                 
                   warnings: [],
                 },
               },

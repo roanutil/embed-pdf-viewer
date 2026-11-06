@@ -382,7 +382,7 @@ const fail = (label: string): Step => ({
   error: { name: 'EngineError', message: 'aborted read', code: 'Aborted' },
 });
 
-const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
+const LOCAL = { kind: 'local' as const, sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null };
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 /** A pointer sample over page `pon` at content point (x, y); viewport = the
  *  point, so the drag threshold reads in the same units. */

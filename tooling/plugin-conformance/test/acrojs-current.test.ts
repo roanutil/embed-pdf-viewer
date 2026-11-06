@@ -538,7 +538,7 @@ test('host transactions are plain promises; disposal refuses new admissions with
   });
   const promise = host.transaction(async () => 42);
   assert.equal('abort' in promise, false);
-  host.dispose();
+  host.destroy();
   assert.equal(await promise, 42);
   await assert.rejects(
     host.transaction(async () => 0),

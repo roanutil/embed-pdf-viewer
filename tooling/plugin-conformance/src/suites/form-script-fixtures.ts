@@ -203,8 +203,8 @@ registerPlugin('form-scripts-current', {
           return controller;
         };
         ctx.cleanup(() => {
-          controller?.dispose();
-          realm?.dispose();
+          controller?.destroy();
+          realm?.destroy();
         });
         return {
           api: {
@@ -214,8 +214,8 @@ registerPlugin('form-scripts-current', {
               ready().activate(form, ref, action),
             recalculate: (form: FormSnapshot) => ready().recalculate(form),
             dispose: () => {
-              ready().dispose();
-              realm?.dispose();
+              ready().destroy();
+              realm?.destroy();
             },
           },
         };
@@ -295,7 +295,7 @@ export const list = (
 export const tree = (root: PdfActionNode | null, incomplete = false): PdfActionTree => ({
   root,
   incomplete,
-  warningFlags: 0,
+ 
   warnings: incomplete ? ['incomplete'] : [],
 });
 export const js = (script: string, next: PdfActionNode[] = []): PdfActionNode => ({

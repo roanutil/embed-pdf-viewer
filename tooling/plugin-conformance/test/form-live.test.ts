@@ -449,16 +449,16 @@ test('confirmed facts retain exact origins, continue after listener failures, an
   assert.deepEqual(object(callbacks[1]!.args[0]).origin, {
     kind: 'remote',
     sessionId: 's2',
-    sub: 'u-9',
-    ts: 0,
-    serverId: null,
+    subject: 'u-9',
+    at: '1970-01-01T00:00:00.000Z',
+    serverSequence: null,
   });
   assert.deepEqual(object(callbacks[3]!.args[0]).origin, {
     kind: 'local',
     sessionId: 's1',
-    sub: null,
-    ts: 0,
-    serverId: null,
+    subject: null,
+    at: '1970-01-01T00:00:00.000Z',
+    serverSequence: null,
   });
   assert.deepEqual(callbacks[8]!.args, [
     {
@@ -466,10 +466,10 @@ test('confirmed facts retain exact origins, continue after listener failures, an
       origin: {
         kind: 'local',
         sessionId: 's1',
-        sub: null,
-        ts: 0,
-        serverId: null,
-        tx: { id: operationAt(1), index: 0, count: 1 },
+        subject: null,
+        at: '1970-01-01T00:00:00.000Z',
+        serverSequence: null,
+        transaction: { id: operationAt(1), index: 0, count: 1 },
       },
     },
   ]);

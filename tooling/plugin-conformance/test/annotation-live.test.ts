@@ -367,7 +367,7 @@ test('every successful apply has matching current ops/items/events/opId/birth re
         const event = response.events![j]!;
         assert.ok('origin' in event);
         assert.deepEqual(
-          event.origin.tx,
+          event.origin.transaction,
           { id: result.meta.opId, index: j, count: result.items.length },
           name,
         );
@@ -906,7 +906,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
           page: pr(1),
           annotation: born,
           meta,
-          origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+          origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
         });
         assert.equal(
           state().draft?.kind,
@@ -966,7 +966,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
           annotation,
           appearance,
           meta,
-          origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+          origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
         });
         fake.settle('moved', {
           value: {

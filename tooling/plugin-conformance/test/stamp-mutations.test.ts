@@ -1004,10 +1004,10 @@ test('programmatic placement carries exact ops/resources/opIds, confirmed facts 
     [1, 2, 4].map((i) => ({
       kind: 'local',
       sessionId: 's1',
-      sub: null,
-      ts: 0,
-      serverId: null,
-      tx: { id: operationAt(i), index: 0, count: 1 },
+      subject: null,
+      at: '1970-01-01T00:00:00.000Z',
+      serverSequence: null,
+      transaction: { id: operationAt(i), index: 0, count: 1 },
     })),
   );
   assert.equal(

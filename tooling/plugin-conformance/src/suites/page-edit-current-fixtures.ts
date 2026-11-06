@@ -50,16 +50,16 @@ export const labelled = (
 export const local: EventOrigin = {
   kind: 'local',
   sessionId: 's1',
-  sub: null,
-  ts: 0,
-  serverId: null,
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 export const remote: EventOrigin = {
   kind: 'remote',
   sessionId: 's2',
-  sub: 'other',
-  ts: 0,
-  serverId: null,
+  subject: 'other',
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 export const meta = {
   affectedPages: [],

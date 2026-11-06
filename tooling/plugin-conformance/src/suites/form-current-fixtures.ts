@@ -239,7 +239,7 @@ export function valueSet(
       field,
       widgets,
       meta,
-      origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+      origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
     },
   ];
   return { value, events };

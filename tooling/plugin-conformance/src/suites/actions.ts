@@ -207,7 +207,7 @@ registerPlugin('detached-realm', {
       create: (ctx) => {
         let realm: DetachedScriptRealm | null = null;
         const documentRealm = ctx.tryGet(ActionsToken)?.scriptRealm;
-        ctx.cleanup(() => realm?.dispose());
+        ctx.cleanup(() => realm?.destroy());
         return {
           api: {
             transaction: () => documentRealm?.transaction(async () => 'body-result'),
@@ -216,11 +216,11 @@ registerPlugin('detached-realm', {
                 throw new Error('body threw');
               }),
             detachedTransaction: () => realm?.transaction(async () => 'body-result'),
-            dispose: () => realm?.dispose(),
+            dispose: () => realm?.destroy(),
             mint: () => {
               const mintRealm = ctx.tryForDocument(ActionsToken, owner)?.createDetachedScriptRealm;
               if (!mintRealm) return null;
-              realm?.dispose();
+              realm?.destroy();
               realm = mintRealm({
                 doc: ctx.doc!,
                 document: () => (meta === undefined ? ctx.document() : meta),
@@ -267,7 +267,7 @@ const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
 const engineWith = (over: Partial<FakeDocumentSpec> = {}) => ({ documents: { a: doc(over) } });
 
 type Node = Record<string, unknown>;
-const tree = (root: Node | null, incomplete = false) => ({ root, incomplete, warningFlags: 0, warnings: incomplete ? ['incomplete'] : [] });
+const tree = (root: Node | null, incomplete = false) => ({ root, incomplete, warnings: incomplete ? ['incomplete'] : [] });
 const js = (script: string, next: Node[] = []): Node => ({ type: 'javascript', subtype: 'JavaScript', script, next });
 const goto = (pon: number, next: Node[] = []): Node => ({ type: 'goto', subtype: 'GoTo', destination: { kind: 'fit', page: pr(pon) }, next });
 const uri = (value: string, next: Node[] = [], isMap = false): Node => ({ type: 'uri', subtype: 'URI', uri: value, isMap, next });
@@ -1051,7 +1051,7 @@ const activateCurrent = (
 ): ActionTrigger => ({
   type: 'activate',
   page: current.pr(page),
-  ref,
+  annotation: ref,
   ...(source ? { source } : {}),
 });
 const annotationCurrent = (
@@ -1063,7 +1063,7 @@ const annotationCurrent = (
   type: 'annotation',
   event,
   page: current.pr(page),
-  ref,
+  annotation: ref,
   ...(source ? { source } : {}),
 });
 const fanPage5 = [
@@ -1395,7 +1395,7 @@ const triggerCases: ScenarioCase[] = [
         doc: 'a',
         event: {
           type: 'metadata.updated',
-          origin: { kind: 'remote', sessionId: 'peer', sub: null, ts: 0, serverId: null },
+          origin: { kind: 'remote', sessionId: 'peer', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
           metadata: {
             title: 'Changed',
             author: null,
@@ -1419,7 +1419,7 @@ const triggerCases: ScenarioCase[] = [
         event: {
           type: 'stream.desynced',
           reason: 'backlog-overflow',
-          ts: 0,
+          at: '1970-01-01T00:00:00.000Z',
         } satisfies DocumentEvent,
       },
       dispatch(current.pageEvent('visible', 5)),
@@ -2246,7 +2246,7 @@ const scriptCases: ScenarioCase[] = [
               boot: [
                 out({
                   formEffects: [formEffect],
-                  uiEffects: [{ kind: 'alert', message: 'booted', icon: 3 }],
+                  uiEffects: [{ type: 'alert', message: 'booted', icon: 3 }],
                   diagnostics: [{ code: 'unsupported-api', message: 'app.beep' }],
                   error: { kind: 'exception', message: 'boot threw', stack: 'at boot' },
                 }),
@@ -2330,21 +2330,21 @@ const scriptCases: ScenarioCase[] = [
         sandbox: {
           builds: [
             {
-              boot: [out({ uiEffects: [{ kind: 'print' }] })],
+              boot: [out({ uiEffects: [{ type: 'print' }] })],
               run: [
                 out({
                   uiEffects: [
-                    { kind: 'gotoPage', page: 2 },
+                    { type: 'goToPage', page: 2 },
                     {
-                      kind: 'submitForm',
+                      type: 'submitForm',
                       url: 'https://s.test/',
                       fieldNames: ['name', 'choice'],
                       includeEmpty: true,
                       format: 'xfdf',
                       method: 'get',
                     },
-                    { kind: 'alert', message: 'hi', icon: 1, title: 'T' },
-                    { kind: 'print' },
+                    { type: 'alert', message: 'hi', icon: 1, title: 'T' },
+                    { type: 'print' },
                   ],
                 }),
               ],
@@ -2368,7 +2368,7 @@ const scriptCases: ScenarioCase[] = [
     covers:
       "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
     plugins: current.plugins(
-      JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ kind: 'print' }] })] }] } }),
+      JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ type: 'print' }] })] }] } }),
     ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
     steps: [
@@ -2705,7 +2705,7 @@ const scriptCases: ScenarioCase[] = [
           sandbox: {
             builds: [
               {},
-              { run: [{ output: { uiEffects: [{ kind: 'alert', message: 'hi', icon: 0 }] } }] },
+              { run: [{ output: { uiEffects: [{ type: 'alert', message: 'hi', icon: 0 }] } }] },
             ],
           },
           budget: {
@@ -2836,10 +2836,10 @@ const surfaceCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
       surface({
         uiEffects: [
-          { kind: 'alert', message: 'm1', icon: 0 },
-          { kind: 'alert', message: 'm2', icon: 2, title: 'T' },
-          { kind: 'gotoPage', page: 3 },
-          { kind: 'print' },
+          { type: 'alert', message: 'm1', icon: 0 },
+          { type: 'alert', message: 'm2', icon: 2, title: 'T' },
+          { type: 'goToPage', page: 3 },
+          { type: 'print' },
         ],
         diagnostics: [{ code: 'unsupported-api', message: 'x' }],
         error: { kind: 'exception', message: 'boom' },
@@ -2849,8 +2849,8 @@ const surfaceCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter()),
       surface({
         uiEffects: [
-          { kind: 'alert', message: 'm3', icon: 1 },
-          { kind: 'gotoPage', page: 1 },
+          { type: 'alert', message: 'm3', icon: 1 },
+          { type: 'goToPage', page: 1 },
         ],
       }),
     ],
@@ -2877,7 +2877,7 @@ const surfaceCases: ScenarioCase[] = [
       open('b'),
       listen('onDiagnosticReported'),
       listen('onScriptDiagnosticReported'),
-      surface({ uiEffects: [{ kind: 'alert', message: 'm', icon: 0 }, { kind: 'print' }] }),
+      surface({ uiEffects: [{ type: 'alert', message: 'm', icon: 0 }, { type: 'print' }] }),
       {
         op: 'call',
         target: { token: 'actions', doc: 'b' },
@@ -2900,14 +2900,14 @@ const surfaceCases: ScenarioCase[] = [
         op: 'call',
         target: { token: 'actions', doc: 'b' },
         method: 'surfaceScriptResult',
-        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+        args: [surfaceResult({ uiEffects: [{ type: 'print' }] })],
       },
       settle('printing', 'done'),
       {
         op: 'call',
         target: { token: 'actions', doc: 'b' },
         method: 'surfaceScriptResult',
-        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+        args: [surfaceResult({ uiEffects: [{ type: 'print' }] })],
       },
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
@@ -2925,9 +2925,9 @@ const surfaceCases: ScenarioCase[] = [
       cap('setSubmitHandler', fnSpec('handler')),
       surface({
         uiEffects: [
-          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          { type: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
           {
-            kind: 'submitForm',
+            type: 'submitForm',
             url: 'https://x.test',
             fieldNames: ['a'],
             includeEmpty: true,
@@ -2938,7 +2938,7 @@ const surfaceCases: ScenarioCase[] = [
         origin: 'lifecycle',
       }),
       surface({
-        uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }],
+        uiEffects: [{ type: 'submitForm', url: null, fieldNames: null, includeEmpty: false }],
         origin: 'user',
       }),
     ],
@@ -2959,14 +2959,14 @@ const surfaceCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
       surface({
         uiEffects: [
-          { kind: 'print' },
-          { kind: 'gotoPage', page: 2 },
-          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
-          { kind: 'alert', message: 'from the asset', icon: 3 },
+          { type: 'print' },
+          { type: 'goToPage', page: 2 },
+          { type: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          { type: 'alert', message: 'from the asset', icon: 3 },
         ],
         realm: 'detached',
       }),
-      surface({ uiEffects: [{ kind: 'gotoPage', page: 2 }], realm: 'document' }),
+      surface({ uiEffects: [{ type: 'gotoPage', page: 2 }], realm: 'document' }),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
@@ -2984,9 +2984,9 @@ const surfaceCases: ScenarioCase[] = [
       surfaceCommit(
         {
           uiEffects: [
-            { kind: 'alert', message: 'boot', icon: 0, phase: 'boot' },
-            { kind: 'gotoPage', page: 1, phase: 'user' },
-            { kind: 'alert', message: 'user', icon: 1, phase: 'user' },
+            { type: 'alert', message: 'boot', icon: 0, phase: 'boot' },
+            { type: 'gotoPage', page: 1, phase: 'user' },
+            { type: 'alert', message: 'user', icon: 1, phase: 'user' },
           ],
           diagnostics: [{ code: 'unsupported-api', message: 'd' }],
           error: { kind: 'exception', message: 'e' },
@@ -3005,8 +3005,8 @@ const surfaceCases: ScenarioCase[] = [
       surfaceCommit(
         {
           uiEffects: [
-            { kind: 'print', phase: 'boot' },
-            { kind: 'alert', message: 'asset', icon: 0, phase: 'user' },
+            { type: 'print', phase: 'boot' },
+            { type: 'alert', message: 'asset', icon: 0, phase: 'user' },
           ],
           diagnostics: [],
         },

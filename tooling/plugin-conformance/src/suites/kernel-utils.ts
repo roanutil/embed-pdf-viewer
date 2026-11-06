@@ -98,7 +98,7 @@ function eventHookScript(ops: HookOp[], withErrorSink: boolean): unknown[] {
         hook.emit(step.event);
         break;
       case 'dispose':
-        hook.dispose();
+        hook.destroy();
         log.push('disposed');
         break;
       case 'onSignal':

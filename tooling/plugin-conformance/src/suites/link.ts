@@ -736,10 +736,10 @@ const cases: ScenarioCase[] = [
       ...boot,
       lk('onLoaded', [{ $fn: 'loaded' }]),
       lk('isLoaded', [pr(1)]),
-      lk('listAllLinks'),
+      lk('readAllLinks'),
       lk('isLoaded', [pr(1)]),
       lk('isLoaded', [pr(2)]),
-      lk('listAllLinks'),
+      lk('readAllLinks'),
       emit(createdFact(link(2))),
       lk('listLinks', [pr(1)]),
     ],
@@ -751,7 +751,7 @@ const cases: ScenarioCase[] = [
     plugins: WITH_ANNOTATION,
     engine: { documents: { a: annotationDoc({ 1: [link(1)], 2: PAGE2 }) } },
     ...UNSNAPSHOTTED,
-    steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('listAllLinks')],
+    steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('readAllLinks')],
   },
 ];
 

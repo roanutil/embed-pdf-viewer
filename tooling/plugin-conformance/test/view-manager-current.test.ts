@@ -399,7 +399,7 @@ test('controller memoization, rename, reconciliation and disposal preserve publi
   ctx.notify();
   assert.deepEqual(api.getPane('pane-1'), p('pane-1', []));
   const atDispose = ctx.state.get();
-  await ctx.dispose();
+  await ctx.destroy();
   order = ['after'];
   ctx.notify();
   assert.equal(ctx.state.get(), atDispose);

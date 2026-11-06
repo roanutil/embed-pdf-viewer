@@ -191,8 +191,8 @@ const doc = (responses: ResponseSpec[] = [read()], over: Partial<FakeDocumentSpe
   },
 });
 
-const LOCAL: EventOrigin = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null };
-const REMOTE: EventOrigin = { kind: 'remote', sessionId: 's2', sub: 'u-9', ts: 0, serverId: null };
+const LOCAL: EventOrigin = { kind: 'local', sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null };
+const REMOTE: EventOrigin = { kind: 'remote', sessionId: 's2', subject: 'u-9', at: '1970-01-01T00:00:00.000Z', serverSequence: null };
 
 const meta = (opId: string, changed: number[]) => ({
   affectedPages: [],
@@ -243,7 +243,7 @@ const factsOf = (opId: string, answers: Answer[], origin: EventOrigin = LOCAL): 
   const events = changeEvents(resultOf(opId, answers) as Parameters<typeof changeEvents>[0]);
   return events.map(
     (event, index) =>
-      ({ ...event, origin: { ...origin, tx: { id: opId, index, count: events.length } } }) as DocumentEvent,
+      ({ ...event, origin: { ...origin, transaction: { id: opId, index, count: events.length } } }) as DocumentEvent,
   );
 };
 

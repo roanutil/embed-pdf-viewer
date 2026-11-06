@@ -264,7 +264,7 @@ const cases: ScenarioCase[] = [
       emit({
         type: 'pages.deleted',
         pages: [pr(2)],
-        layout: { pageCount: 1, pages: [PAGES[0]!], namedPages: [] },
+        layout: { labels: [], pageCount: 1, pages: [PAGES[0]!], namedPages: [] },
         meta,
         origin: LOCAL,
       }),
@@ -272,7 +272,7 @@ const cases: ScenarioCase[] = [
       emit({
         type: 'pages.inserted',
         insertedPages: [pr(2)],
-        layout: { pageCount: 2, pages: PAGES, namedPages: [] },
+        layout: { labels: [], pageCount: 2, pages: PAGES, namedPages: [] },
         meta,
         origin: REMOTE,
       }),

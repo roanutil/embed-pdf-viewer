@@ -95,8 +95,8 @@ registerPlugin('attachment', {
           ...cap,
           ensureLoaded: (options) => cap.ensureLoaded(withSignal(options)),
           refresh: (options) => cap.refresh(withSignal(options)),
-          add: (files, options) => cap.add(files, withSignal(options)),
-          remove: (file, options) => cap.remove(file, withSignal(options)),
+          create: (files, options) => cap.create(files, withSignal(options)),
+          delete: (file, options) => cap.delete(file, withSignal(options)),
           download: (file, options) => cap.download(file, withSignal(options)),
         };
         return { api: wrapped, connect };
@@ -133,7 +133,7 @@ const att = (name: string, index: number, over: Partial<Attachment> = {}): Attac
   mimeType: null,
   description: null,
   sizeBytes: null,
-  checksum: null,
+  md5: null,
   createdAt: null,
   modifiedAt: null,
   ...over,
@@ -151,7 +151,7 @@ const NOTES = att('notes.txt', 3, {
   mimeType: 'text/plain',
   description: 'The notes',
   sizeBytes: 5,
-  checksum: '5d41402abc4b2a76b9719d911017c592',
+  md5: '5d41402abc4b2a76b9719d911017c592',
   createdAt: '2024-01-02T03:04:05Z',
   modifiedAt: '2024-01-02T03:04:06Z',
 });
@@ -179,7 +179,7 @@ const SCAN = fileAttachment(20, {
     mimeType: 'image/png',
     description: null,
     sizeBytes: 8,
-    checksum: null,
+    md5: null,
     createdAt: null,
     modifiedAt: null,
   },
@@ -193,7 +193,7 @@ const LOCKED = fileAttachment(21, {
     mimeType: null,
     description: 'On page two',
     sizeBytes: null,
-    checksum: null,
+    md5: null,
     createdAt: null,
     modifiedAt: null,
   },
@@ -242,15 +242,15 @@ const doc = (
   },
 });
 
-const LOCAL: EventOrigin = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null };
-const REMOTE: EventOrigin = { kind: 'remote', sessionId: 's2', sub: 'u-9', ts: 0, serverId: null };
+const LOCAL: EventOrigin = { kind: 'local', sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null };
+const REMOTE: EventOrigin = { kind: 'remote', sessionId: 's2', subject: 'u-9', at: '1970-01-01T00:00:00.000Z', serverSequence: null };
 
 const meta = (opId: string, changed: AttachmentRef[]) => ({
   affectedPages: [],
   cacheDelta: null,
   opId,
   undoable: true,
-  changed,
+  changedRefs: changed,
 });
 
 /** The engine's item for one op of a change, built for the change named `opId`. */
@@ -276,7 +276,7 @@ const factsOf = (opId: string, answers: Answer[], origin: EventOrigin = LOCAL): 
     (event, index) =>
       ({
         ...event,
-        origin: { ...origin, tx: { id: opId, index, count: events.length } },
+        origin: { ...origin, transaction: { id: opId, index, count: events.length } },
       }) as DocumentEvent,
   );
 };
@@ -360,7 +360,7 @@ const look: Step[] = [
   at('list'),
   at('getSelected'),
   at('getStatus'),
-  at('canAdd'),
+  at('canCreate'),
   at('canDownload'),
 ];
 const hooks: Step[] = [
@@ -470,9 +470,9 @@ const cases: ScenarioCase[] = [
       at('get', ['page:obj:22']),
       at('get', ['page:obj:23']),
       at('isPending', [pageFile(SCAN)]),
-      at('canRemove', [pageFile(SCAN)]),
-      at('canRemove', [pageFile(LOCKED)]),
-      at('canRemove', [docFile(NOTES)]),
+      at('canDelete', [pageFile(SCAN)]),
+      at('canDelete', [pageFile(LOCKED)]),
+      at('canDelete', [docFile(NOTES)]),
       emit(
         createdFact(
           fileAttachment(24, {
@@ -481,7 +481,7 @@ const cases: ScenarioCase[] = [
               mimeType: 'text/plain',
               description: null,
               sizeBytes: 1,
-              checksum: null,
+              md5: null,
               createdAt: null,
               modifiedAt: null,
             },
@@ -519,7 +519,7 @@ const cases: ScenarioCase[] = [
     doc([read(), deferApply('a1'), deferApply('a2')]),
     [
       at('ensureLoaded'),
-      at('add', [
+      at('create', [
         [
           { data: bytes('hello'), name: 'notes.txt', mimeType: 'text/plain', description: 'Again' },
           { data: bytes('readme'), name: 'README' },
@@ -550,7 +550,7 @@ const cases: ScenarioCase[] = [
         6,
       ),
       at('list'),
-      at('add', [[{ data: bytes('📄'), name: '📄.txt' }]]),
+      at('create', [[{ data: bytes('📄'), name: '📄.txt' }]]),
       at('list'),
       emit(factsOf(operationAt(2), [created(made('📄.txt', 4, { sizeBytes: 4 }))])[0]),
       settle('a2', resultOf(operationAt(2), [created(made('📄.txt', 4, { sizeBytes: 4 }))]), 6),
@@ -563,16 +563,16 @@ const cases: ScenarioCase[] = [
     'controller.ts:204-210: an add with no files resolves [] and reads nothing; an add before the first read reads the attachments first, since the names in the document decide the free ones; a file without a name (absent, null or empty) rejects invalid-input once the read landed and stages nothing',
     doc([deferRead('r'), applied(1, created(made('notes (3).txt', 4, { sizeBytes: 2 })))]),
     [
-      at('add', [[]]),
+      at('create', [[]]),
       at('getStatus'),
-      at('add', [[{ data: bytes('hi'), name: 'notes.txt' }]]),
+      at('create', [[{ data: bytes('hi'), name: 'notes.txt' }]]),
       at('getStatus'),
       at('list'),
       settle('r', LIST, 10),
       at('list'),
-      at('add', [[{ data: bytes('a'), name: 'fine.txt' }, { data: bytes('b') }]]),
-      at('add', [[{ data: bytes('b'), name: null }]]),
-      at('add', [[{ data: bytes('b'), name: '' }]]),
+      at('create', [[{ data: bytes('a'), name: 'fine.txt' }, { data: bytes('b') }]]),
+      at('create', [[{ data: bytes('b'), name: null }]]),
+      at('create', [[{ data: bytes('b'), name: '' }]]),
       at('list'),
     ],
   ),
@@ -582,11 +582,11 @@ const cases: ScenarioCase[] = [
     doc([deferRead('r'), applied(1, removed('README')), deferApply('x')]),
     [
       at('ensureLoaded'),
-      at('remove', [docFile(README)], 4),
+      at('delete', [docFile(README)], 4),
       at('getStatus'),
       settle('r', { attachments: [ENV, NOTES2, NOTES, WIDE] }),
-      at('remove', [fileLike(att('missing.txt', 0))]),
-      at('remove', [docFile(NOTES)]),
+      at('delete', [fileLike(att('missing.txt', 0))]),
+      at('delete', [docFile(NOTES)]),
       ...look,
       at('isPending', [docFile(NOTES)]),
       emit(factsOf(operationAt(2), [removed('notes.txt')])[0], 4),
@@ -626,14 +626,14 @@ const cases: ScenarioCase[] = [
     ]),
     [
       at('ensureLoaded'),
-      at('remove', [docFile(NOTES)]),
+      at('delete', [docFile(NOTES)]),
       at('list'),
       undoLabel,
       undo,
       at('list'),
       refuse('undo1', { name: 'EngineError', message: 'no', code: 'Refused' }),
       at('list'),
-      at('add', [[{ data: bytes('m'), name: 'made.txt' }]]),
+      at('create', [[{ data: bytes('m'), name: 'made.txt' }]]),
       at('list'),
       undoLabel,
       undo,
@@ -664,7 +664,7 @@ const cases: ScenarioCase[] = [
         args: [key('lost.bin')],
         error: { name: 'EngineError', message: 'no such file', code: 'NotFound' },
       },
-      deferApply('add'),
+      deferApply('create'),
     ]),
     [
       at('ensureLoaded'),
@@ -675,9 +675,9 @@ const cases: ScenarioCase[] = [
       at('download', [fileLike(README, { name: ' \u0007‏⁦ ' })]),
       at('download', [fileLike(att('huge.bin', 0))]),
       at('download', [fileLike(att('lost.bin', 0))]),
-      at('add', [[{ data: bytes('late'), name: 'late.txt' }]]),
+      at('create', [[{ data: bytes('late'), name: 'late.txt' }]]),
       at('download', [docFile(att('late.txt', 0))]),
-      settle('add', resultOf(operationAt(1), [created(made('late.txt', 4, { sizeBytes: 4 }))]), 10),
+      settle('create', resultOf(operationAt(1), [created(made('late.txt', 4, { sizeBytes: 4 }))]), 10),
     ],
   ),
   scenario(
@@ -699,7 +699,7 @@ const cases: ScenarioCase[] = [
       at('reveal', [{ ...pageFile(SCAN), home: { kind: 'page', ref: objRef(99) } }]),
       an('selection.list'),
       at('download', [pageFile(LOCKED)], 8),
-      at('remove', [pageFile(SCAN)], 6),
+      at('delete', [pageFile(SCAN)], 6),
       at('list'),
     ],
     [INTERACTION, ANNOTATION, STAGE, ...ALONE],
@@ -712,8 +712,8 @@ const cases: ScenarioCase[] = [
       at('ensureLoaded'),
       at('list'),
       at('isPending', [pageFile(SCAN)]),
-      at('canRemove', [pageFile(SCAN)]),
-      at('remove', [pageFile(SCAN)]),
+      at('canDelete', [pageFile(SCAN)]),
+      at('delete', [pageFile(SCAN)]),
       at('download', [pageFile(SCAN)]),
       at('reveal', [pageFile(SCAN)]),
     ],
@@ -733,13 +733,13 @@ const cases: ScenarioCase[] = [
     }),
     [
       ...look,
-      at('canRemove', [docFile(NOTES)]),
-      at('add', [[{ data: bytes('x'), name: 'x.txt' }]]),
-      at('remove', [docFile(NOTES)]),
+      at('canDelete', [docFile(NOTES)]),
+      at('create', [[{ data: bytes('x'), name: 'x.txt' }]]),
+      at('delete', [docFile(NOTES)]),
       at('getStatus'),
       at('ensureLoaded'),
-      at('add', [[{ data: bytes('x'), name: 'x.txt' }]]),
-      at('remove', [docFile(NOTES)]),
+      at('create', [[{ data: bytes('x'), name: 'x.txt' }]]),
+      at('delete', [docFile(NOTES)]),
       at('list'),
       at('download', [docFile(NOTES)]),
     ],
@@ -767,11 +767,11 @@ const cases: ScenarioCase[] = [
     ),
     [
       at('canDownload'),
-      at('canAdd'),
+      at('canCreate'),
       at('ensureLoaded'),
       at('download', [docFile(NOTES)]),
       at('download', [pageFile(SCAN)]),
-      at('add', [[{ data: bytes('x'), name: 'x.txt' }]]),
+      at('create', [[{ data: bytes('x'), name: 'x.txt' }]]),
     ],
     WITH_ANNOTATIONS,
   ),
@@ -784,9 +784,9 @@ const cases: ScenarioCase[] = [
     [
       at('list'),
       an('canDelete', [SCAN.ref]),
-      at('canRemove', [pageFile(SCAN)]),
-      at('canRemove', [docFile(NOTES)]),
-      at('canAdd'),
+      at('canDelete', [pageFile(SCAN)]),
+      at('canDelete', [docFile(NOTES)]),
+      at('canCreate'),
     ],
     WITH_ANNOTATIONS,
   ),
@@ -796,11 +796,11 @@ const cases: ScenarioCase[] = [
     doc([read(), deferApply('x'), refusedApply]),
     [
       at('ensureLoaded'),
-      at('add', [[{ data: bytes('no'), name: 'no.txt' }]]),
+      at('create', [[{ data: bytes('no'), name: 'no.txt' }]]),
       at('list'),
       refuse('x', { name: 'EngineError', message: 'no', code: 'Refused' }),
       at('list'),
-      at('remove', [docFile(NOTES)], 6),
+      at('delete', [docFile(NOTES)], 6),
       at('list'),
     ],
   ),
@@ -815,18 +815,18 @@ const cases: ScenarioCase[] = [
     [
       at('ensureLoaded', [signal('load')]),
       abort('load'),
-      at('add', [[{ data: bytes('x'), name: 'x.txt' }], signal('read')]),
+      at('create', [[{ data: bytes('x'), name: 'x.txt' }], signal('read')]),
       abort('read'),
       at('getStatus'),
       settle('r', LIST),
       at('getStatus'),
       at('list'),
       abort('gone'),
-      at('add', [[{ data: bytes('x'), name: 'x.txt' }], signal('gone')]),
-      at('remove', [docFile(NOTES), signal('gone')]),
+      at('create', [[{ data: bytes('x'), name: 'x.txt' }], signal('gone')]),
+      at('delete', [docFile(NOTES), signal('gone')]),
       at('download', [docFile(NOTES), signal('gone')]),
       at('ensureLoaded', [signal('gone')]),
-      at('remove', [docFile(NOTES), signal('late')]),
+      at('delete', [docFile(NOTES), signal('late')]),
       abort('late'),
       at('list'),
       emit(factsOf(operationAt(1), [removed('notes.txt')])[0]),
@@ -847,7 +847,7 @@ const cases: ScenarioCase[] = [
       ...hooks,
       ...look,
       at('ensureLoaded'),
-      at('remove', [docFile(NOTES)]),
+      at('delete', [docFile(NOTES)]),
       close,
     ],
   ),

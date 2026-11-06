@@ -80,8 +80,8 @@ test('confirmed engine events reach the kernel before an immediate or deferred m
   for (const deferred of [false, true]) {
     const event: DocumentEvent = {
       type: 'pages.reordered',
-      origin: { kind: 'local', sessionId: 's', sub: null, ts: 0, serverId: null },
-      layout: { pageCount: 0, pages: [], namedPages: [] },
+      origin: { kind: 'local', sessionId: 's', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
+      layout: { labels: [], pageCount: 0, pages: [], namedPages: [] },
       pages: [],
       meta: { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true },
     };
@@ -366,7 +366,7 @@ test('the fake exposes current service methods and isolates listeners while adva
   for (const serverId of [9, 3])
     fake.emit('a', {
       type: 'pages.reordered',
-      origin: { kind: 'remote', sessionId: 's', sub: null, ts: 0, serverId },
+      origin: { kind: 'remote', sessionId: 's', subject: null, at: '1970-01-01T00:00:00.000Z', serverId },
       layout: { pageCount: 0, pages: [], namedPages: [] },
       pages: [],
       meta: { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true },
@@ -382,8 +382,8 @@ test('late responses and retained old handles cannot publish into a reopened doc
     const event: DocumentEvent = {
       type: 'pages.reordered',
       pages: [page.ref],
-      origin: { kind: 'local', sessionId: 'old', sub: null, ts: 0, serverId: null },
-      layout: { pageCount: 1, pages: [page], namedPages: [] },
+      origin: { kind: 'local', sessionId: 'old', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
+      layout: { labels: [], pageCount: 1, pages: [page], namedPages: [] },
       meta: { affectedPages: [], cacheDelta: null, opId: 'old-write', undoable: true },
     };
     const fake = createFakeEngine(

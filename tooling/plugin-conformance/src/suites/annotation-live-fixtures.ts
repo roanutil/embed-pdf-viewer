@@ -74,8 +74,8 @@ export const origin = (
 ): EventOrigin => ({
   kind,
   sessionId: kind === 'local' ? 's1' : 's2',
-  sub: kind === 'local' ? null : 'u-9',
-  ts: 0,
+  subject: kind === 'local' ? null : 'u-9',
+  at: '1970-01-01T00:00:00.000Z',
   serverId,
 });
 export const LOCAL = origin('local');
@@ -174,7 +174,7 @@ export function confirmation(
     };
     // The explicit item discriminant fixes its event/result shape; no compatibility projection.
     items.push({ ...item, meta } as ChangeItem);
-    const from = { ...LOCAL, tx: { id: opId, index, count: entries.length } };
+    const from = { ...LOCAL, transaction: { id: opId, index, count: entries.length } };
     if (item.type === 'annotations.create' || item.type === 'annotations.update')
       events.push({
         ...item,

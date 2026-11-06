@@ -58,7 +58,7 @@ const budget = (maxEffects: number) => ({
   maxOutputBytes: 1048576,
 });
 const alert = (message: string): ScriptOutput['uiEffects'][number] => ({
-  kind: 'alert',
+  type: 'alert',
   message,
   icon: 0,
 });
@@ -242,7 +242,7 @@ const dynamic: ScenarioCase[] = [
       armed,
       annotation('renderArmedStampPreview', [64]),
       stamp('exportLibrary', ['stamp-lib-0-1']),
-      stamp('readAssetBytes', [ID]),
+      stamp('getAssetBytes', [ID]),
     ],
   },
   {
@@ -269,7 +269,7 @@ const dynamic: ScenarioCase[] = [
       stamp('createAsset', [{ name: 'Dynamic', source: PDF, size: { width: 200, height: 80 } }]),
       arm('stamp-lib-0-0:Dynamic'),
       armed,
-      stamp('readAssetBytes', ['stamp-lib-0-0:Dynamic']),
+      stamp('getAssetBytes', ['stamp-lib-0-0:Dynamic']),
     ],
   },
   {
@@ -533,7 +533,7 @@ const added: ScenarioCase[] = [
         { documentId: 'a' },
       ]),
       annotation('list'),
-      stamp('readAssetBytes', [ID]),
+      stamp('getAssetBytes', [ID]),
       stamp('exportLibrary', ['stamp-lib-0-1']),
     ],
   },

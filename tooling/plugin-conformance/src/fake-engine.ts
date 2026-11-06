@@ -465,8 +465,8 @@ export function createFakeEngine(
         labels = event.layout.labels ?? [];
         namedPages = event.layout.namedPages ?? [];
       }
-      if ('origin' in event && event.origin.serverId !== null) {
-        lastServerId = Math.max(lastServerId ?? 0, event.origin.serverId);
+      if ('origin' in event && event.origin.serverSequence !== null) {
+        lastServerId = Math.max(lastServerId ?? 0, event.origin.serverSequence);
       }
       for (const listener of [...listeners]) {
         try {

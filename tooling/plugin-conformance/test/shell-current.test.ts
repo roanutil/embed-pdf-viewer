@@ -168,7 +168,7 @@ test('focus, exclusive closure, replacement props and snapshots have literal sta
     api.closeAll();
     assert.equal(events.length, 12);
   } finally {
-    ctx.dispose();
+    ctx.destroy();
   }
 });
 import { canonical, snapshotHooks } from '../src/canonical';

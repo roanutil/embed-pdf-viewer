@@ -65,7 +65,7 @@ const gotoNode = (pon: number) => ({
 const treeValue = (root: unknown, incomplete = false) => ({
   root,
   incomplete,
-  warningFlags: 0,
+ 
   warnings: incomplete ? ['incomplete'] : [],
 });
 const diagnostic = (code: string, message: string) => ({ code, message });
@@ -503,7 +503,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
         openSequence: 'off',
         javascript: {
           enabled: true,
-          sandbox: { builds: [{ run: [{ output: { uiEffects: [{ kind: 'print' }] } }] }] },
+          sandbox: { builds: [{ run: [{ output: { uiEffects: [{ type: 'print' }] } }] }] },
         },
       },
       {
@@ -606,7 +606,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
       log.length = 0;
       // This is the separate form-pipeline surface carry, not an executor policy exemption.
       actions.surfaceScriptResult({
-        uiEffects: [{ kind: 'print' }],
+        uiEffects: [{ type: 'print' }],
         diagnostics: [],
         origin: 'lifecycle',
         phase: 'user',
@@ -644,7 +644,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
       }
       assert.deepEqual(fake.unmatched, []);
     } finally {
-      ctx.dispose();
+      ctx.destroy();
       await doc.close();
     }
   }

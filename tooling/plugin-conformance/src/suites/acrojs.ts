@@ -263,7 +263,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
         >,
         ...(config.budget ? { budget: config.budget } : {}),
       });
-      ctx.cleanup(() => host.dispose());
+      ctx.cleanup(() => host.destroy());
       const api: ScriptHostDriver = {
         transaction: (ops) =>
           host.transaction(async (txn) => {
@@ -279,7 +279,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
             }
             return out;
           }),
-        dispose: () => host.dispose(),
+        dispose: () => host.destroy(),
       };
       return { api };
     },
@@ -299,7 +299,7 @@ const node = (type: string, extra: Record<string, unknown> = {}, next: unknown[]
   ...extra,
   next,
 });
-const actionTree = (root: unknown, incomplete = false) => ({ root, incomplete, warningFlags: 0, warnings: [] });
+const actionTree = (root: unknown, incomplete = false) => ({ root, incomplete, warnings: [] });
 const claims = (over: Partial<Identity> = {}): Identity => ({
   userId: 'u-1',
   displayName: 'Ada',
@@ -464,7 +464,7 @@ const hostCases: ScenarioCase[] = [
     plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ run: [{ output: {
       event: { rc: false, value: 'edited', change: 'x', selStart: 1, selEnd: 2 },
       formEffects: [{ kind: 'setValue', ref: { kind: 'fqn', name: 't' }, value: { value: 'edited' } }],
-      uiEffects: [{ kind: 'print' }],
+      uiEffects: [{ type: 'print' }],
       diagnostics: [{ code: 'script-error', message: 'script refusal' }],
     } }] }] } }),
     steps: [start, txn(run('output()'))],

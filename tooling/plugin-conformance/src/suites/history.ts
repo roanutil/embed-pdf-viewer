@@ -184,7 +184,7 @@ const look: Step[] = [
   history('getRedoLabel'),
 ];
 
-const remote = { kind: 'remote', sessionId: 'other', sub: null, ts: 0, serverId: 1 };
+const remote = { kind: 'remote', sessionId: 'other', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: 1 };
 const endsUndo = (type: string): Step => ({ op: 'emit', doc: 'a', event: { type, origin: remote } });
 
 /** A case on document `a`, opened with the history and the actor, the

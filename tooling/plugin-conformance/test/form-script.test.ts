@@ -650,7 +650,7 @@ test('native scripted confirmation preserves complete fields, own widget rows, e
     [2, 3].map((number, index) => ({
       ref: ref(number),
       value: number === 2 ? '3' : '6',
-      origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 3 } },
+      origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 3 } },
     })),
   );
   const snapshot = object(readReturns(name, trace, 'getSnapshot')[0]);
@@ -1091,7 +1091,7 @@ registerPlugin('form-script-realm-state', {
                 detached: await detached.transaction(async () => 'detached no-run transaction'),
               };
             } finally {
-              detached.dispose();
+              detached.destroy();
             }
           },
         },

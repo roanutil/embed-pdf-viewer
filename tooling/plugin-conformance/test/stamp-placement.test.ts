@@ -689,7 +689,7 @@ test('dynamic direct and batch placement use exact resources, reserved refs, ope
     })),
     [0, 2].map((i) => ({
       annotation: literal(expected[i]),
-      origin: { ...LOCAL, tx: { id: operationAt(i + 1), index: 0, count: 1 } },
+      origin: { ...LOCAL, transaction: { id: operationAt(i + 1), index: 0, count: 1 } },
     })),
   );
   assert.deepEqual(

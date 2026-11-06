@@ -394,7 +394,7 @@ const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({
 
 // ── steps ─────────────────────────────────────────────────────────────────────
 
-const ORIGIN = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null } as const;
+const ORIGIN = { kind: 'local', sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null } as const;
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open = (id = 'a'): Step => ({
   op: 'call',

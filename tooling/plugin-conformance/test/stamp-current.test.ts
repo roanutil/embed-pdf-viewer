@@ -645,14 +645,14 @@ test('the unconfigured local defaults succeed and binary cache clears on control
       ],
     ],
   );
-  await localContext.dispose();
+  await localContext.destroy();
   assert.equal(current.getAssetBytes('default-local:Stamp1'), null);
   assert.equal(current.getAssetPreview('default-local:Stamp1'), null);
   await assert.rejects(current.exportLibrary('default-local'), {
     code: 'not-found',
     capability: 'stamp',
   });
-  await ctx.dispose();
+  await ctx.destroy();
 });
 
 import {
@@ -992,7 +992,7 @@ test('required PieceInfo refusals recover through a complete current local impor
     steps: [
       ...original.steps,
       stamp('importLibrary', [PDF]),
-      stamp('readAssetBytes', ['stamp-lib-0-7:Stamp1']),
+      stamp('getAssetBytes', ['stamp-lib-0-7:Stamp1']),
     ],
   };
   const result = await runScenario(recovered);
@@ -1053,7 +1053,7 @@ test('settings replace the engine port, reset canImport and retain ownership onl
     api.listLibraries().map((l) => l.id),
     ['owned', 'borrowed'],
   );
-  await ctx.dispose();
+  await ctx.destroy();
   await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(owned.log.filter((entry) => 'path' in entry && entry.path === 'destroy').length, 1);
   assert.equal(

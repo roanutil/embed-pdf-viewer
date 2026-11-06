@@ -27,7 +27,7 @@ const SESSION_SNAPSHOT = { snapshot: SNAP };
 const tree = (name: string) => ({
   root: { type: 'named' as const, subtype: 'Named', name, next: [] },
   incomplete: false,
-  warningFlags: 0,
+ 
   warnings: [],
 });
 const actionsCall = (method: string, ...args: unknown[]): Step => ({

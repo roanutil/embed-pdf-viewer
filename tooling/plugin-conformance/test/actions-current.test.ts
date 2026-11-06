@@ -667,7 +667,7 @@ const scriptNode = (script: string) => ({
   script,
   next: [],
 });
-const treeValue = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
+const treeValue = (root: unknown) => ({ root, incomplete: false, warnings: [] });
 const request = {
   url: 'https://home.test/submit',
   method: 'post',

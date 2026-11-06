@@ -663,7 +663,7 @@ test('real annotation creates carry complete geometry styles labels refs resourc
       .filter((e) => e.type === 'annotations.created');
     const event = events[i]!;
     assert.ok(event.type === 'annotations.created');
-    assert.deepEqual(event.origin.tx, { id: call.args[1].opId, index: 0, count: 1 });
+    assert.deepEqual(event.origin.transaction, { id: call.args[1].opId, index: 0, count: 1 });
     assert.equal(event.meta.opId, call.args[1].opId);
     assert.deepEqual(event.meta.changed, [dto.ref]);
     assert.deepEqual(event.annotation, canonical(dto));
@@ -775,7 +775,7 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
     assert.ok(event.type === 'annotations.updated');
     assert.equal(event.appearance.changed, true);
     assert.deepEqual(event.meta.changed, [objRef(1)]);
-    assert.equal(event.origin.tx?.id, (writes[i]!.args[1] as { opId: string }).opId);
+    assert.equal(event.origin.transaction?.id, (writes[i]!.args[1] as { opId: string }).opId);
   }
 });
 test('multi-page strict preflight and tolerant scale errors remain separate channels', async () => {
@@ -963,7 +963,7 @@ test('all authored persistent scale results carry complete matching mutation pro
       const event = response.events![0]!;
       assert.ok(event.type === 'pages.scaleSet');
       assert.deepEqual(event.meta, result.meta);
-      assert.deepEqual(event.origin.tx, { id: result.meta.opId, index: 0, count: 1 });
+      assert.deepEqual(event.origin.transaction, { id: result.meta.opId, index: 0, count: 1 });
     }
   }
 });

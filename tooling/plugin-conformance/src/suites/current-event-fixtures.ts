@@ -5,9 +5,9 @@ import { annotationOfDraft } from '../../../../packages/engine/core/src/pageSpac
 export const fixtureOrigin = {
   kind: 'local' as const,
   sessionId: 's1',
-  sub: null,
-  ts: 0,
-  serverId: null,
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 type Kind =
   | 'annotations.created'
@@ -33,7 +33,7 @@ export function confirmedEvent(
     undoable: !['pages.flattened', 'redaction.applied'].includes(type),
   };
   const origin = fixtureOrigin;
-  const layout = { pageCount: pages.length, pages: [...pages], namedPages: [] };
+  const layout = { labels: [], pageCount: pages.length, pages: [...pages], namedPages: [] };
   switch (type) {
     case 'pages.reordered':
       return { type, pages: refs, layout, meta, origin };
@@ -85,7 +85,7 @@ export function confirmedEvent(
         { subtype: 'square', box: { x: 10, y: 20, width: 30, height: 40 } },
         { ref, nm: 'event-square' },
       );
-      const annotMeta = { ...meta, changed: [ref] };
+      const annotMeta = { ...meta, changedRefs: [ref] };
       return type === 'annotations.created'
         ? { type, page, annotation, meta: annotMeta, origin }
         : {

@@ -20,7 +20,7 @@ import type {
   PageTextSnapshot,
 } from '@embedpdf/engine-core/runtime';
 const box = { x: 0, y: 0, width: 600, height: 800 };
-const origin: EventOrigin = { kind: 'local', sessionId: 'fake', sub: null, ts: 0, serverId: null };
+const origin: EventOrigin = { kind: 'local', sessionId: 'fake', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null };
 const page = (pon: number, index: number): PageLayout => ({
   index,
   ref: { kind: 'objectNumber', objectNumber: pon },
@@ -642,7 +642,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.reordered',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(1, 1)] },
+          layout: { namedPages: [], labels: [], pageCount: 2, pages: [page(2, 0), page(1, 1)] },
         } satisfies DocumentEvent,
       },
       {
@@ -653,7 +653,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.deleted',
           pages: [ref1(1)],
-          layout: { namedPages: [], pageCount: 1, pages: [page(2, 0)] },
+          layout: { namedPages: [], labels: [], pageCount: 1, pages: [page(2, 0)] },
         } satisfies DocumentEvent,
       },
       {
@@ -664,7 +664,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.inserted',
           insertedPages: [ref1(9)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(9, 1)] },
+          layout: { namedPages: [], labels: [], pageCount: 2, pages: [page(2, 0), page(9, 1)] },
         } satisfies DocumentEvent,
       },
       {
@@ -1167,7 +1167,7 @@ const cases: ScenarioCase[] = [
           type: 'pages.rotated',
           pages: [ref1(1)],
           rotation: 90,
-          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+          layout: { namedPages: [], labels: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
         } satisfies DocumentEvent,
       },
       settle('policy', { kind: 'continuous' }),
@@ -1772,7 +1772,7 @@ const v3Cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.deleted',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 1, pages: [page(1, 0)] },
+          layout: { namedPages: [], labels: [], pageCount: 1, pages: [page(1, 0)] },
         } satisfies DocumentEvent,
       },
       api('getPage', 2),
@@ -1985,7 +1985,7 @@ const v3Cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.reordered',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(7, 0), page(1, 1)] },
+          layout: { namedPages: [], labels: [], pageCount: 2, pages: [page(7, 0), page(1, 1)] },
         } satisfies DocumentEvent,
       },
       docs('getRevision', 'a'),
@@ -2036,7 +2036,7 @@ const v3Cases: ScenarioCase[] = [
           type: 'pages.rotated',
           pages: [ref1(1)],
           rotation: 90,
-          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+          layout: { namedPages: [], labels: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
         } satisfies DocumentEvent,
       },
       docs('onClosed', { $fn: 'closedThrows', throws: { message: 'listener broke' } }),

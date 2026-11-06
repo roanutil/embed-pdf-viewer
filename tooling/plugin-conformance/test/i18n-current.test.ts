@@ -518,7 +518,7 @@ test('immutable settings follow locale, fallback, loader replacement and reset w
     assert.equal(calls, 1);
     assert.equal(h.api.t('hi'), 'Hallo');
   } finally {
-    h.ctx.dispose();
+    h.ctx.destroy();
   }
 });
 test('cancellation stops the waiter, preserves late registration, and an already aborted signal never calls the loader', async () => {
@@ -577,7 +577,7 @@ test('cancellation stops the waiter, preserves late registration, and an already
     });
     assert.equal(calls, 1);
   } finally {
-    h.ctx.dispose();
+    h.ctx.destroy();
   }
 });
 import { readFileSync } from 'node:fs';
