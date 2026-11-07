@@ -3,6 +3,14 @@
 //! on the page, and the editor's layout putting the text where the painter
 //! draws it.
 
+use std::rc::Rc;
+
+use epdf_annotation_core::TextRunScene;
+use epdf_fonts::{FontStyle, StandardFont};
+use epdf_form_core::text::{
+    Alignment, FieldTextOptions, MountableFontProgram, PaintFont, PaintFonts, default_paint_fonts,
+    last_resort_paint_font, layout_field, program_paint_font, standard_paint_font,
+};
 use epdf_form_core::*;
 use serde_json::{Value, json};
 
@@ -50,17 +58,22 @@ fn painter_widget(patch: Value) -> WidgetRow {
 fn editor_widget(patch: Value) -> WidgetRow {
     row_of(merge(
         json!({
+            "subtype": "widget",
             "rect": { "x": 10, "y": 20, "width": 120, "height": 24 },
             "box": { "x": 10, "y": 20, "width": 120, "height": 24 },
+            "rotation": null,
             "appearanceState": null,
             "color": "#000000",
             "interiorColor": null,
             "strokeWidth": 1,
             "borderStyle": "solid",
+            "dashArray": null,
             "fontFamily": "helvetica",
             "fontSize": 10,
             "fontColor": null,
             "textAlign": "left",
+            "caption": null,
+            "checkStyle": null,
         }),
         patch,
     ))
@@ -69,7 +82,7 @@ fn editor_widget(patch: Value) -> WidgetRow {
 fn text_field(patch: Value) -> FieldFacts {
     field_of(merge(
         json!({
-            "family": "text",
+            "kind": "text",
             "value": "",
             "multiline": false,
             "password": false,
@@ -78,6 +91,29 @@ fn text_field(patch: Value) -> FieldFacts {
         }),
         patch,
     ))
+}
+
+/// A program font covering `first..=last`, every character 600 thousandths
+/// wide, as the tests make one.
+fn program_font(name: &str, first: u32, last: u32, ascent: f64, descent: f64) -> Rc<PaintFont> {
+    program_paint_font(
+        &[(first, last - first + 1)],
+        ascent,
+        descent,
+        MountableFontProgram::new(name, 400, FontStyle::Normal, Rc::new(Vec::new)),
+        Rc::new(|text: &[u16], _| char::decode_utf16(text.iter().copied()).count() as f64 * 600.0),
+    )
+}
+
+/// `painter.test.ts`'s fonts: Helvetica, a Hebrew fallback, the last resort.
+fn hebrew_fonts() -> (PaintFonts, Rc<PaintFont>) {
+    let hebrew = program_font("hebrew-hash", 0x0590, 0x05ff, 950.0, -250.0);
+    let fonts = PaintFonts {
+        face: standard_paint_font(StandardFont::Helvetica),
+        fallbacks: vec![hebrew.clone()],
+        last_resort: Some(last_resort_paint_font()),
+    };
+    (fonts, hebrew)
 }
 
 fn drawing(row: &WidgetRow, field: &FieldFacts) -> WidgetDrawing {
@@ -92,16 +128,39 @@ fn close(actual: f64, expected: f64, digits: i32) {
     );
 }
 
+const FRAME: epdf_geometry::Rect =
+    epdf_geometry::Rect { x: 10.0, y: 20.0, width: 100.0, height: 20.0 };
+
+fn text_runs_of(scene: &[SceneNode]) -> Vec<&TextRunScene> {
+    scene
+        .iter()
+        .filter_map(|node| match node {
+            SceneNode::TextRun(run) => Some(run),
+            _ => None,
+        })
+        .collect()
+}
+
 #[test]
 fn it_says_when_its_drawing_may_differ_from_the_engine_picture() {
     let plain = text_field(json!({ "value": "Plain" }));
     assert_eq!(drawing(&painter_widget(json!({})), &plain).approximate, None);
-    // WinAnsi can't write Cyrillic: the engine takes another font for it.
+    // WinAnsi can't write Cyrillic: the engine takes another font for it,
+    // which the painter wasn't given; given the fonts, a box is what the
+    // engine draws too.
     let cyrillic = text_field(json!({ "value": "Привет" }));
     assert_eq!(
         drawing(&painter_widget(json!({})), &cyrillic).approximate,
         Some(Approximation::Glyph)
     );
+    let (fonts, _) = hebrew_fonts();
+    let given = widget_drawing_in(
+        &painter_widget(json!({})),
+        &cyrillic,
+        &ShownValue::default(),
+        Some(&fonts),
+    );
+    assert_eq!(given.expect("drawn").approximate, None);
     // A font that isn't one of the 14 lays out with Helvetica's numbers.
     assert_eq!(
         drawing(&painter_widget(json!({ "fontFamily": "Roboto" })), &plain).approximate,
@@ -115,13 +174,25 @@ fn it_says_when_its_drawing_may_differ_from_the_engine_picture() {
 }
 
 #[test]
-fn it_does_not_draw_a_signature_or_an_unknown_family() {
+fn it_draws_a_signature_box_and_nothing_of_an_unknown_kind() {
     let row = painter_widget(json!({}));
-    for family in [json!({ "family": "signature" }), json!({ "family": "unknown" })] {
-        assert!(widget_drawing(&row, &field_of(family), &ShownValue::default()).is_none());
-    }
-    assert!(!paints(FieldFamily::Signature) && !paints(FieldFamily::Unknown));
-    assert!(paints(FieldFamily::Text) && paints(FieldFamily::Pushbutton));
+    let signature = drawing(&row, &field_of(json!({ "kind": "signature" })));
+    // The background over the whole box, then the border inside it; no text.
+    let kinds: Vec<&str> = signature
+        .ops
+        .iter()
+        .map(|op| match op {
+            DrawOp::Fill { .. } => "fill",
+            DrawOp::Stroke { .. } => "stroke",
+            DrawOp::Clip { .. } => "clip",
+            DrawOp::Text { .. } => "text",
+        })
+        .collect();
+    assert_eq!(kinds, ["fill", "stroke"]);
+    assert_eq!(signature.approximate, None);
+    let unknown = field_of(json!({ "kind": "unknown" }));
+    assert!(widget_drawing(&row, &unknown, &ShownValue::default()).is_none());
+    assert!(paints(FieldKind::Signature) && !paints(FieldKind::Unknown));
 }
 
 #[test]
@@ -144,19 +215,19 @@ fn it_shows_the_text_it_is_given_over_the_value() {
 
 #[test]
 fn it_fits_a_size_of_0_to_the_box_with_the_engine_sizes() {
-    let font = layout_font_of(Some("helvetica")).expect("helvetica");
     let fitted = |height: f64| {
-        layout_variable_text(
+        layout_field(
             "Hello",
-            &font,
-            &VariableTextOptions {
+            &default_paint_fonts(Some("helvetica")),
+            &FieldTextOptions {
                 plate: PdfRect { left: 0.0, bottom: 0.0, right: 200.0, top: height },
                 font_size: 0.0,
                 alignment: Alignment::Left,
                 multiline: false,
-                substitute: None,
+                password: false,
                 limit: 0,
                 cells: 0,
+                centered: true,
             },
         )
         .font_size
@@ -165,49 +236,99 @@ fn it_fits_a_size_of_0_to_the_box_with_the_engine_sizes() {
     assert_eq!([fitted(10.0), fitted(20.0), fitted(40.0)], [8.0, 14.0, 30.0]);
 }
 
-fn glyphs_of(scene: &[SceneNode]) -> &epdf_annotation_core::GlyphsScene {
-    scene
-        .iter()
-        .find_map(|node| match node {
-            SceneNode::Glyphs(glyphs) => Some(glyphs),
-            _ => None,
-        })
-        .expect("glyphs")
-}
-
 #[test]
-fn it_lands_on_the_page_turned_with_the_widget() {
+fn it_lands_on_the_page_at_its_left_edge_clipped_and_turned_with_the_widget() {
     let field = text_field(json!({ "value": "Hi" }));
-    let frame = epdf_geometry::Rect { x: 10.0, y: 20.0, width: 100.0, height: 20.0 };
     let upright = widget_scene(
         &drawing(&painter_widget(json!({})), &field),
-        &WidgetPlacement { box_: frame, rotation: None },
+        &WidgetPlacement { box_: FRAME, rotation: None },
     );
-    let glyphs = glyphs_of(&upright);
-    assert_eq!(glyphs.offsets, [0.0, 7.22]);
-    let font_family = &glyphs.font_family;
-    assert!(font_family.starts_with("\"epdf-") && font_family.contains("\", Helvetica"));
+    let run = text_runs_of(&upright)[0];
+    assert_eq!((run.text.as_str(), run.rtl, run.plain, run.at.x), ("Hi", false, true, 12.0));
+    assert!(run.font_family.starts_with("\"epdf-") && run.font_family.contains("\", Helvetica"));
     // The face it draws in comes with it, for whatever draws it to mount.
-    let program = &glyphs.program.as_ref().expect("a program").0;
-    assert_eq!(program.family(), &font_family[1..22]);
+    let program = &run.program.as_ref().expect("a program").0;
+    assert_eq!(program.family(), &run.font_family[1..22]);
     assert_eq!((program.weight(), program.style()), (400.0, "normal"));
     assert!(!program.load().is_empty());
-    assert_eq!(
-        glyphs.clip,
-        Some(epdf_geometry::Rect { x: 11.0, y: 21.0, width: 98.0, height: 18.0 })
-    );
-    assert_eq!(glyphs.rotation, None);
+    assert_eq!(run.clip, Some(epdf_geometry::Rect { x: 11.0, y: 21.0, width: 98.0, height: 18.0 }));
+    assert_eq!(run.rotation, None);
 
     let turned = widget_scene(
         &drawing(&painter_widget(json!({ "rotation": 90 })), &field),
-        &WidgetPlacement { box_: frame, rotation: Some(90.0) },
+        &WidgetPlacement { box_: FRAME, rotation: Some(90.0) },
     );
-    let glyphs = glyphs_of(&turned);
-    assert_eq!(glyphs.rotation, Some(90.0));
+    let run = text_runs_of(&turned)[0];
+    assert_eq!(run.rotation, Some(90.0));
     // Turned a quarter clockwise about the box's middle (60, 30): the clip stands up.
     assert_eq!(
-        glyphs.clip,
+        run.clip,
         Some(epdf_geometry::Rect { x: 51.0, y: -19.0, width: 18.0, height: 98.0 })
+    );
+}
+
+#[test]
+fn it_draws_mixed_scripts_as_runs_in_their_fonts_in_the_engine_order() {
+    let (fonts, hebrew) = hebrew_fonts();
+    let field = text_field(json!({ "value": "Hello שלום 123" }));
+    let drawn =
+        widget_drawing_in(&painter_widget(json!({})), &field, &ShownValue::default(), Some(&fonts));
+    let scene =
+        widget_scene(&drawn.expect("drawn"), &WidgetPlacement { box_: FRAME, rotation: None });
+    let runs = text_runs_of(&scene);
+    let helvetica = standard_paint_font(StandardFont::Helvetica);
+    let first_family = |family: &str| family.split(',').next().expect("a family").to_string();
+    let found: Vec<(String, bool, String)> = runs
+        .iter()
+        .map(|run| (run.text.clone(), run.rtl, first_family(&run.font_family)))
+        .collect();
+    let face = first_family(&helvetica.font_family);
+    let hebrew_family = hebrew.font_family.clone();
+    assert_eq!(
+        found,
+        [
+            ("Hello ".to_string(), false, face.clone()),
+            ("123".to_string(), false, face.clone()),
+            (" ".to_string(), true, face),
+            ("שלום".to_string(), true, hebrew_family),
+        ]
+    );
+    // Each starts where the one before it ends.
+    let xs: Vec<f64> = runs.iter().map(|run| run.at.x).collect();
+    assert!(xs.windows(2).all(|pair| pair[0] <= pair[1]), "{xs:?}");
+    let shalom = runs.iter().find(|run| run.rtl && run.text == "שלום").expect("hebrew run");
+    assert!(!shalom.plain);
+    assert_eq!(shalom.program.as_ref().expect("program").0.family(), hebrew.program.family);
+}
+
+#[test]
+fn it_draws_a_comb_arabic_letters_in_the_forms_the_whole_word_gives_them() {
+    let arabic = program_font("arabic-hash", 0x0600, 0x06ff, 950.0, -250.0);
+    let fonts = PaintFonts {
+        face: standard_paint_font(StandardFont::Helvetica),
+        fallbacks: vec![arabic],
+        last_resort: Some(last_resort_paint_font()),
+    };
+    let comb = text_field(json!({ "value": "مرحبا", "comb": true, "maxLength": 5 }));
+    let drawn =
+        widget_drawing_in(&painter_widget(json!({})), &comb, &ShownValue::default(), Some(&fonts));
+    let scene =
+        widget_scene(&drawn.expect("drawn"), &WidgetPlacement { box_: FRAME, rotation: None });
+    let joins: Vec<(String, bool, bool)> = text_runs_of(&scene)
+        .iter()
+        .map(|run| {
+            (run.text.clone(), run.joins_previous.unwrap_or(false), run.joins_next.unwrap_or(false))
+        })
+        .collect();
+    assert_eq!(
+        joins,
+        [
+            ("م".to_string(), false, true),
+            ("ر".to_string(), true, false),
+            ("ح".to_string(), false, true),
+            ("ب".to_string(), true, true),
+            ("ا".to_string(), true, false),
+        ]
     );
 }
 
@@ -226,9 +347,9 @@ fn painted_text(row: &WidgetRow, field: &FieldFacts) -> (f64, Vec<TextRun>) {
 /// Where the CSS line box puts the first baseline, from the box's top.
 fn css_baseline(row: &WidgetRow, field: &FieldFacts, text: &str) -> f64 {
     let layout = text_editor_layout(row, field, text).expect("layout");
-    let ascent = f64::from(layout_font_of(row.font_family.as_deref()).expect("font").ascent)
-        * layout.font_size
-        / 1000.0;
+    let font =
+        StandardFont::from_name(row.font_family.as_deref().expect("font")).expect("standard");
+    let ascent = standard_paint_font(font).ascent * layout.font_size / 1000.0;
     let height = row.box_.expect("box").height;
     let content = height - layout.padding.top - layout.padding.bottom;
     let multiline = matches!(field, FieldFacts::Text(facts) if facts.multiline);
@@ -296,45 +417,77 @@ fn the_editor_spaces_a_comb_by_its_cells() {
 }
 
 #[test]
+fn the_editor_reads_the_line_in_the_direction_the_engine_draws_it() {
+    let rtl = |text: &str| {
+        text_editor_layout(&editor_widget(json!({})), &text_field(json!({})), text)
+            .expect("layout")
+            .rtl
+    };
+    assert!(rtl("שלום test 123"));
+    assert!(!rtl("test 123 שלום"));
+    assert!(rtl("123 שלום"));
+    assert!(!rtl(""));
+}
+
+#[test]
 fn the_editor_is_only_for_text_fields() {
-    let checkbox = field_of(json!({ "family": "checkbox" }));
+    let checkbox = field_of(json!({ "kind": "checkbox" }));
     assert!(text_editor_layout(&editor_widget(json!({})), &checkbox, "").is_none());
 }
 
-/// Rust only: a run's text is a `String`, so a comb that splits a surrogate
-/// pair into its cells writes each half as U+FFFD, where the TypeScript
-/// writes the lone half. The layout's code units keep both halves.
 #[test]
-fn a_comb_splitting_a_surrogate_pair_writes_replacement_characters() {
-    let row = editor_widget(json!({ "fontFamily": "courier" }));
-    let field = text_field(json!({ "value": "😀", "comb": true, "maxLength": 4 }));
-    let (_, runs) = painted_text(&row, &field);
-    let texts: Vec<&str> = runs.iter().map(|run| run.text.as_str()).collect();
-    assert_eq!(texts, ["\u{fffd}", "\u{fffd}"]);
-    let font = layout_font_of(Some("courier")).expect("courier");
-    let layout = layout_variable_text(
-        "😀",
-        &font,
-        &VariableTextOptions {
-            plate: PdfRect { left: 0.0, bottom: 0.0, right: 100.0, top: 20.0 },
-            font_size: 10.0,
-            alignment: Alignment::Left,
-            multiline: false,
-            substitute: None,
-            limit: 0,
-            cells: 4,
-        },
+fn the_editor_names_the_programs_its_text_is_drawn_in() {
+    let fonts = PaintFonts {
+        face: standard_paint_font(StandardFont::Helvetica),
+        fallbacks: vec![
+            program_font("arabic", 0x0600, 0x06ff, 900.0, -200.0),
+            program_font("hebrew", 0x0590, 0x05ff, 900.0, -200.0),
+        ],
+        last_resort: Some(last_resort_paint_font()),
+    };
+    let layout = |text: &str| {
+        text_editor_layout_in(&editor_widget(json!({})), &text_field(json!({})), text, Some(&fonts))
+            .expect("layout")
+    };
+    let families = |text: &str| {
+        layout(text).programs.iter().map(|program| program.family.clone()).collect::<Vec<_>>()
+    };
+    let face = standard_paint_font(StandardFont::Helvetica).program.family.clone();
+    let last_resort = last_resort_paint_font().program.family.clone();
+    assert_eq!(families("Hello"), [face.clone(), last_resort.clone()]);
+    assert_eq!(families("Hello שלום"), [face.clone(), "epdf-hebrew".into(), last_resort.clone()]);
+    assert_eq!(
+        layout("Hello שלום").font_family,
+        format!("\"{face}\", \"epdf-hebrew\", \"{last_resort}\", Helvetica, Arial, sans-serif")
     );
-    let codes: Vec<u16> = layout.lines[0].words.iter().map(|word| word.code).collect();
-    assert_eq!(codes, [0xd83d, 0xde00]);
-    assert!(layout.approximate);
 }
 
-/// `drawing/index.ts:107`: `appearanceState !== null && !== 'Off'`. An absent
+#[test]
+fn widget_text_is_every_character_the_painter_draws() {
+    let row = editor_widget(json!({}));
+    let none = ShownValue::default();
+    assert_eq!(widget_text(&row, &text_field(json!({ "value": "שלום" })), &none), "שלום");
+    let shown = ShownValue { text: Some("$1,234.50".into()), checked: None };
+    assert_eq!(widget_text(&row, &text_field(json!({ "value": "1234.5" })), &shown), "$1,234.50");
+    let secret = text_field(json!({ "value": "secret", "password": true }));
+    assert_eq!(widget_text(&row, &secret, &none), "*");
+    assert_eq!(widget_text(&row, &text_field(json!({ "password": true })), &none), "");
+    let list = field_of(json!({
+        "kind": "listbox",
+        "options": [{ "label": "One", "selected": false }, { "label": "שתיים", "selected": true }],
+        "topIndex": 0,
+    }));
+    assert_eq!(widget_text(&row, &list, &none), "One\nשתיים");
+    let button = field_of(json!({ "kind": "pushbutton" }));
+    assert_eq!(widget_text(&editor_widget(json!({ "caption": "שלח" })), &button, &none), "שלח");
+    assert_eq!(widget_text(&row, &field_of(json!({ "kind": "checkbox" })), &none), "");
+}
+
+/// `drawing/index.ts`: `appearanceState !== null && !== 'Off'`. An absent
 /// member is `undefined`, so a check box without one shows checked.
 #[test]
 fn an_absent_appearance_state_reads_as_on_and_null_as_off() {
-    let checkbox = field_of(json!({ "family": "checkbox" }));
+    let checkbox = field_of(json!({ "kind": "checkbox" }));
     let symbols = |patch: Value| {
         let mut widget = json!({
             "rect": { "x": 0, "y": 0, "width": 18, "height": 18 },

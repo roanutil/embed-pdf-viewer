@@ -1,6 +1,6 @@
-//! `layout/breaks.ts`: where a line may break, as the engine decides it. A
-//! port of PDFium's character classes (`cpvt_section.cpp`), quirks included
-//! (every character from U+0080 to U+0094 counts as punctuation).
+//! `breaks.ts`: where a line may break, as the engine decides it. A port of
+//! PDFium's character classes (`cpvt_section.cpp`), quirks included (every
+//! character from U+0080 to U+0094 counts as punctuation).
 //!
 //! The layout asks with UTF-16 code units, so the supplementary CJK ranges
 //! below never match there, as in the TypeScript.
@@ -127,7 +127,7 @@ pub(crate) fn is_space(code: u32) -> bool {
 
 /// Whether a word may start at `current` after `previous` (CPVT's
 /// `NeedDivision`).
-pub(crate) fn needs_break(previous: u32, current: u32) -> bool {
+pub fn needs_break(previous: u32, current: u32) -> bool {
     if (is_latin(previous) || is_digit(previous)) && (is_latin(current) || is_digit(current)) {
         return false;
     }

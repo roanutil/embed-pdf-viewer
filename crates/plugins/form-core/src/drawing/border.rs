@@ -1,8 +1,9 @@
 //! `drawing/border.ts`: the pieces every widget's appearance shares, ported
 //! from the generator. Rectangles as PDFium shrinks them, the border style's
 //! numbers (`GetBorderStyleInfo`: a beveled or inset border counts double),
-//! the border itself (`GenerateBorderAP`), and the box a check box or a push
-//! button draws (`BuildCheckboxBoxStream`).
+//! the border itself (`GenerateBorderAP`), the box a check box or a push
+//! button draws (`BuildCheckboxBoxStream`), and a text or signature field's
+//! box (`fieldBoxOps`).
 
 use epdf_geometry::js;
 
@@ -173,6 +174,35 @@ pub(crate) fn border_ops(rect: PdfRect, info: &BorderStyleInfo, color: Option<Rg
             .into_iter()
             .collect(),
     }
+}
+
+/// `fieldBoxOps`: a text field's or signature field's box, the background
+/// filled even-odd and a solid border stroked down its middle.
+pub(crate) fn field_box_ops(
+    bbox: PdfRect,
+    info: &BorderStyleInfo,
+    background: Option<Rgb>,
+    border: Option<Rgb>,
+) -> Vec<DrawOp> {
+    let width = info.width;
+    let mut ops = Vec::new();
+    if let Some(background) = background {
+        ops.push(DrawOp::Fill { path: vec![rect_path(bbox)], color: background, even_odd: true });
+    }
+    if info.style != WidgetBorderStyle::Solid {
+        ops.extend(border_ops(bbox, info, border));
+    } else if let Some(border) = border
+        && width > 0.0
+    {
+        let half = fround(width / 2.0);
+        ops.push(DrawOp::Stroke {
+            path: vec![rect_path(deflate(bbox, half, half))],
+            color: border,
+            width,
+            dash: None,
+        });
+    }
+    ops
 }
 
 /// `BuildCheckboxBoxStream`: the background inside the border's middle, and

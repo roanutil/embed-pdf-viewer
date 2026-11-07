@@ -16,7 +16,8 @@ import {
   toolTouchOf as isTouchDirect,
 } from '../../../../packages/plugin/annotation/src/tools/definitions';
 import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
-import { familyKey } from '@embedpdf/engine-core/runtime';
+import { familyKey, standardFontForFace } from '@embedpdf/engine-core/runtime';
+import { standardFontCss, standardFontOf } from '../../../../packages/core/fonts/src/index';
 import {
   fontForFace,
   rangeProps,
@@ -30,7 +31,6 @@ import {
   faceForFont,
   richDocOf,
 } from '../../../../packages/core/annotation/src/richtext';
-import { removedUpstream } from '../removed';
 import { previewBucket } from '../../../../packages/plugin/annotation/src/host-contract';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
 import { mergeSettings, type DeepPartial } from '../../../../packages/core/main/src/settings';
@@ -66,6 +66,9 @@ const renamed: Record<string, string> = {
   runDeltaForProps: 'runDeltaForFields',
   geometryFromInput: 'parseAnnotationDraft',
   mergeChrome: 'mergeSettings',
+  // 595fa2bd5: the standard font that stands in, as CSS (see the table below).
+  cssFontFamilyForFace: 'standardFontCssOfFace',
+  cssFontFamilyForFont: 'standardFontCssOfFont',
 };
 function c(fn: string, label: string, ...args: unknown[]): FunctionCase {
   const before = `${fn}/${label}`;
@@ -419,9 +422,17 @@ for (const [label, face] of [
 }
 cases.push(c('fontForFace', 'no-fonts', { family: 'Inter', weight: 700 }));
 for (const family of ['Helvetica', 'courier new', 'Inter', 'Unknown Face']) {
-  cases.push(c('cssFontFamilyForFace', family, family, FONTS));
+  cases.push(c('cssFontFamilyForFace', family, { family }));
 }
-cases.push(c('cssFontFamilyForFace', 'no-fonts', 'Inter'));
+retire(
+  'cssFontFamilyForFace/no-fonts',
+  '595fa2bd5: a face resolves to the standard font that stands in, with no registered list at this level (the fonts plugin owns registered fonts), so every face case is a no-fonts case.',
+);
+cases.push({
+  name: 'standardFontCssOfFace/bold-italic',
+  fn: 'standardFontCssOfFace',
+  args: [{ family: 'Times New Roman', weight: 700, italic: true }],
+});
 for (const font of ['helvetica-bold', 'courier', 'symbol', 'inter-bold'])
   cases.push(c('cssFontFamilyForFont', font, font));
 cases.push(c('familyKey', 'punctuated', " Times-New_Roman 'PS' "));
@@ -875,11 +886,15 @@ export const suites: Suite[] = [
         faceForFont(font, fonts && (() => fonts))) as never,
       fontForFace: ((face: never, fonts?: never[]) =>
         fontForFace(face, fonts && (() => fonts))) as never,
-      // 595fa2bd5 removed both: a text box's CSS now comes from the fonts
-      // plugin (`text.bodyCss`), else core-fonts' `standardFontCss`, which
-      // `core/fonts.json` covers.
-      cssFontFamilyForFace: removedUpstream('cssFontFamilyForFace', '595fa2bd5') as never,
-      cssFontFamilyForFont: removedUpstream('cssFontFamilyForFont', '595fa2bd5') as never,
+      // 595fa2bd5 replaced `cssFontFamilyForFont(font)` and
+      // `cssFontFamilyForFace(family, fonts)`: a text box's CSS comes from the
+      // fonts plugin (`text.bodyCss`, scenario-level), else from the standard
+      // font that stands in, as `buildTextItems` and `bodyCss` ask for it
+      // without one. A registered font's CSS is the fonts plugin's now, so the
+      // registered list the face cases passed has no pure counterpart.
+      standardFontCssOfFont: ((font: string) => standardFontCss(standardFontOf(font))) as never,
+      standardFontCssOfFace: ((face: { family: string; weight?: number; italic?: boolean }) =>
+        standardFontCss(standardFontForFace(face))) as never,
       familyKey: familyKey as never,
       bodyFromTextStyle: ((t: never, fonts?: never[]) =>
         bodyFromTextStyle(t, fonts && (() => fonts))) as never,

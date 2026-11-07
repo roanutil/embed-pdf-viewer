@@ -27,25 +27,25 @@ fn the_table_names_only_what_the_vectors_call() {
     assert_eq!(table, called);
 }
 
-/// Every family the painter draws, and every check style, is drawn by some
-/// case, and every standard font lays text out, so a family or a face the
+/// Every kind the painter draws, and every check style, is drawn by some
+/// case, and every standard font lays text out, so a kind or a face the
 /// generator stopped writing fails here rather than passing by omission. No
 /// case throws: the painter has no failure the vectors record.
 #[test]
-fn the_vectors_cover_every_family_style_and_face() {
+fn the_vectors_cover_every_kind_style_and_face() {
     let cases = load(FILE)["cases"].as_array().expect("cases").clone();
     assert!(cases.iter().all(|case| case["outcome"].get("returned").is_some()));
-    let families: BTreeSet<String> = cases
+    let kinds: BTreeSet<String> = cases
         .iter()
         .filter(|case| case["fn"] == "widgetDrawing")
-        .map(|case| case["args"][1]["family"].as_str().expect("family").to_string())
+        .map(|case| case["args"][1]["kind"].as_str().expect("kind").to_string())
         .collect();
     let all: BTreeSet<String> =
         ["text", "checkbox", "radio", "combobox", "listbox", "pushbutton", "signature", "unknown"]
             .into_iter()
             .map(String::from)
             .collect();
-    assert_eq!(families, all);
+    assert_eq!(kinds, all);
     let styles: BTreeSet<String> = cases
         .iter()
         .filter(|case| case["fn"] == "widgetDrawing")
@@ -54,7 +54,7 @@ fn the_vectors_cover_every_family_style_and_face() {
     assert_eq!(styles.len(), 6, "{styles:?}");
     let faces: BTreeSet<String> = cases
         .iter()
-        .filter(|case| case["fn"] == "widgetDrawing" && case["args"][1]["family"] == "text")
+        .filter(|case| case["fn"] == "widgetDrawing" && case["args"][1]["kind"] == "text")
         .filter_map(|case| case["args"][0]["fontFamily"].as_str().map(String::from))
         .collect();
     for font in epdf_fonts::StandardFont::ALL {
