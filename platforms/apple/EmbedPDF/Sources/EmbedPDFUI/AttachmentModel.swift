@@ -15,6 +15,7 @@ public final class AttachmentModel {
   public private(set) var pendingIDs: Set<String> = []
   public private(set) var performing = false
   public private(set) var error: PDFError?
+  @ObservationIgnored private var errorIsReadFailure = false
   @ObservationIgnored private let viewer: PDFViewer
   @ObservationIgnored private let attachments: AttachmentCapability
   @ObservationIgnored private let snapshots = SnapshotRefresh()
@@ -32,7 +33,15 @@ public final class AttachmentModel {
     await observeCapability(viewer: viewer, events: attachments.events,
       initial: {
         guard self.observation == session else { return }
-        do { try await self.attachments.ensureLoaded() } catch { self.error = controlError(error) }
+        do {
+          try await self.attachments.ensureLoaded()
+          guard self.observation == session, !Task.isCancelled else { return }
+          if self.errorIsReadFailure { self.error = nil; self.errorIsReadFailure = false }
+        } catch {
+          guard self.observation == session, !Task.isCancelled else { return }
+          self.errorIsReadFailure = true
+          self.error = controlError(error)
+        }
         await self.refresh()
       },
       refresh: { if self.observation == session { await self.refresh() } },
@@ -57,6 +66,7 @@ public final class AttachmentModel {
     }, failure: {
       self.files = []; self.selectedFiles = []; self.pendingIDs = []
       self.canAdd = false; self.canDownload = false; self.canRemoveSelection = false
+      self.errorIsReadFailure = true
       self.error = controlError($0)
     })
   }
@@ -91,12 +101,14 @@ public final class AttachmentModel {
 
   public func fileOperationFailed(_ failure: any Error) {
     if (failure as NSError).domain == NSCocoaErrorDomain && (failure as NSError).code == CocoaError.userCancelled.rawValue { return }
+    errorIsReadFailure = false
     error = controlError(failure)
   }
 
   private func perform<Value>(_ action: () async throws -> Value) async -> Value? {
     guard !performing else { return nil }
     performing = true
+    errorIsReadFailure = false
     error = nil
     defer { performing = false }
     do {
@@ -107,6 +119,7 @@ public final class AttachmentModel {
       return value
     } catch {
       await refresh()
+      self.errorIsReadFailure = false
       self.error = controlError(error)
       return nil
     }

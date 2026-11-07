@@ -8,6 +8,31 @@ import UniformTypeIdentifiers
 @MainActor
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct AttachmentModelTests {
+  @Test func cancellingInitialObservationDoesNotPoisonTheRetainedModel() async throws {
+    let (viewer, _, _, model) = try await opened()
+    let cancelled = Task { withUnsafeCurrentTask { $0?.cancel() }; await model.task() }
+    await cancelled.value
+    expectNoDifference(model.error, nil)
+    let reopened = Task { await model.task() }
+    defer { reopened.cancel() }
+    try await expectObserved({ model.status }, equals: .ready) {}
+    expectNoDifference(model.error, nil)
+    try await viewer.destroy()
+    await reopened.value
+  }
+
+  @Test func startingObservationPreservesAFileOperationFailure() async throws {
+    let (viewer, _, _, model) = try await opened()
+    await model.importFiles([URL(fileURLWithPath: "/nonexistent/embedpdf-retained-model-file")])
+    let failure = try #require(model.error)
+    let observing = Task { await model.task() }
+    defer { observing.cancel() }
+    try await expectObserved({ model.status }, equals: .ready) {}
+    expectNoDifference(model.error, failure)
+    try await viewer.destroy()
+    await observing.value
+  }
+
   func opened(scope: [String]? = nil) async throws -> (PDFViewer, DocumentInfo, AttachmentCapability, AttachmentModel) {
     let viewer = try PDFViewer(ViewerConfig(scope: scope, interaction: true, annotation: "", attachment: true))
     try await viewer.start()

@@ -6,6 +6,33 @@ import Testing
 @MainActor
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct OutlineModelTests {
+  @Test func cancellingInitialObservationDoesNotPoisonTheRetainedModel() async throws {
+    let (viewer, _, _, model) = try await opened()
+    let cancelled = Task { withUnsafeCurrentTask { $0?.cancel() }; await model.task() }
+    await cancelled.value
+    expectNoDifference(model.error, nil)
+    let reopened = Task { await model.task() }
+    defer { reopened.cancel() }
+    try await expectObserved({ model.status }, equals: .ready) {}
+    expectNoDifference(model.error, nil)
+    try await viewer.destroy()
+    await reopened.value
+  }
+
+  @Test func startingObservationPreservesAnActionFailure() async throws {
+    let (viewer, _, _, model) = try await opened()
+    await model.reload()
+    let item = try #require(await model.create(OutlineItemInput(title: "Parent", clearTarget: true)))
+    await model.move([item.itemRef], to: item.itemRef)
+    let failure = try #require(model.error)
+    let observing = Task { await model.task() }
+    defer { observing.cancel() }
+    try await expectObserved({ model.status }, equals: .ready) {}
+    expectNoDifference(model.error, failure)
+    try await viewer.destroy()
+    await observing.value
+  }
+
   func opened(scope: [String]? = nil, stage: Bool = false) async throws -> (PDFViewer, DocumentInfo, OutlineCapability, OutlineModel) {
     let viewer = try PDFViewer(ViewerConfig(scope: scope, stage: stage ? StageConfig() : nil, outline: true))
     try await viewer.start()

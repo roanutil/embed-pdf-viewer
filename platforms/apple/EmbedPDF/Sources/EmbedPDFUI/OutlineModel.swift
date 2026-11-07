@@ -15,6 +15,7 @@ public final class OutlineModel {
   public private(set) var performing = false
   public private(set) var error: PDFError?
   public private(set) var lastActivation: LinkActivation?
+  @ObservationIgnored private var errorIsReadFailure = false
   @ObservationIgnored private let viewer: PDFViewer
   @ObservationIgnored private let outline: OutlineCapability
   @ObservationIgnored private let snapshots = SnapshotRefresh()
@@ -32,7 +33,15 @@ public final class OutlineModel {
     await observeCapability(viewer: viewer, events: outline.events,
       initial: {
         guard self.observation == session else { return }
-        do { try await self.outline.ensureLoaded() } catch { self.error = controlError(error) }
+        do {
+          try await self.outline.ensureLoaded()
+          guard self.observation == session, !Task.isCancelled else { return }
+          if self.errorIsReadFailure { self.error = nil; self.errorIsReadFailure = false }
+        } catch {
+          guard self.observation == session, !Task.isCancelled else { return }
+          self.errorIsReadFailure = true
+          self.error = controlError(error)
+        }
         await self.refresh()
       },
       refresh: { if self.observation == session { await self.refresh() } },
@@ -55,6 +64,7 @@ public final class OutlineModel {
     }, failure: {
       self.items = []; self.rows = []; self.selectedItems = []; self.currentItem = nil
       self.canEdit = false
+      self.errorIsReadFailure = true
       self.error = controlError($0)
     })
   }
@@ -86,6 +96,7 @@ public final class OutlineModel {
   private func perform<Value>(_ action: () async throws -> Value) async -> Value? {
     guard !performing else { return nil }
     performing = true
+    errorIsReadFailure = false
     error = nil
     defer { performing = false }
     do {
@@ -94,6 +105,7 @@ public final class OutlineModel {
       return value
     } catch {
       await refresh()
+      self.errorIsReadFailure = false
       self.error = controlError(error)
       return nil
     }
