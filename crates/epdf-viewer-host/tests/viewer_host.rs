@@ -2508,7 +2508,7 @@ fn a_changed_document_validates_invalid() {
     let s = block_on(host.signature(doc)).unwrap();
     block_on(s.refresh(CancelToken::new())).unwrap();
     let request = SignatureValidateRequest {
-        at: None,
+        validation_time: None,
         until: Some(SignatureModificationsBasis::WorkingCopy),
     };
     let verdicts = block_on(s.validate(request, CancelToken::new())).unwrap();

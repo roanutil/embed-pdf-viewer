@@ -600,7 +600,7 @@ impl StampHandle {
     }
 
     /// The asset's own one-page PDF.
-    pub async fn get_asset_bytes(&self, id: String) -> Result<Option<Vec<u8>>, ViewerError> {
+    pub async fn read_asset_bytes(&self, id: String) -> Result<Option<Vec<u8>>, ViewerError> {
         self.cap.call(move |c| Ok(c.get_asset_bytes(&id))).await
     }
 
