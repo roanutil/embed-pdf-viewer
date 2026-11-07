@@ -829,7 +829,7 @@ fn a_rich_text_draft_writes_its_body_and_runs() {
                 ] } }),
     );
     let dto = &result["annotation"];
-    assert_eq!(dto["contents"], "Hello bold red\rH2");
+    assert_eq!(dto["contents"], "Hello bold red\nH2");
     assert_eq!(dto["fontFamily"], "helvetica");
     assert_eq!(test_support::canonical_numbers(&dto["fontSize"]), json!(18));
     assert_eq!(dto["color"], "#0000ff");
@@ -999,7 +999,7 @@ fn a_measured_create_writes_each_measurement_field() {
 }
 
 /// A line read sent back as a create: its unmeasured caption fields
-/// (`captionPosition: "inline"`, `captionEnabled` null or false, no offset,
+/// (`captionPosition: "inline"`, `captionEnabled` false, no offset,
 /// no leader, no scale) are accepted, as upstream accepts them.
 #[test]
 fn a_line_read_sent_back_as_a_create_is_accepted() {
@@ -1012,7 +1012,7 @@ fn a_line_read_sent_back_as_a_create_is_accepted() {
     let copy = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
         .outcome
         .expect("the read creates");
-    assert_eq!(copy["annotation"]["captionEnabled"], Value::Null);
+    assert_eq!(copy["annotation"]["captionEnabled"], false);
     assert_eq!(copy["annotation"]["captionPosition"], "inline");
     assert_eq!(
         test_support::canonical_numbers(&copy["annotation"]["linePoints"]),

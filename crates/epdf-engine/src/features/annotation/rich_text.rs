@@ -1,4 +1,5 @@
-//! The rich text of a free text, and the wire between it and the fork.
+//! The rich text of a free text or a markup comment, and the wire between it
+//! and the fork.
 //!
 //! Ports `core/src/dto/RichText.ts` (the DTO) and
 //! `services/src/features/annotations/internal/richTextWire.ts` (the wire).
@@ -8,7 +9,8 @@
 //! writing is a stringify, except for FACES. The DTO names a face the way the
 //! host does (a registered font's key, a standard font's kebab name); the fork
 //! names it the way a PDF does (family, weight, italic). Both directions map
-//! here.
+//! here, and so do hard line breaks: `\n` in the DTO, `\r` in the fork's
+//! JSON, as a PDF spells them.
 //!
 //! Only what the engine itself reasons about is typed: the body's face, size,
 //! colour and alignment. Paragraph properties and run deltas are carried as
@@ -25,6 +27,9 @@ use crate::features::annotation::vocabulary::{StandardFont, TextAlignment};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RichTextBody {
+    /// Empty when the fork names no family (a comment's body, as Acrobat
+    /// writes one).
+    #[serde(default)]
     pub family: String,
     /// 100..900.
     pub weight: u32,
@@ -50,7 +55,7 @@ pub struct RichTextBody {
 /// `RichTextRun`. The style holds only what the run overrides.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RichTextRun {
-    /// May contain `\r`: a hard line break inside the paragraph.
+    /// May contain `\n`: a hard line break inside the paragraph.
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub style: Option<Map<String, Value>>,
@@ -94,14 +99,45 @@ impl RichTextBody {
     }
 }
 
-/// `richTextPlainText`: paragraphs joined by `\r`, runs concatenated. What the
-/// fork writes to `/Contents`.
+/// `DEFAULT_RICH_TEXT_BODY`'s family: what a body naming none reads as.
+pub const DEFAULT_RICH_TEXT_FAMILY: &str = "Helvetica";
+
+/// `DEFAULT_RICH_TEXT_BODY`: the body a rich text that gives one starts from.
+pub fn default_rich_text_body() -> Map<String, Value> {
+    serde_json::json!({
+        "family": DEFAULT_RICH_TEXT_FAMILY,
+        "weight": 400,
+        "italic": false,
+        "size": 12,
+        "color": "#000000",
+        "decoration": [],
+        "script": "normal",
+        "letterSpacing": 0,
+        "horizontalScale": 1,
+        "align": "left",
+        "dir": "ltr",
+    })
+    .as_object()
+    .cloned()
+    .unwrap_or_default()
+}
+
+/// `toLineBreaks`: `text` with every line break (`\r\n`, `\r` or `\n`)
+/// spelled `line_break`. Text the engine returns ends its lines in `\n`; a
+/// PDF string spells them `\r`, as Acrobat writes them.
+pub fn to_line_breaks(text: &str, line_break: &str) -> String {
+    text.replace("\r\n", "\n").replace('\r', "\n").replace('\n', line_break)
+}
+
+/// `richTextPlainText`: paragraphs joined by `\n`, runs concatenated: its
+/// annotation's `contents`.
 pub fn plain_text(paragraphs: &[RichTextParagraph]) -> String {
-    paragraphs
+    let joined = paragraphs
         .iter()
         .map(|p| p.runs.iter().map(|r| r.text.as_str()).collect::<String>())
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n");
+    to_line_breaks(&joined, "\n")
 }
 
 /// `richTextParagraphsFromPlainText`: one paragraph per line break, one run
@@ -279,7 +315,7 @@ pub fn engine_rich_text_json(
                 .runs
                 .iter()
                 .map(|r| RichTextRun {
-                    text: r.text.clone(),
+                    text: to_line_breaks(&r.text, "\r"),
                     style: r.style.as_ref().map(|s| with_engine_face(s, describe)),
                 })
                 .collect(),
@@ -296,7 +332,14 @@ pub fn engine_rich_text_json(
 /// `parseEngineRichText`: the fork's JSON in the DTO shape, its `source` and
 /// `diagnostics` dropped. `None` when it is not what the fork writes.
 pub fn parse_engine_rich_text(json: &str) -> Option<RichTextDocument> {
+    parsed_engine_rich_text(json).map(|(_, document)| document)
+}
+
+/// `parsedEngineRichText`: the fork's JSON as the DTO, and where the fork
+/// read it from (`source`: `rc`, or `contents`).
+fn parsed_engine_rich_text(json: &str) -> Option<(Option<String>, RichTextDocument)> {
     let mut raw: Map<String, Value> = serde_json::from_str(json).ok()?;
+    let source = raw.get("source").and_then(Value::as_str).map(str::to_owned);
     let mut body = match raw.remove("body") {
         Some(Value::Object(body)) => body,
         _ => return None,
@@ -307,20 +350,26 @@ pub fn parse_engine_rich_text(json: &str) -> Option<RichTextDocument> {
     };
     body.remove("source");
     // Every colour as the engine gives colours: `#rrggbb`, lowercase
-    // (`withLowercaseColor`), the body's and each run's.
+    // (`withLowercaseColor`), the body's and each run's; a hard break `\n`.
     lowercase_color(&mut body);
     for paragraph in paragraphs.as_array_mut().into_iter().flatten() {
         let runs = paragraph.get_mut("runs").and_then(Value::as_array_mut);
         for run in runs.into_iter().flatten() {
+            if let Some(Value::String(text)) = run.get_mut("text") {
+                *text = to_line_breaks(text, "\n");
+            }
             if let Some(Value::Object(style)) = run.get_mut("style") {
                 lowercase_color(style);
             }
         }
     }
-    Some(RichTextDocument {
-        body: serde_json::from_value(Value::Object(body)).ok()?,
-        paragraphs: serde_json::from_value(paragraphs).ok()?,
-    })
+    Some((
+        source,
+        RichTextDocument {
+            body: serde_json::from_value(Value::Object(body)).ok()?,
+            paragraphs: serde_json::from_value(paragraphs).ok()?,
+        },
+    ))
 }
 
 /// `withLowercaseColor`.
@@ -333,6 +382,58 @@ fn lowercase_color(style: &mut Map<String, Value>) {
 /// `readEngineRichText`.
 pub fn read_rich_text(annotation: &pdfium::Annotation<'_>) -> Option<RichTextDocument> {
     annotation.rich_text_json().ok().flatten().as_deref().and_then(parse_engine_rich_text)
+}
+
+/// `readCommentRichText`: a markup annotation's comment as rich text, its
+/// `/RC`; `None` when it has none (the fork's model then comes from
+/// `/Contents`, which is the plain comment itself). A body that names no
+/// family, as Acrobat writes a comment's, reads as the default body's.
+pub fn read_comment_rich_text(annotation: &pdfium::Annotation<'_>) -> Option<RichTextDocument> {
+    let json = annotation.rich_text_json().ok().flatten()?;
+    let (source, mut document) = parsed_engine_rich_text(&json)?;
+    if source.as_deref() != Some("rc") {
+        return None;
+    }
+    if document.body.family.is_empty() {
+        document.body.family = DEFAULT_RICH_TEXT_FAMILY.to_owned();
+    }
+    Some(document)
+}
+
+/// `commentWithoutDefaultFamily`: a comment's rich text with a body in the
+/// default family written as one naming none: a comment that names none
+/// reads back in it ([`read_comment_rich_text`]), so another tool's comment
+/// sent back keeps its reader's face.
+pub fn comment_without_default_family(input: &RichTextDocumentInput) -> RichTextDocumentInput {
+    let mut out = input.clone();
+    if let Some(body) = out.body.as_mut()
+        && body.get("family").and_then(Value::as_str) == Some(DEFAULT_RICH_TEXT_FAMILY)
+    {
+        body.remove("family");
+    }
+    out
+}
+
+/// `applyComment`'s write: a markup annotation's comment as rich text,
+/// `/RC` with its plain projection in `/Contents`, the appearance left as it
+/// is.
+pub fn write_comment_rich_text(
+    annotation: &pdfium::Annotation<'_>,
+    subtype: &str,
+    input: &RichTextDocumentInput,
+    describe: Option<DescribeFont<'_>>,
+) -> Result<(), EngineError> {
+    let json = engine_rich_text_json(&comment_without_default_family(input), describe);
+    let ok = annotation.set_rich_text_json(&json).map_err(|_| {
+        EngineError::with_message(EngineErrorCode::InvalidArg, "rich text JSON contains NUL")
+    })?;
+    if !ok {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("{subtype}: the comment's rich text could not be written"),
+        ));
+    }
+    Ok(())
 }
 
 /// `writeRichText`: `/RC`, `/DS`, `/DA`, `/Contents` and the appearance
@@ -356,19 +457,24 @@ pub fn write_rich_text(
 }
 
 /// `assertRichTextAgreement`: a draft or patch carrying both `contents` and
-/// `richText` must agree, `contents` being the plain projection. A stale DTO
-/// echo fails loud here instead of quietly restoring old text.
+/// `richText` must agree, `contents` being the plain projection, line breaks
+/// however spelled. A stale DTO echo fails loud here instead of quietly
+/// restoring old text.
 pub fn assert_agreement(
+    subtype: Option<&str>,
     contents: Option<&str>,
-    rich_text: Option<&RichTextDocumentInput>,
+    paragraphs: Option<&[RichTextParagraph]>,
 ) -> Result<(), EngineError> {
-    let (Some(contents), Some(rich_text)) = (contents, rich_text) else {
+    let (Some(contents), Some(paragraphs)) = (contents, paragraphs) else {
         return Ok(());
     };
-    if contents != plain_text(&rich_text.paragraphs) {
+    if to_line_breaks(contents, "\n") != plain_text(paragraphs) {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
+            format!(
+                "{}: `contents` must equal the plain projection of `richText` when both are given",
+                subtype.unwrap_or("annotation")
+            ),
         ));
     }
     Ok(())
@@ -438,11 +544,13 @@ mod tests {
 
     #[test]
     fn contents_must_be_the_plain_projection() {
-        let rich =
-            RichTextDocumentInput { body: None, paragraphs: paragraphs_from_plain_text("a\nb") };
-        assert!(assert_agreement(Some("a\rb"), Some(&rich)).is_ok());
-        assert!(assert_agreement(Some("a\nb"), Some(&rich)).is_err());
-        assert!(assert_agreement(None, Some(&rich)).is_ok());
+        let paragraphs = paragraphs_from_plain_text("a\nb");
+        let agree = |contents| assert_agreement(Some("text"), contents, Some(&paragraphs));
+        assert!(agree(Some("a\rb")).is_ok());
+        assert!(agree(Some("a\r\nb")).is_ok());
+        assert!(agree(Some("a\nb")).is_ok());
+        assert!(agree(Some("ab")).is_err());
+        assert!(agree(None).is_ok());
     }
 
     #[test]

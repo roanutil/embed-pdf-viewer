@@ -23,7 +23,8 @@ use super::prepare::{DraftFields, FieldOwner, owner_of, read_field, standard_sta
 use super::shape_for_rect::pdf_resolve_rect_command;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::rich_text::{
-    RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text, plain_text,
+    RichTextParagraph, assert_agreement, default_rich_text_body, face_for_free_text_font,
+    paragraphs_from_plain_text, plain_text,
 };
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::geom::{PdfPoint, PdfPointTurn, PdfRect, pdf_point_turned, pdf_point_unturned};
@@ -241,24 +242,56 @@ fn paragraphs_of(value: Option<&Value>) -> Option<Vec<RichTextParagraph>> {
 }
 
 /// `assertRichTextAgreement`: `contents` beside `richText` is its plain
-/// projection.
+/// projection, line breaks however spelled.
 fn assert_rich_text_agreement(patch: &Map<String, Value>) -> Result<(), EngineError> {
-    let (Some(contents), Some(rich)) =
-        (patch.get("contents").and_then(Value::as_str), patch.get("richText"))
-    else {
+    let Some(rich) = patch.get("richText").filter(|rich| !rich.is_null()) else {
         return Ok(());
     };
     let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
-    if contents != plain_text(&paragraphs) {
-        return Err(invalid(
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
+    assert_agreement(
+        patch.get("subtype").and_then(Value::as_str),
+        patch.get("contents").and_then(Value::as_str),
+        Some(&paragraphs),
+    )
+}
+
+/// `commentFollows`: a markup annotation's comment follows its text (free
+/// text has its own rule). New rich text brings its `contents`;
+/// `richText: null` makes the comment plain, `contents` as it is; new
+/// `contents` on a rich comment becomes paragraphs, one per line break, over
+/// the comment's body; `null` contents clear both; a plain comment stays
+/// plain.
+fn comment_follows(current: &Map<String, Value>, patch: &mut Map<String, Value>) {
+    match patch.get("richText") {
+        Some(Value::Null) => return,
+        Some(rich) => {
+            let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
+            patch.insert("contents".into(), Value::String(plain_text(&paragraphs)));
+            return;
+        }
+        None => {}
     }
-    Ok(())
+    let Some(contents) = patch.get("contents").cloned() else {
+        return;
+    };
+    if current.get("richText").is_none_or(Value::is_null) {
+        return;
+    }
+    let Some(contents) = contents.as_str() else {
+        patch.insert("richText".into(), Value::Null);
+        return;
+    };
+    let paragraphs = paragraphs_from_plain_text(contents);
+    patch.insert(
+        "richText".into(),
+        serde_json::json!({ "paragraphs": serde_json::to_value(&paragraphs).unwrap_or_default() }),
+    );
+    patch.insert("contents".into(), Value::String(plain_text(&paragraphs)));
 }
 
 /// `freeTextFollows`: a free text's text lives in its rich text. New
-/// `richText` brings its `contents`; new `contents` becomes body-style
+/// `richText` brings its `contents`, and a body it gives is replaced whole;
+/// new `contents` becomes body-style
 /// paragraphs; a new font, size, text colour or alignment moves the body;
 /// whatever moves the body states the complete rich text, and the size,
 /// text colour and alignment it reads back with. A callout line needs the
@@ -309,16 +342,22 @@ fn free_text_follows(
         return Ok(());
     }
     let read_rich = current.get("richText");
-    let mut body = read_rich
-        .and_then(|rich| rich.get("body"))
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    if let Some(given) =
-        patch.get("richText").and_then(|rich| rich.get("body")).and_then(Value::as_object)
-    {
-        body.extend(given.clone());
-    }
+    // A body the new rich text gives is replaced whole: what it leaves out
+    // takes the default, never the current value. Without one the current
+    // body stays, as on a comment.
+    let mut body =
+        match patch.get("richText").and_then(|rich| rich.get("body")).and_then(Value::as_object) {
+            Some(given) => {
+                let mut body = default_rich_text_body();
+                body.extend(given.clone());
+                body
+            }
+            None => read_rich
+                .and_then(|rich| rich.get("body"))
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default(),
+        };
     body.extend(changes);
     let paragraphs = match patch.get("richText").and_then(|rich| rich.get("paragraphs")) {
         Some(paragraphs) => paragraphs.clone(),
@@ -353,8 +392,8 @@ fn free_text_follows(
     }
     if text_changed {
         let projected = paragraphs_of(Some(&paragraphs)).unwrap_or_default();
-        // The engine writes `/Contents` from the rich text: a line break
-        // reads back as `\r`.
+        // The engine writes `/Contents` from the rich text; `contents` is its
+        // plain projection.
         patch.insert("contents".into(), Value::String(plain_text(&projected)));
     }
     patch.insert(
@@ -579,10 +618,12 @@ pub fn pdf_derive_annotation_patch(
     if subtype == AnnotationSubtype::Text {
         note_state_follows(current, &mut patch)?;
     }
+    assert_rich_text_agreement(&patch)?;
     if subtype == AnnotationSubtype::FreeText {
-        assert_rich_text_agreement(&patch)?;
         free_text_follows(current, &mut patch, describe)?;
         callout_end_follows(current, &mut patch);
+    } else if owner_of(subtype, "richText").is_some() {
+        comment_follows(current, &mut patch);
     }
     measurement_follows(subtype, current, &mut patch)?;
     Ok(patch)
@@ -679,7 +720,7 @@ mod tests {
         assert!(!resolved.data.contains_key("contents"), "the text isn't rewritten");
         let text = pdf_resolve_annotation_patch(&current, map(json!({ "contents": "a\nb" })), None)
             .unwrap();
-        assert_eq!(text.data["contents"], "a\rb");
+        assert_eq!(text.data["contents"], "a\nb");
     }
 
     #[test]

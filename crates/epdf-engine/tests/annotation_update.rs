@@ -1193,7 +1193,7 @@ fn a_paragraphs_only_patch_keeps_the_body_and_contents_rewrite_body_style_paragr
             .outcome
             .expect("a contents rewrite")["annotation"]
             .clone();
-    assert_eq!(rewritten["contents"], "one\rtwo");
+    assert_eq!(rewritten["contents"], "one\ntwo");
     assert_eq!(
         rewritten["richText"]["paragraphs"],
         json!([{ "runs": [{ "text": "one" }] }, { "runs": [{ "text": "two" }] }])
@@ -1253,6 +1253,119 @@ fn contents_and_rich_text_that_disagree_are_refused() {
     .outcome
     .expect("an agreement");
     assert_eq!(agreed["annotation"]["contents"], "yes");
+}
+
+/// A shape's or note's draft at the case's spot.
+fn markup(replay: &mut Replay, draft: Value) -> Value {
+    let page = load().cases[0].page_object_number;
+    create(replay, &draft, page, &BTreeMap::new())
+}
+
+const SHAPE_BOX: &str = r#"{ "x": 72, "y": 72, "width": 100, "height": 60 }"#;
+const ICON_RECT: &str = r#"{ "x": 72, "y": 72, "width": 20, "height": 20 }"#;
+
+fn shape_box() -> Value {
+    serde_json::from_str(SHAPE_BOX).unwrap()
+}
+
+fn icon_rect() -> Value {
+    serde_json::from_str(ICON_RECT).unwrap()
+}
+
+#[test]
+fn a_comment_as_rich_text_reads_back_with_its_plain_projection_and_a_plain_one_reads_null() {
+    let mut replay = open(&load());
+    let paragraphs = json!([
+        { "runs": [{ "text": "Hello " }, { "text": "bold", "style": { "weight": 700 } }] },
+        { "runs": [{ "text": "two", "style": { "decoration": ["underline"] } }] },
+    ]);
+    let note = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "richText": { "paragraphs": paragraphs } }),
+    );
+    assert_eq!(note["contents"], "Hello bold\ntwo", "{note}");
+    assert_eq!(note["richText"]["paragraphs"], paragraphs);
+    // A body nobody stated: the engine's default.
+    assert_eq!(note["richText"]["body"]["family"], "Helvetica");
+    assert_eq!(note["richText"]["body"]["size"], 12.0);
+
+    let plain =
+        markup(&mut replay, json!({ "subtype": "text", "rect": icon_rect(), "contents": "plain" }));
+    assert_eq!(plain["richText"], Value::Null, "{plain}");
+}
+
+#[test]
+fn new_contents_rewrite_a_rich_comment_and_null_makes_it_plain() {
+    let mut replay = open(&load());
+    let created = markup(
+        &mut replay,
+        json!({ "subtype": "square", "box": shape_box(), "richText": {
+            "body": { "color": "#102030" },
+            "paragraphs": [{ "runs": [{ "text": "was " },
+                { "text": "bold", "style": { "weight": 700 } }] }] } }),
+    );
+    // A plain-text client's edit: the comment's /RC follows, not just
+    // /Contents.
+    let rewritten = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "subtype": "square", "contents": "now\nplain" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a contents rewrite")["annotation"]
+        .clone();
+    assert_eq!(rewritten["contents"], "now\nplain");
+    assert_eq!(
+        rewritten["richText"]["paragraphs"],
+        json!([{ "runs": [{ "text": "now" }] }, { "runs": [{ "text": "plain" }] }])
+    );
+    assert_eq!(rewritten["richText"]["body"]["color"], "#102030");
+
+    let unstyled = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "subtype": "square", "richText": null }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a plain comment")["annotation"]
+        .clone();
+    assert_eq!(unstyled["richText"], Value::Null, "{unstyled}");
+    assert_eq!(unstyled["contents"], "now\nplain");
+}
+
+#[test]
+fn a_redacts_comment_in_another_font_leaves_its_overlays() {
+    let mut replay = open(&load());
+    let redact = markup(
+        &mut replay,
+        json!({ "subtype": "redact", "rect": shape_box(), "overlayText": "CONFIDENTIAL",
+            "fontFamily": "courier", "fontSize": 10, "fontColor": "#ff0000",
+            "richText": { "body": { "family": "Times", "size": 14 },
+                "paragraphs": [{ "runs": [{ "text": "why" }] }] } }),
+    );
+    assert_eq!(redact["richText"]["body"]["family"], "Times", "{redact}");
+    assert_eq!(redact["richText"]["body"]["size"], 14.0);
+    assert_eq!(redact["fontFamily"], "courier");
+    assert_eq!(redact["fontSize"], 10.0);
+    assert_eq!(redact["fontColor"], "#ff0000");
+}
+
+#[test]
+fn a_comments_line_breaks_are_newlines_in_contents_and_returns_in_the_file() {
+    let mut replay = open(&load());
+    let note = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "contents": "first\nsecond\r\nthird" }),
+    );
+    assert_eq!(note["contents"], "first\nsecond\nthird");
+    // As Acrobat writes it: every line break a carriage return.
+    let text = saved_text(&mut replay);
+    assert!(
+        text.contains("(first\\rsecond\\rthird)") || text.contains("(first\rsecond\rthird)"),
+        "no /Contents with carriage returns"
+    );
 }
 
 #[test]

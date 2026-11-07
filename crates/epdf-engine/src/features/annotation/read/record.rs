@@ -22,7 +22,7 @@ use crate::clock::pdf_date_to_iso;
 use crate::error::EngineError;
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
 use crate::features::annotation::flags::AnnotationFlags;
-use crate::features::annotation::rich_text::free_text_font_for_face;
+use crate::features::annotation::rich_text::{free_text_font_for_face, to_line_breaks};
 use crate::features::annotation::vocabulary::{
     AnnotationBorderStyle, AnnotationReplyType, BlendMode, TextAlignment,
 };
@@ -299,7 +299,9 @@ pub fn read_annotation_record_base(
             right: f64::from(rect.right),
             top: f64::from(rect.top),
         },
-        contents: dictionary_read("Contents", annotation.string_value("Contents"))?,
+        // Lines end in `\n`, however `/Contents` spells them.
+        contents: dictionary_read("Contents", annotation.string_value("Contents"))?
+            .map(|contents| to_line_breaks(&contents, "\n")),
         subject: dictionary_read("Subj", annotation.string_value("Subj"))?,
         author: dictionary_read("T", annotation.string_value("T"))?,
         created_at: date("CreationDate")?,

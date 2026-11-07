@@ -74,15 +74,15 @@ pub fn write_measurement_fields(
                 offset as f32,
             ))?;
         }
-        match f.caption_enabled {
-            None => {}
-            Some(None) => p::remove_key(annotation, "Cap")?,
-            Some(Some(enabled)) => {
-                let offset =
-                    f.caption_offset.flatten().map(|o| (o.along as f32, o.perpendicular as f32));
-                let top = f.caption_position.as_deref() == Some("top");
-                require_measure_write(annotation.set_line_caption(enabled, top, offset))?;
-            }
+        if let Some(enabled) = f.caption_enabled {
+            let offset =
+                f.caption_offset.flatten().map(|o| (o.along as f32, o.perpendicular as f32));
+            let top = f.caption_position.as_deref() == Some("top");
+            require_measure_write(annotation.set_line_caption(
+                enabled.unwrap_or(false),
+                top,
+                offset,
+            ))?;
         }
     } else {
         match f.caption_enabled {

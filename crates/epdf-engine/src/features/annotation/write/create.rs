@@ -43,7 +43,7 @@ use super::stamp::{DrawingIndex, author_stamp_appearance, write_stamp_fit};
 use crate::cancel::CancelToken;
 use crate::clock::{Clock, format_pdf_timestamp};
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::annotation::read::kinds::{AnnotationRecord, read_annotation_record_kind};
+use crate::features::annotation::read::kinds::{AnnotationRecord, read_annotation_record};
 use crate::features::annotation::read::record::read_annotation_record_base;
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::features::annotation::vocabulary::{
@@ -167,9 +167,9 @@ pub fn create_annotation(
 
     let mut prepared = prepare_create(draft, &resources, services.context, document)?;
     claim_name(document, page_index, page, prepared.nm())?;
-    // A stamped create is a new annotation: without a name of its own it
-    // gets a fresh one. A fresh name is never taken.
-    if prepared.nm().is_none() {
+    // A stamped create is a new annotation: left without a name it gets a
+    // fresh one, never taken. `nm: null` (or empty) asks for none.
+    if prepared.fields.nm.is_none() {
         let fresh = uuid_v7(services.clock.now().epoch_millis, services.ids);
         prepared.fields.nm = Some(Some(fresh));
     }
@@ -246,11 +246,11 @@ pub fn create_annotation(
     let created = open()?;
     let mut budget = crate::features::actions::vocabulary::ActionReadBudgetTracker::default();
     let base = read_annotation_record_base(document, &created, page, index, &mut budget)?;
-    let kind = read_annotation_record_kind(document, &created, &base, created.subtype_code())?;
+    let record = read_annotation_record(document, &created, base, created.subtype_code())?;
     let mut changed = vec![AnnotationRef::ObjectNumber { page, annot: object_number }];
     changed.extend(linked);
     Ok(AnnotationCreateResult {
-        annotation: AnnotationRecord { base, kind },
+        annotation: record,
         meta: AnnotationMutationMeta::of(stamp, page, changed),
         parent_before,
     })
@@ -477,7 +477,53 @@ fn default_color(subtype: AnnotationSubtype) -> Rgb {
 }
 
 /// `applyDraft`: the kind's writer.
+/// `applyDraft`: the kind's fields, then a markup annotation's comment.
 fn apply_draft(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    draft: &PreparedDraft,
+    resources: &DraftResources<'_>,
+    services: &CreateServices<'_>,
+) -> Result<(), EngineError> {
+    apply_kind_draft(document, annotation, draft, resources, services)?;
+    apply_comment(annotation, draft.subtype, &draft.fields.comment, services.context)
+}
+
+/// `applyComment`: a markup annotation's comment as rich text (`/RC`),
+/// after the kind's fields, whose base wrote its `contents`: rich text
+/// writes `/RC` and its plain projection in `/Contents`, `null` removes
+/// `/RC` and leaves `/Contents`. A free text writes its own: its rich text
+/// is what it draws.
+pub(crate) fn apply_comment(
+    annotation: &Annotation<'_>,
+    subtype: AnnotationSubtype,
+    comment: &super::prepare::Nullable<
+        crate::features::annotation::rich_text::RichTextDocumentInput,
+    >,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    if subtype == AnnotationSubtype::FreeText {
+        return Ok(());
+    }
+    match comment {
+        None => Ok(()),
+        Some(None) => {
+            p::remove_key(annotation, "RC")?;
+            Ok(())
+        }
+        Some(Some(rich)) => {
+            let describe = |key: &str| context.describe_font(key);
+            crate::features::annotation::rich_text::write_comment_rich_text(
+                annotation,
+                subtype.as_str(),
+                rich,
+                Some(&describe),
+            )
+        }
+    }
+}
+
+fn apply_kind_draft(
     document: &Document,
     annotation: &Annotation<'_>,
     draft: &PreparedDraft,
@@ -670,6 +716,10 @@ fn rotation(f: &DraftFields) -> Option<f64> {
 fn apply_base(annotation: &Annotation<'_>, draft: &PreparedDraft) -> Result<(), EngineError> {
     let f = &draft.fields;
     if let Some(contents) = &f.contents {
+        // `/Contents` spells a line break `\r`, as Acrobat writes them.
+        let contents = contents
+            .as_deref()
+            .map(|text| crate::features::annotation::rich_text::to_line_breaks(text, "\r"));
         p::set_string_or_clear(annotation, "Contents", contents.as_deref())?;
     }
     if let Some(subject) = &f.subject {
@@ -1044,8 +1094,11 @@ pub fn create_batch(
                 claim_name(document, page_index, create.page, Some(&nm))
             })?;
             claimed.push((page_index, nm));
-        } else if matches!(create.attribution, BatchAttribution::Stamp(_)) {
-            // A fresh name is never taken: no claim needed.
+        } else if draft.fields.nm.is_none()
+            && matches!(create.attribution, BatchAttribution::Stamp(_))
+        {
+            // A create of your own left without a name gets a fresh one,
+            // never taken: no claim needed. `nm: null` asks for none.
             draft.fields.nm = Some(Some(uuid_v7(services.clock.now().epoch_millis, services.ids)));
         }
         for Planned(at) in create.reply_to.map(|(to, _)| to).into_iter().chain(create.parent) {
@@ -1142,9 +1195,12 @@ pub fn create_batch(
         let mut budget = crate::features::actions::vocabulary::ActionReadBudgetTracker::default();
         let base =
             read_annotation_record_base(document, &annotation, at.page, at.index, &mut budget)?;
-        let kind =
-            read_annotation_record_kind(document, &annotation, &base, annotation.subtype_code())?;
-        created.push(AnnotationRecord { base, kind });
+        created.push(read_annotation_record(
+            document,
+            &annotation,
+            base,
+            annotation.subtype_code(),
+        )?);
     }
     let mut pages: Vec<PageRef> = Vec::new();
     for at in &placed {

@@ -38,7 +38,7 @@ use crate::features::annotation::intent::{
 };
 use crate::features::annotation::rich_text::{
     RichTextBody, RichTextDocument, RichTextParagraph, RichTextRun, free_text_font_for_face,
-    read_rich_text,
+    read_comment_rich_text, read_rich_text,
 };
 use crate::features::annotation::state::{state_from_pdf, state_model_from_pdf};
 use crate::features::annotation::subtype::{AnnotationSubtype, code};
@@ -54,8 +54,21 @@ use crate::geom::{CalloutLine, LinePoints, NamedPdfQuad, PdfPoint, PdfRect, norm
 pub struct AnnotationRecord {
     #[serde(flatten)]
     pub base: AnnotationRecordBase,
+    /// A markup comment's rich text, where upstream's reader puts it: beside
+    /// the base fields. A text markup's and a shape's sit with their kind's
+    /// fields instead, and free text has its own.
+    #[serde(flatten)]
+    pub comment: Option<CommentRecord>,
     #[serde(flatten)]
     pub kind: AnnotationRecordKind,
+}
+
+/// `/RC`: a markup annotation's comment as rich text, `None` for a plain
+/// comment (`readCommentRichText`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommentRecord {
+    pub rich_text: Option<RichTextDocument>,
 }
 
 /// The kind's half of a record.
@@ -181,6 +194,8 @@ pub struct TextMarkupRecord {
     pub color: HexColor,
     pub opacity: f64,
     pub quad_points: Vec<NamedPdfQuad>,
+    /// The comment's rich text (`readTextMarkupExtras`).
+    pub rich_text: Option<RichTextDocument>,
 }
 
 /// Square and circle.
@@ -193,6 +208,8 @@ pub struct ShapeRecord {
     pub content_box: PdfRect,
     pub rotation: Option<f64>,
     pub cloudy_intensity: Option<f64>,
+    /// The comment's rich text (`readShapeExtras`).
+    pub rich_text: Option<RichTextDocument>,
 }
 
 /// Polygon and polyline.
@@ -237,7 +254,8 @@ pub enum CaptionPosition {
 pub struct LineRecord {
     pub measure: Option<Value>,
     pub intent: Option<LineIntent>,
-    pub caption_enabled: Option<bool>,
+    /// `/Cap`, `false` when the file has none (its ISO default).
+    pub caption_enabled: bool,
     pub caption_position: CaptionPosition,
     pub caption_offset: Option<CaptionOffset>,
     pub leader: Option<LineLeader>,
@@ -521,6 +539,7 @@ fn read_text_markup(
         color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(fallback)),
         opacity: opacity(annotation),
         quad_points: quad_points(annotation)?,
+        rich_text: read_comment_rich_text(annotation),
     })
 }
 
@@ -531,6 +550,7 @@ fn read_shape(annotation: &Annotation<'_>) -> Result<ShapeRecord, EngineError> {
         content_box: shape.content_box,
         rotation: shape.rotation,
         cloudy_intensity: cloudy_intensity(annotation),
+        rich_text: read_comment_rich_text(annotation),
     })
 }
 
@@ -566,10 +586,8 @@ fn read_line(annotation: &Annotation<'_>) -> Result<LineRecord, EngineError> {
     Ok(LineRecord {
         measure: measure(annotation)?,
         intent: LineIntent::from_name(intent(annotation)?.as_deref()),
-        // An absent `/Cap` reads `null`, as on polygons and polylines; `/CP`
-        // reads its ISO default.
-        caption_enabled: has_key(annotation, "Cap")
-            .then(|| caption.is_some_and(|caption| caption.enabled)),
+        // An absent `/Cap` and `/CP` read their ISO defaults.
+        caption_enabled: caption.is_some_and(|caption| caption.enabled),
         caption_position: match caption {
             Some(caption) if caption.position_code == 1 => CaptionPosition::Top,
             _ => CaptionPosition::Inline,
@@ -758,12 +776,20 @@ fn read_caret(annotation: &Annotation<'_>) -> Result<CaretRecord, EngineError> {
 
 fn read_redact(annotation: &Annotation<'_>) -> Result<RedactRecord, EngineError> {
     let da = annotation.default_appearance();
-    // The face the /DA names, resolved by identity as free text does.
-    let face = da.and_then(|_| read_rich_text(annotation)).map(|rich| rich.body);
+    // The face the /DA names, resolved by identity as free text does. Not
+    // the rich text's body: a redact's rich text is its comment, whose own
+    // font isn't the overlay's.
+    let face = match da {
+        Some(_) => dictionary_read("DA", annotation.default_appearance_font_face())?,
+        None => None,
+    };
     let font_family = match (&face, da) {
-        (Some(face), _) if !face.family.is_empty() => {
-            free_text_font_for_face(&face.family, face.weight, face.italic, Some(&key_for_face))
-        }
+        (Some((family, weight, italic)), _) if !family.is_empty() => free_text_font_for_face(
+            family,
+            u32::try_from(*weight).unwrap_or(400),
+            *italic,
+            Some(&key_for_face),
+        ),
         (_, Some(da)) => StandardFont::from_code(da.font_code).as_str().to_owned(),
         (_, None) => DEFAULT_STANDARD_FONT.as_str().to_owned(),
     };
@@ -810,6 +836,32 @@ fn read_file_attachment(annotation: &Annotation<'_>) -> Result<FileAttachmentRec
         color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(YELLOW)),
         opacity: opacity(annotation),
     })
+}
+
+/// Read the record of an annotation whose base is read: its kind's half,
+/// and the comment's rich text of a markup kind whose reader puts it beside
+/// the base.
+pub fn read_annotation_record(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    base: AnnotationRecordBase,
+    raw_subtype_code: i32,
+) -> Result<AnnotationRecord, EngineError> {
+    use AnnotationSubtype as S;
+    let comment = match AnnotationSubtype::from_code(raw_subtype_code) {
+        S::Text
+        | S::Caret
+        | S::FileAttachment
+        | S::Ink
+        | S::Line
+        | S::Redact
+        | S::Stamp
+        | S::Polygon
+        | S::Polyline => Some(CommentRecord { rich_text: read_comment_rich_text(annotation) }),
+        _ => None,
+    };
+    let kind = read_annotation_record_kind(document, annotation, &base, raw_subtype_code)?;
+    Ok(AnnotationRecord { base, comment, kind })
 }
 
 /// Read a kind's half (`pickReader` and the reader it picks). A subtype the
