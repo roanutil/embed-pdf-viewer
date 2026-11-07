@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "70910/75371",
-    "branches": "13929/15204",
+    "statements": "70950/75371",
+    "branches": "13953/15229",
     "unsnapshottedOnlyLines": 831,
     "unloadedFiles": 36
   },
@@ -4428,7 +4428,7 @@
     },
     "packages/plugin/annotation/src/read/render.ts": {
       "statements": "354/375",
-      "branches": "75/103",
+      "branches": "76/104",
       "uncoveredLines": [
         165,
         166,
@@ -4484,15 +4484,11 @@
       ]
     },
     "packages/plugin/annotation/src/read/text-fonts.ts": {
-      "statements": "188/276",
-      "branches": "20/38",
+      "statements": "202/276",
+      "branches": "25/47",
       "uncoveredLines": [
         49,
-        105,
         106,
-        107,
-        108,
-        109,
         116,
         117,
         118,
@@ -4552,17 +4548,7 @@
         204,
         205,
         206,
-        223,
-        224,
-        225,
-        226,
-        227,
-        228,
-        229,
-        230,
-        231,
         232,
-        233,
         241,
         242,
         243,
@@ -4577,6 +4563,8 @@
         276
       ],
       "uncoveredBranches": [
+        "108:17#0",
+        "108:57#0",
         "150:21#0",
         "151:9#0",
         "152:4#0",
@@ -4585,6 +4573,8 @@
         "166:6#0",
         "191:40#0",
         "203:17#0",
+        "230:6#0",
+        "231:15#0",
         "237:6#0",
         "238:13#0",
         "248:19#0",
@@ -4599,7 +4589,7 @@
     },
     "packages/plugin/annotation/src/read/view.ts": {
       "statements": "323/328",
-      "branches": "75/83",
+      "branches": "76/84",
       "uncoveredLines": [
         273,
         283,
@@ -4986,8 +4976,8 @@
       ]
     },
     "packages/plugin/annotation/src/text-item.ts": {
-      "statements": "95/130",
-      "branches": "13/21",
+      "statements": "121/130",
+      "branches": "30/35",
       "uncoveredLines": [
         46,
         47,
@@ -4997,43 +4987,14 @@
         51,
         52,
         53,
-        71,
-        105,
-        106,
-        107,
-        108,
-        109,
-        110,
-        111,
-        112,
-        113,
-        114,
-        115,
-        116,
-        117,
-        118,
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130
+        71
       ],
       "uncoveredBranches": [
         "64:51#0",
         "67:49#0",
-        "68:52#0",
         "68:65#0",
         "70:82#0",
-        "73:4#0",
-        "84:66#0",
-        "88:6#0"
+        "84:66#0"
       ]
     },
     "packages/plugin/annotation/src/token.ts": {
