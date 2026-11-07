@@ -126,7 +126,10 @@ fn a_flatten_applies_exactly_the_given_refs_and_reports_each() {
     for (key, value) in result.as_object().expect("an object") {
         assert_eq!(&event[key], value, "the event changed '{key}'");
     }
-    assert_eq!(event["origin"]["tx"], json!({ "id": "op-flatten", "index": 0, "count": 1 }));
+    assert_eq!(
+        event["origin"]["transaction"],
+        json!({ "id": "op-flatten", "index": 0, "count": 1 })
+    );
 
     // The layout is untouched; `a` is content now, `b` and `c` remain.
     assert_eq!(pages(&mut replay), layout_before);
@@ -313,7 +316,7 @@ fn a_page_flatten_applies_once_and_then_finds_nothing() {
     let event = &answer["event"];
     assert_eq!(event["type"], "pages.flattened", "{event}");
     assert_eq!(event["pages"], result["pages"]);
-    assert_eq!(event["origin"]["tx"]["id"], "op-1");
+    assert_eq!(event["origin"]["transaction"]["id"], "op-1");
     assert_eq!(pages(&mut replay), layout_before);
     assert!(listed(&mut replay, pon).len() < before.len());
 

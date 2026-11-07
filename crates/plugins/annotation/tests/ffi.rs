@@ -53,8 +53,9 @@ thread_local! {
 }
 
 fn local_origin(op_id: &str) -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-            "tx": { "id": op_id, "index": 0, "count": 1 } })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+        "transaction": { "id": op_id, "index": 0, "count": 1 } })
 }
 
 /// The engine's answer to one op, and the event it publishes for it.

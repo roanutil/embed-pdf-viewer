@@ -207,10 +207,10 @@ fn an_event_carries_its_result_verbatim() {
         EventOrigin {
             kind: OriginKind::Local,
             session_id: String::from("engine-1"),
-            sub: None,
-            ts: 1_700_000_000_000,
-            server_id: None,
-            tx: None,
+            subject: None,
+            at: String::from("2023-11-14T22:13:20.000Z"),
+            server_sequence: None,
+            transaction: None,
             undo_of: None,
         },
     );
@@ -230,21 +230,21 @@ fn an_event_carries_its_result_verbatim() {
 }
 
 #[test]
-fn a_local_origin_has_no_subject_and_no_server_id() {
+fn a_local_origin_has_no_subject_and_no_server_sequence() {
     // Provenance, not transport. A local engine has nobody authenticated
     // and no audit log, so both are absent rather than invented; a
-    // consumer using `sub` for attribution can tell.
+    // consumer using `subject` for attribution can tell.
     let origin = EventOrigin {
         kind: OriginKind::Local,
         session_id: String::from("engine-1"),
-        sub: None,
-        ts: 0,
-        server_id: None,
-        tx: None,
+        subject: None,
+        at: String::from("1970-01-01T00:00:00.000Z"),
+        server_sequence: None,
+        transaction: None,
         undo_of: None,
     };
     let wire = serde_json::to_value(&origin).expect("serialize");
-    assert_eq!(wire["sub"], serde_json::Value::Null);
-    assert_eq!(wire["serverId"], serde_json::Value::Null);
+    assert_eq!(wire["subject"], serde_json::Value::Null);
+    assert_eq!(wire["serverSequence"], serde_json::Value::Null);
     assert_eq!(wire["sessionId"], "engine-1");
 }

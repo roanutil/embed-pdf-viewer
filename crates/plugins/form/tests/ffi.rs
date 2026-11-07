@@ -81,7 +81,7 @@ fn spec() -> TestSpec {
         let meta = json!({ "affectedPages": [page()], "cacheDelta": null, "opId": op_id, "undoable": true,
             "changedFields": [field["ref"]], "changedWidgets": field["widgets"], "redrawnWidgets": field["widgets"] });
         let event = json!({ "type": "forms.valueSet", "field": field, "widgets": [], "meta": meta,
-            "origin": { "kind": "local", "tx": { "id": op_id, "index": 0, "count": 1 } } });
+            "origin": { "kind": "local", "transaction": { "id": op_id, "index": 0, "count": 1 } } });
         Ok(Reply {
             value: json!({ "items": [{ "type": "forms.setValue", "field": field, "widgets": [], "meta": meta }], "meta": meta }),
             events: vec![event],

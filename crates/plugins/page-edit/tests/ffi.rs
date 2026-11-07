@@ -58,8 +58,8 @@ fn applied(args: &[Value], op: &Value, pages: &[Value], inserted: Option<Vec<u32
     }
     let mut fact = item.clone();
     fact["type"] = json!(fact_type);
-    fact["origin"] =
-        json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null });
+    fact["origin"] = json!({ "kind": "local", "sessionId": "s1",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null });
     Reply { value: json!({ "items": [item], "meta": META(args) }), events: vec![fact] }
 }
 

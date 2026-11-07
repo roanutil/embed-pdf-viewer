@@ -25,11 +25,13 @@ fn md(title: &str) -> Value {
 }
 
 fn local() -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null })
 }
 
 fn remote() -> Value {
-    json!({ "kind": "remote", "sessionId": "s2", "sub": "u-9", "ts": 0, "serverId": null })
+    json!({ "kind": "remote", "sessionId": "s2",
+        "subject": "u-9", "at": "1970-01-01T00:00:00.000Z", "serverSequence": null })
 }
 
 fn meta() -> Value {

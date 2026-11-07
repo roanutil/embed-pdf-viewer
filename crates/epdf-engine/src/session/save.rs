@@ -115,29 +115,31 @@ pub struct EventOrigin {
     /// The engine instance that caused it.
     pub session_id: String,
     /// The authenticated subject, for a cloud engine. `None` locally.
-    pub sub: Option<String>,
-    /// When, in epoch milliseconds.
-    pub ts: i64,
+    pub subject: Option<String>,
+    /// When, as an ISO 8601 instant in UTC with milliseconds
+    /// (`new Date().toISOString()`): the server's time for remote, the
+    /// engine's for local. See [`crate::clock::format_iso_instant`].
+    pub at: String,
     /// The server audit-log row id, which is the resume cursor and is
     /// monotonic per document. `None` until the mutation has a server
     /// identity, which for a local engine is never.
-    pub server_id: Option<i64>,
+    pub server_sequence: Option<i64>,
     /// The write this event is one fact of: its `opId`, and where the event
     /// stands among the write's events. Set on the writes that run as a
     /// change, and on every other write and notice: `publishWrite` stamps
     /// each event it publishes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tx: Option<EventTx>,
+    pub transaction: Option<EventTransaction>,
     /// Set on the events of an undo: the `opId` of the change it undid.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub undo_of: Option<String>,
 }
 
-/// `origin.tx`: the write an event belongs to, and its place among the
+/// `origin.transaction`: the write an event belongs to, and its place among the
 /// write's events, counting from 0 to `count - 1` in the order they were
 /// published.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct EventTx {
+pub struct EventTransaction {
     pub id: String,
     pub index: usize,
     pub count: usize,

@@ -103,7 +103,7 @@ fn an_updated_document_reads_back_as_the_typescript_engines_did() {
                     standard.as_object_mut().unwrap().remove("custom");
                     assert_eq!(result["metadata"], standard, "{}", case.name);
                 }
-                assert_eq!(result["meta"]["opId"], answer["event"]["origin"]["tx"]["id"]);
+                assert_eq!(result["meta"]["opId"], answer["event"]["origin"]["transaction"]["id"]);
                 assert_eq!(result["meta"]["affectedPages"], json!([]), "{}", case.name);
                 assert_eq!(result["meta"]["cacheDelta"], Value::Null, "{}", case.name);
             }

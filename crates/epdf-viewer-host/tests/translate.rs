@@ -489,7 +489,7 @@ fn an_apply_runs_a_page_change_and_answers_its_items_and_events() {
     let decoded = run(&mut host, "apply", None, &[change]).unwrap();
     assert_eq!(decoded.value["items"][0]["type"], "pages.rotate");
     assert_eq!(decoded.events[0]["type"], "pages.rotated");
-    assert!(decoded.events[0]["origin"]["tx"].is_object(), "{}", decoded.events[0]);
+    assert!(decoded.events[0]["origin"]["transaction"].is_object(), "{}", decoded.events[0]);
     let list = run(&mut host, "pages.list", None, &[]).unwrap().value;
     assert_eq!(list["pages"][0]["rotation"], 90);
 }

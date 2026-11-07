@@ -104,7 +104,7 @@ fn prepare_then_complete_seals_the_field() {
     assert_eq!(completed["event"]["type"], json!("signatures.completed"));
     // The first of two facts of the write: `document.versioned` follows.
     assert_eq!(
-        completed["event"]["origin"]["tx"],
+        completed["event"]["origin"]["transaction"],
         json!({ "id": "sign-1", "index": 0, "count": 2 }),
         "{completed}"
     );

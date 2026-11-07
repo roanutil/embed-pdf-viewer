@@ -102,7 +102,7 @@ fn page_op(host: &mut Host, doc: &str, op_id: &str, op: Value) -> (Value, Value)
     let items = answer["result"]["items"].as_array().expect("items");
     let events = answer["events"].as_array().expect("events");
     assert_eq!((items.len(), events.len()), (1, 1), "{answer}");
-    assert_eq!(events[0]["origin"]["tx"], json!({ "id": op_id, "index": 0, "count": 1 }));
+    assert_eq!(events[0]["origin"]["transaction"], json!({ "id": op_id, "index": 0, "count": 1 }));
     (items[0].clone(), events[0].clone())
 }
 
@@ -222,7 +222,7 @@ fn a_metadata_write_answers_its_meta_and_publishes_one_fact_of_its_write() {
     );
     assert!(updated["result"].get("cache").is_none(), "{updated}");
     assert_eq!(
-        updated["event"]["origin"]["tx"],
+        updated["event"]["origin"]["transaction"],
         json!({ "id": "meta-1", "index": 0, "count": 1 }),
         "{updated}"
     );
@@ -346,7 +346,7 @@ fn a_form_change_publishes_each_ops_fact() {
         events.iter().zip(applied["result"]["items"].as_array().unwrap()).enumerate()
     {
         assert_eq!(
-            event["origin"]["tx"],
+            event["origin"]["transaction"],
             json!({ "id": "script-1", "index": index, "count": 2 }),
             "{applied}"
         );
@@ -444,9 +444,9 @@ fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_cancelled() {
     }
     assert_eq!(event["origin"]["kind"], json!("local"));
     // The one fact of its write (`publishWrite`).
-    assert!(event["origin"]["tx"]["id"].is_string(), "{prepared}");
-    assert_eq!(event["origin"]["tx"]["index"], json!(0));
-    assert_eq!(event["origin"]["tx"]["count"], json!(1));
+    assert!(event["origin"]["transaction"]["id"].is_string(), "{prepared}");
+    assert_eq!(event["origin"]["transaction"]["index"], json!(0));
+    assert_eq!(event["origin"]["transaction"]["count"], json!(1));
 
     // `signatures.cancel` (7bccc4f35) publishes `signatures.cancelled`.
     let aborted = envelope(
@@ -465,7 +465,7 @@ fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_cancelled() {
         "{aborted}",
     );
     assert_eq!(aborted["event"]["type"], json!("signatures.cancelled"));
-    assert_eq!(aborted["event"]["origin"]["tx"]["count"], json!(1), "{aborted}");
+    assert_eq!(aborted["event"]["origin"]["transaction"]["count"], json!(1), "{aborted}");
     assert_eq!(aborted["event"]["signingId"], signing_id);
 
     // Nothing parked any more: not a cancel, so no notice.
@@ -526,7 +526,10 @@ fn every_form_write_carries_meta() {
     );
     assert_eq!(set["result"]["field"]["value"], json!("Ada"), "{set}");
     assert_eq!(set["result"]["widgets"][0]["ref"], widget["ref"], "{set}");
-    assert_eq!(set["event"]["origin"]["tx"], json!({ "id": "fill-1", "index": 0, "count": 1 }));
+    assert_eq!(
+        set["event"]["origin"]["transaction"],
+        json!({ "id": "fill-1", "index": 0, "count": 1 })
+    );
 
     // A reset publishes one `forms.valueSet` per field it changed
     // (`formResetFacts`), as `events`.
@@ -561,7 +564,7 @@ fn every_form_write_carries_meta() {
     );
     assert_eq!(repaired["result"]["needsAppearancesCleared"], json!(false), "{repaired}");
     assert_eq!(
-        repaired["event"]["origin"]["tx"],
+        repaired["event"]["origin"]["transaction"],
         json!({ "id": "repair-1", "index": 0, "count": 1 }),
         "{repaired}"
     );
@@ -579,7 +582,10 @@ fn every_field_edit_carries_meta() {
     let check = |answer: &Value, op_id: &str| {
         assert_eq!(answer["result"]["meta"]["opId"], json!(op_id), "{answer}");
         assert_eq!(answer["result"]["meta"]["undoable"], json!(true), "{answer}");
-        assert_eq!(answer["event"]["origin"]["tx"], json!({ "id": op_id, "index": 0, "count": 1 }));
+        assert_eq!(
+            answer["event"]["origin"]["transaction"],
+            json!({ "id": op_id, "index": 0, "count": 1 })
+        );
     };
     let created = form_write(
         &mut host,

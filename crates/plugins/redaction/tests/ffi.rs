@@ -78,8 +78,9 @@ fn hit(start: u32) -> Value {
 }
 
 fn origin(op: &Value) -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-        "tx": { "id": op, "index": 0, "count": 1 } })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+        "transaction": { "id": op, "index": 0, "count": 1 } })
 }
 
 /// `doc.apply({ops}, {opId})`: each op answered as the engine answers it,
@@ -381,7 +382,8 @@ fn a_remote_apply_arrives_as_a_typed_result() {
         "removedAnnotationCount": 0,
         "meta": { "affectedPages": [page(1)], "cacheDelta": null, "opId": "remote",
             "undoable": false },
-        "origin": { "kind": "remote", "sessionId": "s2", "sub": null, "ts": 0, "serverId": "9" } });
+        "origin": { "kind": "remote", "sessionId": "s2",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": 9 } });
     block_on(thread.call(move |k| k.emit(&event))).unwrap().unwrap();
     let expected = RedactionApplyScope::Pages { pages: vec![PageRef { page_object_number: 1 }] };
     let last = block_on(redaction.last_result()).unwrap().unwrap();
@@ -410,7 +412,8 @@ fn a_retired_failed_status_is_refused_as_invalid_state() {
         "removedAnnotationCount": 0,
         "meta": { "affectedPages": [page(1)], "cacheDelta": null, "opId": "old",
             "undoable": false },
-        "origin": { "kind": "remote", "sessionId": "s2", "sub": null, "ts": 0, "serverId": "9" } });
+        "origin": { "kind": "remote", "sessionId": "s2",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": 9 } });
     block_on(thread.call(move |k| k.emit(&event))).unwrap().unwrap();
     let error = block_on(redaction.last_result()).unwrap_err();
     assert_eq!(code(&error), Some("invalid-state"), "{error:?}");

@@ -57,7 +57,8 @@ fn scale_set(pon: u32) -> Value {
         "type": "pages.scaleSet",
         "page": page_ref(pon),
         "meta": { "affectedPages": [page_ref(pon)], "cacheDelta": null, "opId": "set", "undoable": true },
-        "origin": { "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null }
+        "origin": { "kind": "local", "sessionId": "s1",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null }
     })
 }
 

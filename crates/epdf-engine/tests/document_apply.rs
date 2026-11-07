@@ -143,7 +143,7 @@ fn ops_apply_in_order_as_one_write_and_publish_one_burst() {
     assert_eq!(types, ["metadata.updated", "metadata.customUpdated", "metadata.updated"]);
     for (index, event) in events.iter().enumerate() {
         assert_eq!(
-            event["origin"]["tx"],
+            event["origin"]["transaction"],
             json!({ "id": "change-conformance-order", "index": index, "count": 3 })
         );
         assert!(event["origin"].get("undoOf").is_none(), "{event}");
@@ -260,7 +260,61 @@ fn an_undo_carries_the_op_id_it_undid() {
     let undo = apply(&mut host, json!({ "undoOf": mine["meta"]["opId"] }), Some("undo-1"))
         .expect("the undo applies");
     assert_eq!(undo["events"][0]["origin"]["undoOf"], mine["meta"]["opId"]);
-    assert_eq!(undo["events"][0]["origin"]["tx"]["id"], "undo-1");
+    assert_eq!(undo["events"][0]["origin"]["transaction"]["id"], "undo-1");
+}
+
+/// The origin a local change stamps, key for key and in upstream's order
+/// (`EventOrigin` in `core/src/events/DocumentEvent.ts`, stamped by
+/// `publishChange` in `EventHub.ts`): `subject` and `serverSequence` null,
+/// `at` one `new Date().toISOString()` for the whole burst, `transaction`
+/// counting the change's events, and `undoOf` only on an undo's.
+#[test]
+fn a_change_stamps_upstreams_origin_shape() {
+    let mut host = Host::new().with_determinism(
+        Box::new(epdf_engine::clock::FixedClock(epdf_engine::clock::Timestamp::utc(
+            1_762_424_306_789,
+        ))),
+        Box::new(epdf_engine::ids::SeededIdSource::new(1)),
+    );
+    common::open_fixture(&mut host, FIXTURE);
+    let answer = apply(
+        &mut host,
+        json!({ "ops": [update(json!({ "title": "One" })), update(json!({ "title": "Two" }))] }),
+        Some("pin-1"),
+    )
+    .expect("the change applies");
+    let events = answer["events"].as_array().expect("events");
+    assert_eq!(events.len(), 2, "{answer}");
+    let session = events[0]["origin"]["sessionId"].as_str().expect("a session id").to_owned();
+    assert!(!session.is_empty());
+    for (index, event) in events.iter().enumerate() {
+        let expected = format!(
+            concat!(
+                r#"{{"kind":"local","sessionId":"{}","subject":null,"#,
+                r#""at":"2025-11-06T10:18:26.789Z","serverSequence":null,"#,
+                r#""transaction":{{"id":"pin-1","index":{},"count":2}}}}"#
+            ),
+            session, index
+        );
+        assert_eq!(serde_json::to_string(&event["origin"]).unwrap(), expected);
+    }
+
+    let undo = apply(&mut host, json!({ "undoOf": "pin-1" }), Some("pin-2")).expect("undone");
+    let undone = undo["events"].as_array().expect("events");
+    assert!(!undone.is_empty(), "{undo}");
+    for (index, event) in undone.iter().enumerate() {
+        let expected = format!(
+            concat!(
+                r#"{{"kind":"local","sessionId":"{}","subject":null,"#,
+                r#""at":"2025-11-06T10:18:26.789Z","serverSequence":null,"#,
+                r#""transaction":{{"id":"pin-2","index":{},"count":{}}},"undoOf":"pin-1"}}"#
+            ),
+            session,
+            index,
+            undone.len()
+        );
+        assert_eq!(serde_json::to_string(&event["origin"]).unwrap(), expected);
+    }
 }
 
 #[test]

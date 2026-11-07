@@ -693,7 +693,10 @@ fn emits_one_annotations_created_per_annotation_as_one_transaction() {
         assert_eq!(event["type"], "annotations.created");
         assert_eq!(event["annotation"], answer["result"]["annotations"][index]);
         assert_eq!(event["page"], page_ref(page));
-        assert_eq!(event["origin"]["tx"], json!({ "id": "import-1", "index": index, "count": 2 }));
+        assert_eq!(
+            event["origin"]["transaction"],
+            json!({ "id": "import-1", "index": index, "count": 2 })
+        );
     }
 }
 

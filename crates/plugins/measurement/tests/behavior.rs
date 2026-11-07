@@ -274,7 +274,8 @@ fn closing_mid_change_reports_each_page_and_refuses_the_queued_write() {
             "type": "pages.scaleSet",
             "page": pr(pon),
             "meta": { "affectedPages": [pr(pon)], "cacheDelta": null, "opId": "set", "undoable": true },
-            "origin": { "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null },
+            "origin": { "kind": "local", "sessionId": "s1",
+                "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
         })
     };
     let rig = Rig::new(vec![

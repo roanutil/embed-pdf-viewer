@@ -33,8 +33,9 @@ fn outline() -> Value {
 }
 
 fn local(op_id: &str) -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-            "tx": { "id": op_id, "index": 0, "count": 1 } })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+        "transaction": { "id": op_id, "index": 0, "count": 1 } })
 }
 
 /// The n-th change's id under the case entropy.
@@ -165,8 +166,10 @@ fn the_mirror_and_on_changed_lead_the_writes_promise() {
     let _off = rig.outline.on_changed(move |event| {
         // The mirror already holds the confirmed item when the event fires.
         let listed = numbers(&cap.list());
-        log.borrow_mut()
-            .push(format!("changed {} {:?} {}", event.kind, listed, event.origin["tx"]["id"]));
+        log.borrow_mut().push(format!(
+            "changed {} {:?} {}",
+            event.kind, listed, event.origin["transaction"]["id"]
+        ));
         Ok(())
     });
     let promise = rig.outline.create(titled("N"), OutlineCreateOptions::default());

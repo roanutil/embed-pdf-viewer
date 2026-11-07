@@ -128,8 +128,9 @@ fn apply_answer(scope: Value, pages: Vec<Value>, op: &str) -> Value {
         event[k] = v.clone();
     }
     event["origin"] = json!({
-        "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-        "tx": { "id": op, "index": 0, "count": 1 },
+        "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+        "transaction": { "id": op, "index": 0, "count": 1 },
     });
     json!({
         "path": "redaction.apply",
@@ -360,7 +361,7 @@ fn an_apply_commits_one_page_and_leaves_the_other_pages_marks() {
 
     let events = events.borrow();
     assert_eq!(events.len(), 1);
-    assert_eq!(events[0].origin["tx"]["id"], json!("one"));
+    assert_eq!(events[0].origin["transaction"]["id"], json!("one"));
     assert!(events[0].result.get("type").is_none() && events[0].result.get("origin").is_none());
     assert!(Rc::ptr_eq(&rig.redaction.get_last_result().unwrap(), &events[0].result));
     assert!(!rig.redaction.is_applying());
@@ -688,8 +689,8 @@ fn a_remote_apply_reaches_every_listener() {
     {
         event[k] = v.clone();
     }
-    event["origin"] =
-        json!({ "kind": "remote", "sessionId": "s2", "sub": null, "ts": 0, "serverId": "9" });
+    event["origin"] = json!({ "kind": "remote", "sessionId": "s2",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": 9 });
     rig.fake.emit("a", &event).expect("emit");
     rt::run_until_stalled();
     assert_eq!(heard.get(), 1);

@@ -2474,7 +2474,7 @@ impl Host {
 
     /// Stamp `event` as this engine's own and as the one fact of the write
     /// `op_id` (`publishWrite`): a local origin under the session's id, at
-    /// the clock's now, with `tx` naming the write. A completed signing is
+    /// the clock's now, with `transaction` naming the write. A completed signing is
     /// the first of two facts: `document.versioned` follows it from the
     /// host's publisher (`LocalDocumentSignaturesService.complete`), because
     /// an answer carries one event.
@@ -2489,7 +2489,7 @@ impl Host {
         let mut stamped = self.stamp_change(key, op_id, None, vec![value(&event)?])?;
         let mut stamped = stamped.pop().unwrap_or(serde_json::Value::Null);
         if versioned {
-            stamped["origin"]["tx"]["count"] = serde_json::json!(2);
+            stamped["origin"]["transaction"]["count"] = serde_json::json!(2);
         }
         Ok(stamped)
     }
@@ -2719,8 +2719,9 @@ impl Host {
     }
 
     /// Stamp a change's events as this engine's own, each one fact of the
-    /// write `op_id`: `origin.tx` counts them, and an undo's carry the
-    /// `opId` it undid.
+    /// write `op_id`: `origin.transaction` counts them, and an undo's carry
+    /// the `opId` it undid. One `at` for all of them, as `publishChange`
+    /// reads the time once.
     fn stamp_change(
         &self,
         key: &SessionKey,
@@ -2731,7 +2732,7 @@ impl Host {
         use crate::session::save;
 
         let session = self.sessions.session(key)?;
-        let ts = self.clock.now().epoch_millis;
+        let at = crate::clock::format_iso_instant(self.clock.now().epoch_millis);
         let count = events.len();
         events
             .into_iter()
@@ -2740,10 +2741,14 @@ impl Host {
                 let origin = save::EventOrigin {
                     kind: save::OriginKind::Local,
                     session_id: session.session_id().to_owned(),
-                    sub: None,
-                    ts,
-                    server_id: None,
-                    tx: Some(save::EventTx { id: op_id.to_owned(), index, count }),
+                    subject: None,
+                    at: at.clone(),
+                    server_sequence: None,
+                    transaction: Some(save::EventTransaction {
+                        id: op_id.to_owned(),
+                        index,
+                        count,
+                    }),
                     undo_of: undo_of.clone(),
                 };
                 event["origin"] = value(&origin)?;

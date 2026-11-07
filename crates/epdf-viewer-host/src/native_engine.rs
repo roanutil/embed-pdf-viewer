@@ -209,7 +209,7 @@ fn publish(doc: &str, event: &Value) {
             listener(event);
         }
         let mut origin = event.get("origin").cloned().unwrap_or(Value::Null);
-        if let Some(tx) = origin.get_mut("tx").filter(|tx| tx.is_object()) {
+        if let Some(tx) = origin.get_mut("transaction").filter(|tx| tx.is_object()) {
             tx["index"] = json!(1);
         }
         let versioned = json!({
@@ -1279,7 +1279,7 @@ mod tests {
                     &json!({
                         "type": "signatures.completed",
                         "version": 2,
-                        "origin": { "tx": { "index": 0, "count": 2 } },
+                        "origin": { "transaction": { "index": 0, "count": 2 } },
                     }),
                 );
                 let held_after_event = doc.held_object_numbers();

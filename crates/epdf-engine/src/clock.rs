@@ -370,6 +370,28 @@ pub fn format_pdf_timestamp(at: Timestamp) -> Option<String> {
     ))
 }
 
+/// An instant as `Date.prototype.toISOString` writes it: UTC, milliseconds,
+/// `Z` (`2026-11-06T10:18:26.000Z`). What upstream stamps as
+/// `EventOrigin.at` (`EventHub.ts`, `new Date().toISOString()`).
+///
+/// A year outside 0 to 9999 takes the expanded form `toISOString` writes
+/// for it, a sign and six digits (`+010000`, `-000001`). The range
+/// `toISOString` refuses with a `RangeError` (beyond 8.64e15 ms either side
+/// of the epoch) has no counterpart: the engine's clock never reads it.
+pub fn format_iso_instant(epoch_millis: i64) -> String {
+    let c = civil_from_epoch_millis(epoch_millis);
+    let millis = epoch_millis.rem_euclid(1_000);
+    let year = if (0..=9999).contains(&c.year) {
+        format!("{:04}", c.year)
+    } else {
+        format!("{}{:06}", if c.year < 0 { '-' } else { '+' }, c.year.unsigned_abs())
+    };
+    format!(
+        "{year}-{:02}-{:02}T{:02}:{:02}:{:02}.{millis:03}Z",
+        c.month, c.day, c.hour, c.minute, c.second
+    )
+}
+
 /// Accepts exactly the strings `IsoDateTimeSchema` accepts
 /// (`core/src/dto/IsoDateTime.schema.ts`), which is zod 3's
 /// `z.string().datetime({ offset: true, local: true })`:
@@ -729,5 +751,27 @@ mod tests {
         ] {
             assert!(!is_iso_date_time(rejected), "{rejected}");
         }
+    }
+
+    #[test]
+    fn an_instant_is_written_as_to_iso_string_writes_it() {
+        // `new Date(ms).toISOString()` in Node, for each.
+        for (millis, expected) in [
+            (0, "1970-01-01T00:00:00.000Z"),
+            (1_700_000_000_000, "2023-11-14T22:13:20.000Z"),
+            (1_762_424_306_789, "2025-11-06T10:18:26.789Z"),
+            (951_782_400_001, "2000-02-29T00:00:00.001Z"),
+            (-1, "1969-12-31T23:59:59.999Z"),
+            (-62_167_219_200_000, "0000-01-01T00:00:00.000Z"),
+            (-62_198_755_200_000, "-000001-01-01T00:00:00.000Z"),
+            (253_402_300_800_000, "+010000-01-01T00:00:00.000Z"),
+        ] {
+            assert_eq!(format_iso_instant(millis), expected, "{millis}");
+        }
+    }
+
+    #[test]
+    fn an_iso_instant_is_an_iso_date_time() {
+        assert!(is_iso_date_time(&format_iso_instant(1_762_424_306_789)));
     }
 }
