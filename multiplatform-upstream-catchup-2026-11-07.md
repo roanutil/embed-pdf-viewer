@@ -68,15 +68,32 @@ merge had no conflicts. Upstream's 42 commits add two exports, `EPDFAnnot_SetNoC
 diff against upstream after the merge is build scripts, patches, args goldens,
 `fpdfsdk/epdf_layer_embeddertest.cpp` and docs, 25 files.
 
-The `wasm32-eh` PDFium (which no release publishes, and which `epdf-wasm` links) is being built
-from `786765b80` in a separate container, `embedpdf-runtime-build-c7`, into
-`/Users/andrew/repos/embed-pdf-runtime-builds/c7-4346c5131/` on the host, following the recipe of
-the previous build in `c2-cff0077cf/` beside it. Until it exists, every checkout here builds its
-`wasm32` payload with `EMBEDPDF_RUST_CORE=0` (PDFium alone). That is enough for the TS oracle and
-the vector generators. The `packages/core-wasm` suites wait for it.
+The fork's `wasm32-eh` PDFium (which no release publishes, and which `epdf-wasm` links) was built
+from `786765b80` in container `embedpdf-runtime-build-c7` (debian trixie, linux/amd64, volume
+`embedpdf-runtime-build-c7-work`, emsdk 4.0.0, 263 s after a 127 s dependency sync). The archive
+is `/Users/andrew/repos/embed-pdf-runtime-builds/c7-4346c5131/libembedpdf-runtime-wasm32-eh-786765b80.tar.gz`,
+sha256 `2ae6869dcc29da304c950d0fc1a77f88332d88d7618c68d493d2fcdafa92bc8d`, and its
+`BUILD-METADATA.json` names `786765b8048312ce1def201baf9680a4d0347fdd`. A copy sits at
+`/workspaces/` in the dev container, with a pin file `/workspaces/wasm32-eh-pin.json` for
+`PDF_RUNTIME_BUILD_FILE=/workspaces/wasm32-eh-pin.json fetch-libpdfium.sh wasm32-eh`. The fork's
+`linux-arm64` and `wasm32` are not rebuilt: the checkouts use upstream's `runtime-4346c5131`
+release for both, and the fork's diff from upstream is build-only.
 
-The branch is not pushed yet. Pushing from the container fails because the host's git credential
-forwarder (port 18081) is not running.
+Pushed to `roanutil/embed-pdf-runtime` on 2026-11-07. The host's git credential forwarder listens
+on port 10895; pass `-e GIT_CREDENTIAL_FORWARDER_SERVER=host.docker.internal:10895` to
+`docker exec` for pushes.
+
+### Container environment notes
+
+- Use `bash -c`, not `bash -lc`, with `docker exec`: a login shell drops emsdk from `PATH`.
+- `packages/engine/runtime/build/generate-functions.mjs` parses the PDFium headers with the host
+  `clang`. On Linux LP64, `uint64_t` resolves to `unsigned long`, which the generator classifies
+  as `i32`; on macOS it is `unsigned long long` (`i64`). `EPDFAttachment_ExtractFile` and
+  `EPDFAttachment_ExtractFileToOwnedBuffer` then fail `verify-wasm-abi.mjs` (5 arguments against
+  the export's 6). The shim `/workspaces/bin/clang` (committed as `clang-shim.sh`) parses the AST
+  against the emscripten sysroot; the regenerated `pdf-functions.generated.ts` then matches the
+  committed file byte for byte. `prep.sh` puts it first on `PATH`. No repo code changed.
+- `packages/rust-viewer-bundle` fails to build until the `wasm32` payload carries the Rust core.
 
 ### Impl merge
 
@@ -95,7 +112,62 @@ impl's own hunks against upstream.
 
 ### Baselines
 
-Pending.
+Results live in `/workspaces/results/<name>/` in the container (`cargo.failed`, `engconf.all`,
+`plugconf.all`, `ts.log`).
+
+Impl at `5a2f25f06` is red before anything changes: `cargo test --workspace` passes 568 and fails
+99, all in `crates/epdf-engine/tests` and all on stale-shape vectors (`missing field ...`); 10 of 32
+engine `:check` scripts fail (`scope`, `metadata`, `annotation-read`, `forms`, `annotation-create`,
+`annotation-update`, `operations`, `pages-mutate`, `wire`, `form-apply`). The earlier catch-up
+regenerated impl's vectors and left the Rust port to plugins, and this one follows that: impl gets
+the merge, the generator fixes and the regenerated vectors; the Rust port happens on plugins.
+
+Plugins at `8fa01cc1e`: `cargo test --workspace` passes 3,187 and fails none (1 ignored). Every
+engine `:check` script passes. Every plugin-conformance check fails (`vectors:check`,
+`coverage:check`, `test:harness`, `typecheck` with 70 errors): the generator imports
+`packages/core/annotation/src/font-css`, removed by `595fa2bd5` before the start, and plugin models
+renamed before the start. So the plugin vectors were already not regenerable at the start; the
+committed ones still replay in Rust. TS suites: `@embedpdf/engine` native tests need the
+`linux-arm64` addon (`build:target linux-arm64`, now in `prep-extra.sh`) and the viewer tests need
+Playwright browsers; rerun after `prep-extra.sh`.
+
+### Impl after the merge
+
+The merged impl compiles and its cargo failures are the same 99 as its baseline. The generators had
+9 type errors against upstream's TS, fixed in `dc4e31dc6`: `changed` -> `changedRefs` (26a686502),
+form `family` -> `kind` (c4b286a69), `decodePdfBits`/`PdfBits` -> `permissionFlagsOf`/
+`PdfPermissionFlags` (a780243ba), and `advisoryFromPdfBits` removed with no replacement (a780243ba),
+whose cases now record the flags and what `materializePdfPermissions` grants on them. Every group was
+regenerated in `7fe03c102` (deterministic over two runs); the commit message traces each change.
+`wire:check` still fails as at the start (it expects 89 request kinds; the union has 94).
+
+### Plugins
+
+`702dacba8` merges the impl catch-up into plugins (only `runtime-src` conflicted), `f8958b69f`
+merges impl's generator and vector commits (the scope generator conflicted; vectors taken from impl
+and regenerated after). On plugins: `f55f8c35a` (`SignatureDTO` -> `Signature`, `contentsSize` ->
+`contentsSizeBytes`), `1dbde8772` (the fonts generator sent `displayHash`, renamed `displaySha256` in
+26a686502, so three program reads regenerated as `NotFound`; caught by a regenerated answer that
+contradicted its case), `cc2d9490f` (every engine group regenerated; `operations:check` and
+`wire:check` pass).
+
+On `cc2d9490f`, `cargo test --workspace` passes 3,077 and fails 110, all in `epdf-engine` (vector
+shape and behaviour changes above).
+
+Phase 1 runs four workers in their own worktrees and branches, briefed by
+`/workspaces/AGENT-BRIEF.md` (copied to `docs/research/upstream-catchup-2026-11-07/AGENT-BRIEF.md`):
+
+| Worker | Branch | Area |
+|---|---|---|
+| e1 | `research/catchup-1107-e1` | `epdf-engine` annotations: annotation_*, attachments, actions, submit flags |
+| e2 | `research/catchup-1107-e2` | `epdf-engine` everything else: forms, security, scope, signature, pages, text, save, fonts, error codes, wire |
+| t1 | `research/catchup-1107-t1` | plugin-conformance shared sources and the annotation, form, fonts, stamp, signature, measurement, redaction and acrojs suites |
+| t2 | `research/catchup-1107-t2` | plugin-conformance actions, attachment, commands, i18n, kernel, link, metadata, outline, page-edit, render, search, selection, shell, stage, ui-core and view-manager suites |
+
+Phase 2, after integrating phase 1 on the plugins branch: regenerate every plugin vector and port
+the Rust plugin crates to replay them; then `coverage:check` (new upstream TS paths need cases), the
+`core-wasm` suites on a payload with the Rust core (the `wasm32-eh` build above), and the
+`platforms/` wrappers.
 
 ### Test suites
 

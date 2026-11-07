@@ -4,6 +4,8 @@ set -uo pipefail
 cd "$1" || exit 2
 export NPM_TOKEN="" CI=true
 export CARGO_TARGET_DIR="$1/target"
+# clang shim (see clang-shim.sh): header AST parsed against the emscripten sysroot
+export PATH="/workspaces/bin:$PATH"
 step() { echo "=== $(date +%T) $*"; "$@" || { echo "FAILED: $*"; exit 1; }; }
 step pnpm install --frozen-lockfile
 step bash packages/engine/runtime/scripts/fetch-libpdfium.sh linux-$(node -p process.arch)
@@ -12,7 +14,8 @@ if ! bash packages/engine/runtime/scripts/fetch-payload.sh wasm32; then
   echo "no published payload; building wasm32 without the Rust core (no wasm32-eh PDFium yet)"
   EMBEDPDF_RUST_CORE=0 step pnpm --filter @embedpdf/engine-runtime build:target wasm32
 fi
-for p in @embedpdf/engine-runtime @embedpdf/engine-core @embedpdf/engine-services @embedpdf/engine; do step pnpm --filter $p build; done
+# build every workspace package (dependencies included) so the TS suites and generators resolve
+step pnpm exec turbo run build --filter='./packages/**' --filter='./tooling/**' --filter='!@mfb/embedpdf-rust-viewer' --concurrency=6
 pnpm --filter @embedpdf/example-rust-kernel-eval bootstrap || echo "kernel-eval bootstrap failed (non-fatal)"
 step cargo fetch --locked
 echo "PREP DONE"
