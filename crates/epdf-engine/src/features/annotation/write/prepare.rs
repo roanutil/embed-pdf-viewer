@@ -544,6 +544,10 @@ pub const FLAG_NAMES: [&str; 10] = [
     "lockedContents",
 ];
 
+/// `DEFAULT_DASH_ARRAY`: ISO 32000's default dash, 3 on and 3 off, written
+/// as both lengths.
+pub const DEFAULT_DASH_ARRAY: [f64; 2] = [3.0, 3.0];
+
 /// A create, checked and stated whole, in the file's coordinates: what the
 /// writers write (`PlacedDraft`). A box kind states its `box`.
 #[derive(Debug, Clone)]
@@ -776,6 +780,11 @@ pub(crate) fn read_field(
             let dashes: Option<Vec<f64>> = read_nullable(kind, name, value)?;
             if dashes.iter().flatten().any(|d| !nonnegative(*d)) {
                 return Err(invalid(kind, name, "expected numbers of 0 or more"));
+            }
+            // `DashArrayWriteSchema`: an empty pattern is a solid line, which
+            // is `borderStyle: 'solid'`.
+            if dashes.as_ref().is_some_and(Vec::is_empty) {
+                return Err(invalid(kind, name, "expected at least one length"));
             }
             fields.dash_array = Some(dashes);
         }
@@ -1283,6 +1292,15 @@ pub fn derive_draft(
         fields.contents.as_ref().and_then(Option::as_deref),
         rich.map(|rich| rich.paragraphs.as_slice()),
     )?;
+    // `dashDraftFollows`: a dashed border with its pattern left out states
+    // the default, which Acrobat needs to draw it dashed. `null` is no
+    // pattern. Every kind's default border is solid.
+    if owner_of(draft.subtype, "dashArray").is_some()
+        && fields.border_style == Some(AnnotationBorderStyle::Dashed)
+        && fields.dash_array.is_none()
+    {
+        fields.dash_array = Some(Some(DEFAULT_DASH_ARRAY.to_vec()));
+    }
     // `commentDraftFollows`: a markup comment's rich text brings its
     // `contents`, its plain projection.
     if let Some(Some(comment)) = &fields.comment {

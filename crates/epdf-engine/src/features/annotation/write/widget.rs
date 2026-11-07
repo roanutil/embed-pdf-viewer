@@ -125,6 +125,10 @@ pub fn read_style_field(
         "dashArray" => {
             style.dash_array = Some(nullable(value, |v| {
                 let dashes: Vec<f64> = read_enum(kind, name, v)?;
+                // `DashArrayWriteSchema`: at least one length.
+                if dashes.is_empty() {
+                    return Err(invalid(kind, name, "expected at least one length"));
+                }
                 if dashes.iter().any(|d| !d.is_finite() || *d < 0.0) {
                     return Err(invalid(kind, name, "expected numbers of 0 or more"));
                 }

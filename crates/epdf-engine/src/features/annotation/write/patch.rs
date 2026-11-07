@@ -255,6 +255,26 @@ fn assert_rich_text_agreement(patch: &Map<String, Value>) -> Result<(), EngineEr
     )
 }
 
+/// `dashPatchFollows`: a patch that makes a border dashed and leaves its
+/// pattern out, on a border that has none, states the default, as a draft
+/// does. A pattern the patch gives, `null` among them, is written as given,
+/// and a patch that leaves the style alone leaves the border as the file has
+/// it.
+fn dash_patch_follows(
+    subtype: AnnotationSubtype,
+    current: &Map<String, Value>,
+    patch: &mut Map<String, Value>,
+) {
+    if owner_of(subtype, "dashArray").is_none()
+        || patch.get("borderStyle").and_then(Value::as_str) != Some("dashed")
+        || patch.contains_key("dashArray")
+        || current.get("dashArray").is_some_and(|dashes| !dashes.is_null())
+    {
+        return;
+    }
+    patch.insert("dashArray".into(), serde_json::json!(super::prepare::DEFAULT_DASH_ARRAY));
+}
+
 /// `commentFollows`: a markup annotation's comment follows its text (free
 /// text has its own rule). New rich text brings its `contents`;
 /// `richText: null` makes the comment plain, `contents` as it is; new
@@ -618,6 +638,7 @@ pub fn pdf_derive_annotation_patch(
     if subtype == AnnotationSubtype::Text {
         note_state_follows(current, &mut patch)?;
     }
+    dash_patch_follows(subtype, current, &mut patch);
     assert_rich_text_agreement(&patch)?;
     if subtype == AnnotationSubtype::FreeText {
         free_text_follows(current, &mut patch, describe)?;

@@ -691,6 +691,113 @@ fn a_color_sent_back_unchanged_stays_as_the_file_stores_it() {
     assert_eq!(after["color"], square["color"]);
 }
 
+// ── runDrawingDetailsConformance's dash patterns ────────────────────────────
+
+/// Another app's two dashed squares that name no pattern: one without `/D`,
+/// one with `/D []`.
+fn dash_fixture() -> Replay {
+    let mut host = host();
+    let opened = host.call_filled(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
+            "password": null })
+        .to_string(),
+        vec![pdf_of(&[
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Annots [4 0 R 5 0 R] >>",
+            "<< /Type /Annot /Subtype /Square /Rect [140 20 240 120] /BS << /S /D /W 2 >> \
+             /C [1 0 0] /NM (dashed-no-pattern) /F 4 >>",
+            "<< /Type /Annot /Subtype /Square /Rect [140 140 240 220] \
+             /BS << /S /D /W 2 /D [] >> /C [1 0 0] /NM (dashed-empty-pattern) /F 4 >>",
+        ])],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    Replay::adopt(host, DOC)
+}
+
+#[test]
+fn a_dashed_border_states_its_pattern_never_an_empty_one() {
+    let mut replay = dash_fixture();
+    let listed_now = listed(&mut replay);
+    let named = |nm: &str| listed_now.iter().find(|a| a["nm"] == nm).cloned().expect(nm);
+    // Another app's dashed border without /D reads as it stands; an empty
+    // /D is a solid line and reads solid.
+    let no_pattern = named("dashed-no-pattern");
+    assert_eq!(no_pattern["borderStyle"], "dashed", "{no_pattern}");
+    assert_eq!(no_pattern["dashArray"], Value::Null);
+    let empty_pattern = named("dashed-empty-pattern");
+    assert_eq!(empty_pattern["borderStyle"], "solid", "{empty_pattern}");
+    assert_eq!(empty_pattern["dashArray"], Value::Null);
+
+    let page = 3;
+    let square = |extra: Value| {
+        let mut draft = json!({ "subtype": "square",
+            "box": { "x": 20, "y": 20, "width": 100, "height": 100 } });
+        for (k, v) in extra.as_object().unwrap() {
+            draft[k] = v.clone();
+        }
+        draft
+    };
+    let patterned = create(
+        &mut replay,
+        &square(json!({ "borderStyle": "solid", "dashArray": [2, 2] })),
+        page,
+        &BTreeMap::new(),
+    );
+    assert_eq!(patterned["borderStyle"], "solid");
+    assert_eq!(patterned["dashArray"], json!([2.0, 2.0]));
+
+    // A dashed border whose pattern is left out is written with the
+    // default; `null` is no pattern, written as none.
+    let dashed =
+        create(&mut replay, &square(json!({ "borderStyle": "dashed" })), page, &BTreeMap::new());
+    assert_eq!(dashed["borderStyle"], "dashed");
+    assert_eq!(dashed["dashArray"], json!([3.0, 3.0]));
+    let none = create(
+        &mut replay,
+        &square(json!({ "borderStyle": "dashed", "dashArray": null })),
+        page,
+        &BTreeMap::new(),
+    );
+    assert_eq!(none["borderStyle"], "dashed");
+    assert_eq!(none["dashArray"], Value::Null);
+    let cleared = update(
+        &mut replay,
+        &patterned["ref"],
+        &json!({ "borderStyle": "dashed", "dashArray": null }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a dashed border without a pattern")["annotation"]
+        .clone();
+    assert_eq!(cleared["borderStyle"], "dashed");
+    assert_eq!(cleared["dashArray"], Value::Null);
+    // A border made dashed with no pattern of its own states the default.
+    let made_dashed = update(
+        &mut replay,
+        &named("dashed-empty-pattern")["ref"],
+        &json!({ "borderStyle": "dashed" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a border made dashed")["annotation"]
+        .clone();
+    assert_eq!(made_dashed["dashArray"], json!([3.0, 3.0]));
+
+    // An empty pattern is a solid line, which is borderStyle 'solid': a
+    // write refuses it, on create and update alike.
+    let request = json!({ "kind": "annotations.create", "jobId": "<job>", "docId": DOC,
+        "opId": "<op>", "page": page_ref(page),
+        "draft": square(json!({ "borderStyle": "dashed", "dashArray": [] })) });
+    let refused = replay.send(&request, Vec::new()).outcome.expect_err("an empty pattern");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    let refused =
+        update(&mut replay, &dashed["ref"], &json!({ "dashArray": [] }), &BTreeMap::new())
+            .outcome
+            .expect_err("an empty pattern");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+}
+
 // ── runNoStrokeConformance's writes ─────────────────────────────────────────
 
 #[test]
