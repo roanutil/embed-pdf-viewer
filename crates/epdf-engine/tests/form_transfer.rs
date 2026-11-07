@@ -774,7 +774,7 @@ fn each_import_is_one_transaction_one_event_per_field_sharing_its_op_id() {
     for (index, event) in created.iter().enumerate() {
         assert_eq!(event["field"], imported["result"]["fields"][index]);
         assert_eq!(
-            event["origin"]["tx"],
+            event["origin"]["transaction"],
             json!({ "id": "form-import-1", "index": index, "count": SOURCE_FIELDS.len() })
         );
     }

@@ -34,7 +34,7 @@
 //! worker answers, all under its `opId`, and nothing for a retry. This host
 //! stands in for both, so `document.apply` answers those events beside its
 //! result as an `events` array (`{result, replayed, mutationSequence,
-//! events}`), each stamped with `origin.tx` and, for an undo, `undoOf`. One
+//! events}`), each stamped with `origin.transaction` and, for an undo, `undoOf`. One
 //! envelope `event` could not carry them: a change publishes one fact per
 //! op. That is this host's own decision, kept when the wire contract closed
 //! (8.27): the forms verbs answer the same way. `document.applyChanges` publishes

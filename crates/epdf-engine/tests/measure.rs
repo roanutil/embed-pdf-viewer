@@ -89,7 +89,7 @@ fn set_scale_keeps_a_foreign_viewport() {
     );
     assert_eq!(written["result"]["event"]["type"], json!("pages.scaleSet"), "{written}");
     assert_eq!(
-        written["result"]["event"]["origin"]["tx"],
+        written["result"]["event"]["origin"]["transaction"],
         json!({ "id": "scale-1", "index": 0, "count": 1 }),
         "{written}"
     );

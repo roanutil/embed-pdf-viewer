@@ -85,7 +85,7 @@ pub struct MutationMeta {
     pub affected_pages: Vec<PageRef>,
     pub cache_delta: Option<CacheDelta>,
     /// The write's id: the `opId` it was given, or the one minted for it.
-    /// Its events carry it as `origin.tx.id`, and `document.apply` with
+    /// Its events carry it as `origin.transaction.id`, and `document.apply` with
     /// `{ undoOf: opId }` undoes the write.
     pub op_id: String,
     /// Whether `{ undoOf: opId }` can undo the write. False for a write that

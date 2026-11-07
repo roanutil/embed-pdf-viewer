@@ -53,7 +53,7 @@ fn a_name_change_publishes_pages_named() {
     assert_eq!(envelope["result"]["event"]["page"], page_ref(pon));
     // The one fact of its write (`publishWrite`).
     assert_eq!(
-        envelope["result"]["event"]["origin"]["tx"],
+        envelope["result"]["event"]["origin"]["transaction"],
         json!({ "id": "name-1", "index": 0, "count": 1 })
     );
     let response = host.call_filled(
@@ -65,7 +65,7 @@ fn a_name_change_publishes_pages_named() {
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(envelope["result"]["event"]["type"], json!("pages.named"), "{}", envelope["error"]);
     assert_eq!(envelope["result"]["event"]["page"], Value::Null);
-    assert_eq!(envelope["result"]["event"]["origin"]["tx"]["id"], json!("name-2"));
+    assert_eq!(envelope["result"]["event"]["origin"]["transaction"]["id"], json!("name-2"));
     assert_eq!(envelope["result"]["result"]["layout"]["namedPages"], json!([]));
 }
 

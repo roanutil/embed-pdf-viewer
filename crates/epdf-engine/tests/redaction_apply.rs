@@ -172,7 +172,7 @@ fn an_applied_redaction_removes_what_the_typescript_engine_removed() {
             Some(event) => {
                 assert!(wrote, "{}: an event for a write that wrote nothing", case.name);
                 assert_eq!(event["type"], "redaction.applied", "{}", case.name);
-                assert_eq!(event["origin"]["tx"]["id"], op_id, "{}: {event}", case.name);
+                assert_eq!(event["origin"]["transaction"]["id"], op_id, "{}: {event}", case.name);
                 assert_eq!(event["results"], result["results"], "{}", case.name);
             }
             None => assert!(!wrote, "{}: a write with no event", case.name),
