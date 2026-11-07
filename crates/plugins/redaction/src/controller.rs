@@ -113,7 +113,7 @@ impl RedactionCapability {
         self.0.settings.events.on(move |event| {
             listener(&RedactionSettingsChanged {
                 settings: RedactionSettings::of(&event.settings),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }

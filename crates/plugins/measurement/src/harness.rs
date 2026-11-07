@@ -158,7 +158,7 @@ fn call_capability(
         "onSettingsChanged" => {
             let callback = h.callback(args.first().unwrap_or(&Value::Null));
             let off = cap.on_settings_changed_json(move |settings, changed| {
-                match callback.call(vec![json!({ "settings": settings, "changed": changed })]) {
+                match callback.call(vec![json!({ "settings": settings, "changedKeys": changed })]) {
                     Answer::Throws(error) => Err(error),
                     _ => Ok(()),
                 }
