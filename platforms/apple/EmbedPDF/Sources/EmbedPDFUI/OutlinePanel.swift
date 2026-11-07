@@ -6,9 +6,6 @@ import SwiftUI
 public struct OutlinePanel: View {
   private let model: OutlineModel
   private let onActivation: (LinkActivation) -> Void
-  @State private var editor: OutlineEditor?
-  @State private var moving: OutlineMoveEditor?
-  @State private var deleting: OutlineItem?
 
   public init(model: OutlineModel, onActivation: @escaping (LinkActivation) -> Void = { _ in }) {
     self.model = model
@@ -16,6 +13,20 @@ public struct OutlinePanel: View {
   }
 
   public var body: some View {
+    ModelScope(model: model) { OutlinePanelContent(model: $0, onActivation: onActivation) }
+  }
+}
+
+@MainActor
+private struct OutlinePanelContent: View {
+  let model: OutlineModel
+  let onActivation: (LinkActivation) -> Void
+  @State private var editor: OutlineEditor?
+  @State private var moving: OutlineMoveEditor?
+  @State private var deleting: OutlineItem?
+  @State private var active = true
+
+  var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
         Text("Bookmarks").font(.headline)
@@ -37,7 +48,10 @@ public struct OutlinePanel: View {
               .accessibilityValue(row.expanded ? "Expanded" : "Collapsed")
           }
           Button {
-            Task { if let result = await model.activate(row.item.itemRef) { onActivation(result) } }
+            Task {
+              guard active, let result = await model.activate(row.item.itemRef), active, !Task.isCancelled else { return }
+              onActivation(result)
+            }
           } label: {
             HStack {
               Text(row.item.title).bold(row.item.bold).italic(row.item.italic)
@@ -69,10 +83,12 @@ public struct OutlinePanel: View {
     }
     .disabled(model.performing)
     .task(id: ObjectIdentifier(model)) { await model.task() }
-    .sheet(item: $editor) { editor in OutlineEditForm(model: model, editor: editor) }
-    .sheet(item: $moving) { editor in OutlineMoveForm(model: model, editor: editor) }
+    .onAppear { active = true }
+    .onDisappear { active = false; editor = nil; moving = nil; deleting = nil }
+    .sheet(item: $editor) { editor in OutlineEditForm(model: model, editor: editor, isCurrent: { active && self.editor?.id == editor.id }) }
+    .sheet(item: $moving) { editor in OutlineMoveForm(model: model, editor: editor, isCurrent: { active && moving?.id == editor.id }) }
     .confirmationDialog("Delete bookmark and its children?", isPresented: $deleting.controlPresented, presenting: deleting) { item in
-      Button("Delete", role: .destructive) { Task { await model.delete([item.itemRef]) } }
+      Button("Delete", role: .destructive) { Task { if active { await model.delete([item.itemRef]) } } }
       Button("Cancel", role: .cancel) {}
     } message: { item in Text(item.title) }
   }
@@ -110,6 +126,7 @@ private final class OutlineEditor: Identifiable {
 private struct OutlineEditForm: View {
   let model: OutlineModel
   @Bindable var editor: OutlineEditor
+  let isCurrent: () -> Bool
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
@@ -143,17 +160,18 @@ private struct OutlineEditForm: View {
   }
 
   private func save() async {
+    guard isCurrent() else { return }
     let target: PageLinkTarget? = editor.destination == 1 ? .uri(uri: editor.uri) : nil
     if let item = editor.item {
       var clear: [OutlinePatchKey] = []
       if editor.destination == 2 { clear.append(.target) }
       if editor.defaultColor { clear.append(.color) }
       if await model.update(item.itemRef, OutlineItemPatch(title: editor.title, target: target,
-        color: editor.defaultColor ? nil : editor.color, bold: editor.bold, italic: editor.italic, open: editor.open, clear: clear)) != nil { dismiss() }
+        color: editor.defaultColor ? nil : editor.color, bold: editor.bold, italic: editor.italic, open: editor.open, clear: clear)) != nil, isCurrent(), !Task.isCancelled { dismiss() }
     } else {
       if await model.create(OutlineItemInput(title: editor.title.isEmpty ? nil : editor.title,
         parent: editor.parent, position: editor.position, target: target, clearTarget: editor.destination == 2,
-        color: editor.defaultColor ? nil : editor.color, bold: editor.bold, italic: editor.italic)) != nil { dismiss() }
+        color: editor.defaultColor ? nil : editor.color, bold: editor.bold, italic: editor.italic)) != nil, isCurrent(), !Task.isCancelled { dismiss() }
     }
   }
 }
@@ -171,6 +189,7 @@ private final class OutlineMoveEditor: Identifiable {
 private struct OutlineMoveForm: View {
   let model: OutlineModel
   @Bindable var editor: OutlineMoveEditor
+  let isCurrent: () -> Bool
   @Environment(\.dismiss) private var dismiss
   var body: some View {
     NavigationStack {
@@ -190,8 +209,9 @@ private struct OutlineMoveForm: View {
         ToolbarItem(placement: .confirmationAction) {
           Button("Move") {
             Task {
+              guard isCurrent() else { return }
               await model.move([editor.item.itemRef], to: editor.parent, position: editor.first ? .start : .end)
-              if model.error == nil { dismiss() }
+              if model.error == nil, isCurrent(), !Task.isCancelled { dismiss() }
             }
           }.disabled(model.performing || !model.canEdit)
         }

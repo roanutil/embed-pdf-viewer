@@ -4,15 +4,26 @@ import SwiftUI
 @MainActor
 public struct AttachmentPanel: View {
   private let model: AttachmentModel
+  public init(model: AttachmentModel) { self.model = model }
+
+  public var body: some View {
+    ModelScope(model: model) { AttachmentPanelContent(model: $0) }
+  }
+}
+
+@MainActor
+private struct AttachmentPanelContent: View {
+  let model: AttachmentModel
   @State private var importing = false
   @State private var exporting = false
   @State private var content: AttachmentContent?
   @State private var deleting: AttachedFile?
   @State private var downloadTask: Task<Void, Never>?
 
-  public init(model: AttachmentModel) { self.model = model }
+  @State private var importTask: Task<Void, Never>?
+  @State private var active = true
 
-  public var body: some View {
+  var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
         Text("Attachments").font(.headline)
@@ -53,7 +64,7 @@ public struct AttachmentPanel: View {
           guard let file = model.selectedFiles.first else { return }
           downloadTask?.cancel()
           downloadTask = Task {
-            guard let result = await model.download(file), !Task.isCancelled else { return }
+            guard let result = await model.download(file), active, !Task.isCancelled else { return }
             content = result
             exporting = true
           }
@@ -66,21 +77,30 @@ public struct AttachmentPanel: View {
     }
     .disabled(model.performing)
     .task(id: ObjectIdentifier(model)) { await model.task() }
-    .onDisappear { downloadTask?.cancel(); downloadTask = nil; content = nil; exporting = false }
-    .onChange(of: ObjectIdentifier(model)) { _, _ in downloadTask?.cancel(); content = nil; exporting = false }
+    .onAppear { active = true }
+    .onDisappear {
+      active = false
+      importTask?.cancel(); importTask = nil
+      downloadTask?.cancel(); downloadTask = nil
+      content = nil; exporting = false; deleting = nil
+    }
     .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
+      guard active else { return }
       switch result {
-      case let .success(urls): Task { await model.importFiles(urls) }
+      case let .success(urls):
+        importTask?.cancel()
+        importTask = Task { if active, !Task.isCancelled { await model.importFiles(urls) } }
       case let .failure(error): model.fileOperationFailed(error)
       }
     }
     .fileExporter(isPresented: $exporting, document: content.map { AttachmentExportDocument(data: $0.data) },
       contentType: AttachmentExportDocument.contentType(for: content?.mimeType), defaultFilename: content?.name ?? "Attachment") { result in
+        guard active else { return }
         if case let .failure(error) = result { model.fileOperationFailed(error) }
         content = nil
       }
     .confirmationDialog("Remove attachment?", isPresented: $deleting.controlPresented, presenting: deleting) { file in
-      Button("Remove", role: .destructive) { Task { await model.remove(file) } }
+      Button("Remove", role: .destructive) { Task { if active { await model.remove(file) } } }
       Button("Cancel", role: .cancel) {}
     } message: { file in Text(file.name) }
   }
