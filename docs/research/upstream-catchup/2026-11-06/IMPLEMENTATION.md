@@ -239,3 +239,15 @@ Explained by TypeScript commits after the vector line (df0dcfd04 line):
 Not yet explained: ui-solver and ui-schema lengths and overflow flags (24 values); signature messages and codes (7); form-scripting (4); render-tile-plane (3); stamp-library (3); view-manager (17, besides the method rename); page-edit (12); signature-verify (2); ui-projection (3); stage-anchor (2); selection (1); i18n CHG beyond the locale (checked by the same commit).
 
 Vectors are not committed in this step. The regenerated set is in the working tree of the repo; the committed vectors remain at 71730f101.
+
+## UI and signature groups (2026-11-06)
+
+UI (ui-solver, ui-schema, ui-projection): explained by `242a4f529` ("Add panel bars and inherit group importance"). It lies after the commit that wrote the committed solver vector (`fc5ecbd33`) and before the vectors' line (`df0dcfd04`). It changes importance inheritance, which drives the shed, overflow and length values. The UI suite and the solver's own logic are unchanged since then.
+
+Signature: four causes.
+- Stale fixture: the signing key setting and the per-call key were renamed (`signer`/`key` to `signingKey`). The suite still wrote `key`, so the configured and per-call signers were ignored. Fixed in `signature-plugin.ts`. Case `authority-twins` now returns `sign`, matching the committed vector.
+- Per-call signer honored (case `sign-with-a-per-call-signer`): the per-call signer rejects "not me", and the signing cancels and rejects. The case says a per-call signer wins, so the new behavior matches its description.
+- Failing raw signer (case `sign-with-a-raw-signer`): the signing aborts and rejects with the signer's message, as the case says. The committed run instead completed with a certificate error.
+- Rename: `validatedAt` to `validationTime` in verdicts (name-level check passed).
+
+Vectors remain uncommitted. The committed vectors stay at 71730f101.

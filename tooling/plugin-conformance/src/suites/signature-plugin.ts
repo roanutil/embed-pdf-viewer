@@ -203,7 +203,7 @@ function configOf(spec: SignatureSpec, env: PluginEnv): SignatureConfig {
   return {
     ...(spec.mode !== undefined ? { mode: spec.mode } : {}),
     ...(spec.allowCertify !== undefined ? { allowCertify: spec.allowCertify } : {}),
-    ...(spec.signer ? { key: signerOf(spec.signer, env) } : {}),
+    ...(spec.signer ? { signingKey: signerOf(spec.signer, env) } : {}),
     ...(spec.trust
       ? { trust: { anchors: answering('trust.anchors', spec.trust.anchors, env) as never } }
       : {}),
