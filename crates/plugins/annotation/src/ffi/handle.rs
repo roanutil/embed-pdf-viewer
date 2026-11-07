@@ -335,7 +335,7 @@ impl AnnotationHandle {
                     });
                     let l = listener.clone();
                     let thread = events.thread_changed.on(move |e| {
-                        let change = match e.get("change").and_then(Value::as_str) {
+                        let change = match e.get("type").and_then(Value::as_str) {
                             Some("reply") => AnnotationThreadChange::Reply,
                             Some("text") => AnnotationThreadChange::Text,
                             Some("status") => AnnotationThreadChange::Status,

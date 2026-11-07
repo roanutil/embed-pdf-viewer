@@ -4,7 +4,6 @@
 
 use std::rc::Rc;
 
-use epdf_annotation_core::font_css::css_font_family_for_font;
 use epdf_annotation_core::kinds::widget_kind_of;
 use epdf_annotation_core::object::Json;
 use epdf_annotation_core::record::{
@@ -31,9 +30,9 @@ use crate::model::{
     with_session, with_snap,
 };
 use crate::rich_text::{
-    Face, FontHandle, RichTextDocument, TextSelection, body_from_text_style,
-    css_font_family_for_face, face_for_font, family_key, font_for_face, range_props, rich_doc_of,
-    run_delta_for_fields, runs_in_range, strip_body_defaults, text_commit_patch,
+    Face, FontHandle, RichTextDocument, TextSelection, body_from_text_style, face_for_font,
+    family_key, font_for_face, range_props, rich_doc_of, run_delta_for_fields, runs_in_range,
+    strip_body_defaults, text_commit_patch,
 };
 use crate::sync::records::{core_error, dto_key};
 use crate::text_item::build_text_items;
@@ -214,13 +213,19 @@ fn font_for_face_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(json!(font_for_face(&Face::read(arg(args, 0).unwrap_or(&Value::Null)), list.as_deref())))
 }
 
-fn css_for_face_fn(args: &[Value]) -> Result<Value, Error> {
-    let list = fonts(args, 1);
-    Ok(json!(css_font_family_for_face(&text(args, 0), list.as_deref())))
+/// `removedUpstream(name, commit)`: a function the TypeScript no longer has;
+/// its cases record the throw (595fa2bd5 removed the CSS family helpers: a
+/// text box's CSS comes from the fonts plugin, else `standardFontCss`).
+fn removed_upstream(name: &str, commit: &str) -> Error {
+    Error::new(format!("{name} was removed upstream in {commit}"))
 }
 
-fn css_for_font_fn(args: &[Value]) -> Result<Value, Error> {
-    Ok(json!(css_font_family_for_font(&text(args, 0))))
+fn css_for_face_fn(_: &[Value]) -> Result<Value, Error> {
+    Err(removed_upstream("cssFontFamilyForFace", "595fa2bd5"))
+}
+
+fn css_for_font_fn(_: &[Value]) -> Result<Value, Error> {
+    Err(removed_upstream("cssFontFamilyForFont", "595fa2bd5"))
 }
 
 fn family_key_fn(args: &[Value]) -> Result<Value, Error> {

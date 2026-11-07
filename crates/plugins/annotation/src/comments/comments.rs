@@ -29,7 +29,7 @@ fn object(value: Value) -> Object {
 
 impl Core {
     fn announce_thread(&self, root: &Value, change: &str) {
-        self.events.thread_changed.emit(&json!({ "rootRef": root, "change": change }));
+        self.events.thread_changed.emit(&json!({ "rootRef": root, "type": change }));
     }
 
     /// `createConversationAnnot(page, draft)`.
