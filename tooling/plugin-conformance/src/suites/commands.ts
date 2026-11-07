@@ -325,6 +325,7 @@ const equalCases: FunctionCase[] = [
   eq('menu-absent-on-one-side', rc(), rc({ menu: undefined })),
   eq('enabled-differs', rc(), rc({ enabled: false })),
   eq('active-differs', rc(), rc({ active: true })),
+  eq('pressable-differs', rc(), rc({ pressable: true })),
   eq('visible-differs', rc(), rc({ visible: false })),
   eq('shortcut-count-differs', rc(), rc({ shortcuts: ['Mod+='] })),
   eq('shortcut-differs', rc(), rc({ shortcuts: ['Mod+=', 'Mod+Add'] })),
@@ -463,7 +464,14 @@ const no = (name: string) => fn(name, { returns: false });
 const boom = (name: string, message = `${name} failed`) =>
   fn(name, { throws: { name: 'Error', message } });
 
-type CallbackMember = 'active' | 'enabled' | 'visible' | 'iconAccent' | 'run' | 'allowed';
+type CallbackMember =
+  | 'active'
+  | 'enabled'
+  | 'visible'
+  | 'iconAccent'
+  | 'run'
+  | 'allowed'
+  | 'labelParams';
 type VectorDef = Omit<CommandDefinition, CallbackMember> & {
   [K in CallbackMember]?: CommandFnSpec;
 };
@@ -491,6 +499,25 @@ const es = {
   translations: { commands: { zoomIn: 'Acercar', zoomOut: 'Alejar', search: 'Buscar' } },
 };
 const withI18n = { factory: 'commands-current-i18n', config: { locales: [en, es], locale: 'en' } };
+/** Plural labels for `labelParams` (ccc4bf7fe): `count` picks the form. */
+const withPluralI18n = {
+  factory: 'commands-current-i18n',
+  config: {
+    locales: [
+      {
+        code: 'en',
+        name: 'English',
+        translations: {
+          pages: {
+            delete: { one: 'Delete {count} page', other: 'Delete {count} pages' },
+            rotate: 'Rotate {count} pages by {degrees}°',
+          },
+        },
+      },
+    ],
+    locale: 'en',
+  },
+};
 
 const stroke = (key: string, over: Record<string, unknown> = {}) => ({
   key,
@@ -654,7 +681,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'throwing-derivations-fall-back',
     covers:
-      'A derivation that throws falls back: enabled and visible to true, active to false, iconAccent to none. The command still resolves, and execute still runs it.',
+      'A derivation that throws counts as no (67b45d349): enabled, visible and active false, iconAccent none. The command still resolves, hidden, and execute rejects it as hidden.',
     plugins: [
       commands([
         vdef('t', {
@@ -733,6 +760,117 @@ const cases: ScenarioCase[] = [
       cmd('execute', 'both'),
       cmd('setDisabledCategories', []),
       cmd('execute', 'none'),
+    ],
+  },
+  {
+    name: 'label-params-without-i18n',
+    covers:
+      'Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked on every resolve, before the derivations.',
+    plugins: [
+      commands([
+        vdef('delete', {
+          label: 'Delete {count} pages',
+          labelParams: fn('delete.labelParams', { returns: { count: 3 } }),
+        }),
+        vdef('key-only', {
+          labelKey: '{what} by key',
+          labelParams: fn('key-only.labelParams', { returns: { what: 'labelled' } }),
+        }),
+        vdef('{n}-id', {
+          labelKey: undefined,
+          labelParams: fn('id.labelParams', { returns: { n: 'seven' } }),
+        }),
+        vdef('partial', {
+          label: '{a} and {b}',
+          labelParams: fn('partial.labelParams', { returns: { a: 'x' } }),
+        }),
+        vdef('throws', {
+          label: 'Delete {count}',
+          labelParams: boom('throws.labelParams'),
+        }),
+        vdef('live', {
+          label: '{count} selected',
+          active: yes('live.active'),
+          labelParams: fn('live.labelParams', {
+            seq: [{ returns: { count: 1 } }, { returns: { count: 2 } }],
+          }),
+        }),
+      ]),
+    ],
+    steps: [
+      cmd('resolveCommand', 'delete'),
+      cmd('resolveCommand', 'key-only'),
+      cmd('resolveCommand', '{n}-id'),
+      cmd('resolveCommand', 'partial'),
+      cmd('resolveCommand', 'throws'),
+      cmd('resolveCommand', 'live'),
+      cmd('resolveCommand', 'live'),
+      cmd('searchCommands', 'selected'),
+    ],
+  },
+  {
+    name: 'label-params-with-i18n',
+    covers:
+      'With i18n, labelParams go to t(): a number count picks the plural form of the translated label, other params fill its slots, and a label without a translation falls back to label with the params filled in (ccc4bf7fe).',
+    plugins: [
+      withPluralI18n,
+      commands([
+        vdef('one', {
+          labelKey: 'pages.delete',
+          labelParams: fn('one.labelParams', { returns: { count: 1 } }),
+        }),
+        vdef('many', {
+          labelKey: 'pages.delete',
+          labelParams: fn('many.labelParams', { returns: { count: 4 } }),
+        }),
+        vdef('rotate', {
+          labelKey: 'pages.rotate',
+          labelParams: fn('rotate.labelParams', { returns: { count: 2, degrees: 90 } }),
+        }),
+        vdef('untranslated', {
+          label: 'Crop {count} pages',
+          labelKey: 'pages.crop',
+          labelParams: fn('untranslated.labelParams', { returns: { count: 5 } }),
+        }),
+        vdef('no-params', { labelKey: 'pages.delete' }),
+      ]),
+    ],
+    steps: [
+      cmd('resolveCommand', 'one'),
+      cmd('resolveCommand', 'many'),
+      cmd('resolveCommand', 'rotate'),
+      cmd('resolveCommand', 'untranslated'),
+      cmd('resolveCommand', 'no-params'),
+    ],
+  },
+  {
+    name: 'pressable',
+    covers:
+      'A command is pressable when it has an active of its own or opens a panel, never when it opens a menu (9ffb07628); a modal or a plain run is not.',
+    plugins: [
+      withShell,
+      commands([
+        vdef('toggle', { active: no('toggle.active') }),
+        vdef('panel', { panel: 'search' }),
+        vdef('panel-object', { panel: { id: 'thumbs' } }),
+        vdef('menu', { menu: 'file' }),
+        vdef('menu-with-active', { menu: 'file', active: yes('menu.active') }),
+        vdef('empty-menu-with-panel', { menu: '', panel: 'search' }),
+        vdef('modal', { modal: 'print' }),
+        vdef('plain', { run: fn('plain.run') }),
+      ]),
+    ],
+    steps: [
+      ...[
+        'toggle',
+        'panel',
+        'panel-object',
+        'menu',
+        'menu-with-active',
+        'empty-menu-with-panel',
+        'modal',
+        'plain',
+      ].map((id) => cmd('resolveCommand', id)),
     ],
   },
   {
