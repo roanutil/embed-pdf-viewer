@@ -7,11 +7,11 @@
   "owners": [
     {
       "path": "packages/plugin/shell/src/model.ts",
-      "sha256": "1941e6339ca5c6bf95e0c8a089192294019c3fdf90bd6d5674e186a4e552da7f"
+      "sha256": "dcede278b81da38d7bc290bdf4d0cc40362f59696e4f0e1466cc700cce7f9dcf"
     },
     {
       "path": "packages/plugin/shell/src/controller.ts",
-      "sha256": "472d0b423bca484f16f0aadd5ff39fa1d768cf095a442f24e7235ef83f84c7c9"
+      "sha256": "01596eddacc9638ddcbbfcf22e17add6517f5adf30d27ea76a59c7262147d05d"
     },
     {
       "path": "packages/plugin/shell/src/contract.ts",
@@ -19,11 +19,11 @@
     },
     {
       "path": "packages/plugin/shell/src/shell.plugin.ts",
-      "sha256": "f2f50047d4489e931d8a3bad68214943025285caba44ae8163c8eeb819f245a5"
+      "sha256": "6beffa89adb3201acc25ba3a853133ecb1e9f70a13f1935ccf2ce13259bf0abf"
     },
     {
       "path": "packages/plugin/shell/src/state.ts",
-      "sha256": "089bd6f38429b6ce24a9f4229a647b657092cb2f172869afbb0684c1d0ed1004"
+      "sha256": "77a900e2e553520067ef9114cba0f432a2ce0ea73dfe01b28dc2762551d7b7cd"
     },
     {
       "path": "packages/plugin/shell/src/token.ts",
@@ -31,11 +31,11 @@
     },
     {
       "path": "packages/plugin/shell/src/index.ts",
-      "sha256": "12d04e1028e1938537e4f9cfbf5ba0f64e5a0b570415ff60b2955eb8d92310ab"
+      "sha256": "9cfb492530dfed00034b655c6aee982af90d9f04e9c20cc9a7796deb190293a6"
     },
     {
       "path": "packages/plugin/shell/test/shell.test.ts",
-      "sha256": "751dd67986a6283c7e3de0c50586bdeb3997d2de8879a20ec08cdc3cf3f77a43"
+      "sha256": "8aff42c876a4b35fefa29f08bd3b4acda00e3db169246955553d55659337db53"
     }
   ],
   "contracts": {

@@ -174,7 +174,7 @@ test('signature asset placement is isolated across repeated scenarios', async ()
     assert.deepEqual(settlement, {
       promise: outcome.promise,
       resolved: {
-        kind: 'placed',
+        status: 'placed',
         annotation: {
           kind: 'objectNumber',
           page: { kind: 'objectNumber', objectNumber: 1 },

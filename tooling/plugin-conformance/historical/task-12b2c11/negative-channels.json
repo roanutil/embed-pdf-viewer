@@ -21,9 +21,9 @@
     },
     "source": {
       "path": "packages/core/main/src/kernel.ts",
-      "line": 385,
+      "line": 438,
       "symbol": "openFailed",
-      "sha256": "7d9d0a102fec2eeea0c1cb782f96d3e4865a31bc0ed16d46d11208ab6e7a203b"
+      "sha256": "ce0a1e147aa784ee0d681d524493b52ec2f05b01b96915e1c80b38daf067133a"
     }
   },
   {
@@ -40,7 +40,7 @@
       "path": "packages/core/main/src/event-hook.ts",
       "line": 57,
       "symbol": "listener(event)",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     }
   },
   {
@@ -57,7 +57,7 @@
       "path": "packages/core/main/src/event-hook.ts",
       "line": 57,
       "symbol": "listener(event)",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     }
   },
   {
@@ -74,7 +74,7 @@
       "path": "packages/core/main/src/event-hook.ts",
       "line": 57,
       "symbol": "listener(event)",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     }
   },
   {
@@ -91,7 +91,7 @@
       "path": "packages/core/main/src/event-hook.ts",
       "line": 57,
       "symbol": "listener(event)",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     }
   },
   {
@@ -108,7 +108,7 @@
       "path": "packages/core/main/src/event-hook.ts",
       "line": 57,
       "symbol": "listener(event)",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     }
   },
   {
@@ -123,9 +123,9 @@
     },
     "source": {
       "path": "packages/core/main/src/kernel.ts",
-      "line": 418,
+      "line": 471,
       "symbol": "${what} on a ${status} kernel",
-      "sha256": "7d9d0a102fec2eeea0c1cb782f96d3e4865a31bc0ed16d46d11208ab6e7a203b"
+      "sha256": "ce0a1e147aa784ee0d681d524493b52ec2f05b01b96915e1c80b38daf067133a"
     }
   }
 ]
