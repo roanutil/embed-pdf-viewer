@@ -54,12 +54,12 @@ const NOUNS: [&str; 7] = ["links", "selection", "draft", "text", "tools", "stamp
 fn noun_members(noun: &str) -> &'static [&'static str] {
     match noun {
         "selection" => &[
-            "set",
+            "select",
             "add",
             "selectAll",
             "selectInRect",
             "clear",
-            "list",
+            "getSelected",
             "update",
             "updateLink",
             "getProperties",
@@ -442,7 +442,7 @@ const MEMBERS: &[&str] = &[
     "hoverAt",
     "finishInkDraft",
     "cancel",
-    "distanceCreationPage",
+    "getDistanceCreationPage",
     "onDraftCaptured",
     "createMarkup",
     "createCaret",
@@ -571,7 +571,7 @@ fn call_noun(
     h: &Harness,
 ) -> Outcome {
     match (noun, method) {
-        ("selection", "set") => {
+        ("selection", "select") => {
             a.selection_set(&refs(args, 0));
             undefined_outcome()
         }
@@ -591,7 +591,7 @@ fn call_noun(
             a.selection_clear();
             undefined_outcome()
         }
-        ("selection", "list") => Outcome::Returned(json!(*a.list_selected())),
+        ("selection", "getSelected") => Outcome::Returned(json!(*a.list_selected())),
         ("selection", "update") => {
             let patch = match arg(args, 0) {
                 Some(spec) if spec.get("$fn").is_some() => {
@@ -812,10 +812,10 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
                 ops_of: member_callback(h, &spec, "opsOf"),
                 undo_of: member_callback(h, &spec, "undoOf"),
                 reorder_ops: member_callback(h, &spec, "reorderOps"),
-                authority: member_callback(h, &spec, "authority"),
-                picture_epoch: member_callback(h, &spec, "pictureEpoch"),
-                picture_version: member_callback(h, &spec, "pictureVersion"),
-                pending: member_callback(h, &spec, "pending"),
+                authority: member_callback(h, &spec, "getAuthority"),
+                picture_epoch: member_callback(h, &spec, "getPictureEpoch"),
+                picture_version: member_callback(h, &spec, "getPictureVersion"),
+                pending: member_callback(h, &spec, "isPending"),
                 painter: member_callback(h, &spec, "painter"),
                 render_appearances: member_callback(h, &spec, "renderAppearances"),
             });
@@ -830,10 +830,13 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         }
         "getEditingId" => Outcome::Returned(a.get_editing_id().map_or(Value::Null, Value::String)),
         "draftContents" => unit(a.draft_contents(&value(args, 0), &text(args, 1))),
-        "draftRichText" => unit(a.draft_rich_text(
+        "draftRichText" => match a.draft_rich_text(
             &value(args, 0),
             value(args, 1).get("paragraphs").cloned().unwrap_or(json!([])),
-        )),
+        ) {
+            Ok(kept) => Outcome::Returned(kept),
+            Err(error) => Outcome::Threw(error),
+        },
         "setTextSelection" => {
             let range = arg(args, 1).filter(|r| !r.is_null()).map(|r| {
                 (
@@ -844,7 +847,14 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
             a.set_text_selection(&value(args, 0), range);
             undefined_outcome()
         }
-        "getCssFontFamily" => Outcome::Returned(json!(a.get_css_font_family(&text(args, 0)))),
+        "getCssFontFamily" => {
+            let face = value(args, 0);
+            Outcome::Returned(json!(a.get_css_font_family(&crate::rich_text::Face {
+                family: face.get("family").and_then(Value::as_str).unwrap_or("undefined").into(),
+                weight: face.get("weight").and_then(Value::as_f64),
+                italic: face.get("italic").and_then(Value::as_bool),
+            })))
+        }
         // ── crud ──
         "create" => {
             let options = value(args, 3);
@@ -933,7 +943,7 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         }
         "remeasurePage" => promise(a.remeasure_page(&value(args, 0), value(args, 1))),
         "onDraftCaptured" => subscribe(h, &a.events.draft_captured, &value(args, 0)),
-        "distanceCreationPage" => Outcome::Returned(opt_value(a.distance_creation_page())),
+        "getDistanceCreationPage" => Outcome::Returned(opt_value(a.distance_creation_page())),
         // ── pointer ──
         "editPointer" => {
             let touch = arg(args, 7).map(|v| epdf_annotation_core::json::truthy(Some(v)));

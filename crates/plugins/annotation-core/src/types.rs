@@ -396,10 +396,10 @@ js_object! {
     /// Snapping settings (`SnapSettings`).
     pub struct SnapSettings {
         "alignment" => pub alignment: bool,
-        "alignmentThreshold" => pub alignment_threshold: f64,
+        "alignmentThresholdPx" => pub alignment_threshold: f64,
         "rotation" => pub rotation: bool,
         "rotationAngles" => pub rotation_angles: Vec<f64>,
-        "rotationThreshold" => pub rotation_threshold: f64,
+        "rotationThresholdDeg" => pub rotation_threshold: f64,
     }
 }
 
@@ -1122,6 +1122,7 @@ js_object! {
         "lineCap" => pub line_cap: Option<String>,
         "join" => pub join: Option<String>,
         "fillRule" => pub fill_rule: Option<String>,
+        "hairline" => pub hairline: Option<bool>,
     }
 }
 
@@ -1178,6 +1179,7 @@ js_object! {
         "text" => pub text: String,
         "fontSize" => pub font_size: f64,
         "fontFamily" => pub font_family: Option<String>,
+        "program" => pub program: Option<FontProgramRef>,
         "rotation" => pub rotation: Option<f64>,
         "paint" => pub paint: Paint,
         "clip" => pub clip: Option<Rect>,

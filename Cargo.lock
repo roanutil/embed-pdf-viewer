@@ -436,6 +436,7 @@ version = "0.0.0"
 dependencies = [
  "build-support",
  "epdf-engine",
+ "epdf-fonts",
  "epdf-geometry",
  "epdf-kernel",
  "indexmap",

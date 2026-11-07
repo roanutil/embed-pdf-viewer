@@ -336,6 +336,7 @@ pub fn create_annotation_controller(
     // has (read once, when it opens: each seeds its defaults).
     core.wire_store()?;
     core.create_tool_registry()?;
+    core.watch_text_fonts()?;
     // The session snaps, and lets people change by hand, as the settings say.
     let parsed = core.parsed();
     core.update_state(|s| crate::model::with_snap(s, &parsed.snap));
@@ -402,5 +403,39 @@ impl Core {
             Ok(())
         });
         self.cx.listen(off);
+    }
+}
+
+impl Core {
+    /// `createTextFonts`'s model watch (`dropStaleAnswers`, 8737c9507): the
+    /// model is read after every store change, so a box restyled since the
+    /// fonts plugin answered is asked again. The fonts plugin's answers are
+    /// not ported, so there are none to drop; the watch still reads the
+    /// model as the TypeScript does.
+    fn watch_text_fonts(&self) -> Result<(), Error> {
+        let me = self.weak();
+        self.cx.watch(
+            move || Ok(me.upgrade().map(|core| core.model())),
+            |_, _| Ok(()),
+            |a, b| match (a, b) {
+                (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+                (None, None) => true,
+                _ => false,
+            },
+        )?;
+        // The box someone starts typing in is resolved by the fonts plugin
+        // (not ported); the model is read on every state change all the same.
+        let me = self.weak();
+        let editing: Rc<RefCell<Option<String>>> = Rc::default();
+        self.cx.on_state_change(move |_, _| {
+            if let Some(core) = me.upgrade() {
+                let next = core.model().editing.clone();
+                if *editing.borrow() != next {
+                    *editing.borrow_mut() = next;
+                }
+            }
+            Ok(())
+        });
+        Ok(())
     }
 }

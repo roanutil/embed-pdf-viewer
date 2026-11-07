@@ -8,6 +8,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use epdf_annotation_core::richtext::{RichTextParagraph, RichTextStyleDelta, type_with_style};
 use epdf_annotation_core::types::{Id, Model, Point};
 use epdf_kernel::Unsubscribe;
 use epdf_kernel::rt::Promise;
@@ -18,7 +19,9 @@ use crate::controller::Core;
 use crate::js::key_or_none;
 use crate::model::set_text_selection;
 use crate::read::chrome::HitView;
-use crate::rich_text::{TextSelection, css_font_family_for_face, rich_doc_of, text_commit_patch};
+use crate::rich_text::{
+    Face, TextSelection, rich_doc_of, standard_font_for_face, text_commit_patch,
+};
 use crate::services::store::{Commit, StoreHold, Written};
 
 const TEXT_WRITE_DELAY_MS: f64 = 250.0;
@@ -164,25 +167,80 @@ impl Core {
         self.type_text(&id, json!({ "type": "setText", "id": id, "text": text })).map(|_| ())
     }
 
-    /// `draftRichText(ref, doc)`.
+    /// `styleTyping(id, style)`: the style the text typed next at the caret
+    /// in box `id` takes, over what was chosen there already. Nothing is
+    /// written until it is typed.
+    pub(crate) fn style_typing(&self, id: &str, style: &serde_json::Map<String, Value>) {
+        let Some(selection) = self.state().text_selection.clone() else { return };
+        if selection.id != id || selection.start != selection.end {
+            return;
+        }
+        let mut typing = selection.typing.clone().unwrap_or_default();
+        for (key, value) in style {
+            typing.insert(key.clone(), value.clone());
+        }
+        let next = TextSelection { typing: Some(typing), ..(*selection).clone() };
+        self.update_state(|s| set_text_selection(s, Some(Rc::new(next))));
+    }
+
+    /// `typedInStyle(id, paragraphs)`: the paragraphs typed into box `id`,
+    /// the text typed at the caret in the style chosen there
+    /// (`typeWithStyle`), and the caret where the typing leaves it. Any other
+    /// edit drops the style.
+    fn typed_in_style(&self, id: &str, paragraphs: Value) -> Value {
+        let Some(selection) = self.state().text_selection.clone() else { return paragraphs };
+        let model = self.model();
+        let (Some(typing), true, Some(record)) =
+            (selection.typing.as_ref(), selection.id == id, model.by_id.get(id))
+        else {
+            return paragraphs;
+        };
+        let before = rich_doc_of(&record.annotation, self.fonts().as_deref()).typed();
+        let after: Vec<RichTextParagraph> =
+            serde_json::from_value(paragraphs.clone()).unwrap_or_default();
+        let style: RichTextStyleDelta =
+            serde_json::from_value(Value::Object(typing.clone())).unwrap_or_default();
+        let typed = type_with_style(&before, &after, selection.start, &style);
+        let caret = match &typed {
+            Some(typed) => TextSelection {
+                id: id.to_string(),
+                start: typed.caret,
+                end: typed.caret,
+                typing: typed.style.as_ref().and_then(|s| match serde_json::to_value(s) {
+                    Ok(Value::Object(o)) => Some(o),
+                    _ => None,
+                }),
+            },
+            None => TextSelection::new(id.to_string(), selection.start, selection.end),
+        };
+        self.update_state(|s| set_text_selection(s, Some(Rc::new(caret))));
+        match typed {
+            Some(typed) => serde_json::to_value(typed.paragraphs).unwrap_or(paragraphs),
+            None => paragraphs,
+        }
+    }
+
+    /// `draftRichText(ref, doc)`: returns the paragraphs it keeps, the text
+    /// typed at the caret in a style chosen there.
     pub fn draft_rich_text(
         &self,
         reference: &Value,
         paragraphs: Value,
-    ) -> Result<(), epdf_kernel::Error> {
+    ) -> Result<Value, epdf_kernel::Error> {
         let id = key_or_none(reference);
+        let kept = self.typed_in_style(&id, paragraphs);
         self.type_text(
             &id,
-            json!({ "type": "setRichText", "id": id, "doc": { "paragraphs": paragraphs } }),
-        )
-        .map(|_| ())
+            json!({ "type": "setRichText", "id": id, "doc": { "paragraphs": kept } }),
+        )?;
+        Ok(json!({ "paragraphs": kept }))
     }
 
     /// `setTextSelection(ref, range)`.
     pub fn set_text_selection(&self, reference: &Value, range: Option<(f64, f64)>) {
         let id = key_or_none(reference);
         let previous = self.state().text_selection.clone();
-        let next = range.map(|(start, end)| TextSelection { id, start, end });
+        let next = range.map(|(start, end)| TextSelection::new(id, start, end));
         let same = match (&previous, &next) {
             (None, None) => true,
             (Some(p), Some(n)) => p.id == n.id && p.start == n.start && p.end == n.end,
@@ -195,8 +253,11 @@ impl Core {
         self.update_state(|s| set_text_selection(s, next));
     }
 
-    /// `getCssFontFamily(family)`.
-    pub fn get_css_font_family(&self, family: &str) -> String {
-        css_font_family_for_face(family, self.fonts().as_deref())
+    /// `getCssFontFamily(face, id)`: the CSS family list a face is drawn
+    /// with in a text box (`textFonts.faceCss`). Without a fonts plugin to
+    /// ask, the standard font the engine draws the face in.
+    pub fn get_css_font_family(&self, face: &Face) -> String {
+        epdf_annotation_core::font_css::standard_paint_font_of(&standard_font_for_face(face))
+            .font_family
     }
 }

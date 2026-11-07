@@ -3028,6 +3028,7 @@
           "cloudyIntensity": null
         }
       ],
+      "covers": "Explicit malformed read: an empty dash pattern, which a read never returns and a write refuses since fe2941a27 (DashArrayWriteSchema); the pure helpers carry it as given.",
       "outcome": {
         "returned": {
           "id": "obj:6",
@@ -3271,6 +3272,7 @@
           "cloudyIntensity": null
         }
       ],
+      "covers": "Explicit malformed read: an empty dash pattern, which a read never returns and a write refuses since fe2941a27 (DashArrayWriteSchema); the pure helpers carry it as given.",
       "outcome": {
         "returned": {
           "contents": null,
@@ -3381,6 +3383,7 @@
           "ellipse": false
         }
       ],
+      "covers": "Explicit malformed read: an empty dash pattern, which a read never returns and a write refuses since fe2941a27 (DashArrayWriteSchema); the pure helpers carry it as given.",
       "outcome": {
         "returned": {
           "id": "obj:6",
@@ -115114,17 +115117,23 @@
       "name": "widgetKindOf/text",
       "fn": "widgetKindOf",
       "args": [
-        "text"
+        {
+          "fieldKind": "text",
+          "hasMark": false
+        }
       ],
       "outcome": {
-        "returned": "widget-box"
+        "returned": "widget-text"
       }
     },
     {
       "name": "widgetKindOf/unknown",
       "fn": "widgetKindOf",
       "args": [
-        "signature"
+        {
+          "fieldKind": "signature",
+          "hasMark": false
+        }
       ],
       "outcome": {
         "returned": "widget-box"

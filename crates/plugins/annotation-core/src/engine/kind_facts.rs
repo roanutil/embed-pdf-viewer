@@ -41,6 +41,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("quadPoints", FieldOwner::Data),
@@ -50,6 +51,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("quadPoints", FieldSpace::Quads),
             ],
         },
@@ -89,6 +91,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("quadPoints", FieldOwner::Data),
@@ -98,6 +101,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("quadPoints", FieldSpace::Quads),
             ],
         },
@@ -137,6 +141,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("quadPoints", FieldOwner::Data),
@@ -146,6 +151,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("quadPoints", FieldSpace::Quads),
             ],
         },
@@ -185,6 +191,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("quadPoints", FieldOwner::Data),
@@ -195,6 +202,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("quadPoints", FieldSpace::Quads),
             ],
         },
@@ -234,6 +242,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -249,6 +258,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("box", FieldSpace::Box),
             ],
         },
@@ -288,6 +298,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -303,6 +314,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("box", FieldSpace::Box),
             ],
         },
@@ -342,6 +354,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -361,6 +374,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("vertices", FieldSpace::Points),
                 ("captionCenter", FieldSpace::Point),
                 ("measure", FieldSpace::Measure),
@@ -402,6 +416,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -421,6 +436,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("vertices", FieldSpace::Points),
                 ("captionCenter", FieldSpace::Point),
                 ("measure", FieldSpace::Measure),
@@ -462,6 +478,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -483,6 +500,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("linePoints", FieldSpace::LinePoints),
                 ("measure", FieldSpace::Measure),
             ],
@@ -569,6 +587,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("strokeWidth", FieldOwner::Data),
@@ -583,6 +602,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("inkList", FieldSpace::Strokes),
             ],
         },
@@ -622,6 +642,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("box", FieldOwner::Data),
                 ("rotation", FieldOwner::Data),
                 ("intent", FieldOwner::Data),
@@ -629,7 +650,6 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("fontSize", FieldOwner::Data),
                 ("textAlign", FieldOwner::Data),
                 ("verticalAlign", FieldOwner::Data),
-                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("fontColor", FieldOwner::Data),
                 ("interiorColor", FieldOwner::Data),
@@ -646,8 +666,8 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
-                ("box", FieldSpace::Box),
                 ("richText", FieldSpace::Length),
+                ("box", FieldSpace::Box),
                 ("calloutLine", FieldSpace::CalloutLine),
             ],
         },
@@ -687,6 +707,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("box", FieldOwner::Data),
@@ -698,6 +719,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("box", FieldSpace::Box),
             ],
         },
@@ -737,6 +759,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("icon", FieldOwner::Data),
@@ -746,7 +769,11 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             ],
             read_back: &[],
             colors: &["color"],
-            spaces: &[("rect", FieldSpace::Box), ("actions", FieldSpace::Actions)],
+            spaces: &[
+                ("rect", FieldSpace::Box),
+                ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
+            ],
         },
     ),
     (
@@ -784,6 +811,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("box", FieldOwner::Data),
                 ("rotation", FieldOwner::Data),
                 ("name", FieldOwner::Data),
@@ -795,6 +823,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("box", FieldSpace::Box),
             ],
         },
@@ -834,6 +863,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("icon", FieldOwner::Data),
@@ -841,7 +871,11 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             ],
             read_back: &[],
             colors: &["color"],
-            spaces: &[("rect", FieldSpace::Box), ("actions", FieldSpace::Actions)],
+            spaces: &[
+                ("rect", FieldSpace::Box),
+                ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
+            ],
         },
     ),
     (
@@ -893,7 +927,8 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("caption", FieldOwner::Data),
                 ("checkStyle", FieldOwner::Data),
                 ("field", FieldOwner::Engine),
-                ("fieldFamily", FieldOwner::Engine),
+                ("fieldKind", FieldOwner::Engine),
+                ("hasMark", FieldOwner::Engine),
             ],
             read_back: &["rect", "actions"],
             colors: &["color", "interiorColor", "fontColor"],
@@ -939,6 +974,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
                 ("modifiedBy", FieldOwner::Attribution),
                 ("importedBy", FieldOwner::Engine),
                 ("actions", FieldOwner::Preserved),
+                ("richText", FieldOwner::Data),
                 ("color", FieldOwner::Data),
                 ("opacity", FieldOwner::Data),
                 ("quadPoints", FieldOwner::Data),
@@ -955,6 +991,7 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
             spaces: &[
                 ("rect", FieldSpace::Box),
                 ("actions", FieldSpace::Actions),
+                ("richText", FieldSpace::Length),
                 ("quadPoints", FieldSpace::Quads),
             ],
         },
@@ -1048,4 +1085,4 @@ pub const KIND_FACTS: &[(&str, KindFacts)] = &[
 ];
 
 /// `ANNOTATION_DEFAULTS`, each kind's members in the order the table spreads them.
-pub const DEFAULTS_JSON: &str = r##"{"square":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"circle":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"line":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid","lineEndings":{"start":"none","end":"none"},"captionPosition":"inline"},"polygon":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"polyline":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid","lineEndings":{"start":"none","end":"none"}},"ink":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"highlight":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"multiply","color":"#ffff00","opacity":1},"underline":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"squiggly":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"strikeout":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"caret":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1},"free-text":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","contents":"","intent":"free-text","fontFamily":"helvetica","fontSize":12,"textAlign":"left","verticalAlign":"top","color":"#000000","fontColor":"#000000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"text":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","icon":"note","open":false,"color":"#ffff00","opacity":1},"file-attachment":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","icon":"paperclip","color":"#ffff00","opacity":1},"link":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal"},"redact":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","quadPoints":[],"color":"#ff0000","opacity":1,"repeat":false,"fontFamily":"helvetica","fontSize":12,"fontColor":"#000000","textAlign":"left"},"stamp":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","fit":"contain","opacity":1},"widget":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","strokeWidth":1,"borderStyle":"solid","textAlign":"left"},"popup":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","open":false}}"##;
+pub const DEFAULTS_JSON: &str = r##"{"square":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"circle":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"line":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid","lineEndings":{"start":"none","end":"none"},"captionEnabled":false,"captionPosition":"inline"},"polygon":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"polyline":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid","lineEndings":{"start":"none","end":"none"}},"ink":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"highlight":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"multiply","color":"#ffff00","opacity":1},"underline":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"squiggly":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"strikeout":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#000000","opacity":1},"caret":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","color":"#ff0000","opacity":1},"free-text":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","contents":"","intent":"free-text","fontFamily":"helvetica","fontSize":12,"textAlign":"left","verticalAlign":"top","color":"#000000","fontColor":"#000000","opacity":1,"strokeWidth":1,"borderStyle":"solid"},"text":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","icon":"note","open":false,"color":"#ffff00","opacity":1},"file-attachment":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","icon":"paperclip","color":"#ffff00","opacity":1},"link":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal"},"redact":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","quadPoints":[],"color":"#ff0000","opacity":1,"repeat":false,"fontFamily":"helvetica","fontSize":12,"fontColor":"#000000","textAlign":"left"},"stamp":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","fit":"contain","opacity":1},"widget":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","strokeWidth":1,"borderStyle":"solid","textAlign":"left"},"popup":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false,"blendMode":"normal","open":false}}"##;

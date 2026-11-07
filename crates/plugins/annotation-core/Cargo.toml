@@ -17,6 +17,7 @@ harness = ["dep:plugin-conformance", "dep:epdf-kernel"]
 
 [dependencies]
 epdf-geometry = { path = "../geometry", default-features = false }
+epdf-fonts = { path = "../fonts", default-features = false }
 serde = { version = "1", features = ["derive", "rc"] }
 # `Model.defaults` keeps the order tools were configured in, as the
 # TypeScript object does.

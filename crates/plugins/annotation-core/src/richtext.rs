@@ -1,6 +1,6 @@
 //! `richtext.ts`: the rich text run algebra over a FreeText's rich document
 //! (engine `RichTextDocumentInput`). Offsets count UTF-16 code units of the
-//! plain projection: paragraphs joined by `\r`, runs concatenated.
+//! plain projection: paragraphs joined by `\n`, runs concatenated.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -56,7 +56,7 @@ impl RichTextStyleDelta {
     }
 
     /// `{ ...self, ...over }`.
-    fn spread(&self, over: &RichTextStyleDelta) -> RichTextStyleDelta {
+    pub fn spread(&self, over: &RichTextStyleDelta) -> RichTextStyleDelta {
         RichTextStyleDelta {
             family: over.family.clone().or_else(|| self.family.clone()),
             weight: over.weight.or(self.weight),
@@ -71,8 +71,24 @@ impl RichTextStyleDelta {
         }
     }
 
+    /// `style[key] !== undefined`.
+    pub fn has(&self, key: RichTextStyleKey) -> bool {
+        match key {
+            RichTextStyleKey::Family => self.family.is_some(),
+            RichTextStyleKey::Weight => self.weight.is_some(),
+            RichTextStyleKey::Italic => self.italic.is_some(),
+            RichTextStyleKey::Size => self.size.is_some(),
+            RichTextStyleKey::Color => self.color.is_some(),
+            RichTextStyleKey::Decoration => self.decoration.is_some(),
+            RichTextStyleKey::Script => self.script.is_some(),
+            RichTextStyleKey::LetterSpacing => self.letter_spacing.is_some(),
+            RichTextStyleKey::HorizontalScale => self.horizontal_scale.is_some(),
+            RichTextStyleKey::Unknown => self.unknown.is_some(),
+        }
+    }
+
     /// `delete style[key]`.
-    fn clear(&mut self, key: RichTextStyleKey) {
+    pub fn clear(&mut self, key: RichTextStyleKey) {
         match key {
             RichTextStyleKey::Family => self.family = None,
             RichTextStyleKey::Weight => self.weight = None,
@@ -387,7 +403,7 @@ pub fn plain_text_of(paragraphs: &[RichTextParagraph]) -> String {
         .iter()
         .map(|p| p.runs.iter().map(|r| r.text.as_str()).collect::<String>())
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n")
 }
 
 const PARAGRAPH_PROPS: [&str; 6] =
@@ -402,4 +418,103 @@ pub fn is_plain_rich_text(doc: &RichTextDocumentInput) -> bool {
         PARAGRAPH_PROPS.iter().all(|k| !p.props.contains_key(*k))
             && p.runs.iter().all(|r| clean_delta(r.style.as_ref()).is_none())
     })
+}
+
+/// `inserted(before, after, at)`: the text an edit inserted at `at`, when
+/// inserting it there is all the edit did, as typing at a caret does.
+fn inserted_at(
+    before: &[RichTextParagraph],
+    after: &[RichTextParagraph],
+    at: f64,
+) -> Option<Vec<u16>> {
+    let was: Vec<u16> = plain_text_of(before).encode_utf16().collect();
+    let is: Vec<u16> = plain_text_of(after).encode_utf16().collect();
+    let added = is.len() as f64 - was.len() as f64;
+    if added <= 0.0 || at > was.len() as f64 || at < 0.0 || at.fract() != 0.0 {
+        return None;
+    }
+    let (at, added) = (at as usize, added as usize);
+    if is[..at] != was[..at] || is[at + added..] != was[at..] {
+        return None;
+    }
+    Some(is[at..at + added].to_vec())
+}
+
+/// What `typeWithStyle` gives: the document, where the caret is after the
+/// typing, and the style a line break carries on to it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TypedWithStyle {
+    pub paragraphs: Vec<RichTextParagraph>,
+    pub caret: f64,
+    pub style: Option<RichTextStyleDelta>,
+}
+
+/// `typeWithStyle(before, after, at, style)`: typing at a caret where the
+/// text typed next has a style of its own: the text the edit inserted at
+/// `at` takes it. A line break carries the style on to the caret. `None`
+/// when the edit was no typing at `at`.
+pub fn type_with_style(
+    before: &[RichTextParagraph],
+    after: &[RichTextParagraph],
+    at: f64,
+    style: &RichTextStyleDelta,
+) -> Option<TypedWithStyle> {
+    let inserted = inserted_at(before, after, at)?;
+    let caret = at + inserted.len() as f64;
+    if inserted.iter().all(|unit| *unit == u16::from(b'\n')) {
+        return Some(TypedWithStyle {
+            paragraphs: after.to_vec(),
+            caret,
+            style: Some(style.clone()),
+        });
+    }
+    let paragraphs =
+        apply_style_to_range(after, RichTextRange { start: at, end: caret }, style, &[])
+            .unwrap_or_else(|| after.to_vec());
+    Some(TypedWithStyle { paragraphs, caret, style: None })
+}
+
+/// `restyleRuns(doc, change)`: every run's own style passed through
+/// `change` (`None`: the style it was given), normalised; `None` when no
+/// run changed.
+pub fn restyle_runs(
+    paragraphs: &[RichTextParagraph],
+    change: impl Fn(&RichTextStyleDelta) -> Option<RichTextStyleDelta>,
+) -> Option<Vec<RichTextParagraph>> {
+    let none = RichTextStyleDelta::default();
+    let mut changed = false;
+    let restyled: Vec<RichTextParagraph> = paragraphs
+        .iter()
+        .map(|paragraph| RichTextParagraph {
+            runs: paragraph
+                .runs
+                .iter()
+                .map(|run| match change(run.style.as_ref().unwrap_or(&none)) {
+                    None => run.clone(),
+                    Some(style) => {
+                        changed = true;
+                        RichTextRun { text: run.text.clone(), style: Some(style) }
+                    }
+                })
+                .collect(),
+            props: paragraph.props.clone(),
+        })
+        .collect();
+    changed.then(|| normalize_runs(&restyled))
+}
+
+/// `withoutStyle(style, keys)`: `style` without `keys`, so a run follows the
+/// body for them; `None` when it has none of them.
+pub fn without_style(
+    style: &RichTextStyleDelta,
+    keys: &[RichTextStyleKey],
+) -> Option<RichTextStyleDelta> {
+    if !keys.iter().any(|key| style.has(*key)) {
+        return None;
+    }
+    let mut out = style.clone();
+    for key in keys {
+        out.clear(*key);
+    }
+    Some(out)
 }

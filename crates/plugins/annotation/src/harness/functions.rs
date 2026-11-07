@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use epdf_annotation_core::font_css::css_font_family_for_font;
+use epdf_annotation_core::font_css::standard_font_css_value;
 use epdf_annotation_core::kinds::widget_kind_of;
 use epdf_annotation_core::object::Json;
 use epdf_annotation_core::record::{
@@ -31,9 +31,9 @@ use crate::model::{
     with_session, with_snap,
 };
 use crate::rich_text::{
-    Face, FontHandle, RichTextDocument, TextSelection, body_from_text_style,
-    css_font_family_for_face, face_for_font, family_key, font_for_face, range_props, rich_doc_of,
-    run_delta_for_fields, runs_in_range, strip_body_defaults, text_commit_patch,
+    Face, FontHandle, RichTextDocument, TextSelection, body_from_text_style, face_for_font,
+    family_key, font_for_face, range_props, rich_doc_of, run_delta_for_fields, runs_in_range,
+    standard_font_for_face, strip_body_defaults, text_commit_patch,
 };
 use crate::sync::records::{core_error, dto_key};
 use crate::text_item::build_text_items;
@@ -199,6 +199,7 @@ fn set_text_selection_fn(args: &[Value]) -> Result<Value, Error> {
             id: s.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
             start: s.get("start").and_then(Value::as_f64).unwrap_or(f64::NAN),
             end: s.get("end").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            typing: s.get("typing").and_then(Value::as_object).cloned(),
         })
     });
     Ok(set_text_selection(&state, selection).to_json())
@@ -214,13 +215,21 @@ fn font_for_face_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(json!(font_for_face(&Face::read(arg(args, 0).unwrap_or(&Value::Null)), list.as_deref())))
 }
 
-fn css_for_face_fn(args: &[Value]) -> Result<Value, Error> {
-    let list = fonts(args, 1);
-    Ok(json!(css_font_family_for_face(&text(args, 0), list.as_deref())))
+/// `standardFontCss(standardFontForFace(face))`: the standard font that
+/// stands in for a face, as CSS (595fa2bd5 replaced `cssFontFamilyForFace`).
+fn standard_css_of_face_fn(args: &[Value]) -> Result<Value, Error> {
+    let face = arg(args, 0).cloned().unwrap_or(Value::Null);
+    let face = Face {
+        family: face.get("family").and_then(Value::as_str).unwrap_or("undefined").into(),
+        weight: face.get("weight").and_then(Value::as_f64),
+        italic: face.get("italic").and_then(Value::as_bool),
+    };
+    Ok(standard_font_css_value(&standard_font_for_face(&face)))
 }
 
-fn css_for_font_fn(args: &[Value]) -> Result<Value, Error> {
-    Ok(json!(css_font_family_for_font(&text(args, 0))))
+/// `standardFontCss(standardFontOf(font))` (595fa2bd5 replaced `cssFontFamilyForFont`).
+fn standard_css_of_font_fn(args: &[Value]) -> Result<Value, Error> {
+    Ok(standard_font_css_value(&text(args, 0)))
 }
 
 fn family_key_fn(args: &[Value]) -> Result<Value, Error> {
@@ -411,8 +420,8 @@ pub fn pure_functions() -> FunctionTable {
         ("setTextSelection", set_text_selection_fn),
         ("faceForFont", face_for_font_fn),
         ("fontForFace", font_for_face_fn),
-        ("cssFontFamilyForFace", css_for_face_fn),
-        ("cssFontFamilyForFont", css_for_font_fn),
+        ("standardFontCssOfFace", standard_css_of_face_fn),
+        ("standardFontCssOfFont", standard_css_of_font_fn),
         ("familyKey", family_key_fn),
         ("bodyFromTextStyle", body_from_text_style_fn),
         ("richDocOf", rich_doc_of_fn),
@@ -497,8 +506,16 @@ fn writable_target_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(writable_target(arg(args, 0)))
 }
 
+/// `widgetKindOf(widget)` on whatever the case passes: a value that is no
+/// object has no `fieldKind` or `hasMark`, as in JavaScript.
+fn widget_kind_of_value(widget: Option<&Value>) -> &'static str {
+    let member = |name: &str| widget.and_then(Value::as_object).and_then(|w| w.get(name));
+    let has_mark = epdf_annotation_core::json::truthy(member("hasMark"));
+    widget_kind_of(member("fieldKind").and_then(Value::as_str).unwrap_or("undefined"), has_mark)
+}
+
 fn widget_kind_of_fn(args: &[Value]) -> Result<Value, Error> {
-    Ok(json!(widget_kind_of(&text(args, 0))))
+    Ok(json!(widget_kind_of_value(args.first())))
 }
 
 fn widget_appearance_of_fn(args: &[Value]) -> Result<Value, Error> {

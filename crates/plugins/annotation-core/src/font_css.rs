@@ -27,3 +27,74 @@ pub fn css_font_family_for_font(font: &str) -> String {
         None => format!("{}, sans-serif", mounted_font_family(font)),
     }
 }
+
+/// A standard face's program as a scene's font program (`standardFontProgram`):
+/// its members print as the TypeScript object does, `load` a function.
+#[derive(Debug)]
+pub struct StandardSceneProgram(pub &'static epdf_fonts::FontProgram);
+
+impl crate::types::SceneFontProgram for StandardSceneProgram {
+    fn members(&self) -> crate::json::Object {
+        let mut members = match serde_json::to_value(self.0) {
+            Ok(serde_json::Value::Object(members)) => members,
+            _ => crate::json::Object::new(),
+        };
+        members.insert("load".into(), serde_json::json!({ "$function": true }));
+        members
+    }
+    fn family(&self) -> &str {
+        &self.0.family
+    }
+    fn weight(&self) -> f64 {
+        f64::from(self.0.weight)
+    }
+    fn style(&self) -> &str {
+        match self.0.style {
+            epdf_fonts::FontStyle::Normal => "normal",
+            epdf_fonts::FontStyle::Italic => "italic",
+        }
+    }
+    fn load(&self) -> &[u8] {
+        self.0.load()
+    }
+}
+
+/// What `standardPaintFont(font)` paints with: its CSS family list and its program.
+pub struct StandardPaintFont {
+    pub font_family: String,
+    pub program: crate::types::FontProgramRef,
+}
+
+/// `standardPaintFont(font)` (`@embedpdf/core-text`), its CSS and program.
+pub fn standard_paint_font(font: epdf_fonts::StandardFont) -> StandardPaintFont {
+    let css = epdf_fonts::standard_font_css(font);
+    StandardPaintFont {
+        font_family: css.font_family,
+        program: crate::types::FontProgramRef(std::rc::Rc::new(StandardSceneProgram(
+            epdf_fonts::standard_font_program(font),
+        ))),
+    }
+}
+
+/// `standardPaintFont(standardFontOf(font))`: the font of a box, drawn in its
+/// standard font, Helvetica for any other.
+pub fn standard_paint_font_of(font: &str) -> StandardPaintFont {
+    standard_paint_font(
+        epdf_fonts::StandardFont::from_name(font).unwrap_or(epdf_fonts::StandardFont::Helvetica),
+    )
+}
+
+/// `standardFontCss(standardFontOf(font))` as its object prints: the CSS
+/// family list, weight and style, and the programs (`load` a function).
+pub fn standard_font_css_value(font: &str) -> serde_json::Value {
+    let standard =
+        epdf_fonts::StandardFont::from_name(font).unwrap_or(epdf_fonts::StandardFont::Helvetica);
+    let css = epdf_fonts::standard_font_css(standard);
+    let program = StandardSceneProgram(epdf_fonts::standard_font_program(standard));
+    serde_json::json!({
+        "fontFamily": css.font_family,
+        "fontWeight": css.font_weight,
+        "fontStyle": css.font_style,
+        "programs": [crate::types::SceneFontProgram::members(&program)],
+    })
+}

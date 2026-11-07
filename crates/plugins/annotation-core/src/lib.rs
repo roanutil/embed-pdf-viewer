@@ -18,6 +18,7 @@ pub mod object;
 
 pub mod anchor;
 pub mod appearance;
+pub mod bezier;
 pub mod cloudy;
 pub mod editable;
 pub mod endings;
@@ -32,6 +33,7 @@ pub mod helvetica;
 pub mod hit;
 pub mod icons;
 pub mod ink;
+pub mod ink_curves;
 pub mod js;
 pub mod json;
 pub mod kinds;

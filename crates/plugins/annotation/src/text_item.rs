@@ -2,7 +2,7 @@
 //! geometry-only `textBoxes` joined with the font and CSS into render-ready
 //! `TextItem`s.
 
-use epdf_annotation_core::font_css::css_font_family_for_font;
+use epdf_annotation_core::font_css::standard_paint_font_of;
 use epdf_annotation_core::object::Json;
 use epdf_annotation_core::props::initial_text_style;
 use epdf_annotation_core::record::{style_of, text_of};
@@ -41,15 +41,28 @@ pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -
                 .unwrap_or_else(|| json!(""));
             item.insert("contents".into(), contents);
             item.insert("richText".into(), json!({ "paragraphs": paragraphs }));
+            let face = match &doc {
+                Some(doc) => json!({
+                    "family": doc.body.get("family").cloned().unwrap_or(Value::Null),
+                    "weight": doc.body.get("weight").cloned().unwrap_or(Value::Null),
+                    "italic": doc.body.get("italic").cloned().unwrap_or(Value::Null),
+                }),
+                None => json!({ "family": "Helvetica", "weight": 400, "italic": false }),
+            };
+            item.insert("face".into(), face);
+            // Without the fonts plugin, the box draws in the standard font the
+            // engine falls back to for its font (`standardFontCss`).
+            let family = style.font_family.as_ref().and_then(Value::as_str).unwrap_or("undefined");
+            let body_css = standard_paint_font_of(family);
+            item.insert("programs".into(), json!([body_css.program.0.members()]));
             item.insert("editing".into(), json!(tb.editing));
             if tb.rot != 0.0 && !tb.rot.is_nan() {
                 item.insert("rot".into(), num(tb.rot));
             }
-            let family = style.font_family.as_ref().and_then(Value::as_str).unwrap_or("undefined");
             item.insert(
                 "css".into(),
                 json!({
-                    "fontFamily": css_font_family_for_font(family),
+                    "fontFamily": body_css.font_family,
                     "fontSize": style.font_size.clone().unwrap_or_else(epdf_kernel::undefined),
                     "color": style.font_color.clone().unwrap_or_else(epdf_kernel::undefined),
                     "fontWeight": if style.bold == Some(true) { 700 } else { 400 },

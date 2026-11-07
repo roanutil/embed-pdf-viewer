@@ -57,7 +57,7 @@ const INERT_KEYS: &[&str] = &[
     "actions",
     "file",
     "field",
-    "fieldFamily",
+    "fieldKind",
 ];
 
 const CONTENTS_PAINTED: [&str; 2] = ["free-text", "redact"];

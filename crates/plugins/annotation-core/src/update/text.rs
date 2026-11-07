@@ -47,18 +47,18 @@ pub fn set_rich_text(model: &Model, id: &str, doc: &Object) -> (Model, Vec<Effec
         return (model.clone(), Vec::new());
     };
     let normalized = normalize_doc(&input);
-    let mut body = record
-        .annotation
-        .get("richText")
-        .and_then(|r| r.get("body"))
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    if let Some(over) = normalized.body.as_ref() {
-        for (k, v) in over {
-            body.insert(k.clone(), v.clone());
-        }
-    }
+    // As the engine does: a body the editor gives is replaced whole over the
+    // defaults, and without one the annotation's body is kept.
+    let body = match normalized.body.as_ref() {
+        Some(over) => json::spread(&crate::engine::text::default_rich_text_body(), over),
+        None => record
+            .annotation
+            .get("richText")
+            .and_then(|r| r.get("body"))
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default(),
+    };
     let rich = json::object([
         ("body", Value::Object(body)),
         ("paragraphs", paragraphs_value(&normalized.paragraphs)),

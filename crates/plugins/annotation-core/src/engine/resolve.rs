@@ -22,10 +22,12 @@ use super::measure::{
     DimensionInput, assert_pdf_float, assert_writable_measure, measurement_readout,
 };
 use super::shape_for_rect::{pdf_shape_for_rect, shape_fields_of};
+use super::siblings::{field_the_kind_cannot_hold, sibling_kinds_of};
 use super::space::{pdf_rect_of_value, pdf_rect_value, to_page, to_pdf};
 use super::text::{
     DescribeFont, action_tree_of, default_rich_text_body, face_for_free_text_font,
     rich_text_paragraphs_from_plain_text, rich_text_plain_text, standard_state_model_of,
+    to_line_breaks,
 };
 use crate::error::{CoreError, CoreResult};
 use crate::json::{self, Object, num};
@@ -55,22 +57,140 @@ pub fn assert_declared_fields(subtype: &str, write: &Object) -> CoreResult<()> {
     }
 }
 
-/// `assertRichTextAgreement(input)`.
+/// `assertRichTextAgreement(input)` (`resolve/comment.ts`): `contents`, given
+/// beside `richText`, is its plain projection, line breaks however spelled.
 pub fn assert_rich_text_agreement(input: &Object) -> CoreResult<()> {
-    if json::get_str(input, "subtype") != Some("free-text") {
-        return Ok(());
-    }
-    let Some(rich) = defined(input.get("richText")) else { return Ok(()) };
-    let Some(contents) = json::get(input, "contents").and_then(Value::as_str) else {
-        return Ok(());
-    };
+    let Some(rich) = json::get(input, "richText") else { return Ok(()) };
+    let Some(contents) = json::get(input, "contents") else { return Ok(()) };
     let paragraphs = rich.get("paragraphs").and_then(Value::as_array).cloned().unwrap_or_default();
-    if contents != rich_text_plain_text(&paragraphs) {
-        return Err(CoreError::invalid(
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
+    if to_line_breaks(&json::string_of(contents), "\n") != rich_text_plain_text(&paragraphs) {
+        let subtype = defined(input.get("subtype"))
+            .map(json::string_of)
+            .unwrap_or_else(|| "annotation".into());
+        return Err(CoreError::invalid(format!(
+            "{subtype}: `contents` must equal the plain projection of `richText` when both are given"
+        )));
     }
     Ok(())
+}
+
+/// `hasRichComment(subtype)`: a markup kind other than free text, whose rich
+/// text is drawn.
+fn has_rich_comment(subtype: Option<&str>) -> bool {
+    match subtype {
+        None | Some("free-text") => false,
+        Some(subtype) => field_names(subtype).contains(&"richText"),
+    }
+}
+
+/// The plain projection of a rich text value.
+fn plain_of(rich: &Value) -> String {
+    let paragraphs = rich.get("paragraphs").and_then(Value::as_array).cloned().unwrap_or_default();
+    rich_text_plain_text(&paragraphs)
+}
+
+/// `commentDraftFollows(draft)`: a markup annotation's rich comment brings
+/// its `contents`, its plain projection.
+fn comment_draft_follows(draft: &Object) -> Object {
+    if !has_rich_comment(json::get_str(draft, "subtype")) {
+        return draft.clone();
+    }
+    let Some(rich) = json::get(draft, "richText").filter(|r| json::truthy(Some(r))) else {
+        return draft.clone();
+    };
+    let mut out = draft.clone();
+    out.insert("contents".into(), Value::String(plain_of(rich)));
+    out
+}
+
+/// `commentFollows(current, patch)`: a markup annotation's comment follows
+/// its text. New rich text brings its `contents`; `richText: null` makes it
+/// plain; new `contents` on a rich comment becomes paragraphs, and `null`
+/// contents clear both.
+fn comment_follows(current: &Object, patch: &Object) -> Object {
+    let subtype = defined(patch.get("subtype"))
+        .and_then(Value::as_str)
+        .or_else(|| json::get_str(current, "subtype"));
+    if !has_rich_comment(subtype) {
+        return patch.clone();
+    }
+    let rich = defined(patch.get("richText"));
+    if let Some(rich) = rich.filter(|r| json::truthy(Some(r))) {
+        let mut out = patch.clone();
+        out.insert("contents".into(), Value::String(plain_of(rich)));
+        return out;
+    }
+    let contents = defined(patch.get("contents"));
+    if rich.is_some_and(Value::is_null) || contents.is_none() {
+        return patch.clone();
+    }
+    if !json::truthy(current.get("richText")) {
+        return patch.clone();
+    }
+    let mut out = patch.clone();
+    let Some(contents) = contents.filter(|c| !c.is_null()) else {
+        out.insert("richText".into(), Value::Null);
+        return out;
+    };
+    let paragraphs = rich_text_paragraphs_from_plain_text(&json::string_of(contents));
+    let plain = rich_text_plain_text(&paragraphs);
+    out.insert(
+        "richText".into(),
+        Value::Object(json::object([("paragraphs", Value::Array(paragraphs))])),
+    );
+    out.insert("contents".into(), Value::String(plain));
+    out
+}
+
+/// `DEFAULT_DASH_ARRAY`: ISO 32000's default dash, 3 on and 3 off.
+const DEFAULT_DASH_ARRAY: [f64; 2] = [3.0, 3.0];
+
+fn default_dash_array() -> Value {
+    Value::Array(DEFAULT_DASH_ARRAY.iter().map(|n| num(*n)).collect())
+}
+
+/// `needsDefaultDash(borderStyle, dashArray)`: a dashed border whose write
+/// leaves its pattern out.
+fn needs_default_dash(border_style: Option<&Value>, dash_array: Option<&Value>) -> bool {
+    border_style.and_then(Value::as_str) == Some("dashed") && json::undefined(dash_array)
+}
+
+fn has_dash_pattern(subtype: &str) -> bool {
+    kind_facts_of(subtype).is_some_and(|facts| facts.declares("dashArray"))
+}
+
+/// `dashDraftFollows(draft)`: a draft whose border is dashed with its
+/// pattern left out states the default.
+fn dash_draft_follows(draft: &Object) -> Object {
+    let subtype = json::get_str(draft, "subtype").unwrap_or("");
+    if !has_dash_pattern(subtype) {
+        return draft.clone();
+    }
+    let defaults = annotation_defaults_of(subtype);
+    let style = json::get(draft, "borderStyle").or_else(|| json::get(&defaults, "borderStyle"));
+    if !needs_default_dash(style, draft.get("dashArray")) {
+        return draft.clone();
+    }
+    let mut out = draft.clone();
+    out.insert("dashArray".into(), default_dash_array());
+    out
+}
+
+/// `dashPatchFollows(current, patch)`: a patch that makes a border dashed
+/// and leaves its pattern out, on a border that has none, states the default.
+fn dash_patch_follows(current: &Object, patch: &Object) -> Object {
+    if !has_dash_pattern(json::get_str(current, "subtype").unwrap_or("")) {
+        return patch.clone();
+    }
+    if !needs_default_dash(defined(patch.get("borderStyle")), patch.get("dashArray")) {
+        return patch.clone();
+    }
+    if !json::nullish(current.get("dashArray")) {
+        return patch.clone();
+    }
+    let mut out = patch.clone();
+    out.insert("dashArray".into(), default_dash_array());
+    out
 }
 
 fn state_needs_model(state: &str) -> CoreError {
@@ -168,8 +288,8 @@ pub fn read_value_of(name: &str, value: &Value, current: Option<&Value>) -> Valu
             let mut out = match current.and_then(Value::as_object) {
                 Some(read) => read.clone(),
                 None => json::object([
-                    ("size", Value::Null),
-                    ("checksum", Value::Null),
+                    ("sizeBytes", Value::Null),
+                    ("md5", Value::Null),
                     ("createdAt", Value::Null),
                     ("modifiedAt", Value::Null),
                 ]),
@@ -219,9 +339,10 @@ fn following_reads(current: &Object, resolved: &Object) -> Object {
 /// `applyResolvedPatch(current, resolved)`: the patch's data fields in place,
 /// each as a read spells it; the rest keep `current`'s values.
 pub fn apply_resolved_patch(current: &Object, resolved: &Object) -> Object {
-    let subtype = json::get_str(current, "subtype").unwrap_or("");
+    let own = json::get_str(current, "subtype").unwrap_or("");
+    let subtype = defined(resolved.get("subtype")).and_then(Value::as_str).unwrap_or(own);
     let facts = kind_facts_of(subtype);
-    let mut next = current.clone();
+    let mut next = if subtype == own { current.clone() } else { as_kind(current, subtype) };
     for (name, value) in resolved {
         if name == "subtype" || json::undefined(Some(value)) {
             continue;
@@ -238,6 +359,27 @@ pub fn apply_resolved_patch(current: &Object, resolved: &Object) -> Object {
     next
 }
 
+/// `asKind(read, subtype, owners)`: a read of one kind as a read of its
+/// sibling `subtype`: the fields that kind declares, a field only it has `null`.
+fn as_kind(read: &Object, subtype: &str) -> Object {
+    let owners = kind_facts_of(subtype);
+    let before = kind_facts_of(json::get_str(read, "subtype").unwrap_or(""));
+    let has = |name: &str| owners.is_some_and(|f| f.declares(name));
+    let had = |name: &str| before.is_some_and(|f| f.declares(name));
+    let mut next = json::object([("subtype", Value::String(subtype.into()))]);
+    for (name, value) in read {
+        if name != "subtype" && (has(name) || !had(name)) {
+            next.insert(name.clone(), value.clone());
+        }
+    }
+    for (name, _) in owners.map(|f| f.owners).unwrap_or(&[]) {
+        if !had(name) {
+            next.insert((*name).into(), Value::Null);
+        }
+    }
+    next
+}
+
 /// `mergeAnnotationPatch(current, patch)`: the patch as given, no rule run.
 pub fn merge_annotation_patch(current: &Object, patch: &Object) -> Object {
     apply_resolved_patch(current, patch)
@@ -248,8 +390,18 @@ pub fn annotation_patch_between(before: &Object, after: &Object) -> Object {
     let mut patch = Object::new();
     let subtype = json::get_str(after, "subtype").unwrap_or("");
     let Some(facts) = kind_facts_of(subtype) else { return patch };
+    let had = kind_facts_of(json::get_str(before, "subtype").unwrap_or(""));
+    let retyped = json::get_str(before, "subtype") != Some(subtype);
+    if retyped {
+        patch.insert("subtype".into(), Value::String(subtype.into()));
+    }
     for (name, owner) in facts.owners {
-        if *owner != FieldOwner::Data || json::same_value(before.get(*name), after.get(*name)) {
+        let was = if retyped && !had.is_some_and(|f| f.declares(name)) {
+            Some(&Value::Null)
+        } else {
+            before.get(*name)
+        };
+        if *owner != FieldOwner::Data || json::same_value(was, after.get(*name)) {
             continue;
         }
         let now = defined(after.get(*name)).cloned().unwrap_or(Value::Null);
@@ -260,14 +412,53 @@ pub fn annotation_patch_between(before: &Object, after: &Object) -> Object {
 
 // ── preparing an update ─────────────────────────────────────────────────────
 
-fn annotation_patch_for_target(current: &Object, patch: &Object) -> CoreResult<Object> {
-    let subtype = json::get_str(current, "subtype").unwrap_or("");
-    if let Some(given) = defined(patch.get("subtype"))
-        && given.as_str() != Some(subtype)
-    {
-        return Err(CoreError::invalid("Annotation subtype cannot change"));
+/// `orList(names)`: `['a', 'b', 'c']` as "a, b or c".
+fn or_list(names: &[&str]) -> String {
+    match names {
+        [] => String::new(),
+        [one] => (*one).into(),
+        [rest @ .., last] => format!("{} or {last}", rest.join(", ")),
     }
-    if subtype == "unsupported" {
+}
+
+/// `kindAfter(current, requested)`: the kind an update leaves the
+/// annotation, its own or a sibling the patch names.
+fn kind_after(current: &Object, requested: Option<&Value>) -> CoreResult<String> {
+    let own = json::get_str(current, "subtype").unwrap_or("");
+    let Some(requested) = requested else { return Ok(own.into()) };
+    let requested = json::string_of(requested);
+    if requested == own {
+        return Ok(own.into());
+    }
+    let siblings = sibling_kinds_of(own);
+    if !siblings.contains(&requested.as_str()) {
+        let message = if siblings.is_empty() {
+            format!("{own} has no other kind it can become")
+        } else {
+            format!("{own} can become {}, not {requested}", or_list(&siblings))
+        };
+        return Err(CoreError::invalid_field(message, "subtype"));
+    }
+    if let Some(held) = field_the_kind_cannot_hold(current, &requested) {
+        let value = current.get(held).cloned().unwrap_or(Value::Null);
+        let shown = match &value {
+            Value::String(text) => format!("'{text}'"),
+            other => json::stringify(other),
+        };
+        return Err(CoreError::invalid_field(
+            format!(
+                "{own} field '{held}' holds {shown}, and {requested} has no such field: clear it first, in the same change"
+            ),
+            held,
+        ));
+    }
+    Ok(requested)
+}
+
+fn annotation_patch_for_target(current: &Object, patch: &Object) -> CoreResult<Object> {
+    let subtype = kind_after(current, defined(patch.get("subtype")))?;
+    let subtype = subtype.as_str();
+    if json::get_str(current, "subtype") == Some("unsupported") {
         return Err(CoreError::invalid(
             "an annotation of a type the engine doesn't model can't be updated",
         ));
@@ -490,13 +681,18 @@ fn free_text_follows(
         current.get("richText").and_then(Value::as_object).cloned().unwrap_or_default();
     let current_body =
         current_rich.get("body").and_then(Value::as_object).cloned().unwrap_or_default();
+    // A body the patch gives is replaced whole over the defaults; without one
+    // the current body is kept.
     let given_body = patch
         .get("richText")
         .and_then(|r| r.get("body"))
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    let body = json::spread(&json::spread(&current_body, &given_body), &changes);
+        .filter(|b| json::truthy(Some(b)))
+        .and_then(Value::as_object);
+    let base = match given_body {
+        Some(given) => json::spread(&default_rich_text_body(), given),
+        None => current_body,
+    };
+    let body = json::spread(&base, &changes);
     let paragraphs = match patch
         .get("richText")
         .and_then(|r| defined(r.get("paragraphs")))
@@ -831,8 +1027,7 @@ pub fn resolve_measurement_draft(draft: &Object) -> CoreResult<Object> {
     let mut resolved = draft.clone();
     if touches_caption(draft) {
         if subtype == "line" {
-            let enabled =
-                defined(draft.get("captionEnabled")).cloned().unwrap_or(Value::Bool(false));
+            let enabled = json::get(draft, "captionEnabled").cloned().unwrap_or(Value::Bool(false));
             let position = json::get(draft, "captionPosition")
                 .cloned()
                 .unwrap_or(Value::String("inline".into()));
@@ -960,9 +1155,12 @@ fn pdf_derive_annotation_patch(
     prepared: &Object,
     describe: Option<DescribeFont>,
 ) -> CoreResult<Object> {
-    let resolved = note_state_follows(current, prepared)?;
+    let resolved = dash_patch_follows(current, &note_state_follows(current, prepared)?);
     assert_rich_text_agreement(&resolved)?;
-    let text = callout_end_follows(current, &free_text_follows(current, &resolved, describe)?);
+    let text = callout_end_follows(
+        current,
+        &comment_follows(current, &free_text_follows(current, &resolved, describe)?),
+    );
     measurement_follows(current, &text)
 }
 
@@ -984,10 +1182,10 @@ pub fn pdf_predict_annotation_draft(
     assert_declared_fields(subtype, draft)?;
     let prepared = box_draft_follows(draft)?;
     assert_rich_text_agreement(&prepared)?;
-    let followed = redact_draft_follows(&free_text_draft_follows(
-        &note_draft_state_follows(&prepared)?,
+    let followed = redact_draft_follows(&comment_draft_follows(&free_text_draft_follows(
+        &dash_draft_follows(&note_draft_state_follows(&prepared)?),
         describe,
-    )?);
+    )?));
     resolve_measurement_draft(&followed)
 }
 
@@ -1152,7 +1350,8 @@ pub fn annotation_of_resolved_draft(resolved: &Object, context: &DraftContext) -
         read.insert("actions".into(), actions);
     }
     if subtype == "widget" {
-        read.insert("fieldFamily".into(), Value::String("unknown".into()));
+        read.insert("fieldKind".into(), Value::String("unknown".into()));
+        read.insert("hasMark".into(), Value::Bool(false));
     }
     read
 }

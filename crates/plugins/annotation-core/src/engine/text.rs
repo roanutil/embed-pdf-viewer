@@ -98,9 +98,10 @@ pub fn default_rich_text_body() -> Object {
     ])
 }
 
-/// `richTextPlainText(doc)`: runs joined, paragraphs joined by `\r`.
+/// `richTextPlainText(doc)`: runs joined, paragraphs joined by `\n`, every
+/// line break spelled `\n`.
 pub fn rich_text_plain_text(paragraphs: &[Value]) -> String {
-    paragraphs
+    let joined = paragraphs
         .iter()
         .map(|p| {
             p.get("runs")
@@ -113,7 +114,14 @@ pub fn rich_text_plain_text(paragraphs: &[Value]) -> String {
                 .unwrap_or_default()
         })
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n");
+    to_line_breaks(&joined, "\n")
+}
+
+/// `toLineBreaks(text, lineBreak)`: every line break (`\r\n`, `\r` or `\n`)
+/// spelled `line_break`.
+pub fn to_line_breaks(text: &str, line_break: &str) -> String {
+    split_lines(text).join(line_break)
 }
 
 /// `text.split(/\r\n|\r|\n/)`.
@@ -188,7 +196,6 @@ pub fn action_tree_of(target: &Object) -> Value {
     Value::Object(json::object([
         ("root", Value::Object(root)),
         ("incomplete", Value::Bool(false)),
-        ("warningFlags", num(0.0)),
         ("warnings", Value::Array(Vec::new())),
     ]))
 }

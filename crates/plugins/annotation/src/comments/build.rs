@@ -192,11 +192,12 @@ fn compute_review(states: &[Value], current_user_id: Option<&str>) -> Value {
         "statusRefs".into(),
         Value::Array(states.iter().map(|a| a.get("ref").cloned().unwrap_or(Value::Null)).collect()),
     );
-    if let Some(user) = current_user_id {
-        let mine =
-            by_reviewer.iter().find(|(k, _)| k == user).map_or(Value::Null, |(_, s)| s.to_json());
-        review.insert("mine".into(), mine);
-    }
+    // `byReviewer[currentUserId]`: `null` when that reviewer has none, or
+    // when no `currentUserId` was given.
+    let mine = current_user_id
+        .and_then(|user| by_reviewer.iter().find(|(k, _)| k == user))
+        .map_or(Value::Null, |(_, s)| s.to_json());
+    review.insert("mine".into(), mine);
     Value::Object(review)
 }
 

@@ -2,9 +2,12 @@
 
 use serde_json::Value;
 
-use crate::json;
-use crate::kinds::{AnnotationKind, flag_properties};
-use crate::types::TextStyle;
+use crate::editable::is_editable_by_hand;
+use crate::engine::siblings::{can_change_kind, sibling_kinds_of};
+use crate::json::{self, Object};
+use crate::kinds::{AnnotationKind, flag_properties, kind_choice};
+use crate::record::kind_of;
+use crate::types::{EditableKinds, TextStyle};
 
 /// `initialTextStyle`.
 pub fn initial_text_style() -> TextStyle {
@@ -57,4 +60,42 @@ pub fn shared_properties(kinds: &[AnnotationKind]) -> Vec<Value> {
         .into_iter()
         .filter(|p| rest.iter().all(|keys| key_of(p).is_some_and(|k| keys.iter().any(|x| x == k))))
         .collect()
+}
+
+/// `kindChoiceOf(model, annotations)`: the kind choice over `annotations`
+/// (`subtype`), offered when they are kinds of one sibling group and each can
+/// change kind now, listing the kinds of the group people may change by hand.
+fn kind_choice_of(editable: &EditableKinds, annotations: &[&Object]) -> Option<Value> {
+    let first = annotations.first()?;
+    let own = json::get_str(first, "subtype").unwrap_or("");
+    let mut group = vec![own];
+    group.extend(sibling_kinds_of(own));
+    let changeable = annotations.iter().all(|annotation| {
+        let subtype = json::get_str(annotation, "subtype").unwrap_or("");
+        group.contains(&subtype)
+            && sibling_kinds_of(subtype).iter().any(|kind| can_change_kind(annotation, kind))
+    });
+    if !changeable {
+        return None;
+    }
+    let kinds: Vec<&str> = group
+        .into_iter()
+        .filter(|kind| {
+            let mut retyped = (*first).clone();
+            retyped.insert("subtype".into(), Value::String((*kind).into()));
+            is_editable_by_hand(editable, &retyped)
+        })
+        .collect();
+    (kinds.len() > 1).then(|| kind_choice(&kinds))
+}
+
+/// `selectionProperties(model, annotations)`: the properties the selected
+/// annotations' kinds share, led by the kind they can become when they can.
+pub fn selection_properties(editable: &EditableKinds, annotations: &[&Object]) -> Vec<Value> {
+    let kinds: Vec<AnnotationKind> = annotations.iter().map(|a| kind_of(a)).collect();
+    let shared = shared_properties(&kinds);
+    match kind_choice_of(editable, annotations) {
+        Some(choice) => std::iter::once(choice).chain(shared).collect(),
+        None => shared,
+    }
 }
