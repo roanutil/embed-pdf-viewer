@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_geometry::Rect;
+use epdf_geometry::{PageRotation, Rect};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
@@ -99,6 +99,11 @@ const MEMBERS: &[&str] = &[
     "getAppearanceScale",
     "onRenderCompleted",
     "onRenderFailed",
+    "canSnapshot",
+    "getSnapshot",
+    "clearSnapshot",
+    "onSnapshotChanged",
+    "getSnapshotBox",
 ];
 const VIEW_MEMBERS: &[&str] =
     &["setDemand", "getPlan", "markPainted", "markUnpainted", "release", "destroy"];
@@ -191,9 +196,15 @@ fn page_options(
         Some(format) => Some(from_value::<RenderFormat>(format)?),
         None => None,
     };
+    let rect = match member(options, "rect") {
+        Some(rect) => Some(from_value::<Rect>(rect)?),
+        None => None,
+    };
     Ok(RenderPageOptions {
         width: number(options, "width"),
         scale: number(options, "scale"),
+        rect,
+        rotation: number(options, "rotation").map(PageRotation),
         layers: layers(options),
         format,
         quality: number(options, "quality"),
@@ -216,6 +227,17 @@ fn hook<E: Serialize + 'static>(
         off.call();
         Outcome::undefined()
     })))
+}
+
+/// A [`Snapshot`] as the TypeScript's canonical form writes it: its
+/// picture a tracked promise, numbered where it appears.
+fn snapshot_json(h: &Harness, snapshot: Option<&Snapshot>) -> Value {
+    let Some(snapshot) = snapshot else { return Value::Null };
+    json!({
+        "page": snapshot.page.to_json(),
+        "rect": to_value(&snapshot.rect),
+        "image": h.track(snapshot.image.convert(|image| Ok(to_value(image)))),
+    })
 }
 
 fn appearance_options(options: Option<&Value>) -> Result<AppearancesOptions, Error> {
@@ -380,6 +402,31 @@ impl Render {
                 let cap = cap.clone();
                 hook(h, present(args, 0), move |f| cap.on_render_failed(f))
             }
+            "canSnapshot" => Outcome::Returned(json!(cap.can_snapshot())),
+            "getSnapshot" => Outcome::Returned(snapshot_json(h, cap.get_snapshot().as_ref())),
+            "clearSnapshot" => {
+                cap.clear_snapshot();
+                Outcome::undefined()
+            }
+            "onSnapshotChanged" => {
+                let callback = h.callback(present(args, 0).unwrap_or(&Value::Null));
+                let tracker = h.clone();
+                let off = cap.on_snapshot_changed(move |event| {
+                    let snapshot = snapshot_json(&tracker, event.snapshot.as_ref());
+                    let event = json!({ "snapshot": snapshot });
+                    match callback.call(vec![event]) {
+                        Answer::Throws(error) => Err(error),
+                        _ => Ok(()),
+                    }
+                });
+                Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                    off.call();
+                    Outcome::undefined()
+                })))
+            }
+            "getSnapshotBox" => Outcome::Returned(
+                cap.get_snapshot_box(page_ref_arg(args, 0)?).map_or(Value::Null, |r| to_value(&r)),
+            ),
             other => not_a_function(other),
         })
     }

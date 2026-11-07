@@ -19,7 +19,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 
-use epdf_geometry::Rect;
+use epdf_geometry::{PageRotation, Rect, intersect_rects};
 use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::{CallFacts, CallPriority, DocumentHandle};
 use epdf_kernel::error::{code, plugin_error, to_plugin_error, to_plugin_error_info};
@@ -40,7 +40,8 @@ use crate::appearance_store::{AppearanceStore, RecentPictures};
 use crate::contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
     PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
-    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, config_of, render_defaults,
+    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, Snapshot, SnapshotChangedEvent,
+    config_of, render_defaults,
 };
 use crate::host_contract::{
     AppearanceFamily, AppearancePicture, AppearancesOptions, PaintSettings, RenderCompletedEvent,
@@ -58,6 +59,7 @@ use crate::paint_plan::{
 };
 use crate::policy::{CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, PageRenderViewport};
 use crate::raster_store::{DEFAULT_MAX_COST, PageImageHandle, RasterStore};
+use crate::snapshot::{Snapshots, connect_snapshots};
 use crate::strategy::{ResolvedStrategy, base_ask_width, resolve_strategy};
 use crate::tile_manager::{TileManager, TileManagerDeps};
 use crate::tiles::PageSizePt;
@@ -148,8 +150,8 @@ pub struct RenderSettingsChanged {
     pub changed_keys: Vec<String>,
 }
 
-struct Core {
-    cx: Controller<RenderState, Value>,
+pub(crate) struct Core {
+    pub(crate) cx: Controller<RenderState, Value>,
     settings: InstanceSettings,
     resolved_memo: RefCell<Option<(Rc<Value>, Rc<ResolvedRenderOptions>)>>,
     host: RenderHost,
@@ -172,6 +174,8 @@ struct Core {
     pending_advance: RefCell<IndexSet<u32>>,
     advance_scheduled: Cell<bool>,
     views: RefCell<IndexMap<String, ViewRecord>>,
+    /// The snapshot tool's held snapshot and its event.
+    pub(crate) snapshots: Snapshots,
 }
 
 impl Core {
@@ -221,7 +225,7 @@ impl Core {
         resolved
     }
 
-    fn get_settings(&self) -> RenderSettings {
+    pub(crate) fn get_settings(&self) -> RenderSettings {
         self.decode_settings(&self.settings.get())
     }
 
@@ -305,7 +309,7 @@ impl Core {
     // ── strategy ∧ policy ──
 
     /// The policy is a document fact on the kernel's registry.
-    fn policy(&self) -> EngineRenderPolicy {
+    pub(crate) fn policy(&self) -> EngineRenderPolicy {
         self.with_meta(|meta| {
             let Some(meta) = meta else { return CONTINUOUS_RENDER_POLICY };
             let mut memo = self.policy_memo.borrow_mut();
@@ -343,7 +347,7 @@ impl Core {
 
     /// `ctx.getPage(page)`: the page's ref and size, or `None` for a page
     /// this document does not have.
-    fn find_page(&self, page: PageArg) -> Option<(PageRef, PageSizePt)> {
+    pub(crate) fn find_page(&self, page: PageArg) -> Option<(PageRef, PageSizePt)> {
         self.with_meta(|meta| {
             let pages = meta?.pages.as_array()?;
             let info = match page {
@@ -615,8 +619,81 @@ impl Core {
         })
     }
 
+    /// `renderPart`: a picture of part of a page, or a turned one, for its
+    /// caller alone: no layer asks for it, so it skips the store. The rect
+    /// is cut at the page's edge, and the size is the caller's, as the
+    /// engine takes it.
+    fn render_part(
+        &self,
+        page: PageRef,
+        page_size: PageSizePt,
+        options: &RenderPageOptions,
+        layers: PageRenderLayers,
+        format: Option<RenderFormat>,
+        quality: Option<f64>,
+    ) -> Result<Promise<PageImage>, Error> {
+        let whole = Rect { x: 0.0, y: 0.0, width: page_size.width, height: page_size.height };
+        let rect = options.rect.map(|rect| intersect_rects(rect, whole));
+        if let Some(rect) = rect
+            && !(rect.width > 0.0 && rect.height > 0.0)
+        {
+            return Err(plugin_error(
+                code::INVALID_INPUT,
+                CAPABILITY,
+                "the rect misses the page",
+                None,
+                Some(json!({ "field": "rect" })),
+            ));
+        }
+        let mut request = Map::new();
+        if let Some(rect) = rect {
+            request.insert("target".into(), json!({ "kind": "rect", "rect": rect }));
+        }
+        let viewport = match options.width {
+            Some(width) => json!({ "kind": "width", "width": js::max(1.0, js::round(width)) }),
+            None => json!({ "kind": "scale", "scale": options.scale.unwrap_or(1.0) }),
+        };
+        request.insert("viewport".into(), viewport);
+        if let Some(rotation) = options.rotation.filter(|r| turns(*r)) {
+            request.insert("rotation".into(), json!(rotation.0));
+        }
+        request.insert("includeAnnotations".into(), json!(layers.include_annotations));
+        request.insert("includeFormFields".into(), json!(layers.include_form_fields));
+        if let Some(format) = format {
+            request.insert("format".into(), json!(format.as_str()));
+        }
+        if let Some(quality) = quality {
+            request.insert("quality".into(), json!(quality));
+        }
+        let doc = self.cx.doc()?;
+        let facts = high_for(None);
+        // A signal that never fires stands in for none.
+        let signal = options.signal.clone().unwrap_or_default();
+        let release = self.host.release_image.clone();
+        let handle = move |value: &Value| {
+            Ok(match &release {
+                Some(release) => PageImageHandle::with_release(value.clone(), release.clone()),
+                None => PageImageHandle::new(value.clone()),
+            })
+        };
+        // A copy draws as the page it copies, which the engine may not have
+        // yet either.
+        let drawn = self.copied_from(page).unwrap_or(page);
+        if !self.is_pending(drawn) {
+            return Ok(
+                render_image(&doc, &facts, drawn, Value::Object(request), &signal).convert(handle)
+            );
+        }
+        let held = self.when_held(drawn, Some(signal.clone()));
+        Ok(Promise::spawn(async move {
+            held.reaction().await?;
+            render_image(&doc, &facts, drawn, Value::Object(request), &signal).reaction().await
+        })
+        .convert(handle))
+    }
+
     /// The public door: the requested size, exactly.
-    fn render_page(
+    pub(crate) fn render_page(
         self: &Rc<Self>,
         page: PageArg,
         options: RenderPageOptions,
@@ -625,14 +702,18 @@ impl Core {
         Promise::spawn(async move {
             this.cx.assert_allowed(RENDER_SCOPE, "render.renderPage")?;
             let (page, size) = this.page_of(page)?;
-            let width = js::max(
-                1.0,
-                js::round(options.width.unwrap_or(options.scale.unwrap_or(1.0) * size.width)),
-            );
             let layers = this.picture_layers(options.layers, "render.renderPage")?;
             let strategy = this.strategy();
             let format = options.format.or(strategy.format);
             let quality = options.quality.or(strategy.quality);
+            if options.rect.is_some() || options.rotation.is_some_and(turns) {
+                let part = this.render_part(page, size, &options, layers, format, quality)?;
+                return adopt(cancellable(CAPABILITY, options.signal.clone(), part)).await;
+            }
+            let width = js::max(
+                1.0,
+                js::round(options.width.unwrap_or(options.scale.unwrap_or(1.0) * size.width)),
+            );
             // A width that matches a conformed raster (same format, default
             // quality) is the same key, so the cached image serves it.
             let key = this.raster_key(
@@ -1045,6 +1126,11 @@ fn all(promises: Vec<Promise<()>>) -> Promise<()> {
     all
 }
 
+/// A rotation JavaScript reads as true: neither 0 nor NaN.
+fn turns(rotation: PageRotation) -> bool {
+    rotation.0 != 0.0 && !rotation.0.is_nan()
+}
+
 /// `{priority: 'high', view}`, the view left out when the caller names none.
 fn high_for(view: Option<String>) -> CallFacts {
     CallFacts { priority: Some(CallPriority::High), view }
@@ -1323,6 +1409,42 @@ impl RenderCapability {
         self.0.render_failed.on(listener)
     }
 
+    // ── snapshots, both lenses ──
+
+    /// `canSnapshot()`: may this session take snapshots? It needs
+    /// `doc.render` and `doc.content.copy`, which a PDF that forbids copying
+    /// leaves out. Without them the snapshot tool draws no box.
+    pub fn can_snapshot(&self) -> bool {
+        self.0.can_snapshot()
+    }
+
+    /// `getSnapshot()`: the snapshot held now, or `None`.
+    pub fn get_snapshot(&self) -> Option<Snapshot> {
+        self.0.get_snapshot()
+    }
+
+    /// `clearSnapshot()`: let the snapshot go; its picture, if still
+    /// rendering, stops.
+    pub fn clear_snapshot(&self) {
+        self.0.clear_snapshot();
+    }
+
+    /// `onSnapshotChanged`: a snapshot was taken, or let go.
+    pub fn on_snapshot_changed(
+        &self,
+        listener: impl Fn(&SnapshotChangedEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.snapshots.changed.on(listener)
+    }
+
+    /// `getSnapshotBox(page)` (host lens): the snapshot tool's box on
+    /// `page`, in page space, for a page layer to draw: while it is dragged
+    /// and while it is held. `None` on every other page, and for a drag
+    /// still too small to be a box.
+    pub fn get_snapshot_box(&self, page: PageRef) -> Option<Rect> {
+        self.0.get_snapshot_box(page)
+    }
+
     /// The raster store both planes share.
     pub fn raster_store(&self) -> &RasterStore {
         &self.0.store
@@ -1448,6 +1570,7 @@ pub fn create_render_controller(
     let invalidated = cx.event_source::<RenderInvalidatedEvent>();
     let render_completed = cx.event_source::<RenderCompletedEvent>();
     let render_failed = cx.event_source::<RenderFailedEvent>();
+    let snapshot_changed = cx.event_source::<SnapshotChangedEvent>();
     let clock = cx.clock();
 
     let core = Rc::new_cyclic(|weak: &Weak<Core>| {
@@ -1524,6 +1647,7 @@ pub fn create_render_controller(
             pending_advance: RefCell::new(IndexSet::new()),
             advance_scheduled: Cell::new(false),
             views: RefCell::new(IndexMap::new()),
+            snapshots: Snapshots::new(snapshot_changed),
         }
     });
 
@@ -1547,7 +1671,7 @@ pub fn create_render_controller(
                 core.on_document_event(event);
             }
         })));
-        Ok(())
+        connect_snapshots(&connecting)
     });
     Ok((RenderCapability(core), Some(connect)))
 }

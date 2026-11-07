@@ -814,6 +814,7 @@ dependencies = [
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-plugin-interaction",
  "epdf-plugin-page-edit",
  "futures",
  "indexmap",

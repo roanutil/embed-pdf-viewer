@@ -38,6 +38,7 @@ pub mod model;
 pub mod paint_plan;
 pub mod policy;
 pub mod raster_store;
+pub mod snapshot;
 pub mod strategy;
 pub mod tile_manager;
 pub mod tiles;
@@ -54,7 +55,8 @@ pub use appearance_store::{AppearanceStore, ITEMS_KEPT, RecentPictures, SETS_KEP
 pub use contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
     PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
-    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, TilesSetting, render_defaults,
+    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, SNAPSHOT_MAX_PIXELS, SNAPSHOT_TOOL,
+    Snapshot, SnapshotBoxLook, SnapshotChangedEvent, SnapshotConfig, TilesSetting, render_defaults,
 };
 pub use controller::{
     RenderCapability, RenderSettingsChanged, ViewDemand, create_render_controller,
@@ -65,8 +67,8 @@ pub use host_contract::{
 };
 pub use invalidation::{PixelChange, pixel_change_of};
 pub use model::{
-    PageLayerRights, PageRenderLayers, RenderState, initial_render_state, invalidate_pages,
-    layers_key_of, render_epoch_of, resolve_page_layers,
+    PageLayerRights, PageRenderLayers, RenderState, SnapshotBox, initial_render_state,
+    invalidate_pages, layers_key_of, render_epoch_of, resolve_page_layers, set_snapshot_box,
 };
 pub use paint_plan::{
     DEFAULT_TILE_PYRAMID, FullPageSettings, PageViewDemand, PrefetchOptions, Quantize,
@@ -78,6 +80,7 @@ pub use policy::{
     snap_appearance_scale, snap_full_page_viewport, snap_tile_scale,
 };
 pub use raster_store::{DEFAULT_MAX_COST, PageImageHandle, RasterStore, ReleaseImage};
+pub use snapshot::snapshot_scale;
 pub use strategy::{ResolvedStrategy, base_ask_width, resolve_strategy};
 pub use tile_manager::{TileManager, TileManagerDeps, TileStats};
 pub use tiles::{PageSizePt, TileCoord, TileGrid};
@@ -95,6 +98,8 @@ pub fn render_plugin(config: RenderConfig) -> AnyPlugin {
 pub fn render_plugin_with_host(config: RenderConfig, host: RenderHost) -> AnyPlugin {
     define::<RenderState, Value>("render")
         .document_scoped()
+        // With the interaction plugin, the plugin adds the `snapshot` tool.
+        .optional(epdf_plugin_interaction::INTERACTION.any())
         .initial_state(initial_render_state)
         .settings(SettingsDeclaration {
             defaults: contract::render_defaults_json(),

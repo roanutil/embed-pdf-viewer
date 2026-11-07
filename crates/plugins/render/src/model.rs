@@ -55,9 +55,12 @@ pub struct SnapshotBox {
 }
 
 /// `setSnapshotBox(state, snapshot)`: `None` when the box is already that
-/// one (the TypeScript returns `state` itself).
+/// one (the TypeScript returns `state` itself). The TypeScript compares
+/// identity and every box it passes is a new object, so only clearing an
+/// empty box is no change: a box equal to the one there is still a new state.
 pub fn set_snapshot_box(state: &RenderState, snapshot: Option<SnapshotBox>) -> Option<RenderState> {
-    (state.snapshot != snapshot).then(|| RenderState { snapshot, ..state.clone() })
+    (state.snapshot.is_some() || snapshot.is_some())
+        .then(|| RenderState { snapshot, ..state.clone() })
 }
 
 /// `initialRenderState()`.

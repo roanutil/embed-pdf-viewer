@@ -13,13 +13,15 @@ crate-type = ["rlib"]
 # replays the vectors with no flags; a host that ships the plugin turns it
 # off with `default-features = false`.
 default = ["harness"]
-harness = ["dep:plugin-conformance"]
+harness = ["dep:plugin-conformance", "epdf-plugin-interaction/harness"]
 # The uniffi exports (`ffi` module), for `epdf-viewer-host`.
 uniffi = ["dep:uniffi", "dep:epdf-ffi"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
 epdf-geometry = { path = "../geometry", default-features = false }
+# The snapshot tool takes its pointer from the hub, when the document has one.
+epdf-plugin-interaction = { path = "../interaction", default-features = false }
 indexmap = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }

@@ -1,6 +1,7 @@
 //! `vectors/plugins/render-*.json`, generated from `packages/plugin/render`
 //! (and `engine-core`'s render-policy snaps).
 
+use epdf_plugin_interaction::harness::Interaction;
 use epdf_plugin_page_edit::harness::PageEdit;
 use epdf_plugin_render::harness::{Render, functions};
 use std::collections::BTreeSet;
@@ -8,7 +9,11 @@ use std::collections::BTreeSet;
 use plugin_conformance::{Registry, assert_suite, load};
 
 fn replay(file: &str) {
-    assert_suite(file, &Registry::new().with(Render).with(PageEdit), &functions());
+    assert_suite(
+        file,
+        &Registry::new().with(Render).with(PageEdit).with(Interaction),
+        &functions(),
+    );
 }
 
 #[test]
@@ -70,4 +75,9 @@ fn capability_matches_the_typescript() {
 #[test]
 fn tile_plane_matches_the_typescript() {
     replay("plugins/render-tile-plane.json");
+}
+
+#[test]
+fn snapshot_tool_matches_the_typescript() {
+    replay("plugins/render-snapshot.json");
 }
