@@ -298,3 +298,17 @@ pub fn stringify(value: &Value) -> String {
     }
     serde_json::to_string(&plain(value)).unwrap_or_default()
 }
+
+/// `String(value)` for the values a write carries: a string as it is, a
+/// number as JavaScript prints it, anything else as JSON.
+pub fn string_of(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.clone(),
+        Value::Bool(b) => b.to_string(),
+        Value::Null => "null".into(),
+        _ => match number(value) {
+            Some(x) => crate::js::number_to_string(x),
+            None => stringify(value),
+        },
+    }
+}

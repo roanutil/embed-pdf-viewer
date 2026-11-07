@@ -580,7 +580,7 @@ pub fn distance_drawn_bounds(layout: &DistanceLayout, stroke_width: f64) -> Rect
 /// The paint a distance's lines and endings take.
 fn line_paint(style: &Style) -> Paint {
     Paint {
-        stroke: style.color.clone(),
+        stroke: style.color.clone().filter(|c| !c.is_null()),
         width: Some(style.stroke_width),
         opacity: style.opacity.clone(),
         dash: dash_of(style),

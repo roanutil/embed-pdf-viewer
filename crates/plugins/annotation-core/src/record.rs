@@ -16,6 +16,7 @@ use crate::engine::resolve::{
     DraftContext, annotation_of_draft, annotation_patch_between, apply_annotation_patch,
     merge_annotation_patch, resolve_annotation_patch, resolve_rect_command,
 };
+use crate::engine::siblings::can_change_kind;
 use crate::error::CoreResult;
 use crate::flags::may_write;
 use crate::geometry::{geom_rotation, selection_quad};
@@ -116,9 +117,12 @@ pub fn with_values(
     record: &ModelAnnotation,
     values: &FieldValues,
 ) -> CoreResult<Option<ModelAnnotation>> {
-    let subtype = record.subtype().to_string();
+    let subtype = kind_after(record, values);
     let declared = field_names(&subtype);
     let mut taken = Object::new();
+    if subtype != record.subtype() {
+        taken.insert("subtype".into(), Value::String(subtype.clone()));
+    }
     for (field, value) in values {
         if json::undefined(Some(value)) || field == "subtype" || !declared.contains(&field.as_str())
         {
@@ -138,6 +142,23 @@ pub fn with_values(
         return Ok(None);
     }
     Ok(Some(record.with_annotation(annotation)))
+}
+
+/// `kindAfter(record, values)`: the sibling kind `values` names when this
+/// session may change the record now and the annotation can become it
+/// (`canChangeKind`), else its own.
+fn kind_after(record: &ModelAnnotation, values: &FieldValues) -> String {
+    let own = record.subtype();
+    match values.get("subtype").and_then(Value::as_str) {
+        Some(named)
+            if named != own
+                && may_write(record, "subtype")
+                && can_change_kind(&record.annotation, named) =>
+        {
+            named.into()
+        }
+        _ => own.into(),
+    }
 }
 
 /// [`with_values`], the record itself when nothing changes.

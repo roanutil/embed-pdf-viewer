@@ -1122,6 +1122,7 @@ js_object! {
         "lineCap" => pub line_cap: Option<String>,
         "join" => pub join: Option<String>,
         "fillRule" => pub fill_rule: Option<String>,
+        "hairline" => pub hairline: Option<bool>,
     }
 }
 

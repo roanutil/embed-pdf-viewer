@@ -99,8 +99,12 @@ fn change_between(before: &Model, after: &Model) -> CoreResult<ChangeSet> {
         if fields.is_empty() {
             continue;
         }
-        let mut patch = fields;
-        patch.insert("subtype".into(), serde_json::Value::String(previous.subtype().into()));
+        // A kind change states its new subtype; every other patch names the kind it has.
+        let mut patch = crate::json::object([(
+            "subtype",
+            serde_json::Value::String(previous.subtype().into()),
+        )]);
+        patch.extend(fields);
         put.push(Rc::new(apply_change(previous, &patch)?));
         patches.insert(id.clone(), patch);
     }

@@ -11,5 +11,6 @@ pub mod kind_facts;
 pub mod measure;
 pub mod resolve;
 pub mod shape_for_rect;
+pub mod siblings;
 pub mod space;
 pub mod text;

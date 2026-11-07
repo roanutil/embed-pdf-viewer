@@ -29,6 +29,14 @@ fn s(text: &str) -> Value {
 }
 
 /// `shapePaint(style, closed)`, its blend laid over it.
+/// `style.color ?? undefined`: a `null` color strokes nothing.
+fn stroke_color(style: &Style) -> Option<Value> {
+    style.color.clone().filter(|c| !c.is_null())
+}
+
+/// `HAIRLINE_KINDS`: the kinds a width of 0 draws as a hairline.
+const HAIRLINE_KINDS: [&str; 3] = ["line", "polyline", "ink"];
+
 fn shape_paint(style: &Style, closed: bool) -> Paint {
     let cloudy = style.cloudy_intensity.as_option().is_some_and(|i| *i != 0.0 && !i.is_nan());
     let mut keys = vec!["fill", "stroke", "width", "opacity", "dash"];
@@ -38,7 +46,7 @@ fn shape_paint(style: &Style, closed: bool) -> Paint {
     keys.push("blend");
     Paint {
         fill: if closed { style.interior_color.as_option().map(|c| s(c)) } else { None },
-        stroke: style.color.clone(),
+        stroke: stroke_color(style),
         width: Some(style.stroke_width),
         opacity: style.opacity.clone(),
         dash: dash_of(style),
@@ -78,7 +86,7 @@ fn squiggle_path(start: Point, direction: Point, normal: Point, length: f64, amp
 
 fn line_paint(style: &Style, width: f64) -> Paint {
     Paint {
-        stroke: style.color.clone(),
+        stroke: stroke_color(style),
         width: Some(width),
         opacity: style.opacity.clone(),
         blend: blend_for(style),
@@ -152,7 +160,7 @@ fn markup_scene(subtype: &str, quads: &[Quad], style: &Style) -> Vec<SceneNode> 
             _ => nodes.push(SceneNode::painted(
                 &RenderNode::poly(quad_ring(*quad).to_vec(), true),
                 Paint {
-                    fill: style.color.clone(),
+                    fill: stroke_color(style),
                     opacity: style.opacity.clone(),
                     blend: blend_for(style),
                     ..Paint::default()
@@ -287,7 +295,7 @@ fn redact_scene(item: &RenderItem) -> Vec<SceneNode> {
             1.5
         };
         let paint = Paint {
-            stroke: item.style.color.clone(),
+            stroke: stroke_color(&item.style),
             width: Some(width),
             opacity: item.style.opacity.clone(),
             ..Paint::default()
@@ -354,8 +362,8 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
     }
     if let Shape::Caret(_) = &item.geometry {
         let paint = Paint {
-            fill: item.style.color.clone(),
-            stroke: item.style.color.clone(),
+            fill: stroke_color(&item.style),
+            stroke: stroke_color(&item.style),
             width: Some(CARET_STROKE_WIDTH),
             opacity: item.style.opacity.clone(),
             ..Paint::default()
@@ -367,20 +375,33 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
             .collect();
     }
     let ink = matches!(item.geometry, Shape::Ink(_));
+    // A line, polyline or ink at width 0 is a hairline, as the engine and
+    // Acrobat draw it; a square, circle or polygon at width 0 has no outline.
+    let hairline =
+        item.style.stroke_width == 0.0 && HAIRLINE_KINDS.contains(&item.subtype.as_str());
     let mut nodes: Vec<SceneNode> = geom_scene(&item.geometry, item.style.stroke())
         .iter()
         .map(|node| {
             let closed = match node {
-                RenderNode::Rect(_) | RenderNode::Ellipse(_) | RenderNode::Path(_) => true,
+                RenderNode::Rect(_) | RenderNode::Ellipse(_) => true,
+                RenderNode::Path(_) => !ink,
                 RenderNode::Poly(p) => p.closed,
                 RenderNode::Line(_) => false,
             };
             let mut paint = shape_paint(&item.style, closed);
-            if ink {
-                paint.line_cap = Some("round".into());
-                paint.join = Some("round".into());
+            let mut keys = vec!["fill", "stroke", "width", "opacity", "dash", "join", "blend"];
+            if hairline {
+                paint.hairline = Some(true);
+                keys.push("hairline");
             }
-            SceneNode::painted(node, paint)
+            // Ink is drawn as Acrobat draws it: round caps and no join, and a
+            // stroke of one point is a dot filled in the stroke's colour.
+            if ink {
+                paint.fill = if closed { stroke_color(&item.style) } else { None };
+                paint.line_cap = Some("round".into());
+                keys.push("lineCap");
+            }
+            SceneNode::painted(node, paint.ordered(&keys))
         })
         .collect();
     if let Some(m) = &measure {

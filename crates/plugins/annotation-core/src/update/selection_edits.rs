@@ -15,6 +15,9 @@ use crate::json::{self, Object, num};
 use crate::links::link_children_of;
 use crate::props::kind_takes_link;
 use crate::record::{kind_of, shape_of, with_shape, with_values, writable_target};
+use crate::richtext::{
+    RichTextParagraph, RichTextStyleDelta, RichTextStyleKey, restyle_runs, without_style,
+};
 use crate::selection::annotation_turn_pivot;
 use crate::types::{Effect, FieldValues, Id, Model, ModelAnnotation, Point};
 use crate::update::changes::without_records;
@@ -41,10 +44,82 @@ fn change_records(
     })
 }
 
-/// `setFields(model, patches)`.
+/// `setFields(model, patches)`: a record takes the fields its kind has and
+/// may change now. A new kind is taken by hand only when people may change
+/// that kind too. A free text's font, size and text color are all its
+/// text's (`withWordsFollowing`).
 pub fn set_fields(model: &Model, patches: &IndexMap<Id, FieldValues>) -> CoreResult<Model> {
     let ids: Vec<Id> = patches.keys().cloned().collect();
-    change_records(model, &ids, |record| with_values(record, &patches[&record.id]))
+    change_records(model, &ids, |record| {
+        let patch = &patches[&record.id];
+        let subtype = patch.get("subtype").filter(|v| !json::undefined(Some(v)));
+        let fields = json::without(patch, "subtype");
+        let by_hand = subtype.is_none_or(|subtype| {
+            let mut retyped: Object = (*record.annotation).clone();
+            retyped.insert("subtype".into(), subtype.clone());
+            is_editable_by_hand(&model.editable, &retyped)
+        });
+        let own = with_words_following(&record.annotation, &fields);
+        let values = match subtype {
+            Some(subtype) if by_hand => {
+                json::spread(&json::object([("subtype", subtype.clone())]), &own)
+            }
+            _ => own,
+        };
+        with_values(record, &values)
+    })
+}
+
+/// `RUN_STYLE_OF_FIELD`: the run style each of a free text's text fields sets.
+fn run_style_of_field(field: &str) -> Option<RichTextStyleKey> {
+    match field {
+        "fontFamily" => Some(RichTextStyleKey::Family),
+        "fontSize" => Some(RichTextStyleKey::Size),
+        "fontColor" => Some(RichTextStyleKey::Color),
+        _ => None,
+    }
+}
+
+/// A free text's paragraphs and body, as its rich text holds them.
+fn rich_text_of(annotation: &Object) -> (Object, Vec<RichTextParagraph>) {
+    let rich =
+        json::get(annotation, "richText").and_then(Value::as_object).cloned().unwrap_or_default();
+    let body = rich.get("body").and_then(Value::as_object).cloned().unwrap_or_default();
+    let paragraphs = rich
+        .get("paragraphs")
+        .and_then(|p| serde_json::from_value::<Vec<RichTextParagraph>>(p.clone()).ok())
+        .unwrap_or_default();
+    (body, paragraphs)
+}
+
+fn rich_text_value(body: Object, paragraphs: &[RichTextParagraph]) -> Value {
+    Value::Object(json::object([
+        ("body", Value::Object(body)),
+        ("paragraphs", serde_json::to_value(paragraphs).unwrap_or(Value::Array(Vec::new()))),
+    ]))
+}
+
+/// `withWordsFollowing(annotation, fields)`: a font, size or text color set
+/// on the whole box is every word's, so a word with its own stops naming it.
+fn with_words_following(annotation: &Object, fields: &FieldValues) -> FieldValues {
+    if json::get_str(annotation, "subtype") != Some("free-text") {
+        return fields.clone();
+    }
+    let keys: Vec<RichTextStyleKey> = fields
+        .iter()
+        .filter(|(_, value)| !json::undefined(Some(value)))
+        .filter_map(|(field, _)| run_style_of_field(field))
+        .collect();
+    if keys.is_empty() {
+        return fields.clone();
+    }
+    let (body, paragraphs) = rich_text_of(annotation);
+    let Some(following) = restyle_runs(&paragraphs, |style| without_style(style, &keys)) else {
+        return fields.clone();
+    };
+    let mut out = fields.clone();
+    out.insert("richText".into(), rich_text_value(body, &following));
+    out
 }
 
 fn body_has(body: &Object, format: &str) -> bool {
@@ -82,7 +157,31 @@ fn body_with(body: &Object, format: &str, on: bool) -> Object {
     out
 }
 
-/// `setTextFormat(model, format, on)`.
+/// `runFollowing(style, format, on)`: a run's own style with `format` the
+/// body's: no weight or italic of its own, and an underline taken off the
+/// lines it draws itself, or added to them. `None`: the style as it was.
+fn run_following(style: &RichTextStyleDelta, format: &str, on: bool) -> Option<RichTextStyleDelta> {
+    match format {
+        "bold" => without_style(style, &[RichTextStyleKey::Weight]),
+        "italic" => without_style(style, &[RichTextStyleKey::Italic]),
+        _ => {
+            let lines = style.decoration.as_ref()?;
+            if lines.iter().any(|line| line == "underline") == on {
+                return None;
+            }
+            let mut lines: Vec<String> =
+                lines.iter().filter(|line| *line != "underline").cloned().collect();
+            if on {
+                lines.push("underline".into());
+            }
+            Some(RichTextStyleDelta { decoration: Some(lines), ..style.clone() })
+        }
+    }
+}
+
+/// `setTextFormat(model, format, on)`: bold, italic or underline on or off
+/// for all the text of the selection's free texts: the body takes the
+/// format, and a word with its own follows it (`runFollowing`).
 pub fn set_text_format(model: &Model, format: &str, on: bool) -> CoreResult<Model> {
     let ids = (*model.selected).clone();
     change_records(model, &ids, |record| {
@@ -94,10 +193,15 @@ pub fn set_text_format(model: &Model, format: &str, on: bool) -> CoreResult<Mode
             .cloned()
             .unwrap_or_default();
         let body = rich.get("body").and_then(Value::as_object).cloned().unwrap_or_default();
-        if body_has(&body, format) == on {
+        let (_, runs) = rich_text_of(&record.annotation);
+        let following = restyle_runs(&runs, |style| run_following(style, format, on));
+        if body_has(&body, format) == on && following.is_none() {
             return Ok(None);
         }
-        let paragraphs = rich.get("paragraphs").cloned().unwrap_or(Value::Null);
+        let paragraphs = match following {
+            Some(following) => serde_json::to_value(following).unwrap_or(Value::Array(Vec::new())),
+            None => rich.get("paragraphs").cloned().unwrap_or(Value::Null),
+        };
         let values = json::object([(
             "richText",
             Value::Object(json::object([

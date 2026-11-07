@@ -4,10 +4,15 @@
 
 use serde_json::Value;
 
+use crate::bezier::{bezier_at, bezier_turns};
 use crate::cloudy::{cloudy_poly_bounds, cloudy_poly_outline, cloudy_poly_path};
 use crate::endings::{ending_nodes, ending_pieces};
 use crate::engine::geom::{
     PointTurn, page_point_turned, page_point_unturned, page_turn_of_drawn, page_turn_of_upright,
+};
+use crate::ink_curves::{
+    INK_CURVE_TOLERANCE, INK_DOT_RADIUS, InkStrokeCurves, fit_ink_stroke, ink_curves_path,
+    ink_curves_polyline,
 };
 use crate::js;
 use crate::json::{self, Object};
@@ -496,15 +501,139 @@ fn ending_segs(shape: &Shape) -> Vec<EndingSeg> {
     ]
 }
 
+/// `endingWidth(strokeWidth)`: the width a line's endings are sized by: a
+/// hairline (width 0) has a 1 pt line's, as the engine draws them.
+fn ending_width(stroke_width: f64) -> f64 {
+    if stroke_width > 0.0 { stroke_width } else { 1.0 }
+}
+
 fn ending_nodes_of(seg: &EndingSeg, stroke_width: f64) -> Vec<RenderNode> {
-    ending_nodes(seg.tip, seg.angle, seg.ending.as_deref(), stroke_width)
+    ending_nodes(seg.tip, seg.angle, seg.ending.as_deref(), ending_width(stroke_width))
+}
+
+/// `inkCurvesOf(strokes)`: each drawn ink stroke as Acrobat draws it.
+fn ink_curves_of(strokes: &[Vec<Point>]) -> Vec<InkStrokeCurves> {
+    strokes.iter().filter_map(|stroke| fit_ink_stroke(stroke, INK_CURVE_TOLERANCE)).collect()
+}
+
+/// `firstDirection(from, points)`: the unit direction from `from` to the
+/// first of `points` apart from it; none when all sit on it.
+fn first_direction(from: Point, points: &[Point]) -> Option<Point> {
+    points.iter().find_map(|point| {
+        let length = js::hypot(point.x - from.x, point.y - from.y);
+        (length >= 1e-9)
+            .then(|| Point { x: (point.x - from.x) / length, y: (point.y - from.y) / length })
+    })
+}
+
+/// `inkOutlinePoints(curves, strokeWidth)`: the points a fitted ink stroke's
+/// box is made of, as the runtime measures what its appearance paints.
+fn ink_outline_points(curves: &InkStrokeCurves, stroke_width: f64) -> Vec<Point> {
+    let half = stroke_width / 2.0;
+    let (start, cubics) = match curves {
+        InkStrokeCurves::Dot { center } => {
+            let reach = INK_DOT_RADIUS + half;
+            return vec![
+                Point { x: center.x - reach, y: center.y - reach },
+                Point { x: center.x + reach, y: center.y + reach },
+            ];
+        }
+        InkStrokeCurves::Curves { start, cubics } => (*start, cubics),
+    };
+    struct Turn {
+        at: Point,
+        across_x: bool,
+    }
+    struct Piece {
+        from: Point,
+        to: Point,
+        leaving: Point,
+        arriving: Point,
+    }
+    let mut out = vec![start];
+    let mut turns: Vec<Turn> = Vec::new();
+    let mut pieces: Vec<Piece> = Vec::new();
+    let mut from = start;
+    for cubic in cubics {
+        let (c1, c2, end) = (cubic.control1, cubic.control2, cubic.end);
+        out.push(end);
+        for t in bezier_turns(from.x, c1.x, c2.x, end.x) {
+            turns.push(Turn { at: bezier_at(from, c1, c2, end, t), across_x: true });
+        }
+        for t in bezier_turns(from.y, c1.y, c2.y, end.y) {
+            turns.push(Turn { at: bezier_at(from, c1, c2, end, t), across_x: false });
+        }
+        let leaving = first_direction(from, &[c1, c2, end]);
+        let back = first_direction(end, &[c2, c1, from]);
+        if let (Some(leaving), Some(back)) = (leaving, back) {
+            pieces.push(Piece {
+                from,
+                to: end,
+                leaving,
+                arriving: Point { x: -back.x, y: -back.y },
+            });
+        }
+        from = end;
+    }
+    out.extend(turns.iter().map(|turn| turn.at));
+    if half <= 0.0 || pieces.is_empty() {
+        return out;
+    }
+    let across = |at: Point, d: Point| {
+        [
+            Point { x: at.x - d.y * half, y: at.y + d.x * half },
+            Point { x: at.x + d.y * half, y: at.y - d.x * half },
+        ]
+    };
+    let pen = |at: Point| {
+        [
+            Point { x: at.x - half, y: at.y },
+            Point { x: at.x + half, y: at.y },
+            Point { x: at.x, y: at.y - half },
+            Point { x: at.x, y: at.y + half },
+        ]
+    };
+    for piece in &pieces {
+        out.extend(across(piece.from, piece.leaving));
+        out.extend(across(piece.to, piece.arriving));
+    }
+    for k in 0..pieces.len() - 1 {
+        let (at, arriving) = (pieces[k].to, pieces[k].arriving);
+        let leaving = pieces[k + 1].leaving;
+        let sum = js::hypot(arriving.x + leaving.x, arriving.y + leaving.y);
+        let outward = Point { x: arriving.x - leaving.x, y: arriving.y - leaving.y };
+        let outward_length = js::hypot(outward.x, outward.y);
+        // One over the sine of half the angle between them; past the limit the join is beveled.
+        if sum < 1e-9 || outward_length < 1e-9 || 2.0 / sum > MITER_LIMIT {
+            continue;
+        }
+        let reach = (half * (2.0 / sum)) / outward_length;
+        out.push(Point { x: at.x + outward.x * reach, y: at.y + outward.y * reach });
+    }
+    out.extend(pen(pieces[0].from));
+    out.extend(pen(pieces[pieces.len() - 1].to));
+    for turn in &turns {
+        let at = turn.at;
+        if turn.across_x {
+            out.push(Point { x: at.x - half, y: at.y });
+            out.push(Point { x: at.x + half, y: at.y });
+        } else {
+            out.push(Point { x: at.x, y: at.y - half });
+            out.push(Point { x: at.x, y: at.y + half });
+        }
+    }
+    out
 }
 
 /// What a points shape draws, as the engine's `rect` takes it in.
 pub fn points_drawn_bounds(shape: &Shape, stroke: Stroke) -> Rect {
     let strokes = drawn_strokes_of(shape);
     if matches!(shape, Shape::Ink(_)) {
-        return expand_rect(union_rect(&strokes.concat()), stroke.stroke_width / 2.0);
+        let mut all = strokes.concat();
+        for curves in ink_curves_of(&strokes) {
+            all.extend(ink_outline_points(&curves, stroke.stroke_width));
+        }
+        return union_rect(&all);
     }
     let points = strokes.into_iter().next().unwrap_or_default();
     let closed = matches!(shape, Shape::Poly(p) if p.closed);
@@ -534,6 +663,26 @@ pub fn points_corners(shape: &Shape, stroke: Stroke) -> [Point; 4] {
 pub fn points_painted(shape: &Shape, stroke: Stroke, filled: bool) -> Vec<PaintedPiece> {
     let half_width = stroke.stroke_width / 2.0;
     let strokes = drawn_strokes_of(shape);
+    if matches!(shape, Shape::Ink(_)) {
+        return ink_curves_of(&strokes)
+            .into_iter()
+            .map(|curves| match curves {
+                InkStrokeCurves::Dot { center } => PaintedPiece::Oval {
+                    center,
+                    rx: INK_DOT_RADIUS,
+                    ry: INK_DOT_RADIUS,
+                    rotation: 0.0,
+                    half_width,
+                    filled: true,
+                },
+                InkStrokeCurves::Curves { start, cubics } => PaintedPiece::Stroke {
+                    points: ink_curves_polyline(start, &cubics),
+                    closed: false,
+                    half_width,
+                },
+            })
+            .collect();
+    }
     let closed = matches!(shape, Shape::Poly(p) if p.closed);
     let outline = strokes.first().cloned();
     let mut pieces = Vec::new();
@@ -571,7 +720,20 @@ pub fn points_painted(shape: &Shape, stroke: Stroke, filled: bool) -> Vec<Painte
 pub fn points_scene(shape: &Shape, stroke: Stroke) -> Vec<RenderNode> {
     let strokes = drawn_strokes_of(shape);
     if matches!(shape, Shape::Ink(_)) {
-        return strokes.into_iter().map(|s| RenderNode::poly(s, false)).collect();
+        return ink_curves_of(&strokes)
+            .into_iter()
+            .map(|curves| match curves {
+                InkStrokeCurves::Dot { center } => RenderNode::ellipse(Rect {
+                    x: center.x - INK_DOT_RADIUS,
+                    y: center.y - INK_DOT_RADIUS,
+                    width: 2.0 * INK_DOT_RADIUS,
+                    height: 2.0 * INK_DOT_RADIUS,
+                }),
+                InkStrokeCurves::Curves { start, cubics } => {
+                    RenderNode::path(ink_curves_path(start, &cubics))
+                }
+            })
+            .collect();
     }
     let points = strokes.into_iter().next().unwrap_or_default();
     if let Shape::Poly(p) = shape
