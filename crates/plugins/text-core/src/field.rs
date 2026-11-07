@@ -17,12 +17,12 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 
-use super::bidi::first_strong_is_rtl;
-use super::breaks::{is_open_punctuation, is_space, needs_break};
-use super::fonts::{PaintFont, PaintFonts};
-use super::graphemes::grapheme_starts;
-use super::items::{Paragraph, Run, graphemes_width, itemize, runs_of, scaled};
-use super::joining::{Joins, joined_text, joins_of};
+use crate::bidi::first_strong_is_rtl;
+use crate::breaks::{is_open_punctuation, is_space, needs_break};
+use crate::fonts::{PaintFont, PaintFonts};
+use crate::graphemes::grapheme_starts;
+use crate::items::{Paragraph, Run, graphemes_width, itemize, runs_of, scaled};
+use crate::joining::{Joins, joined_text, joins_of};
 use crate::{PdfRect, fround};
 
 fn is_float_zero(value: f64) -> bool {

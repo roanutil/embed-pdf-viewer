@@ -5,10 +5,10 @@
 
 use std::rc::Rc;
 
+use epdf_text_core::PaintFont;
 use serde::Serialize;
 
 use crate::PdfRect;
-use crate::text::PaintFont;
 
 /// A colour as the stream paints it: red, green and blue from 0 to 1.
 pub type Rgb = [f64; 3];

@@ -27,7 +27,7 @@ pub(crate) fn code_point_at(text: &[u16], at: usize) -> u32 {
 }
 
 /// `/\p{M}/u`: a mark.
-pub(crate) fn is_mark(code_point: u32) -> bool {
+pub fn is_mark(code_point: u32) -> bool {
     char::from_u32(code_point)
         .is_some_and(|c| c.general_category_group() == GeneralCategoryGroup::Mark)
 }
@@ -37,7 +37,7 @@ fn is_variation_selector(code_point: u32) -> bool {
 }
 
 /// The code points of `text`, a surrogate pair as one.
-pub(crate) fn code_points_of(text: &[u16]) -> Vec<u32> {
+pub fn code_points_of(text: &[u16]) -> Vec<u32> {
     let mut code_points = Vec::new();
     let mut at = 0;
     while at < text.len() {

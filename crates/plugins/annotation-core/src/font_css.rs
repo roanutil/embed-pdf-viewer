@@ -59,6 +59,36 @@ impl crate::types::SceneFontProgram for StandardSceneProgram {
     }
 }
 
+/// A mountable program (`core-fonts`) as a scene's font program: its members
+/// print as the TypeScript object does, `load` a function. A program the host
+/// has draws no bytes here; whatever mounts it reads them through
+/// [`epdf_fonts::MountableFontProgram::load`].
+impl crate::types::SceneFontProgram for epdf_fonts::MountableFontProgram {
+    fn members(&self) -> crate::json::Object {
+        let mut members = match serde_json::to_value(self) {
+            Ok(serde_json::Value::Object(members)) => members,
+            _ => crate::json::Object::new(),
+        };
+        members.insert("load".into(), serde_json::json!({ "$function": true }));
+        members
+    }
+    fn family(&self) -> &str {
+        &self.family
+    }
+    fn weight(&self) -> f64 {
+        f64::from(self.weight)
+    }
+    fn style(&self) -> &str {
+        match self.style {
+            epdf_fonts::FontStyle::Normal => "normal",
+            epdf_fonts::FontStyle::Italic => "italic",
+        }
+    }
+    fn load(&self) -> &[u8] {
+        self.built_in_bytes().unwrap_or_default()
+    }
+}
+
 /// What `standardPaintFont(font)` paints with: its CSS family list and its program.
 pub struct StandardPaintFont {
     pub font_family: String,

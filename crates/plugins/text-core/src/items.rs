@@ -6,11 +6,11 @@ use std::rc::Rc;
 
 use epdf_geometry::js;
 
-use super::bidi::{line_levels, paragraph_levels, visual_order};
-use super::fonts::{PaintFont, PaintFonts, match_grapheme};
-use super::graphemes::{code_point_at, code_points_of, graphemes_of, is_invisible_grapheme};
-use super::scripts::{is_common_script, is_simple_script, script_of};
+use crate::bidi::{line_levels, paragraph_levels, visual_order};
+use crate::fonts::{PaintFont, PaintFonts, match_grapheme};
 use crate::fround;
+use crate::graphemes::{code_point_at, code_points_of, graphemes_of, is_invisible_grapheme};
+use crate::scripts::{is_common_script, is_simple_script, script_of};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Item {

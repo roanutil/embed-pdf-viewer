@@ -6,12 +6,12 @@
 use std::rc::Rc;
 
 use epdf_annotation_core::TextRunScene;
-use epdf_fonts::{FontStyle, StandardFont};
-use epdf_form_core::text::{
-    Alignment, FieldTextOptions, MountableFontProgram, PaintFont, PaintFonts, default_paint_fonts,
+use epdf_fonts::{FontStyle, MountableFontProgram, StandardFont};
+use epdf_form_core::*;
+use epdf_text_core::{
+    Alignment, FieldTextOptions, PaintFont, PaintFonts, default_paint_fonts,
     last_resort_paint_font, layout_field, program_paint_font, standard_paint_font,
 };
-use epdf_form_core::*;
 use serde_json::{Value, json};
 
 fn merge(mut base: Value, patch: Value) -> Value {

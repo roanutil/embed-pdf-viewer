@@ -20,17 +20,17 @@
 
 use std::rc::Rc;
 
-use epdf_fonts::{FontStyle, StandardFont};
+use epdf_fonts::{FontStyle, MountableFontProgram, StandardFont};
 use epdf_kernel::Error;
+use epdf_text_core::{
+    FieldText, FieldTextOptions, PaintFont, PaintFonts, default_paint_fonts,
+    last_resort_paint_font, layout_field, needs_break, program_paint_font, standard_paint_font,
+};
 use plugin_conformance::FunctionTable;
 use plugin_conformance::js::{arg, to_value};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
-use crate::text::{
-    FieldText, FieldTextOptions, MountableFontProgram, PaintFont, PaintFonts, default_paint_fonts,
-    last_resort_paint_font, layout_field, needs_break, program_paint_font, standard_paint_font,
-};
 use crate::*;
 
 type Out = Result<Value, Error>;
@@ -93,7 +93,7 @@ struct ProgramSpec {
 
 /// `/[\p{M}‍]/u`.
 fn takes_no_room(code_point: u32) -> bool {
-    code_point == 0x200d || crate::text::is_mark(code_point)
+    code_point == 0x200d || epdf_text_core::is_mark(code_point)
 }
 
 fn program_font(spec: &ProgramSpec) -> Rc<PaintFont> {
@@ -108,7 +108,7 @@ fn program_font(spec: &ProgramSpec) -> Rc<PaintFont> {
         spec.descent.unwrap_or(-300.0),
         program,
         Rc::new(move |text: &[u16], _rtl: bool| {
-            let code_points = crate::text::code_points_of(text);
+            let code_points = epdf_text_core::code_points_of(text);
             let room = code_points.iter().filter(|&&cp| !takes_no_room(cp)).count() as f64;
             let joiners = code_points.iter().filter(|&&cp| cp == 0x200d).count() as f64;
             room * advance - joiners * joined

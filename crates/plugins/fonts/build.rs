@@ -8,7 +8,10 @@
 //! apart. It writes `$OUT_DIR/faces.rs` (the layout numbers), each program
 //! decoded into `$OUT_DIR/<font>.otf` (14 files), and `$OUT_DIR/programs.rs`,
 //! the `PROGRAMS` table that `include_bytes!`es them, so a build that never
-//! loads a program can drop them. It reads the generator's exact layout and
+//! loads a program can drop them. The last-resort program
+//! (`last-resort.generated.ts`) goes the same way, into
+//! `$OUT_DIR/last-resort.ttf` and `$OUT_DIR/last_resort.rs`
+//! (`LAST_RESORT_HASH`, and `LAST_RESORT_PROGRAM` including those bytes). It reads the generator's exact layout and
 //! panics on any line it doesn't expect, rather than guess.
 //!
 //! The rpath: re-emitted for this crate's own test binaries. The conformance
@@ -71,6 +74,38 @@ fn main() {
     }
     programs.push_str("];\n");
     std::fs::write(out.join("programs.rs"), programs).expect("write programs.rs");
+
+    // The last-resort program (`last-resort.generated.ts`), the same way.
+    let last_resort = standard.parent().expect("src").join("last-resort.generated.ts");
+    let (hash, program) = last_resort_of(&last_resort);
+    std::fs::write(out.join("last-resort.ttf"), decode_base64(&program))
+        .expect("write last-resort.ttf");
+    std::fs::write(
+        out.join("last_resort.rs"),
+        format!(
+            "/// SHA-256 of the last-resort program, hex.\n\
+             pub const LAST_RESORT_HASH: &str = {hash:?};\n\
+             /// The last-resort program: a box for every character.\n\
+             static LAST_RESORT_PROGRAM: &[u8] = \
+             include_bytes!(concat!(env!(\"OUT_DIR\"), \"/last-resort.ttf\"));\n"
+        ),
+    )
+    .expect("write last_resort.rs");
+}
+
+/// The last-resort program's hash and base64, from their two exports.
+fn last_resort_of(path: &Path) -> (String, String) {
+    let text = read(path);
+    let constant = |name: &str| {
+        let prefix = format!("export const {name} = '");
+        text.lines()
+            .find_map(|line| line.strip_prefix(&prefix)?.strip_suffix("';"))
+            .unwrap_or_else(|| panic!("{}: no {name}", path.display()))
+            .to_string()
+    };
+    let program = constant("LAST_RESORT_PROGRAM");
+    assert!(program.len().is_multiple_of(4), "{}: not padded base64", path.display());
+    (constant("LAST_RESORT_HASH"), program)
 }
 
 /// `decodeBase64(text)`, as `src/base64.rs` and the TypeScript's

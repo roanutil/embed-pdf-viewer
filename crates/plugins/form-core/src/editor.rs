@@ -6,13 +6,11 @@
 
 use std::rc::Rc;
 
-use epdf_fonts::FontStyle;
+use epdf_fonts::{FontStyle, MountableFontProgram};
+use epdf_text_core::{FieldText, PaintFont, PaintFonts, standard_font_of, standard_font_stack};
 use serde::Serialize;
 
 use crate::drawing::{text_field_layout, text_look_of};
-use crate::text::{
-    FieldText, MountableFontProgram, PaintFont, PaintFonts, standard_font_of, standard_font_stack,
-};
 use crate::{FieldFacts, WidgetRow};
 
 /// Where the text starts inside the widget's box, from each edge.

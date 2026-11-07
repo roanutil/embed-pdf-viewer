@@ -511,13 +511,10 @@ dependencies = [
  "epdf-fonts",
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-text-core",
  "plugin-conformance",
  "serde",
  "serde_json",
- "unicode-bidi",
- "unicode-bidi-mirroring",
- "unicode-properties",
- "unicode-script",
 ]
 
 [[package]]
@@ -975,6 +972,19 @@ dependencies = [
  "plugin-conformance",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "epdf-text-core"
+version = "0.0.0"
+dependencies = [
+ "epdf-fonts",
+ "epdf-geometry",
+ "serde",
+ "unicode-bidi",
+ "unicode-bidi-mirroring",
+ "unicode-properties",
+ "unicode-script",
 ]
 
 [[package]]
