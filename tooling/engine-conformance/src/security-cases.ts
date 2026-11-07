@@ -49,7 +49,7 @@ export interface OpenedAsCodeCase {
 export interface AdvisoryCase {
   readonly name: string;
   readonly covers: string;
-  /** Raw permission word, decoded through `decodePdfBits` first. */
+  /** Raw permission word, decoded through `permissionFlagsOf` first. */
   readonly raw: number | null;
 }
 

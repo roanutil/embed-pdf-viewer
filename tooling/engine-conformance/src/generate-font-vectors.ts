@@ -143,7 +143,7 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: at(answers, 1).facts.faces[0].programs[0].displaySha256,
+          displaySha256: at(answers, 1).facts.faces[0].programs[0].displaySha256,
           part: 'info',
         },
       }),
@@ -151,7 +151,7 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: at(answers, 1).facts.faces[0].programs[0].displaySha256,
+          displaySha256: at(answers, 1).facts.faces[0].programs[0].displaySha256,
           part: 'data',
         },
       }),
@@ -159,7 +159,7 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: 'ab',
+          displaySha256: 'ab',
           part: 'info',
         },
       }),
@@ -176,7 +176,7 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: DOC_ID,
-          displayHash: at(answers, 7).facts.engineFonts[0].sha256,
+          displaySha256: at(answers, 7).facts.engineFonts[0].sha256,
           part: 'info',
         },
       }),
@@ -220,7 +220,7 @@ const CASES: readonly FontCase[] = [
         request: {
           kind: 'document.fonts.program',
           docId: 'missing',
-          displayHash: 'ab',
+          displaySha256: 'ab',
           part: 'info',
         },
       }),
