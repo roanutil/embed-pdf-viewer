@@ -285,7 +285,8 @@ type OpenedDocument = Awaited<ReturnType<ReturnType<typeof createLocalEngine>['o
  * name for object numbers"). `setValue` takes what a read returns since
  * d7bd2d277 ("Engine API v3 forms shapes"): `{ value }` for text, combo box
  * and radio, `{ checked }` for a checkbox and `{ selectedValues }` for a
- * list box. Which one depends on the field's family, so it is read first; a
+ * list box. Which one depends on the field's kind (its `family` until
+ * c4b286a69), so it is read first; a
  * field the form doesn't have is translated by the value's own type.
  */
 function v3FieldRef(ref: Record<string, unknown>): FormFieldRef {
@@ -294,29 +295,29 @@ function v3FieldRef(ref: Record<string, unknown>): FormFieldRef {
     : { kind: 'objectNumber', objectNumber: ref.fieldObjectNumber as number };
 }
 
-async function familyOf(doc: OpenedDocument, ref: FormFieldRef): Promise<string | null> {
+async function kindOf(doc: OpenedDocument, ref: FormFieldRef): Promise<string | null> {
   const { fields } = await doc.forms.list();
   const field = fields.find((candidate) =>
     ref.kind === 'fqn'
       ? candidate.name === ref.name
       : candidate.ref.kind === 'objectNumber' && candidate.ref.objectNumber === ref.objectNumber,
   );
-  return field?.family ?? null;
+  return field?.kind ?? null;
 }
 
-function v3Value(value: Record<string, unknown>, family: string | null): FormFieldValue {
+function v3Value(value: Record<string, unknown>, kind: string | null): FormFieldValue {
   switch (value.type) {
     // A checkbox and a radio take their state as `{ value }`, the export
     // value, which the engine resolves against the widgets' on-states
     // (`toggleStateOf` in `core/src/forms/write.ts`); a null clears. Any
-    // other family is sent a toggle as `{ checked }`, which is what a
+    // other kind is sent a toggle as `{ checked }`, which is what a
     // toggle means there and what it refuses.
     case 'toggle':
-      return family === 'radio' || family === 'checkbox'
+      return kind === 'radio' || kind === 'checkbox'
         ? { value: value.state as string | null }
         : { checked: value.state !== null };
     case 'choice':
-      return family === 'combobox'
+      return kind === 'combobox'
         ? { value: (value.values as string[])[0] ?? null }
         : { selectedValues: value.values as string[] };
     default:
@@ -341,7 +342,7 @@ async function readCase(entry: WriteCase): Promise<unknown> {
     try {
       const ref = v3FieldRef(entry.ref);
       const value = entry.value
-        ? v3Value(entry.value, await familyOf(doc, ref))
+        ? v3Value(entry.value, await kindOf(doc, ref))
         : undefined;
       // `request` is the wire request the case's old spelling became, which
       // the Rust runner replays (see `recording-engine.ts`).

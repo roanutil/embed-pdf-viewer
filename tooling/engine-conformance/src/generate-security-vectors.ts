@@ -1,7 +1,7 @@
 /**
  * Emits `vectors/security/state.json`: what `buildSecurityInfo`,
- * `openedAsFromCode`, `advisoryFromPdfBits` and `securityStateFromProbe`
- * produce.
+ * `openedAsFromCode`, `permissionFlagsOf` with `materializePdfPermissions`,
+ * and `securityStateFromProbe` produce.
  *
  * From the repository root:
  *   pnpm --filter @embedpdf/tooling-engine-conformance run security
@@ -15,11 +15,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
-import {
-  advisoryFromPdfBits,
-  securityStateFromProbe,
-} from '../../../packages/engine/core/src/engine/document-security-state';
+import { materializePdfPermissions } from '../../../packages/engine/core/src/auth/scope/builders';
+import { permissionFlagsOf } from '../../../packages/engine/core/src/auth/scope/permission-flags';
+import { securityStateFromProbe } from '../../../packages/engine/core/src/engine/document-security-state';
 import type { DocumentSecurityProbeInfo } from '../../../packages/engine/core/src/wire/worker-protocol';
 import {
   buildSecurityInfo,
@@ -39,8 +37,12 @@ import {
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'security');
 
-/** Bump when the envelope changes shape. The Rust runner asserts it. */
-const SCHEMA_VERSION = 1;
+/**
+ * Bump when the envelope changes shape. The Rust runner asserts it. 2: the
+ * advisory cases carry `flags` and `granted` (a780243ba), and the state
+ * carries `permissions.flags`, not `bits`.
+ */
+const SCHEMA_VERSION = 2;
 
 /** The three shapes `buildSecurityInfo` does not construct. */
 function unbuiltProbe(name: string): DocumentSecurityProbeInfo {
@@ -134,11 +136,14 @@ async function main(): Promise<void> {
     // `openedAsFromCode`.
     openedAsFromCode: OPENED_AS_CODE_CASES.map((c) => ({ ...c, openedAs: openedAsFromCode(c.code) })),
 
-    // `advisoryFromPdfBits`, with the decoded bits alongside so a divergence
-    // separates a decoder disagreement from an advisory one.
+    // `permissionFlagsOf` and what `materializePdfPermissions` grants on
+    // those flags, sorted. a780243ba removed `advisoryFromPdfBits` (and the
+    // advisory with it); the grant is what it was derived from, so the
+    // cases keep their coverage. The flags travel alongside so a divergence
+    // separates a decoder disagreement from a grant one.
     advisory: ADVISORY_CASES.map((c) => {
-      const bits = decodePdfBits(c.raw);
-      return { ...c, bits, advisory: advisoryFromPdfBits(bits) };
+      const flags = permissionFlagsOf(c.raw);
+      return { ...c, flags, granted: [...materializePdfPermissions(flags)].sort() };
     }),
 
     // `securityStateFromProbe`.

@@ -16,7 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
+import { permissionFlagsOf } from '../../../packages/engine/core/src/auth/scope/permission-flags';
 import { parseScope } from '../../../packages/engine/core/src/auth/scope/parser';
 import {
   checkCapability,
@@ -27,7 +27,7 @@ import {
 import type {
   DocCapability,
   Identity,
-  PdfBits,
+  PdfPermissionFlags,
 } from '../../../packages/engine/core/src/auth/scope/types';
 
 import {
@@ -42,8 +42,11 @@ import {
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'scope');
 
-/** Bump when either envelope changes shape. The Rust runner asserts it. */
-const SCHEMA_VERSION = 1;
+/**
+ * Bump when either envelope changes shape. The Rust runner asserts it. 2: the
+ * decoded table carries `flags` (`PdfPermissionFlags`, a780243ba), not `bits`.
+ */
+const SCHEMA_VERSION = 2;
 
 interface ParseResult extends ParseCase {
   readonly valid: boolean;
@@ -56,7 +59,7 @@ interface ParseResult extends ParseCase {
 interface BitsResult {
   readonly name: string;
   readonly raw: number | null;
-  readonly bits: PdfBits;
+  readonly flags: PdfPermissionFlags;
 }
 
 interface PerBitsResult {
@@ -107,7 +110,7 @@ function runResolveCase(entry: ResolveCase): ResolveResult {
   const results = entry.bits.map((name): PerBitsResult => {
     const declared = BITS_BY_NAME.get(name);
     if (!declared) throw new Error(`resolve case ${entry.name} names unknown bits ${name}`);
-    const bits = decodePdfBits(declared.raw);
+    const bits = permissionFlagsOf(declared.raw);
 
     const expanded = [...expandRawScope(entry.scope, bits)].sort();
     const granted = ALL_CAPABILITIES.filter((c) =>
@@ -182,7 +185,7 @@ async function main(): Promise<void> {
   const bitsTable: readonly BitsResult[] = BITS_CASES.map((b) => ({
     name: b.name,
     raw: b.raw,
-    bits: decodePdfBits(b.raw),
+    flags: permissionFlagsOf(b.raw),
   }));
 
   let differed = false;
