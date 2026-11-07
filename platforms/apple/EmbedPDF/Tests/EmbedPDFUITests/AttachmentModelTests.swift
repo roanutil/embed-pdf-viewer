@@ -33,6 +33,7 @@ struct AttachmentModelTests {
     let exported = AttachmentExportDocument(data: content.data)
     expectNoDifference(exported.data, bytes)
     expectNoDifference(AttachmentExportDocument.contentType(for: "application/x-unknown-example"), .data)
+    expectNoDifference(AttachmentExportDocument.contentType(for: "text/plain"), .data)
     let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".bin")
     try bytes.write(to: temporary)
     defer { try? FileManager.default.removeItem(at: temporary) }

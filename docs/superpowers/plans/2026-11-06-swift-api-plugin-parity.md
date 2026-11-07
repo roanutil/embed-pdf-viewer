@@ -242,10 +242,10 @@ Expose files/selection/status/availability/pending/error as read-only state.
 `AttachmentPanel.init(model: AttachmentModel)` owns fileImporter/fileExporter;
 `AttachmentExportDocument` conforms to SwiftUI `FileDocument` and stores `Data`.
 
-- [ ] Add failing tests for both file homes, optional MIME type, import/download/export bytes, duplicate labels with distinct IDs, denied operations, cancellation, file I/O errors, and view replacement while a download completes.
-- [ ] Implement the model with independent revisions and controller events. Do file reads off the main actor, balance security-scoped URL access with `defer`, and forward copied bytes to the capability. File exporter appears only after a user download action. Ask before deleting an attachment in the UI.
-- [ ] Implement native list selection, page reveal, import, remove and export; show loading/empty/error and per-file availability. Give unknown MIME types an ordinary data export without guessing executable behavior. Add accessible labels and keyboard actions.
-- [ ] Run `EmbedPDFUITests/AttachmentModelTests`, `EmbedPDFTests/AttachmentTests`, and demo import/export scenarios on iOS/macOS; commit as `feat(apple-ui): add attachment panel and file import export`.
+- [x] Add failing tests for both file homes, optional MIME type, import/download/export bytes, duplicate labels with distinct IDs, denied operations, cancellation, file I/O errors, and view replacement while a download completes.
+- [x] Implement the model with independent revisions and controller events. Do file reads off the main actor, balance security-scoped URL access with `defer`, and forward copied bytes to the capability. File exporter appears only after a user download action. Ask before deleting an attachment in the UI.
+- [x] Implement native list selection, page reveal, import, remove and export; show loading/empty/error and per-file availability. Give unknown MIME types an ordinary data export without guessing executable behavior. Add accessible labels and keyboard actions.
+- [x] Run `EmbedPDFUITests/AttachmentModelTests`, `EmbedPDFTests/AttachmentTests`, and demo import/export scenarios on iOS/macOS; commit as `feat(apple-ui): add attachment panel and file import export`.
 
 ## Task 9: Integration, distribution and documentation
 

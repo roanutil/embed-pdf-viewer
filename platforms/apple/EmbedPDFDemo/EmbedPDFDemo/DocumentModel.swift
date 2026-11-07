@@ -15,6 +15,7 @@ final class DocumentModel {
     let annotations: AnnotationCapability
     let history: HistoryModel
     let outline: OutlineModel
+    let attachments: AttachmentModel
     let reader: StageReaderModel
   }
 
@@ -43,11 +44,15 @@ final class DocumentModel {
   func task() async {
     guard viewer == nil else { return }
     do {
-      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig(), interaction: true, stage: StageConfig(), annotation: "", history: true, outline: true))
+      if ProcessInfo.processInfo.arguments.contains("--attachment-fixture") {
+        let folder = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        try Data("Attachment file picker round trip".utf8).write(to: folder.appendingPathComponent("attachment-fixture.txt"), options: .atomic)
+      }
+      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig(), interaction: true, stage: StageConfig(), annotation: "", history: true, outline: true, attachment: true))
       try await viewer.start()
       self.viewer = viewer
     } catch {
-      self.error = error
+      self.error = error as? PDFError ?? PDFError(name: "FileError", code: "operation-failed", detail: error.localizedDescription)
       return
     }
     await open(bundled: "report")
@@ -130,6 +135,7 @@ final class DocumentModel {
         annotations: try await viewer.annotations(for: document),
         history: HistoryModel(viewer: viewer, history: try await viewer.history(for: document)),
         outline: OutlineModel(viewer: viewer, outline: try await viewer.outline(for: document)),
+        attachments: AttachmentModel(viewer: viewer, attachments: try await viewer.attachments(for: document)),
         reader: StageReaderModel(stage: try await viewer.stage(for: document), render: try await viewer.render(in: document))
       )
       canAddNote = try await opened?.annotations.canCreate() ?? false

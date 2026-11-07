@@ -5,6 +5,7 @@ import SwiftUI
 struct DocumentView: View {
   @Bindable var model: DocumentModel
   @State private var showingBookmarks = false
+  @State private var showingAttachments = false
 
   var body: some View {
     NavigationStack {
@@ -43,6 +44,14 @@ struct DocumentView: View {
         }
       }
     }
+    .sheet(isPresented: $showingAttachments) {
+      if let opened = model.opened {
+        NavigationStack {
+          AttachmentPanel(model: opened.attachments)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingAttachments = false } } }
+        }
+      }
+    }
     .sheet(item: $model.metadataSheet) { sheet in
       MetadataView(metadata: sheet.metadata, custom: sheet.custom)
     }
@@ -69,6 +78,11 @@ struct DocumentView: View {
       Button("Bookmarks", systemImage: "bookmark") { showingBookmarks = true }
         .disabled(model.opened == nil)
         .accessibilityIdentifier("showBookmarks")
+    }
+    ToolbarItem(placement: .topBarTrailing) {
+      Button("Attachments", systemImage: "paperclip") { showingAttachments = true }
+        .disabled(model.opened == nil)
+        .accessibilityIdentifier("showAttachments")
     }
     ToolbarItem(placement: .topBarTrailing) {
       Button("Info", systemImage: "info.circle") { Task { await model.metadataButtonTapped() } }

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 public struct AttachmentExportDocument: FileDocument {
   public static let readableContentTypes: [UTType] = [.data]
+  public static let writableContentTypes: [UTType] = [.data]
   public var data: Data
 
   public init(data: Data) { self.data = data }
@@ -14,8 +15,7 @@ public struct AttachmentExportDocument: FileDocument {
   public func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
     FileWrapper(regularFileWithContents: data)
   }
-  public static func contentType(for mimeType: String?) -> UTType {
-    guard let mimeType, let type = UTType(mimeType: mimeType), type.isDeclared else { return .data }
-    return type
-  }
+  /// Arbitrary attachment bytes use the document's declared writable type.
+  /// The suggested filename retains the attachment's original extension.
+  public static func contentType(for _: String?) -> UTType { .data }
 }
