@@ -25,7 +25,7 @@ use crate::controller::Core;
 use crate::js::{key_or_none, num, page_object_number};
 use crate::model::{ForeignPlacement, GhostPointer};
 use crate::read::chrome::core_page;
-use crate::text_item::build_text_items;
+use crate::text_item::{TextItemFonts, build_text_items};
 
 type ItemsKey =
     (Rc<Model>, Option<Rc<GhostPointer>>, Option<Rc<ForeignPlacement>>, Option<(f64, f64)>);
@@ -95,7 +95,10 @@ impl Core {
         {
             return v.clone();
         }
-        let items = Value::Array(build_text_items(&model, &core_page(page), view.as_ref()));
+        let lookup = self.fonts();
+        let fonts = TextItemFonts { lookup: lookup.as_deref() };
+        let items =
+            Value::Array(build_text_items(&model, &core_page(page), view.as_ref(), Some(fonts)));
         self.render
             .texts
             .borrow_mut()

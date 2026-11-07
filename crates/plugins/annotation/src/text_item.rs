@@ -1,6 +1,7 @@
 //! `text-item.ts`: the free-text presentation projection, the core's
 //! geometry-only `textBoxes` joined with the font and CSS into render-ready
-//! `TextItem`s.
+//! `TextItem`s; and the part of `read/text-fonts.ts` that answers without
+//! the fonts plugin, which this port has no counterpart of.
 
 use epdf_annotation_core::font_css::standard_paint_font_of;
 use epdf_annotation_core::object::Json;
@@ -12,17 +13,95 @@ use epdf_annotation_core::view::text_boxes;
 use serde_json::{Map, Value, json};
 
 use crate::js::num;
-use crate::rich_text::{rich_doc_of, strip_body_defaults};
+use crate::rich_text::{
+    Face, FontLookup, face_for_font, rich_doc_of, standard_font_for_face, strip_body_defaults,
+};
 
-/// `buildTextItems(model, page, view)`.
-pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<Value> {
+/// `fonts` of `buildTextItems`: the plugin's font lookup, with its text
+/// fonts (`createTextFonts`) as they answer when no fonts plugin is there.
+#[derive(Clone, Copy)]
+pub struct TextItemFonts<'a> {
+    pub lookup: FontLookup<'a>,
+}
+
+/// A face's standard CSS (`standardFontCss(font)`): its family list and
+/// programs, each program's `load` a function.
+fn standard_css(font: &str) -> (String, Vec<Value>) {
+    let css = standard_paint_font_of(font);
+    (css.font_family, vec![Value::Object(css.program.0.members())])
+}
+
+/// `bodyIsItsFont(style, body)`: the body's face is the one its font names
+/// alone, so the box's font is the one drawn.
+fn body_is_its_font(font: &str, body: &Face, lookup: FontLookup) -> bool {
+    let face = face_for_font(font, lookup);
+    face.weight.unwrap_or(400.0) == body.weight.unwrap_or(400.0)
+        && face.italic.unwrap_or(false) == body.italic.unwrap_or(false)
+}
+
+/// `textFonts.bodyCss(id, style, body)` without the fonts plugin: the
+/// standard font the engine falls back to for the box's font, or for its
+/// body's face when that isn't the font's.
+fn body_css(font: &str, body: &Face, lookup: FontLookup) -> (String, Vec<Value>) {
+    if body_is_its_font(font, body, lookup) {
+        standard_css(font)
+    } else {
+        standard_css(&standard_font_for_face(body))
+    }
+}
+
+/// A run style's member that is there (`own?.x !== undefined`).
+fn defined(value: Option<&Value>) -> Option<&Value> {
+    value.filter(|v| !epdf_kernel::is_undefined(v))
+}
+
+/// `programsOf(id, doc, body, bodyPrograms, text)`: the body's programs,
+/// then those of each face a run names (`textFonts.faceCss`, the standard
+/// font for the face without the fonts plugin), each program once.
+fn programs_of(paragraphs: &[Value], body: &Face, body_programs: Vec<Value>) -> Vec<Value> {
+    let mut programs = body_programs;
+    for paragraph in paragraphs {
+        let runs = paragraph.get("runs").and_then(Value::as_array).cloned().unwrap_or_default();
+        for run in runs {
+            let own = run.get("style");
+            let family = defined(own.and_then(|s| s.get("family")));
+            let weight = defined(own.and_then(|s| s.get("weight")));
+            let italic = defined(own.and_then(|s| s.get("italic")));
+            if family.is_none() && weight.is_none() && italic.is_none() {
+                continue;
+            }
+            let face = Face {
+                family: family
+                    .and_then(Value::as_str)
+                    .map_or_else(|| body.family.clone(), str::to_string),
+                weight: weight.map_or(body.weight, Value::as_f64),
+                italic: italic.map_or(body.italic, Value::as_bool),
+            };
+            for program in standard_css(&standard_font_for_face(&face)).1 {
+                let hash = program.get("hash");
+                if !programs.iter().any(|known| known.get("hash") == hash) {
+                    programs.push(program);
+                }
+            }
+        }
+    }
+    programs
+}
+
+/// `buildTextItems(model, page, view, fonts)`.
+pub fn build_text_items(
+    model: &Model,
+    page: &PageRef,
+    view: Option<&ViewEnv>,
+    fonts: Option<TextItemFonts>,
+) -> Vec<Value> {
     text_boxes(model, page, view)
         .into_iter()
         .map(|tb| {
             let record = model.by_id.get(&tb.id);
             let style = record.and_then(|r| text_of(&r.annotation)).unwrap_or_else(initial_text_style);
             let sw = record.map_or(0.0, |r| style_of(&r.annotation).stroke_width);
-            let doc = record.map(|r| rich_doc_of(&r.annotation, None));
+            let doc = record.map(|r| rich_doc_of(&r.annotation, fonts.and_then(|f| f.lookup)));
             let paragraphs = match &doc {
                 Some(doc) => Value::Array(strip_body_defaults(&doc.paragraphs, &doc.body)),
                 None => json!([{ "runs": [{ "text": "" }] }]),
@@ -50,11 +129,18 @@ pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -
                 None => json!({ "family": "Helvetica", "weight": 400, "italic": false }),
             };
             item.insert("face".into(), face);
-            // Without the fonts plugin, the box draws in the standard font the
-            // engine falls back to for its font (`standardFontCss`).
+            // The box's font's standard CSS (`standardFontCss`), or with the
+            // plugin's fonts what its text fonts answer.
             let family = style.font_family.as_ref().and_then(Value::as_str).unwrap_or("undefined");
-            let body_css = standard_paint_font_of(family);
-            item.insert("programs".into(), json!([body_css.program.0.members()]));
+            let (font_family, programs) = match (fonts, &doc) {
+                (Some(fonts), Some(doc)) => {
+                    let body = Face::read(&item["face"]);
+                    let (font_family, programs) = body_css(family, &body, fonts.lookup);
+                    (font_family, programs_of(&doc.paragraphs, &body, programs))
+                }
+                _ => standard_css(family),
+            };
+            item.insert("programs".into(), Value::Array(programs));
             item.insert("editing".into(), json!(tb.editing));
             if tb.rot != 0.0 && !tb.rot.is_nan() {
                 item.insert("rot".into(), num(tb.rot));
@@ -62,7 +148,7 @@ pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -
             item.insert(
                 "css".into(),
                 json!({
-                    "fontFamily": body_css.font_family,
+                    "fontFamily": font_family,
                     "fontSize": style.font_size.clone().unwrap_or_else(epdf_kernel::undefined),
                     "color": style.font_color.clone().unwrap_or_else(epdf_kernel::undefined),
                     "fontWeight": if style.bold == Some(true) { 700 } else { 400 },

@@ -758,7 +758,10 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         "listPageItems" => {
             Outcome::Returned(lent_scenes(h, a.list_page_items(&value(args, 0), view_env(args, 1))))
         }
-        "listTextItems" => Outcome::Returned(a.list_text_items(&value(args, 0), view_env(args, 1))),
+        "listTextItems" => Outcome::Returned(program_loads(
+            h,
+            a.list_text_items(&value(args, 0), view_env(args, 1)),
+        )),
         "listLinkItems" => Outcome::Returned(a.list_link_items(&value(args, 0))),
         "getAppearanceEpoch" => Outcome::Returned(json!(a.get_appearance_epoch(&value(args, 0)))),
         "renderAppearances" => {
@@ -1054,6 +1057,20 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         "onWriteFailed" => subscribe(h, &a.events.write_failed, &value(args, 0)),
         other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
     }
+}
+
+/// Each text item's programs' `load` prints as a ref, a function each
+/// program carries.
+fn program_loads(h: &Harness, mut items: Value) -> Value {
+    for item in items.as_array_mut().into_iter().flatten() {
+        for program in item.get_mut("programs").and_then(Value::as_array_mut).into_iter().flatten()
+        {
+            if program.get("load").is_some_and(|load| load.get("$function").is_some()) {
+                program["load"] = function_ref(h);
+            }
+        }
+    }
+    items
 }
 
 /// A page item's `lentScene` prints as a ref, a function the item carries.
