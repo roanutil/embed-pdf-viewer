@@ -6636,7 +6636,7 @@
     },
     {
       "name": "throwing-derivations-fall-back",
-      "covers": "A derivation that throws falls back: enabled and visible to true, active to false, iconAccent to none. The command still resolves, and execute still runs it.",
+      "covers": "A derivation that throws counts as no (67b45d349): enabled, visible and active false, iconAccent none. The command still resolves, hidden, and execute rejects it as hidden.",
       "plugins": [
         {
           "factory": "commands",
@@ -8476,6 +8476,1600 @@
           "engineState": {},
           "outcome": {
             "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "label-params-without-i18n",
+      "covers": "Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked on every resolve, before the derivations.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "delete",
+                "labelKey": "delete",
+                "label": "Delete {count} pages",
+                "labelParams": {
+                  "$fn": "delete.labelParams",
+                  "returns": {
+                    "count": 3
+                  }
+                }
+              },
+              {
+                "id": "key-only",
+                "labelKey": "{what} by key",
+                "labelParams": {
+                  "$fn": "key-only.labelParams",
+                  "returns": {
+                    "what": "labelled"
+                  }
+                }
+              },
+              {
+                "id": "{n}-id",
+                "labelParams": {
+                  "$fn": "id.labelParams",
+                  "returns": {
+                    "n": "seven"
+                  }
+                }
+              },
+              {
+                "id": "partial",
+                "labelKey": "partial",
+                "label": "{a} and {b}",
+                "labelParams": {
+                  "$fn": "partial.labelParams",
+                  "returns": {
+                    "a": "x"
+                  }
+                }
+              },
+              {
+                "id": "throws",
+                "labelKey": "throws",
+                "label": "Delete {count}",
+                "labelParams": {
+                  "$fn": "throws.labelParams",
+                  "throws": {
+                    "name": "Error",
+                    "message": "throws.labelParams failed"
+                  }
+                }
+              },
+              {
+                "id": "live",
+                "labelKey": "live",
+                "label": "{count} selected",
+                "active": {
+                  "$fn": "live.active",
+                  "returns": true
+                },
+                "labelParams": {
+                  "$fn": "live.labelParams",
+                  "seq": [
+                    {
+                      "returns": {
+                        "count": 1
+                      }
+                    },
+                    {
+                      "returns": {
+                        "count": 2
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "delete"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "key-only"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "{n}-id"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "partial"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "throws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "live"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "live"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "searchCommands",
+          "args": [
+            "selected"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "delete.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "delete",
+              "label": "Delete 3 pages",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "key-only.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "key-only",
+              "label": "labelled by key",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "id.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "{n}-id",
+              "label": "seven-id",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "partial.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "partial",
+              "label": "x and {b}",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "throws.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "throws",
+              "label": "Delete {count}",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "live.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "live.active",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "live",
+              "label": "1 selected",
+              "shortcuts": [],
+              "enabled": true,
+              "active": true,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "live.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "live.active",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "live",
+              "label": "2 selected",
+              "shortcuts": [],
+              "enabled": true,
+              "active": true,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "delete.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "key-only.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "id.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "partial.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "throws.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "live.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "live.active",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "id": "live",
+                "label": "2 selected",
+                "shortcuts": [],
+                "enabled": true,
+                "active": true,
+                "pressable": true,
+                "visible": true,
+                "categories": []
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "label-params-with-i18n",
+      "covers": "With i18n, labelParams go to t(): a number count picks the plural form of the translated label, other params fill its slots, and a label without a translation falls back to label with the params filled in (ccc4bf7fe).",
+      "plugins": [
+        {
+          "factory": "commands-current-i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "pages": {
+                    "delete": {
+                      "one": "Delete {count} page",
+                      "other": "Delete {count} pages"
+                    },
+                    "rotate": "Rotate {count} pages by {degrees}°"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "one",
+                "labelKey": "pages.delete",
+                "labelParams": {
+                  "$fn": "one.labelParams",
+                  "returns": {
+                    "count": 1
+                  }
+                }
+              },
+              {
+                "id": "many",
+                "labelKey": "pages.delete",
+                "labelParams": {
+                  "$fn": "many.labelParams",
+                  "returns": {
+                    "count": 4
+                  }
+                }
+              },
+              {
+                "id": "rotate",
+                "labelKey": "pages.rotate",
+                "labelParams": {
+                  "$fn": "rotate.labelParams",
+                  "returns": {
+                    "count": 2,
+                    "degrees": 90
+                  }
+                }
+              },
+              {
+                "id": "untranslated",
+                "labelKey": "pages.crop",
+                "label": "Crop {count} pages",
+                "labelParams": {
+                  "$fn": "untranslated.labelParams",
+                  "returns": {
+                    "count": 5
+                  }
+                }
+              },
+              {
+                "id": "no-params",
+                "labelKey": "pages.delete"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "one"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "many"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "rotate"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "untranslated"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "no-params"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "stateChanges": [
+            {
+              "slice": "i18n",
+              "previous": {
+                "locale": "",
+                "locales": {},
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              },
+              "next": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          ],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "one.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "one",
+              "label": "Delete 1 page",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "many.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "many",
+              "label": "Delete 4 pages",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "rotate.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "rotate",
+              "label": "Rotate 2 pages by 90°",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "untranslated.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "untranslated",
+              "label": "Crop 5 pages",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "console.warn",
+              "args": [
+                "[i18n] missing translation \"no-params\" or \"pages.delete\" (locale: en)"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "no-params",
+              "label": "no-params",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "pressable",
+      "covers": "A command is pressable when it has an active of its own or opens a panel, never when it opens a menu (9ffb07628); a modal or a plain run is not.",
+      "plugins": [
+        {
+          "factory": "commands-current-shell"
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "toggle",
+                "labelKey": "toggle",
+                "active": {
+                  "$fn": "toggle.active",
+                  "returns": false
+                }
+              },
+              {
+                "id": "panel",
+                "labelKey": "panel",
+                "panel": "search"
+              },
+              {
+                "id": "panel-object",
+                "labelKey": "panel-object",
+                "panel": {
+                  "id": "thumbs"
+                }
+              },
+              {
+                "id": "menu",
+                "labelKey": "menu",
+                "menu": "file"
+              },
+              {
+                "id": "menu-with-active",
+                "labelKey": "menu-with-active",
+                "menu": "file",
+                "active": {
+                  "$fn": "menu.active",
+                  "returns": true
+                }
+              },
+              {
+                "id": "empty-menu-with-panel",
+                "labelKey": "empty-menu-with-panel",
+                "menu": "",
+                "panel": "search"
+              },
+              {
+                "id": "modal",
+                "labelKey": "modal",
+                "modal": "print"
+              },
+              {
+                "id": "plain",
+                "labelKey": "plain",
+                "run": {
+                  "$fn": "plain.run"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "toggle"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "panel-object"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "menu-with-active"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "empty-menu-with-panel"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "plain"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "toggle.active",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "toggle",
+              "label": "toggle",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "panel",
+              "label": "panel",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "panel-object",
+              "label": "panel-object",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "menu",
+              "label": "menu",
+              "shortcuts": [],
+              "menu": "file",
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "menu.active",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "menu-with-active",
+              "label": "menu-with-active",
+              "shortcuts": [],
+              "menu": "file",
+              "enabled": true,
+              "active": true,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "empty-menu-with-panel",
+              "label": "empty-menu-with-panel",
+              "shortcuts": [],
+              "menu": "",
+              "enabled": true,
+              "active": false,
+              "pressable": true,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "modal",
+              "label": "modal",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "plain",
+              "label": "plain",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
           },
           "state": {
             "core": {
