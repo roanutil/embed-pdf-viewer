@@ -165,9 +165,7 @@ impl Core {
             let first = crate::js::stringify(value_of(spec, 0).as_ref());
             if (0..sources.len()).any(|i| crate::js::stringify(value_of(spec, i).as_ref()) != first)
                 || (of_text
-                    && texts
-                        .iter()
-                        .any(|t| t.as_ref().is_some_and(|(_, m)| m.iter().any(|k| *k == key))))
+                    && texts.iter().any(|t| t.as_ref().is_some_and(|(_, m)| m.contains(&key))))
             {
                 mixed.push(key);
             }

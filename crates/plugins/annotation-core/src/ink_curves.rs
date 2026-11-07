@@ -129,7 +129,8 @@ fn least_squares_cubic(points: &[Point], piece: Piece, places: &[f64]) -> [Point
 /// that distance, and which (the last of equals).
 fn worst_point(points: &[Point], piece: Piece, places: &[f64], cubic: &[Point; 4]) -> (f64, usize) {
     let [p0, p1, p2, p3] = *cubic;
-    let mut worst = (0.0, (piece.last - piece.first + 1) / 2 + piece.first);
+    // Math.floor((last - first + 1) / 2) + first.
+    let mut worst = (0.0, (piece.last - piece.first).div_ceil(2) + piece.first);
     for i in piece.first + 1..piece.last {
         let off = minus(bezier_at(p0, p1, p2, p3, places[i - piece.first]), points[i]);
         let squared = dot(off, off);
