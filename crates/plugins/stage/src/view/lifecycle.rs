@@ -44,7 +44,7 @@ impl StageCapability {
         let effect = self.sync_responsive_quietly();
         if effect == SettingEffect::Reflow {
             self.go_to_target(
-                self.st().cursor as isize,
+                self.st().page_index as isize,
                 Some(GoToOptions::behavior(ScrollBehaviorKind::Instant)),
             );
         } else {
@@ -78,7 +78,7 @@ impl StageCapability {
             // A lock is this document's now, not the user's: the saved view
             // keeps what's under it.
             settings: self.view_state_settings(),
-            cursor: Some(self.st().cursor),
+            page_index: Some(self.st().page_index),
             anchor: self.current_anchor()?,
         })
     }

@@ -190,8 +190,8 @@ pub trait DocumentHandle {
     fn page_index(&self, pon: u32) -> Result<u32, Error>;
     /// `events.subscribe(listener)`.
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe;
-    /// `events.lastServerId()`.
-    fn last_server_id(&self) -> Option<String> {
+    /// `events.lastServerSequence()`.
+    fn last_server_sequence(&self) -> Option<String> {
         None
     }
     /// `setWorkingSet(view, pages)`: what `view` shows of the document, a

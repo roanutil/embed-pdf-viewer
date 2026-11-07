@@ -7,7 +7,7 @@ and the `canSelect` / `canCopy` twins. Every case in the three vector files repl
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events, registry and content invalidation, permissions, the `dragThreshold` setting |
+| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events, registry and content invalidation, permissions, the `dragThresholdPx` setting |
 | `vectors/plugins/selection-geometry.json` | 288 | `pageGeometryOf`, `pdfPointOf`, `pageQuadOf`, `pageTextSegmentOf`, the page-space text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceText`, the model's transitions |
 | `vectors/plugins/selection-handles.json` | 43 | `selectionHandleGeom`, the handle drag session, the handle constants |
 
@@ -62,13 +62,13 @@ For annotation (Task 13.17), search (13.20), redaction (13.23), and the viewer h
 | `SelectionEndpoint.glyph_quad: TextQuad`, `SelectionHandleEndpoint.glyph_quad: TextQuad` | `Quad` (`upper_left`..`lower_right`) |
 | `SnapshotPage.segments: Vec<_>` | `Rc<Vec<_>>` (iterates the same) |
 | `page_ref_json` on contract types | kernel `PageRef` serde |
-| `SelectionConfig { drag_threshold: Option<f64> }` | `{ drag_threshold, color: Option<Option<String>>, handles: Option<SelectionHandleConfig> }`, `to_json`/`from_json`. New `SelectionSettings`, `selection_defaults()`, `SelectionSettingsChanged`, and `get_settings`/`update_settings`/`reset_settings`/`on_settings_changed` |
+| `SelectionConfig { drag_threshold_px: Option<f64> }` | `{ drag_threshold_px, color: Option<Option<String>>, handles: Option<SelectionHandleConfig> }`, `to_json`/`from_json`. New `SelectionSettings`, `selection_defaults()`, `SelectionSettingsChanged`, and `get_settings`/`update_settings`/`reset_settings`/`on_settings_changed` |
 | `ChangeOrigin`, `ChangeTrigger`, `.origin` on changed and cleared events | removed. `SelectionChangedEvent{range, pages}`, `SelectionClearedEvent{}` |
 | `is_gesture_active()` | `is_selecting()` |
 | `select_page`, `select_word_at`, `select_line_at`, `extend_to`, `list_segments`, `list_rects` take `PageRef` | take `impl Into<PageTarget>` (`PageRef` or `usize`; `PageTarget::Index(f64)`) |
 | `GlyphPointer`, `SelectionAction`, `reduce_selection`, `SelectionState.{loaded, gesture_active}` | `GlyphPosition`; `model::{set_selection, clear_selection, set_highlight_hidden, set_selecting, content_changed_pages_of}`; `SelectionState{selection, segments, highlight_hidden, selecting}` |
 | `create_selection_controller` (pub) | crate-private |
-| `TextSelectHandlerOptions{drag_threshold: Option<f64>}` | `Option<Rc<dyn Fn() -> f64>>` |
+| `TextSelectHandlerOptions{drag_threshold_px: Option<f64>}` | `Option<Rc<dyn Fn() -> f64>>` |
 | new | `selection_state`/`SelectionStateView`, `SelectionHandleEndpoints`, `selection_handle_endpoints_of`, `arm_selection_handle`/`ArmedSelectionHandle`, `SelectionHandleStage`/`selection_handle_view_of` |
 | ffi `SelectionChangeTrigger`, `.trigger`, `SelectionClearedEvent`, `is_gesture_active` | removed; `SelectionEvent::Cleared` is a unit variant; `is_selecting`. Quads map onto `epdf_ffi::TextQuad` through `quad()` until 13.33 renames the mirror |
 

@@ -33,19 +33,19 @@ impl StageCapability {
                     });
                 }
             }
-            if previous.cursor != next.cursor {
+            if previous.page_index != next.page_index {
                 let page = ctx.document().and_then(|document| {
                     document
                         .pages
                         .as_array()
-                        .and_then(|pages| pages.get(next.cursor))
+                        .and_then(|pages| pages.get(next.page_index))
                         .and_then(|page| page.get("ref"))
                         .and_then(PageRef::from_json)
                 });
                 page_changed.emit(&StagePageChangedEvent {
                     page,
-                    page_index: next.cursor,
-                    previous_page_index: previous.cursor,
+                    page_index: next.page_index,
+                    previous_page_index: previous.page_index,
                 });
             }
             if previous.viewport_writes != next.viewport_writes {
@@ -59,7 +59,7 @@ impl StageCapability {
             if !changed.is_empty() {
                 settings_changed.emit(&StageSettingsChangedEvent {
                     settings: pick_settings(&next.settings),
-                    changed,
+                    changed_keys: changed,
                 });
             }
             Ok(())

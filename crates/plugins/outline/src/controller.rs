@@ -181,7 +181,7 @@ impl Core {
     /// changes.
     fn spots(&self) -> Rc<Vec<OutlineSpot>> {
         let list = self.list();
-        let revision = self.cx.document().map_or(0, |doc| doc.revision);
+        let revision = self.cx.document().map_or(0, |doc| doc.pages_sequence);
         if let Some((items, at, spots)) = &self.memos.borrow().spots
             && Rc::ptr_eq(items, &list)
             && *at == revision

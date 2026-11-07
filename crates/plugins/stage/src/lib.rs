@@ -9,8 +9,8 @@
 //! areas (`services`, `read`, `camera`, `navigation`, `settings::area`,
 //! `view`), [`connect`] and [`working_set`], [`state`], [`scroll_handler`],
 //! and the wiring in [`stage_plugin`] (`stage.plugin.ts`). Names mirror the
-//! TypeScript contract (`getPageFrame` is
-//! [`StageCapability::get_page_frame`]). The spatial math is
+//! TypeScript contract (`getPageBox` is
+//! [`StageCapability::get_page_box`]). The spatial math is
 //! `epdf-stage-core`.
 
 // Callback-shaped types (`Rc<dyn Fn(...)>`) are the port of JavaScript
@@ -45,6 +45,7 @@ pub mod camera {
 pub mod navigation {
     pub mod arrive;
     pub mod reveal;
+    pub mod turn;
     pub mod zoom;
     pub mod zoom_drag;
 }

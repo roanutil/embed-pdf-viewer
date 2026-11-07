@@ -83,15 +83,15 @@ impl TryFrom<sc::Anchor> for ViewAnchor {
     fn try_from(a: sc::Anchor) -> Result<Self, Self::Error> {
         Ok(ViewAnchor {
             page_index: crate::to_u32(a.page_index, "an anchor's page index")?,
-            fx: a.fx,
-            fy: a.fy,
+            fx: a.fraction_x,
+            fy: a.fraction_y,
         })
     }
 }
 
 impl From<ViewAnchor> for sc::Anchor {
     fn from(a: ViewAnchor) -> Self {
-        sc::Anchor { page_index: a.page_index as usize, fx: a.fx, fy: a.fy }
+        sc::Anchor { page_index: a.page_index as usize, fraction_x: a.fx, fraction_y: a.fy }
     }
 }
 

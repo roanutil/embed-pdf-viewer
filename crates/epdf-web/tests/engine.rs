@@ -228,7 +228,7 @@ async fn synchronous_reads_go_to_the_bridge_each_time() {
     assert_eq!(doc.page_index(7).unwrap(), UNINDEXED);
     let missing = doc.page_index(99).unwrap_err();
     assert_eq!((missing.name.as_str(), missing.code()), ("EngineError", Some("NotFound")));
-    assert_eq!(doc.last_server_id().as_deref(), Some("42"));
+    assert_eq!(doc.last_server_sequence().as_deref(), Some("42"));
 
     let unlock = security.unlock(json!({"password": "pw"}));
     js_sleep(0.0).await;

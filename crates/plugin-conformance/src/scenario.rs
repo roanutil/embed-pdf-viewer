@@ -369,7 +369,7 @@ fn kernel_call(kernel: &Kernel, method: &str, args: &[Value], h: &Harness) -> Ou
     match method {
         "start" => Outcome::promise_unit(kernel.start()),
         "destroy" => Outcome::promise_unit(kernel.destroy()),
-        "status" => Outcome::Returned(json!(kernel.status().as_str())),
+        "getStatus" => Outcome::Returned(json!(kernel.status().as_str())),
         "getState" => Outcome::Returned(kernel.state_json()),
         "scopeOf" => Outcome::Returned(json!(match kernel.scope_of(&token_arg(args.first(), h)) {
             PluginScope::Document => "document",

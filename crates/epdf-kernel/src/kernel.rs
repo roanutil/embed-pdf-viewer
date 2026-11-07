@@ -426,7 +426,7 @@ fn page_meta_of(meta: &Rc<DocumentMeta>, view: &crate::page_view::View) -> Rc<Do
         pages: view.pages.clone(),
         page_labels: view.labels.clone(),
         pending_pages: view.pending.clone(),
-        revision: if moved { meta.revision + 1 } else { meta.revision },
+        pages_sequence: if moved { meta.pages_sequence + 1 } else { meta.pages_sequence },
         ..(**meta).clone()
     })
 }
@@ -912,7 +912,7 @@ impl Inner {
             return;
         }
         let moved = !Rc::ptr_eq(&updated.pages, &existing.pages);
-        let (revision, pages) = (updated.revision, updated.pages.clone());
+        let (pages_sequence, pages) = (updated.pages_sequence, updated.pages.clone());
         self.set_core(
             |core| {
                 core.documents.insert(id.clone(), updated);
@@ -924,7 +924,7 @@ impl Inner {
         }
         self.events.pages_changed.emit(&serde_json::json!({
             "documentId": id,
-            "revision": revision,
+            "pagesSequence": pages_sequence,
             "pages": pages,
         }));
     }
@@ -1607,7 +1607,7 @@ impl Inner {
             pages: view.pages,
             page_labels: view.labels,
             pending_pages: crate::page_view::no_pending_pages(),
-            revision: 0,
+            pages_sequence: 0,
             render_policy,
         }));
 
@@ -1621,7 +1621,7 @@ impl Inner {
         let s = Rc::downgrade(&session);
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
             let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
-            let tx = event.pointer("/origin/tx");
+            let tx = event.pointer("/origin/transaction");
             let id = tx.and_then(|t| t["id"].as_str());
             let old = if session
                 .burst
@@ -3012,7 +3012,7 @@ impl Documents {
     }
 
     pub fn get_revision(&self, id: Option<&str>) -> i64 {
-        self.meta_of(id).map_or(-1, |meta| meta.revision as i64)
+        self.meta_of(id).map_or(-1, |meta| meta.pages_sequence as i64)
     }
 
     /// The permissions.md chrome exception: print and download.

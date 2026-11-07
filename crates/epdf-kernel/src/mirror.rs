@@ -45,10 +45,10 @@ pub fn is_resync(e: &Value) -> bool {
     matches!(e["type"].as_str(), Some("stream.desynced" | "document.versioned"))
 }
 pub fn change_id_of(e: &Value) -> Option<&str> {
-    e.pointer("/origin/tx/id").and_then(Value::as_str)
+    e.pointer("/origin/transaction/id").and_then(Value::as_str)
 }
 pub fn last_event_of(e: &Value) -> Option<&str> {
-    let tx = e.pointer("/origin/tx")?;
+    let tx = e.pointer("/origin/transaction")?;
     let count = tx["count"].as_u64()?;
     (count > 0 && tx["index"].as_u64() == Some(count - 1)).then(|| tx["id"].as_str()).flatten()
 }
@@ -56,7 +56,7 @@ pub fn last_event_of(e: &Value) -> Option<&str> {
 pub struct Loaded {
     pub value: Value,
     /// The load's watermark as the engine sent it (`loaded.cursor`): a
-    /// queued event whose `origin.serverId` is `<=` it is already in the
+    /// queued event whose `origin.serverSequence` is `<=` it is already in the
     /// value. Any JSON value; compared as JavaScript does.
     pub cursor: Option<Value>,
 }
@@ -475,12 +475,12 @@ impl Mirror {
                     next,
                 });
                 // `mirror.ts`: `cursor = loaded.cursor ?? null`; an event
-                // with an `origin` skips when `serverId <= cursor`.
+                // with an `origin` skips when `serverSequence <= cursor`.
                 let cursor =
                     loaded.cursor.as_ref().filter(|c| !c.is_null() && !crate::is_undefined(c));
                 for e in pending {
                     if let (Some(cursor), Some(origin)) = (cursor, e.get("origin")) {
-                        let server = origin.get("serverId");
+                        let server = origin.get("serverSequence");
                         if !matches!(server, Some(Value::Null)) && js_less_or_equal(server, cursor)
                         {
                             continue;

@@ -53,7 +53,7 @@ public struct SearchCapability: Sendable {
   }
 
   /// Re-run the current query from scratch.
-  public func refresh() async throws(PDFError) -> SearchResult {
+  public func refresh() async throws(PDFError) {
     try await bridgedCancellable { token in try await handle.refresh(cancel: token) }
   }
 

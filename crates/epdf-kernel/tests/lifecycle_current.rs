@@ -104,7 +104,7 @@ impl DocumentHandle for Doc {
                 if let Some(answer) = self.apply_answer.borrow().clone() {
                     return answer;
                 }
-                self.events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"kind":"local","tx":{"id":args[1]["opId"],"index":0,"count":1}}}));
+                self.events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"kind":"local","transaction":{"id":args[1]["opId"],"index":0,"count":1}}}));
                 Promise::resolved(json!({"applied":true}))
             }
             "download" | "downloadLayer" => self
@@ -831,7 +831,7 @@ fn a_page_mirror_subscribes_to_the_handle_at_creation_between_the_kernel_and_con
                 name: "pages".into(),
                 load: Rc::new(|_, _, _| Promise::resolved(json!(0))),
                 affected: Rc::new(move |_| {
-                    let revision = mirror_ctx.document().map_or(0, |m| m.revision);
+                    let revision = mirror_ctx.document().map_or(0, |m| m.pages_sequence);
                     mirror_log.borrow_mut().push(("mirror", revision));
                     Affected::None
                 }),
@@ -846,7 +846,7 @@ fn a_page_mirror_subscribes_to_the_handle_at_creation_between_the_kernel_and_con
                 let _kept = &mirror;
                 let (log, ctx) = (connect_log.clone(), connect_ctx.clone());
                 connect_ctx.listen(connect_ctx.doc()?.subscribe(Rc::new(move |_| {
-                    let revision = ctx.document().map_or(0, |m| m.revision);
+                    let revision = ctx.document().map_or(0, |m| m.pages_sequence);
                     log.borrow_mut().push(("connect", revision));
                 })));
                 Ok(())
@@ -1010,7 +1010,7 @@ fn a_burst_holds_notifications_until_its_last_event() {
         count.set(count.get() + 1);
         Ok(())
     }));
-    let event = |index: u32| json!({"type":"metadata.changed","origin":{"kind":"remote","tx":{"id":"burst","index":index,"count":2}}});
+    let event = |index: u32| json!({"type":"metadata.changed","origin":{"kind":"remote","transaction":{"id":"burst","index":index,"count":2}}});
     document.events.emit(&event(0));
     let held = woken.get();
     kernel.documents().rename("doc", "held.pdf");

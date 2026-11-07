@@ -36,10 +36,11 @@ fn an_alignment_value_keeps_named_stops_and_fractions() {
 
 #[test]
 fn an_anchor_index_that_does_not_fit_is_invalid_state() {
-    let core = sc::Anchor { page_index: usize::MAX, fx: 0.0, fy: 0.0 };
+    let core = sc::Anchor { page_index: usize::MAX, fraction_x: 0.0, fraction_y: 0.0 };
     let error = ViewAnchor::try_from(core).unwrap_err();
     assert_eq!(error.code(), Some("invalid-state"));
-    let ok = ViewAnchor::try_from(sc::Anchor { page_index: 3, fx: 0.5, fy: 0.25 }).unwrap();
+    let ok = ViewAnchor::try_from(sc::Anchor { page_index: 3, fraction_x: 0.5, fraction_y: 0.25 })
+        .unwrap();
     assert_eq!(ok, ViewAnchor { page_index: 3, fx: 0.5, fy: 0.25 });
     assert_eq!(to_u32(7, "a page index").unwrap(), 7);
 }

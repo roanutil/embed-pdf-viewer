@@ -328,12 +328,6 @@ impl StageCapability {
 // ── the area's api ──
 
 impl StageCapability {
-    /// Momentum pan from a release velocity in viewport px/s. Without frames
-    /// it only snaps into bounds.
-    pub fn fling(&self, velocity_x: f64, velocity_y: f64) -> Result<(), Error> {
-        self.start_camera_physics(velocity_x, velocity_y)
-    }
-
     /// A tween or fling is running.
     pub fn is_moving(&self) -> bool {
         self.inner.cancel_frame.borrow().is_some()

@@ -54,7 +54,7 @@ impl StageCapability {
             // The flow toggled: re-place onto the cursor's page under the
             // new flow's scene.
             self.go_to_target(
-                self.st().cursor as isize,
+                self.st().page_index as isize,
                 Some(GoToOptions::behavior(ScrollBehaviorKind::Instant)),
             );
         } else if scene || refit {
@@ -247,7 +247,7 @@ impl StageCapability {
         self.publish_active(resolved.active);
         let effective = StageSettingsPatch::from(resolved.effective);
         self.update(|s| patch_settings(s, &effective));
-        let cursor = view.cursor.unwrap_or(0);
+        let cursor = view.page_index.unwrap_or(0);
         self.update(|s| set_cursor(s, cursor));
         self.invalidate_scene();
         self.apply_anchor(view.anchor, None);

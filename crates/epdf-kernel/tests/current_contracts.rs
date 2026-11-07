@@ -106,7 +106,7 @@ fn own_fact_folds_before_settlement_and_every_origin_uses_same_fold() {
     let publish = events.clone();
     let q = DocumentChanges::new(
         Rc::new(move |_, options| {
-            publish.emit(&json!({"type":"metadata.changed","value":4,"origin":{"kind":"local","tx":{"id": options["opId"], "index":0,"count":1}}}));
+            publish.emit(&json!({"type":"metadata.changed","value":4,"origin":{"kind":"local","transaction":{"id": options["opId"], "index":0,"count":1}}}));
             Promise::resolved(json!({"applied":true}))
         }),
         Rc::new(|| {}),
@@ -162,7 +162,7 @@ fn registration_settings_merge_reset_and_dispose_instance_listener() {
     settings.update_settings(&json!({"nested":{"x":3}}));
     assert!(Rc::ptr_eq(&same, &settings.get()));
     settings.update_settings(&json!({"person":{"name":"b"},"nested":{"y":8}}));
-    assert_eq!(*instance.get(), json!({"person":{"name":"b"},"nested":{"x":3,"y":8}}));
+    assert_eq!(*instance.get(), json!({"person":{"name":"b","id":1},"nested":{"x":3,"y":8}}));
     scope.dispose();
     rt::run_until_stalled();
     settings.reset_settings();
@@ -507,13 +507,13 @@ fn full_load_replays_only_events_after_cursor_and_keeps_prediction_until_reload(
         .for_plugin("test")
         .stage(StagedChange::ops(json!({"key":"x"}), vec![json!({"value":7})]))
         .unwrap();
-    events.emit(&json!({"type":"metadata.changed","reload":true,"origin":{"tx":{"id":c.op_id(),"index":0,"count":1}}}));
+    events.emit(&json!({"type":"metadata.changed","reload":true,"origin":{"transaction":{"id":c.op_id(),"index":0,"count":1}}}));
     resolve.resolve(json!({}));
     rt::run_until_stalled();
     assert!(q.shown().is_empty());
     assert_eq!(*mirror.view(), json!(7));
-    events.emit(&json!({"type":"metadata.changed","value":3,"origin":{"serverId":2}}));
-    events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"serverId":4}}));
+    events.emit(&json!({"type":"metadata.changed","value":3,"origin":{"serverSequence":2}}));
+    events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"serverSequence":4}}));
     land.resolve(Loaded { value: json!(7), cursor: Some(json!(3)) });
     rt::run_until_stalled();
     assert_eq!(*mirror.get(), json!(9));
@@ -721,13 +721,13 @@ fn a_string_load_cursor_skips_queued_events_at_or_below_it_as_javascript_compare
     let _load = mirror.refresh();
     rt::run_until_stalled();
     // Queued while the load runs; the load's cursor is the string "2".
-    events.emit(&json!({"type":"x","value":"equal","origin":{"serverId":"2"}}));
-    events.emit(&json!({"type":"x","value":"lower","origin":{"serverId":"1"}}));
+    events.emit(&json!({"type":"x","value":"equal","origin":{"serverSequence":"2"}}));
+    events.emit(&json!({"type":"x","value":"lower","origin":{"serverSequence":"1"}}));
     // "10" <= "2" as strings: already in the load.
-    events.emit(&json!({"type":"x","value":"string-ten","origin":{"serverId":"10"}}));
-    events.emit(&json!({"type":"x","value":"higher","origin":{"serverId":"3"}}));
+    events.emit(&json!({"type":"x","value":"string-ten","origin":{"serverSequence":"10"}}));
+    events.emit(&json!({"type":"x","value":"higher","origin":{"serverSequence":"3"}}));
     // A number against the string compares as numbers: 10 > 2.
-    events.emit(&json!({"type":"x","value":"number-ten","origin":{"serverId":10}}));
+    events.emit(&json!({"type":"x","value":"number-ten","origin":{"serverSequence":10}}));
     events.emit(&json!({"type":"x","value":"no-id","origin":{}}));
     land.resolve(Loaded { value: json!([]), cursor: Some(json!("2")) });
     rt::run_until_stalled();
@@ -1338,7 +1338,7 @@ fn a_mirror_view_is_memoized_and_drops_a_change_its_fold_took() {
     let view = mirror.view();
     assert_eq!(*view, json!(9));
     assert!(Rc::ptr_eq(&view, &mirror.view()), "the same inputs, the same view");
-    events.emit(&json!({"type":"metadata.changed","origin":{"kind":"local","tx":{"id":change.op_id(),"index":0,"count":1}}}));
+    events.emit(&json!({"type":"metadata.changed","origin":{"kind":"local","transaction":{"id":change.op_id(),"index":0,"count":1}}}));
     assert!(Rc::ptr_eq(&mirror.get(), &value), "the fold kept the value");
     assert_eq!(*mirror.view(), json!(0), "the change the fold took leaves the view");
     assert!(change.result().peek().is_none());
@@ -1461,10 +1461,10 @@ fn a_page_mirror_view_keeps_a_change_until_the_page_read_lands() {
     assert_eq!(*view, json!(9));
     assert!(Rc::ptr_eq(&view, &pages.view(&page).unwrap()), "the same inputs, the same view");
     let tx = json!({"id":change.op_id(),"index":0,"count":1});
-    events.emit(&json!({"type":"same","origin":{"kind":"local","tx":tx}}));
+    events.emit(&json!({"type":"same","origin":{"kind":"local","transaction":tx}}));
     assert_eq!(*pages.view(&page).unwrap(), json!(1), "the change the fold took leaves the view");
     assert_eq!(*rereads.view(&page).unwrap(), json!(9), "kept while its page reads again");
-    events.emit(&json!({"type":"reload","origin":{"kind":"local","tx":tx}}));
+    events.emit(&json!({"type":"reload","origin":{"kind":"local","transaction":tx}}));
     assert_eq!(*pages.view(&page).unwrap(), json!(9), "kept while its page reads again");
     resolve.resolve(json!({"applied":true}));
     rt::run_until_stalled();

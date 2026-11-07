@@ -19,21 +19,24 @@ struct Inner {
     report: Report,
     initial: Rc<Value>,
     current: RefCell<Rc<Value>>,
+    defaults: Value,
     whole: Vec<String>,
     notify: Rc<dyn Fn()>,
     events: EventHookSource<SettingsChanged>,
 }
 impl Settings {
     pub fn new(declaration: SettingsDeclaration, notify: Rc<dyn Fn()>, report: Report) -> Self {
-        let initial = Rc::new(merge_settings(
+        let initial = Rc::new(merge_declared_settings(
             &declaration.defaults,
             declaration.registered.as_ref(),
+            &declaration.defaults,
             &declaration.whole,
         ));
         Self(Rc::new(Inner {
             report: report.clone(),
             initial: initial.clone(),
             current: RefCell::new(initial),
+            defaults: declaration.defaults,
             whole: declaration.whole,
             notify,
             events: EventHookSource::new(Some(report)),
@@ -93,7 +96,12 @@ impl Settings {
         self.0.events.emit(&SettingsChanged { settings: next, changed });
     }
     pub fn update_settings(&self, changes: &Value) {
-        self.commit(Rc::new(merge_settings(&self.get(), Some(changes), &self.0.whole)));
+        self.commit(Rc::new(merge_declared_settings(
+            &self.get(),
+            Some(changes),
+            &self.0.defaults,
+            &self.0.whole,
+        )));
     }
     pub fn reset_settings(&self) {
         self.commit(self.0.initial.clone());
@@ -182,6 +190,77 @@ pub fn merge_settings(base: &Value, change: Option<&Value>, whole: &[String]) ->
         result.insert(key.clone(), next);
     }
     if result.is_empty() && !base.is_object() { base.clone() } else { json!(result) }
+}
+
+/// `mergeSettings(settings, changes, { defaults, whole })`: `changes` merged
+/// into `settings`, the settings at the `whole` paths (`"identity"`,
+/// `"snapshot.box"`) replaced instead, what such a change leaves out taking
+/// its default.
+pub fn merge_declared_settings(
+    settings: &Value,
+    changes: Option<&Value>,
+    defaults: &Value,
+    whole: &[String],
+) -> Value {
+    let Some(changes) = changes.filter(|c| c.is_object() && !crate::is_undefined(c)) else {
+        return merge_settings(settings, changes, &[]);
+    };
+    if whole.is_empty() {
+        return merge_settings(settings, Some(changes), &[]);
+    }
+    let paths: Vec<Vec<&str>> = whole.iter().map(|path| path.split('.').collect()).collect();
+    let mut rest = changes.clone();
+    for path in &paths {
+        if value_at(&rest, path).is_some() {
+            rest = with_value_at(&rest, path, crate::undefined());
+        }
+    }
+    let mut merged = merge_settings(settings, Some(&rest), &[]);
+    for path in &paths {
+        let Some(change) = value_at(changes, path) else { continue };
+        let value = filled_from(value_at(defaults, path), change);
+        let same = value_at(&merged, path).is_some_and(|now| crate::js::same_value(now, &value));
+        if !same {
+            merged = with_value_at(&merged, path, value);
+        }
+    }
+    merged
+}
+
+/// `valueAt`: the value at `path`, `None` where the path ends early or the
+/// value is `undefined`.
+fn value_at<'a>(value: &'a Value, path: &[&str]) -> Option<&'a Value> {
+    let mut at = value;
+    for key in path {
+        at = at.as_object()?.get(*key)?;
+    }
+    (!crate::is_undefined(at)).then_some(at)
+}
+
+/// `withValueAt`: `value` with `next` at `path`, the objects along it copied.
+fn with_value_at(value: &Value, path: &[&str], next: Value) -> Value {
+    let Some((key, rest)) = path.split_first() else { return next };
+    let mut into =
+        value.as_object().filter(|_| !crate::is_undefined(value)).cloned().unwrap_or_default();
+    let inner = into.get(*key).cloned().unwrap_or_else(crate::undefined);
+    into.insert((*key).to_string(), with_value_at(&inner, rest, next));
+    Value::Object(into)
+}
+
+/// `filledFrom`: a whole value, a plain object's keys left out (or
+/// `undefined`) taking their defaults.
+fn filled_from(default: Option<&Value>, change: &Value) -> Value {
+    let (Some(change_object), Some(Value::Object(default_object))) = (change.as_object(), default)
+    else {
+        return change.clone();
+    };
+    let mut filled = default_object.clone();
+    for (key, value) in change_object {
+        if !crate::is_undefined(value) {
+            filled.insert(key.clone(), value.clone());
+        }
+    }
+    Value::Object(filled)
 }
 
 /// Who holds a document setting and the sentence its controls show.

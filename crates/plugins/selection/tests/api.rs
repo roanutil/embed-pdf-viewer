@@ -111,13 +111,15 @@ fn settings_change_for_every_document_and_reset_to_the_registered_ones() {
     let seen = Rc::new(Cell::new(0));
     let s = seen.clone();
     let _off = selection.on_settings_changed(move |event| {
-        assert_eq!(event.changed, vec!["dragThreshold".to_string()]);
+        assert_eq!(event.changed_keys, vec!["dragThresholdPx".to_string()]);
         s.set(s.get() + 1);
         Ok(())
     });
-    selection.update_settings(&SelectionConfig { drag_threshold: Some(9.0), ..Default::default() });
-    assert_eq!(selection.get_settings().drag_threshold, 9.0);
-    selection.update_settings(&SelectionConfig { drag_threshold: Some(9.0), ..Default::default() });
+    selection
+        .update_settings(&SelectionConfig { drag_threshold_px: Some(9.0), ..Default::default() });
+    assert_eq!(selection.get_settings().drag_threshold_px, 9.0);
+    selection
+        .update_settings(&SelectionConfig { drag_threshold_px: Some(9.0), ..Default::default() });
     assert_eq!(seen.get(), 1, "a change that changes nothing fires nothing");
     selection.reset_settings();
     assert_eq!(selection.get_settings(), selection_defaults());
@@ -161,13 +163,13 @@ fn a_malformed_setting_reads_as_its_default_and_is_reported() {
     let seen = Rc::new(Cell::new(0.0));
     let s = seen.clone();
     let _off = selection.on_settings_changed(move |event| {
-        s.set(event.settings.drag_threshold);
+        s.set(event.settings.drag_threshold_px);
         Ok(())
     });
     // A host writing JSON straight into the store, past the typed API.
     let store = kernel.settings_of(SELECTION.any()).unwrap();
-    store.update_settings(&json!({ "dragThreshold": "far", "color": "red" }));
-    assert_eq!(selection.get_settings().drag_threshold, 4.0, "the default");
+    store.update_settings(&json!({ "dragThresholdPx": "far", "color": "red" }));
+    assert_eq!(selection.get_settings().drag_threshold_px, 4.0, "the default");
     assert_eq!(selection.get_settings().color.as_deref(), Some("red"), "the rest still reads");
     assert_eq!(seen.get(), 4.0, "the listener still hears the change");
     assert!(

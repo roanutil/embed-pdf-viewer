@@ -127,8 +127,8 @@ The new vectors in `kernel.ts`:
   `$undefined` guard replaced with `true` (`:40`), and `AbortSignal::same` replaced with `true`.
 - `guarded-handle-security-reads`: `docRead` now calls a method at the end of its path, so the
   probe reads identity, current, the password prompt, the three annotation checks and
-  `events.lastServerId` through the guard, on two documents with opposite answers. Kills 11
-  mutants in `guarded.rs` and both `Some` replacements of the default `last_server_id` in
+  `events.lastServerSequence` through the guard, on two documents with opposite answers. Kills 11
+  mutants in `guarded.rs` and both `Some` replacements of the default `last_server_sequence` in
   `engine.rs`.
 
 The lane case exposed a port bug. `js_string` printed integers through `x as i64`, so a reason of
@@ -143,7 +143,7 @@ through a real kernel, which kills every survivor in `plugin.rs`, `Kernel::try_c
 `Kernel::core`, `dyn Action::downcast` (through the reducer) and `LifecycleEvents::dispose`.
 `tests/runtime.rs` adds three `Set` iteration cases for the store's listener lists
 (`store.rs:59`, `:66`, `:91`), lease accessors, `get_slice` and `dispatch_to`, a stub handle for
-the guard's `has` and `last_server_id` pass-throughs, `listener_count`, `Error::from_spec`
+the guard's `has` and `last_server_sequence` pass-throughs, `listener_count`, `Error::from_spec`
 members and `PageRef::to_json`. The `js.rs` unit tests add `number`, tuple and struct variants,
 the enum reader and the decode message.
 

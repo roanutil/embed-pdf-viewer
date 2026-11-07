@@ -34,7 +34,7 @@ pub struct SelectionHandleSettings {
 #[serde(rename_all = "camelCase")]
 pub struct SelectionSettings {
     /// Viewport px the pointer travels before a press becomes a drag that selects.
-    pub drag_threshold: f64,
+    pub drag_threshold_px: f64,
     /// The color of selected text, or `None` for the viewer's accent at 35%.
     pub color: Option<String>,
     pub handles: SelectionHandleSettings,
@@ -43,7 +43,7 @@ pub struct SelectionSettings {
 /// `SELECTION_DEFAULTS`.
 pub fn selection_defaults() -> SelectionSettings {
     SelectionSettings {
-        drag_threshold: 4.0,
+        drag_threshold_px: 4.0,
         color: None,
         handles: SelectionHandleSettings {
             color: None,
@@ -64,7 +64,7 @@ pub struct SelectionHandleConfig {
 /// `Some(None)` for a color is the `null` that means the accent.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SelectionConfig {
-    pub drag_threshold: Option<f64>,
+    pub drag_threshold_px: Option<f64>,
     pub color: Option<Option<String>>,
     pub handles: Option<SelectionHandleConfig>,
 }
@@ -73,8 +73,8 @@ impl SelectionConfig {
     /// The members it names, as the settings store keeps them.
     pub fn to_json(&self) -> Value {
         let mut out = Map::new();
-        if let Some(threshold) = self.drag_threshold {
-            out.insert("dragThreshold".into(), json!(threshold));
+        if let Some(threshold) = self.drag_threshold_px {
+            out.insert("dragThresholdPx".into(), json!(threshold));
         }
         if let Some(color) = &self.color {
             out.insert("color".into(), json!(color));
@@ -106,7 +106,7 @@ impl SelectionConfig {
                 shadow: h.get("shadow").and_then(Value::as_str).map(str::to_string),
             });
         SelectionConfig {
-            drag_threshold: value.get("dragThreshold").and_then(Value::as_f64),
+            drag_threshold_px: value.get("dragThresholdPx").and_then(Value::as_f64),
             color: value.get("color").and_then(text),
             handles,
         }
@@ -117,7 +117,8 @@ impl SelectionConfig {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SelectionSettingsChanged {
     pub settings: SelectionSettings,
-    pub changed: Vec<String>,
+    #[serde(rename = "changedKeys")]
+    pub changed_keys: Vec<String>,
 }
 
 // ── the range vocabulary ──────────────────────────────────────────────────────

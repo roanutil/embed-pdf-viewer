@@ -147,10 +147,10 @@ fn origin(local: bool, id: Option<&str>) -> Value {
     let mut origin = json!({
         "kind": if local { "local" } else { "remote" },
         "sessionId": if local { "me" } else { "them" },
-        "sub": null, "ts": 0, "serverId": null,
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
     });
     if let Some(id) = id {
-        origin["tx"] = json!({ "id": id, "index": 0, "count": 1 });
+        origin["transaction"] = json!({ "id": id, "index": 0, "count": 1 });
     }
     origin
 }
@@ -246,7 +246,7 @@ impl Harness {
     }
 
     fn revision(&self) -> u64 {
-        self.ctx.document().unwrap().revision
+        self.ctx.document().unwrap().pages_sequence
     }
 
     fn order(&self) -> Vec<u64> {
@@ -383,7 +383,7 @@ fn shows_blank_pages_before_the_engine_has_them_named_pending() {
     );
     assert_eq!(h.order(), vec![1, 40, 2, 3]);
     assert_eq!(h.get_page(40)["size"], json!({ "width": 300, "height": 200 }));
-    assert_eq!(pending_of(&h), json!([[40, { "look": "blank" }]]));
+    assert_eq!(pending_of(&h), json!([[40, { "kind": "blank" }]]));
 
     let shown = h.pages();
     let pages = shown.as_array().unwrap().clone();
@@ -440,7 +440,7 @@ fn shows_a_copy_at_once_pending_as_a_copy_of_its_page() {
     );
     assert_eq!(h.order(), vec![1, 40, 2, 3]);
     assert_eq!(h.get_page(40)["rotation"], json!(90));
-    assert_eq!(pending_of(&h), json!([[40, { "look": "copy", "of": r(2) }]]));
+    assert_eq!(pending_of(&h), json!([[40, { "kind": "copy", "of": r(2) }]]));
 }
 
 #[test]
@@ -487,7 +487,7 @@ fn shows_deleted_pages_back_at_once_when_an_undo_restores_them() {
     h.undo(vec![json!({ "type": "pages.restore", "pages": restored })]);
     assert_eq!(h.order(), vec![1, 2, 3]);
     assert_eq!(h.get_page(2)["rotation"], json!(90));
-    assert_eq!(pending_of(&h), json!([[2, { "look": "own" }]]));
+    assert_eq!(pending_of(&h), json!([[2, { "kind": "own" }]]));
 }
 
 /// A page mirror whose reads answer `"read"`, and a blank insert of page 40
