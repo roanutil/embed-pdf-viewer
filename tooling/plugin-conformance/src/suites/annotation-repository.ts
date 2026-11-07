@@ -77,7 +77,9 @@ function replace(before: string, fn: string, ...args: unknown[]) {
       ? invalidDrafts[before]
       : before.includes('text-no-icon')
         ? 'Explicit malformed imported read: the required current icon field is absent.'
-        : undefined;
+        : before.includes('square-dashed-empty')
+          ? 'Explicit malformed read: an empty dash pattern, which a read never returns and a write refuses since fe2941a27 (DashArrayWriteSchema); the pure helpers carry it as given.'
+          : undefined;
   cases.push({ name, fn, args, ...(covers ? { covers } : {}) });
 }
 const retire = (before: string, reason: string) => migration.push({ before, after: null, reason });
@@ -676,8 +678,9 @@ for (const [label, target] of [
   ['undefined', undefined],
 ])
   replace(`writableTarget/${label}`, 'writableTarget', target);
-replace('widgetKindOf/text', 'widgetKindOf', 'text');
-replace('widgetKindOf/unknown', 'widgetKindOf', 'signature');
+// widgetKindOf takes the widget since c4b286a69: its fieldKind, and hasMark.
+replace('widgetKindOf/text', 'widgetKindOf', { fieldKind: 'text', hasMark: false });
+replace('widgetKindOf/unknown', 'widgetKindOf', { fieldKind: 'signature', hasMark: false });
 for (const [label, defaults] of [
   [
     'everything',
