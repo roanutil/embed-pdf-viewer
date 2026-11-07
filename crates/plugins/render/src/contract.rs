@@ -4,7 +4,9 @@
 //! in, `onInvalidated` out). What a view layer needs to paint is the host
 //! lens, [`crate::host_contract`].
 
+use epdf_geometry::{PageRotation, Rect};
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::types::PluginErrorInfo;
 use serde::ser::SerializeSeq;
@@ -230,10 +232,18 @@ pub type PageImage = PageImageHandle;
 /// `RenderPageOptions`.
 #[derive(Clone, Default)]
 pub struct RenderPageOptions {
-    /// Exact output width in device pixels (height keeps the aspect).
+    /// Exact output width in device pixels (height keeps the aspect of what
+    /// is drawn).
     pub width: Option<f64>,
     /// Device pixels per PDF point; ignored when `width` is given. `None` is 1.
     pub scale: Option<f64>,
+    /// Draw only this part of the page, in page space: from the page's
+    /// top-left, y down, in points. `width` and `scale` then size the part.
+    /// Cut at the page's edge; a rect that misses the page is refused
+    /// (`invalid-input`).
+    pub rect: Option<Rect>,
+    /// Turn the picture clockwise. `None` (and 0) is the page as stored.
+    pub rotation: Option<PageRotation>,
     pub layers: PageLayerOptions,
     /// Per-call encode overrides; default to the plugin's strategy.
     pub format: Option<RenderFormat>,
@@ -252,7 +262,9 @@ pub struct RenderThumbnailOptions {
     pub signal: Option<AbortSignal>,
 }
 
-/// `RenderPagesOptions`: a batch's per-page options and its pool size.
+/// `RenderPagesOptions`: a batch's per-page options and its pool size. A
+/// batch renders whole pages: the TypeScript type leaves `rect` out, and
+/// one given anyway reaches every page as it would there.
 #[derive(Clone, Default)]
 pub struct RenderPagesOptions {
     pub page: RenderPageOptions,
@@ -303,6 +315,29 @@ pub enum InvalidateScope {
 pub struct InvalidateOptions {
     pub pages: Option<Vec<PageArg>>,
     pub scope: Option<InvalidateScope>,
+}
+
+// ── snapshots ─────────────────────────────────────────────────────────────────
+
+/// `Snapshot`: part of a page taken as a picture with the
+/// [`SNAPSHOT_TOOL`], held until another is taken, the tool changes or it
+/// is let go (`clear_snapshot`).
+#[derive(Clone)]
+pub struct Snapshot {
+    /// The page it was taken on.
+    pub page: PageRef,
+    /// The box, in page space: from the page's top-left, y down, in points.
+    pub rect: Rect,
+    /// Its picture, as PNG, turned as the page was shown. Rejects when it
+    /// can't be rendered, and with `operation-cancelled` once the snapshot is
+    /// let go first.
+    pub image: Promise<PageImage>,
+}
+
+/// `SnapshotChangedEvent`: a snapshot was taken, or let go (`None`).
+#[derive(Clone)]
+pub struct SnapshotChangedEvent {
+    pub snapshot: Option<Snapshot>,
 }
 
 // ── events ────────────────────────────────────────────────────────────────────

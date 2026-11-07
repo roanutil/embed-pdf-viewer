@@ -142,8 +142,8 @@ test('all owned cases have unique names and exactly their current shipping outco
       }
     }
   }
-  assert.equal(total, 1287);
-  assert.equal(scenarios, 171);
+  assert.equal(total, 1292);
+  assert.equal(scenarios, 176);
   console.log(JSON.stringify({ total, functions, scenarios, unexpected: 0, duplicates: 0 }));
 });
 const geometry: PageGeometrySnapshot = {

@@ -614,9 +614,12 @@ function decodeValue(value: unknown, dc: DecodeContext): unknown {
 function scriptedFn(spec: FnSpec, dc: DecodeContext): (...args: unknown[]) => unknown {
   let calls = 0;
   return (...args: unknown[]) => {
+    // A function among the arguments is only noted, as in state; a promise
+    // (a snapshot's picture) is tracked, so its settlement lands in the trace.
+    const hooks: CanonicalHooks = { fn: () => null, promise: dc.hooks.promise };
     dc.entry().callbacks.push({
       fn: spec.$fn,
-      args: args.map((arg) => canonical(arg, snapshotHooks)),
+      args: args.map((arg) => canonical(arg, hooks)),
     });
     const answer = spec.seq ? spec.seq[Math.min(calls, spec.seq.length - 1)] : spec;
     calls += 1;

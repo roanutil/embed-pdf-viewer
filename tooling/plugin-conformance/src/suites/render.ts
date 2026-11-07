@@ -1566,6 +1566,198 @@ const tileCases: ScenarioCase[] = [
   ),
 ];
 
+// ── the snapshot tool and parts of pages ───────────────────────────────────────
+
+/** A call on the interaction hub, which the snapshot tool takes its pointer from. */
+const hub = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'interaction', doc: 'a' },
+  method,
+  args,
+});
+const NO_MODIFIERS = { shift: false, alt: false, ctrl: false, meta: false };
+/** A pointer sample over page `pon` at page point (x, y), or over a gap with `pon: null`. */
+const pointer = (
+  phase: 'down' | 'move' | 'up' | 'cancel',
+  pon: number | null,
+  x: number,
+  y: number,
+  hit: { scale?: number; rotation?: number } = {},
+): Step =>
+  hub('dispatchPointer', {
+    phase,
+    viewport: { x, y },
+    modifiers: NO_MODIFIERS,
+    ...(pon === null ? {} : { page: { ref: pr(pon), point: { x, y }, ...hit } }),
+  });
+const COPY = ['doc.render', 'doc.render.thumbnail', 'doc.annotate.read', 'doc.forms.read', 'doc.content.copy'];
+const withHub = (config?: RenderPluginOptions): PluginSpec[] => [{ factory: 'interaction' }, ...render(config)];
+const RENDER_STATE = ['render::a'];
+const rect = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
+
+const snapshotCases: ScenarioCase[] = [
+  {
+    name: 'snapshot-a-drag-holds-its-box',
+    covers:
+      "The snapshot tool's drag holds its box in page space on the page the press was on: getSnapshotBox answers null while the drag is too small to be a box (4 view px at the press's scale) and on other pages, a move is kept on the page, and a move over another page moves nothing. The release holds it: the snapshot's picture renders the box once every change is in, as a PNG at snapshot.scale (2) with the page's turn, and getSnapshot answers the page, the rect and the picture. clearSnapshot lets it go once.",
+    plugins: withHub(),
+    engine: { documents: { a: doc({ allows: COPY }) } },
+    snapshot: RENDER_STATE,
+    steps: [
+      start,
+      open(),
+      v3('canSnapshot'),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(11)),
+      v3('onSnapshotChanged', { $fn: 'changed', returns: null }),
+      hub('activateTool', 'snapshot'),
+      pointer('down', 11, 100, 120, { scale: 1.5, rotation: 0 }),
+      v3('getSnapshotBox', pr(11)),
+      pointer('move', 11, 102, 121),
+      v3('getSnapshotBox', pr(11)),
+      pointer('move', 11, 400, 900),
+      v3('getSnapshotBox', pr(11)),
+      v3('getSnapshotBox', pr(22)),
+      pointer('move', 22, 50, 50),
+      v3('getSnapshotBox', pr(11)),
+      pointer('up', 11, 400, 500),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(11)),
+      settle('r0'),
+      v3('getSnapshot'),
+      v3('clearSnapshot'),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(11)),
+      v3('clearSnapshot'),
+    ],
+  },
+  {
+    name: 'snapshot-a-click-takes-the-whole-page',
+    covers:
+      "A click (a drag under 4 view px) takes the whole page, turned as the page was shown, at snapshot.scale lowered to the deployment's maxRenderPixels. Letting it go while its picture renders aborts the render and rejects the picture operation-cancelled. A drag dragged up and left is the same box; a release over a gap keeps the last point; the next press lets the held snapshot go, and a cancelled drag leaves no box.",
+    plugins: withHub({ snapshot: { scale: 3 } }),
+    engine: {
+      documents: {
+        a: doc({ allows: COPY, policy: { ...LATTICE, maxRenderPixels: 400_000 } }),
+      },
+    },
+    snapshot: RENDER_STATE,
+    steps: [
+      start,
+      open(),
+      v3('onSnapshotChanged', { $fn: 'changed', returns: null }),
+      hub('activateTool', 'snapshot'),
+      pointer('down', 22, 300, 200, { scale: 2, rotation: 90 }),
+      pointer('up', 22, 301, 201),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(22)),
+      v3('clearSnapshot'),
+      v3('getSnapshot'),
+      pointer('down', 11, 500, 700, { rotation: 270 }),
+      pointer('move', 11, 450, 650),
+      pointer('up', null, 10, 10),
+      v3('getSnapshot'),
+      settle('r1'),
+      pointer('down', 33, 10, 10, { scale: 1 }),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(33)),
+      pointer('move', 33, 200, 200),
+      v3('getSnapshotBox', pr(33)),
+      pointer('cancel', 33, 200, 200),
+      v3('getSnapshotBox', pr(33)),
+      v3('getSnapshot'),
+    ],
+  },
+  {
+    name: 'snapshot-fits-16-megapixels-and-another-tool-lets-it-go',
+    covers:
+      'A snapshot whose picture would pass 16 million pixels at snapshot.scale is rendered at the largest scale that fits, counting whole pixels. Activating the snapshot tool again keeps the snapshot; another tool lets it go and stops its picture; a press between pages takes nothing.',
+    plugins: withHub({ snapshot: { scale: 10 } }),
+    engine: { documents: { a: doc({ allows: COPY }) } },
+    snapshot: RENDER_STATE,
+    steps: [
+      start,
+      open(),
+      v3('onSnapshotChanged', { $fn: 'changed', returns: null }),
+      hub('activateTool', 'snapshot'),
+      pointer('down', 11, 10, 10),
+      pointer('up', 11, 10, 10),
+      v3('getSnapshot'),
+      hub('activateTool', 'snapshot'),
+      v3('getSnapshot'),
+      hub('activateTool', 'pointer'),
+      v3('getSnapshot'),
+      hub('activateTool', 'snapshot'),
+      pointer('down', null, 10, 10),
+      v3('getSnapshotBox', pr(11)),
+      v3('getSnapshot'),
+    ],
+  },
+  {
+    name: 'snapshot-needs-content-copy',
+    covers:
+      'canSnapshot needs doc.render and doc.content.copy: without copying the snapshot tool takes no press and draws no box.',
+    plugins: withHub(),
+    engine: { documents: { a: doc() } },
+    snapshot: RENDER_STATE,
+    steps: [
+      start,
+      open(),
+      v3('canSnapshot'),
+      hub('activateTool', 'snapshot'),
+      pointer('down', 11, 10, 10),
+      pointer('move', 11, 300, 300),
+      pointer('up', 11, 300, 300),
+      v3('getSnapshotBox', pr(11)),
+      v3('getSnapshot'),
+    ],
+  },
+  {
+    name: 'snapshot-without-the-interaction-plugin',
+    covers:
+      'Without the interaction plugin there is no snapshot tool: canSnapshot still answers from the rights, getSnapshot and getSnapshotBox answer null, and clearSnapshot lets nothing go.',
+    plugins: render(),
+    engine: { documents: { a: doc({ allows: COPY }) } },
+    snapshot: RENDER_STATE,
+    steps: [
+      start,
+      open(),
+      v3('onSnapshotChanged', { $fn: 'changed', returns: null }),
+      v3('canSnapshot'),
+      v3('getSnapshot'),
+      v3('getSnapshotBox', pr(11)),
+      v3('clearSnapshot'),
+    ],
+  },
+  {
+    name: 'render-page-part-and-turned',
+    covers:
+      "renderPage with a rect renders that part of the page, cut at the page's edge and sized by width or scale, and with a rotation turns the picture; either renders for its caller alone, outside the raster store, so the same call asks again. A rect that misses the page (or only touches its edge) rejects invalid-input; a page the document lacks rejects not-found first; rotation 0 without a rect is the plain cached render; the signal aborts a part; a batch turns every page.",
+    plugins: withSignalsPlugin(),
+    engine: { documents: { a: doc() } },
+    ...UNSNAPSHOTTED,
+    steps: [
+      start,
+      open(),
+      v3('renderPage', pr(11), { rect: rect(-10, -20, 110, 70), scale: 2 }),
+      v3('renderPage', pr(11), { rect: rect(-10, -20, 110, 70), scale: 2 }),
+      v3('renderPage', pr(11), { rect: rect(600, 780, 50, 50), width: 300.6 }),
+      v3('renderPage', pr(11), { rect: rect(700, 0, 10, 10) }),
+      v3('renderPage', pr(11), { rect: rect(612, 0, 10, 10) }),
+      v3('renderPage', pr(99), { rect: rect(700, 0, 10, 10) }),
+      v3('renderPage', pr(22), { rotation: 90 }),
+      v3('renderPage', pr(22), { rotation: 0, width: 100 }),
+      v3('renderPage', pr(11), { rect: rect(0, 0, 10, 10), format: 'png', quality: 0.5, includeAnnotations: false }),
+      v3('renderPage', pr(33), { rect: rect(0, 0, 10, 10), signal: signal('part') }),
+      abortSignal('part'),
+      ...settleRange(0, 5),
+      v3('renderPages', [pr(11), pr(33)], { rotation: 180, scale: 0.5 }),
+      settle('r7'),
+      settle('r8'),
+    ],
+  },
+];
+
 export const suites: Suite[] = [
   {
     kind: 'scenario',
@@ -1578,5 +1770,11 @@ export const suites: Suite[] = [
     file: 'plugins/render-tile-plane.json',
     describes: 'packages/plugin/render: the tile manager behind tilesFor (engagement, levels, want sets, retention, settle, backpressure).',
     cases: tileCases,
+  },
+  {
+    kind: 'scenario',
+    file: 'plugins/render-snapshot.json',
+    describes: 'packages/plugin/render: the snapshot tool on the interaction hub, and renderPage for part of a page or a turned one.',
+    cases: snapshotCases,
   },
 ];
