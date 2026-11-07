@@ -75,3 +75,11 @@ pub fn standard_paint_font(font: epdf_fonts::StandardFont) -> StandardPaintFont 
         ))),
     }
 }
+
+/// `standardPaintFont(standardFontOf(font))`: the font of a box, drawn in its
+/// standard font, Helvetica for any other.
+pub fn standard_paint_font_of(font: &str) -> StandardPaintFont {
+    standard_paint_font(
+        epdf_fonts::StandardFont::from_name(font).unwrap_or(epdf_fonts::StandardFont::Helvetica),
+    )
+}
