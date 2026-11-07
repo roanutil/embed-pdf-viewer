@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { suites } from '../src/suites/shell';
 import { runScenario } from '../src/scenario';
+// The page-edit cases name the history plugin factory.
+import '../src/suites/history';
 import * as model from '../../../packages/plugin/shell/src/model';
 import { createTestContext } from '../../../packages/core/main/src/testing';
 import { createShellController } from '../../../packages/plugin/shell/src/controller';
@@ -421,7 +423,7 @@ type Saved = {
 const history = new URL('../historical/task-12b2c10/', import.meta.url);
 const saved = (p: string): unknown => JSON.parse(readFileSync(new URL(p, history), 'utf8'));
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
-test('prior i18n642 and actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel', async () => {
+test('prior i18n676 and actions160 commands83 link37 metadata17 and page-edit20 retain all inputs and every output channel', async () => {
   const available = [
     ...(await import('../src/suites/i18n')).suites,
     ...(await import('../src/suites/actions')).suites,
@@ -470,7 +472,7 @@ test('prior i18n642 and actions160 commands79 link37 metadata17 and page-edit19 
       }
     }
   }
-  assert.equal(count, 954);
+  assert.equal(count, 993);
 });
 test('all current shell inputs and complete outcomes remain independently replayable', async () => {
   const rows = saved('current-inputs-runtime.json') as Saved[];

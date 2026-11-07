@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { suites } from '../src/suites/view-manager';
 import { runScenario } from '../src/scenario';
+// The page-edit cases name the history plugin factory.
+import '../src/suites/history';
 const pure = suites[0];
 const live = suites[1];
 if (pure.kind !== 'function' || live.kind !== 'scenario') throw Error('view manager suites');
@@ -459,7 +461,7 @@ type Saved = {
   outcome?: unknown;
   result?: unknown;
 };
-test('prior shell47 i18n642 and actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel', async () => {
+test('prior shell47 i18n676 and actions160 commands83 link37 metadata17 and page-edit20 retain all inputs and every output channel', async () => {
   const available = [
     ...(await import('../src/suites/shell')).suites,
     ...(await import('../src/suites/i18n')).suites,
@@ -510,7 +512,7 @@ test('prior shell47 i18n642 and actions160 commands79 link37 metadata17 and page
       }
     }
   }
-  assert.equal(count, 1001);
+  assert.equal(count, 1040);
 });
 
 const history = new URL('../historical/task-12b2c11/', import.meta.url);

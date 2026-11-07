@@ -12,7 +12,7 @@
     {
       "slice": "i",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-i/accounting.json",
-      "sha256": "c24cc501a20a2a5a38ab3da8f68ac534b87c9c41a33f2b1f23ccc86632672eea",
+      "sha256": "f0d5cf7664eec1b9aa683b2d2e4f8f2dd28d92a69712e6edec18596b4d4c91f0",
       "original": 61,
       "current": 64,
       "mappings": [
@@ -26,7 +26,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "reads-without-a-measure-service",
-            "inputSha256": "493a871089c446acefc3874a4e8e7cb631ff3cbc6007472bc48956fbe1d4b8eb",
+            "inputSha256": "ec737e164f8960d654409e3f252829a307190cfcae48c87566dc342410428263",
             "fn": null
           },
           "disposition": "mapped",
@@ -53,7 +53,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "imperial-default-and-custom-presets",
-            "inputSha256": "e3d901c84ae1ad9a1c61b4d4f7731c515a5ea7488cf79ec19ce53ba5e0bfb3b3",
+            "inputSha256": "69274a373d9037e7b33613c2fd5390de4d616412fc006ca60b786e7ffeb53c1a",
             "fn": null
           },
           "disposition": "mapped",
@@ -80,7 +80,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "custom-default-measure",
-            "inputSha256": "dff4beb4612b2c71864b260daffa77c9dd1c4e8e7ce66b090c33d82e7a850afc",
+            "inputSha256": "6811ae8609dd9d3a44cc604fb6e607300b6a9b7b74fad8a7794cea2f613bbef5",
             "fn": null
           },
           "disposition": "mapped",
@@ -105,7 +105,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "measure-service-viewports",
-            "inputSha256": "9537815119f29cc2992ec7e89b867feaafdf93003656d222bd17009a0eb606fa",
+            "inputSha256": "d82ee9121ab3b84367b5beab2ec9764364acc871297dc0eb1702fb6e67b2b19f",
             "fn": null
           },
           "disposition": "mapped",
@@ -132,7 +132,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "viewport-reads-fail-refresh-and-rehydrate",
-            "inputSha256": "2abe3769b1c535f4d5e4b917567dd835e003e17251d0007d2c2bcf0ad3f426f1",
+            "inputSha256": "31ce288f28a4c35f7deb2785f0d79611ca80be8b9dfd10f97fe58bf53a905cbd",
             "fn": null
           },
           "disposition": "mapped",
@@ -158,7 +158,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "refresh-epochs",
-            "inputSha256": "39177e51ce088ce58ced585bb41010aa8550e7bb0419fbf915d92e4622ca503b",
+            "inputSha256": "714ff521a1224a57b65441e9c538397227f680e0a677130da578017afecb2f12",
             "fn": null
           },
           "disposition": "mapped",
@@ -184,7 +184,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "set-scale-on-one-page",
-            "inputSha256": "f1d0a183b1d5dfff9a14fad46cd936c11c0592ac9e05e606641b0e0c7180b17f",
+            "inputSha256": "6f2c497f708893d61b726ff3f0e85d98ac26272fab634a4e0a205eb82876a4e6",
             "fn": null
           },
           "disposition": "mapped",
@@ -210,7 +210,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "set-scale-on-several-pages",
-            "inputSha256": "9637fa9bb16226e3c453ed16cdeed8b6bf8cc775ebdbb5e4a69a79ec30c948cc",
+            "inputSha256": "6f16287257e638f7ed35731abe4c844decda97cddca5366dd03b80cb117eb975",
             "fn": null
           },
           "disposition": "mapped",
@@ -236,7 +236,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "set-scale-preflight",
-            "inputSha256": "ebe4c52f5efc5e09289279857da05a86c6216f5989a130cdcaec0fe5e7a699b5",
+            "inputSha256": "e362e8028fc5735b2211e1bc4608fa0e95338ec5aa561dd00ea17cf0dd683f74",
             "fn": null
           },
           "disposition": "mapped",
@@ -262,7 +262,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "units-precision-and-presets",
-            "inputSha256": "2b0c7c75c007bd7ad0634e38d76853cdba403ca7b7d8f974c70e4d8f21f798cc",
+            "inputSha256": "254ac1ea317b4b8a25a6c63f4b99a35bba754fe0d56f1f72661cd0e5077bbbce",
             "fn": null
           },
           "disposition": "mapped",
@@ -288,7 +288,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "service-writes-and-foreign-scales",
-            "inputSha256": "b2bc49596842b40ccbb9090050f55d619b0caa28ea2f4a1009f81881c2b318c3",
+            "inputSha256": "0cbe6ef7867bcfb819313f02c2ede649cb5d0ba5d6060399ce175d10669765ad",
             "fn": null
           },
           "disposition": "mapped",
@@ -314,7 +314,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "calibration-flow",
-            "inputSha256": "f27c08a03ecc2dcb4b1516f8c27ae394b57e9d1d14d2536b744fc1af82065fc7",
+            "inputSha256": "ddc78ce0a7612398ae4255383566887df99b734178b54550d25b4cee1b45bc92",
             "fn": null
           },
           "disposition": "mapped",
@@ -397,7 +397,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "create-measurement",
-            "inputSha256": "33e33f07f887c040656445cfa4535cb4475f10c400654fead0dbccbcda8be8c3",
+            "inputSha256": "1d6fdf187fd02e32efd23ab24e4d6c8c6fbf98dbc1319c23ea8165f7f38abf18",
             "fn": null
           },
           "disposition": "mapped",
@@ -424,7 +424,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "listener-throws",
-            "inputSha256": "5da2e566c42ef02d9027adc95cd44be01354777124c25f28bc987ee25edbb6c5",
+            "inputSha256": "ab7c3a785d324cc13f33e7d5847c0529eb9ddd80f89c0be353f0f0efd65ce86f",
             "fn": null
           },
           "disposition": "mapped",
@@ -451,7 +451,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "pages-inserted-and-removed",
-            "inputSha256": "977bb49f679a7cc76a9c6cbc9499d8c6077f79376f66b9c8cfd5970c953c195a",
+            "inputSha256": "55a0cfa1df9847247fcf158918775d3e3fe6b303e2ebc2f96829dc99c0bddcb6",
             "fn": null
           },
           "disposition": "mapped",
@@ -477,7 +477,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "page-removed-while-a-change-waits",
-            "inputSha256": "f442b301f80714f911443f244c99c6a3adc0fa52946bdc5c4f7ac7dd68964dc8",
+            "inputSha256": "13cce4ad310759459dc9944e91de2d1ed6c768c6f2a612949c292732785f349e",
             "fn": null
           },
           "disposition": "mapped",
@@ -503,7 +503,7 @@
           "after": {
             "file": "plugins/measurement.json",
             "name": "close-mid-flight",
-            "inputSha256": "a6766054d2f6e1df0526903f38b6a22a95d6c0c52d618575470780375447c3fc",
+            "inputSha256": "802bbadc3fd345cb7a887fbf98fa1d5fcd1dd306b81740176d905695a4ab53c3",
             "fn": null
           },
           "disposition": "mapped",
@@ -654,7 +654,7 @@
           "after": {
             "file": "plugins/measurement-functions.json",
             "name": "reduce-reports",
-            "inputSha256": "4e353f15bdc18850664f6179e3e1be566ff8bf9702e539db9d0da0ef7845c98e",
+            "inputSha256": "2916fd338f8c73621652b8d6682068d00ce6156d2aa275beb7847941e4a6cad6",
             "fn": "setReports"
           },
           "disposition": "mapped",
@@ -1701,7 +1701,7 @@
               }
             ]
           },
-          "inputSha256": "8010b2c3dca90d4a51566163a56bb3156037f97ac0bbdd7f6b15bd0e3f55fd66",
+          "inputSha256": "64447c49058908ace391a8b0ec052f07c024e44526cf4e0cd9b9b274795e2f3c",
           "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
           "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
         },
@@ -1748,7 +1748,7 @@
               }
             ]
           },
-          "inputSha256": "9e1635f284275703cd2f853e8ef58e045236a517b476acef90b9ee0e54c356ec",
+          "inputSha256": "73a875817278a68c4d1efaed0ddcaab9fd2682b34de6b73a7d2b46612b20ce61",
           "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
           "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
         }
@@ -1757,7 +1757,7 @@
     {
       "slice": "ii",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-ii/accounting.json",
-      "sha256": "25edf6a08142d6a53ce680108a2473e4a9856fcc6eee0c5ba973bb7fd3c7ddc3",
+      "sha256": "a2e768b6c6b3478be705e23e52cf2fcd075504084e41d00ec6a20d159915e54c",
       "original": 50,
       "current": 57,
       "mappings": [
@@ -1803,7 +1803,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "mark-the-text-selection",
-            "inputSha256": "3774ba5bbf2d83da77452e594db5986d1f28ddddf6a2ff3b78e48c630789e2c9"
+            "inputSha256": "89a75f2822fe62d302c7548f7d0f1177e171c20b95960ccfc056cfe03be764a6"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -1869,7 +1869,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "the-redact-tool",
-            "inputSha256": "958fad1d58d6a454b5c05fd469f8315decb8eaf2c6ffaf2f6da97f10c7271364"
+            "inputSha256": "b6dc7b10d49be629b1bb38cce14c8eec931f024277ed35a5be65e3e9c44e1c48"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -1935,7 +1935,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "pending-projection",
-            "inputSha256": "a07196ffb32c9e12fbf58ffee7217f7a39f75b742cb1dc4a0070dd68d94a73f3"
+            "inputSha256": "ad55590c2cf796f39e831d3cd2ebaa97661a4c824fdfd69d343d9f6a194ba06f"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -1968,7 +1968,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "estimate-collateral",
-            "inputSha256": "fc9e7b87415bd688208499843193dace37583775977da47f2e8d828d2f5de5ec"
+            "inputSha256": "c7a4a7ea3ee9af830f3e7feb2b4c826a240c75c618a01940843d949e514f4b4b"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2001,7 +2001,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "apply-named-marks",
-            "inputSha256": "7b73dcc1df12efea29d50ac074544d868e1aae402b2233ac53caabbd780db73f"
+            "inputSha256": "0f1977d73a26a2c32ded8d212a92483e59568d211a23317855b777430d6b5d63"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2034,7 +2034,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "apply-all-pages",
-            "inputSha256": "936a051e6578161f207d925b8caa59ffcef004f433842d9d822bb704d91542ae"
+            "inputSha256": "b5b1aec0377b80a823d186aacb1d0c745035428195f805eecd9db6fdf255588b"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2067,7 +2067,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "apply-refused",
-            "inputSha256": "76bcc90b4e196fb2ac114660446e64c63463dadf14fc42e578c5635c28ed27fd"
+            "inputSha256": "0f3c942784baa1946b102b9e5332d104337009b4d48b2b872a2435f444f3370b"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2100,7 +2100,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "apply-refusals-before-the-engine",
-            "inputSha256": "3adfc22c7c279d446de148cefc780cf802516bda0acb8f5aaa91b8e24c6eee95"
+            "inputSha256": "e0bc8eed38a1c08a9064adf328f86c5705a98a6760a10b124be4e8db0b34eae2"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2133,7 +2133,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "remote-applies-arrive-as-events",
-            "inputSha256": "aa232e9e7ae33c0e64dcf8df8361d802794de0d2f9828d73edd4a8fb06ff9d58"
+            "inputSha256": "9a4056f79c4b7aef84bbed01f9e00fb8c1d028bdf2dabcc05a92cb639f8041da"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2166,7 +2166,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "a-throwing-listener-is-isolated",
-            "inputSha256": "c4d3b8a7d2da623cdf33af2f46603b73a738d3ff276ac062c0a6f55bcec7650f"
+            "inputSha256": "6c88f804b8043120e0a5467a248f4728bf223625ebd43061bd5b7293d1ac6d2b"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2199,7 +2199,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "set-label",
-            "inputSha256": "9ec1107310bb3e71d1f37c1a1759ac8e8214a7c0cdd84c43dde26bcf67b3833f"
+            "inputSha256": "24507a36e26e331df7f5d0cef1914d01f9e85d3e08c7a643a2dd41a353612d55"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2232,7 +2232,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "mark-area-and-page",
-            "inputSha256": "6aecc2977e8a4e4c6cdb0f1a2a7e44ed6005fb1136b7ea4a1d638c093510e544"
+            "inputSha256": "f3d90842ceec11d9692e55a20bd662ea97ac3090e91c0216c5789cd60e82d179"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2265,7 +2265,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "an-overlay-without-values-adds-nothing",
-            "inputSha256": "319f9babdca69f74d3d11c8a36c7bcd649e1ad74306f9349f23321bdc5918aa7"
+            "inputSha256": "5ba3563a40272632f969cdd3e497ca9f3813f4bf1e3f2fdeea2e8b27ea180cfe"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2298,7 +2298,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "mark-search-matches",
-            "inputSha256": "2340b44545ee7e0270df026795cd248cd1afa27435f2e1bd71e6415721ca1350"
+            "inputSha256": "849f77787abe4c0ecae292097f4377f2a4a4277fa9c873068d181bb2a6025947"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2364,7 +2364,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "unmark-and-clear",
-            "inputSha256": "f99da39277dc66d66ad7a3709bba9f71a6119571a68a836ffecf88632ebe056a"
+            "inputSha256": "7775268eb5aa3dc61ffd66f9404f294f13145a05bc3232493e66f93e5e07cbc0"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2397,7 +2397,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "apply-pages",
-            "inputSha256": "b1b841b193bc07acba6d0b2bdecfce85a3bd2c7c7dd22d618b8b59753ec6a9c9"
+            "inputSha256": "65fe6e666d08b287ca9be4a0dbed14ba1b619e158f930d238bfe17677c38e2ad"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2430,7 +2430,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "pending-reads",
-            "inputSha256": "4c962c87771918e8198ec46dfbe71bed6a62773b619dc8e2712bb6f3f3004b32"
+            "inputSha256": "7a37a15e2db34b5d849a97be1893b48efb54c2932533b6c829361a0d731f9977"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2463,7 +2463,7 @@
           "after": {
             "file": "plugins/redaction.json",
             "name": "update-label-refused",
-            "inputSha256": "c81cbd50e58a20fc5e62c3f25e0832a7c2f479cd58e4b31fe0f423fc76ea5ff3"
+            "inputSha256": "d8d97cfb3252c9f62c217fbde5ed493b67074e31625caad46a8f726860f1cdb2"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2645,7 +2645,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "no-document",
-            "inputSha256": "6c217e9b09fc5a0816331141429081c87aa3867aec953b42332d53b8b340885f"
+            "inputSha256": "18ff902d920290a2d6ab25885183ad49c2091a27a7be77ecb3dec8b947069960"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2678,7 +2678,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "no-pages",
-            "inputSha256": "f9a12b06320caa09e0c77e5892b006d2e3eca4b87aba518eec63dbd1b03321bb"
+            "inputSha256": "31ca8655bb7edf58812a445f13f39536c73a4193730857951b6dd476f340cf6d"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2711,7 +2711,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "no-marks",
-            "inputSha256": "b959008771338b5a63a4d5f30584bb4115f98fec12d3bc0973d439859f193d61"
+            "inputSha256": "78d95c76a15e4c7810e2dd9ddafcce79097ed717fa2a3851dc189df5f6561494"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2744,7 +2744,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "rect-mark-overlaps",
-            "inputSha256": "d57251434ce3b8c402cd0581c67c042dd0b4a73709ed2a70b8126ad81f3ac147"
+            "inputSha256": "65dc1523235d5f74e69a7fab87213759fa1406bd4bb3f196ec7b13dc079fe0e8"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2777,7 +2777,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "touching-edges-do-not-count",
-            "inputSha256": "00381c271335dad096e9fe155c0325344232ab1e97086063950555706a95b985"
+            "inputSha256": "8d6c0ea907d8e26772c9e4f4d92c0f571722ff8aceb92bfe3d851798739684c3"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2810,7 +2810,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "contained-and-containing",
-            "inputSha256": "f038b36df2f83fc0c08c00fce4470da60367ed58948d300ee437dd92ffefe038"
+            "inputSha256": "ab38c7ea65d2a0b5a3bee97b559388b2b3ba873bb4eb144f5fccb184702e974e"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2843,7 +2843,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "sliver-overlap",
-            "inputSha256": "d7585e9d7a414809258c12d7e16d642fc45b96d96c262fc653af413e538bca7a"
+            "inputSha256": "50cd2cfd67b327862b75de8b54a53293579ccc96f1a7fb915cfe569ecb47100d"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2876,7 +2876,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "quads-replace-the-rect",
-            "inputSha256": "3db49c42e65dbc0a55d7ee303c4303c0fa89cbc5ce565d2251358ce17831eac1"
+            "inputSha256": "663a5d651e80404cf40ad49e2265b3a06bfa01a4926caf30f4a58da02ecc4a64"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2909,7 +2909,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "tilted-quad-box",
-            "inputSha256": "c52b82ad2c899a7a5a75f887a6b2c731c05f13716e51005daa1035341cdc8bc6"
+            "inputSha256": "01a82490f50088d29fd013a1340424a42817ac9bb23138ef98baf302626e032c"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2942,7 +2942,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "one-annotation-counts-once",
-            "inputSha256": "8d4234290cb2d02217f73726172e63fc0fa3b155622f2a1fc1ae00ecfd8ac21c"
+            "inputSha256": "edc71b1ef20415cda243539df390388d50a96f239cfb290bf2d189f2bf8b1057"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -2975,7 +2975,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "marks-are-never-collateral",
-            "inputSha256": "642c0aa32e2d4088d85496fe7c46c766a063f6b0f7035faabc2c688c9963922d"
+            "inputSha256": "da029ce94cd8d6a10402dc709548561a857a5054e773cc47f0cd84ea408d4652"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3008,7 +3008,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "filter-by-id",
-            "inputSha256": "d94c42abacb8eacf38c61ccc3744f9405d4f29d12fb5d9de6698dd9c69c085c8"
+            "inputSha256": "19389543716c49cb79dd2598df4d7b287f6546aaddc35671187da8d78cfb15ed"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3041,7 +3041,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "filter-matches-nothing",
-            "inputSha256": "8f26bac6bcadfcfc81e30eaf3214c924962ef727a92d81fea2140187a53181fc"
+            "inputSha256": "7965f71fbb37ba2ff84cff3e01ccf9ccc7a211a48524ee2fc0ab7cb70c560751"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3074,7 +3074,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "empty-filter",
-            "inputSha256": "e84b7edee6aebfdd8618932b57c900b6da2d46cca4ac020fbfe06b2a8c1472ec"
+            "inputSha256": "cdc8d948dcf3def75f5c97a55fa69caaed00ecfdee09971ba15b728eafad169f"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3107,7 +3107,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "null-filter-is-all",
-            "inputSha256": "6fc88ec155964c38e3671e3bb0be08fd03ba1205c9ae0f1160c5129d88ca5d99"
+            "inputSha256": "581d490fa4188f4c50b8eb60e5d12c95150b2be0c4c949960349084d826ba2a5"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3140,7 +3140,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "filter-by-nm-and-index",
-            "inputSha256": "444047d92c8c334aa0dc0bb511b61722d0eb735e0e1cd62fd35f28555b70e70c"
+            "inputSha256": "b8d7dd8e381a4dddf43e292f4e04e98ee6050ec05dea1363b5e19f90352e3083"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3173,7 +3173,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "pages-in-document-order",
-            "inputSha256": "70776716ae661f8abd34311d8ae117c40da19749d34bd8acbef3caf70072620f"
+            "inputSha256": "137cba374f4835bb31cd8bb77a74004c1edfb286b4dbbd6d3c6953dc1e262497"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3206,7 +3206,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "nan-geometry-never-intersects",
-            "inputSha256": "d374595c4f73c18766348d8b56069630418b4dcfcdb08b125dde9bd36baaacae"
+            "inputSha256": "71cfd0749ed88ae948a7abf6e83155e992feaf4e9b0b152a32d2eed69ecf8c79"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3239,7 +3239,7 @@
           "after": {
             "file": "plugins/redaction-functions.json",
             "name": "negative-and-fractional",
-            "inputSha256": "eb587937592200a7e3409a725d55db9eb0865b33418272036fe03a8ae18a024f"
+            "inputSha256": "5c8dac1716ea21727d0bdd349fc12a27b961a43d494c20634b868f31a5ce3016"
           },
           "disposition": "mapped",
           "task11InputDrift": false,
@@ -3268,7 +3268,7 @@
         {
           "file": "plugins/redaction.json",
           "name": "mark-ownership-and-flags",
-          "inputSha256": "4acb0ffe4d8bf9e0aa8b8bc0cba947642b670daa9d991d94fd08cea687ab75a3",
+          "inputSha256": "fa6383946fd268f87f04a26ffef06af6052d7cb7a35f0dbf0bfbaf1114abed11",
           "reason": "Self-scoped owner mutation/deletion authority plus foreign/unstamped/locked refusal and exact batch failures.",
           "evidence": [
             "packages/plugin/redaction/src/model.ts",
@@ -3291,7 +3291,7 @@
         {
           "file": "plugins/redaction.json",
           "name": "apply-queue-and-unchanged-page",
-          "inputSha256": "387d5871d4d28b852a8ceacbb1d3f734915677f774044bae823b8d0f0984e1fa",
+          "inputSha256": "59b61e856e1742abbd4475446b3c4ed2296f81714271ea9fcc299ed223128dc1",
           "reason": "Serialize two actual engine applies; preserve unrelated page-two marks and final engine history.",
           "evidence": [
             "packages/plugin/redaction/src/model.ts",
@@ -3314,7 +3314,7 @@
         {
           "file": "plugins/redaction.json",
           "name": "close-during-apply",
-          "inputSha256": "d7dd67c8a6162c7ce498fc1fb0955a19837705717dd2589da525eecf78c6d7e7",
+          "inputSha256": "131f9d6f43fab778218ee52b60c9f581be72d5a4124cb536cf57d502cbb276e3",
           "reason": "Actual instance-close cancellation/report, released listener and fresh document idle/result state.",
           "evidence": [
             "packages/plugin/redaction/src/model.ts",
@@ -3406,7 +3406,7 @@
         {
           "file": "plugins/redaction-functions.json",
           "name": "mark-of-text",
-          "inputSha256": "4f100c973849e805b6224987b0ea3425da316772075af2551fcf49d3fbe1076a",
+          "inputSha256": "d7bf8db01f6429affbfe9f38ffbd504e83e5df91eea879821440a76f0e0bb228",
           "reason": "Actual markOf projection preserves text quad kind/pageIndex/bounds.",
           "evidence": [
             "packages/plugin/redaction/src/model.ts",
@@ -3429,7 +3429,7 @@
         {
           "file": "plugins/redaction-functions.json",
           "name": "mark-of-area",
-          "inputSha256": "94486535878eca3b7898151fd31c776559ff1313f5a99bdfc9b279e2e87e0462",
+          "inputSha256": "ffe6ddb8036df89ebddf5ab420d9c12c1e49c54752b90ecfb73870c739e77f75",
           "reason": "Actual markOf projection preserves area bounds/label.",
           "evidence": [
             "packages/plugin/redaction/src/model.ts",
