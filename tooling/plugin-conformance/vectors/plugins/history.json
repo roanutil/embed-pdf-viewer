@@ -5493,12 +5493,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000002",
+                "label": {
+                  "key": "annotation.move"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -6261,12 +6289,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000003",
+                "label": {
+                  "key": "annotation.move"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000002",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 5,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -7375,12 +7431,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "annotation.move"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000003",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -9160,12 +9244,72 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000001",
+                "label": {
+                  "key": "annotation.move"
+                },
+                "undoOf": null,
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000002",
+                "label": {
+                  "key": "annotation.move"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -17806,7 +17950,7 @@
                   "settings": {
                     "limit": 1
                   },
-                  "changedKeys": [
+                  "changed": [
                     "limit"
                   ]
                 }
@@ -19225,7 +19369,7 @@
                   "settings": {
                     "limit": 0
                   },
-                  "changedKeys": [
+                  "changed": [
                     "limit"
                   ]
                 }
@@ -20181,7 +20325,7 @@
                   "settings": {
                     "limit": 100
                   },
-                  "changedKeys": [
+                  "changed": [
                     "limit"
                   ]
                 }
@@ -24755,12 +24899,200 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000001",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000002",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000003",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 3,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000003",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000005",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000002",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000006",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -26235,12 +26567,296 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000001",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000002",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000003",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 3,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000003",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000005",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000002",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000006",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000007",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000006",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000008",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000005",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000009",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000004",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 3,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -37970,12 +38586,72 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000003",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": null,
+                "merge": "text:10",
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 3,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": true
+              },
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000003",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 2,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -44598,12 +45274,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000003",
+                "label": {
+                  "key": "a"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -51955,12 +52659,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "a"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000002",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -54609,12 +55341,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000004",
+                "label": {
+                  "key": "a"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -63345,12 +64105,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000005",
+                "label": {
+                  "key": "annotation.text"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000001",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -68460,12 +69248,40 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "ctx.changes.pending is not a function"
+            "returned": [
+              {
+                "opId": "00000000-0000-7000-8000-000000000005",
+                "label": {
+                  "key": "b"
+                },
+                "undoOf": "00000000-0000-7000-8000-000000000003",
+                "merge": null,
+                "shows": [
+                  {
+                    "type": "annotations.update",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10
+                    },
+                    "patch": {
+                      "subtype": "square",
+                      "box": {
+                        "x": 1,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      }
+                    }
+                  }
+                ],
+                "held": false,
+                "history": false
               }
-            }
+            ]
           },
           "state": {
             "plugins": {
@@ -71105,9 +71921,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -71177,9 +71993,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -71249,9 +72065,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -71321,9 +72137,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -71393,9 +72209,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -71456,9 +72272,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },
@@ -76289,9 +77105,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": 1
+              "sub": null,
+              "ts": 0,
+              "serverId": 1
             }
           }
         },

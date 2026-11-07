@@ -478,7 +478,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -642,7 +642,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -800,7 +800,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -956,7 +956,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1112,7 +1112,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1274,7 +1274,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1430,7 +1430,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1586,7 +1586,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1742,7 +1742,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2475,7 +2475,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2596,7 +2596,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2707,7 +2707,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2815,7 +2815,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2923,7 +2923,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3081,7 +3081,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3150,7 +3150,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3272,7 +3272,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3341,7 +3341,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3453,7 +3453,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3522,7 +3522,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3631,7 +3631,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3700,7 +3700,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3809,7 +3809,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3878,7 +3878,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4278,7 +4278,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4380,7 +4380,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4549,7 +4549,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4618,7 +4618,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4727,7 +4727,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4796,7 +4796,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5376,7 +5376,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5445,7 +5445,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5594,7 +5594,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5663,7 +5663,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5790,7 +5790,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5859,7 +5859,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5982,7 +5982,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6051,7 +6051,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6174,7 +6174,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6243,7 +6243,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6366,7 +6366,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6435,7 +6435,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6878,7 +6878,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6947,7 +6947,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7056,7 +7056,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7125,7 +7125,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9800,7 +9800,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9909,7 +9909,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10013,7 +10013,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10115,7 +10115,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10217,7 +10217,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12006,7 +12006,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12121,7 +12121,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12230,7 +12230,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12334,7 +12334,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12436,7 +12436,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12538,7 +12538,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12674,7 +12674,7 @@
                     },
                     "permissions": {
                       "known": true,
-                      "flags": null,
+                      "bits": null,
                       "allAllowed": true,
                       "openedAs": "none",
                       "securityHandlerRevision": null,
@@ -13434,7 +13434,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13543,7 +13543,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13647,7 +13647,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13749,7 +13749,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13851,7 +13851,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13966,7 +13966,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15588,7 +15588,7 @@
                     },
                     "permissions": {
                       "known": true,
-                      "flags": null,
+                      "bits": null,
                       "allAllowed": true,
                       "openedAs": "none",
                       "securityHandlerRevision": null,
@@ -16126,7 +16126,7 @@
                     },
                     "permissions": {
                       "known": true,
-                      "flags": null,
+                      "bits": null,
                       "allAllowed": true,
                       "openedAs": "none",
                       "securityHandlerRevision": null,
@@ -17064,7 +17064,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17173,7 +17173,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17277,7 +17277,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17379,7 +17379,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17481,7 +17481,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18969,7 +18969,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19152,7 +19152,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19221,7 +19221,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19383,7 +19383,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19452,7 +19452,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19601,7 +19601,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19670,7 +19670,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19798,7 +19798,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19867,7 +19867,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19991,7 +19991,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20060,7 +20060,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20184,7 +20184,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20253,7 +20253,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20586,7 +20586,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20691,7 +20691,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20791,7 +20791,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20889,7 +20889,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20987,7 +20987,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21163,9 +21163,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -21183,7 +21183,6 @@
             "rotation": 90,
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 2,
               "pages": [
                 {
@@ -21303,9 +21302,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -21322,7 +21321,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 2,
               "pages": [
                 {
@@ -21442,9 +21440,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -21461,7 +21459,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 1,
               "pages": [
                 {
@@ -21528,9 +21525,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -21547,7 +21544,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 2,
               "pages": [
                 {
@@ -21667,9 +21663,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -21936,7 +21932,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21964,7 +21960,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -22204,7 +22200,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22232,7 +22228,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 2,
+                "revision": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -22472,7 +22468,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 2,
+                  "revision": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22500,7 +22496,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 3,
+                "revision": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -22634,7 +22630,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 3,
+                  "revision": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22662,7 +22658,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 4,
+                "revision": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -22902,7 +22898,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 4,
+                  "revision": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23054,7 +23050,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 4,
+                  "revision": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23634,7 +23630,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "lattice",
                     "fullPage": {
@@ -23798,7 +23794,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "lattice",
                     "fullPage": {
@@ -23873,7 +23869,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24035,7 +24031,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "lattice",
                     "fullPage": {
@@ -24110,7 +24106,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24179,7 +24175,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24345,7 +24341,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "lattice",
                     "fullPage": {
@@ -24420,7 +24416,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24489,7 +24485,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24558,7 +24554,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24845,7 +24841,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25798,7 +25794,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25900,7 +25896,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26002,7 +25998,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26104,7 +26100,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26206,7 +26202,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26303,7 +26299,7 @@
               "pendingPages": {
                 "$map": []
               },
-              "pagesSequence": 0,
+              "revision": 0,
               "renderPolicy": {
                 "kind": "continuous"
               },
@@ -26376,7 +26372,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26483,7 +26479,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26608,7 +26604,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26721,7 +26717,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26829,7 +26825,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27043,7 +27039,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27151,7 +27147,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27264,7 +27260,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27372,7 +27368,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27530,7 +27526,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27599,7 +27595,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27708,7 +27704,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27777,7 +27773,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27818,12 +27814,7 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "started"
           },
           "state": {
             "core": {
@@ -27891,7 +27882,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27960,7 +27951,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28491,7 +28482,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28683,7 +28674,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28752,7 +28743,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28867,7 +28858,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28936,7 +28927,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29051,7 +29042,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29120,7 +29111,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29235,7 +29226,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29304,7 +29295,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29419,7 +29410,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29488,7 +29479,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29603,7 +29594,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29672,7 +29663,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29787,7 +29778,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29856,7 +29847,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29981,7 +29972,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30050,7 +30041,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30170,7 +30161,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30239,7 +30230,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30354,7 +30345,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30423,7 +30414,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30536,7 +30527,7 @@
                     "pendingPages": {
                       "$map": []
                     },
-                    "pagesSequence": 0,
+                    "revision": 0,
                     "renderPolicy": {
                       "kind": "continuous"
                     },
@@ -30605,7 +30596,7 @@
                     "pendingPages": {
                       "$map": []
                     },
-                    "pagesSequence": 0,
+                    "revision": 0,
                     "renderPolicy": {
                       "kind": "continuous"
                     },
@@ -30701,7 +30692,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30770,7 +30761,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31134,7 +31125,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31238,7 +31229,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31367,7 +31358,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31497,7 +31488,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31601,7 +31592,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31705,7 +31696,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32406,7 +32397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32573,7 +32564,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32642,7 +32633,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32813,7 +32804,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32882,7 +32873,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32951,7 +32942,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33089,7 +33080,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33158,7 +33149,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33227,7 +33218,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33341,7 +33332,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33410,7 +33401,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33479,7 +33470,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33593,7 +33584,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33662,7 +33653,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33731,7 +33722,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33862,7 +33853,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33931,7 +33922,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34000,7 +33991,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34114,7 +34105,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34183,7 +34174,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34252,7 +34243,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34369,7 +34360,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34438,7 +34429,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34507,7 +34498,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34621,7 +34612,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34690,7 +34681,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34759,7 +34750,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34876,7 +34867,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34945,7 +34936,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35014,7 +35005,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35128,7 +35119,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35197,7 +35188,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35266,7 +35257,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35380,7 +35371,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35449,7 +35440,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35518,7 +35509,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35635,7 +35626,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35704,7 +35695,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35773,7 +35764,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35887,7 +35878,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -35956,7 +35947,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36025,7 +36016,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36173,7 +36164,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36242,7 +36233,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36353,7 +36344,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36422,7 +36413,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36535,7 +36526,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36604,7 +36595,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36773,7 +36764,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36842,7 +36833,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36947,7 +36938,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37016,7 +37007,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37658,7 +37649,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37816,7 +37807,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37885,7 +37876,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37997,7 +37988,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38066,7 +38057,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38195,7 +38186,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38296,7 +38287,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38912,7 +38903,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39027,7 +39018,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39138,7 +39129,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39236,7 +39227,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39334,7 +39325,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39492,7 +39483,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39561,7 +39552,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39676,7 +39667,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39745,7 +39736,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39847,7 +39838,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39916,7 +39907,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40018,7 +40009,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40087,7 +40078,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40191,12 +40182,7 @@
           "status": "created",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "created"
           },
           "state": {
             "core": {
@@ -40260,12 +40246,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "started"
           },
           "state": {
             "core": {
@@ -40316,12 +40297,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "started"
           },
           "state": {
             "core": {
@@ -40579,12 +40555,7 @@
           "status": "failed",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "failed"
           },
           "state": {
             "core": {
@@ -40757,12 +40728,7 @@
           "status": "destroyed",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "destroyed"
           },
           "state": {
             "core": {
@@ -41287,7 +41253,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41479,7 +41445,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41548,7 +41514,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41665,7 +41631,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41734,7 +41700,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41837,12 +41803,7 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "destroying"
           },
           "state": {
             "core": {
@@ -41976,12 +41937,7 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "destroyed"
           },
           "state": {
             "core": {
@@ -42568,7 +42524,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42776,7 +42732,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43220,7 +43176,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -44583,7 +44539,7 @@
                     },
                     "permissions": {
                       "known": true,
-                      "flags": null,
+                      "bits": null,
                       "allAllowed": true,
                       "openedAs": "none",
                       "securityHandlerRevision": null,
@@ -45763,7 +45719,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -45872,7 +45828,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -45976,7 +45932,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46130,7 +46086,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46199,7 +46155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46314,7 +46270,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46383,7 +46339,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46488,7 +46444,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46557,7 +46513,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46659,7 +46615,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46728,7 +46684,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46830,7 +46786,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46899,7 +46855,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47224,7 +47180,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47984,9 +47940,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -48004,7 +47960,6 @@
             "rotation": 90,
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 1,
               "pages": [
                 {
@@ -48324,7 +48279,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -48431,7 +48386,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -48948,7 +48903,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49053,7 +49008,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49181,7 +49136,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49292,7 +49247,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49403,7 +49358,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49514,7 +49469,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49625,7 +49580,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49736,7 +49691,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49910,7 +49865,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49979,7 +49934,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50094,7 +50049,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50163,7 +50118,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50514,7 +50469,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50722,7 +50677,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50938,7 +50893,7 @@
               "pendingPages": {
                 "$map": []
               },
-              "pagesSequence": 0,
+              "revision": 0,
               "renderPolicy": {
                 "kind": "continuous"
               },
@@ -51730,7 +51685,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52392,7 +52347,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52497,7 +52452,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52602,7 +52557,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53739,7 +53694,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53915,7 +53870,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53984,7 +53939,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54167,7 +54122,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54236,7 +54191,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54305,7 +54260,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54441,7 +54396,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54510,7 +54465,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54647,7 +54602,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54716,7 +54671,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54853,7 +54808,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54922,7 +54877,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55040,9 +54995,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -55233,7 +55188,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55335,7 +55290,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55745,7 +55700,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55866,7 +55821,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57004,7 +56959,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57109,7 +57064,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57630,7 +57585,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57844,7 +57799,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57952,7 +57907,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58060,7 +58015,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58180,7 +58135,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58290,7 +58245,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58485,7 +58440,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58554,7 +58509,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58672,7 +58627,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58741,7 +58696,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58886,7 +58841,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -59081,7 +59036,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -59150,7 +59105,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -59268,7 +59223,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -59337,7 +59292,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60410,12 +60365,7 @@
           "status": "failed",
           "engineState": {},
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "[scenario] \"status\" is not a function"
-              }
-            }
+            "returned": "failed"
           },
           "state": {
             "core": {
@@ -60611,9 +60561,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -60874,7 +60824,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60978,7 +60928,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61084,7 +61034,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61286,7 +61236,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61355,7 +61305,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61493,7 +61443,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61562,7 +61512,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61717,7 +61667,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61824,7 +61774,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62320,7 +62270,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62528,7 +62478,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62651,7 +62601,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62768,7 +62718,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62897,7 +62847,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62999,7 +62949,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63101,7 +63051,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63203,7 +63153,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63305,7 +63255,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63409,7 +63359,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63511,7 +63461,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63619,7 +63569,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64264,7 +64214,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64472,7 +64422,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64606,7 +64556,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64734,7 +64684,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64862,7 +64812,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64989,7 +64939,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65116,7 +65066,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65505,7 +65455,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65713,7 +65663,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65836,7 +65786,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65964,7 +65914,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66072,7 +66022,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66674,7 +66624,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66882,7 +66832,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66986,7 +66936,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67090,7 +67040,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67213,7 +67163,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67317,7 +67267,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67421,7 +67371,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67528,7 +67478,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67632,7 +67582,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67736,7 +67686,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67844,7 +67794,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67958,7 +67908,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68062,7 +68012,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68166,7 +68116,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68270,7 +68220,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68374,7 +68324,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68478,7 +68428,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68589,7 +68539,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69133,7 +69083,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69341,7 +69291,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69443,7 +69393,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69564,7 +69514,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69673,7 +69623,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69775,7 +69725,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69892,7 +69842,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70007,7 +69957,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70119,7 +70069,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70221,7 +70171,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70681,7 +70631,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70889,7 +70839,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70999,7 +70949,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71101,7 +71051,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71211,7 +71161,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71328,7 +71278,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71432,7 +71382,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71536,7 +71486,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72103,7 +72053,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72311,7 +72261,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72421,7 +72371,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72523,7 +72473,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72633,7 +72583,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72758,7 +72708,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72878,7 +72828,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72980,7 +72930,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73090,7 +73040,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73194,7 +73144,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73319,7 +73269,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73429,7 +73379,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73533,7 +73483,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73658,7 +73608,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73762,7 +73712,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73872,7 +73822,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73976,7 +73926,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74101,7 +74051,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74220,7 +74170,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74330,7 +74280,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74448,7 +74398,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74558,7 +74508,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74684,7 +74634,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74794,7 +74744,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74912,7 +74862,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75022,7 +74972,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75134,7 +75084,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75244,7 +75194,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75746,7 +75696,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75954,7 +75904,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76063,7 +76013,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76169,7 +76119,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76278,7 +76228,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76387,7 +76337,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76496,7 +76446,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76875,9 +76825,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -76894,7 +76844,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 1,
               "pages": [
                 {
@@ -77319,7 +77268,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -77583,7 +77532,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -77793,7 +77742,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78003,7 +77952,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78169,7 +78118,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78329,7 +78278,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78495,7 +78444,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78705,7 +78654,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78863,7 +78812,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78894,7 +78843,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -79028,7 +78977,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79133,7 +79082,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79290,7 +79239,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79403,7 +79352,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79508,7 +79457,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79618,7 +79567,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79723,7 +79672,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79836,7 +79785,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79941,7 +79890,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80046,7 +79995,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80151,7 +80100,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80256,7 +80205,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80361,7 +80310,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80501,9 +80450,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -80520,7 +80469,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 3,
               "pages": [
                 {
@@ -80912,7 +80860,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -81120,7 +81068,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -81148,7 +81096,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -81494,7 +81442,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -81702,7 +81650,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -81910,7 +81858,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -82170,7 +82118,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -82430,7 +82378,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -82690,7 +82638,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83297,7 +83245,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83505,7 +83453,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83615,7 +83563,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83725,7 +83673,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83850,7 +83798,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -83952,7 +83900,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84072,7 +84020,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84182,7 +84130,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84286,7 +84234,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84411,7 +84359,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84521,7 +84469,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84625,7 +84573,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84750,7 +84698,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84860,7 +84808,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -84964,7 +84912,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85089,7 +85037,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85199,7 +85147,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85303,7 +85251,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85428,7 +85376,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85538,7 +85486,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85642,7 +85590,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85767,7 +85715,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85877,7 +85825,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -85981,7 +85929,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86106,7 +86054,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86216,7 +86164,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86320,7 +86268,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86445,7 +86393,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86555,7 +86503,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86659,7 +86607,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86784,7 +86732,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86894,7 +86842,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -86998,7 +86946,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -87123,7 +87071,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -87233,7 +87181,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -87337,7 +87285,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -87462,7 +87410,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -87987,7 +87935,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88195,7 +88143,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88299,7 +88247,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88418,7 +88366,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88522,7 +88470,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88624,7 +88572,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88726,7 +88674,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88828,7 +88776,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -88930,7 +88878,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89032,7 +88980,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89202,7 +89150,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89271,7 +89219,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89380,7 +89328,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89449,7 +89397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89558,7 +89506,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -89627,7 +89575,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -90670,7 +90618,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -90878,7 +90826,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -90992,7 +90940,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -91306,7 +91254,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -91410,7 +91358,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -91514,7 +91462,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -91628,7 +91576,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -91732,7 +91680,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -92111,9 +92059,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -92130,7 +92078,6 @@
             ],
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 2,
               "pages": [
                 {
@@ -92642,7 +92589,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -92846,7 +92793,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -92915,7 +92862,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93075,7 +93022,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93144,7 +93091,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93406,7 +93353,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93475,7 +93422,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93682,7 +93629,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93751,7 +93698,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93906,7 +93853,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -93975,7 +93922,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94182,7 +94129,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94251,7 +94198,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94458,7 +94405,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94527,7 +94474,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94682,7 +94629,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94751,7 +94698,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94906,7 +94853,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -94975,7 +94922,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95130,7 +95077,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95199,7 +95146,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95354,7 +95301,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95423,7 +95370,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95448,7 +95395,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -95691,7 +95638,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95760,7 +95707,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95915,7 +95862,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -95984,7 +95931,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96139,7 +96086,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96208,7 +96155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96417,7 +96364,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96486,7 +96433,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96641,7 +96588,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96710,7 +96657,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96865,7 +96812,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -96934,7 +96881,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -97274,9 +97221,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "fake",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             },
             "meta": {
               "affectedPages": [],
@@ -97294,7 +97241,6 @@
             "rotation": 90,
             "layout": {
               "namedPages": [],
-              "labels": [],
               "pageCount": 1,
               "pages": [
                 {
@@ -97748,7 +97694,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -97925,7 +97871,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98101,7 +98047,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98144,7 +98090,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -98210,7 +98156,7 @@
               "args": [
                 {
                   "documentId": "a",
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "pages": [
                     {
                       "index": 0,
@@ -98346,7 +98292,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98468,7 +98414,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98626,7 +98572,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98736,7 +98682,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98914,7 +98860,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -98983,7 +98929,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -99115,7 +99061,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 1,
+                  "revision": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -99184,7 +99130,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -99986,7 +99932,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100091,7 +100037,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100200,7 +100146,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100360,7 +100306,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100479,7 +100425,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100608,7 +100554,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100727,7 +100673,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100911,7 +100857,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -100980,7 +100926,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101106,7 +101052,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101175,7 +101121,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101303,7 +101249,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101372,7 +101318,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101504,7 +101450,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101573,7 +101519,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101705,7 +101651,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101774,7 +101720,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101911,7 +101857,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -101980,7 +101926,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102117,7 +102063,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102186,7 +102132,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102381,7 +102327,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102450,7 +102396,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102520,7 +102466,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102658,7 +102604,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102727,7 +102673,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102797,7 +102743,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102918,7 +102864,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -102987,7 +102933,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103057,7 +103003,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103174,7 +103120,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103243,7 +103189,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103313,7 +103259,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103430,7 +103376,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103499,7 +103445,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -103569,7 +103515,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104032,7 +103978,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104232,7 +104178,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104301,7 +104247,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104370,7 +104316,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104495,7 +104441,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104564,7 +104510,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104633,7 +104579,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104743,7 +104689,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104812,7 +104758,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104881,7 +104827,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -104987,7 +104933,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105056,7 +105002,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105125,7 +105071,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105231,7 +105177,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105300,7 +105246,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105369,7 +105315,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105797,7 +105743,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -105899,7 +105845,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -106221,7 +106167,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -106326,7 +106272,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -106431,7 +106377,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -106546,7 +106492,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -106661,7 +106607,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107297,7 +107243,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107407,7 +107353,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107517,7 +107463,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107627,7 +107573,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107737,7 +107683,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107842,7 +107788,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -107947,7 +107893,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -108057,7 +108003,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -108162,7 +108108,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -108267,7 +108213,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },

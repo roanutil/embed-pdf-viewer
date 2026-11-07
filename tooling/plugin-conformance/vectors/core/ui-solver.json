@@ -925,15 +925,13 @@
               [
                 "g:a",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "overflow"
                 }
               ],
               [
                 "g:b",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "overflow"
                 }
               ]
             ]
@@ -945,13 +943,13 @@
                 {
                   "shedCount": 0,
                   "collapsed": false,
-                  "overflowed": false
+                  "overflowed": true
                 }
               ]
             ]
           },
-          "hasOverflow": false,
-          "length": 90,
+          "hasOverflow": true,
+          "length": 40,
           "complete": true
         }
       }
@@ -1009,15 +1007,13 @@
               [
                 "g:b",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "shed"
                 }
               ],
               [
                 "g:c",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "shed"
                 }
               ]
             ]
@@ -1027,7 +1023,7 @@
               [
                 "g",
                 {
-                  "shedCount": 0,
+                  "shedCount": 2,
                   "collapsed": false,
                   "overflowed": false
                 }
@@ -1035,7 +1031,7 @@
             ]
           },
           "hasOverflow": false,
-          "length": 140,
+          "length": 86,
           "complete": true
         }
       }
@@ -1094,22 +1090,19 @@
               [
                 "g:b",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "shed"
                 }
               ],
               [
                 "g:c",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "shed"
                 }
               ],
               [
                 "g:d",
                 {
-                  "kind": "variant",
-                  "variant": "icon"
+                  "kind": "shed"
                 }
               ]
             ]
@@ -1119,7 +1112,7 @@
               [
                 "g",
                 {
-                  "shedCount": 0,
+                  "shedCount": 3,
                   "collapsed": false,
                   "overflowed": false
                 }
@@ -1127,7 +1120,7 @@
             ]
           },
           "hasOverflow": false,
-          "length": 190,
+          "length": 86,
           "complete": true
         }
       }

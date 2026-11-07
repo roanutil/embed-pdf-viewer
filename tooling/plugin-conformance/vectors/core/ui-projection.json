@@ -61,8 +61,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -229,11 +228,11 @@
           {
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "panel:sidebar"
               },
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "page:settings",
                 "menu": "page-settings"
               }
@@ -243,7 +242,7 @@
             "labelKey": "zoom.title",
             "rows": [
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "zoom:menu",
                 "menu": "zoom"
               }
@@ -252,11 +251,11 @@
           {
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "pan:toggle"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "pointer:toggle"
               }
             ]
@@ -266,16 +265,16 @@
             "role": "radio",
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:view"
               },
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "mode:annotate",
                 "menu": "annotate-menu"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:shapes"
               }
             ]
@@ -341,8 +340,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -494,11 +492,11 @@
           {
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "panel:sidebar"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "page:settings"
               }
             ]
@@ -507,7 +505,7 @@
             "labelKey": "zoom.title",
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "zoom:menu"
               }
             ]
@@ -515,11 +513,11 @@
           {
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "pan:toggle"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "pointer:toggle"
               }
             ]
@@ -529,15 +527,15 @@
             "role": "radio",
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:view"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:annotate"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:shapes"
               }
             ]
@@ -603,8 +601,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -779,8 +776,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -1004,8 +1000,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -1174,7 +1169,7 @@
           {
             "rows": [
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "page:settings",
                 "menu": "page-settings"
               }
@@ -1183,7 +1178,7 @@
           {
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "pointer:toggle"
               }
             ]
@@ -1193,12 +1188,12 @@
             "role": "radio",
             "rows": [
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "mode:annotate",
                 "menu": "annotate-menu"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:shapes"
               }
             ]
@@ -1304,8 +1299,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -1420,7 +1414,7 @@
             "labelKey": "zoom.title",
             "rows": [
               {
-                "kind": "command",
+                "type": "command",
                 "command": "zoom:menu"
               }
             ]
@@ -1549,16 +1543,16 @@
       "outcome": {
         "returned": [
           {
-            "kind": "command",
+            "type": "command",
             "command": "mode:view"
           },
           {
-            "kind": "submenu",
+            "type": "submenu",
             "command": "mode:annotate",
             "menu": "annotate-menu"
           },
           {
-            "kind": "command",
+            "type": "command",
             "command": "mode:shapes"
           }
         ]
@@ -1778,12 +1772,12 @@
       "outcome": {
         "returned": [
           {
-            "kind": "submenu",
+            "type": "submenu",
             "command": "mode:annotate",
             "menu": "annotate-menu"
           },
           {
-            "kind": "command",
+            "type": "command",
             "command": "mode:shapes"
           }
         ]
@@ -1902,8 +1896,7 @@
                 "inline"
               ],
               "terminal": "zoom:menu",
-              "importance": 3,
-              "grow": false
+              "importance": 3
             }
           ]
         },
@@ -1987,7 +1980,7 @@
       "outcome": {
         "returned": [
           {
-            "kind": "submenu",
+            "type": "submenu",
             "command": "zoom:menu",
             "menu": "zoom"
           }
@@ -2052,8 +2045,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -2242,8 +2234,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -2392,8 +2383,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -2561,8 +2551,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -2713,8 +2702,7 @@
                         "inline"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3,
-                      "grow": false
+                      "importance": 3
                     }
                   ]
                 },
@@ -3025,7 +3013,7 @@
             {
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "page:settings",
                   "menu": "page-settings"
                 }
@@ -3035,7 +3023,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -3044,11 +3032,11 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pan:toggle"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -3058,16 +3046,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -3271,7 +3259,7 @@
             {
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "page:settings",
                   "menu": "page-settings"
                 }
@@ -3281,7 +3269,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -3290,11 +3278,11 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pan:toggle"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -3304,16 +3292,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -3517,7 +3505,7 @@
             {
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "page:settings",
                   "menu": "page-settings"
                 }
@@ -3527,7 +3515,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -3536,11 +3524,11 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pan:toggle"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -3550,16 +3538,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -3763,7 +3751,7 @@
             {
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "page:settings",
                   "menu": "page-settings"
                 }
@@ -3773,7 +3761,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -3782,11 +3770,11 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pan:toggle"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -3796,16 +3784,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -4009,7 +3997,7 @@
             {
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "page:settings",
                   "menu": "page-settings"
                 }
@@ -4019,7 +4007,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -4028,11 +4016,11 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pan:toggle"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -4042,16 +4030,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -4258,7 +4246,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -4267,7 +4255,7 @@
             {
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "pointer:toggle"
                 }
               ]
@@ -4277,16 +4265,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -4494,7 +4482,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -4505,16 +4493,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -4722,7 +4710,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -4733,16 +4721,16 @@
               "role": "radio",
               "rows": [
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:view"
                 },
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "mode:annotate",
                   "menu": "annotate-menu"
                 },
                 {
-                  "kind": "command",
+                  "type": "command",
                   "command": "mode:shapes"
                 }
               ]
@@ -4951,7 +4939,7 @@
               "labelKey": "zoom.title",
               "rows": [
                 {
-                  "kind": "submenu",
+                  "type": "submenu",
                   "command": "zoom:menu",
                   "menu": "zoom"
                 }
@@ -4961,12 +4949,12 @@
           "shed": {
             "modes": [
               {
-                "kind": "submenu",
+                "type": "submenu",
                 "command": "mode:annotate",
                 "menu": "annotate-menu"
               },
               {
-                "kind": "command",
+                "type": "command",
                 "command": "mode:shapes"
               }
             ]
@@ -5125,8 +5113,7 @@
                 [
                   "modes:mode:shapes",
                   {
-                    "kind": "variant",
-                    "variant": "icon"
+                    "kind": "shed"
                   }
                 ]
               ]
@@ -5160,7 +5147,7 @@
                 [
                   "modes",
                   {
-                    "shedCount": 0,
+                    "shedCount": 1,
                     "collapsed": false,
                     "overflowed": false
                   }
@@ -5168,11 +5155,18 @@
               ]
             },
             "hasOverflow": false,
-            "length": 420,
+            "length": 416,
             "complete": true
           },
           "overflow": [],
-          "shed": {}
+          "shed": {
+            "modes": [
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
         }
       }
     }

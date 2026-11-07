@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/render/src/tiles.ts: the aligned tile grid, paint and engine rects, bleedPx, coverage, the prefetch ring.",
+  "describes": "packages/plugin/render/src/tiles.ts: the aligned tile grid, paint and engine rects, bleed, coverage, the prefetch ring.",
   "cases": [
     {
       "name": "tileGrid/letter@0.1/256",
@@ -25955,7 +25955,7 @@
       }
     },
     {
-      "name": "bleedRect/negative-bleedPx",
+      "name": "bleedRect/negative-bleed",
       "fn": "bleedRect",
       "args": [
         {

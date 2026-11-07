@@ -2113,7 +2113,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2433,7 +2433,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2650,7 +2650,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2867,7 +2867,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3090,7 +3090,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3307,7 +3307,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3524,7 +3524,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3741,7 +3741,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3958,7 +3958,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4175,7 +4175,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4392,7 +4392,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4609,7 +4609,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "pagesSequence": 0,
+                  "revision": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18395,6 +18395,24 @@
                   }
                 }
               ]
+            },
+            {
+              "fn": "below.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 5,
+                    "y": 5
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -18405,11 +18423,8 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "handler.onPointerDown is not a function"
-              }
+            "returned": {
+              "$undefined": true
             }
           },
           "state": {
@@ -18744,6 +18759,34 @@
                   }
                 }
               ]
+            },
+            {
+              "fn": "below.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 400,
+                    "y": 400
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "point": {
+                      "x": 400,
+                      "y": 400
+                    }
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -18754,11 +18797,8 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "handler.onPointerDown is not a function"
-              }
+            "returned": {
+              "$undefined": true
             }
           },
           "state": {
@@ -56186,6 +56226,47 @@
                   }
                 }
               ]
+            },
+            {
+              "fn": "below.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 400,
+                    "y": 400
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "point": {
+                      "x": 400,
+                      "y": 400
+                    }
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "started",
+              "args": [
+                {
+                  "toolId": "pointer",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "pointerType": "mouse"
+                }
+              ]
             }
           ],
           "reports": [],
@@ -56196,11 +56277,8 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "TypeError",
-                "message": "handler.onPointerDown is not a function"
-              }
+            "returned": {
+              "$undefined": true
             }
           },
           "state": {
@@ -56219,7 +56297,36 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "below.onUp",
+              "args": [
+                {
+                  "phase": "up",
+                  "viewport": {
+                    "x": 400,
+                    "y": 400
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "point": {
+                      "x": 400,
+                      "y": 400
+                    }
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -57226,7 +57333,6 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
-              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -57252,7 +57358,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changedRefs": [
+              "changed": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -57266,9 +57372,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -57293,7 +57399,6 @@
             ],
             "rotation": 90,
             "layout": {
-              "labels": [],
               "pageCount": 3,
               "pages": [
                 {
@@ -57480,9 +57585,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -57515,7 +57620,6 @@
               }
             ],
             "layout": {
-              "labels": [],
               "pageCount": 3,
               "pages": [
                 {
@@ -57702,9 +57806,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -57729,7 +57833,6 @@
               }
             ],
             "layout": {
-              "labels": [],
               "pageCount": 2,
               "pages": [
                 {
@@ -57855,9 +57958,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -57908,7 +58011,6 @@
               }
             ],
             "layout": {
-              "labels": [],
               "pageCount": 3,
               "pages": [
                 {
@@ -58095,9 +58197,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -58774,7 +58876,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -59456,7 +59558,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 2,
+                "revision": 2,
                 "pages": [
                   {
                     "index": 1,
@@ -60022,7 +60124,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 3,
+                "revision": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -60324,7 +60426,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 4,
+                "revision": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -61767,7 +61869,6 @@
             ],
             "rotation": 90,
             "layout": {
-              "labels": [],
               "pageCount": 3,
               "pages": [
                 {
@@ -61954,9 +62055,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -62344,7 +62445,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "pagesSequence": 1,
+                "revision": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -63711,9 +63812,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -64222,9 +64323,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -64467,9 +64568,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         }
@@ -79840,9 +79941,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },
@@ -85581,6 +85682,62 @@
         },
         {
           "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "highlightHidden": false,
+                "selecting": true
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "highlightHidden": false,
+                "selecting": true
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [
             {
               "slice": "selection::a",
@@ -85748,152 +85905,6 @@
               }
             }
           ],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 4
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          },
-          "state": {
-            "plugins": {
-              "selection::a": {
-                "selection": {
-                  "anchor": {
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "glyph": 0
-                  },
-                  "focus": {
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "glyph": 6
-                  }
-                },
-                "segments": {
-                  "1": [
-                    {
-                      "quad": {
-                        "upperLeft": {
-                          "x": 50,
-                          "y": 50
-                        },
-                        "upperRight": {
-                          "x": 92,
-                          "y": 50
-                        },
-                        "lowerLeft": {
-                          "x": 50,
-                          "y": 62
-                        },
-                        "lowerRight": {
-                          "x": 92,
-                          "y": 62
-                        }
-                      },
-                      "rect": {
-                        "x": 50,
-                        "y": 50,
-                        "width": 42,
-                        "height": 12
-                      },
-                      "advance": 1
-                    }
-                  ]
-                },
-                "highlightHidden": false,
-                "selecting": true
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 4
-            }
-          },
-          "outcome": {
-            "returned": true
-          },
-          "state": {
-            "plugins": {
-              "selection::a": {
-                "selection": {
-                  "anchor": {
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "glyph": 0
-                  },
-                  "focus": {
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "glyph": 6
-                  }
-                },
-                "segments": {
-                  "1": [
-                    {
-                      "quad": {
-                        "upperLeft": {
-                          "x": 50,
-                          "y": 50
-                        },
-                        "upperRight": {
-                          "x": 92,
-                          "y": 50
-                        },
-                        "lowerLeft": {
-                          "x": 50,
-                          "y": 62
-                        },
-                        "lowerRight": {
-                          "x": 92,
-                          "y": 62
-                        }
-                      },
-                      "rect": {
-                        "x": 50,
-                        "y": 50,
-                        "width": 42,
-                        "height": 12
-                      },
-                      "advance": 1
-                    }
-                  ]
-                },
-                "highlightHidden": false,
-                "selecting": true
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
           "documentEvents": [],
           "engine": [],
           "callbacks": [],
@@ -87388,9 +87399,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "subject": null,
-              "at": "1970-01-01T00:00:00.000Z",
-              "serverSequence": null
+              "sub": null,
+              "ts": 0,
+              "serverId": null
             }
           }
         },

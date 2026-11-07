@@ -164,14 +164,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "sandbox.dispose",
-              "args": [
-                0
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "destroyed",
           "engineState": {},
@@ -336,12 +329,6 @@
               "args": []
             },
             {
-              "fn": "sandbox.dispose",
-              "args": [
-                0
-              ]
-            },
-            {
               "fn": "sandbox.factory",
               "args": [
                 1
@@ -394,14 +381,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "sandbox.dispose",
-              "args": [
-                1
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {},
@@ -1906,19 +1886,7 @@
             {
               "promise": 2,
               "resolved": [
-                {
-                  "event": {
-                    "rc": true,
-                    "value": null,
-                    "change": "",
-                    "selStart": 0,
-                    "selEnd": 0
-                  },
-                  "formEffects": [],
-                  "annotEffects": [],
-                  "uiEffects": [],
-                  "diagnostics": []
-                },
+                null,
                 {
                   "event": {
                     "rc": true,
@@ -1940,58 +1908,9 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "sandbox.factory",
-              "args": [
-                1
-              ]
-            },
-            {
-              "fn": "bootSources",
-              "args": []
-            },
-            {
-              "fn": "sandbox.boot",
-              "args": [
-                1,
-                [
-                  "retry()"
-                ],
-                {
-                  "document": {
-                    "id": "doc-1",
-                    "fileName": "x.pdf",
-                    "pageCount": 1,
-                    "pageNumber": 0
-                  },
-                  "identity": {
-                    "name": "",
-                    "loginName": "",
-                    "corporation": "",
-                    "email": ""
-                  },
-                  "environment": {
-                    "nowMs": 1000,
-                    "utcOffsetMinutes": 0,
-                    "randomSeed": 1966707430
-                  },
-                  "fields": [],
-                  "event": {
-                    "kind": "name-tree-boot"
-                  }
-                },
-                {
-                  "maxExecutionMs": 50,
-                  "maxMemoryBytes": 16777216,
-                  "maxStackBytes": 524288,
-                  "maxEffects": 256,
-                  "maxOutputBytes": 1048576
-                }
-              ]
-            },
-            {
               "fn": "sandbox.run",
               "args": [
-                1,
+                0,
                 "b()",
                 {
                   "document": {
@@ -2009,7 +1928,7 @@
                   "environment": {
                     "nowMs": 1000,
                     "utcOffsetMinutes": 0,
-                    "randomSeed": 1949929811
+                    "randomSeed": 1966707430
                   },
                   "fields": [],
                   "event": {
@@ -2296,54 +2215,9 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "sandbox.factory",
-              "args": [
-                1
-              ]
-            },
-            {
-              "fn": "sandbox.boot",
-              "args": [
-                1,
-                [
-                  "boot()"
-                ],
-                {
-                  "document": {
-                    "id": "doc-1",
-                    "fileName": "x.pdf",
-                    "pageCount": 1,
-                    "pageNumber": 0
-                  },
-                  "identity": {
-                    "name": "",
-                    "loginName": "",
-                    "corporation": "",
-                    "email": ""
-                  },
-                  "environment": {
-                    "nowMs": 1000,
-                    "utcOffsetMinutes": 0,
-                    "randomSeed": 1949929811
-                  },
-                  "fields": [],
-                  "event": {
-                    "kind": "name-tree-boot"
-                  }
-                },
-                {
-                  "maxExecutionMs": 50,
-                  "maxMemoryBytes": 16777216,
-                  "maxStackBytes": 524288,
-                  "maxEffects": 256,
-                  "maxOutputBytes": 1048576
-                }
-              ]
-            },
-            {
               "fn": "sandbox.run",
               "args": [
-                1,
+                0,
                 "after()",
                 {
                   "document": {
@@ -2361,7 +2235,7 @@
                   "environment": {
                     "nowMs": 1000,
                     "utcOffsetMinutes": 0,
-                    "randomSeed": 1933152192
+                    "randomSeed": 1949929811
                   },
                   "fields": [],
                   "event": {
@@ -2557,54 +2431,9 @@
               ]
             },
             {
-              "fn": "sandbox.factory",
-              "args": [
-                1
-              ]
-            },
-            {
-              "fn": "sandbox.boot",
-              "args": [
-                1,
-                [
-                  "boot()"
-                ],
-                {
-                  "document": {
-                    "id": "doc-1",
-                    "fileName": "x.pdf",
-                    "pageCount": 1,
-                    "pageNumber": 0
-                  },
-                  "identity": {
-                    "name": "",
-                    "loginName": "",
-                    "corporation": "",
-                    "email": ""
-                  },
-                  "environment": {
-                    "nowMs": 1000,
-                    "utcOffsetMinutes": 0,
-                    "randomSeed": 1966707430
-                  },
-                  "fields": [],
-                  "event": {
-                    "kind": "name-tree-boot"
-                  }
-                },
-                {
-                  "maxExecutionMs": 50,
-                  "maxMemoryBytes": 16777216,
-                  "maxStackBytes": 524288,
-                  "maxEffects": 256,
-                  "maxOutputBytes": 1048576
-                }
-              ]
-            },
-            {
               "fn": "sandbox.run",
               "args": [
-                1,
+                0,
                 "a()",
                 {
                   "document": {
@@ -2622,7 +2451,7 @@
                   "environment": {
                     "nowMs": 1000,
                     "utcOffsetMinutes": 0,
-                    "randomSeed": 1949929811
+                    "randomSeed": 1966707430
                   },
                   "fields": [],
                   "event": {
@@ -4482,14 +4311,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "sandbox.dispose",
-              "args": [
-                0
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {},
