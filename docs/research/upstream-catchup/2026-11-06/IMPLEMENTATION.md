@@ -226,3 +226,16 @@ Vectors are NOT committed. The regenerated output is kept at /tmp/regen-vectors 
 Accepted by the user: the committed plugin vectors are replaced by the output of the generator against the merged TypeScript at HEAD. `vectors:check` passes: 117 files current. Evidence for the decision: the committed vectors were written on a line of history (`df0dcfd04`) that predates the naming renames (PR F, `2ce3f7bc5`), and the generator could not run at that commit (`font-css` removed in `595fa2bd5`). The renames reached this branch through a merge.
 
 Residual review: after mapping confirmed renames (`family`→`kind`, `fieldFamily`→`fieldKind`, `size`→`sizeBytes`, `checksum`→`md5`, `changed`→`changedRefs`, `tx`→`transaction`, `sub`→`subject`, `ts`→`at`, `serverId`→`serverSequence`, `bits`→`flags`), about 52,000 leaf paths across 47 files still differ. Verified by sampling, not per path: state-shape renames in the TypeScript (`revision`→`pagesSequence`, `rotationThreshold`→`rotationThresholdDeg`, `cursor`→`turnGestures`) and removal of `action.warningFlags`. Not yet traced: the case-count changes (`len` differences in `outline`, `interaction`, `link`, `actions-script`, `acrojs-host`) and the `type` changes in the stage and i18n vectors. Those are the first things to check.
+
+## Vector verification, step 2 (2026-11-06)
+
+Tooling bug fixed: three engine-facing meta literals still wrote `changed`, while the TypeScript reads `changedRefs` (outline suite `meta()`, the shared annotation `confirmation()` meta, and one signature suite meta). The outline title regression came from this bug. With the fix, the outline title counts match the committed vector exactly.
+
+Explained by TypeScript commits after the vector line (df0dcfd04 line):
+- Renames: field and key names listed earlier, `removePane`→`deletePane`, `selectionHandleGeom`→`selectionHandleGeometry`, and the origin fields.
+- i18n locale (`ar`→`en` at the first read): `58435c49a` (fallback loading) makes a locale not ready while the fallback loads.
+- Stage camera (search-stage, stage-capability): `1ed34c6fe` (turn pages past the edge) and `f45ac2990` (spreads step as one) change page and camera behavior.
+
+Not yet explained: ui-solver and ui-schema lengths and overflow flags (24 values); signature messages and codes (7); form-scripting (4); render-tile-plane (3); stamp-library (3); view-manager (17, besides the method rename); page-edit (12); signature-verify (2); ui-projection (3); stage-anchor (2); selection (1); i18n CHG beyond the locale (checked by the same commit).
+
+Vectors are not committed in this step. The regenerated set is in the working tree of the repo; the committed vectors remain at 71730f101.

@@ -199,7 +199,7 @@ const meta = (opId: string, changed: number[]) => ({
   cacheDelta: null,
   opId,
   undoable: true,
-  changed: changed.map(ref),
+  changedRefs: changed.map(ref),
 });
 const order = (parent: number | null, children: number[]) => ({
   parent: parent === null ? null : ref(parent),

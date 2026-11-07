@@ -487,7 +487,7 @@ const emit = (event: Dto): Step => {
           cacheDelta: null,
           opId: 'reorder',
           undoable: true,
-          changed: [currentSquare(900).ref],
+          changedRefs: [currentSquare(900).ref],
         },
         origin: ORIGIN,
       };

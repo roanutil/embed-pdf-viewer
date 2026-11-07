@@ -170,7 +170,7 @@ export function confirmation(
       cacheDelta: null,
       opId,
       undoable: true,
-      changed: [...refs],
+      changedRefs: [...refs],
     };
     // The explicit item discriminant fixes its event/result shape; no compatibility projection.
     items.push({ ...item, meta } as ChangeItem);
