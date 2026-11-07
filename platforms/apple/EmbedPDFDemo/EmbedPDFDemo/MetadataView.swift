@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MetadataView: View {
   let metadata: DocumentMetadata
+  let custom: CustomMetadata
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
@@ -17,13 +18,13 @@ struct MetadataView: View {
         Section("Producer") {
           row("Creator", metadata.creator)
           row("Producer", metadata.producer)
-          row("Created", metadata.created)
-          row("Modified", metadata.modified)
+          row("Created", metadata.createdAt)
+          row("Modified", metadata.modifiedAt)
         }
-        if !metadata.custom.isEmpty {
+        if !custom.isEmpty {
           Section("Custom") {
-            ForEach(metadata.custom.keys.sorted(), id: \.self) { key in
-              row(key, metadata.custom[key])
+            ForEach(custom.keys.sorted(), id: \.self) { key in
+              row(key, custom[key])
             }
           }
         }

@@ -35,7 +35,7 @@ struct DocumentView: View {
       Text(error.detail)
     }
     .sheet(item: $model.metadataSheet) { sheet in
-      MetadataView(metadata: sheet.metadata)
+      MetadataView(metadata: sheet.metadata, custom: sheet.custom)
     }
   }
 
@@ -49,6 +49,12 @@ struct DocumentView: View {
       } label: {
         Label("Open", systemImage: "doc.badge.plus")
       }
+    }
+    ToolbarItem(placement: .topBarTrailing) {
+      Button("Add note", systemImage: "note.text.badge.plus") { Task { await model.addNoteButtonTapped() } }
+        .labelStyle(.iconOnly)
+        .disabled(!model.canAddNote)
+        .accessibilityIdentifier("addNote")
     }
     ToolbarItem(placement: .topBarTrailing) {
       Button("Info", systemImage: "info.circle") { Task { await model.metadataButtonTapped() } }
@@ -82,7 +88,11 @@ private struct PagesView: View {
         .background(Color(.secondarySystemBackground))
       }
       .safeAreaInset(edge: .bottom) {
-        SearchBar(search: search)
+        VStack(spacing: 0) {
+          HistoryControls(model: opened.history).padding([.horizontal, .top])
+          SearchBar(search: search)
+        }
+        .background(.bar)
       }
       .onChange(of: search.activeIndex) { _, index in
         scrollToHit(index, proxy: proxy)

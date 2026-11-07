@@ -12,6 +12,8 @@ final class DocumentModel {
     let render: RenderCapability
     let search: SearchModel
     let metadata: MetadataCapability
+    let annotations: AnnotationCapability
+    let history: HistoryModel
   }
 
   struct PasswordPrompt: Identifiable {
@@ -24,11 +26,13 @@ final class DocumentModel {
   struct MetadataSheet: Identifiable {
     let id = UUID()
     let metadata: DocumentMetadata
+    let custom: CustomMetadata
   }
 
   private(set) var opened: Opened?
   var error: PDFError?
   private(set) var isOpening = false
+  private(set) var canAddNote = false
   var isImporting = false
   var passwordPrompt: PasswordPrompt?
   var metadataSheet: MetadataSheet?
@@ -37,7 +41,7 @@ final class DocumentModel {
   func task() async {
     guard viewer == nil else { return }
     do {
-      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig()))
+      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig(), interaction: true, annotation: "", history: true))
       try await viewer.start()
       self.viewer = viewer
     } catch {
@@ -73,12 +77,23 @@ final class DocumentModel {
     guard let opened else { return }
     do {
       try await opened.metadata.refresh()
+      try await opened.metadata.refreshCustom()
       if let metadata = try await opened.metadata.snapshot() {
-        metadataSheet = MetadataSheet(metadata: metadata)
+        metadataSheet = MetadataSheet(metadata: metadata, custom: try await opened.metadata.customSnapshot() ?? [:])
       }
     } catch {
       self.error = error
     }
+  }
+
+  func addNoteButtonTapped() async {
+    guard let opened, let page = opened.pages.first?.page else { return }
+    do {
+      _ = try await opened.annotations.create(
+        #"{"subtype":"text","rect":{"x":72,"y":72,"width":24,"height":24},"contents":"A note"}"#, on: page)
+      error = nil
+    } catch { self.error = error }
+    canAddNote = (try? await opened.annotations.canCreate()) ?? false
   }
 
   func errorDismissed() {
@@ -96,6 +111,7 @@ final class DocumentModel {
   private func open(_ data: Data, name: String, password: String? = nil) async {
     guard let viewer else { return }
     isOpening = true
+    canAddNote = false
     defer { isOpening = false }
     do {
       if let previous = opened?.document {
@@ -108,8 +124,11 @@ final class DocumentModel {
         pages: try await viewer.pages(of: document),
         render: try await viewer.render(in: document),
         search: SearchModel(search: try await viewer.search(in: document)),
-        metadata: try await viewer.metadata(for: document)
+        metadata: try await viewer.metadata(for: document),
+        annotations: try await viewer.annotations(for: document),
+        history: HistoryModel(viewer: viewer, history: try await viewer.history(for: document))
       )
+      canAddNote = try await opened?.annotations.canCreate() ?? false
       error = nil
     } catch where error.detail.contains("DocPassword") {
       passwordPrompt = PasswordPrompt(data: data, name: name)
