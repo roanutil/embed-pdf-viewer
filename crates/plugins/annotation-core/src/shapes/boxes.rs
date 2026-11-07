@@ -22,7 +22,7 @@ pub const TURNING_KINDS: [&str; 3] = ["square", "circle", "stamp"];
 pub fn draws_ellipse(annotation: &Object) -> bool {
     let subtype = json::get_str(annotation, "subtype");
     subtype == Some("circle")
-        || (subtype == Some("widget") && json::get_str(annotation, "fieldFamily") == Some("radio"))
+        || (subtype == Some("widget") && json::get_str(annotation, "fieldKind") == Some("radio"))
 }
 
 fn rect_member(annotation: &Object, name: &str) -> Rect {

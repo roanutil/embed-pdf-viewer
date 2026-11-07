@@ -20,7 +20,7 @@ use crate::error::CoreResult;
 use crate::flags::may_write;
 use crate::geometry::{geom_rotation, selection_quad};
 use crate::json::{self, Object};
-use crate::kinds::{AnnotationKind, field_family_of_kind, kind_named, widget_kind_of};
+use crate::kinds::{AnnotationKind, field_kind_of, kind_named, widget_kind_of};
 use crate::measurement::{distance_drawn_bounds, distance_layout, measurement_of};
 use crate::measurement_shape::shape_measurement_layout;
 use crate::rect::{rect_corner_points, rotated_aabb, union_rect};
@@ -48,12 +48,14 @@ pub fn annotation_key(reference: &Value) -> Option<String> {
     }
 }
 
-/// `kindOf(annotation)`: the kind its subtype, field family or intent names.
+/// `kindOf(annotation)`: the kind its subtype, field kind (or the mark in
+/// it) or intent names.
 pub fn kind_of(annotation: &Object) -> AnnotationKind {
     match json::get_str(annotation, "subtype") {
         Some("widget") => {
-            let family = json::get_str(annotation, "fieldFamily").unwrap_or("undefined");
-            kind_named(widget_kind_of(family))
+            let field_kind = json::get_str(annotation, "fieldKind").unwrap_or("undefined");
+            let has_mark = json::truthy(json::get(annotation, "hasMark"));
+            kind_named(widget_kind_of(field_kind, has_mark))
         }
         Some("free-text") => {
             kind_named(if json::get_str(annotation, "intent") == Some("free-text-callout") {
@@ -263,9 +265,9 @@ pub fn read_of_defaults(kind: &str, defaults: &FieldValues) -> Object {
         out.insert(k, v);
     }
     if subtype == "widget"
-        && let Some(family) = field_family_of_kind(kind)
+        && let Some(field_kind) = field_kind_of(kind)
     {
-        out.insert("fieldFamily".into(), Value::String(family.into()));
+        out.insert("fieldKind".into(), Value::String(field_kind.into()));
     }
     for (k, v) in defaults {
         out.insert(k.clone(), v.clone());

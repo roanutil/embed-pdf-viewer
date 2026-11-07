@@ -555,7 +555,7 @@ pub fn range_props(
     Ok((values, mixed))
 }
 
-/// `plainTextOf(doc)`: paragraphs joined by `\r`, runs concatenated.
+/// `plainTextOf(doc)`: paragraphs joined by `\n`, runs concatenated.
 pub fn plain_text_of(paragraphs: &[Value]) -> String {
     paragraphs
         .iter()
@@ -566,7 +566,7 @@ pub fn plain_text_of(paragraphs: &[Value]) -> String {
                 .unwrap_or_default()
         })
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n")
 }
 
 #[cfg(test)]

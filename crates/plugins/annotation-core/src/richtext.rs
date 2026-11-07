@@ -1,6 +1,6 @@
 //! `richtext.ts`: the rich text run algebra over a FreeText's rich document
 //! (engine `RichTextDocumentInput`). Offsets count UTF-16 code units of the
-//! plain projection: paragraphs joined by `\r`, runs concatenated.
+//! plain projection: paragraphs joined by `\n`, runs concatenated.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -387,7 +387,7 @@ pub fn plain_text_of(paragraphs: &[RichTextParagraph]) -> String {
         .iter()
         .map(|p| p.runs.iter().map(|r| r.text.as_str()).collect::<String>())
         .collect::<Vec<_>>()
-        .join("\r")
+        .join("\n")
 }
 
 const PARAGRAPH_PROPS: [&str; 6] =

@@ -1152,7 +1152,8 @@ pub fn annotation_of_resolved_draft(resolved: &Object, context: &DraftContext) -
         read.insert("actions".into(), actions);
     }
     if subtype == "widget" {
-        read.insert("fieldFamily".into(), Value::String("unknown".into()));
+        read.insert("fieldKind".into(), Value::String("unknown".into()));
+        read.insert("hasMark".into(), Value::Bool(false));
     }
     read
 }

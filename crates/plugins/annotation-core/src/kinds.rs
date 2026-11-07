@@ -125,6 +125,18 @@ fn color(key: &str, label: &str, label_key: &str) -> Value {
     ])
 }
 
+/// A color a panel may also set to none (`allowsNone`), which writes `null`:
+/// no stroke, no fill, no border.
+fn color_or_none(key: &str, label: &str, label_key: &str) -> Value {
+    property([
+        ("key", s(key)),
+        ("control", s("color")),
+        ("label", s(label)),
+        ("labelKey", s(label_key)),
+        ("allowsNone", Value::Bool(true)),
+    ])
+}
+
 fn number(key: &str, label: &str, label_key: &str, min: f64, max: f64, step: f64) -> Value {
     property([
         ("key", s(key)),
@@ -141,12 +153,13 @@ fn opacity() -> Value {
     number("opacity", "Opacity", "annotation.style.opacity", 0.1, 1.0, 0.05)
 }
 
+/// A shape's or a line's stroke: none keeps the fill and the stroke width.
 fn stroke() -> Value {
-    color("color", "Stroke", "annotation.style.stroke")
+    color_or_none("color", "Stroke", "annotation.style.stroke")
 }
 
 fn fill() -> Value {
-    color("interiorColor", "Fill", "annotation.style.fill")
+    color_or_none("interiorColor", "Fill", "annotation.style.fill")
 }
 
 fn color_field() -> Value {
@@ -359,7 +372,7 @@ fn text_box_fields() -> Vec<Value> {
         text_format("underline", "Underline"),
         text_align("Align", "annotation.style.align"),
         opacity(),
-        color("interiorColor", "Background", "annotation.style.background"),
+        color_or_none("interiorColor", "Background", "annotation.style.background"),
         color("color", "Border", "annotation.style.border"),
         number("strokeWidth", "Border width", "annotation.style.borderWidth", 0.0, 12.0, 0.5),
         linkable(),
@@ -420,8 +433,8 @@ fn attachment_fields() -> Vec<Value> {
 
 fn widget_box_fields() -> Vec<Value> {
     vec![
-        color("color", "Border color", "annotation.style.borderColor"),
-        color("interiorColor", "Background", "annotation.style.background"),
+        color_or_none("color", "Border color", "annotation.style.borderColor"),
+        color_or_none("interiorColor", "Background", "annotation.style.background"),
         number("strokeWidth", "Border width", "annotation.style.borderWidth", 0.0, 12.0, 0.5),
         border(false, "Border style", "annotation.style.borderStyle"),
     ]
@@ -762,7 +775,7 @@ fn kind(
 }
 
 /// The names of the kinds in `KINDS`, in its order.
-pub const KIND_NAMES: [&str; 24] = [
+pub const KIND_NAMES: [&str; 25] = [
     "square",
     "circle",
     "line",
@@ -787,6 +800,7 @@ pub const KIND_NAMES: [&str; 24] = [
     "widget-toggle",
     "widget-radio",
     "widget-box",
+    "widget-mark",
 ];
 
 /// The kind `KINDS` declares under `name`, if any.
@@ -963,6 +977,9 @@ pub fn declared_kind(name: &str) -> Option<AnnotationKind> {
         "widget-toggle" | "widget-radio" | "widget-box" => {
             kind(name, Family::Box, widget_style, None, widget_caps(), widget_box_fields)
         }
+        // A signature field's widget with a mark in it (`hasMark`): it shows
+        // the mark, not its box, so it has no style.
+        "widget-mark" => kind(name, Family::Box, widget_style, None, widget_caps(), no_fields),
         _ => return None,
     })
 }
@@ -988,9 +1005,13 @@ pub fn kind_named(name: &str) -> AnnotationKind {
     })
 }
 
-/// `widgetKindOf(family)`: the widget kind for a field family.
-pub fn widget_kind_of(family: &str) -> &'static str {
-    match family {
+/// `widgetKindOf(widget)`: the name of a widget's kind: the one with a
+/// mark in it, else its field kind's.
+pub fn widget_kind_of(field_kind: &str, has_mark: bool) -> &'static str {
+    if has_mark {
+        return "widget-mark";
+    }
+    match field_kind {
         "text" => "widget-text",
         "combobox" | "listbox" => "widget-choice",
         "pushbutton" => "widget-button",
@@ -1000,8 +1021,8 @@ pub fn widget_kind_of(family: &str) -> &'static str {
     }
 }
 
-/// `fieldFamilyOfKind(kind)`: the field family a widget kind stands for.
-pub fn field_family_of_kind(kind: &str) -> Option<&'static str> {
+/// `fieldKindOf(kind)`: the field kind a widget kind stands for.
+pub fn field_kind_of(kind: &str) -> Option<&'static str> {
     Some(match kind {
         "widget-text" => "text",
         "widget-choice" => "combobox",

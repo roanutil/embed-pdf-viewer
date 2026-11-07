@@ -396,10 +396,10 @@ js_object! {
     /// Snapping settings (`SnapSettings`).
     pub struct SnapSettings {
         "alignment" => pub alignment: bool,
-        "alignmentThreshold" => pub alignment_threshold: f64,
+        "alignmentThresholdPx" => pub alignment_threshold: f64,
         "rotation" => pub rotation: bool,
         "rotationAngles" => pub rotation_angles: Vec<f64>,
-        "rotationThreshold" => pub rotation_threshold: f64,
+        "rotationThresholdDeg" => pub rotation_threshold: f64,
     }
 }
 

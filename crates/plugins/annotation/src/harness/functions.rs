@@ -497,8 +497,16 @@ fn writable_target_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(writable_target(arg(args, 0)))
 }
 
+/// `widgetKindOf(widget)` on whatever the case passes: a value that is no
+/// object has no `fieldKind` or `hasMark`, as in JavaScript.
+fn widget_kind_of_value(widget: Option<&Value>) -> &'static str {
+    let member = |name: &str| widget.and_then(Value::as_object).and_then(|w| w.get(name));
+    let has_mark = epdf_annotation_core::json::truthy(member("hasMark"));
+    widget_kind_of(member("fieldKind").and_then(Value::as_str).unwrap_or("undefined"), has_mark)
+}
+
 fn widget_kind_of_fn(args: &[Value]) -> Result<Value, Error> {
-    Ok(json!(widget_kind_of(&text(args, 0))))
+    Ok(json!(widget_kind_of_value(args.first())))
 }
 
 fn widget_appearance_of_fn(args: &[Value]) -> Result<Value, Error> {
