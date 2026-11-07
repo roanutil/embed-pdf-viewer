@@ -79,13 +79,16 @@ function sandboxFactory(spec: SandboxSpec, env: PluginEnv): ScriptSandboxFactory
     env.log('sandbox.factory', [id]);
     const builds = spec.builds?.length ? spec.builds : [{}];
     const build = builds[Math.min(id, builds.length - 1)]!;
-    let disposed = false,
+    let destroyed = false,
       boots = 0,
       runs = 0;
     const answer = (answers: readonly SandboxAnswer[] | undefined, index: number): ScriptOutput => {
       const next = answers?.length ? answers[Math.min(index, answers.length - 1)]! : {};
-      if (next.dispose) disposed = true;
-      if (next.throws) throw makeError(next.throws);
+      if (next.dispose) destroyed = true;
+      if (next.throws) {
+        destroyed = true; // a runtime fault destroys the realm
+        throw makeError(next.throws);
+      }
       return {
         event: { rc: true, value: null, change: '', selStart: 0, selEnd: 0 },
         formEffects: [],
@@ -96,8 +99,8 @@ function sandboxFactory(spec: SandboxSpec, env: PluginEnv): ScriptSandboxFactory
       };
     };
     const sandbox: ScriptSandbox = {
-      get disposed() {
-        return disposed;
+      get destroyed() {
+        return destroyed;
       },
       boot(sources, input, budget) {
         env.log('sandbox.boot', [id, sources, input, budget]);
@@ -107,9 +110,9 @@ function sandboxFactory(spec: SandboxSpec, env: PluginEnv): ScriptSandboxFactory
         env.log('sandbox.run', [id, source, input, budget]);
         return answer(build.run, runs++);
       },
-      dispose() {
+      destroy() {
         env.log('sandbox.dispose', [id]);
-        disposed = true;
+        destroyed = true;
       },
     };
     if (build.rejects) return Promise.reject(makeError(build.rejects));

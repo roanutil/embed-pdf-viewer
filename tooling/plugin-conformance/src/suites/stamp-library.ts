@@ -160,7 +160,7 @@ const importing: ScenarioCase[] = [
       importWithAssetName(PDF, {
         name: '',
         categories: [],
-        kind: 'initials',
+        assetKind: 'initials',
         assetName: { $fn: 'assetName', seq: [{ returns: 'First' }, {}, {}] },
       }),
       stamp('listLibraries'),

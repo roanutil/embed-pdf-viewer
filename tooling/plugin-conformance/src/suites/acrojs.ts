@@ -187,18 +187,21 @@ export function scriptedSandboxFactory(spec: SandboxSpec, env: PluginEnv): Scrip
     env.log('sandbox.factory', [id]);
     const builds = spec.builds && spec.builds.length > 0 ? spec.builds : [{}];
     const build: SandboxBuildSpec = builds[Math.min(id, builds.length - 1)];
-    let disposed = false;
+    let destroyed = false;
     let boots = 0;
     let runs = 0;
     const respond = (list: readonly SandboxAnswerSpec[] | undefined, index: number): ScriptOutput => {
       const answer: SandboxAnswerSpec = list && list.length > 0 ? list[Math.min(index, list.length - 1)] : {};
-      if (answer.dispose) disposed = true;
-      if (answer.throws) throw makeError(answer.throws);
+      if (answer.dispose) destroyed = true;
+      if (answer.throws) {
+        destroyed = true; // a runtime fault destroys the realm
+        throw makeError(answer.throws);
+      }
       return emptyOutput(answer.output);
     };
     const sandbox: ScriptSandbox = {
-      get disposed() {
-        return disposed;
+      get destroyed() {
+        return destroyed;
       },
       boot(sources, input, budget) {
         env.log('sandbox.boot', [id, sources, input, budget]);
@@ -210,9 +213,9 @@ export function scriptedSandboxFactory(spec: SandboxSpec, env: PluginEnv): Scrip
         runs += 1;
         return respond(build.run, runs - 1);
       },
-      dispose() {
+      destroy() {
         env.log('sandbox.dispose', [id]);
-        disposed = true;
+        destroyed = true;
       },
     };
     if (build.rejects) return Promise.reject(makeError(build.rejects));

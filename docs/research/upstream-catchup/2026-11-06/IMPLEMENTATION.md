@@ -214,3 +214,9 @@ Stops at, in order of the scenario that fails:
 2. `form-scripting` `the-time-budget` and `the-time-budget-shrinks` (also `a-fault-rebuilds-the-realm`): expect a realm rebuild behind a slow factory, through `sandbox.builds` and `settle('rebuild')`. The sandbox factory contract used by those fixtures must be checked against the current actions realm (`packages/plugin/actions/src/scripting/realm.ts`). Not yet investigated.
 
 Vectors are not regenerated in this step. Each regenerated group needs the same semantic review as before.
+
+## Plugin conformance generator runs end to end (2026-11-06)
+
+The generator now completes (exit 0) with the current API. Typecheck: 82 errors. Fixes in this step: sandbox members `destroyed` and `destroy()`, with runtime faults recorded as destroying the realm; the stamp import option `kind` renamed to `assetKind`; `fieldKind` on widget rows.
+
+Vectors are NOT committed. The regenerated output is kept at /tmp/regen-vectors in the container. Review shows 47 changed files; after mapping the confirmed key renames, about 52,000 leaf paths still differ. They are state-shape changes: `revision` to `pagesSequence`, `rotationThreshold` to `rotationThresholdDeg`, `cursor` to `turnGestures`, `action.warningFlags` removed, and others. The TypeScript renames behind them are in the starting commit, and the committed vectors were written after those commits yet still contain the old names. Those committed vectors were therefore not reproducible from the current TypeScript. Decision needed: accept the regenerated vectors as the oracle for the current TypeScript, or keep the committed vectors and treat the generator as the thing to fix.
