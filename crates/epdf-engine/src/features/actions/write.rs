@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use super::destination::PdfDestination;
 use super::reader::{ActionNode, ActionNodeKind, ActionTargetRef, ActionTree};
+use super::submit_flags::{SubmitFormFlagWrites, encode_submit_form_flags};
 use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::read::base::AnnotationActions;
@@ -67,9 +68,10 @@ pub enum ActionWriteKind<D = PdfDestination> {
         url: String,
         /// `None` submits every field the form exports.
         fields: Option<Vec<ActionTargetRef>>,
-        /// The raw `/Flags` word; 0 when left out.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<u32>,
+        /// The named `/Flags` bits, flat on the action; each off when left
+        /// out.
+        #[serde(flatten)]
+        flags: SubmitFormFlagWrites,
     },
 }
 
@@ -339,7 +341,7 @@ fn node_write_of<D: Clone>(node: &ActionNode<D>) -> Option<ActionWrite<D>> {
         ActionNodeKind::SubmitForm { payload: Some(payload) } => ActionWriteKind::SubmitForm {
             url: payload.url.clone(),
             fields: payload.fields.clone(),
-            flags: Some(payload.flags.raw),
+            flags: payload.flags.into(),
         },
         _ => return None,
     };
@@ -469,7 +471,11 @@ fn create_action(
         }
         ActionWriteKind::SubmitForm { url, fields, flags } => {
             let targets = fields.as_deref().map(targets_of);
-            document.create_submit_form_action(url, targets.as_deref(), flags.unwrap_or(0))
+            document.create_submit_form_action(
+                url,
+                targets.as_deref(),
+                encode_submit_form_flags(flags),
+            )
         }
     };
     made.map_err(|_| {

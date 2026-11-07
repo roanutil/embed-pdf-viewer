@@ -124,13 +124,11 @@ pub fn link_target_from_action_tree(tree: &ActionTree) -> PdfLinkTarget {
 mod tests {
     use super::*;
     use crate::features::actions::reader::ActionNode;
-    use crate::features::actions::vocabulary::ActionWarningFlags;
 
     fn tree(kind: ActionNodeKind) -> ActionTree {
         ActionTree {
             root: Some(ActionNode { kind, subtype: "Test".into(), next: Vec::new() }),
             incomplete: false,
-            warning_flags: ActionWarningFlags(0),
             warnings: Vec::new(),
         }
     }
@@ -153,12 +151,7 @@ mod tests {
     fn a_tree_whose_root_was_dropped_is_a_dead_end_rather_than_a_dead_link() {
         // `Unsupported`, not `None`. `None` means the annotation named
         // nowhere at all; this one named something the reader could not keep.
-        let empty = ActionTree {
-            root: None,
-            incomplete: false,
-            warning_flags: ActionWarningFlags(0),
-            warnings: Vec::new(),
-        };
+        let empty = ActionTree { root: None, incomplete: false, warnings: Vec::new() };
         assert_eq!(link_target_from_action_tree(&empty), PdfLinkTarget::Unsupported);
     }
 

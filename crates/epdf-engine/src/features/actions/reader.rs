@@ -52,6 +52,8 @@ pub struct SubmitFormPayload {
     /// everything eligible in exclude mode. Presence and emptiness are
     /// different states and the wire keeps them apart.
     pub fields: Option<Vec<ActionTargetRef>>,
+    /// The named `/Flags` bits, flat on the payload.
+    #[serde(flatten)]
     pub flags: SubmitFormFlags,
     /// `/CharSet`, extracted but not applied by this stack.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -190,9 +192,7 @@ pub struct ActionTree<D = PdfDestination> {
     pub root: Option<ActionNode<D>>,
     /// A consumer must never execute a tree whose `incomplete` is true.
     pub incomplete: bool,
-    /// The raw native bits, so a newer runtime's warnings survive an older
-    /// SDK.
-    pub warning_flags: ActionWarningFlags,
+    /// What the reader dropped or couldn't read, by name.
     pub warnings: Vec<ActionWarning>,
 }
 
@@ -205,7 +205,6 @@ impl<D> ActionTree<D> {
         Ok(ActionTree {
             root: self.root.map(|root| root.try_map_destinations(convert)).transpose()?,
             incomplete: self.incomplete,
-            warning_flags: self.warning_flags,
             warnings: self.warnings,
         })
     }
@@ -271,7 +270,7 @@ pub fn read_action_model(
         warnings.push(ActionWarning::PayloadDropped);
     }
 
-    Ok(ActionTree { root, incomplete, warning_flags, warnings })
+    Ok(ActionTree { root, incomplete, warnings })
 }
 
 fn validate_node_id(raw: i64, node_count: u32) -> Result<ActionNodeId, EngineError> {

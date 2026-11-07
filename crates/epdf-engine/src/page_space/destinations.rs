@@ -238,7 +238,6 @@ mod tests {
 
     use super::*;
     use crate::features::actions::reader::{ActionNode, ActionNodeKind};
-    use crate::features::actions::vocabulary::ActionWarningFlags;
     use crate::geom::PdfRect;
 
     fn page(n: u32) -> PageObjectNumber {
@@ -397,7 +396,6 @@ mod tests {
     fn every_goto_in_an_action_tree_converts_down_its_next_chain() {
         let tree = ActionTree {
             incomplete: false,
-            warning_flags: ActionWarningFlags(0),
             warnings: Vec::new(),
             root: Some(node(
                 ActionNodeKind::Goto {
