@@ -9,19 +9,19 @@
   "currentOwners": [
     {
       "path": "packages/plugin/i18n/src/controller.ts",
-      "sha256": "1d2541e81fa00066a7893fff888de39fb009ec1a819645fe593fac25c43697a6"
+      "sha256": "88e0ab02c4ddfe395661662c04f19df6d12d2a3350b94fa49b61bc32225866fe"
     },
     {
       "path": "packages/plugin/i18n/src/contract.ts",
-      "sha256": "f4cb5989f5c27107470ce11856daf373795f83d7c9b0ccd20b7771b471752b46"
+      "sha256": "2c122cddf621f248638f294801245083829b7142c964de463d77b43e0c45cf7d"
     },
     {
       "path": "packages/plugin/i18n/src/model.ts",
-      "sha256": "16e427447c6117210eee3ed8a4d28a9848c9fece7c1dfb2b07ec79d29c77cfb8"
+      "sha256": "bec6527724c10afe55773d2d449981540775b7cafe938368d57ff4208bf038f0"
     },
     {
       "path": "packages/plugin/i18n/src/translate.ts",
-      "sha256": "bf9b0efa03272c5da9205edb012b1e0d6e29c874aec4c26fe7e45e75e8aa6a22"
+      "sha256": "bea7f6904be12b508ebe92ceebf03494031298a2e3e5765c2ced26fb147153d5"
     },
     {
       "path": "packages/plugin/i18n/src/negotiate.ts",
@@ -29,11 +29,11 @@
     },
     {
       "path": "packages/plugin/i18n/src/sync/loaders.ts",
-      "sha256": "18c8d4b1c236dcd097305aa13342242ab1ab59e9b9019d0c7f1e5784d1f5db72"
+      "sha256": "186aeead10b85fb9de091af36f17d2a40241ae1aab5e3f03f967a975f96d75b4"
     },
     {
       "path": "packages/plugin/i18n/src/i18n.plugin.ts",
-      "sha256": "92c38fdb64ade03135974dfa78d1fbfc4753170bd15fff486d8831f71c66b526"
+      "sha256": "9745ca86548defb59248b76be05f55863d8beeb26007a01a54c56180964027b0"
     }
   ],
   "contracts": {
