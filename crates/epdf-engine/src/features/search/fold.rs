@@ -9,8 +9,12 @@
 //! through the same fold, so the comparison is between two normalized forms
 //! rather than between a normalized one and a raw one.
 //!
-//! Fold version 1, in the order the steps apply:
+//! Fold version 2, in the order the steps apply:
 //!
+//! 0. Invisible characters are ignored, so a match runs straight across
+//!    them: format characters (soft hyphen, zero-width space and joiners,
+//!    bidi marks, `U+FEFF`), control codes other than whitespace, and
+//!    noncharacters (ac625667e).
 //! 1. A whitespace run collapses to a single space.
 //! 2. Each code point is NFKD-decomposed, so a ligature splits and a
 //!    superscript becomes its digit.
@@ -29,7 +33,7 @@ use crate::features::text::TextRange;
 
 /// Bump on any semantic change, so a stored pre-folded corpus is rebuilt
 /// rather than silently compared against differently folded needles.
-pub const SEARCH_FOLD_VERSION: u32 = 1;
+pub const SEARCH_FOLD_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct FoldOptions {
@@ -64,6 +68,26 @@ pub struct FoldedText {
 /// to matter.
 fn is_search_whitespace(c: char) -> bool {
     c.is_whitespace() || c == '\u{FEFF}'
+}
+
+/// Whether a character is invisible in print and meaningless to a reader
+/// (`IGNORABLE`): general category Cf or Cc, or a noncharacter. Tab and the
+/// line breaks are whitespace instead.
+fn is_ignorable(c: char) -> bool {
+    if matches!(c, '\t' | '\n' | '\u{0B}' | '\u{0C}' | '\r') {
+        return false;
+    }
+    let cp = u32::from(c);
+    crate::features::text::charmap::is_noncharacter(cp)
+        // Cc.
+        || matches!(cp, 0x00..=0x1F | 0x7F..=0x9F)
+        // Cf.
+        || matches!(cp,
+            0x00AD | 0x0600..=0x0605 | 0x061C | 0x06DD | 0x070F | 0x0890..=0x0891 | 0x08E2
+            | 0x180E | 0x200B..=0x200F | 0x202A..=0x202E | 0x2060..=0x2064
+            | 0x2066..=0x206F | 0xFEFF | 0xFFF9..=0xFFFB | 0x110BD | 0x110CD
+            | 0x13430..=0x1343F | 0x1BCA0..=0x1BCA3 | 0x1D173..=0x1D17A | 0xE0001
+            | 0xE0020..=0xE007F)
 }
 
 /// Whether a character is a combining mark, Unicode general category M.
@@ -151,6 +175,11 @@ pub fn fold_text(original: &str, options: FoldOptions) -> FoldedText {
     let mut index: u32 = 0;
 
     for cp in original.chars() {
+        // Before the whitespace test: JavaScript's `\s` includes `U+FEFF`.
+        if is_ignorable(cp) {
+            index += cp.len_utf16() as u32;
+            continue;
+        }
         let piece: String = if is_search_whitespace(cp) {
             " ".to_string()
         } else {
@@ -243,6 +272,16 @@ mod tests {
     //! `toOriginalRange` in `packages/engine/core/test/search/fold.test.ts`.
 
     use super::*;
+
+    #[test]
+    fn invisible_characters_fold_to_nothing_and_keep_the_way_back() {
+        // Fold version 2: a soft hyphen, a zero-width space and U+FEFF are
+        // ignored, so "co\u{AD}op" folds as "coop"; a tab stays whitespace.
+        let folded = fold_text("co\u{AD}o\u{200B}p\u{FEFF}\tx", FoldOptions::default());
+        assert_eq!(folded.folded, "coop x");
+        assert_eq!(folded.map, vec![0, 1, 3, 5, 7, 8]);
+        assert_eq!(SEARCH_FOLD_VERSION, 2);
+    }
 
     fn original(text: &str, start: usize, length: usize) -> Option<TextRange> {
         to_original_range(&fold_text(text, FoldOptions::default()), start, length)

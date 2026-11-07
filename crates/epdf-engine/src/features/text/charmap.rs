@@ -96,6 +96,75 @@ impl PageTextSnapshot {
     }
 }
 
+/// Whether a code point is one of Unicode's noncharacters (`isNoncharacter`):
+/// `U+FDD0..=U+FDEF` and the last two code points of every plane. Unicode
+/// reserves them for a program's internal use, so they are never text a
+/// document's author wrote.
+pub fn is_noncharacter(code_point: u32) -> bool {
+    (0xfdd0..=0xfdef).contains(&code_point) || code_point & 0xfffe == 0xfffe
+}
+
+/// The page text the engine returns, from the text as PDFium extracted it
+/// (`toPageText`, ac625667e):
+///
+/// - a line break is `\n`: PDFium writes `\r\n`, and its `\r` gives no text
+///   (a lone `\r` becomes `\n`);
+/// - a noncharacter gives no text: PDFium writes `U+FFFE` for a line-end
+///   hyphen it joined into one word, and for a glyph mapped to NUL.
+///
+/// Every character keeps its place in character space, so selection, boxes
+/// and hit ranges are the same before and after. Returns `extracted` itself
+/// when it has neither.
+pub fn to_page_text(extracted: PageTextSnapshot) -> PageTextSnapshot {
+    if !extracted.text.chars().any(|c| c == '\r' || is_noncharacter(u32::from(c))) {
+        return extracted;
+    }
+    let units: Vec<u16> = extracted.text.encode_utf16().collect();
+    let anchors = &extracted.char_map;
+    let mut text: Vec<u16> = Vec::with_capacity(units.len());
+    let mut char_map: Vec<CharMapAnchor> = Vec::new();
+    let mut anchor_index = 0usize;
+    let mut start = 0usize;
+    for char in 0..extracted.char_count {
+        let mut end = start + 1;
+        if anchor_index < anchors.len() && anchors[anchor_index].char == char + 1 {
+            end = anchors[anchor_index].text as usize;
+            anchor_index += 1;
+        }
+        // `text.slice(start, end)`: clamped, and empty when reversed.
+        let from = start.min(units.len());
+        let piece = page_text_of(&units[from..end.clamp(from, units.len())], units.get(end));
+        text.extend_from_slice(piece);
+        // An anchor after every character that gives other than one unit.
+        if piece.len() != 1 {
+            char_map.push(CharMapAnchor::new(char + 1, text.len() as u32));
+        }
+        start = end;
+    }
+    PageTextSnapshot {
+        text: String::from_utf16_lossy(&text),
+        char_count: extracted.char_count,
+        char_map,
+    }
+}
+
+const LINE_FEED: [u16; 1] = [0x0a];
+
+/// One character's text in the page text, given the unit that follows it
+/// (`pageTextOf`).
+fn page_text_of<'a>(extracted: &'a [u16], next: Option<&u16>) -> &'a [u16] {
+    if extracted == [0x0d] {
+        return if next == Some(&0x0a) { &[] } else { &LINE_FEED };
+    }
+    let first = char::decode_utf16(extracted.iter().copied()).next();
+    if let Some(Ok(c)) = first
+        && is_noncharacter(u32::from(c))
+    {
+        return &[];
+    }
+    extracted
+}
+
 /// The greatest anchor at or before `boundary`, with an implicit head.
 fn anchor_at_or_before(map: &[CharMapAnchor], boundary: u32) -> CharMapAnchor {
     // Binary search rather than a scan: a page of CJK text has an anchor per
@@ -272,4 +341,42 @@ pub fn char_map_violation(
     let tail = u64::from(prev_text) + u64::from(char_count - prev_char);
     (tail != u64::from(text_len_utf16))
         .then(|| format!("map projects charCount to {tail}, but text length is {text_len_utf16}"))
+}
+
+#[cfg(test)]
+mod page_text_tests {
+    //! `toPageText`'s rules (`packages/engine/core/test/text/charmap.test.ts`).
+    use super::*;
+
+    fn snapshot(text: &str, char_count: u32, char_map: Vec<CharMapAnchor>) -> PageTextSnapshot {
+        PageTextSnapshot { text: text.to_owned(), char_count, char_map }
+    }
+
+    #[test]
+    fn a_crlf_line_break_reads_as_one_lf_and_keeps_every_character_in_place() {
+        let read = to_page_text(snapshot("ab\r\ncd", 6, Vec::new()));
+        assert_eq!(read.text, "ab\ncd");
+        assert_eq!(read.char_count, 6);
+        assert_eq!(read.char_map, vec![CharMapAnchor::new(3, 2)]);
+        assert_eq!(char_map_violation(6, read.text_len_utf16(), &read.char_map), None);
+    }
+
+    #[test]
+    fn a_lone_cr_becomes_lf_and_a_joined_hyphen_gives_no_text() {
+        let read = to_page_text(snapshot("a\rb\u{FFFE}c", 5, Vec::new()));
+        assert_eq!(read.text, "a\nbc");
+        assert_eq!(read.char_map, vec![CharMapAnchor::new(4, 3)]);
+    }
+
+    #[test]
+    fn text_with_neither_comes_back_as_it_was() {
+        let plain = snapshot("abc", 3, Vec::new());
+        assert_eq!(to_page_text(plain.clone()), plain);
+    }
+
+    #[test]
+    fn noncharacters_are_the_reserved_range_and_each_planes_last_two() {
+        assert!(is_noncharacter(0xFDD0) && is_noncharacter(0xFFFF) && is_noncharacter(0x10FFFE));
+        assert!(!is_noncharacter(0xFDCF) && !is_noncharacter(0xFFFD));
+    }
 }
