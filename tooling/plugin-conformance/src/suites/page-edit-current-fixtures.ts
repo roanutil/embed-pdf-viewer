@@ -38,7 +38,7 @@ export const three = [page(10, 0), page(20, 1, 90, 300, 400), page(30, 2, 270, 5
 export const layout = (pages: readonly PageLayout[], labels?: readonly PageLabelSection[]) => ({
   pageCount: pages.length,
   pages: [...pages],
-  ...(labels ? { labels: [...labels] } : {}),
+  labels: labels ? [...labels] : [],
   namedPages: [],
 });
 /** `pages` as the engine lists them under `sections`: each at its index, labelled from them. */
@@ -50,16 +50,16 @@ export const labelled = (
 export const local: EventOrigin = {
   kind: 'local',
   sessionId: 's1',
-  sub: null,
-  ts: 0,
-  serverId: null,
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 export const remote: EventOrigin = {
   kind: 'remote',
   sessionId: 's2',
-  sub: 'other',
-  ts: 0,
-  serverId: null,
+  subject: 'other',
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 export const meta = {
   affectedPages: [],
@@ -215,7 +215,10 @@ export function bindTransactions(c: ScenarioCase): ScenarioCase {
                       return {
                         ...e,
                         meta: { ...e.meta, opId: id },
-                        origin: { ...e.origin, tx: { id, index, count: r.events!.length } },
+                        origin: {
+                          ...e.origin,
+                          transaction: { id, index, count: r.events!.length },
+                        },
                       };
                     default:
                       throw Error('page fixture expected page event');

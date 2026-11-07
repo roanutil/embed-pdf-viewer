@@ -27,7 +27,7 @@ test('current dispatcher executes document work before deferred navigation and U
   assert.deepEqual(calls[1]!.args[1], {
     origin: 'user',
     source: { kind: 'api' },
-    event: { scope: 'activate' },
+    event: { type: 'activate' },
   });
   assert.deepEqual(calls[2]!.args, ['https://a.test/', { isMap: true, origin: 'user' }]);
   assert.deepEqual(result.trace.flatMap((step) => step.settled).at(-1)?.resolved, {
@@ -659,7 +659,7 @@ test('every owned dispatch and submit result, observer report and callback order
   }
 });
 
-const user = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
+const user = { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } };
 const namedNode = (name: string) => ({ type: 'named', subtype: 'Named', name, next: [] });
 const scriptNode = (script: string) => ({
   type: 'javascript',
@@ -667,15 +667,14 @@ const scriptNode = (script: string) => ({
   script,
   next: [],
 });
-const treeValue = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
+const treeValue = (root: unknown) => ({ root, incomplete: false, warnings: [] });
 const request = {
   url: 'https://home.test/submit',
   method: 'post',
   format: 'fdf',
-  flagsRaw: 0,
   entries: [{ name: 'plain', value: 'visible' }],
   origin: 'user',
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 const intent = {
   url: 'https://home.test/submit',
@@ -684,7 +683,6 @@ const intent = {
   includeNoValueFields: false,
   format: 'fdf',
   method: 'post',
-  flagsRaw: 0,
 };
 
 test('raw tree resolution uses current refs, returns exact values and memoizes the catalog', async () => {
@@ -810,7 +808,6 @@ test('submit normalizes the resolver intent and sends current request fields and
               url: 'https://home.test/submit',
               format: 'fdf',
               method: 'post',
-              flagsRaw: 0,
               ...(charSet ? { charSet } : {}),
             },
             origin: 'user',
@@ -898,12 +895,12 @@ test('queued execution does not run or settle later work before the deferred exe
       {
         origin: 'hover',
         source: { kind: 'api' },
-        event: { scope: 'annotation', name: 'cursorEnter' },
+        event: { type: 'annotation', event: 'cursorEnter' },
       },
       {
         origin: 'lifecycle',
         source: { kind: 'document' },
-        event: { scope: 'document', name: 'open' },
+        event: { type: 'document', event: 'open' },
       },
       user,
       user,
@@ -967,15 +964,15 @@ test('pure trigger descriptors and URL encoding have exact independent results',
   const pure = suites.find((suite) => suite.file === 'plugins/actions.json')!;
   if (pure.kind !== 'function') throw new Error('missing pure suite');
   const events = [
-    { scope: 'activate' },
+    { type: 'activate' },
     ...['cursorEnter', 'cursorExit', 'mouseDown', 'mouseUp', 'focus', 'blur'].map((name) => ({
-      scope: 'annotation',
-      name,
+      type: 'annotation',
+      event: name,
     })),
-    ...['open', 'close', 'visible', 'invisible'].map((name) => ({ scope: 'page', name })),
+    ...['open', 'close', 'visible', 'invisible'].map((name) => ({ type: 'page', event: name })),
     ...['open', 'will-save', 'did-save', 'will-print', 'did-print', 'will-close'].map((name) => ({
-      scope: 'document',
-      name,
+      type: 'document',
+      event: name,
     })),
   ];
   const origins = [
@@ -1168,7 +1165,6 @@ const submitOp = (sentAt: string, charSet?: string) => ({
         url: 'https://home.test/submit',
         format: 'fdf',
         method: 'post',
-        flagsRaw: 0,
         ...(charSet ? { charSet } : {}),
       },
       origin: 'user',

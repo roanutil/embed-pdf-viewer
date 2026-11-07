@@ -317,6 +317,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -346,6 +347,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -376,6 +378,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -396,6 +399,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -425,6 +429,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -454,6 +459,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -474,6 +480,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -503,6 +510,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -523,6 +531,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -552,6 +561,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -572,6 +582,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -601,6 +612,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -620,6 +632,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -648,6 +661,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -667,6 +681,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -696,6 +711,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -716,6 +732,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -745,6 +762,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -765,6 +783,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -794,6 +813,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -810,6 +830,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -835,6 +856,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -852,6 +874,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -880,6 +903,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -899,6 +923,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -928,6 +953,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -948,6 +974,7 @@
           "menu": "other",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -977,6 +1004,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -996,6 +1024,7 @@
           ],
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1025,6 +1054,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1045,6 +1075,7 @@
           "menu": "zoom",
           "enabled": false,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1074,6 +1105,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1094,6 +1126,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": true,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1123,6 +1156,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1143,6 +1177,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": false,
           "categories": [
             "zoom"
@@ -1172,6 +1207,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1191,6 +1227,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1220,6 +1257,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1240,6 +1278,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1269,6 +1308,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1289,6 +1329,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1315,6 +1356,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1332,6 +1374,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1361,6 +1404,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1381,6 +1425,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1411,6 +1456,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1432,6 +1478,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1462,6 +1509,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "zoom"
@@ -1482,6 +1530,7 @@
           "menu": "zoom",
           "enabled": true,
           "active": false,
+          "pressable": false,
           "visible": true,
           "categories": [
             "other",

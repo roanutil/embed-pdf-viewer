@@ -20,7 +20,13 @@ import type {
   PageTextSnapshot,
 } from '@embedpdf/engine-core/runtime';
 const box = { x: 0, y: 0, width: 600, height: 800 };
-const origin: EventOrigin = { kind: 'local', sessionId: 'fake', sub: null, ts: 0, serverId: null };
+const origin: EventOrigin = {
+  kind: 'local',
+  sessionId: 'fake',
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
+};
 const page = (pon: number, index: number): PageLayout => ({
   index,
   ref: { kind: 'objectNumber', objectNumber: pon },
@@ -53,7 +59,7 @@ const unlockedSecurity: DocumentSecurityState = {
   encryption: { state: 'none', requiresPassword: false },
   permissions: {
     known: true,
-    bits: null,
+    flags: null,
     allAllowed: true,
     openedAs: 'none',
     securityHandlerRevision: null,
@@ -627,6 +633,7 @@ const cases: ScenarioCase[] = [
           pages: [ref1(1)],
           rotation: 90,
           layout: {
+            labels: [],
             namedPages: [],
             pageCount: 2,
             pages: [{ ...page(1, 0), rotation: 90 }, page(2, 1)],
@@ -641,7 +648,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.reordered',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(1, 1)] },
+          layout: { labels: [], namedPages: [], pageCount: 2, pages: [page(2, 0), page(1, 1)] },
         } satisfies DocumentEvent,
       },
       {
@@ -652,7 +659,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.deleted',
           pages: [ref1(1)],
-          layout: { namedPages: [], pageCount: 1, pages: [page(2, 0)] },
+          layout: { labels: [], namedPages: [], pageCount: 1, pages: [page(2, 0)] },
         } satisfies DocumentEvent,
       },
       {
@@ -663,7 +670,7 @@ const cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.inserted',
           insertedPages: [ref1(9)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(2, 0), page(9, 1)] },
+          layout: { labels: [], namedPages: [], pageCount: 2, pages: [page(2, 0), page(9, 1)] },
         } satisfies DocumentEvent,
       },
       {
@@ -755,7 +762,7 @@ const cases: ScenarioCase[] = [
       cap('ws', 'document'),
       settle('open-b', { $document: 'b' }),
       cap('alpha', 'documentId', [], 'b'),
-      kernel('status'),
+      kernel('getStatus'),
     ],
   },
   {
@@ -894,7 +901,7 @@ const cases: ScenarioCase[] = [
       probe({ id: 'late', token: 'late', requires: ['early'], connect: {} }),
       probe({ id: 'early', token: 'early', connect: {} }),
     ],
-    steps: [kernel('status'), start, kernel('status'), start, kernel('status'), start],
+    steps: [kernel('getStatus'), start, kernel('getStatus'), start, kernel('getStatus'), start],
   },
   {
     name: 'start-failure',
@@ -907,13 +914,13 @@ const cases: ScenarioCase[] = [
     engine: { documents: { a: doc() } },
     steps: [
       start,
-      kernel('status'),
+      kernel('getStatus'),
       start,
       kernel('capability', { $token: 'ws' }),
       kernel('tryCapability', { $token: 'ws' }),
       open(bytes('a')),
       destroy,
-      kernel('status'),
+      kernel('getStatus'),
     ],
   },
   {
@@ -934,10 +941,10 @@ const cases: ScenarioCase[] = [
       open(bytes('b')),
       cap('alpha', 'cleanup', ['late-registered'], 'a'),
       destroy,
-      kernel('status'),
+      kernel('getStatus'),
       settle('beta-teardown'),
       settle('beta-teardown'),
-      kernel('status'),
+      kernel('getStatus'),
       kernel('getState'),
       kernel('capability', { $token: 'ws' }),
       kernel('tryCapability', { $token: 'ws' }),
@@ -1166,7 +1173,12 @@ const cases: ScenarioCase[] = [
           type: 'pages.rotated',
           pages: [ref1(1)],
           rotation: 90,
-          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+          layout: {
+            labels: [],
+            namedPages: [],
+            pageCount: 1,
+            pages: [{ ...page(1, 0), rotation: 90 }],
+          },
         } satisfies DocumentEvent,
       },
       settle('policy', { kind: 'continuous' }),
@@ -1435,7 +1447,7 @@ const v3Cases: ScenarioCase[] = [
     name: 'connect-throws-at-start',
     covers: 'A workspace connect that throws fails start.',
     plugins: [probe(wsCtl('wsc', { connect: { throws: { message: 'cannot connect' } } }))],
-    steps: [start, kernel('status')],
+    steps: [start, kernel('getStatus')],
   },
   {
     name: 'connect-updates-and-listens',
@@ -1771,7 +1783,7 @@ const v3Cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.deleted',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 1, pages: [page(1, 0)] },
+          layout: { labels: [], namedPages: [], pageCount: 1, pages: [page(1, 0)] },
         } satisfies DocumentEvent,
       },
       api('getPage', 2),
@@ -1807,6 +1819,7 @@ const v3Cases: ScenarioCase[] = [
           type: 'pages.deleted',
           pages: [ref1(2)],
           layout: {
+            labels: [],
             namedPages: [],
             pageCount: 3,
             pages: [
@@ -1873,7 +1886,7 @@ const v3Cases: ScenarioCase[] = [
               encryption: { state: 'none', requiresPassword: false },
               permissions: {
                 known: true,
-                bits: null,
+                flags: null,
                 allAllowed: true,
                 openedAs: 'owner',
                 securityHandlerRevision: null,
@@ -1899,7 +1912,7 @@ const v3Cases: ScenarioCase[] = [
       api('docRead', 'security.allowsAnnotation', 'update', {}),
       api('docRead', 'security.allowsAnnotation', 'delete', {}),
       api('docRead', 'security.allowsAnnotation', 'set-group', { groupId: 'g1' }),
-      api('docRead', 'events.lastServerId'),
+      api('docRead', 'events.lastServerSequence'),
       open(bytes('b')),
       cap('ctl', 'docRead', ['security.allowsAnnotation', 'create'], 'b'),
       cap('ctl', 'docRead', ['security.allowsAnnotation', 'set-group', { groupId: 'g1' }], 'b'),
@@ -1983,7 +1996,7 @@ const v3Cases: ScenarioCase[] = [
           meta: mutationMeta,
           type: 'pages.reordered',
           pages: [ref1(2)],
-          layout: { namedPages: [], pageCount: 2, pages: [page(7, 0), page(1, 1)] },
+          layout: { labels: [], namedPages: [], pageCount: 2, pages: [page(7, 0), page(1, 1)] },
         } satisfies DocumentEvent,
       },
       docs('getRevision', 'a'),
@@ -2034,7 +2047,12 @@ const v3Cases: ScenarioCase[] = [
           type: 'pages.rotated',
           pages: [ref1(1)],
           rotation: 90,
-          layout: { namedPages: [], pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] },
+          layout: {
+            labels: [],
+            namedPages: [],
+            pageCount: 1,
+            pages: [{ ...page(1, 0), rotation: 90 }],
+          },
         } satisfies DocumentEvent,
       },
       docs('onClosed', { $fn: 'closedThrows', throws: { message: 'listener broke' } }),

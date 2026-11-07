@@ -29,8 +29,20 @@ const standard = (title: string | null = null) => ({
   modifiedAt: null,
   trapped: 'unknown',
 });
-const local = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null };
-const remote = { kind: 'remote', sessionId: 's2', sub: 'u-9', ts: 0, serverId: null };
+const local = {
+  kind: 'local',
+  sessionId: 's1',
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
+};
+const remote = {
+  kind: 'remote',
+  sessionId: 's2',
+  subject: 'u-9',
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
+};
 const value = (t: TraceEntry) =>
   t.outcome && 'returned' in t.outcome ? t.outcome.returned : undefined;
 const scenario = async (name: string) => {

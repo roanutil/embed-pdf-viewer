@@ -402,10 +402,10 @@ const harness = async (responses: ResponseSpec[] = [], allows: '*' | string[] = 
           origin: {
             kind: 'local',
             sessionId: 's1',
-            sub: null,
-            ts: 0,
-            serverId: null,
-            tx: { id, index, count },
+            subject: null,
+            at: '1970-01-01T00:00:00.000Z',
+            serverSequence: null,
+            transaction: { id, index, count },
           },
         };
       default:
@@ -1116,10 +1116,10 @@ test('each staged fixture answer/event names its exact current request opId and 
         assert.deepEqual(e.origin, {
           kind: 'local',
           sessionId: 's1',
-          sub: null,
-          ts: 0,
-          serverId: null,
-          tx: { id, index: i, count: a.events!.length },
+          subject: null,
+          at: '1970-01-01T00:00:00.000Z',
+          serverSequence: null,
+          transaction: { id, index: i, count: a.events!.length },
         });
       }
     }
@@ -1344,10 +1344,10 @@ const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>) => {
       assert.deepEqual(event.origin, {
         kind: 'local',
         sessionId: 's1',
-        sub: null,
-        ts: 0,
-        serverId: null,
-        tx: { id, index, count: events.length },
+        subject: null,
+        at: '1970-01-01T00:00:00.000Z',
+        serverSequence: null,
+        transaction: { id, index, count: events.length },
       });
     }
   }

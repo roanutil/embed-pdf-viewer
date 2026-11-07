@@ -65,7 +65,6 @@ const gotoNode = (pon: number) => ({
 const treeValue = (root: unknown, incomplete = false) => ({
   root,
   incomplete,
-  warningFlags: 0,
   warnings: incomplete ? ['incomplete'] : [],
 });
 const diagnostic = (code: string, message: string) => ({ code, message });
@@ -503,7 +502,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
         openSequence: 'off',
         javascript: {
           enabled: true,
-          sandbox: { builds: [{ run: [{ output: { uiEffects: [{ kind: 'print' }] } }] }] },
+          sandbox: { builds: [{ run: [{ output: { uiEffects: [{ type: 'print' }] } }] }] },
         },
       },
       {
@@ -606,7 +605,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
       log.length = 0;
       // This is the separate form-pipeline surface carry, not an executor policy exemption.
       actions.surfaceScriptResult({
-        uiEffects: [{ kind: 'print' }],
+        uiEffects: [{ type: 'print' }],
         diagnostics: [],
         origin: 'lifecycle',
         phase: 'user',
@@ -644,7 +643,7 @@ test('M14 executor print distinguishes kernel origin refusal, adapter policy and
       }
       assert.deepEqual(fake.unmatched, []);
     } finally {
-      ctx.dispose();
+      ctx.destroy();
       await doc.close();
     }
   }
@@ -792,7 +791,7 @@ test('six annotation events and first-party hints preserve full origin/source/ev
           {
             origin: index < 2 ? 'hover' : 'user',
             source: source(4, 7),
-            event: { scope: 'annotation', name: events[index] },
+            event: { type: 'annotation', event: events[index] },
           },
         ],
       },
@@ -808,7 +807,7 @@ test('six annotation events and first-party hints preserve full origin/source/ev
       fn: 'exec.named',
       args: [
         namedNode('e'),
-        { origin: 'hover', source: hint, event: { scope: 'annotation', name: 'cursorEnter' } },
+        { origin: 'hover', source: hint, event: { type: 'annotation', event: 'cursorEnter' } },
       ],
     },
     { fn: 'onExecuted', args: [{ tree: treeValue(namedNode('e')), result: done(), source: hint }] },
@@ -825,21 +824,21 @@ test('adapter installation coalesces reports and completion observers run once a
       fn: 'exec.goto',
       args: [
         gotoNode(3),
-        { origin: 'lifecycle', source: docSource, event: { scope: 'document', name: 'open' } },
+        { origin: 'lifecycle', source: docSource, event: { type: 'document', event: 'open' } },
       ],
     },
     {
       fn: 'exec.named',
       args: [
         namedNode('OpenAction'),
-        { origin: 'lifecycle', source: docSource, event: { scope: 'document', name: 'open' } },
+        { origin: 'lifecycle', source: docSource, event: { type: 'document', event: 'open' } },
       ],
     },
     {
       fn: 'exec.named',
       args: [
         namedNode('O-3'),
-        { origin: 'lifecycle', source: source(3), event: { scope: 'page', name: 'open' } },
+        { origin: 'lifecycle', source: source(3), event: { type: 'page', event: 'open' } },
       ],
     },
   ]);

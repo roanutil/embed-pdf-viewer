@@ -48,7 +48,13 @@ const UNSNAPSHOTTED = {
 
 // ── the v3 surface ────────────────────────────────────────────────────────────
 
-const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
+const LOCAL = {
+  kind: 'local' as const,
+  sessionId: 's1',
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
+};
 
 /** v2 stage method → v3 name. */
 const RENAMED: Readonly<Record<string, string>> = {
@@ -58,7 +64,7 @@ const RENAMED: Readonly<Record<string, string>> = {
   visiblePages: 'listVisiblePages',
   currentPage: 'getCurrentPageIndex',
   currentItemPages: 'listCurrentItemPages',
-  pageRect: 'getPageFrame',
+  pageRect: 'getPageBox',
   pageAt: 'getPageAt',
   pointOnPage: 'viewportToPage',
   pageRectToScreen: 'pageRectToViewport',
@@ -328,8 +334,8 @@ const view = (over: Record<string, unknown> = {}) => ({
   zoom: { level: 1 },
   scrollBehavior: 'instant',
   viewUnitsPerPoint: 1,
-  cursor: 2,
-  anchor: { pageIndex: 2, fx: 0.25, fy: 0.5 },
+  pageIndex: 2,
+  anchor: { pageIndex: 2, fractionX: 0.25, fractionY: 0.5 },
   ...over,
 });
 
@@ -452,7 +458,10 @@ const placementCases: ScenarioCase[] = [
       st('currentItemPages'),
       st('visiblePages'),
       st('refit'),
-      st('applyViewState', view({ cursor: 0, anchor: { pageIndex: 0, fx: 0, fy: 0 } })),
+      st(
+        'applyViewState',
+        view({ pageIndex: 0, anchor: { pageIndex: 0, fractionX: 0, fractionY: 0 } }),
+      ),
       st('fling', 500, 500),
       vp(800, 600),
       st('setFlow', 'paged'),
@@ -482,7 +491,9 @@ const placementCases: ScenarioCase[] = [
       st(
         'provideInitialView',
         1,
-        fnSpec('low', { returns: view({ cursor: 1, anchor: { pageIndex: 1, fx: 0, fy: 0 } }) }),
+        fnSpec('low', {
+          returns: view({ pageIndex: 1, anchor: { pageIndex: 1, fractionX: 0, fractionY: 0 } }),
+        }),
       ),
       st('provideInitialView', 5, fnSpec('high-null', { returns: null })),
       st('provideInitialView', 3, fnSpec('mid-a', { returns: view({ layout: 'horizontal' }) })),
@@ -512,12 +523,12 @@ const placementCases: ScenarioCase[] = [
   {
     name: 'restored-view-without-a-cursor',
     covers:
-      'applyViewState with no cursor lands on page 0 (`view.cursor ?? 0`) and restores the anchor there.',
+      'applyViewState with no cursor lands on page 0 (`view.pageIndex ?? 0`) and restores the anchor there.',
     plugins: stage(),
     engine: engine(),
     steps: [
       ...boot,
-      st('applyViewState', { ...view({ spread: 'odd' }), cursor: { $undefined: true } }),
+      st('applyViewState', { ...view({ spread: 'odd' }), pageIndex: { $undefined: true } }),
       st('currentPage'),
       st('camera'),
     ],
@@ -882,11 +893,17 @@ const navigationCases: ScenarioCase[] = [
       st('viewpoint'),
       st('goToPage', 0),
       st('goToPage', 2, {
-        viewpoint: { anchor: { pageIndex: 2, fx: 0.4, fy: 0.3 }, zoom: { level: 2.5 } },
+        viewpoint: {
+          anchor: { pageIndex: 2, fractionX: 0.4, fractionY: 0.3 },
+          zoom: { level: 2.5 },
+        },
       }),
       st('camera'),
       st('goToPage', 1, {
-        viewpoint: { anchor: { pageIndex: 1, fx: 0.1, fy: 0.9 }, zoom: { mode: 'fit-width' } },
+        viewpoint: {
+          anchor: { pageIndex: 1, fractionX: 0.1, fractionY: 0.9 },
+          zoom: { mode: 'fit-width' },
+        },
         behavior: 'smooth',
       }),
     ],
@@ -926,21 +943,21 @@ const navigationCases: ScenarioCase[] = [
       st('reveal', 3, {
         rect: { x: 10, y: 10, width: 100, height: 0 },
         zoom: 'fit-width',
-        anchor: { y: 'start' },
+        align: { y: 'start' },
       }),
       st('reveal', 0, {
         rect: { x: 0, y: 300, width: 0, height: 200 },
         zoom: 'fit-height',
-        anchor: { x: 'start' },
+        align: { x: 'start' },
       }),
       st('reveal', 1, {
         rect: { x: 100, y: 100, width: 0, height: 0 },
         zoom: { level: 1.5 },
-        anchor: { x: 'start', y: 'start' },
+        align: { x: 'start', y: 'start' },
       }),
       st('reveal', 1, { rect: { x: 100, y: 100, width: 0, height: 0 }, zoom: 'fit' }),
       st('reveal', 1, { rect: null, zoom: 'keep' }),
-      st('reveal', 1, { rect: null, zoom: 'keep', anchor: {} }),
+      st('reveal', 1, { rect: null, zoom: 'keep', align: {} }),
       st('reveal', 2, { zoom: 'fit-width' }),
       st('reveal', 2, { zoom: 'fit-height' }),
       st('reveal', 0, { zoom: { level: 0 } }),
@@ -960,26 +977,26 @@ const navigationCases: ScenarioCase[] = [
       st('goToPage', 1),
       st('reveal', 1, {
         rect: { x: 100, y: 100, width: 50, height: 50 },
-        anchor: { x: 'keep', y: 'keep' },
+        align: { x: 'keep', y: 'keep' },
       }),
-      st('reveal', 1, { rect: { x: 100, y: 100, width: 50, height: 50 }, anchor: {} }),
-      st('reveal', 1, { rect: { x: 100, y: 700, width: 50, height: 50 }, anchor: {} }),
-      st('reveal', 0, { rect: { x: 100, y: 100, width: 50, height: 50 }, anchor: {} }),
-      st('reveal', 2, { rect: { x: 0, y: 0, width: 600, height: 800 }, anchor: {} }),
+      st('reveal', 1, { rect: { x: 100, y: 100, width: 50, height: 50 }, align: {} }),
+      st('reveal', 1, { rect: { x: 100, y: 700, width: 50, height: 50 }, align: {} }),
+      st('reveal', 0, { rect: { x: 100, y: 100, width: 50, height: 50 }, align: {} }),
+      st('reveal', 2, { rect: { x: 0, y: 0, width: 600, height: 800 }, align: {} }),
       st('reveal', 2, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
-        anchor: { x: 'end', y: 'end' },
+        align: { x: 'end', y: 'end' },
       }),
       st('reveal', 2, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
-        anchor: { x: 'center', y: 0.35 },
+        align: { x: 'center', y: 0.35 },
       }),
-      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, anchor: { x: -3, y: 7 } }),
+      st('reveal', 2, { rect: { x: 100, y: 200, width: 50, height: 50 }, align: { x: -3, y: 7 } }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 50, height: 50 }, zoom: { level: 2 } }),
       st('reveal', 3, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
         zoom: { level: 2 },
-        anchor: { x: 'start' },
+        align: { x: 'start' },
       }),
     ],
     snapshot: SNAP,
@@ -1294,7 +1311,8 @@ const mutationEdgeCases: ScenarioCase[] = [
   },
   {
     name: 'the-fits-predicate-height',
-    covers: 'The same predicate on a spread whose height binds.',
+    covers:
+      'The same predicate on a spread taller than the padded viewport: it reads the width only, so the spread still steps as one while it fits across, however tall.',
     plugins: stage({ scrollBehavior: 'instant', spread: 'odd' }),
     engine: engine(Array.from({ length: 7 }, (_, i) => page(i + 1, i, 300, 800))),
     steps: [
@@ -1318,28 +1336,28 @@ const mutationEdgeCases: ScenarioCase[] = [
       ...boot,
       st('goToPage', 1),
       st('camera'),
-      st('reveal', 1, { rect: { x: 50, y: -5, width: 40, height: 10 }, anchor: { x: 'keep' } }),
+      st('reveal', 1, { rect: { x: 50, y: -5, width: 40, height: 10 }, align: { x: 'keep' } }),
       st('goToPage', 1),
-      st('reveal', 1, { rect: { x: 50, y: 20, width: 40, height: 40 }, anchor: { x: 'keep' } }),
+      st('reveal', 1, { rect: { x: 50, y: 20, width: 40, height: 40 }, align: { x: 'keep' } }),
       st('goToPage', 1),
-      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 320 }, anchor: { x: 'keep' } }),
+      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 320 }, align: { x: 'keep' } }),
       st('goToPage', 1),
-      st('reveal', 1, { rect: { x: 50, y: 700, width: 40, height: 40 }, anchor: { x: 'keep' } }),
-      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 40 }, anchor: { x: 'keep' } }),
-      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 1000 }, anchor: { x: 'keep' } }),
-      st('reveal', 2, { rect: { x: 500, y: 300, width: 40, height: 40 }, anchor: {} }),
-      st('reveal', 2, { rect: { x: 10, y: 300, width: 40, height: 40 }, anchor: {} }),
+      st('reveal', 1, { rect: { x: 50, y: 700, width: 40, height: 40 }, align: { x: 'keep' } }),
+      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 40 }, align: { x: 'keep' } }),
+      st('reveal', 1, { rect: { x: 50, y: 10, width: 40, height: 1000 }, align: { x: 'keep' } }),
+      st('reveal', 2, { rect: { x: 500, y: 300, width: 40, height: 40 }, align: {} }),
+      st('reveal', 2, { rect: { x: 10, y: 300, width: 40, height: 40 }, align: {} }),
       st('reveal', 2, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
-        anchor: { x: 'start', y: 'end' },
+        align: { x: 'start', y: 'end' },
       }),
       st('reveal', 2, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
-        anchor: { x: 'end', y: 'start' },
+        align: { x: 'end', y: 'start' },
       }),
       st('reveal', 2, {
         rect: { x: 100, y: 200, width: 50, height: 50 },
-        anchor: { x: 0.25, y: 0.75 },
+        align: { x: 0.25, y: 0.75 },
       }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 50, height: 500 }, zoom: 'fit' }),
       st('reveal', 3, { rect: { x: 100, y: 200, width: 400, height: 50 }, zoom: 'fit' }),
@@ -1900,7 +1918,7 @@ const motionCases: ScenarioCase[] = [
         pages: FIVE.map((p) => p.ref),
         origin: LOCAL,
         meta: { affectedPages: [], cacheDelta: null, opId: 'clear', undoable: true },
-        layout: { pageCount: 0, pages: [], namedPages: [] },
+        layout: { pageCount: 0, pages: [], labels: [], namedPages: [] },
       }),
       advance(300),
       st('camera'),
@@ -2130,7 +2148,10 @@ const feedCases: ScenarioCase[] = [
     engine: withActions(portrait(3)),
     steps: [
       ...boot,
-      st('applyViewState', view({ cursor: 7, anchor: { pageIndex: 2, fx: 0.5, fy: 0.5 } })),
+      st(
+        'applyViewState',
+        view({ pageIndex: 7, anchor: { pageIndex: 2, fractionX: 0.5, fractionY: 0.5 } }),
+      ),
       v3('getCurrentPage'),
       v3('getCurrentPageIndex'),
     ],
@@ -2199,9 +2220,9 @@ const feedCases: ScenarioCase[] = [
         id: 'low',
         priority: 5,
         enabledFor: { $fn: 'low.enabledFor', returns: true },
-        onDown: { $fn: 'low.onDown', returns: true },
-        onMove: { $fn: 'low.onMove' },
-        onUp: { $fn: 'low.onUp' },
+        onPointerDown: { $fn: 'low.onDown', returns: true },
+        onPointerMove: { $fn: 'low.onMove' },
+        onPointerUp: { $fn: 'low.onUp' },
       }),
       ix('dispatchPointer', sample('down', 5, 300, false)),
       ix('dispatchPointer', sample('move', 45, 290, false)),
@@ -2390,7 +2411,10 @@ const eventCases: ScenarioCase[] = [
       st('setDevicePixelRatio', 2),
       callRef(2),
       st('panBy', 0, -40),
-      st('applyViewState', view({ cursor: 9, anchor: { pageIndex: 4, fx: 0.5, fy: 0.5 } })),
+      st(
+        'applyViewState',
+        view({ pageIndex: 9, anchor: { pageIndex: 4, fractionX: 0.5, fractionY: 0.5 } }),
+      ),
       callRef(0),
       callRef(4),
       st('goToPage', 0),

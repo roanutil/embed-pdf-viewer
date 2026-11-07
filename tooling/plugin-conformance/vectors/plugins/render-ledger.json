@@ -11,7 +11,8 @@
         "returned": {
           "contentEpochs": {},
           "annotationEpochs": {},
-          "fieldEpochs": {}
+          "fieldEpochs": {},
+          "snapshot": null
         }
       }
     },
@@ -22,7 +23,8 @@
         {
           "contentEpochs": {},
           "annotationEpochs": {},
-          "fieldEpochs": {}
+          "fieldEpochs": {},
+          "snapshot": null
         },
         [
           11
@@ -37,7 +39,8 @@
             "annotationEpochs": {
               "11": 1
             },
-            "fieldEpochs": {}
+            "fieldEpochs": {},
+            "snapshot": null
           }
         }
       }
@@ -56,7 +59,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [
           11,
@@ -79,7 +83,8 @@
             },
             "fieldEpochs": {
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -98,7 +103,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [
           11,
@@ -120,7 +126,8 @@
             },
             "fieldEpochs": {
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -139,7 +146,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [
           11,
@@ -160,7 +168,8 @@
             },
             "fieldEpochs": {
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -179,7 +188,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [],
         "content"
@@ -197,7 +207,8 @@
             },
             "fieldEpochs": {
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -216,7 +227,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [],
         "annotations"
@@ -234,7 +246,8 @@
             },
             "fieldEpochs": {
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -253,7 +266,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [
           33
@@ -273,7 +287,8 @@
             },
             "fieldEpochs": {
               "33": 8
-            }
+            },
+            "snapshot": null
           }
         }
       }
@@ -292,7 +307,8 @@
           },
           "fieldEpochs": {
             "33": 7
-          }
+          },
+          "snapshot": null
         },
         [
           5
@@ -313,7 +329,8 @@
             "fieldEpochs": {
               "5": 1,
               "33": 7
-            }
+            },
+            "snapshot": null
           }
         }
       }

@@ -1008,7 +1008,7 @@ const stageCases: ScenarioCase[] = [
   {
     name: 'navigation-reveals-the-hit',
     covers:
-      "next/prev/goTo reveal the hit's page at its bounds with the find-bar default arrival (anchor y 0.35, smooth); a hit with no segments reveals with no rect.",
+      "next/prev/goTo reveal the hit's page at its bounds with the find-bar default arrival (align y 0.35, smooth); a hit with no segments reveals with no rect.",
     plugins: withStage(),
     engine: {
       documents: {
@@ -1033,8 +1033,8 @@ const stageCases: ScenarioCase[] = [
   {
     name: 'reveal-options-merge',
     covers:
-      'Arrival options merge per key: per-call over plugin config over the default. An explicit undefined anchor overrides the default away (a bare reveal when the hit has no rect); a null config anchor is a positioned reveal with no anchor axes.',
-    plugins: withStage({ reveal: { anchor: { x: 'center', y: 'start' }, behavior: 'instant' } }),
+      'Arrival options merge per key: per-call over plugin config over the default. An explicit undefined align overrides the default away (a bare reveal when the hit has no rect); a null config align is a positioned reveal with no align axes.',
+    plugins: withStage({ reveal: { align: { x: 'center', y: 'start' }, behavior: 'instant' } }),
     engine: {
       documents: {
         a: doc([
@@ -1050,17 +1050,17 @@ const stageCases: ScenarioCase[] = [
       s('search', Q),
       s('next'),
       s('goTo', 0, { behavior: 'smooth' }),
-      s('goTo', 1, { anchor: { y: 'end' } }),
-      s('goTo', 2, { anchor: { $undefined: true } }),
-      s('goTo', 2, { anchor: { y: 0.5 }, behavior: { $undefined: true } }),
+      s('goTo', 1, { align: { y: 'end' } }),
+      s('goTo', 2, { align: { $undefined: true } }),
+      s('goTo', 2, { align: { y: 0.5 }, behavior: { $undefined: true } }),
       s('goTo', 1, {}),
     ],
   },
   {
     name: 'reveal-config-anchor-null',
     covers:
-      'A config anchor of null replaces the default: the reveal is positioned (anchor present) with neither axis set.',
-    plugins: withStage({ reveal: { anchor: null as never } }),
+      'A config align of null replaces the default: the reveal is positioned (align present) with neither axis set.',
+    plugins: withStage({ reveal: { align: null as never } }),
     engine: {
       documents: {
         a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(33, 5, [])], null, 3))]),

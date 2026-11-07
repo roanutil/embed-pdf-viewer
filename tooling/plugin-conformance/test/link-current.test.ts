@@ -211,14 +211,14 @@ test('navigation ownership follows real link/pan tools and behavior matching', a
 test('classic activations and current events hand every non-navigation target to the embedder', async () => {
   const r = await scenario('activate-without-a-stage');
   const expected = [
-    { outcome: 'destination', destination: { kind: 'xyz', page: pr(2), x: 10, y: 20, zoom: 3 } },
-    { outcome: 'uri', uri: 'https://example.com/x' },
-    { outcome: 'named', name: 'LastPage' },
+    { status: 'destination', destination: { kind: 'xyz', page: pr(2), x: 10, y: 20, zoom: 3 } },
+    { status: 'uri', uri: 'https://example.com/x' },
+    { status: 'named', name: 'LastPage' },
     ...['javascript', 'goto-remote', 'launch', 'unsupported'].map((kind, i) => ({
-      outcome: 'reported',
+      status: 'reported',
       target: [{ kind }, { kind, file: 'other.pdf' }, { kind, path: 'calc.exe' }, { kind }][i],
     })),
-    { outcome: 'destination', destination: { kind: 'fit', page: pr(1) } },
+    { status: 'destination', destination: { kind: 'fit', page: pr(1) } },
   ];
   assert.deepEqual(r.trace.slice(2).map(value), expected);
   for (const t of r.trace.slice(2)) {
@@ -229,8 +229,8 @@ test('classic activations and current events hand every non-navigation target to
   }
   const silent = await scenario('activate-without-a-listener');
   assert.deepEqual(silent.trace.slice(2).map(value), [
-    { outcome: 'uri', uri: 'https://example.com' },
-    { outcome: 'named', name: 'FirstPage' },
+    { status: 'uri', uri: 'https://example.com' },
+    { status: 'named', name: 'FirstPage' },
   ]);
   assert.deepEqual(
     silent.trace.flatMap((t) => t.callbacks),
@@ -242,9 +242,9 @@ test('stage navigation uses page destinations and configured smooth motion rathe
   assert.equal(value(r.trace[5]), 1);
   assert.deepEqual(value(r.trace[4]), { zoom: 2, x: 112, y: 978 });
   assert.deepEqual(value(r.trace[7]), value(r.trace[4]));
-  for (const i of [3, 6, 8, 10, 12]) assert.deepEqual(value(r.trace[i]), { outcome: 'revealed' });
+  for (const i of [3, 6, 8, 10, 12]) assert.deepEqual(value(r.trace[i]), { status: 'revealed' });
   assert.deepEqual(value(r.trace[14]), {
-    outcome: 'reported',
+    status: 'reported',
     target: { kind: 'goto', destination: { kind: 'xyz', page: pr(77), x: 0, y: 0, zoom: 1 } },
   });
   const smooth = await scenario('activate-reveals-smoothly');
@@ -253,12 +253,12 @@ test('stage navigation uses page destinations and configured smooth motion rathe
   assert.deepEqual(value(smooth.trace[7]), { zoom: 2, x: 112, y: 978 });
   const zero = await scenario('activate-destination-that-cannot-invert');
   assert.deepEqual(zero.trace.slice(3).map(value), [
-    { outcome: 'revealed' },
-    { outcome: 'revealed' },
+    { status: 'revealed' },
+    { status: 'revealed' },
   ]);
   assert.equal(zero.trace.flatMap((t) => t.callbacks).length, 2);
   const listener = await scenario('a-throwing-listener-throws-out-of-activate');
-  assert.deepEqual(value(listener.trace[3]), { outcome: 'revealed' });
+  assert.deepEqual(value(listener.trace[3]), { status: 'revealed' });
   assert.equal(value(listener.trace[4]), 1);
   assert.deepEqual(listener.trace[3].reports, [
     { $error: { name: 'Error', message: 'listener broke' } },
@@ -269,7 +269,7 @@ test('actions dispatch resolves goto, handles URI success and preserves exact li
   assert.deepEqual(r.trace[4].settled, [{ promise: 2, resolved: actionResult('goto') }]);
   assert.equal(value(r.trace[5]), 1);
   assert.deepEqual(r.trace[6].settled, [{ promise: 3, resolved: noAdapter }]);
-  assert.deepEqual(value(r.trace[7]), { outcome: 'revealed' });
+  assert.deepEqual(value(r.trace[7]), { status: 'revealed' });
   assert.equal(value(r.trace[8]), 0);
   const hit = await scenario('activate-at-dispatches-with-the-page');
   for (const i of [4, 5]) {
@@ -284,7 +284,7 @@ test('actions dispatch resolves goto, handles URI success and preserves exact li
     assert.deepEqual(e.source, { kind: 'link', annotation: objRef(1), page: pr(1) });
     assert.deepEqual(e.result, actionResult('uri'));
     assert.deepEqual(object(t.callbacks[0].args[0]).activation, {
-      outcome: 'dispatched',
+      status: 'dispatched',
       dispatch: '[promise]',
     });
   }
@@ -296,8 +296,8 @@ test('hit tests include edges, choose smallest area with stable ties and miss ab
     ['obj:2', 'obj:1', 'obj:1', 'obj:3'],
   );
   for (const i of [6, 7, 9, 12]) assert.equal(value(r.trace[i]), null);
-  assert.deepEqual(value(r.trace[10]), { outcome: 'named', name: 'NextPage' });
-  assert.deepEqual(value(r.trace[11]), { outcome: 'uri', uri: 'https://example.com' });
+  assert.deepEqual(value(r.trace[10]), { status: 'named', name: 'NextPage' });
+  assert.deepEqual(value(r.trace[11]), { status: 'uri', uri: 'https://example.com' });
   const area = await scenario('hit-testing-by-area');
   assert.equal(object(value(area.trace[3])).id, 'obj:1');
   assert.equal(object(value(area.trace[4])).id, 'obj:3');
@@ -536,18 +536,18 @@ test('URI openers stack and unsubscribe, event listener failures preserve siblin
     return false;
   });
   assert.deepEqual(api.activate({ kind: 'uri', uri: 'https://test.example' }), {
-    outcome: 'reported',
+    status: 'reported',
     target: { kind: 'uri', uri: 'https://test.example' },
   });
   first();
   assert.deepEqual(api.activate({ kind: 'uri', uri: 'https://test.example' }), {
-    outcome: 'reported',
+    status: 'reported',
     target: { kind: 'uri', uri: 'https://test.example' },
   });
   second();
   second();
   assert.deepEqual(api.activate({ kind: 'uri', uri: 'https://test.example' }), {
-    outcome: 'uri',
+    status: 'uri',
     uri: 'https://test.example',
   });
   assert.equal(seen.filter((v) => Array.isArray(v) && v[0] === 'first').length, 0);
@@ -560,14 +560,14 @@ test('URI openers stack and unsubscribe, event listener failures preserve siblin
   const survivor: unknown[] = [];
   api.onActivated((e) => survivor.push(e));
   assert.deepEqual(api.activate({ kind: 'named', name: 'NextPage' }), {
-    outcome: 'named',
+    status: 'named',
     name: 'NextPage',
   });
   assert.equal(seen.length, before);
   assert.deepEqual(survivor, [
     {
       target: { kind: 'named', name: 'NextPage' },
-      activation: { outcome: 'named', name: 'NextPage' },
+      activation: { status: 'named', name: 'NextPage' },
     },
   ]);
   assert.deepEqual(

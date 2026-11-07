@@ -98,7 +98,7 @@ registerPlugin('signals', {
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 const pr = (pon: number) => ({ kind: 'objectNumber', objectNumber: pon });
-const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+const LOCAL = { kind: 'local', sessionId: 's1', subject: null };
 const widget = (annotObjectNumber: number, pon: number) => ({
   ref: { kind: 'objectNumber', page: pr(pon), annotObjectNumber },
   annotObjectNumber,
@@ -248,14 +248,15 @@ const COPIED = [PAGES[0]!, { ...PAGES[0]!, index: 1, ref: pr(77) }, { ...PAGES[1
 const BLANKED = [...COPIED, { ...layout(88, 4, 300, 300) }];
 const MUTATION_META = { affectedPages: [], cacheDelta: null, opId: 'render-write', undoable: true };
 const pagesLayout = (pages: readonly unknown[]) => ({ pageCount: pages.length, pages, labels: [], namedPages: [] });
-/** The confirmed fact of an insert. */
-const inserted = (pages: readonly unknown[], numbers: number[]) => ({
-  type: 'pages.inserted',
-  insertedPages: numbers.map(pr),
-  layout: pagesLayout(pages),
-  meta: MUTATION_META,
-  origin: { ...LOCAL, ts: 0, serverId: null },
-});
+/** The confirmed fact of an insert. Built from this file's loose helpers, so typed by a cast. */
+const inserted = (pages: readonly unknown[], numbers: number[]) =>
+  ({
+    type: 'pages.inserted',
+    insertedPages: numbers.map(pr),
+    layout: pagesLayout(pages),
+    meta: MUTATION_META,
+    origin: { ...LOCAL, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
+  }) as unknown as NonNullable<ResponseSpec['events']>[number];
 /** The answer to an insert. */
 const insertedResult = (type: string, pages: readonly unknown[], numbers: number[]) => ({
   items: [{ type, insertedPages: numbers.map(pr), layout: pagesLayout(pages), meta: MUTATION_META }],
@@ -682,7 +683,7 @@ const capabilityCases: ScenarioCase[] = [
       start,
       open(),
       emit({ type: 'annotations.created', page: pr(22), origin: LOCAL }),
-      emit({ type: 'annotations.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotations.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', subject: 'alice', at: '1970-01-01T00:00:00.001Z', serverSequence: 7 } }),
       emit({ type: 'annotations.deleted', page: pr(11), origin: LOCAL }),
       emit({ type: 'annotations.reordered', page: pr(33), origin: LOCAL }),
       emit({ type: 'forms.valueSet',
@@ -929,7 +930,7 @@ const capabilityCases: ScenarioCase[] = [
       v3('onRenderFailed', { $fn: 'failed', returns: null }),
       cap('invalidate', { pons: [22], scope: 'annotations' }),
       cap('invalidate'),
-      emit({ type: 'annotations.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotations.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', subject: 'alice', at: '1970-01-01T00:00:00.001Z', serverSequence: 7 } }),
       emit({ type: 'forms.repaired' }),
       // A falsy origin is no origin; any other value goes through originOf. (A non-empty string
       // would too, but originOf reads its `sub`, String.prototype.sub, as the actor.)
@@ -940,7 +941,7 @@ const capabilityCases: ScenarioCase[] = [
         meta: { changedWidgets: [{ ...widget(5, 11), page: null }, widget(6, 33)] }, origin: LOCAL }),
       emit({ type: 'forms.valueSet',
         meta: { changedWidgets: [{ ...widget(5, 11), page: null }] }, origin: LOCAL }),
-      emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }], origin: { ...LOCAL, sub: 'bob' } }),
+      emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }], origin: { ...LOCAL, subject: 'bob' } }),
       cap('renderPage', 11, { scale: 0.5 }),
       v3('renderPage', pr(22), { width: 40 }),
       cap('renderPage', 33, { scale: 1, signal: signal('s1') }),
@@ -1515,7 +1516,7 @@ const tileCases: ScenarioCase[] = [
   tileCase(
     'no-bleed',
     'bleed 0 paints and fetches the logical tile rects; disengaging without debug drops state silently and re-engaging paints from the store.',
-    { tiles: { bleed: 0, prefetch: { margin: 0 } } },
+    { tiles: { bleedPx: 0, prefetch: { margin: 0 } } },
     doc(),
     (v) => [
       ...v.plan('stage', 11, DEEP),
@@ -1558,8 +1559,8 @@ const tileCases: ScenarioCase[] = [
   ),
   tileCase(
     'engage-at-option',
-    'An explicit engageAt replaces the resolved default.',
-    { tiles: { engageAt: 10, prefetch: { margin: 0 } } },
+    'An explicit engageRatio replaces the resolved default.',
+    { tiles: { engageRatio: 10, prefetch: { margin: 0 } } },
     doc(),
     (v) => [...v.plan('stage', 11, DEEP), ...v.plan('stage', 11, demand(7000))],
   ),
