@@ -1621,7 +1621,7 @@ impl Inner {
         let s = Rc::downgrade(&session);
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
             let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
-            let tx = event.pointer("/origin/tx");
+            let tx = event.pointer("/origin/transaction");
             let id = tx.and_then(|t| t["id"].as_str());
             let old = if session
                 .burst
