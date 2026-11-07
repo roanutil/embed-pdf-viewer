@@ -20,7 +20,9 @@ public enum PageRotation { None = 0, Clockwise90 = 90, Clockwise180 = 180, Clock
 public sealed record PageReference(string Kind, uint ObjectNumber);
 public sealed record PageBoxes(PageRect Media, PageRect Crop, PageRect? Bleed, PageRect? Trim, PageRect? Art);
 public sealed record PageInfo(PageIndex Index, [property: JsonPropertyName("ref")] PageReference Reference, string? Label, PageSize Size, PageRotation Rotation, double UserUnit, PageBoxes Boxes, PdfBox PdfCropBox, string? TabOrder, JsonElement? Actions);
-public sealed record CharMapAnchor([property: JsonPropertyName("char")] PdfCharIndex Character, [property: JsonPropertyName("text")] Utf16Offset Text);
+// On the wire an anchor is a `[char, text]` pair, as the TypeScript sends it.
+[JsonConverter(typeof(CharMapAnchorConverter))]
+public sealed record CharMapAnchor(PdfCharIndex Character, Utf16Offset Text);
 public sealed record PageTextSnapshot
 {
     public required string Text { get; init; }
@@ -109,6 +111,23 @@ internal sealed class IndexConverter<T> : JsonConverter<T> where T : struct
 {
     public override T Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options) => (T)(object)(typeof(T) == typeof(PageIndex) ? (object)new PageIndex(reader.GetUInt32()) : typeof(T) == typeof(PdfCharIndex) ? new PdfCharIndex(reader.GetUInt32()) : new Utf16Offset(reader.GetUInt32()));
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) => writer.WriteNumberValue(value switch { PageIndex i => i.Value, PdfCharIndex i => i.Value, Utf16Offset i => i.Value, _ => throw new JsonException("Unknown index unit") });
+}
+internal sealed class CharMapAnchorConverter : JsonConverter<CharMapAnchor>
+{
+    public override CharMapAnchor Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartArray) throw new JsonException("Expected a [char, text] anchor pair");
+        if (!reader.Read() || reader.TokenType != JsonTokenType.Number) throw new JsonException("Expected anchor char index");
+        var character = reader.GetUInt32();
+        if (!reader.Read() || reader.TokenType != JsonTokenType.Number) throw new JsonException("Expected anchor text offset");
+        var text = reader.GetUInt32();
+        if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray) throw new JsonException("Expected a [char, text] anchor pair");
+        return new(new(character), new(text));
+    }
+    public override void Write(Utf8JsonWriter writer, CharMapAnchor value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray(); writer.WriteNumberValue(value.Character.Value); writer.WriteNumberValue(value.Text.Value); writer.WriteEndArray();
+    }
 }
 internal sealed class GeometryRunConverter : JsonConverter<GeometryRun>
 {
