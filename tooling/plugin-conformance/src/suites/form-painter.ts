@@ -37,7 +37,7 @@ import {
   type VariableTextOptions,
   type WidgetScenePlacement,
 } from '../../../../packages/core/form/src/index';
-import { needsBreak } from '../../../../packages/core/form/src/layout/breaks';
+import { needsBreak } from '../../../../packages/core/text/src/breaks';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -65,7 +65,7 @@ const functions = {
   ) => widgetScene(widgetDrawing(widget, field, shown)!, placement),
   textEditorLayout: (widget: WidgetAnnotation, field: FormField, text: string) =>
     textEditorLayout(widget, field, text),
-  paints: (kind: FormField['family']) => paints({ family }),
+  paints: (kind: FormField['kind']) => paints({ kind }),
   needsBreak: (previous: number, currents: readonly number[]) =>
     currents.map((current) => needsBreak(previous, current)),
 };

@@ -33,7 +33,7 @@ import {
 import { CommandsToken } from '../../../../packages/plugin/commands/src/host-contract';
 import type {
   CommandContext as CommandCtx,
-  CommandDef,
+  CommandDefinition,
   CommandsConfig,
   ResolvedCommand,
 } from '../../../../packages/plugin/commands/src/host-contract';
@@ -193,7 +193,7 @@ const settingsCase = (
   return { same: before === api.getDisabledCategories(), settings: api.getSettings() };
 };
 /** Current runtime registrations preserve prefix progress on a refused definition. */
-const register = (defs: CommandDef[]) => {
+const register = (defs: CommandDefinition[]) => {
   const { api } = currentController();
   let error: unknown;
   try {
@@ -338,12 +338,12 @@ const equalCases: FunctionCase[] = [
   eq('categories-are-not-compared', rc(), rc({ categories: ['other', 'more'] })),
 ];
 
-const def = (id: string, over: Partial<CommandDef> = {}): CommandDef => ({
+const def = (id: string, over: Partial<CommandDefinition> = {}): CommandDefinition => ({
   id,
   labelKey: id,
   ...over,
 });
-const reg = (name: string, defs: CommandDef[]): FunctionCase => ({
+const reg = (name: string, defs: CommandDefinition[]): FunctionCase => ({
   name,
   fn: 'registerCurrentCommands',
   args: [defs],
@@ -463,7 +463,7 @@ const boom = (name: string, message = `${name} failed`) =>
   fn(name, { throws: { name: 'Error', message } });
 
 type CallbackMember = 'active' | 'enabled' | 'visible' | 'iconAccent' | 'run' | 'allowed';
-type VectorDef = Omit<CommandDef, CallbackMember> & { [K in CallbackMember]?: CommandFnSpec };
+type VectorDef = Omit<CommandDefinition, CallbackMember> & { [K in CallbackMember]?: CommandFnSpec };
 const vdef = (id: string, over: Partial<Omit<VectorDef, 'id'>> = {}): VectorDef => ({
   id,
   labelKey: id,

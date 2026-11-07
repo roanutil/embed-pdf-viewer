@@ -191,3 +191,7 @@ Still open (about 100 errors, to be worked file by file): event-model fixtures t
 ## Export decisions applied (2026-11-06)
 
 Approved: export the symbols the plugin-conformance tooling imports. Applied as re-exports, with no change to implementation: `familyKey` (plugin/annotation rich-text), `interpolate` (plugin/i18n translate), `FontProgram` (core/fonts index). Remaining missing names are not defined anywhere in the packages: `layoutFontOf`, `layoutVariableText`, `VariableTextOptions`, `layout/breaks` (form), `PageGeom` (stage), `CommandDef` (commands). These need a decision: drop the tooling cases that use them, or name the replacement.
+
+## Replacements for moved symbols (2026-11-06)
+
+Repointed without changing the packages: `PageGeom` to `PageGeometry` (core/stage), `CommandDef` to `CommandDefinition` (plugin/commands contract), and the break rule `needsBreak` to its current module `core/text/src/breaks`. Still unresolved: `layoutFontOf`, `layoutVariableText` and `VariableTextOptions`. The closest current function is `textEditorLayout` in `core/form/src/editor.ts`, which takes a widget and field and returns a different layout. Those cases need rewriting, not repointing.

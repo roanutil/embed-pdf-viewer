@@ -9,7 +9,7 @@
  * take the layout that builds their scene.
  */
 import * as S from '../../../../packages/core/stage/src/index';
-import type { PageGeom, Scene } from '../../../../packages/core/stage/src/index';
+import type { PageGeometry, Scene } from '../../../../packages/core/stage/src/index';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -43,13 +43,13 @@ function sceneProbe(scene: Scene, probe: Probe = {}) {
 }
 
 type Layout =
-  | { kind: 'linear'; pages: PageGeom[]; grouping: number[][]; opts?: S.LinearOptions }
-  | { kind: 'grid'; pages: PageGeom[]; grouping: number[][]; opts?: S.GridOptions };
+  | { kind: 'linear'; pages: PageGeometry[]; grouping: number[][]; opts?: S.LinearOptions }
+  | { kind: 'grid'; pages: PageGeometry[]; grouping: number[][]; opts?: S.GridOptions };
 
 const build = (l: Layout): Scene =>
   l.kind === 'linear' ? S.linearLayout(l.pages, l.grouping, l.opts) : S.gridLayout(l.pages, l.grouping, l.opts);
 
-const pg = (width: number, height: number, extra: Partial<PageGeom> = {}): PageGeom => ({ size: { width, height }, ...extra });
+const pg = (width: number, height: number, extra: Partial<PageGeometry> = {}): PageGeometry => ({ size: { width, height }, ...extra });
 const rect = (x: number, y: number, width: number, height: number): S.Rect => ({ x, y, width, height });
 const pt = (x: number, y: number): S.Point => ({ x, y });
 const cam = (x: number, y: number, zoom: number): S.Camera => ({ x, y, zoom });
@@ -230,9 +230,9 @@ const camera: FunctionCase[] = [
 
 const layoutFns: Record<string, Fn> = {
   groupPages: S.groupPages,
-  linearLayout: (pages: PageGeom[], grouping: number[][], opts?: S.LinearOptions, probe?: Probe) =>
+  linearLayout: (pages: PageGeometry[], grouping: number[][], opts?: S.LinearOptions, probe?: Probe) =>
     sceneProbe(S.linearLayout(pages, grouping, opts), probe),
-  gridLayout: (pages: PageGeom[], grouping: number[][], opts?: S.GridOptions, probe?: Probe) =>
+  gridLayout: (pages: PageGeometry[], grouping: number[][], opts?: S.GridOptions, probe?: Probe) =>
     sceneProbe(S.gridLayout(pages, grouping, opts), probe),
 };
 
