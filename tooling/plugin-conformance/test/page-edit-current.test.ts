@@ -2,6 +2,7 @@ process.env.TZ = 'UTC';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { suites } from '../src/suites/page-edit';
+import '../src/suites/history';
 import { runScenario } from '../src/scenario';
 test('relative rotation uses current refs and stages an actual apply transaction', async () => {
   const suite = suites[0];
@@ -103,25 +104,27 @@ test('deferred changes send in staging order and deliver confirmed document even
   const r = await run('deferred-and-aborted');
   assert.equal(r.trace[2].engine.length, 1);
   assert.equal(r.trace[3].engine.length, 1);
+  // Staged edits show at once (the kernel's predicted page view): the
+  // rotation and the delete are both in before either confirms.
   assert.deepEqual(summary(r.trace[4]), [
-    [10, 0, 0],
-    [20, 1, 90],
-    [30, 2, 270],
+    [10, 0, 90],
+    [30, 1, 270],
   ]);
   assert.deepEqual(r.trace[5].engine, []);
   assert.deepEqual(r.trace[5].settled, [{ promise: 2, resolved: { $undefined: true } }]);
   assert.deepEqual(summary(r.trace[6]), [
     [10, 0, 90],
-    [20, 1, 90],
-    [30, 2, 270],
+    [30, 1, 270],
   ]);
   assert.deepEqual(summary(r.trace[8]), [
     [10, 0, 90],
     [30, 1, 270],
   ]);
   assert.deepEqual(r.trace[7].settled, [{ promise: 3, resolved: { $undefined: true } }]);
-  for (const i of [5, 7])
-    assert.equal(r.trace[i].documentEvents.filter((e) => e.event === 'pagesChanged').length, 1);
+  // The pages move when each edit is staged; the confirmations move nothing.
+  const pagesChanged = (i: number) =>
+    r.trace[i].documentEvents.filter((e) => e.event === 'pagesChanged').length;
+  assert.deepEqual([2, 3, 5, 7].map(pagesChanged), [1, 1, 0, 0]);
 });
 test('blank defaults use actual neighbour size, preserve explicit count/size and return new refs', async () => {
   const r = await run('add-blank');
@@ -132,6 +135,7 @@ test('blank defaults use actual neighbour size, preserve explicit count/size and
           type: 'pages.insertBlank',
           spec: { size: { width: 500, height: 600 }, count: 1 },
           position: 'end',
+          objectNumbers: [31],
         },
       ],
     },
@@ -141,6 +145,7 @@ test('blank defaults use actual neighbour size, preserve explicit count/size and
           type: 'pages.insertBlank',
           spec: { size: { width: 500, height: 600 }, count: 1 },
           position: 'end',
+          objectNumbers: [32],
         },
       ],
     },
@@ -150,6 +155,7 @@ test('blank defaults use actual neighbour size, preserve explicit count/size and
           type: 'pages.insertBlank',
           spec: { size: { width: 300, height: 400 }, count: 1 },
           position: { after: ref(20) },
+          objectNumbers: [33],
         },
       ],
     },
@@ -159,6 +165,7 @@ test('blank defaults use actual neighbour size, preserve explicit count/size and
           type: 'pages.insertBlank',
           spec: { size: { width: 612, height: 792 }, count: 3 },
           position: { after: ref(10) },
+          objectNumbers: [34, 35, 36],
         },
       ],
     },
@@ -191,6 +198,7 @@ test('empty registry inserts Letter; missing refs never become implicit zero rot
         type: 'pages.insertBlank',
         spec: { size: { width: 612, height: 792 }, count: 1 },
         position: 'end',
+        objectNumbers: [1],
       },
     ],
   });
@@ -260,7 +268,16 @@ test('subset insertion uses scratch full scope, selected order, extraction bytes
   ]);
   assert.deepEqual(calls[3], { doc: 'src', path: 'close', args: [] });
   assert.deepEqual(ops(r), [
-    { ops: [{ type: 'pages.insert', source: { $bytes: 'BAUG' }, position: { after: ref(10) } }] },
+    {
+      ops: [
+        {
+          type: 'pages.insert',
+          source: { $bytes: 'BAUG' },
+          position: { after: ref(10) },
+          objectNumbers: [31, 32],
+        },
+      ],
+    },
   ]);
   assert.deepEqual(r.trace[2].settled, [{ promise: 2, resolved: { pages: [ref(77), ref(78)] } }]);
   assert.deepEqual(r.trace[3].engine, []);
@@ -288,7 +305,7 @@ test('clock-named scratch sources close for each malformed source index', async 
       { scope: ['*'] },
     ]);
     assert.deepEqual(
-      (t.engine.at(-1) as { path?: string })?.path === 'apply' ? t.engine.at(-2) : t.engine.at(-1),
+      t.engine.find((c) => (c as { path?: string }).path === 'close'),
       { doc: 'src', path: 'close', args: [] },
     );
   }
@@ -299,8 +316,10 @@ test('cross-document refs resolve in source registry, bytes insert in destinatio
   assert.deepEqual(r.trace[4].engine[0], { doc: 'b', path: 'pages.extract', args: [[ref(20)]] });
   assert.deepEqual(
     ops(r),
-    ['end', 'start'].map((position) => ({
-      ops: [{ type: 'pages.insert', source: { $bytes: 'BwgJ' }, position }],
+    ['end', 'start'].map((position, i) => ({
+      ops: [
+        { type: 'pages.insert', source: { $bytes: 'BwgJ' }, position, objectNumbers: [31 + i] },
+      ],
     })),
   );
   assert.deepEqual(r.trace[5].engine, []);
@@ -308,17 +327,25 @@ test('cross-document refs resolve in source registry, bytes insert in destinatio
 });
 test('duplicate copies selected order after last page and extraction returns original bytes', async () => {
   const r = await run('duplicate');
-  assert.deepEqual(r.trace[2].engine[0], {
-    doc: 'a',
-    path: 'pages.extract',
-    args: [[ref(10), ref(20)]],
-  });
+  // Since 46c23b702 a duplicate is one pages.copy at chosen object numbers,
+  // with no extraction.
   assert.deepEqual(
-    ops(r),
-    [{ after: ref(20) }, 'end'].map((position) => ({
-      ops: [{ type: 'pages.insert', source: { $bytes: 'CgsM' }, position }],
-    })),
+    r.trace[2].engine.map((c) => (c as { path?: string }).path),
+    ['apply'],
   );
+  assert.deepEqual(ops(r), [
+    {
+      ops: [
+        {
+          type: 'pages.copy',
+          pages: [ref(10), ref(20)],
+          position: { after: ref(20) },
+          objectNumbers: [77, 78],
+        },
+      ],
+    },
+    { ops: [{ type: 'pages.copy', pages: [ref(30)], position: 'end', objectNumbers: [79] }] },
+  ]);
   assert.deepEqual(r.trace[6].settled, [{ promise: 6, resolved: { $bytes: 'CgsM' } }]);
   assert.deepEqual(
     summary(r.trace.at(-1)!).map((p) => p[0]),
@@ -517,8 +544,9 @@ test('two quick turns see pending rotation, retain undo predictions and label on
         },
       ],
     );
+    // Both turns show at once, before either confirms.
     assert.deepEqual(compact(h), [
-      [10, 0],
+      [10, 180],
       [20, 90],
       [30, 270],
     ]);
@@ -534,7 +562,8 @@ test('two quick turns see pending rotation, retain undo predictions and label on
     assert.equal(h.settle('two', { value: result(second) }), true);
     await two;
     await tick();
-    assert.deepEqual(order, ['fact:90', 'first-resolved', 'fact:180', 'second-resolved']);
+    // Each confirmation matches what already shows, so the pages do not move again.
+    assert.deepEqual(order, ['first-resolved', 'second-resolved']);
     assert.deepEqual(compact(h), [
       [10, 180],
       [20, 90],
@@ -596,7 +625,9 @@ test('extract waits for earlier changes to settle; labels/counts distinguish all
     assert.deepEqual(h.reports, []);
   } finally {
     try {
-      assertDirectIdentity(h);
+      // Since 46c23b702 duplicate is one pages.copy that does not wait for
+      // the turn, so its result can land before the turn's.
+      assertDirectIdentity(h, false);
     } finally {
       await h.kernel.destroy();
     }
@@ -654,6 +685,7 @@ test('blank positions choose each anchor or edge size and explicit count/size wi
           type: 'pages.insertBlank',
           spec: { size: row.size, count: row.count },
           position: 'position' in row.options ? row.options.position : 'end',
+          objectNumbers: row.count === 2 ? [31, 32] : [31],
         },
       ]);
       assert.deepEqual(h.staged[0].label, { key: 'pages.insertBlank', count: row.count });
@@ -669,7 +701,7 @@ test('blank positions choose each anchor or edge size and explicit count/size wi
     }
   }
 });
-test('pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download', async () => {
+test('pre-aborted calls refuse before staging, permission refusal wins and extract separately requires download', async () => {
   const h = await harness();
   const abort = new AbortController();
   abort.abort();
@@ -701,12 +733,8 @@ test('pre-aborted calls refuse before staging, permission refusal wins and dupli
   }
   const denied = await harness([], ['doc.pages.assemble']);
   try {
-    await reject(
-      denied.api.duplicate([pr(10)]),
-      'permission-denied',
-      'pageEdit.duplicate requires doc.download',
-      'doc.download',
-    );
+    // Since 46c23b702 duplicate needs only doc.pages.assemble (one
+    // pages.copy, no extraction); extract still needs doc.download.
     await reject(
       denied.api.extract([pr(10)], { signal: abort.signal }),
       'permission-denied',
@@ -733,8 +761,9 @@ test('cancelling staged write rejects caller while the change still confirms; de
     await tick();
     abort.abort();
     await check;
+    // The change still confirms, so it keeps showing.
     assert.deepEqual(compact(h), [
-      [10, 0],
+      [10, 90],
       [20, 90],
       [30, 270],
     ]);
@@ -930,8 +959,11 @@ test('every negative channel is exact and named; no unused promises, unmatched c
       }
     }
     assert.deepEqual(actual, expected, c.name + ' exact rejected steps/payloads');
+    // pending-pages-show-their-look reads the pages while its last change
+    // is still on its way: that one never settles.
+    const open = c.name === 'pending-pages-show-their-look' ? [4] : [];
     assert.deepEqual(
-      pending.sort((a, b) => a - b),
+      pending.filter((p) => !open.includes(p)).sort((a, b) => a - b),
       settled.sort((a, b) => a - b),
       c.name + ' all promises settle once',
     );
@@ -951,7 +983,7 @@ type Saved = {
   result?: unknown;
   outcome?: unknown;
 };
-test('prior actions160, commands79, link37 and metadata17 retain complete inputs and every output channel', async () => {
+test('prior actions160, commands83, link37 and metadata17 retain complete inputs and every output channel', async () => {
   const available = [
     ...(await import('../src/suites/actions')).suites,
     ...(await import('../src/suites/commands')).suites,
@@ -996,7 +1028,7 @@ test('prior actions160, commands79, link37 and metadata17 retain complete inputs
       }
     }
   }
-  assert.equal(count, 293);
+  assert.equal(count, 297);
 });
 test('reorder and whole-PDF insert label the exact history scope, and returned answers alone cannot change registry', async () => {
   const h = await harness([
@@ -1036,7 +1068,7 @@ const saved = (p: string): unknown => JSON.parse(readFileSync(new URL(p, history
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 test('nineteen current inputs and complete schema2 outcomes remain exact and replayable', async () => {
   const rows = saved('current-inputs-runtime.json') as Saved[];
-  assert.equal(rows.length, 19);
+  assert.equal(rows.length, 20);
   for (const row of rows) {
     const c = cases.find((c) => c.name === row.name)!;
     assert.deepEqual(canonical(c), row.input, row.name + ' exact input');
@@ -1303,7 +1335,7 @@ test('both cross-document placements preserve every source page and confirm comp
 });
 import type { ChangeResult, DocumentEvent } from '@embedpdf/engine-core/runtime';
 /** Read actual delivered values independently from the binding metadata chosen by the fixture. */
-const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>) => {
+const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>, ordered = true) => {
   const requests = h.fake.log.filter(
     (c): c is { doc: string; path: string; args: unknown[] } => 'path' in c && c.path === 'apply',
   );
@@ -1336,7 +1368,8 @@ const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>) => {
   }
   assert.equal(new Set(resultIds).size, resultIds.length, 'one delivered result per request');
   for (const [index, id] of resultIds.entries())
-    assert.equal(id, ids[index], 'delivered result follows its actual request');
+    if (ordered) assert.equal(id, ids[index], 'delivered result follows its actual request');
+    else assert.ok(ids.includes(id), 'delivered result has an actual request');
   for (const [id, events] of eventGroups) {
     assert.ok(resultIds.includes(id), 'confirmed fact has delivered result');
     for (const [index, event] of events.entries()) {

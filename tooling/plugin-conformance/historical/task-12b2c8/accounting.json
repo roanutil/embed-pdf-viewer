@@ -3831,7 +3831,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 1,
-      "currentInputSha256": "8a6f0089e2d193b171214591f1cf27195eef9497a8f5b4d95ac4497b1bf85e7f",
+      "currentInputSha256": "14dc42a271916dda1764c47b56282f60579d90d64fa787c70b06b739dfa12007",
       "currentOutcomeSha256": "68c418dea1e6009535fb9201dcca9d2c23b2bd3d8af82c1326d9ab498b2a80f0",
       "changedInputPaths": [
         "$.covers",
@@ -4551,7 +4551,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 2,
-      "currentInputSha256": "a73ce8d2481331356890acabdd107dff0e57797d539dd97ddb7e07c42bc78fe1",
+      "currentInputSha256": "00a907d2b3cbf2c715f315ed3fdf85bdda923fc648f309d716bfe31a6d246956",
       "currentOutcomeSha256": "2b24a0bd1e959d91b933909865cb584a9975118b8518a5a54ea4993275ec57ed",
       "changedInputPaths": [
         "$.covers",
@@ -5222,7 +5222,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 3,
-      "currentInputSha256": "d6446b1f667e3dc83b4561e3ac4e705e0a888e751bef60221dfe370baee92779",
+      "currentInputSha256": "81f6d3e99fe238e8a4b264e20ac31af723344886b45f4f76b7b2c16e92e500b8",
       "currentOutcomeSha256": "2d12cca678f6e2b1287da7881c27a565a4d0392df2ed17c18da2ea8d4bb7059b",
       "changedInputPaths": [
         "$.covers",
@@ -6222,7 +6222,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 5,
-      "currentInputSha256": "a8b13b724645e610028c68d91d75296e78916c550228bc75d5ddc648f2aca3d1",
+      "currentInputSha256": "04c3145c55d62113ecb9a8bbf34be5a39066b889b754e61c6354f8358ee7f473",
       "currentOutcomeSha256": "6465ba5b657af2a325850bc842e5ccf787ae82cd5ffc04fae143f4ca7aa18490",
       "changedInputPaths": [
         "$.covers",
@@ -7866,7 +7866,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 6,
-      "currentInputSha256": "940e918db01a4dcaf4b45b1defa997b71998726661ea9428bc07dd6560419dc5",
+      "currentInputSha256": "ea1b23e94f26f847288a8fe15bbf995f82b8fb4770537e537c9a63b7fdeb7d42",
       "currentOutcomeSha256": "48bc882bf3b9f43a51272d1c2aa89b232e517381b3ccb9a48ea0f1589393b2f3",
       "changedInputPaths": [
         "$.covers",
@@ -9430,7 +9430,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 8,
-      "currentInputSha256": "d9eff7a327d7e69a08416736c1110b144d55d4322d2a7c34f15190a719d6c427",
+      "currentInputSha256": "e76a5ffe9914c04d236c19fa3801640b9551323b3fe0be85ab601ee9e6cb25ee",
       "currentOutcomeSha256": "6c8a9b971cd146bf25dd29853de35474b9a3e02933913cab99f5559efc9e4e62",
       "changedInputPaths": [
         "$.covers",
@@ -10864,7 +10864,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 10,
-      "currentInputSha256": "64af95bf6f9a3af1a9f13f07018954e3d46a158708380a04ab450b91497add61",
+      "currentInputSha256": "635b7c9269a71635be8c54fdf1e132a01092edd139c89bf4f8abf06de0c11e01",
       "currentOutcomeSha256": "a278b496bcbf37f699362ed88096c07d6a55afe1807b53d4f3405b768af1fdfb",
       "changedInputPaths": [
         "$.covers",
@@ -11365,7 +11365,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 11,
-      "currentInputSha256": "32d13756d7e9d7ab04fd415057e4aa240d67d4008e0777c144a2720277a6ddf8",
+      "currentInputSha256": "3f76ee2099441445f37dbb979e5388f2d20cf40954190737b8a43d1c62b7bc1b",
       "currentOutcomeSha256": "357138c6e0893837035041758a1e1db10456872e463e8b99cdc879a6c0af7044",
       "changedInputPaths": [
         "$.covers",
@@ -11982,7 +11982,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 12,
-      "currentInputSha256": "d598ef725181ae0dc4a84314d9be0ea1934ccf8c3c06e9cc4c7a211d8ae651b5",
+      "currentInputSha256": "f3fffe12f7f0a2f685beb29ab2e81a15d74001018b7e919fbd6d111dc56839fc",
       "currentOutcomeSha256": "c165440bf6fca03c5aff0c4d748a3f27913a7c1c3033ad89f9aebb2242a3f26a",
       "changedInputPaths": [
         "$.covers",
@@ -12850,7 +12850,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 13,
-      "currentInputSha256": "6603b0fcfa86cd11056fae65daaf89df8b49af31d9e570528ff2f2dedf926cd0",
+      "currentInputSha256": "32ffebf1702906d15027c1582da624b16d91f88c1387c88ba492f2f790ea2256",
       "currentOutcomeSha256": "7f1040311b2d6c0c4a81b0ff96821cdceee459589af2ebc23c4fb0e1735502ed",
       "changedInputPaths": [
         "$.covers",
@@ -14265,7 +14265,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 14,
-      "currentInputSha256": "84036129c12e61e42461586a518281c7ea1610ce729fa49776b309e50121c1f0",
+      "currentInputSha256": "e97c35b8b4e9e18277745cb19c6d58ee6f552178810dcb218b657ee4a68c81b8",
       "currentOutcomeSha256": "76c0ee1fa2a0b69c2e8250115827a76e4da2238fdde597c9f95d30aecc0a4e1a",
       "changedInputPaths": [
         "$.covers",
@@ -14805,7 +14805,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 15,
-      "currentInputSha256": "2a25bf1b72fd7f81a4e139bab8cafeb24314589190c66be2454d6b6c69523066",
+      "currentInputSha256": "fa611e5710f5481088664dac81794210bd709d4c2e815aa42517a1b1816d9c8f",
       "currentOutcomeSha256": "5ecb9d268fef496f981db1bfaa5a0194fe527e764bc2aba86ebd668057af1d6f",
       "changedInputPaths": [
         "$.covers",
@@ -15665,7 +15665,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 16,
-      "currentInputSha256": "2d583152491112cb2187b82bca3165a344da2d8e9c9b47dfaa5218757316cf76",
+      "currentInputSha256": "41a8f1089e815e4aa1d443f6f97013ba0fc6e9fa420d007bac1de52b13cc5505",
       "currentOutcomeSha256": "db4a0928f7bf383149031a306c8f2497ff6eb3effe0a66eca6e9a4a192cdda8e",
       "changedInputPaths": [
         "$.covers",
@@ -16370,7 +16370,7 @@
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
       "currentIndex": 17,
-      "currentInputSha256": "608f3c5c0b8307e183e914dcd2454f7484557c2de0bc821bb8f39b444cc89f91",
+      "currentInputSha256": "0a823d01e14371e05317f971a6c6a3aebdcef06942db488917e0a6946b9c5125",
       "currentOutcomeSha256": "a2da15a108298f0416252233613aee7c8cc6ca343d09559d391874f52c2fd33a",
       "changedInputPaths": [
         "$.covers",
@@ -17048,7 +17048,7 @@
       "originalOutcomeSha256": "05e285c12c34acdb32fad72412ff3485d88116dcfc106958db4c084067bd0820",
       "currentFile": "plugins/page-edit.json",
       "currentKind": "scenario",
-      "currentIndex": 18,
+      "currentIndex": 19,
       "currentInputSha256": "53791d9bc3aa16bf3ffb6269260de379b9b14bff1a68f359e03bbb0055c323ca",
       "currentOutcomeSha256": "4fa048d562af08b2386165eb436fef079dcc5b6e58d9c2b4d0d5407411764f60",
       "changedInputPaths": [
