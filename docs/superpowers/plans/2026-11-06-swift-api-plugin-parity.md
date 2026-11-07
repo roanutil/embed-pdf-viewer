@@ -265,7 +265,8 @@ rulings are recorded in
 The branch received one fresh whole-branch review; all three Important findings
 were fixed with failing-to-passing regressions and a green final matrix. One
 Minor audit-classification finding is deferred in the report. The
-unresolved iOS 27.2 picker/automation result remains visible for merge review.
+iOS 27.2 Files/simulator limitation was manually reproduced by the user and
+accepted for this handoff; evidence remains visible in the report.
 No merge or publication has occurred. The default engine pin remains on the
 previous public release; new APIs currently require a local source/packaged
 engine until publishing and pin updates are separately authorized.

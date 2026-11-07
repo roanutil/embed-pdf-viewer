@@ -89,7 +89,7 @@ The dry run printed the proposed release and pin operations. It performed neithe
 Both manifests still pin the previous published engine. Publication is separate
 work and requires authorization. This payload is ready for that review.
 
-## Files investigation and remaining uncertainty
+## Files investigation and manual confirmation
 
 On iOS 27.2 build 24B8117, the native attachment picker test cannot activate the
 demo folder. This reproduced on the original iPhone 17 simulator and a new,
@@ -109,10 +109,18 @@ provider reset, file-filter workaround or skipped test was added to the package.
 The final post-review-fix retest on the original iOS 27.2 simulator also failed:
 the picker restored an empty “On My iPhone” location and exposed neither the
 demo folder nor the fixture. The lifecycle fixes did not establish a working
-iOS 27.2 import path. Manual iOS 27.2 folder activation has been requested to distinguish synthetic
-interaction failure from a user-facing picker failure. Merge review should
-resolve this uncertainty. macOS native file-panel interaction was not automated;
-its models/capabilities and both package modes were tested.
+iOS 27.2 import path.
+
+The user subsequently reproduced the failure manually on the isolated iOS 27.2
+simulator: tapping “EmbedPDF Demo” animates as though navigating, but remains in
+“On My iPhone”. This rules out a failure limited to synthetic taps. Together
+with the successful iOS 26.5 roundtrip, the evidence points to an iOS Files or
+simulator issue; the user accepts that assessment. No EmbedPDF workaround is
+planned, and no further input is needed for this investigation. The exact system
+cause and behavior on physical iOS 27.2 devices remain unverified.
+
+macOS native file-panel interaction was not automated; its models/capabilities
+and both package modes were tested.
 
 ## Rulings I made
 
@@ -158,6 +166,8 @@ reasoning and known cost recorded when each decision was made.
 
 19. Ruling: removed whole-page search border is decorative; Rust stage still reveals selected hits — keep demo stage navigation — cost if wrong: weaker visual search feedback needs follow-up.
 
+20. Ruling: accept the iOS 27.2 folder-navigation failure as an iOS Files/simulator issue for this handoff — the user reproduced the animation-without-navigation manually and agrees with that assessment; iOS 26.5 completes the roundtrip — no speculative EmbedPDF workaround; physical-device behavior and exact system cause remain unverified. This supersedes the pending manual check in ruling 15.
+
 ## Deferred minors
 
 Eleven implemented i18n members are incorrectly grouped with translator-closure
@@ -171,10 +181,8 @@ audit's classification, not runtime feature availability.
 All nine implementation tasks and the three Important review fixes are committed
 on the dedicated branch. Keep the branch for user review; no merge, push or
 publication was performed. Diagnostic logs and native screenshots remain in the
-ignored plan workspace while the iOS 27.2 question is unresolved.
+ignored plan workspace as evidence of the iOS 27.2 Files/simulator limitation.
 
-Next check (under two minutes): on the “EmbedPDF Plugin Controls” iOS 27.2
-simulator, open EmbedPDF Demo → Attachments → Import files → Browse →
-On My iPhone → EmbedPDF Demo. Report whether the folder opens and shows
-`attachment-fixture.txt`. This establishes whether manual navigation succeeds;
-it does not by itself certify the whole import/export flow.
+The requested manual check is complete; no further user input is required.
+Next action: review this branch's diff against
+`research/multi-platform-rust-core-impl-plugins` before merging.
