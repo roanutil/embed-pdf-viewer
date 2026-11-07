@@ -35,12 +35,12 @@ const seed = [
   }),
   circle(3, { page: pr(2), ref: objRef(3, 2) }),
 ];
-const remote = (serverId: number | null) => origin('remote', serverId);
+const remote = (serverSequence: number | null) => origin('remote', serverSequence);
 // Deliberately malformed external cursor values: these reach the current mirror's JS comparison.
-const malformedFact = (n: number, serverId: unknown): Step => ({
+const malformedFact = (n: number, serverSequence: unknown): Step => ({
   op: 'emit',
   doc: 'a',
-  event: { ...createdFact(square(n)), origin: { ...REMOTE, serverId } },
+  event: { ...createdFact(square(n)), origin: { ...REMOTE, serverSequence } },
 });
 const meta = { affectedPages: [pr(2)], cacheDelta: null, opId: 'pages', undoable: true };
 const cases: ScenarioCase[] = [
@@ -165,7 +165,7 @@ const cases: ScenarioCase[] = [
         type: 'annotations.reordered',
         page: pr(1),
         order: [objRef(2), objRef(1), objRef(10), objRef(11)],
-        meta: { ...meta, affectedPages: [pr(1)], changed: [objRef(2)] },
+        meta: { ...meta, affectedPages: [pr(1)], changedRefs: [objRef(2)] },
         origin: remote(24),
       }),
       emit(deletedFact([objRef(2)], remote(26))),
@@ -182,9 +182,9 @@ const cases: ScenarioCase[] = [
       call('onUpdated', [{ $fn: 'updated' }]),
       call('onDeleted', [{ $fn: 'deleted' }]),
       emit(createdFact(square(3), remote(1))),
-      emit(createdFact(square(4), { ...remote(2), sub: 'u1' })),
+      emit(createdFact(square(4), { ...remote(2), subject: 'u1' })),
       emit(updatedFact(square(1, { contents: 'x' }), false, LOCAL)),
-      emit(deletedFact([objRef(2)], { ...remote(3), sub: null })),
+      emit(deletedFact([objRef(2)], { ...remote(3), subject: null })),
       call('list'),
     ],
     [hydrate([square(1), square(2)])],
@@ -226,8 +226,8 @@ const cases: ScenarioCase[] = [
     'Current reads can name a base annotation by immutable baseIndex; get/update identity no longer depends on an index revision or absent ref.',
     [
       call('get', [baseRef(0)]),
-      call('selection.set', [[baseRef(0)]]),
-      call('selection.list'),
+      call('selection.select', [[baseRef(0)]]),
+      call('selection.getSelected'),
       emit(updatedFact(square(1, { ref: baseRef(0), contents: 'base changed' }))),
       call('get', [baseRef(0)]),
       call('refresh'),
@@ -242,7 +242,7 @@ const cases: ScenarioCase[] = [
     'rehydrate-chains-after-the-flight',
     'A refresh during an in-flight reload schedules one further load, and current stream.desynced starts the reload.',
     [
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 1 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: '1970-01-01T00:00:00.001Z' }),
       call('refresh'),
       call('getStatus'),
       settle('second', snapshot([square(1, { contents: 'second' })])),
@@ -264,7 +264,7 @@ const cases: ScenarioCase[] = [
       emit({
         type: 'pages.deleted',
         pages: [pr(2)],
-        layout: { pageCount: 1, pages: [PAGES[0]!], namedPages: [] },
+        layout: { pageCount: 1, pages: [PAGES[0]!], labels: [], namedPages: [] },
         meta,
         origin: LOCAL,
       }),
@@ -272,7 +272,7 @@ const cases: ScenarioCase[] = [
       emit({
         type: 'pages.inserted',
         insertedPages: [pr(2)],
-        layout: { pageCount: 2, pages: PAGES, namedPages: [] },
+        layout: { pageCount: 2, pages: PAGES, labels: [], namedPages: [] },
         meta,
         origin: REMOTE,
       }),

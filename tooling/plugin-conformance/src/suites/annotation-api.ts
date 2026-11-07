@@ -42,7 +42,7 @@ import {
   boot,
 } from './annotation-live-fixtures';
 const box = { x: 10, y: 20, width: 100, height: 40 };
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const ptr = (tool: string, phase: string, x: number, y: number, page = 1, finish = false) =>
   call('createPointer', [tool, phase, pr(page), { x, y }, finish]);
 const text = freeText(1);
@@ -163,7 +163,7 @@ const cases: ScenarioCase[] = [
       call('getAt', [pr(1), { x: 100, y: 150 }]),
       call('getAt', [pr(1), { x: 5, y: 5 }]),
       select(objRef(1)),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('tools.list'),
       call('tools.get', ['square']),
       call('tools.register', [
@@ -380,20 +380,20 @@ const cases: ScenarioCase[] = [
     'Nested selectAll/selectInRect/rotate/reset/update/delete use actual current contracts and whole-change batch results.',
     [
       call('selection.selectAll'),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.selectAll', [pr(2)]),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.selectInRect', [pr(1), { x: 90, y: 90, width: 120, height: 120 }]),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.selectInRect', [pr(1), { x: 590, y: 790, width: 5, height: 5 }]),
-      call('selection.list'),
+      call('selection.getSelected'),
       select(objRef(1)),
       call('selection.rotateBy', [-90]),
       call('selection.resetRotation'),
       call('selection.update', [{ color: '#000000' }]),
       select(objRef(20, 2)),
       call('selection.delete'),
-      call('selection.list'),
+      call('selection.getSelected'),
     ],
     [
       hydrate([
@@ -454,8 +454,9 @@ const cases: ScenarioCase[] = [
       call('text.end'),
       call('get', [objRef(1)]),
       call('text.getEditing'),
-      call('getCssFontFamily', ['Arial']),
-      call('getCssFontFamily', ['Fancy']),
+      // bb0224f52: a face and the text box it is drawn in, not a bare family.
+      call('getCssFontFamily', [{ family: 'Arial', weight: 400, italic: false }, null]),
+      call('getCssFontFamily', [{ family: 'Fancy', weight: 700, italic: true }, null]),
     ],
     [
       hydrate([rich]),
@@ -509,7 +510,7 @@ const cases: ScenarioCase[] = [
       ]),
       call('stamps.place', [{ source: PNG }, { page: pr(7), center: { x: 1, y: 1 } }]),
       call('downloadResource', [objRef(1), 'file']),
-      call('selection.list'),
+      call('selection.getSelected'),
     ],
     [
       hydrate([fileAttachment(1)]),
@@ -521,9 +522,9 @@ const cases: ScenarioCase[] = [
               file: {
                 name: 'a.bin',
                 mimeType: 'application/octet-stream',
-                size: 3,
+                sizeBytes: 3,
                 description: null,
-                checksum: null,
+                md5: null,
                 createdAt: null,
                 modifiedAt: null,
               },
@@ -572,12 +573,12 @@ const cases: ScenarioCase[] = [
       ptr('distance', 'down', 100, 100),
       ptr('distance', 'move', 150, 100),
       ptr('distance', 'up', 244, 100),
-      call('distanceCreationPage'),
+      call('getDistanceCreationPage'),
       call('draft.get'),
       ptr('distance', 'move', 170, 70),
       ptr('distance', 'down', 170, 70),
       call('list'),
-      call('distanceCreationPage'),
+      call('getDistanceCreationPage'),
       ptr('calibrate', 'down', 10, 10),
       ptr('calibrate', 'move', 60, 10),
       ptr('calibrate', 'up', 110, 10),
@@ -702,7 +703,7 @@ const cases: ScenarioCase[] = [
     'No-authority dimensions are reported as skipped; an unreadable mirror reports its failure rather than a silent successful calibration.',
     [
       call('remeasurePage', [pr(1), FEET]),
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 1 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: '1970-01-01T00:00:00.001Z' }),
       call('remeasurePage', [pr(1), FEET]),
     ],
     [],
@@ -730,7 +731,7 @@ const cases: ScenarioCase[] = [
       call('onResynced', [{ $fn: 'resynced' }]),
       emit({
         type: 'document.versioned',
-        version: { sha256: '0'.repeat(64), byteLength: 100 },
+        version: { sha256: '0'.repeat(64), sizeBytes: 100 },
         origin: REMOTE,
       }),
       call('list'),

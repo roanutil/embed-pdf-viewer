@@ -32,8 +32,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   formWidget as currentFormWidget,
-  type FormFieldDTO,
-  type SignatureDTO,
+  type FormField,
+  type Signature,
   type SignatureCompleteResult,
 } from '@embedpdf/engine-core/runtime';
 
@@ -180,7 +180,7 @@ interface SignatureSpec {
   readonly shape?: 'controller';
 }
 
-function signerOf(spec: SignerSpec, env: PluginEnv): NonNullable<SignatureConfig['key']> {
+function signerOf(spec: SignerSpec, env: PluginEnv): NonNullable<SignatureConfig['signingKey']> {
   const sign = answering('signer.sign', spec.answer, env);
   const port =
     spec.kind === 'cms'
@@ -203,7 +203,7 @@ function configOf(spec: SignatureSpec, env: PluginEnv): SignatureConfig {
   return {
     ...(spec.mode !== undefined ? { mode: spec.mode } : {}),
     ...(spec.allowCertify !== undefined ? { allowCertify: spec.allowCertify } : {}),
-    ...(spec.signer ? { key: signerOf(spec.signer, env) } : {}),
+    ...(spec.signer ? { signingKey: signerOf(spec.signer, env) } : {}),
     ...(spec.trust
       ? { trust: { anchors: answering('trust.anchors', spec.trust.anchors, env) as never } }
       : {}),
@@ -226,7 +226,7 @@ registerPlugin('signature', {
       requires: [FormToken],
       optional: [InteractionToken, StampToken, AnnotationToken],
       state: initialSignatureState,
-      settings: { defaults: SIGNATURE_DEFAULTS, whole: ['key', 'trust'] },
+      settings: { defaults: SIGNATURE_DEFAULTS, whole: ['signingKey', 'trust'] },
       create: (ctx) => createSignatureController(ctx as never),
     }) as unknown as AnyPlugin;
   },
@@ -262,8 +262,8 @@ const dto = (
   index: number,
   n: number,
   name: string,
-  over: Partial<SignatureDTO> = {},
-): SignatureDTO => ({
+  over: Partial<Signature> = {},
+): Signature => ({
   index,
   field: ref(n),
   fieldName: name,
@@ -273,7 +273,7 @@ const dto = (
   filter: null,
   subFilter: null,
   byteRange: null,
-  contentsSize: 0,
+  contentsSizeBytes: 0,
   coverage: null,
   revisionIndex: null,
   signer: { name: null, location: null, reason: null, contactInfo: null, signedAt: null },
@@ -288,14 +288,14 @@ const signedDto = (
   index: number,
   n: number,
   name: string,
-  over: Partial<SignatureDTO> = {},
-): SignatureDTO =>
+  over: Partial<Signature> = {},
+): Signature =>
   dto(index, n, name, {
     signed: true,
     filter: 'Adobe.PPKLite',
     subFilter: 'ETSI.CAdES.detached',
     byteRange: [0, 100, 8292, 50],
-    contentsSize: 8192,
+    contentsSizeBytes: 8192,
     coverage: 'whole-revision',
     revisionIndex: 0,
     signer: {
@@ -358,7 +358,7 @@ const FIELDS = [
   sigField(4, 'Sig4', { valueEntry: { kind: 'scalar', value: 'x' } }),
 ];
 const WIDGETS = FIELDS.map((field, index) =>
-  widget(101 + index, field.family, {
+  widget(101 + index, field.kind, {
     field: field.ref,
     rect: { x: 100, y: 168 + index * 100, width: 160, height: 24 },
   }),
@@ -371,7 +371,7 @@ interface DocOptions {
   readonly allows?: string[] | '*';
   /** Tried before the defaults. */
   readonly responses?: ResponseSpec[];
-  readonly fields?: FormFieldDTO[];
+  readonly fields?: FormField[];
 }
 
 const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({
@@ -394,7 +394,7 @@ const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({
 
 // ── steps ─────────────────────────────────────────────────────────────────────
 
-const ORIGIN = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null } as const;
+const ORIGIN = { kind: 'local', sessionId: 's1', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null } as const;
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open = (id = 'a'): Step => ({
   op: 'call',
@@ -487,7 +487,7 @@ const emit = (event: Dto): Step => {
           cacheDelta: null,
           opId: 'reorder',
           undoable: true,
-          changed: [currentSquare(900).ref],
+          changedRefs: [currentSquare(900).ref],
         },
         origin: ORIGIN,
       };
@@ -499,7 +499,7 @@ const emit = (event: Dto): Step => {
       value = { ...event, origin: ORIGIN };
       break;
     case 'document.versioned':
-      value = { ...event, version: { sha256: 'new', byteLength: 10 }, origin: ORIGIN };
+      value = { ...event, version: { sha256: 'new', sizeBytes: 10 }, origin: ORIGIN };
       break;
   }
   return { op: 'emit', doc: 'a', event: value };
@@ -553,7 +553,7 @@ const prepared = (over: Dto = {}) => ({
   digest: GOOD_DIGEST,
   algorithm: 'sha256' as const,
   byteRange: [0, 100, 8292, 50] as [number, number, number, number],
-  contentsSize: 8192,
+  contentsSizeBytes: 8192,
   subFilter: 'ETSI.CAdES.detached' as const,
   expectedVersion: { baseSha256: 'base', editsVersion: 0 },
   expiresAt: null,
@@ -562,7 +562,7 @@ const prepared = (over: Dto = {}) => ({
 const completed = (n = 2, name = 'Sig2'): SignatureCompleteResult => ({
   status: 'completed',
   signature: signedDto(1, n, name),
-  version: { sha256: 'new', byteLength: 10 },
+  version: { sha256: 'new', sizeBytes: 10 },
   previous: { baseSha256: 'base', editsVersion: 0 },
   protection: {
     enforced: null,
@@ -853,7 +853,7 @@ const hydration: ScenarioCase[] = [
       sig('onValidated', fn('validated')),
       sig('onInvalidationPredicted', fn('invalidating')),
       sig('validate'),
-      sig('validate', { at: { kind: 'now' } }),
+      sig('validate', { validationTime: { kind: 'now' } }),
       sig('validateField', ref(1), { until: 'working-copy' }),
       sig('validate'),
       sig('validate', { until: 'persisted' }),
@@ -1264,7 +1264,7 @@ const signing: ScenarioCase[] = [
         field: ref(2),
         mark: MARK,
         appearance: $b('JVBERi0xLjc='),
-        key: fn('call.resolve', {
+        signingKey: fn('call.resolve', {
           resolves: { kind: 'cms', sign: fn('call.sign', { resolves: cmsArg('rsaCades') }) },
         }),
       }),
@@ -1313,7 +1313,7 @@ const signing: ScenarioCase[] = [
       sig('sign', {
         field: ref(2),
         mark: MARK,
-        key: {
+        signingKey: {
           kind: 'raw',
           certificateChain: [],
           algorithm: 'RSA-PKCS1-v1_5',

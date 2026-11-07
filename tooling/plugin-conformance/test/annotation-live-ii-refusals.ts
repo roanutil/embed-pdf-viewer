@@ -9,7 +9,6 @@ export const expectedRefusals: Readonly<
   ],
   'remove-and-remove-thread-atomically': [
     [4, 'settled', ['failed:1', 'delete not permitted']],
-    [5, 'settled', ['failed:2', 'delete not permitted', 'delete not permitted']],
     [7, 'settled', ['failed:1', 'intended atomic thread refusal']],
     [8, 'settled', ['[annotation] no comment thread contains this ref']],
   ],

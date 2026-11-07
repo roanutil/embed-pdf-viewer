@@ -56,8 +56,8 @@ const importing: ScenarioCase[] = [
       stamp('listAssets', [{ libraryId: '' }]),
       stamp('getAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('getAsset', ['nope']),
-      stamp('readAssetBytes', ['stamp-lib-0-1:Stamp2']),
-      stamp('readAssetBytes', ['nope']),
+      stamp('getAssetBytes', ['stamp-lib-0-1:Stamp2']),
+      stamp('getAssetBytes', ['nope']),
       stamp('getAssetPreview', ['stamp-lib-0-1:Stamp1']),
       stamp('getAssetPreview', ['nope']),
       stamp('exportLibrary', ['stamp-lib-0-1']),
@@ -160,7 +160,7 @@ const importing: ScenarioCase[] = [
       importWithAssetName(PDF, {
         name: '',
         categories: [],
-        kind: 'initials',
+        assetKind: 'initials',
         assetName: { $fn: 'assetName', seq: [{ returns: 'First' }, {}, {}] },
       }),
       stamp('listLibraries'),
@@ -316,7 +316,7 @@ const failures: ScenarioCase[] = [
   {
     name: 'previews-must-be-inline-bytes',
     covers:
-      'A valid URL-sourced image is unsupported on the local asset port. An explicitly malformed image missing contentType still caches its byte source with absent MIME. previewWidth sets the actual render request width.',
+      'A valid URL-sourced image is unsupported on the local asset port. An explicitly malformed image missing mimeType still caches its byte source with absent MIME. previewWidth sets the actual render request width.',
     plugins: STAMP({ assetEngine: 'instance', previewWidth: 96 }),
     engine: {
       documents: {
@@ -335,7 +335,7 @@ const failures: ScenarioCase[] = [
               path: 'page.render.image',
               value: {
                 ...image(100),
-                contentType: undefined,
+                mimeType: undefined,
                 source: {
                   kind: 'bytes',
                   bytes: { $bytes: Buffer.from(bytes('png-100')).toString('base64') },
@@ -368,7 +368,7 @@ const blankRenders: ScenarioCase[] = [
         noSource: assetDoc(ONE, {
           catalogWrites: [{ id: 'stamp-lib-0-3' }],
           responses: [
-            { path: 'page.render.image', value: { contentType: 'image/png', source: null } },
+            { path: 'page.render.image', value: { mimeType: 'image/png', source: null } },
           ],
         }),
       },
@@ -587,7 +587,7 @@ const current: ScenarioCase[] = [
       stamp('renderAssetPreview', ['registered:First', { width: 512 }]),
       stamp('renderAssetPreview', ['registered:First', { width: 1024 }]),
       stamp('getAssetPreview', ['registered:First']),
-      stamp('readAssetBytes', ['registered:First']),
+      stamp('getAssetBytes', ['registered:First']),
       stamp('exportLibrary', ['registered']),
     ],
   },

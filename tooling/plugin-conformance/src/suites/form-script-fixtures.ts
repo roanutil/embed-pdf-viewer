@@ -1,7 +1,7 @@
 /** Current scripting host inputs and detached-controller driver. */
 import { definePlugin } from '@embedpdf/core';
 import type {
-  FormFieldDTO,
+  FormField,
   FormFieldRef,
   FormFieldValue,
   FormSnapshot,
@@ -96,7 +96,7 @@ function sandboxFactory(spec: SandboxSpec, env: PluginEnv): ScriptSandboxFactory
       };
     };
     const sandbox: ScriptSandbox = {
-      get disposed() {
+      get destroyed() {
         return disposed;
       },
       boot(sources, input, budget) {
@@ -107,7 +107,7 @@ function sandboxFactory(spec: SandboxSpec, env: PluginEnv): ScriptSandboxFactory
         env.log('sandbox.run', [id, source, input, budget]);
         return answer(build.run, runs++);
       },
-      dispose() {
+      destroy() {
         env.log('sandbox.dispose', [id]);
         disposed = true;
       },
@@ -203,8 +203,8 @@ registerPlugin('form-scripts-current', {
           return controller;
         };
         ctx.cleanup(() => {
-          controller?.dispose();
-          realm?.dispose();
+          controller?.destroy();
+          realm?.destroy();
         });
         return {
           api: {
@@ -214,8 +214,8 @@ registerPlugin('form-scripts-current', {
               ready().activate(form, ref, action),
             recalculate: (form: FormSnapshot) => ready().recalculate(form),
             dispose: () => {
-              ready().dispose();
-              realm?.dispose();
+              ready().destroy();
+              realm?.destroy();
             },
           },
         };
@@ -270,7 +270,7 @@ export function act(method: ActionMethod, args: readonly unknown[] = [], doc = '
   return { op: 'call', target: { token: 'actions', doc }, method, args };
 }
 export const list = (
-  fields: FormFieldDTO[],
+  fields: FormField[],
   extra: Partial<ResponseSpec> = {},
   calculationOrder: FormSnapshot['calculationOrder'] = [],
 ): ResponseSpec => ({
@@ -282,7 +282,7 @@ export const list = (
         widget.page && widget.objectNumber > 0
           ? [
               completeRow(widget.objectNumber, field.ref, widget.page.objectNumber, undefined, {
-                fieldFamily: field.family,
+                fieldKind: field.kind,
               }),
             ]
           : [],
@@ -295,7 +295,6 @@ export const list = (
 export const tree = (root: PdfActionNode | null, incomplete = false): PdfActionTree => ({
   root,
   incomplete,
-  warningFlags: 0,
   warnings: incomplete ? ['incomplete'] : [],
 });
 export const js = (script: string, next: PdfActionNode[] = []): PdfActionNode => ({

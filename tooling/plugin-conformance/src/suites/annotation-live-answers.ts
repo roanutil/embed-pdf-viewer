@@ -238,8 +238,14 @@ export const LIVE_ANSWERS: Readonly<Record<string, ResponseSpec[]>> = {
       ],
       { ms: 0 },
     ),
+    // e2ee5215f: a thread's delete preflight asks the root's blockers, so
+    // other reviewers' review states no longer block the thread at 4; its
+    // root is deleted with every member, in one change.
+    write(2, [{ item: deleted(objRef(1)), changed: [1, 4, 5, 6, 7].map((n) => objRef(n)) }], {
+      ms: 0,
+    }),
     write(
-      2,
+      3,
       [
         {
           item: deleted({
@@ -300,7 +306,6 @@ export const LIVE_ANSWERS: Readonly<Record<string, ResponseSpec[]>> = {
                 activate: {
                   root: { type: 'uri', subtype: 'URI', uri: 'https://a', isMap: false, next: [] },
                   incomplete: false,
-                  warningFlags: 0,
                   warnings: [],
                 },
               },

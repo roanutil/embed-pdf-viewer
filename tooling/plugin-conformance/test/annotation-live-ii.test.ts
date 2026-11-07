@@ -184,7 +184,7 @@ test('every owned mutation has exact current ops, result kind, refs, schema fiel
         assert.equal(item.type, op.type, `${name}:${index} op kind`);
         assert.ok('origin' in event && 'meta' in event, name);
         assert.deepEqual(
-          event.origin.tx,
+          event.origin.transaction,
           { id: args[1].opId, index: i, count: answer.items.length },
           name,
         );
@@ -251,7 +251,7 @@ test('every owned mutation has exact current ops, result kind, refs, schema fiel
   assert.ok(count > 70, `only ${count} writes`);
 });
 import type { CommentThread } from '@embedpdf/engine-core/runtime';
-import type { AnnotationState } from '../../../packages/plugin/annotation/src/model';
+import type { AnnotationModel } from '../../../packages/plugin/annotation/src/model';
 import { objRef, pr } from '../src/suites/annotation-live-fixtures';
 const numbers = (annotations: readonly Annotation[]) =>
   annotations.map((annotation) => {
@@ -259,7 +259,7 @@ const numbers = (annotations: readonly Annotation[]) =>
     return annotation.ref.kind === 'objectNumber' ? annotation.ref.objectNumber : -1;
   });
 function session(name: string, index = -1) {
-  const state = result(name).trace.at(index)?.state as { plugins: Record<string, AnnotationState> };
+  const state = result(name).trace.at(index)?.state as { plugins: Record<string, AnnotationModel> };
   assert.ok(state?.plugins['annotation::a'], name);
   return state.plugins['annotation::a']!.session;
 }
@@ -334,12 +334,15 @@ test('thread deletion preflights every member and uses one successful atomic roo
     writes = ops(name);
   assert.deepEqual(
     writes.map((ops) => ops.map((op) => op.type)),
-    [['annotations.delete'], ['annotations.delete'], ['annotations.delete']],
+    [['annotations.delete'], ['annotations.delete'], ['annotations.delete'], ['annotations.delete']],
   );
-  assert.deepEqual(writes[1]![0], { type: 'annotations.delete', ref: objRef(15) });
+  // e2ee5215f: the preflight asks the root's blockers, so the thread at 4
+  // (other reviewers' review states) is deleted through its root, 1.
+  assert.deepEqual(writes[1]![0], { type: 'annotations.delete', ref: objRef(1) });
+  assert.deepEqual(writes[2]![0], { type: 'annotations.delete', ref: objRef(15) });
   const remaining = read<Annotation[]>(name, 'list');
-  assert.ok(!numbers(remaining).includes(15) && !numbers(remaining).includes(16));
-  assert.ok([1, 4, 5, 6, 7, 10, 11, 12, 13, 14].every((n) => numbers(remaining).includes(n)));
+  assert.ok([1, 4, 5, 6, 7, 15, 16].every((n) => !numbers(remaining).includes(n)));
+  assert.ok([10, 11, 12, 13, 14].every((n) => numbers(remaining).includes(n)));
   const result1 = read<{ deleted: unknown[]; failed: unknown[] }>(name, 'comments.deleteThread', 0);
   assert.equal(result1.deleted.length, 0);
   assert.equal(result1.failed.length, 1);
@@ -356,7 +359,7 @@ test('thread deletion preflights every member and uses one successful atomic roo
 });
 test('grouping preserves subordinate refs and atomic group, ungroup and replacement outcomes', () => {
   assert.deepEqual(
-    read<Annotation[]>('a-pair-groups', 'selection.list').map((annotation) => annotation.reply),
+    read<Annotation[]>('a-pair-groups', 'selection.getSelected').map((annotation) => annotation.reply),
     [null, { to: objRef(1), type: 'group' }],
   );
   assert.deepEqual(
@@ -376,7 +379,7 @@ test('grouping preserves subordinate refs and atomic group, ungroup and replacem
   assert.deepEqual(pair[1]!.reply, { to: objRef(10001), type: 'group' });
   assert.deepEqual(pair[0]!.rect, { x: 87, y: 51, width: 6, height: 6.25 });
   assert.deepEqual(
-    numbers(read<Annotation[]>('replace-text-creates-a-group', 'selection.list')),
+    numbers(read<Annotation[]>('replace-text-creates-a-group', 'selection.getSelected')),
     [10001, 10002],
   );
   assert.deepEqual(
@@ -519,7 +522,7 @@ test('tool gestures create the intended shapes, preserve home-page geometry and 
   const moved = read<Annotation[]>('edit-gestures', 'list')[0]!;
   assert.ok(moved.subtype === 'square');
   assert.deepEqual(moved.box, { x: 125, y: 112, width: 100, height: 100 });
-  assert.deepEqual(read('edit-gestures', 'selection.list'), []);
+  assert.deepEqual(read('edit-gestures', 'selection.getSelected'), []);
   assert.equal(read('edit-gestures', 'draft.get'), null);
   const firstRead = read<unknown>('edit-gestures', 'draft.get', 0);
   assert.equal(firstRead, null);
@@ -677,7 +680,7 @@ test('malformed binary sources fail only in their isolated named case and recove
   const preview = read<{ image: unknown } | null>(name, 'renderArmedStampPreview');
   assert.ok(preview);
   assert.equal(read(name, 'draft.get'), null);
-  assert.deepEqual(read(name, 'selection.list'), []);
+  assert.deepEqual(read(name, 'selection.getSelected'), []);
   assert.equal(read(name, 'text.getEditing'), null);
   assert.equal(ops(name).length, 0);
   assert.deepEqual(session(name).selected, []);

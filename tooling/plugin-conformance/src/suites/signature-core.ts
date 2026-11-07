@@ -13,8 +13,8 @@
  * CMS blobs), generated once because key generation and ECDSA / RSA-PSS
  * signatures are random. Two adapter conventions:
  *
- *   - A `Date` travels as epoch milliseconds (`signingTime`, `genTime`);
- *     a returned `Date` prints as `{$date}`.
+ *   - A point in time travels as the ISO 8601 string the API takes and
+ *     returns (`signingTime`, `genTime`; 2ce3f7bc5).
  *   - The WebCrypto adapters (`webCryptoSigner`, `generateSigningKeyPair`,
  *     `selfSignedCertificate`, `createTestSigner`, `personalSigner`) run
  *     against a scripted WebCrypto: `generateKey` hands out fixture keys,
@@ -54,6 +54,10 @@ import {
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
+
+/** A point in time as the API spells it, from epoch milliseconds. */
+const iso = (ms: number): string => new Date(ms).toISOString();
+const genTime = (ms: number) => ({ kind: 'timestamp' as const, genTime: iso(ms), tokenVerified: true as const });
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -113,7 +117,7 @@ async function signatureFor(input: {
     digest: input.digest,
     hash: input.hash,
     profile: input.profile,
-    signingTime: input.signingTime === undefined ? undefined : new Date(input.signingTime),
+    signingTime: input.signingTime === undefined ? undefined : iso(input.signingTime),
     signer: {
       kind: 'raw',
       certificateChain: input.chain.map((c) => bytesOf(fixtures.certs[c])),
@@ -225,9 +229,6 @@ const describeSigner = (signer: RawSigner) => ({
 
 // ── the harness plugin ───────────────────────────────────────────────────────
 
-const toDate = (ms: unknown) => (typeof ms === 'number' ? new Date(ms) : undefined);
-const withAt = (at: { kind: string; genTime?: number } | undefined) =>
-  at === undefined ? undefined : at.kind === 'timestamp' ? { ...at, genTime: new Date(at.genTime!) } : at;
 
 function signaturePlugin(env: PluginEnv): AnyPlugin {
   return {
@@ -236,21 +237,15 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
     create: (ctx) => ({
       api: {
       verifyCmsSignature: (cms: Uint8Array) => verifyCmsSignature(cms),
-      buildDetachedCms: (input: Parameters<typeof buildDetachedCms>[0] & { signingTime?: number }) =>
-        buildDetachedCms({ ...input, signingTime: toDate(input.signingTime) }),
+      buildDetachedCms: (input: Parameters<typeof buildDetachedCms>[0]) => buildDetachedCms(input),
       verifyForCompletion: (input: Parameters<typeof verifyForCompletion>[0]) => verifyForCompletion(input),
-      validateChain: (cms: Uint8Array, trust: Parameters<typeof validateChain>[1], at?: { kind: string; genTime?: number }) =>
-        validateChain(cms, trust, withAt(at) as Parameters<typeof validateChain>[2]),
+      validateChain: (cms: Uint8Array, trust: Parameters<typeof validateChain>[1], at?: Parameters<typeof validateChain>[2]) =>
+        validateChain(cms, trust, at),
       sign: (documentId: string, input: Parameters<typeof sign>[1]) => sign(ctx.documentHandle(documentId)!, input),
       validateSignatures: (
         documentId: string,
-        options?: Parameters<typeof validateSignatures>[1] & { at?: { kind: string; genTime?: number };
-          },
-      ) =>
-        validateSignatures(
-          ctx.documentHandle(documentId)!,
-          options === undefined ? undefined : ({ ...options, at: withAt(options.at) } as Parameters<typeof validateSignatures>[1]),
-        ),
+        options?: Parameters<typeof validateSignatures>[1],
+      ) => validateSignatures(ctx.documentHandle(documentId)!, options),
       remoteSign: (port: Parameters<typeof remoteSigner>[0], request: Parameters<ReturnType<typeof remoteSigner>['sign']>[0]) => {
         const signer = remoteSigner(port);
         return signer.sign(request);
@@ -415,7 +410,7 @@ const prepared = (over: Record<string, unknown> = {}) => ({
   digest: $b(b64(digestBytes(32, 3))),
   algorithm: 'sha256',
   byteRange: [0, 100, 8292, 50],
-  contentsSize: 8192,
+  contentsSizeBytes: 8192,
   subFilter: 'ETSI.CAdES.detached',
   expectedVersion: { baseSha256: 'base', editsVersion: 0 },
   expiresAt: null,
@@ -471,7 +466,7 @@ const buildInput = async (over: {
     digest: $b(b64(digest)),
     hash,
     profile,
-    ...(over.signingTime === undefined ? {} : { signingTime: over.signingTime }),
+    ...(over.signingTime === undefined ? {} : { signingTime: iso(over.signingTime) }),
     signer: rawSignerArg(chain, algorithm, signerHash, answer),
   };
 };
@@ -546,7 +541,7 @@ const buildCases: ScenarioCase[] = [
   scenario(
     'build-signing-times',
     'Signing times across the UTCTime range: leap days, era and month edges, and a time of day.',
-    SIGNING_TIMES.map((signingTime) => call('buildDetachedCms', { ...PKCS7_NO_SIGNATURE, signingTime })),
+    SIGNING_TIMES.map((signingTime) => call('buildDetachedCms', { ...PKCS7_NO_SIGNATURE, signingTime: iso(signingTime) })),
   ),
   scenario('build-bad-certificate',
     "A chain entry that is not a certificate throws pkijs's error.", [
@@ -577,7 +572,7 @@ const gate = (cms: unknown, profile: 'pkcs7' | 'cades-b', over: Record<string, u
 const gateCases: ScenarioCase[] = [
   scenario('gate-cades-ok', 'A CAdES CMS over the prepared digest passes.', [gate(cmsArg('rsaCades'), 'cades-b')]),
   scenario('gate-pkcs7-ok', 'A PKCS#7 CMS passes the PKCS#7 profile, signing-time and all.', [gate(cmsArg('rsaPkcs7'), 'pkcs7')]),
-  scenario('gate-too-large', 'A CMS bigger than the reserved /Contents is refused first.', [gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: 100 })]),
+  scenario('gate-too-large', 'A CMS bigger than the reserved /Contents is refused first.', [gate(cmsArg('rsaCades'), 'cades-b', { contentsSizeBytes: 100 })]),
   scenario('gate-malformed',
     "A CMS that does not parse is `malformed`, with the parser's message.", [gate(cmsArg('twoSigners'), 'cades-b')]),
   scenario('gate-malformed-type-error', 'A parser failure that is not a CmsError reports its text.', [gate(cmsArg('contentTypeEmpty'), 'cades-b')]),
@@ -593,10 +588,10 @@ const gateCases: ScenarioCase[] = [
   scenario('gate-pkcs7-with-time', 'The same CMS is refused for its signature, not its profile, under PKCS#7.', [gate(cmsArg('generalizedTime'), 'pkcs7')]),
   scenario('gate-signature-invalid', 'A signature that does not verify.', [gate(cmsArg('rsaCadesTampered'), 'cades-b')]),
   scenario('gate-exact-size', 'A CMS exactly as large as the reserved /Contents fits.', [
-    gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: bytesOf(fixtures.cms.rsaCades).length }),
+    gate(cmsArg('rsaCades'), 'cades-b', { contentsSizeBytes: bytesOf(fixtures.cms.rsaCades).length }),
   ]),
   scenario('gate-fractional-size', 'A reserved size that is not whole prints as JavaScript prints it.', [
-    gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: 100.5 }),
+    gate(cmsArg('rsaCades'), 'cades-b', { contentsSizeBytes: 100.5 }),
   ]),
   scenario('gate-signature-unsupported', 'An unsupported algorithm is refused with its own detail.', [gate(cmsArg('unknownCurve'), 'cades-b')]),
 ];
@@ -639,10 +634,10 @@ const trustCases: ScenarioCase[] = [
   scenario('trust-expired-intermediate', 'An expired certificate on the path.', [chain('interExpired', anchors('root'))]),
   scenario('trust-expired-signer', 'An expired lone signer.', [chain('expiredLeaf', anchors('inter'))]),
   scenario('trust-not-yet-valid', "A validation time before every certificate's notBefore.", [
-    chain('rsaCades', anchors('root'), { kind: 'timestamp', genTime: Date.UTC(2005, 0, 1), tokenVerified: true }),
+    chain('rsaCades', anchors('root'), genTime(Date.UTC(2005, 0, 1))),
   ]),
   scenario('trust-at-timestamp', 'A validation time inside the validity window.', [
-    chain('rsaCades', anchors('root'), { kind: 'timestamp', genTime: Date.UTC(2030, 5, 1), tokenVerified: true }),
+    chain('rsaCades', anchors('root'), genTime(Date.UTC(2030, 5, 1))),
   ]),
   scenario('trust-at-now', 'An explicit `now` is the clock.', [chain('rsaCades', anchors('root'), { kind: 'now' })]),
   scenario('trust-ca-without-basic-constraints', 'An issuer with keyCertSign but no BasicConstraints.', [
@@ -669,7 +664,6 @@ for (const name of Object.keys(fixtures.cms).filter((n) => n.startsWith('policy-
 }
 
 // The chain engine's rules one at a time, and its policy half on paths the loop above does not build.
-const genTime = (ms: number) => ({ kind: 'timestamp', genTime: ms, tokenVerified: true });
 trustCases.push(
   scenario('trust-at-not-before', 'A validation time exactly at notBefore is inside the window.', [
     chain('rsaCades', anchors('root'), genTime(Date.UTC(2020, 0, 1))),
@@ -722,7 +716,7 @@ const signDoc = (responses: ResponseSpec[], services = ['signatures']): Record<s
         ],
   },
 });
-const completed = { status: 'completed', signature: { index: 0, fieldName: 'Sig1' }, version: { sha256: 'new', byteLength: 10 } };
+const completed = { status: 'completed', signature: { index: 0, fieldName: 'Sig1' }, version: { sha256: 'new', sizeBytes: 10 } };
 const field = { kind: 'fqn', name: 'Sig1' };
 const rsaAnswer = async (profile: 'pkcs7' | 'cades-b', signingTime?: number, digest = digestBytes(32, 3), hash: RawSigner['hash'] = 'sha256') => ({
   resolves: $b(await signatureFor({ key: 'leaf', chain: leafChain, algorithm: 'RSA-PKCS1-v1_5', hash, profile, digest, signingTime })),
@@ -763,7 +757,7 @@ const signCases: ScenarioCase[] = [
     { path: 'signatures.complete', value: completed },
   ])),
   scenario('sign-cms-signer', 'A CMS signer gets the digest, algorithm and sub-filter; sha256 unless asked.', [
-    signCall({ contentsSize: 16384, signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
+    signCall({ contentsSizeBytes: 16384, signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
     { path: 'signatures.complete', value: completed },
@@ -828,7 +822,7 @@ const sigDto = (over: Record<string, unknown> = {}) => ({
   filter: 'Adobe.PPKLite',
   subFilter: 'ETSI.CAdES.detached',
   byteRange: [0, 100, 8292, 50],
-  contentsSize: 8192,
+  contentsSizeBytes: 8192,
   coverage: 'whole-revision',
   revisionIndex: 0,
   signer: { name: 'Conformance Signer' },
@@ -961,7 +955,7 @@ const validateCases: ScenarioCase[] = [
     { path: 'signatures.analyze', value: analysis({ verdict: 'indeterminate', primary: { verdict: 'incomplete', objectNumber: 7 } }) },
   ])),
   scenario('validate-permitted-undone', 'Permitted later changes, some undone; the working copy was asked for.', [
-    validate({ until: 'working-copy', at: { kind: 'timestamp', genTime: Date.UTC(2030, 5, 1), tokenVerified: true } }),
+    validate({ until: 'working-copy', validationTime: genTime(Date.UTC(2030, 5, 1)) }),
   ], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto()]) },
     contentsOf('rsaCades'),

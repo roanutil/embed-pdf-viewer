@@ -95,7 +95,7 @@ export const applied = (
 ): DocumentEvent => ({
   type: 'redaction.applied',
   ...answer,
-  origin: { ...origin, tx: { id: answer.meta.opId, index: 0, count: 1 } },
+  origin: { ...origin, transaction: { id: answer.meta.opId, index: 0, count: 1 } },
 });
 export const applyAnswer = (
   answer: RedactionApplyResult,

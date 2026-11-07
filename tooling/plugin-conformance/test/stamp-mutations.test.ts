@@ -33,6 +33,7 @@ test('append static answers retain the existing key-sorted registry and page met
   assert.ok(answer);
   assert.deepEqual(answer.value, {
     layout: {
+      labels: [],
       pageCount: 2,
       pages: [
         ...ONE,
@@ -108,7 +109,7 @@ test('canonical append case preserves the imported Stamp1 registration in its st
 
 import type { ScenarioCase, TraceEntry } from '../src/scenario';
 import type { StampAsset, StampLibrary } from '../../../packages/plugin/stamp/src/contract';
-import type { StampState } from '../../../packages/plugin/stamp/src/model';
+import type { StampModel } from '../../../packages/plugin/stamp/src/model';
 import { canonical } from '../src/canonical';
 import { operationAt } from '../src/suites/annotation-live-fixtures';
 import { PDF, png, jpeg, pdf, bytes } from '../src/suites/stamp-current-fixtures';
@@ -140,8 +141,8 @@ function value<T = unknown>(trace: TraceEntry[], step: number): T {
   assert.ok(r && 'returned' in r, `returned ${step}`);
   return r.returned as T;
 }
-function state(trace: TraceEntry[], step = trace.length - 1): StampState {
-  const state = trace[step].state as { plugins?: { stamp?: StampState }; stamp?: StampState };
+function state(trace: TraceEntry[], step = trace.length - 1): StampModel {
+  const state = trace[step].state as { plugins?: { stamp?: StampModel }; stamp?: StampModel };
   const s = state.plugins?.stamp ?? state.stamp;
   assert.ok(s);
   return s;
@@ -536,7 +537,7 @@ test('canonical append returns exact asset, writes, extracted bytes and fact pay
     },
   ]);
   assert.deepEqual(trace[10].callbacks, [
-    { fn: 'LibraryChanged', args: [{ libraryId: asset.libraryId, reason: 'asset-added' }] },
+    { fn: 'LibraryChanged', args: [{ libraryId: asset.libraryId, type: 'asset-created' }] },
     { fn: 'AssetCreated', args: [{ assetId: asset.id, libraryId: asset.libraryId, asset }] },
   ]);
 });
@@ -591,7 +592,7 @@ test('delete removes binaries only after rewrite and leaves an empty seed-backed
   const deletion = calls(trace).find((c) => c.path === 'pages.delete');
   assert.deepEqual(deletion?.args, [[pr(100)]]);
   assert.deepEqual(trace[11].callbacks, [
-    { fn: 'LibraryChanged', args: [{ libraryId: 'stamp-lib-0-1', reason: 'asset-removed' }] },
+    { fn: 'LibraryChanged', args: [{ libraryId: 'stamp-lib-0-1', type: 'asset-deleted' }] },
     {
       fn: 'AssetDeleted',
       args: [{ assetId: 'stamp-lib-0-1:Stamp1', libraryId: 'stamp-lib-0-1', asset: null }],
@@ -1004,10 +1005,10 @@ test('programmatic placement carries exact ops/resources/opIds, confirmed facts 
     [1, 2, 4].map((i) => ({
       kind: 'local',
       sessionId: 's1',
-      sub: null,
-      ts: 0,
-      serverId: null,
-      tx: { id: operationAt(i), index: 0, count: 1 },
+      subject: null,
+      at: '1970-01-01T00:00:00.000Z',
+      serverSequence: null,
+      transaction: { id: operationAt(i), index: 0, count: 1 },
     })),
   );
   assert.equal(

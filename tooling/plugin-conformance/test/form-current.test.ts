@@ -243,7 +243,7 @@ test('indexes use current refs, rebuild joins, isolate pages and preserve no-op 
   );
   for (const name of ['update/page-geom-replaces-a-page', 'update/clear-geom-all'])
     assert.deepEqual(pure(name), {});
-  assert.deepEqual(pure('initialFormState/empty'), {});
+  assert.deepEqual(pure('initialFormState/empty'), { focused: null });
   assert.equal(pure('fieldRefByObjectNumber/object-number'), 'obj:12');
   assert.deepEqual(pure('fieldRefByName/fqn'), { kind: 'fqn', name: 'parent.child' });
 });
@@ -471,10 +471,10 @@ for (const suite of lifecycle)
         assert.deepEqual(object(changes[0]!.args[0]).origin, {
           kind: 'local',
           sessionId: 's1',
-          sub: null,
-          ts: 0,
-          serverId: null,
-          tx: { id: operationAt(1), index: 0, count: 1 },
+          subject: null,
+          at: '1970-01-01T00:00:00.000Z',
+          serverSequence: null,
+          transaction: { id: operationAt(1), index: 0, count: 1 },
         });
         assert.equal(returned(result.trace, 15), false);
         assert.equal(result.trace[16]!.engine.length, 0);

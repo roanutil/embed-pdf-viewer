@@ -50,9 +50,9 @@ const COLOURS = listbox(4, 'colours', ['g']);
 const FIELDS = [NAME, AGREE, COLOUR, COLOURS];
 const ROWS = [
   row(101, ref(1), 1, { x: 10, y: 20, width: 100, height: 24 }),
-  row(102, ref(2), 1, { x: 50, y: 82, width: 18, height: 18 }, { fieldFamily: 'checkbox' }),
-  row(103, ref(3), 1, undefined, { fieldFamily: 'combobox' }),
-  row(104, ref(4), 1, undefined, { fieldFamily: 'listbox' }),
+  row(102, ref(2), 1, { x: 50, y: 82, width: 18, height: 18 }, { fieldKind: 'checkbox' }),
+  row(103, ref(3), 1, undefined, { fieldKind: 'combobox' }),
+  row(104, ref(4), 1, undefined, { fieldKind: 'listbox' }),
 ];
 const FORM = snapshot(FIELDS, ROWS);
 const GRACE = text(1, 'name', 'Grace');
@@ -503,7 +503,7 @@ const cases: ScenarioCase[] = [
       emit({ ...deleteAnswer(1, NAME, [ROWS[0]!]).events[0]! }),
       call('get', [ref(1)]),
       call('getWidget', [objRef(101)]),
-      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 0 }),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: '1970-01-01T00:00:00.000Z' }),
       call('getSnapshot'),
     ],
     FORM,
@@ -576,11 +576,11 @@ const cases: ScenarioCase[] = [
       settle('list', snapshot(READ_FIELDS, ROWS)),
       call('getStatus'),
       call('list'),
-      call('list', [{ family: 'checkbox' }]),
+      call('list', [{ kind: 'checkbox' }]),
       call('list', [{ name: 'colour' }]),
       call('list', [{ name: 'nope' }]),
       call('list', [{ page: pr(2) }]),
-      call('list', [{ family: 'text', page: pr(1) }]),
+      call('list', [{ kind: 'text', page: pr(1) }]),
       call('list', [{}]),
       ...[1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 15, 404].map((n) => call('getValue', [ref(n)])),
       call('getValue', [fqn('loose')]),

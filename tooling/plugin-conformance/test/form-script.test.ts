@@ -85,7 +85,7 @@ const incomplete = failed('invalid-output', 'Refusing to execute an incomplete P
 const bootDiagnostic = (message: string) =>
   diagnostic('Document boot script failed (continuing without it): ' + message);
 const alert = (message: string, phase = 'user', icon = 0) => ({
-  kind: 'alert',
+  type: 'alert',
   message,
   icon,
   phase,
@@ -158,7 +158,7 @@ const expected: Record<string, unknown[]> = {
   ),
   'activation-runs-in-the-transaction': [
     accepted([textEffect(1, 'Mouse Up:Field')], {
-      uiEffects: [alert('Summary ready'), { kind: 'gotoPage', page: 1, phase: 'user' }],
+      uiEffects: [alert('Summary ready'), { type: 'goToPage', pageIndex: 1, phase: 'user' }],
     }),
   ],
   'activation-edits-its-own-field': [accepted([textEffect(9, 'mine')])],
@@ -462,7 +462,7 @@ test('all 24 native integration cases send independently specified atomic ops an
   const fields = array(complete.fields).map(object);
   assert.deepEqual(
     fields
-      .filter((field) => ['text', 'checkbox'].includes(String(field.family)))
+      .filter((field) => ['text', 'checkbox'].includes(String(field.kind)))
       .map((field) => [field.ref, field.valueEntry]),
     [
       [ref(1), { kind: 'none' }],
@@ -471,9 +471,9 @@ test('all 24 native integration cases send independently specified atomic ops an
       [ref(6), { kind: 'scalar', value: 'Off' }],
     ],
   );
-  assert.equal(fields.find((field) => field.family === 'checkbox')!.checked, false);
+  assert.equal(fields.find((field) => field.kind === 'checkbox')!.checked, false);
   assert.equal(
-    object(array(fields.find((field) => field.family === 'checkbox')!.widgets)[0]).checked,
+    object(array(fields.find((field) => field.kind === 'checkbox')!.widgets)[0]).checked,
     false,
   );
 });
@@ -492,7 +492,7 @@ test('sandbox inputs carry current fields, configured environment and exact K/V/
         {
           ref: ref(1),
           name: 'name',
-          family: 'text',
+          kind: 'text',
           value: 'Ada',
           defaultValue: null,
           display: 'visible',
@@ -650,7 +650,7 @@ test('native scripted confirmation preserves complete fields, own widget rows, e
     [2, 3].map((number, index) => ({
       ref: ref(number),
       value: number === 2 ? '3' : '6',
-      origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 3 } },
+      origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 3 } },
     })),
   );
   const snapshot = object(readReturns(name, trace, 'getSnapshot')[0]);
@@ -712,7 +712,7 @@ test('native scripted confirmation preserves complete fields, own widget rows, e
       }
       for (const [index, event] of events.entries())
         assert.deepEqual(
-          object(event.origin).tx,
+          object(event.origin).transaction,
           { id: object(answer.meta).opId, index, count: events.length },
           name + ' tx',
         );
@@ -773,10 +773,9 @@ test('action refusals, explicit submit diagnostics and provenance stay exact at 
     url,
     method: 'post',
     format: 'fdf',
-    flagsRaw: 0,
     entries: items,
     origin: 'user',
-    event: { scope: 'activate' },
+    event: { type: 'activate' },
     ...over,
   });
   const host = (await run('resolve-submit-dataset-door')).trace;
@@ -785,7 +784,7 @@ test('action refusals, explicit submit diagnostics and provenance stay exact at 
     dataset('https://home.test/x', entries, {
       charSet: 'utf-16',
       origin: 'lifecycle',
-      event: { scope: 'document', name: 'open' },
+      event: { type: 'document', event: 'open' },
     }),
     dataset('https://home.test/x', entries),
   ]);
@@ -863,7 +862,7 @@ test('action refusals, explicit submit diagnostics and provenance stay exact at 
     (await run('a-refused-activation-is-dispatched')).trace,
     'activateWidget',
   ).map(object);
-  assert.equal(refusedActivation[0]!.kind, 'dispatched');
+  assert.equal(refusedActivation[0]!.status, 'dispatched');
   const result = object(refusedActivation[0]!.result);
   assert.equal(result.status, 'refused');
   assert.deepEqual(object(object(array(result.steps)[0]).result), {
@@ -1091,7 +1090,7 @@ registerPlugin('form-script-realm-state', {
                 detached: await detached.transaction(async () => 'detached no-run transaction'),
               };
             } finally {
-              detached.dispose();
+              detached.destroy();
             }
           },
         },

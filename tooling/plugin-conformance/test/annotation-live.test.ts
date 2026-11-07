@@ -139,7 +139,7 @@ test('the runner invokes a real current annotation noun', async () => {
     scenario(
       'real-noun',
       'Current shipping nested annotation selection',
-      [call('selection.set', [[objRef(1)]]), call('selection.list')],
+      [call('selection.select', [[objRef(1)]]), call('selection.getSelected')],
       [hydrate([square(1)])],
     ),
   );
@@ -236,7 +236,7 @@ import {
   type ChangeResult,
 } from '@embedpdf/engine-core/runtime';
 import { annotationAfter } from '../../../packages/core/annotation/src/record';
-import type { AnnotationState } from '../../../packages/plugin/annotation/src/model';
+import type { AnnotationModel } from '../../../packages/plugin/annotation/src/model';
 const owned = [...apiSuites, ...crudSuites, ...hydrationSuites, ...reconciliationSuites];
 const currentCases = owned.flatMap((s) => (s.kind === 'scenario' ? s.cases : []));
 const runs = new Map<string, { input: ScenarioCase; trace: TraceEntry[] }>();
@@ -285,7 +285,7 @@ function read<T = unknown>(name: string, method: string, which = -1): T {
   return settled.resolved as T;
 }
 function session(name: string, i = -1) {
-  const state = getRun(name).trace.at(i)?.state as { plugins: Record<string, AnnotationState> };
+  const state = getRun(name).trace.at(i)?.state as { plugins: Record<string, AnnotationModel> };
   assert.ok(state?.plugins['annotation::a']);
   return state.plugins['annotation::a']!.session;
 }
@@ -367,13 +367,13 @@ test('every successful apply has matching current ops/items/events/opId/birth re
         const event = response.events![j]!;
         assert.ok('origin' in event);
         assert.deepEqual(
-          event.origin.tx,
+          event.origin.transaction,
           { id: result.meta.opId, index: j, count: result.items.length },
           name,
         );
         assert.equal(event.origin.kind, 'local');
-        assert.equal(typeof event.origin.ts, 'number');
-        assert.equal(event.origin.serverId, null);
+        assert.equal(typeof event.origin.at, 'string');
+        assert.equal(event.origin.serverSequence, null);
         if (!('annotation' in item)) return;
         assert.equal(
           AnnotationSchema.safeParse(item.annotation).success,
@@ -851,7 +851,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
       await kernel.documents.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
       const a = kernel.capability(AnnotationToken, 'a');
       await a.whenSynced();
-      const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationState).session;
+      const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationModel).session;
       let refusalObserved = false;
       a.onWriteFailed(() => {
         refusalObserved = true;
@@ -872,7 +872,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
       assert.notEqual(a.list(), initialList);
       assert.deepEqual(a.list()[0]!.ref, objRef(10001));
       assert.equal(a.isPending(objRef(10001)), true);
-      a.selection.set([objRef(10001)]);
+      a.selection.select([objRef(10001)]);
       a.editPointer('down', pr(1), { x: 100, y: 125 }, false);
       a.editPointer('move', pr(1), { x: 110, y: 135 }, false);
       assert.equal(state().draft?.kind, 'move');
@@ -896,7 +896,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
         const born = materialize(10001, draft);
         const meta = {
           affectedPages: [pr(1)],
-          changed: [objRef(10001)],
+          changedRefs: [objRef(10001)],
           cacheDelta: null,
           opId,
           undoable: true,
@@ -906,7 +906,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
           page: pr(1),
           annotation: born,
           meta,
-          origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+          origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
         });
         assert.equal(
           state().draft?.kind,
@@ -954,7 +954,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
         const opId = writes[1]!.args[1].opId;
         const meta = {
           affectedPages: [pr(1)],
-          changed: [objRef(10001)],
+          changedRefs: [objRef(10001)],
           cacheDelta: null,
           opId,
           undoable: true,
@@ -966,7 +966,7 @@ test('H3 directly proves synchronous forget during actual store/mirror deletion 
           annotation,
           appearance,
           meta,
-          origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+          origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
         });
         fake.settle('moved', {
           value: {
@@ -1092,7 +1092,7 @@ test('the explicit internal failure-callback reentry edge stays publicly empty a
     await kernel.documents.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
     const a = kernel.capability(AnnotationToken, 'a');
     await a.whenSynced();
-    const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationState).session;
+    const state = () => (kernel.getState().plugins['annotation::a'] as AnnotationModel).session;
     let reentered = false,
       callbackError: unknown;
     a.onWriteFailed(() => {
@@ -1114,7 +1114,7 @@ test('the explicit internal failure-callback reentry edge stays publicly empty a
     });
     void create.catch(() => {});
     await turn();
-    a.selection.set([objRef(10001)]);
+    a.selection.select([objRef(10001)]);
     a.editPointer('down', pr(1), { x: 100, y: 125 }, false);
     a.editPointer('move', pr(1), { x: 110, y: 135 }, false);
     fake.settle('born', {
@@ -1127,7 +1127,7 @@ test('the explicit internal failure-callback reentry edge stays publicly empty a
     assert.equal(state().draft, null);
     // A separate current implementation edge; ordinary refusal tests above still require selected:[].
     assert.deepEqual(state().selected, ['obj:10001']);
-    assert.deepEqual(a.selection.list(), []);
+    assert.deepEqual(a.selection.getSelected(), []);
     assert.equal(a.selection.getAnchor(), null);
     assert.equal(a.get(objRef(10001)), null);
     assert.equal(a.canUpdate(objRef(10001)), false);

@@ -4,7 +4,7 @@ import type {
   AttachmentFileSource,
   Identity,
   DocumentActionsSnapshot,
-  FormFieldDTO,
+  FormField,
   FormEffect,
   PageFlattenResult,
   PageLayout,
@@ -105,7 +105,7 @@ const BOOT_SCRIPTS: DocumentActionsSnapshot = {
 export function dynamicDoc(
   input: {
     pages?: PageLayout[];
-    fields?: FormFieldDTO[];
+    fields?: FormField[];
     responses?: ResponseSpec[];
     lacks?: string[];
     flatten?: PageFlattenResult;

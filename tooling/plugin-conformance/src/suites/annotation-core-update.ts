@@ -1744,7 +1744,7 @@ updateCases.push(
   c(
     'rotateDraftDelta',
     'custom-angles',
-    S({ snap: { ...up.initialModel.snap, rotationAngles: [45, -10], rotationThreshold: 10 } }),
+    S({ snap: { ...up.initialModel.snap, rotationAngles: [45, -10], rotationThresholdDeg: 10 } }),
     rotDraft(v(0, 0), v(0, -10), v(10, -10)),
   ),
   c(

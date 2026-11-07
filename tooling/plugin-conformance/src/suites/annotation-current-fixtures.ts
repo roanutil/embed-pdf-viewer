@@ -267,7 +267,7 @@ export const link = (n: number, over: Partial<Of<'link'>> = {}) =>
   );
 export const widget = (
   n: number,
-  fieldFamily: Of<'widget'>['fieldFamily'],
+  fieldKind: Of<'widget'>['fieldKind'],
   over: Partial<Of<'widget'>> = {},
 ) =>
   read<'widget'>(
@@ -280,7 +280,7 @@ export const widget = (
       textAlign: 'left',
       print: true,
     },
-    { fieldFamily, ...over },
+    { fieldKind, ...over },
   );
 export const unsupported = (
   n: number,

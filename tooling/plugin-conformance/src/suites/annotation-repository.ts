@@ -24,7 +24,7 @@ import { draftOf } from '../../../../packages/core/annotation/src/update/changes
 import { familyOf } from '../../../../packages/core/annotation/src/shapes';
 import { widgetAppearanceOf } from '../../../../packages/core/annotation/src/record/defaults';
 import { widgetKindOf } from '../../../../packages/core/annotation/src/kinds/widget';
-import { pagePointsBounds } from '@embedpdf/engine-core/runtime';
+import { pagePointsBounds, richTextParagraphsFromPlainText } from '@embedpdf/engine-core/runtime';
 import type {
   ModelAnnotation,
   Shape,
@@ -512,7 +512,18 @@ for (const [label, annotation] of STYLED) {
               },
             },
           }
-        : values;
+        : scope === 'format' && 'richText' in annotation
+          ? // 7b91e04a9: a markup annotation's comment is rich text, so the
+            // format is a whole document input over the comment it has.
+            {
+              richText: {
+                paragraphs:
+                  annotation.richText?.paragraphs ??
+                  richTextParagraphsFromPlainText(annotation.contents ?? ''),
+                body: { weight: 700, italic: true, decoration: ['underline'] },
+              },
+            }
+          : values;
     replace(`toScopedPatch/${label}/${scope}`, 'withValues', fromDTO(annotation), stated);
   }
   replace(

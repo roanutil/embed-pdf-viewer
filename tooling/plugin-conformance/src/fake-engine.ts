@@ -38,7 +38,7 @@ import {
   fieldRightsOf,
   type AnnotationOwner,
   type Identity,
-  decodePdfBits,
+  permissionFlagsOf,
   expandRawScope,
   type DocCapability,
   type DocumentSecurityState,
@@ -46,6 +46,7 @@ import {
   LOCAL_ENGINE_BRAND,
   type PageRef,
   type PageLayout,
+  type PageListSnapshot,
   type DocumentEvent,
   type DocumentHandle,
   type LocalDocumentHandle,
@@ -173,6 +174,7 @@ const SERVICE_MEMBERS = {
     extract: true,
     insert: true,
     insertBlank: true,
+    copy: true,
   },
   metadata: { get: true, update: true, custom: true },
   'metadata.custom': { get: true, update: true },
@@ -231,7 +233,14 @@ const SERVICE_MEMBERS = {
   'page.measure': { listViewports: true, setScale: true },
   pieceInfo: { get: true, update: true, list: true, delete: true },
   'page.pieceInfo': { get: true, update: true, list: true, delete: true },
-  fonts: { setEmbeddingPolicy: true, setTypographicFeatures: true },
+  fonts: {
+    list: true,
+    resolve: true,
+    getProgram: true,
+    downloadProgram: true,
+    setEmbeddingPolicy: true,
+    setTypographicFeatures: true,
+  },
 } satisfies { [Path in keyof TableServices]: { [Member in keyof TableServices[Path]]-?: true } };
 
 interface Pending {
@@ -452,21 +461,22 @@ export function createFakeEngine(
     let pages = decode(document.pages ?? []) as PageLayout[];
     let labels = decode(document.labels ?? []);
     let namedPages = decode(document.namedPages ?? []);
-    let lastServerId: number | null = null;
+    let lastServerSequence: number | null = null;
     const publish = (given: DocumentEvent) => {
       let event = given;
-      if ('layout' in event) {
+      const layout = (given as { layout?: Partial<PageListSnapshot> | null }).layout;
+      if (layout && typeof layout === 'object') {
         // A layout written without `labels` (every case before page label
         // sections) is one with none, as `PageListSnapshot` now requires.
-        if (event.layout && !('labels' in event.layout)) {
-          event = { ...event, layout: { ...event.layout, labels: [] } } as DocumentEvent;
+        if (!('labels' in layout)) {
+          event = { ...given, layout: { ...layout, labels: [] } } as DocumentEvent;
         }
-        pages = event.layout.pages ?? [];
-        labels = event.layout.labels ?? [];
-        namedPages = event.layout.namedPages ?? [];
+        pages = (layout.pages ?? []) as PageLayout[];
+        labels = layout.labels ?? [];
+        namedPages = layout.namedPages ?? [];
       }
-      if ('origin' in event && event.origin.serverId !== null) {
-        lastServerId = Math.max(lastServerId ?? 0, event.origin.serverId);
+      if ('origin' in event && event.origin.serverSequence !== null) {
+        lastServerSequence = Math.max(lastServerSequence ?? 0, event.origin.serverSequence);
       }
       for (const listener of [...listeners]) {
         try {
@@ -490,7 +500,7 @@ export function createFakeEngine(
         encryption: { state: 'none', requiresPassword: false },
         permissions: {
           known: true,
-          bits: null,
+          flags: null,
           allAllowed: true,
           openedAs: 'none',
           securityHandlerRevision: null,
@@ -503,7 +513,10 @@ export function createFakeEngine(
       security.passwordPrompt ?? passwordPromptFromState(currentSecurityState),
     );
     const identity = decode(security.identity ?? {}) as Identity;
-    const currentBits = () => decodePdfBits(currentSecurityState.permissions.bits);
+    // An unprobed document (`flags: null`) reads as the most restrictive flags,
+    // as the local engine's `permissionFlagsOf(null)` does.
+    const currentBits = () =>
+      currentSecurityState.permissions.flags ?? permissionFlagsOf(null);
     const allows = (capability: string) =>
       security.allows !== undefined
         ? security.allows === '*' || security.allows.includes(capability)
@@ -683,7 +696,7 @@ export function createFakeEngine(
             listeners.delete(filtered);
           };
         },
-        lastServerId: () => lastServerId,
+        lastServerSequence: () => lastServerSequence,
       },
       page: (ref: PageRef) => {
         const pon = ref.objectNumber;

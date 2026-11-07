@@ -70,13 +70,13 @@ export const operationAt = (n: number, ms = 0): string => {
 };
 export const origin = (
   kind: 'local' | 'remote' = 'remote',
-  serverId: number | null = null,
+  serverSequence: number | null = null,
 ): EventOrigin => ({
   kind,
   sessionId: kind === 'local' ? 's1' : 's2',
-  sub: kind === 'local' ? null : 'u-9',
-  ts: 0,
-  serverId,
+  subject: kind === 'local' ? null : 'u-9',
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence,
 });
 export const LOCAL = origin('local');
 export const REMOTE = origin();
@@ -170,11 +170,11 @@ export function confirmation(
       cacheDelta: null,
       opId,
       undoable: true,
-      changed: [...refs],
+      changedRefs: [...refs],
     };
     // The explicit item discriminant fixes its event/result shape; no compatibility projection.
     items.push({ ...item, meta } as ChangeItem);
-    const from = { ...LOCAL, tx: { id: opId, index, count: entries.length } };
+    const from = { ...LOCAL, transaction: { id: opId, index, count: entries.length } };
     if (item.type === 'annotations.create' || item.type === 'annotations.update')
       events.push({
         ...item,
@@ -273,7 +273,7 @@ export const createdFact = (annotation: Annotation, from: EventOrigin = REMOTE):
   meta: {
     affectedPages: [annotation.page],
     cacheDelta: null,
-    changed: [annotation.ref],
+    changedRefs: [annotation.ref],
     opId: 'remote-create',
     undoable: true,
   },
@@ -291,7 +291,7 @@ export const updatedFact = (
   meta: {
     affectedPages: [annotation.page],
     cacheDelta: null,
-    changed: [annotation.ref],
+    changedRefs: [annotation.ref],
     opId: 'remote-update',
     undoable: true,
   },
@@ -307,7 +307,7 @@ export const deletedFact = (
   meta: {
     affectedPages: [refs[0]!.page],
     cacheDelta: null,
-    changed: [...refs],
+    changedRefs: [...refs],
     opId: 'remote-delete',
     undoable: true,
   },
@@ -320,7 +320,7 @@ export const restoredFact = (page: PageRef, annotations: Annotation[] = []): Doc
   meta: {
     affectedPages: [page],
     cacheDelta: null,
-    changed: annotations.map((a) => a.ref),
+    changedRefs: annotations.map((a) => a.ref),
     opId: 'remote-restore',
     undoable: true,
   },

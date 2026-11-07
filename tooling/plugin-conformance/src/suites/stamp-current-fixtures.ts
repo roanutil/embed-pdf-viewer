@@ -283,7 +283,7 @@ export const image = (objectNumber: number): PageImageResult => ({
   width: 256,
   height: 128,
   format: 'png',
-  contentType: 'image/png',
+  mimeType: 'image/png',
   source: { kind: 'bytes', bytes: bytes(`png-${objectNumber}`) },
 });
 export const metadata = (title: string | null): DocumentMetadata => ({
@@ -357,6 +357,7 @@ export function assetDoc(pages: PageLayout[], input: AssetDocumentInput = {}): F
   const currentLayout: Awaited<ReturnType<LocalDocumentHandle['pages']['list']>> = {
     pageCount: pages.length,
     pages,
+    labels: [],
     namedPages: input.namedPages ?? [],
   };
   const fixedNames = input.pageNames ?? [

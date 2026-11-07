@@ -232,7 +232,7 @@ export const scaleFact = (page = pr(1), opId = 'viewport-fact'): DocumentEvent =
   type: 'pages.scaleSet',
   page,
   meta: meta(page, opId),
-  origin: { ...LOCAL, tx: { id: opId, index: 0, count: 1 } },
+  origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
 });
 export const scaleAnswer = (
   pon = 1,

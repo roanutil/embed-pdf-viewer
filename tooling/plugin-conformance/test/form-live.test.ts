@@ -64,7 +64,7 @@ function checkRows(form: FormSnapshot) {
     if (w.field) {
       const f = form.fields.find((f) => JSON.stringify(f.ref) === JSON.stringify(w.field));
       assert.ok(f, 'row field exists');
-      assert.equal(w.fieldFamily, f.family, 'row family matches its field');
+      assert.equal(w.fieldKind, f.kind, 'row family matches its field');
     }
   }
 }
@@ -449,16 +449,16 @@ test('confirmed facts retain exact origins, continue after listener failures, an
   assert.deepEqual(object(callbacks[1]!.args[0]).origin, {
     kind: 'remote',
     sessionId: 's2',
-    sub: 'u-9',
-    ts: 0,
-    serverId: null,
+    subject: 'u-9',
+    at: '1970-01-01T00:00:00.000Z',
+    serverSequence: null,
   });
   assert.deepEqual(object(callbacks[3]!.args[0]).origin, {
     kind: 'local',
     sessionId: 's1',
-    sub: null,
-    ts: 0,
-    serverId: null,
+    subject: null,
+    at: '1970-01-01T00:00:00.000Z',
+    serverSequence: null,
   });
   assert.deepEqual(callbacks[8]!.args, [
     {
@@ -466,10 +466,10 @@ test('confirmed facts retain exact origins, continue after listener failures, an
       origin: {
         kind: 'local',
         sessionId: 's1',
-        sub: null,
-        ts: 0,
-        serverId: null,
-        tx: { id: operationAt(1), index: 0, count: 1 },
+        subject: null,
+        at: '1970-01-01T00:00:00.000Z',
+        serverSequence: null,
+        transaction: { id: operationAt(1), index: 0, count: 1 },
       },
     },
   ]);
@@ -663,8 +663,8 @@ test('current required validation orders missing fields by page and position, an
   const widgets = [
     row(101, ref(1), 2, { x: 20, y: 20, width: 100, height: 24 }),
     row(102, ref(2), 1, { x: 20, y: 20, width: 100, height: 24 }),
-    row(103, ref(3), 1, { x: 5, y: 10, width: 18, height: 18 }, { fieldFamily: 'checkbox' }),
-    row(104, ref(4), 2, { x: 20, y: 50, width: 100, height: 24 }, { fieldFamily: 'signature' }),
+    row(103, ref(3), 1, { x: 5, y: 10, width: 18, height: 18 }, { fieldKind: 'checkbox' }),
+    row(104, ref(4), 2, { x: 20, y: 50, width: 100, height: 24 }, { fieldKind: 'signature' }),
   ];
   const input = scenario(
     'required-validation-host-check',
@@ -899,13 +899,13 @@ test('whole-form reset refusals preserve all selected values and success confirm
   const colour = snapshots[1]!.fields.find(
     (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 3,
   );
-  assert.ok(colour?.family === 'combobox');
+  assert.ok(colour?.kind === 'combobox');
   assert.equal(colour.value, '');
   assert.ok(colour.options.every((option) => !option.selected));
   const colours = snapshots[1]!.fields.find(
     (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 4,
   );
-  assert.ok(colours?.family === 'listbox');
+  assert.ok(colours?.kind === 'listbox');
   assert.deepEqual(colours.selectedValues, []);
   assert.ok(colours.options.every((option) => !option.selected));
   assert.deepEqual(
@@ -969,7 +969,7 @@ test('whole-form reset refusals preserve all selected values and success confirm
         changedWidgets: [placed(widgetNumber)],
         redrawnWidgets: [placed(widgetNumber)],
       });
-      assert.deepEqual(object(fact.origin).tx, { id: operationAt(n), index, count: 3 });
+      assert.deepEqual(object(fact.origin).transaction, { id: operationAt(n), index, count: 3 });
     }
   }
 });

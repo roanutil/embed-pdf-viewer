@@ -27,7 +27,6 @@ const SESSION_SNAPSHOT = { snapshot: SNAP };
 const tree = (name: string) => ({
   root: { type: 'named' as const, subtype: 'Named', name, next: [] },
   incomplete: false,
-  warningFlags: 0,
   warnings: [],
 });
 const actionsCall = (method: string, ...args: unknown[]): Step => ({
@@ -139,10 +138,10 @@ const cases: ScenarioCase[] = [
             $fn: 'lender.reorder',
             throws: { name: 'Error', message: 'hover fixture is read only' },
           },
-          authority: { $fn: 'lender.authority', returns: { update: true, delete: true } },
-          pictureEpoch: { $fn: 'lender.epoch', returns: 'hover-fixture' },
-          pictureVersion: { $fn: 'lender.version', returns: 0 },
-          pending: { $fn: 'lender.pending', returns: false },
+          getAuthority: { $fn: 'lender.authority', returns: { update: true, delete: true } },
+          getPictureEpoch: { $fn: 'lender.epoch', returns: 'hover-fixture' },
+          getPictureVersion: { $fn: 'lender.version', returns: 0 },
+          isPending: { $fn: 'lender.pending', returns: false },
           painter: { $fn: 'lender.painter', returns: null },
           renderAppearances: { $fn: 'lender.pictures', resolves: [] },
         },
@@ -218,7 +217,7 @@ const cases: ScenarioCase[] = [
         call('canUpdate', [objRef(99)], d),
         call('canDelete', [objRef(99)], d),
       ]),
-      call('selection.set', [[objRef(1)]], 'b'),
+      call('selection.select', [[objRef(1)]], 'b'),
       call('getHitKind', [pr(1), { x: 150, y: 150 }], 'b'),
       call('listChromeNodes', [pr(1)], 'b'),
       call('get', [objRef(3)]),

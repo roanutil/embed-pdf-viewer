@@ -16,9 +16,8 @@ import {
   toolTouchOf as isTouchDirect,
 } from '../../../../packages/plugin/annotation/src/tools/definitions';
 import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
+import { familyKey } from '@embedpdf/engine-core/runtime';
 import {
-  cssFontFamilyForFace,
-  familyKey,
   fontForFace,
   rangeProps,
   runDeltaForFields as runDeltaForProps,
@@ -31,7 +30,7 @@ import {
   faceForFont,
   richDocOf,
 } from '../../../../packages/core/annotation/src/richtext';
-import { cssFontFamilyForFont } from '../../../../packages/core/annotation/src/font-css';
+import { removedUpstream } from '../removed';
 import { previewBucket } from '../../../../packages/plugin/annotation/src/host-contract';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
 import { mergeSettings, type DeepPartial } from '../../../../packages/core/main/src/settings';
@@ -876,9 +875,11 @@ export const suites: Suite[] = [
         faceForFont(font, fonts && (() => fonts))) as never,
       fontForFace: ((face: never, fonts?: never[]) =>
         fontForFace(face, fonts && (() => fonts))) as never,
-      cssFontFamilyForFace: ((family: string, fonts?: never[]) =>
-        cssFontFamilyForFace(family, fonts && (() => fonts))) as never,
-      cssFontFamilyForFont: cssFontFamilyForFont as never,
+      // 595fa2bd5 removed both: a text box's CSS now comes from the fonts
+      // plugin (`text.bodyCss`), else core-fonts' `standardFontCss`, which
+      // `core/fonts.json` covers.
+      cssFontFamilyForFace: removedUpstream('cssFontFamilyForFace', '595fa2bd5') as never,
+      cssFontFamilyForFont: removedUpstream('cssFontFamilyForFont', '595fa2bd5') as never,
       familyKey: familyKey as never,
       bodyFromTextStyle: ((t: never, fonts?: never[]) =>
         bodyFromTextStyle(t, fonts && (() => fonts))) as never,
