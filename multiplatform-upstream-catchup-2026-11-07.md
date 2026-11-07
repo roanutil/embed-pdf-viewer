@@ -211,3 +211,50 @@ of 91.
 Phase 3: tx (shared text crate extracted from form-core, annotation-core redaction labels through
 it, `text-fonts.ts`), pc's rerun and cross-crate renames, then the snapshot tool and turn gestures,
 `coverage:check`, `core-wasm`, the FFI and `platforms/` rename pass, and the TS suites.
+
+### Phase 3 and the final state
+
+| Worker | Branch tip | Result |
+|---|---|---|
+| pc | `b67940226` | actions, attachment, commands, history, i18n, interaction, link, metadata, outline, page-edit, redaction, measurement; `on_pointer_*` and `destroy` renames across crates; new i18n, labelParams and pressable cases |
+| tx | `481d9aef9` | `crates/plugins/text-core` (`epdf-text-core`) extracted from form-core; redaction labels and text boxes lay out through it (23 scene cases); a case for text fonts |
+| ix | `9ef9d787b` | the two integration failures were stale inputs: the actions FFI fixtures and the stage suite's trigger event (`scope` -> `type`) |
+| sn | `49857f94e` | the snapshot tool and `renderPage` `rect`/`rotation` ported; page-turn and snapshot cases added (`plugins/render-snapshot.json`, `plugins/stage-turns.json`) |
+| cw | `df602c7ea` | `core-wasm` and `epdf-web` follow upstream's kernel API; three real bugs fixed (appearance images released while render held them, a host-entry leak, one-hit search sharing keyed on an undefined field) |
+| pf | `2ef1262c0` | `.NET` `CharMapAnchor` as `[char, text]` pairs; Swift and Kotlin needed no source change |
+| og | `f7f633d58` | event origins stamped with upstream's names (`subject`, `at` as ISO 8601, `serverSequence`, `transaction`), pinned by a new test |
+
+On `research/catchup-2026-11-07-plugins` at `3332cc116`, in the container:
+
+| Check | Start (`8fa01cc1e`) | Now |
+|---|---|---|
+| `cargo test --workspace` | 3,187 passed, 0 failed | 3,213 passed, 0 failed (1 ignored) |
+| engine `:check` scripts | 34 of 34 | 34 of 34, on vectors regenerated from upstream |
+| plugin `vectors:check`, `coverage:check`, `test:harness`, `typecheck` | all failing (generator stale) | all passing; 119 vector files, statements 70,950/75,371 |
+| plugin-conformance evidence tests | failing | 678 of 678 |
+| TS package tests (`turbo run test` over `packages/**`) | native addon and browsers missing in the container | 98 of 98 tasks |
+| `core-wasm` vitest, `test:gc` | (needs the Rust-core payload) | 92 of 92, 13 of 13 |
+| `.NET` `dotnet test`, `validate.sh --rid linux-arm64` | | 33 of 33, pass |
+
+Impl (`research/catchup-2026-11-07-impl`, `bc2b75c83`) has the merge, the generator fixes and the
+regenerated engine vectors. Its Rust was red at its start (99 failures) and the port lives on
+plugins, as in the previous catch-up.
+
+### Not done in the container
+
+- The Apple engine release (`apple-engine-<hash>`) and its pin in `Package.swift`, the `wasm32`
+  payload release (`runtime-payloads-<hash>`), and the Linux PDFium the dev containers mount. Each is
+  published from the Mac with `scripts/publish-engine-payload.mjs`; the `wasm32-eh` PDFium it needs
+  for `786765b80` is built (above).
+- The iOS and macOS fork slices for `786765b80`, Xcode builds and tests, the SwiftUI layer and
+  demos. Swift sources type-check and run on Linux against regenerated bindings with stubbed Apple
+  frameworks (293 of 325 Swift Testing tests pass; the 31 failures are stubs and one Foundation
+  difference on Linux).
+- The Android AAR, its 16 KB checks and the emulator run; Kotlin compiled and the smoke tests ran on
+  a desktop JVM.
+- The four other `.NET` RIDs.
+
+### Open decisions
+
+`docs/research/upstream-catchup-2026-11-07/decisions.md` lists every decision the workers raised.
+The ones that need the owner are summarised in the final report of this session.
