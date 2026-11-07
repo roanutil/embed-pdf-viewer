@@ -27,7 +27,7 @@ pub struct FormattedTexts {
 
 /// A text or combo box field's value; none for another family.
 fn value_of(field: &Value) -> Option<String> {
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text" | "combobox") => Some(crate::value::string_of(get(field, "value"))),
         _ => None,
     }

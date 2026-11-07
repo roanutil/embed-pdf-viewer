@@ -50,7 +50,7 @@ fn look_of(widget: Option<&Value>) -> Map<String, Value> {
 /// `exportValueFor(field)`: a radio group's next free `Choice<n>`, a
 /// checkbox's own value; none for other families.
 fn export_value_for(field: &Value) -> Option<Value> {
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         // `return field.exportValue`: absent stays absent (`undefined`), and
         // the placement then carries no `exportValue`.
         Some("checkbox") => {

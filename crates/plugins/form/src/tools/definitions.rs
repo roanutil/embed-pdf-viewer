@@ -7,12 +7,12 @@ use std::sync::LazyLock;
 
 use serde_json::{Value, json};
 
-/// `FormToolDef`.
+/// `FormToolDefinition`.
 #[derive(Clone, Debug, PartialEq)]
-pub struct FormToolDef {
+pub struct FormToolDefinition {
     pub id: &'static str,
-    /// The field family the tool places.
-    pub family: &'static str,
+    /// The field kind the tool places.
+    pub field_kind: &'static str,
     /// The client kind the annotation registry routes on.
     pub visual_kind: &'static str,
     /// What a bare click places.
@@ -22,12 +22,12 @@ pub struct FormToolDef {
     pub cursor: &'static str,
 }
 
-impl FormToolDef {
+impl FormToolDefinition {
     /// The tool as the TypeScript object prints.
     pub fn to_json(&self) -> Value {
         json!({
             "id": self.id,
-            "family": self.family,
+            "fieldKind": self.field_kind,
             "visualKind": self.visual_kind,
             "clickCreate": self.click_create_json(),
             "defaults": self.defaults,
@@ -54,16 +54,16 @@ fn chrome(interior: &str, font_size: bool) -> Value {
 
 fn tool(
     id: &'static str,
-    family: &'static str,
+    field_kind: &'static str,
     visual_kind: &'static str,
     click_create: (f64, f64),
     defaults: Value,
-) -> FormToolDef {
-    FormToolDef { id, family, visual_kind, click_create, defaults, cursor: "crosshair" }
+) -> FormToolDefinition {
+    FormToolDefinition { id, field_kind, visual_kind, click_create, defaults, cursor: "crosshair" }
 }
 
 /// `FORM_TOOLS`.
-pub static FORM_TOOLS: LazyLock<Vec<FormToolDef>> = LazyLock::new(|| {
+pub static FORM_TOOLS: LazyLock<Vec<FormToolDefinition>> = LazyLock::new(|| {
     vec![
         tool("form-text", "text", "widget-text", (160.0, 24.0), chrome("#ffffff", true)),
         tool("form-checkbox", "checkbox", "widget-toggle", (18.0, 18.0), chrome("#ffffff", false)),
@@ -80,6 +80,6 @@ pub static FORM_TOOLS: LazyLock<Vec<FormToolDef>> = LazyLock::new(|| {
 });
 
 /// `FORM_TOOL_BY_ID.get(id)`.
-pub fn form_tool_by_id(id: &str) -> Option<&'static FormToolDef> {
+pub fn form_tool_by_id(id: &str) -> Option<&'static FormToolDefinition> {
     FORM_TOOLS.iter().find(|t| t.id == id)
 }

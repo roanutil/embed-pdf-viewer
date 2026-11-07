@@ -87,10 +87,10 @@ impl WidgetActivationResult {
     pub fn to_json(&self) -> Value {
         match self {
             WidgetActivationResult::Form(result) => {
-                json!({ "kind": "form", "result": epdf_kernel::js::to_value(result) })
+                json!({ "status": "form", "result": epdf_kernel::js::to_value(result) })
             }
             WidgetActivationResult::Dispatched(result) => {
-                json!({ "kind": "dispatched", "result": epdf_kernel::js::to_value(result) })
+                json!({ "status": "dispatched", "result": epdf_kernel::js::to_value(result) })
             }
         }
     }

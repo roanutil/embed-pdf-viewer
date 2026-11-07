@@ -54,7 +54,7 @@ impl crate::controller::Core {
             budget: Some(budget),
         });
         let disposed = made.clone();
-        self.cx.cleanup_fn(move || disposed.dispose());
+        self.cx.cleanup_fn(move || disposed.destroy());
         *self.scripting.pipeline.borrow_mut() = Some(made.clone());
         Some(made)
     }

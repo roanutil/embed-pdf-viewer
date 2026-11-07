@@ -68,42 +68,42 @@ fn fields() -> Vec<Value> {
         with(
             base(1, "text", scalar("abc"), scalar("dflt")),
             json!({
-                "family": "text", "value": "abc", "defaultValue": "dflt", "maxLength": 4,
+                "kind": "text", "value": "abc", "defaultValue": "dflt", "maxLength": 4,
                 "multiline": false, "password": false, "comb": false, "widgets": [plain_widget(101)],
             }),
         ),
         with(
             base(2, "free", none.clone(), none.clone()),
             json!({
-                "family": "text", "value": "", "defaultValue": "", "maxLength": null,
+                "kind": "text", "value": "", "defaultValue": "", "maxLength": null,
                 "multiline": true, "password": false, "comb": false, "widgets": [plain_widget(102)],
             }),
         ),
         with(
             base(3, "agree", scalar("Off"), scalar("Yes")),
             json!({
-                "family": "checkbox", "checked": false, "exportValue": "Yes",
+                "kind": "checkbox", "checked": false, "exportValue": "Yes",
                 "widgets": [widget(103, "Yes", false), widget(104, "Yes", false)],
             }),
         ),
         with(
             base(5, "size", scalar("M"), scalar("1")),
             json!({
-                "family": "radio", "value": "M", "radiosInUnison": false, "noToggleToOff": true,
+                "kind": "radio", "value": "M", "radiosInUnison": false, "noToggleToOff": true,
                 "widgets": [widget(105, "S", false), widget(106, "M", true), widget(107, "M", false)],
             }),
         ),
         with(
             base(8, "unison", scalar("Off"), none.clone()),
             json!({
-                "family": "radio", "value": "Off", "radiosInUnison": true, "noToggleToOff": false,
+                "kind": "radio", "value": "Off", "radiosInUnison": true, "noToggleToOff": false,
                 "widgets": [widget(108, "A", false), widget(109, "A", false), widget(110, "B", false)],
             }),
         ),
         with(
             base(11, "colour", scalar("r"), scalar("")),
             json!({
-                "family": "combobox", "value": "r", "defaultValue": "", "edit": true,
+                "kind": "combobox", "value": "r", "defaultValue": "", "edit": true,
                 "options": options(&["r", "g", ""], &["r"]), "widgets": [plain_widget(111)],
             }),
         ),
@@ -115,7 +115,7 @@ fn fields() -> Vec<Value> {
                 json!({ "kind": "array", "values": ["b", "r"] }),
             ),
             json!({
-                "family": "listbox", "selectedValues": ["r", "g"], "defaultValue": ["r", "b"],
+                "kind": "listbox", "selectedValues": ["r", "g"], "defaultValue": ["r", "b"],
                 "multiSelect": true, "options": options(&["r", "g", "b"], &["r", "g"]), "topIndex": 0,
                 "widgets": [plain_widget(112)],
             }),
@@ -123,7 +123,7 @@ fn fields() -> Vec<Value> {
         with(
             base(13, "single", none.clone(), none),
             json!({
-                "family": "listbox", "selectedValues": [], "defaultValue": [], "multiSelect": false,
+                "kind": "listbox", "selectedValues": [], "defaultValue": [], "multiSelect": false,
                 "options": options(&["x", "y"], &[]), "topIndex": 1, "widgets": [plain_widget(113)],
             }),
         ),
@@ -282,7 +282,7 @@ fn an_update_leaves_what_the_engine_leaves() {
     let (mut compared, mut taken) = (0, 0);
     for field in fields() {
         for patch in patches() {
-            if field["family"] == "text" && patch["defaultValue"].is_array() {
+            if field["kind"] == "text" && patch["defaultValue"].is_array() {
                 continue;
             }
             let ours = engine::form_field_after(
@@ -307,7 +307,7 @@ fn an_update_leaves_what_the_engine_leaves() {
 /// dropdown's default, a list for a list box's.
 fn drafts() -> Vec<Value> {
     let named = |family: &str, members: Value| {
-        let mut draft = json!({ "family": family, "name": "d" });
+        let mut draft = json!({ "kind": family, "name": "d" });
         for (key, value) in members.as_object().unwrap() {
             draft[key] = value.clone();
         }

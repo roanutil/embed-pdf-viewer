@@ -267,6 +267,7 @@ struct FieldDto {
     #[serde(rename = "ref")]
     field_ref: Value,
     name: String,
+    #[serde(rename = "kind")]
     family: String,
     origin: String,
     read_only: bool,
@@ -728,7 +729,7 @@ impl FormCreateFieldInput {
             widget.insert("exportValue".into(), json!(export_value));
         }
         let mut draft = Map::new();
-        draft.insert("family".into(), json!(self.family.as_str()));
+        draft.insert("kind".into(), json!(self.family.as_str()));
         draft.insert("name".into(), json!(self.name));
         draft.insert("widgets".into(), json!([widget]));
         if let Some(options) = &self.options {
@@ -1604,7 +1605,7 @@ impl FormFilter {
     fn to_json(&self) -> Value {
         let mut filter = Map::new();
         if let Some(family) = self.family {
-            filter.insert("family".into(), json!(family.as_str()));
+            filter.insert("kind".into(), json!(family.as_str()));
         }
         if let Some(page) = self.page {
             filter.insert("page".into(), page_json(page));

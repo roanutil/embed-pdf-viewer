@@ -188,7 +188,7 @@ impl StampCapability {
                 )
                 .await;
             if let Some(scripting) = scripting.borrow_mut().take() {
-                scripting.dispose();
+                scripting.destroy();
             }
             if let Some(realm) = realm.borrow_mut().take() {
                 realm.dispose();

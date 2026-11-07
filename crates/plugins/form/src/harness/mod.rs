@@ -505,7 +505,7 @@ fn standalone_plugin(h: &Harness) -> AnyPlugin {
             ctx.cleanup_fn(move || {
                 let state = cleanup.borrow();
                 if let Some(controller) = &state.controller {
-                    controller.dispose();
+                    controller.destroy();
                 }
                 if let Some(realm) = &state.realm {
                     realm.dispose();
@@ -530,7 +530,7 @@ fn call_driver(driver: &StandaloneDriver, method: &str, args: &[Value]) -> Outco
         "activate" => json_promise(controller.activate(form(), value(args, 1), value(args, 2))),
         "recalculate" => json_promise(controller.recalculate(form())),
         _ => {
-            controller.dispose();
+            controller.destroy();
             if let Some(realm) = &driver.state.borrow().realm {
                 realm.dispose();
             }

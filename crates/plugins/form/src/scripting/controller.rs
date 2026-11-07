@@ -156,7 +156,7 @@ impl FormScriptingController {
     }
 
     /// The realm belongs to its owner: this only fences further transactions.
-    pub fn dispose(&self) {
+    pub fn destroy(&self) {
         self.0.disposed.set(true);
     }
 
@@ -471,7 +471,7 @@ async fn run(
     let actions = get(&target, "actions");
     let tree_of =
         |key: &str| actions.and_then(|a| get(a, key)).filter(|t| truthy(Some(t))).cloned();
-    let text_field = crate::value::str_of(&target, "family") == Some("text");
+    let text_field = crate::value::str_of(&target, "kind") == Some("text");
 
     if activation.is_none()
         && has_proposed_value

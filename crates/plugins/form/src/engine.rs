@@ -260,7 +260,7 @@ pub fn serialized_message(error: &Error) -> String {
 /// `fieldValueOf(field)`: the value a field holds, as a write takes it;
 /// none for a family whose value a write can't set.
 pub fn field_value_of(field: &Value) -> Option<Value> {
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("checkbox") => Some(json!({ "checked": member(field, "checked") })),
         Some("listbox") => Some(json!({ "selectedValues": member(field, "selectedValues") })),
         Some("radio") => {
@@ -346,7 +346,7 @@ fn choice_of(field: &Value, values: Vec<String>) -> Result<FieldValueWrite, Erro
     if distinct.len() != values.len() {
         return Err(invalid_value("the values must not repeat".into()));
     }
-    let family = str_of(field, "family");
+    let family = str_of(field, "kind");
     if family == Some("listbox") && !truthy(get(field, "multiSelect")) && values.len() > 1 {
         return Err(invalid_value(format!(
             "'{}' takes one value (it has no multiSelect)",
@@ -368,7 +368,7 @@ fn choice_of(field: &Value, values: Vec<String>) -> Result<FieldValueWrite, Erro
 /// `fieldValueWriteOf(field, value)`: the write `value` makes, checked
 /// against the field first (`InvalidArg` otherwise).
 pub fn field_value_write_of(field: &Value, value: &Value) -> Result<FieldValueWrite, Error> {
-    let family = str_of(field, "family").map(str::to_string);
+    let family = str_of(field, "kind").map(str::to_string);
     match family.as_deref() {
         Some("text") => {
             if has(value, "value") {
@@ -424,7 +424,7 @@ pub fn field_value_write_of(field: &Value, value: &Value) -> Result<FieldValueWr
         _ => {
             return Err(invalid_value(format!(
                 "{} fields hold no value you can set",
-                string_of(get(field, "family"))
+                string_of(get(field, "kind"))
             )));
         }
     }
@@ -437,7 +437,7 @@ pub fn field_value_write_of(field: &Value, value: &Value) -> Result<FieldValueWr
     };
     Err(invalid_value(format!(
         "a {} field takes {takes}, not {}",
-        string_of(get(field, "family")),
+        string_of(get(field, "kind")),
         shape_of(value)
     )))
 }
@@ -497,7 +497,7 @@ pub fn field_after_value(
     value: &Value,
 ) -> Result<FieldWithWidgets, Error> {
     let field = &current.field;
-    let family = str_of(field, "family");
+    let family = str_of(field, "kind");
     match field_value_write_of(field, value)? {
         FieldValueWrite::Text(text) => {
             if family != Some("text") {
@@ -544,7 +544,7 @@ pub fn field_after_reset(current: &FieldWithWidgets) -> Result<FieldWithWidgets,
     let field = &current.field;
     let defaults = get(field, "defaultValueEntry").cloned().unwrap_or(Value::Null);
     let kind = str_of(&defaults, "kind").map(str::to_string);
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text") => {
             if matches!(kind.as_deref(), Some("array" | "unsupported")) {
                 return Err(not_reset(field));
@@ -676,7 +676,7 @@ fn widget_named_by(widgets: &[Value], state: &str) -> i64 {
 /// `toggled(current, target)`.
 fn toggled(current: &FieldWithWidgets, target: i64) -> FieldWithWidgets {
     let field = &current.field;
-    let family = str_of(field, "family");
+    let family = str_of(field, "kind");
     if family != Some("checkbox") && family != Some("radio") {
         return current.clone();
     }
@@ -774,7 +774,7 @@ fn choice_matches(field: &Value, values: &[String]) -> bool {
 }
 
 fn free_text_allowed(field: &Value, values: &[String]) -> bool {
-    str_of(field, "family") == Some("combobox") && truthy(get(field, "edit")) && values.len() == 1
+    str_of(field, "kind") == Some("combobox") && truthy(get(field, "edit")) && values.len() == 1
 }
 
 /// `choiceFieldWith(field, values)`.
@@ -801,7 +801,7 @@ fn choice_field_with(field: &Value, values: &[String]) -> Value {
         matched.iter().map(|&at| options[at].clone()).collect()
     };
     let value_entry = choice_entry_of(&chosen);
-    if str_of(field, "family") == Some("combobox") {
+    if str_of(field, "kind") == Some("combobox") {
         crate::value::spread(
             field,
             [
@@ -857,7 +857,7 @@ fn values_of_entry(entry: Option<&Value>) -> Vec<String> {
 
 /// `withDefault(field, values, filtered)`.
 fn with_default(field: &Value, values: &[String], filtered: bool) -> Value {
-    let combobox = str_of(field, "family") == Some("combobox");
+    let combobox = str_of(field, "kind") == Some("combobox");
     if values.is_empty() {
         let entry = if !filtered {
             none()
@@ -884,7 +884,7 @@ fn with_default(field: &Value, values: &[String], filtered: bool) -> Value {
 /// `withOptions(field, options)`.
 fn with_options(field: &Value, options: Vec<Value>) -> Value {
     let exports: Vec<String> = options.iter().map(|o| string_of(get(o, "value"))).collect();
-    let combobox = str_of(field, "family") == Some("combobox");
+    let combobox = str_of(field, "kind") == Some("combobox");
     let keeps_free_text = combobox && truthy(get(field, "edit"));
     let current = if combobox {
         let value = string_of(get(field, "value"));
@@ -971,7 +971,7 @@ pub fn form_field_after(
     if let Some(group) = get(patch, "groupId") {
         field.insert("groupId".into(), group.clone());
     }
-    let family = field.get("family").and_then(Value::as_str).map(str::to_string);
+    let family = field.get("kind").and_then(Value::as_str).map(str::to_string);
     if family.as_deref() == Some("text") {
         if let Some(limit) = get(patch, "maxLength") {
             field.insert("maxLength".into(), limit.clone());
@@ -1019,7 +1019,7 @@ pub fn form_field_after(
 
 /// `defaultEntryOfDraft(draft)`.
 pub fn default_entry_of_draft(draft: &Value) -> Result<Value, Error> {
-    let family = str_of(draft, "family").unwrap_or("");
+    let family = str_of(draft, "kind").unwrap_or("");
     let options: Vec<String> =
         items(draft, "options").iter().map(|o| string_of(get(o, "value"))).collect();
     let default = get(draft, "defaultValue");
@@ -1101,7 +1101,7 @@ fn widget_row_of_placement(
     let row = epdf_annotation_core::engine::resolve::annotation_of_draft(&look, &context)
         .map_err(|e| Error::new(e.to_string()))?;
     let row = Value::Object(row);
-    let family = str_of(draft, "family").unwrap_or("");
+    let family = str_of(draft, "kind").unwrap_or("");
     let toggle = family == "checkbox" || family == "radio";
     let rect = standing_rect_of(get(&row, "box").unwrap_or(&Value::Null), get(&row, "rotation"));
     Ok(crate::value::spread(
@@ -1109,7 +1109,7 @@ fn widget_row_of_placement(
         [
             ("rect", rect),
             ("field", json!({ "kind": "objectNumber", "objectNumber": field })),
-            ("fieldFamily", json!(family)),
+            ("fieldKind", json!(family)),
             ("print", json!(true)),
             ("hasAppearance", json!(family != "signature")),
             ("appearanceState", if toggle { json!("Off") } else { Value::Null }),
@@ -1160,7 +1160,7 @@ pub fn form_field_of_draft(
             )
         })
         .collect();
-    let family = str_of(draft, "family").unwrap_or("").to_string();
+    let family = str_of(draft, "kind").unwrap_or("").to_string();
     let options: Vec<Value> = if family == "combobox" || family == "listbox" {
         items(draft, "options").iter().map(option_of).collect()
     } else {
@@ -1196,7 +1196,7 @@ pub fn form_field_of_draft(
     };
     match family.as_str() {
         "text" => {
-            put("family", json!("text"));
+            put("kind", json!("text"));
             put("defaultValueEntry", default_entry_of_draft(draft)?);
             put("value", json!(""));
             put("defaultValue", or("defaultValue", json!("")));
@@ -1214,7 +1214,7 @@ pub fn form_field_of_draft(
                     toggle_widget(w, get(p, "exportValue").cloned().unwrap_or(json!("Yes")))
                 })
                 .collect();
-            put("family", json!("checkbox"));
+            put("kind", json!("checkbox"));
             put("checked", json!(false));
             put(
                 "exportValue",
@@ -1231,14 +1231,14 @@ pub fn form_field_of_draft(
                 .zip(&widgets)
                 .map(|(p, w)| toggle_widget(w, get(p, "exportValue").cloned().unwrap_or(json!(""))))
                 .collect();
-            put("family", json!("radio"));
+            put("kind", json!("radio"));
             put("value", json!("Off"));
             put("radiosInUnison", or("radiosInUnison", json!(false)));
             put("noToggleToOff", or("noToggleToOff", json!(false)));
             put("widgets", Value::Array(toggles));
         }
         "combobox" => {
-            put("family", json!("combobox"));
+            put("kind", json!("combobox"));
             put("defaultValueEntry", default_entry_of_draft(draft)?);
             put("value", json!(""));
             put("defaultValue", or("defaultValue", json!("")));
@@ -1249,7 +1249,7 @@ pub fn form_field_of_draft(
         "listbox" => {
             let defaults = strings(get(draft, "defaultValue"));
             let values: Vec<String> = options.iter().map(|o| string_of(get(o, "value"))).collect();
-            put("family", json!("listbox"));
+            put("kind", json!("listbox"));
             put("defaultValueEntry", default_entry_of_draft(draft)?);
             put("selectedValues", json!([]));
             put("defaultValue", json!(in_option_order(&values, &defaults)));
@@ -1259,7 +1259,7 @@ pub fn form_field_of_draft(
             put("widgets", Value::Array(widgets));
         }
         other => {
-            put("family", json!(other));
+            put("kind", json!(other));
             put("widgets", Value::Array(widgets));
         }
     }
@@ -1306,8 +1306,8 @@ pub fn fit_widget_to_family(family: &str, value: &Value) -> Result<Value, Error>
 
 /// `widgetAfterPatch(row, patch)`.
 pub fn widget_after_patch(row: &Value, patch: &Value) -> Result<Value, Error> {
-    let family = str_of(row, "fieldFamily")
-        .map_or_else(|| string_of(get(row, "fieldFamily")), str::to_string);
+    let family =
+        str_of(row, "fieldKind").map_or_else(|| string_of(get(row, "fieldKind")), str::to_string);
     let fitted = fit_widget_to_family(&family, patch)?;
     let mut full: Map<String, Value> = Map::new();
     full.insert("subtype".into(), json!("widget"));

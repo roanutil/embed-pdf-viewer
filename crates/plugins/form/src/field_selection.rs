@@ -108,7 +108,7 @@ pub fn build_submit_entries<F: Borrow<Value>>(
     for field in &selection.selected {
         let explicit = explicit_include && selection.listed(field);
         let name = string_of(get(field, "name"));
-        let family = str_of(field, "family");
+        let family = str_of(field, "kind");
         if family == Some("pushbutton") || family == Some("signature") {
             if explicit {
                 unsupported(format!(

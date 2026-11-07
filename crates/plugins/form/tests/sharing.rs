@@ -45,7 +45,7 @@ fn field(n: usize, value: &str) -> Value {
         "groupId": null, "createdBy": null, "createdAt": null,
         "filledBy": null, "filledByName": null, "filledAt": null, "importedBy": null,
         "widgets": [{ "ref": widget_ref(n), "objectNumber": 10_000 + n, "page": object_ref(1) }],
-        "family": "text", "value": value, "defaultValue": "", "maxLength": null,
+        "kind": "text", "value": value, "defaultValue": "", "maxLength": null,
         "multiline": false, "password": false, "comb": false,
     })
 }
@@ -347,7 +347,7 @@ fn reads_share_the_form_and_keep_their_answers() {
             let all = form.list(None);
             assert_eq!(all.len(), FIELDS);
             assert!(all.iter().zip(fields).all(|(a, b)| Rc::ptr_eq(a, b)), "list shares");
-            let text = form.list(Some(&json!({ "family": "text" })));
+            let text = form.list(Some(&json!({ "kind": "text" })));
             assert!(text.iter().zip(fields).all(|(a, b)| Rc::ptr_eq(a, b)), "a filter shares");
             for n in [1, 250, 500] {
                 let (field, row) = (&fields[n - 1], &rows[n - 1]);

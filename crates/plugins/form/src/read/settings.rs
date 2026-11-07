@@ -36,7 +36,7 @@ fn option_values(field: &Value) -> Vec<Value> {
 
 /// What each family adds.
 fn family_settings(field: &Value) -> Vec<Value> {
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text") => vec![
             setting("defaultValue", "text", "Default value", "form.settings.defaultValue"),
             json!({
