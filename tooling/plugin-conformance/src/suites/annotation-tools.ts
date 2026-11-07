@@ -28,6 +28,7 @@ import {
   ink,
   markup,
   pr,
+  scenario,
 } from './annotation-live-fixtures';
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const SESSION_SNAPSHOT = { snapshot: SNAP };
@@ -68,7 +69,36 @@ const withSelection = [
 ];
 const targetBox = { x: 100, y: 800 - 700, width: 200 - 100, height: 700 - 600 };
 const target = { rect: targetBox, box: targetBox };
+const textBody = freeText(1).richText!.body;
 const cases: ScenarioCase[] = [
+  scenario(
+    'text-items-draw-each-face',
+    "595fa2bd5, read/text-fonts.ts without the fonts plugin: a box whose body face is its font's draws in that font's standard program, one whose body face differs draws in the standard font for the face, and each face a run names adds its standard program to the box's programs.",
+    [1, 2, 3].flatMap((n) => [call('text.begin', [objRef(n)]), call('listTextItems', [pr(1)])]),
+    [
+      hydrate([
+        freeText(1, {
+          richText: {
+            body: { ...textBody, size: 20 },
+            paragraphs: [{ runs: [{ text: 'Hel' }, { text: 'lo', style: { weight: 700 } }] }],
+          },
+        }),
+        freeText(2, {
+          richText: {
+            body: { ...textBody, weight: 700 },
+            paragraphs: [{ runs: [{ text: 'Bold' }] }],
+          },
+        }),
+        freeText(3, {
+          fontFamily: 'times-bold',
+          richText: {
+            body: { ...textBody, family: 'Times', weight: 700 },
+            paragraphs: [{ runs: [{ text: 'Times' }, { text: ' it', style: { italic: true } }] }],
+          },
+        }),
+      ]),
+    ],
+  ),
   {
     name: 'malformed-stamp-source-inputs',
     covers:
