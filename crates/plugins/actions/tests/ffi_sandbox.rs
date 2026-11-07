@@ -199,7 +199,7 @@ fn malformed_output_is_invalid_output() {
 fn oversized_output_is_a_budget_failure() {
     let big = "x".repeat(2048);
     let sandbox = sandbox(engine(move |_| ScriptEvaluation::Value {
-        json: output(json!([{ "kind": "alert", "message": big, "icon": 0 }])),
+        json: output(json!([{ "type": "alert", "message": big, "icon": 0 }])),
     }));
     let budget = epdf_acrojs::ScriptBudget { max_output_bytes: 1024.0, ..DEFAULT_SCRIPT_BUDGET };
     let out = sandbox.run("x", &input(), Some(&budget)).unwrap();
@@ -270,7 +270,7 @@ impl ActionUiHandler for Alerts {
 #[test]
 fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
     let engine = engine(|_| ScriptEvaluation::Value {
-        json: output(json!([{ "kind": "alert", "message": "hi", "icon": 0 }])),
+        json: output(json!([{ "type": "alert", "message": "hi", "icon": 0 }])),
     });
     // `sandbox_factory` returns an `Rc`, so it's built on the kernel thread.
     let shared = engine.clone();

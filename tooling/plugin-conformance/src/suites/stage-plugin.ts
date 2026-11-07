@@ -27,6 +27,7 @@ import {
   StageToken,
   type StageHostCapability,
 } from '../../../../packages/plugin/stage/src/host-contract';
+import type { ActionContext } from '../../../../packages/plugin/actions/src/contract';
 import type { StagePluginOptions } from '../../../../packages/plugin/stage/src/contract';
 import type {
   ResponsiveRule,
@@ -1990,7 +1991,11 @@ const goto = (destination: PageDestination) => ({
 const pdfGoto = (destination: PdfDestination) =>
   goto(pageDestinationOf(destination, { left: 0, bottom: 0, right: 600, top: 800 }));
 const named = (name: string) => ({ type: 'named', subtype: 'Named', name, next: [] });
-const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
+const USER = {
+  origin: 'user',
+  source: { kind: 'api' },
+  event: { type: 'activate' },
+} satisfies ActionContext;
 
 const interaction = { factory: 'interaction' };
 const ix = (method: string, ...args: unknown[]): Step => ({
