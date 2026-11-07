@@ -348,7 +348,7 @@ fn settings_tools_are_registered_and_swapped_for_every_document() {
     let changes = Log::default();
     let c = changes.clone();
     b.on_settings_changed(move |e| {
-        c.borrow_mut().push(format!("{:?} {}", e.changed, e.settings.default_tool));
+        c.borrow_mut().push(format!("{:?} {}", e.changed_keys, e.settings.default_tool));
         Ok(())
     });
 
@@ -389,7 +389,7 @@ fn distinct_equal_settings_tools_count_as_a_change() {
     let changes = Log::default();
     let c = changes.clone();
     a.on_settings_changed(move |e| {
-        c.borrow_mut().push(format!("{:?}", e.changed));
+        c.borrow_mut().push(format!("{:?}", e.changed_keys));
         Ok(())
     });
     let tool = || Rc::new(Tool::new("note", "cell", []));

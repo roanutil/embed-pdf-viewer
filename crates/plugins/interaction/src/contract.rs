@@ -193,7 +193,7 @@ pub struct InteractionConfig {
 #[derive(Clone, Debug)]
 pub struct InteractionSettingsChanged {
     pub settings: InteractionSettings,
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }
 
 /// `RegisterToolOptions`.
@@ -339,7 +339,7 @@ impl fmt::Debug for PointerSample {
 /// The optional members of the TypeScript interface are default methods
 /// whose defaults are what the hub does when the member is absent: nothing
 /// for `on_move`, `on_up` and `on_hover`, `on_up` for `on_cancel` (the
-/// `onCancel ?? onUp` fallback), and no claim for `claims_touch`.
+/// `onPointerCancel ?? onPointerUp` fallback), and no claim for `claims_touch`.
 pub trait InteractionHandler {
     fn id(&self) -> &str;
     /// Higher wins the gesture.

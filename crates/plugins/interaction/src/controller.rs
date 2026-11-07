@@ -412,7 +412,7 @@ impl InteractionCapability {
             let Some(table) = table.upgrade() else { return Ok(()) };
             listener(&InteractionSettingsChanged {
                 settings: table.decode(&event.settings),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }

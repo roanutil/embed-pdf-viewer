@@ -407,10 +407,10 @@ impl ScriptedHandler {
             id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
             priority: spec.get("priority").and_then(number).unwrap_or(f64::NAN),
             enabled_for: member("enabledFor"),
-            on_down: member("onDown"),
-            on_move: member("onMove"),
-            on_up: member("onUp"),
-            on_cancel: member("onCancel"),
+            on_down: member("onPointerDown"),
+            on_move: member("onPointerMove"),
+            on_up: member("onPointerUp"),
+            on_cancel: member("onPointerCancel"),
             on_hover: member("onHover"),
             claims_touch: member("claimsTouch"),
             live: h.is_live(),
@@ -558,7 +558,7 @@ pub fn tool_changed_json(event: &ToolChangedEvent) -> Value {
 }
 
 fn settings_changed_json(event: &InteractionSettingsChanged) -> Value {
-    json!({ "settings": settings_json(&event.settings), "changed": event.changed })
+    json!({ "settings": settings_json(&event.settings), "changedKeys": event.changed_keys })
 }
 
 /// Subscribe a scripted callback to an event hook; the unsubscribe is a ref.
