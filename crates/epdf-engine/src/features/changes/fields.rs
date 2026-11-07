@@ -203,7 +203,7 @@ fn write_update(
     let is = properties_of(&written.field);
     let keys: Vec<&String> = patch
         .keys()
-        .filter(|key| *key != "family" && !values_equal(was.get(*key), is.get(*key)))
+        .filter(|key| *key != "kind" && !values_equal(was.get(*key), is.get(*key)))
         .collect();
     let pick = |from: &Map<String, Value>| -> Map<String, Value> {
         keys.iter()

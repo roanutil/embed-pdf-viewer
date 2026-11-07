@@ -112,8 +112,8 @@ pub fn plan_form_import(input: FormPlanInput<'_>) -> Result<FormImportPlan, Engi
         let rows: Vec<usize> =
             field["widgets"].as_array().into_iter().flatten().filter_map(row_of).collect();
         owned.extend(rows.iter().copied());
-        if field["family"] == "unknown" {
-            dropped.push(json!({ "ref": field["ref"], "reason": "unsupported-family" }));
+        if field["kind"] == "unknown" {
+            dropped.push(json!({ "ref": field["ref"], "reason": "unsupported-kind" }));
             continue;
         }
         let name = field["name"].as_str().unwrap_or_default();
@@ -188,7 +188,7 @@ pub type ValueRefusal<'a> =
 /// `target` (field reads as JSON): each field the bundle holds a value for
 /// gets it, matched by full name (`planFormValuesImport`). Left out, in
 /// bundle order: a field the document doesn't have (`no-field`), one of
-/// another family (`wrong-family`), and one `refusal` names a reason for.
+/// another family (`wrong-kind`), and one `refusal` names a reason for.
 pub fn plan_form_values_import(
     fields: &[Value],
     target: &[Value],
@@ -205,8 +205,8 @@ pub fn plan_form_values_import(
             plan.dropped.push(json!({ "ref": field["ref"], "reason": "no-field" }));
             continue;
         };
-        if target[at]["family"] != field["family"] {
-            plan.dropped.push(json!({ "ref": field["ref"], "reason": "wrong-family" }));
+        if target[at]["kind"] != field["kind"] {
+            plan.dropped.push(json!({ "ref": field["ref"], "reason": "wrong-kind" }));
             continue;
         }
         match refusal(at, &value)? {
@@ -225,7 +225,7 @@ fn holds_value(field: &Value) -> bool {
 /// The value a field read holds, as a value write takes it (`fieldValueOf`,
 /// over the read's JSON).
 pub fn field_value_of(field: &Value) -> Option<FormFieldValue> {
-    match field["family"].as_str()? {
+    match field["kind"].as_str()? {
         "checkbox" => field["checked"].as_bool().map(FormFieldValue::Checked),
         "listbox" => serde_json::from_value(field["selectedValues"].clone())
             .ok()
@@ -302,7 +302,7 @@ fn placement_of(
             }
         }
     }
-    let family = field["family"].as_str().unwrap_or_default();
+    let family = field["kind"].as_str().unwrap_or_default();
     let toggle = if matches!(family, "checkbox" | "radio") {
         let key = annotation_key_of(&row["ref"]);
         field["widgets"]
@@ -362,7 +362,7 @@ fn draft_of(
     index: usize,
 ) -> Result<Map<String, Value>, EngineError> {
     let mut draft = Map::new();
-    let family = field["family"].as_str().unwrap_or_default();
+    let family = field["kind"].as_str().unwrap_or_default();
     draft.insert("name".into(), field["name"].clone());
     for key in ["readOnly", "required", "noExport"] {
         draft.insert(key.into(), field[key].clone());
@@ -391,7 +391,7 @@ fn draft_of(
     };
     match family {
         "text" => {
-            draft.insert("family".into(), json!("text"));
+            draft.insert("kind".into(), json!("text"));
             if has_default {
                 draft.insert("defaultValue".into(), field["defaultValue"].clone());
             }
@@ -403,13 +403,13 @@ fn draft_of(
             }
         }
         "radio" => {
-            draft.insert("family".into(), json!("radio"));
+            draft.insert("kind".into(), json!("radio"));
             for key in ["radiosInUnison", "noToggleToOff"] {
                 draft.insert(key.into(), field[key].clone());
             }
         }
         "combobox" => {
-            draft.insert("family".into(), json!("combobox"));
+            draft.insert("kind".into(), json!("combobox"));
             draft.insert("edit".into(), field["edit"].clone());
             draft.insert("options".into(), options());
             if has_default {
@@ -417,7 +417,7 @@ fn draft_of(
             }
         }
         "listbox" => {
-            draft.insert("family".into(), json!("listbox"));
+            draft.insert("kind".into(), json!("listbox"));
             draft.insert("multiSelect".into(), field["multiSelect"].clone());
             draft.insert("options".into(), options());
             if has_default {
@@ -425,7 +425,7 @@ fn draft_of(
             }
         }
         "checkbox" | "pushbutton" | "signature" => {
-            draft.insert("family".into(), json!(family));
+            draft.insert("kind".into(), json!(family));
         }
         _ => {
             return Err(EngineError::with_message(
@@ -462,7 +462,7 @@ fn family_members(family: &str) -> &'static [&'static str] {
 }
 
 const BASE_MEMBERS: &[&str] = &[
-    "family",
+    "kind",
     "name",
     "readOnly",
     "required",
@@ -479,7 +479,7 @@ const BASE_MEMBERS: &[&str] = &[
 /// The shape the create reads is then read whole
 /// (`FormFieldDraft<PageCoordinates>`).
 fn check_field_draft(draft: &Map<String, Value>) -> Result<(), (String, String)> {
-    let family = draft["family"].as_str().unwrap_or_default();
+    let family = draft["kind"].as_str().unwrap_or_default();
     let own = family_members(family);
     if let Some(key) =
         draft.keys().find(|k| !BASE_MEMBERS.contains(&k.as_str()) && !own.contains(&k.as_str()))
@@ -707,7 +707,7 @@ mod tests {
     fn text_field(name: &str, number: u64, widgets: &[u64], fields: Value) -> Value {
         with(
             json!({
-                "ref": ref_of(number), "name": name, "family": "text", "origin": "acroform",
+                "ref": ref_of(number), "name": name, "kind": "text", "origin": "acroform",
                 "readOnly": false, "required": false, "noExport": false,
                 "alternateName": null, "mappingName": null,
                 "valueEntry": { "kind": "scalar", "value": format!("{name} value") },
@@ -798,7 +798,7 @@ mod tests {
         let create = &planned.creates[0];
         assert_eq!((create.field, create.widgets.clone()), (0, vec![0]));
         assert_eq!(create.value, Some(FormFieldValue::Value(Some("customer.name value".into()))));
-        assert_eq!(create.draft["family"], "text");
+        assert_eq!(create.draft["kind"], "text");
         assert_eq!(create.draft["name"], "customer.name");
         let placed = &create.draft["widgets"][0];
         assert_eq!(placed["page"], json!(page()));
@@ -814,7 +814,7 @@ mod tests {
         let a = text_field("a", 10, &[11], json!({}));
         let again = text_field("a", 20, &[21], json!({}));
         let taken = text_field("taken", 30, &[], json!({}));
-        let unknown = with(text_field("odd", 40, &[], json!({})), json!({ "family": "unknown" }));
+        let unknown = with(text_field("odd", 40, &[], json!({})), json!({ "kind": "unknown" }));
         let bundle = rows(
             &[a.clone(), again.clone(), taken.clone(), unknown.clone()],
             &[
@@ -832,7 +832,7 @@ mod tests {
             [
                 json!({ "ref": again["ref"], "reason": "name-conflict" }),
                 json!({ "ref": taken["ref"], "reason": "name-conflict" }),
-                json!({ "ref": unknown["ref"], "reason": "unsupported-family" }),
+                json!({ "ref": unknown["ref"], "reason": "unsupported-kind" }),
                 json!({ "ref": ref_of(98), "widget": widget_ref(99), "reason": "no-field" }),
             ]
         );
@@ -899,10 +899,10 @@ mod tests {
         let locked = text_field("locked", 40, &[], json!({}));
         let empty = text_field("empty", 50, &[], json!({ "valueEntry": { "kind": "none" } }));
         let target = [
-            json!({ "ref": ref_of(110), "name": "name", "family": "text" }),
-            json!({ "ref": ref_of(130), "name": "box", "family": "checkbox" }),
-            json!({ "ref": ref_of(140), "name": "locked", "family": "text" }),
-            json!({ "ref": ref_of(150), "name": "empty", "family": "text" }),
+            json!({ "ref": ref_of(110), "name": "name", "kind": "text" }),
+            json!({ "ref": ref_of(130), "name": "box", "kind": "checkbox" }),
+            json!({ "ref": ref_of(140), "name": "locked", "kind": "text" }),
+            json!({ "ref": ref_of(150), "name": "empty", "kind": "text" }),
         ];
         let bundle = rows(&[name, missing.clone(), r#box.clone(), locked.clone(), empty], &[], &[]);
         let planned = plan_form_values_import(&bundle.fields, &target, &mut |at, _| {
@@ -921,7 +921,7 @@ mod tests {
             planned.dropped,
             [
                 json!({ "ref": missing["ref"], "reason": "no-field" }),
-                json!({ "ref": r#box["ref"], "reason": "wrong-family" }),
+                json!({ "ref": r#box["ref"], "reason": "wrong-kind" }),
                 json!({ "ref": locked["ref"], "reason": "locked" }),
             ]
         );
@@ -936,7 +936,7 @@ mod tests {
     fn an_export_takes_whole_fields_a_signature_unsigned_a_quiet_field_without_its_value() {
         let signed = with(
             text_field("sign", 10, &[], json!({})),
-            json!({ "family": "signature", "valueEntry": { "kind": "scalar", "value": "12 0 R" } }),
+            json!({ "kind": "signature", "valueEntry": { "kind": "scalar", "value": "12 0 R" } }),
         );
         let quiet = text_field("quiet", 20, &[], json!({ "noExport": true }));
         let exported = form_export_rows_of(

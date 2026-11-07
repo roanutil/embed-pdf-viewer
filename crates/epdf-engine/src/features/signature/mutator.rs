@@ -235,10 +235,17 @@ fn open_bytes(session: &DocumentSession, bytes: &[u8]) -> Result<Document, Engin
 
 /// `bakeWidgetAppearance`: draw a one-page PDF into the widget's normal
 /// appearance. A PDF of any other page count is `InvalidArg`.
+///
+/// `record_fit`, for a mark drawn in without signing, records the fit as a
+/// stamp records its own: the widget then reads as having a mark in it
+/// (`hasMark`), which its style never draws over. A signature's mark needs
+/// no record (the field's value says it's signed), and a signing changes no
+/// other key of its widget.
 pub(crate) fn bake_widget_appearance(
     doc: &Document,
     widget: &FormWidget,
     pdf: &[u8],
+    record_fit: bool,
 ) -> Result<(), EngineError> {
     let Some(page) = widget.page else {
         return Err(EngineError::with_message(
@@ -279,7 +286,24 @@ pub(crate) fn bake_widget_appearance(
                 EngineErrorCode::Unknown,
                 "the appearance page could not be fitted into the widget",
             ),
-        })
+        })?;
+    if record_fit {
+        let not_found = || {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                "the signature widget could not be loaded",
+            )
+        };
+        let page =
+            doc.page_by_object_number(page.object_number().get()).map_err(|_| not_found())?;
+        let annotation =
+            page.annotation_by_object_number(widget.annot_object_number).ok_or_else(not_found)?;
+        crate::features::annotation::write::stamp::write_stamp_fit(
+            &annotation,
+            crate::features::annotation::write::prepare::StampFit::Contain,
+        )?;
+    }
+    Ok(())
 }
 
 /// `groupOfField`: the group of the field `field_object_number`; `None` in
@@ -422,7 +446,7 @@ pub fn prepare(
                 "an appearance carries its PDF as a request payload",
             )
         })?;
-        bake_widget_appearance(&candidate, widget, pdf)?;
+        bake_widget_appearance(&candidate, widget, pdf, false)?;
     }
 
     let mut saved = candidate.save_signature_candidate(value_obj_num).map_err(|_| {

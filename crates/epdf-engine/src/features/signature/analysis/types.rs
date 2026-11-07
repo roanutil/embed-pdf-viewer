@@ -123,6 +123,8 @@ pub struct ObjectChange {
 pub struct RevisionField {
     pub object_number: u32,
     pub name: String,
+    /// `kind` on the wire (c4b286a69).
+    #[serde(rename = "kind")]
     pub family: FormFieldFamily,
     pub widgets: Vec<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

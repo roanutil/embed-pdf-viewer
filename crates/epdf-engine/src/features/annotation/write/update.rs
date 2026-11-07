@@ -171,6 +171,39 @@ pub fn record_json(record: &AnnotationRecord) -> Result<Map<String, Value>, Engi
     }
 }
 
+/// `assertMarkKeepsItsLook`: a widget with a mark in it (`hasMark`: a
+/// signature, or one drawn in) shows the mark, not its box, so a change to
+/// its style, which only the box shows, is refused before anything is
+/// written. A style sent back as it reads is no change.
+fn assert_mark_keeps_its_look(
+    current: &Map<String, Value>,
+    patch: &Map<String, Value>,
+) -> Result<(), EngineError> {
+    if current.get("subtype").and_then(Value::as_str) != Some("widget")
+        || current.get("hasMark") != Some(&Value::Bool(true))
+    {
+        return Ok(());
+    }
+    let changed: Vec<&str> = super::widget::WIDGET_STYLE_NAMES
+        .into_iter()
+        .filter(|name| {
+            patch.get(*name).is_some_and(|sent| {
+                !super::appearance::semantic_equal(Some(sent), current.get(*name))
+            })
+        })
+        .collect();
+    if changed.is_empty() {
+        return Ok(());
+    }
+    Err(EngineError::with_message(
+        EngineErrorCode::InvalidArg,
+        format!(
+            "the widget has a mark in it, which its style doesn't draw: {} can't change",
+            changed.join(", ")
+        ),
+    ))
+}
+
 /// `annotations.update`: edit an annotation in place, checked whole before
 /// the first write (`AnnotationMutator.update`).
 pub fn update_annotation(
@@ -199,6 +232,7 @@ pub fn update_annotation(
     assert_caption_metadata_writable(&annotation, &current, &patch)?;
     let describe = |key: &str| services.context.describe_font(key);
     let resolved = pdf_resolve_annotation_patch(&current, patch, Some(&describe))?;
+    assert_mark_keeps_its_look(&current, &resolved.data)?;
     assert_resources(resolved.subtype, &resources, false)?;
     preflight_patch(document, &resolved, &resources, services.context)?;
     // The apply boundary: everything below writes.
@@ -299,10 +333,12 @@ pub fn update_annotation(
         }
         AppearanceImpact::Regenerate => {
             let blend = resolved.fields.blend_mode.unwrap_or(previous_blend);
-            // A widget is drawn as its field's family draws it; a widget in
-            // no field has no generator.
+            // A widget is drawn as its field's kind draws it: a signature
+            // field's and one in no field, their box. A mark in the widget
+            // stays: the file places it in the moved or resized box.
             let drawn = if resolved.subtype == AnnotationSubtype::Widget {
-                annotation.generate_form_field_appearance()
+                current.get("hasMark") != Some(&Value::Bool(true))
+                    && annotation.generate_form_field_appearance()
             } else {
                 annotation.generate_appearance(Some(blend.code()))
             };

@@ -187,7 +187,7 @@ fn every_family_the_reader_models_appears_in_the_corpus() {
         .as_array()
         .expect("fields")
         .iter()
-        .map(|f| f["family"].as_str().expect("a family"))
+        .map(|f| f["kind"].as_str().expect("a family"))
         .collect();
 
     for family in [
@@ -250,7 +250,7 @@ fn a_fields_widget_names_its_row_by_ref_and_the_row_names_its_field() {
     for widget in radio["widgets"].as_array().expect("widgets") {
         let row = rows.iter().find(|row| row["ref"] == widget["ref"]).expect("a row");
         assert_eq!(row["field"], radio["ref"]);
-        assert_eq!(row["fieldFamily"], "radio");
+        assert_eq!(row["fieldKind"], "radio");
         assert_eq!(widget["objectNumber"], widget["ref"]["objectNumber"]);
         assert_eq!(widget["page"], row["page"]);
     }
@@ -405,7 +405,7 @@ fn lists_the_reconciled_field_tree_with_per_family_dtos() {
     .expect("the snapshot reads back");
 
     let text = field(&snapshot, "maxlen_text");
-    assert_eq!(text["family"], "text");
+    assert_eq!(text["kind"], "text");
     assert_eq!(text["value"], "abc");
     assert_eq!(text["valueEntry"], json!({ "kind": "scalar", "value": "abc" }));
     assert_eq!(text["defaultValueEntry"], json!({ "kind": "none" }));
@@ -413,7 +413,7 @@ fn lists_the_reconciled_field_tree_with_per_family_dtos() {
     assert_eq!(text["widgets"].as_array().map(Vec::len), Some(1));
 
     let radio = field(&snapshot, "ntto_radio");
-    assert_eq!(radio["family"], "radio");
+    assert_eq!(radio["kind"], "radio");
     assert_eq!(radio["noToggleToOff"], true);
     assert_eq!(radio["value"], "x");
     assert_eq!(radio["valueEntry"], json!({ "kind": "scalar", "value": "x" }));
@@ -425,12 +425,12 @@ fn lists_the_reconciled_field_tree_with_per_family_dtos() {
     assert_eq!(field(&snapshot, "unison_radio")["radiosInUnison"], true);
 
     let check = field(&snapshot, "opt_check");
-    assert_eq!(check["family"], "checkbox");
+    assert_eq!(check["kind"], "checkbox");
     assert_eq!(check["checked"], false);
     assert_eq!(check["exportValue"], "Alpha");
 
     // Hierarchical fields surface under their fully qualified name.
-    assert_eq!(field(&snapshot, "billing.name")["family"], "text");
+    assert_eq!(field(&snapshot, "billing.name")["kind"], "text");
     assert_eq!(snapshot["calculationOrder"], json!([]));
 }
 
@@ -699,7 +699,7 @@ fn radio() -> Value {
     };
     with_base(json!({
         "ref": { "kind": "objectNumber", "objectNumber": 6 }, "name": "gender",
-        "family": "radio", "valueEntry": { "kind": "scalar", "value": "male" },
+        "kind": "radio", "valueEntry": { "kind": "scalar", "value": "male" },
         "defaultValueEntry": { "kind": "none" }, "value": "male", "radiosInUnison": false,
         "noToggleToOff": false, "widgets": [toggle(8, "male", true), toggle(9, "female", false)]
     }))
@@ -708,7 +708,7 @@ fn radio() -> Value {
 fn listbox() -> Value {
     with_base(json!({
         "ref": { "kind": "objectNumber", "objectNumber": 9 }, "name": "fruits",
-        "family": "listbox", "valueEntry": { "kind": "array", "values": ["Apple", "Cherry"] },
+        "kind": "listbox", "valueEntry": { "kind": "array", "values": ["Apple", "Cherry"] },
         "defaultValueEntry": { "kind": "array", "values": ["Apple"] },
         "selectedValues": ["Apple", "Cherry"], "defaultValue": ["Apple"], "multiSelect": true,
         "options": [
@@ -732,7 +732,7 @@ fn the_field_dto_union_round_trips_per_family() {
 fn the_family_discriminant_rejects_cross_family_members() {
     // A list box claiming to be text fails: it has no `value` string.
     let mut bad = listbox();
-    bad["family"] = json!("text");
+    bad["kind"] = json!("text");
     assert!(serde_json::from_value::<FormFieldDto>(bad).is_err());
 }
 

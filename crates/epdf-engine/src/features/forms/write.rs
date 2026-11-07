@@ -412,6 +412,7 @@ impl FormMutator<'_> {
                 self.document,
                 &crate::features::signature::types::FormWidget::new(*annot, *page),
                 pdf,
+                true,
             )?;
         }
         let drawn: Vec<u32> = widgets.iter().map(|(annot, _)| *annot).collect();

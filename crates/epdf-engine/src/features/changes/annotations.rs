@@ -922,7 +922,7 @@ pub(super) fn write_update(
     // A widget's patch as its field's family takes it (`fitWidgetToFamily`).
     let patch = if before.get("subtype").and_then(Value::as_str) == Some("widget") {
         let family: crate::features::forms::snapshot::FormFieldFamily =
-            serde_json::from_value(before.get("fieldFamily").cloned().unwrap_or_default())
+            serde_json::from_value(before.get("fieldKind").cloned().unwrap_or_default())
                 .unwrap_or(crate::features::forms::snapshot::FormFieldFamily::Unknown);
         crate::features::forms::field::fit_widget_to_family(family, patch)?
     } else {

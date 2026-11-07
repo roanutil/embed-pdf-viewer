@@ -142,7 +142,7 @@ fn widgets_live_the_full_form_loop() {
     // 1. A field gets a widget where its placement says, styled with the
     // house vocabulary.
     let field = doc.write(json!({ "kind": "forms.createField",
-        "draft": { "family": "text", "name": "loop_field" } }));
+        "draft": { "kind": "text", "name": "loop_field" } }));
     assert_eq!(field["field"]["widgets"], json!([]));
     let reference = field["field"]["ref"].clone();
     let rect = json!({ "x": 20, "y": 20, "width": 180, "height": 24 });
@@ -158,7 +158,7 @@ fn widgets_live_the_full_form_loop() {
     // do.
     let row = doc.row(&widget).expect("a widget row");
     assert_eq!(row["field"], reference);
-    assert_eq!(row["fieldFamily"], "text");
+    assert_eq!(row["fieldKind"], "text");
     close(&row["rect"], &rect);
     assert_eq!(row["interiorColor"], "#f6f8fa");
     let annotations = doc.ok(json!({ "kind": "annotations.list", "pages": [page_ref(PAGE)] }));
@@ -191,7 +191,7 @@ fn widgets_live_the_full_form_loop() {
 fn delete_widget_takes_a_widget_off_its_page_and_out_of_its_field() {
     let mut doc = Doc::toggle_fields();
     let created = doc.ok(json!({ "kind": "forms.createField", "draft": {
-        "family": "text", "name": "delete_me", "widgets": [
+        "kind": "text", "name": "delete_me", "widgets": [
             { "page": page_ref(PAGE), "rect": { "x": 20, "y": 300, "width": 120, "height": 20 } },
             { "page": page_ref(PAGE), "rect": { "x": 20, "y": 330, "width": 120, "height": 20 } },
         ] } }));
@@ -290,7 +290,7 @@ fn create_field_composes_styled_widgets_atomically() {
         json!({ "x": 60, "y": 60, "width": 20, "height": 20 }),
     ];
     let created = doc.write(json!({ "kind": "forms.createField", "draft": {
-        "family": "radio", "name": "authored_radio", "noToggleToOff": true, "widgets": [
+        "kind": "radio", "name": "authored_radio", "noToggleToOff": true, "widgets": [
             { "page": page_ref(PAGE), "rect": rects[0], "exportValue": "yes", "color": "#000000",
               "strokeWidth": 1 },
             { "page": page_ref(PAGE), "rect": rects[1], "exportValue": "no" },
@@ -343,7 +343,7 @@ fn create_field_composes_styled_widgets_atomically() {
     assert_eq!(code(&conflict), "InvalidArg");
     // A member another family has, or a family that isn't the field's, is
     // refused.
-    for patch in [json!({ "multiline": true }), json!({ "family": "text", "name": "x" })] {
+    for patch in [json!({ "multiline": true }), json!({ "kind": "text", "name": "x" })] {
         let refused = doc
             .refused(json!({ "kind": "forms.updateField", "ref": field["ref"], "patch": patch }));
         assert_eq!(code(&refused), "InvalidArg", "{patch}");
@@ -363,7 +363,7 @@ fn create_field_composes_styled_widgets_atomically() {
 fn a_widgets_colour_change_keeps_its_font_and_size() {
     let mut doc = Doc::toggle_fields();
     let created = doc.write(json!({ "kind": "forms.createField", "draft": {
-        "family": "text", "name": "styled", "widgets": [{ "page": page_ref(PAGE),
+        "kind": "text", "name": "styled", "widgets": [{ "page": page_ref(PAGE),
             "rect": { "x": 20, "y": 160, "width": 160, "height": 24 },
             "fontFamily": "courier", "fontSize": 9 }] } }));
     let widget = created["field"]["widgets"][0]["ref"].clone();
@@ -396,16 +396,16 @@ fn a_widgets_colour_change_keeps_its_font_and_size() {
 fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
     let mut doc = Doc::toggle_fields();
     let created = doc.write(json!({ "kind": "forms.createField", "draft": {
-        "family": "pushbutton", "name": "clear", "widgets": [{ "page": page_ref(PAGE),
+        "kind": "pushbutton", "name": "clear", "widgets": [{ "page": page_ref(PAGE),
             "rect": { "x": 20, "y": 120, "width": 120, "height": 28 },
             "caption": "Clear form", "interiorColor": "#f6f8fa",
             "actions": { "activate": { "type": "reset-form", "fields": null, "exclude": false } } }] } }));
     let field = created["field"].clone();
-    assert_eq!(field["family"], "pushbutton");
+    assert_eq!(field["kind"], "pushbutton");
     let widget = field["widgets"][0]["ref"].clone();
     let row = doc.row(&widget).unwrap();
     assert_eq!(
-        (&row["fieldFamily"], &row["caption"], &row["interiorColor"], &row["hasAppearance"]),
+        (&row["fieldKind"], &row["caption"], &row["interiorColor"], &row["hasAppearance"]),
         (&json!("pushbutton"), &json!("Clear form"), &json!("#f6f8fa"), &json!(true))
     );
     assert_eq!(row["actions"]["activate"]["root"]["type"], "reset-form", "{row}");
@@ -459,7 +459,7 @@ fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|w| w["fieldFamily"] == "checkbox")
+        .find(|w| w["fieldKind"] == "checkbox")
         .cloned()
         .unwrap();
     assert_eq!(checkbox["caption"], Value::Null);
@@ -469,7 +469,7 @@ fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
     let caption = doc.refused(json!({ "kind": "forms.updateWidget", "widget": checkbox["ref"],
         "patch": { "caption": "Yes" } }));
     assert_eq!(code(&caption), "InvalidArg");
-    let placed = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let placed = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "captioned", "widgets": [{ "page": page_ref(PAGE),
             "rect": { "x": 20, "y": 160, "width": 120, "height": 20 }, "caption": "x" }] } }));
     assert_eq!(code(&placed), "InvalidArg");
@@ -486,17 +486,17 @@ fn create_is_one_change_a_rejected_draft_creates_nothing() {
     let placed = json!({ "page": page_ref(PAGE), "rect": { "x": 20, "y": 100, "width": 100, "height": 20 } });
 
     // Checked before anything is written.
-    let negative = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let negative = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "rejected_text", "maxLength": -5, "widgets": [placed] } }));
     assert_eq!(code(&negative), "InvalidArg");
     let mut nowhere = placed.clone();
     nowhere["page"] = page_ref(999_999);
-    let missing = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let missing = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "rejected_text", "widgets": [nowhere] } }));
     assert_eq!(code(&missing), "NotFound", "{missing}");
     // Refused after the field exists: the whole create is undone.
     let late = doc.refused(json!({ "kind": "forms.createField", "draft": {
-        "family": "combobox", "name": "rejected_choice", "options": [{ "label": "A", "value": "a" }],
+        "kind": "combobox", "name": "rejected_choice", "options": [{ "label": "A", "value": "a" }],
         "defaultValue": "not-an-option", "widgets": [placed] } }));
     assert_eq!(code(&late), "InvalidArg");
 
@@ -504,7 +504,7 @@ fn create_is_one_change_a_rejected_draft_creates_nothing() {
     assert_eq!(doc.widgets_on(PAGE).len(), widgets_before);
 
     // The names are still free.
-    let created = doc.write(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let created = doc.write(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "rejected_text", "widgets": [placed] } }));
     assert_eq!(created["field"]["name"], "rejected_text");
     doc.write(json!({ "kind": "forms.deleteField", "ref": created["field"]["ref"] }));
@@ -514,7 +514,7 @@ fn create_is_one_change_a_rejected_draft_creates_nothing() {
 fn flags_list_box_defaults_and_signature_fields_are_written_like_any_other_member() {
     let mut doc = Doc::toggle_fields();
     let list = doc.write(json!({ "kind": "forms.createField", "draft": {
-        "family": "listbox", "name": "defaults_list", "multiSelect": true,
+        "kind": "listbox", "name": "defaults_list", "multiSelect": true,
         "options": [{ "label": "A", "value": "a" }, { "label": "B", "value": "b" },
             { "label": "C", "value": "c" }],
         "defaultValue": ["a", "c"], "required": true,
@@ -557,14 +557,14 @@ fn flags_list_box_defaults_and_signature_fields_are_written_like_any_other_membe
 
     // A signature field takes the settings every field shares.
     let signature = doc.write(json!({ "kind": "forms.createField", "draft": {
-        "family": "signature", "name": "sign_here",
+        "kind": "signature", "name": "sign_here",
         "widgets": [{ "page": page_ref(PAGE), "rect": { "x": 20, "y": 220, "width": 150, "height": 40 } }] } }));
     let sign = signature["field"]["ref"].clone();
     doc.write(json!({ "kind": "forms.updateField", "ref": sign, "patch": {
         "name": "signed_here", "alternateName": "Sign here", "required": true } }));
     let renamed = doc.field(&sign).unwrap();
     assert_eq!(
-        (&renamed["family"], &renamed["name"], &renamed["alternateName"], &renamed["required"]),
+        (&renamed["kind"], &renamed["name"], &renamed["alternateName"], &renamed["required"]),
         (&json!("signature"), &json!("signed_here"), &json!("Sign here"), &json!(true))
     );
     let multiline = doc.refused(
@@ -648,7 +648,7 @@ fn a_field_create_update_and_delete_undo_and_redo() {
     // deleted widget's.
     let mut doc = Doc::toggle_fields();
     let created = doc.ok(json!({ "kind": "forms.createField", "opId": "create-1", "draft": {
-        "family": "text", "name": "undo_me", "defaultValue": "start",
+        "kind": "text", "name": "undo_me", "defaultValue": "start",
         "widgets": [{ "page": page_ref(PAGE), "rect": { "x": 20, "y": 400, "width": 100, "height": 20 } }] } }));
     let field = created["result"]["field"].clone();
     let reference = field["ref"].clone();
@@ -702,7 +702,7 @@ fn a_field_create_update_and_delete_undo_and_redo() {
 
     // The create's undo deletes the field, while nobody changed it since.
     let fresh = doc.ok(json!({ "kind": "forms.createField", "opId": "create-2", "draft": {
-        "family": "checkbox", "name": "fresh" } }));
+        "kind": "checkbox", "name": "fresh" } }));
     let fresh = fresh["result"]["field"]["ref"].clone();
     doc.ok(json!({ "kind": "document.apply", "opId": "undo-create",
         "change": { "undoOf": "create-2" } }));
@@ -714,9 +714,9 @@ fn a_calculate_script_keeps_the_field_in_the_calculation_order() {
     // `followCalculateScript` and `forms.reorderCalculations` (98718b780).
     let mut doc = Doc::toggle_fields();
     let script = |text: &str| json!({ "type": "javascript", "script": text });
-    let first = doc.ok(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let first = doc.ok(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "total_a", "actions": { "calculate": script("event.value = 1") } } }));
-    let second = doc.ok(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let second = doc.ok(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "total_b", "actions": { "calculate": script("event.value = 2") } } }));
     let a = first["result"]["field"]["ref"].clone();
     let b = second["result"]["field"]["ref"].clone();
@@ -741,7 +741,7 @@ fn a_calculate_script_keeps_the_field_in_the_calculation_order() {
     assert_eq!(updated["result"]["calculationOrder"], json!([b]));
     assert_eq!(doc.form()["calculationOrder"], json!([b]));
     // A script field may not be written without `doc.forms.script`.
-    let refused = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let refused = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "sneaky", "actions": { "calculate": script("1") } },
         "authority": { "identity": {}, "grants": { "scope": ["doc.forms.modify", "doc.open"],
             "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
@@ -774,14 +774,14 @@ fn a_designer_puts_fields_in_her_own_group_or_one_she_may_set() {
         "rect": { "x": x, "y": 200, "width": 100, "height": 20 } })
     };
     let own = doc.write(json!({ "kind": "forms.createField", "authority": designer(),
-        "draft": { "family": "text", "name": "clause", "widgets": [placed(20)] } }));
+        "draft": { "kind": "text", "name": "clause", "widgets": [placed(20)] } }));
     assert_eq!(own["field"]["groupId"], "legal");
     let buyers = doc.write(json!({ "kind": "forms.createField", "authority": designer(),
-        "draft": { "family": "text", "name": "buyer_address", "groupId": "buyer",
+        "draft": { "kind": "text", "name": "buyer_address", "groupId": "buyer",
             "widgets": [placed(140)] } }));
     assert_eq!(buyers["field"]["groupId"], "buyer");
     let refused = doc.refused(json!({ "kind": "forms.createField", "authority": designer(),
-        "draft": { "family": "text", "name": "seller_address", "groupId": "seller",
+        "draft": { "kind": "text", "name": "seller_address", "groupId": "seller",
             "widgets": [placed(260)] } }));
     assert_eq!(code(&refused), "Forbidden", "{refused}");
     assert_eq!(refused["details"]["required"], "fields:set-group:group=seller", "{refused}");
@@ -900,13 +900,13 @@ fn a_turned_field_fills_and_saves_with_its_turn() {
 fn a_placements_rotation_turns_a_new_fields_contents_inside_its_rect() {
     let mut doc = Doc::open(turned_fields());
     let rect = json!({ "x": 100, "y": 40, "width": 24, "height": 160 });
-    doc.write(json!({ "kind": "forms.createField", "draft": { "family": "text", "name": "side",
+    doc.write(json!({ "kind": "forms.createField", "draft": { "kind": "text", "name": "side",
         "widgets": [{ "page": page_ref(3), "rect": rect, "rotation": 270 }] } }));
     let row = doc.row_of("side");
     assert_eq!(row["rotation"], 270);
     close(&row["rect"], &rect);
     close(&row["box"], &swapped(&rect));
-    let refused = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let refused = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "tilted", "widgets": [{ "page": page_ref(3), "rect": rect, "rotation": 45 }] } }));
     assert_eq!(code(&refused), "InvalidArg");
 }
@@ -915,13 +915,13 @@ fn a_placements_rotation_turns_a_new_fields_contents_inside_its_rect() {
 fn a_placement_gives_where_the_widget_stands_or_its_frame_the_same_widget_either_way() {
     let mut doc = Doc::open(turned_fields());
     let rect = json!({ "x": 150, "y": 40, "width": 24, "height": 160 });
-    doc.write(json!({ "kind": "forms.createField", "draft": { "family": "text", "name": "by-box",
+    doc.write(json!({ "kind": "forms.createField", "draft": { "kind": "text", "name": "by-box",
         "widgets": [{ "page": page_ref(3), "box": swapped(&rect), "rotation": 270 }] } }));
     let row = doc.row_of("by-box");
     assert_eq!(row["rotation"], 270);
     close(&row["rect"], &rect);
     close(&row["box"], &swapped(&rect));
-    let neither = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
+    let neither = doc.refused(json!({ "kind": "forms.createField", "draft": { "kind": "text",
         "name": "nowhere", "widgets": [{ "page": page_ref(3) }] } }));
     assert_eq!(code(&neither), "InvalidArg");
 }

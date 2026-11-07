@@ -102,7 +102,8 @@ pub fn page_widget_of(
         caption: widget.caption,
         check_style: widget.check_style,
         field: widget.field,
-        field_family: widget.field_family,
+        field_kind: widget.field_kind,
+        has_mark: widget.has_mark,
     })
 }
 
@@ -304,7 +305,7 @@ mod tests {
     fn pushbutton(name: &str, actions: Option<Value>) -> Value {
         let mut field = json!({
             "ref": { "kind": "objectNumber", "objectNumber": 9 }, "name": name,
-            "family": "pushbutton", "origin": "acroform", "readOnly": false,
+            "kind": "pushbutton", "origin": "acroform", "readOnly": false,
             "required": false, "noExport": false, "alternateName": null, "mappingName": null,
             "valueEntry": { "kind": "none" }, "defaultValueEntry": { "kind": "none" },
             "groupId": null, "createdBy": null, "createdAt": null, "filledBy": null,
@@ -347,7 +348,7 @@ mod tests {
             "ref": { "kind": "objectNumber", "page": page_ref(4), "objectNumber": 8 },
             "page": page_ref(4), "hasAppearance": false, "appearanceState": null, "nm": null,
             "rect": rect, "box": rect, "rotation": null, "subtype": "widget",
-            "field": null, "fieldFamily": "unknown", "actions": null
+            "field": null, "fieldKind": "unknown", "actions": null
         });
         let nulls = [
             "contents",

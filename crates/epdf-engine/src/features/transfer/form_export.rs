@@ -159,7 +159,7 @@ pub fn form_export_rows_of(
 /// value and who filled it, and a signature field without its signature
 /// (`exportedField`).
 fn exported_field(mut field: Value) -> Value {
-    let family = field["family"].as_str().unwrap_or_default().to_owned();
+    let family = field["kind"].as_str().unwrap_or_default().to_owned();
     if family == "signature" {
         field["valueEntry"] = json!({ "kind": "none" });
         return field;

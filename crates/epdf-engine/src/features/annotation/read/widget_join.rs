@@ -24,7 +24,7 @@ use super::dto::{AnnotationDto, AnnotationKind};
 use crate::features::forms::snapshot::FormFieldFamily;
 use crate::identity::AnnotationRef;
 
-/// Fill in `field_object_number` and `field_family` on every widget.
+/// Fill in `field_object_number` and `field_kind` on every widget.
 ///
 /// Does nothing, cheaply, for a listing with no widgets in it: the model is
 /// not built at all. Most pages have none.
@@ -54,6 +54,6 @@ pub fn join_widget_fields(document: &Document, annotations: &mut [AnnotationDto]
             continue;
         };
         fields.field_object_number = field.object_number();
-        fields.field_family = FormFieldFamily::from_code(field.family_code());
+        fields.field_kind = FormFieldFamily::from_code(field.family_code());
     }
 }
