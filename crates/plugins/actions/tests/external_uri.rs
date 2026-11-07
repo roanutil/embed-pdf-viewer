@@ -54,7 +54,7 @@ fn only_allowed_schemes_reach_open_uri() {
     for uri in ["javascript:alert(1)", "file:///etc/passwd", " https://a.test/ "] {
         let tree = json!({
             "root": { "type": "uri", "subtype": "URI", "uri": uri, "isMap": false, "next": [] },
-            "incomplete": false, "warningFlags": 0, "warnings": []
+            "incomplete": false, "warnings": []
         });
         let result = actions.execute(tree, ctx.clone(), None);
         rt::run_until_stalled();

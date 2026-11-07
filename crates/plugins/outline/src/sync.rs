@@ -51,7 +51,7 @@ pub fn action_tree_of(target: &Value) -> Value {
             "next": [],
         }),
     };
-    json!({ "root": root, "incomplete": false, "warningFlags": 0, "warnings": [] })
+    json!({ "root": root, "incomplete": false, "warnings": [] })
 }
 
 /// `targetFieldsOf(target)`: the target, and the `/A` it is written as.

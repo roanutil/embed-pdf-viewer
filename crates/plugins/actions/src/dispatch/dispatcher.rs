@@ -68,7 +68,6 @@ fn named_tree(name: &str) -> PdfActionTree {
     json!({
         "root": { "type": "named", "subtype": "Named", "name": name, "next": [] },
         "incomplete": false,
-        "warningFlags": 0,
         "warnings": [],
     })
 }

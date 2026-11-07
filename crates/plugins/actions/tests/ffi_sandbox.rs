@@ -27,7 +27,7 @@ use serde_json::{Value, json};
 pub fn named(name: &str) -> Value {
     json!({
         "root": { "type": "named", "subtype": "Named", "name": name, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     })
 }
 
@@ -302,7 +302,7 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
     let script = PdfActionTree::from_json(
         json!({
             "root": { "type": "javascript", "subtype": "JavaScript", "script": "app.alert('hi')", "next": [] },
-            "incomplete": false, "warningFlags": 0, "warnings": []
+            "incomplete": false, "warnings": []
         })
         .to_string(),
     )

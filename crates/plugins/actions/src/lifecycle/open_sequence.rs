@@ -44,7 +44,6 @@ impl ActionsCapability {
                 let tree = json!({
                     "root": { "type": "goto", "subtype": "GoTo", "destination": destination, "next": [] },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": [],
                 });
                 let result =

@@ -36,7 +36,7 @@ fn parse(json: &str, what: &str) -> Result<Value, Error> {
     serde_json::from_str(json).map_err(|e| invalid(format!("{what} is not JSON: {e}")))
 }
 
-/// `PdfActionTree`: `{root, incomplete, warningFlags, warnings}` as the
+/// `PdfActionTree`: `{root, incomplete, warnings}` as the
 /// engine extracted it. Echoed back exactly; never reshaped here.
 #[derive(Debug, PartialEq, uniffi::Object)]
 pub struct PdfActionTree(pub(crate) Value);

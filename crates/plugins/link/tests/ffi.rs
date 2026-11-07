@@ -386,7 +386,7 @@ fn a_link_activated_by_id_dispatches_with_its_page() {
     let mut scripted =
         link(12, [400.0, 380.0, 20.0, 10.0], json!({ "kind": "named", "name": "Mark" }));
     scripted["actions"] = json!({ "activate": { "root": { "type": "named", "subtype": "Named",
-        "name": "Mark", "next": [] }, "incomplete": false, "warningFlags": 0, "warnings": [] } });
+        "name": "Mark", "next": [] }, "incomplete": false, "warnings": [] } });
     let thread = KernelThread::spawn(move |_| {
         let actions =
             ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() };

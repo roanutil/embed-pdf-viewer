@@ -198,7 +198,7 @@ fn context(origin: &str) -> ActionContext {
 fn script(source: &str) -> Value {
     json!({
         "root": { "type": "javascript", "subtype": "JavaScript", "script": source, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": [],
+        "incomplete": false, "warnings": [],
     })
 }
 

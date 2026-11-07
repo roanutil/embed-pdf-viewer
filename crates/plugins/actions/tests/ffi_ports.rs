@@ -26,7 +26,7 @@ use serde_json::{Value, json};
 pub fn named(name: &str) -> Value {
     json!({
         "root": { "type": "named", "subtype": "Named", "name": name, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     })
 }
 
@@ -127,7 +127,7 @@ fn goto() -> Arc<PdfActionTree> {
         "root": { "type": "goto", "subtype": "GoTo",
                   "destination": { "kind": "fit", "page": { "kind": "objectNumber", "objectNumber": 1 } },
                   "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     }))
 }
 
@@ -193,7 +193,7 @@ impl ActionUiHandler for Ui {
 fn uri(uri: &str) -> Arc<PdfActionTree> {
     tree(json!({
         "root": { "type": "uri", "subtype": "URI", "uri": uri, "isMap": false, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     }))
 }
 
@@ -235,7 +235,7 @@ fn submit_tree() -> Arc<PdfActionTree> {
                                           "canonicalFormat": false, "exclNonUserAnnots": false,
                                           "exclFKey": false, "embedForm": false } },
                   "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     }))
 }
 
