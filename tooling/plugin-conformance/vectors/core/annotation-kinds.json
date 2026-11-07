@@ -98,13 +98,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Stroke",
-                "labelKey": "annotation.style.stroke"
+                "labelKey": "annotation.style.stroke",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -245,13 +247,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Stroke",
-                "labelKey": "annotation.style.stroke"
+                "labelKey": "annotation.style.stroke",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -392,13 +396,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Stroke",
-                "labelKey": "annotation.style.stroke"
+                "labelKey": "annotation.style.stroke",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -592,13 +598,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Stroke",
-                "labelKey": "annotation.style.stroke"
+                "labelKey": "annotation.style.stroke",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -739,13 +747,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Stroke",
-                "labelKey": "annotation.style.stroke"
+                "labelKey": "annotation.style.stroke",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -1293,7 +1303,8 @@
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "color",
@@ -1556,7 +1567,8 @@
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "color",
@@ -2565,7 +2577,8 @@
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Fill",
-                "labelKey": "annotation.style.fill"
+                "labelKey": "annotation.style.fill",
+                "allowsNone": true
               },
               {
                 "key": "opacity",
@@ -3268,13 +3281,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -3514,13 +3529,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -3760,13 +3777,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -4003,13 +4022,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -4130,13 +4151,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -4257,13 +4280,15 @@
                 "key": "color",
                 "control": "color",
                 "label": "Border color",
-                "labelKey": "annotation.style.borderColor"
+                "labelKey": "annotation.style.borderColor",
+                "allowsNone": true
               },
               {
                 "key": "interiorColor",
                 "control": "color",
                 "label": "Background",
-                "labelKey": "annotation.style.background"
+                "labelKey": "annotation.style.background",
+                "allowsNone": true
               },
               {
                 "key": "strokeWidth",
@@ -4294,6 +4319,92 @@
                 "cloudy": false
               }
             ]
+          },
+          "widget-mark": {
+            "name": "widget-mark",
+            "family": {
+              "read": {
+                "$function": true
+              },
+              "write": {
+                "$function": true
+              },
+              "placed": {
+                "$function": true
+              },
+              "bounds": {
+                "$function": true
+              },
+              "drawnBounds": {
+                "$function": true
+              },
+              "rect": {
+                "$function": true
+              },
+              "selectionBounds": {
+                "$function": true
+              },
+              "oriented": {
+                "$function": true
+              },
+              "turnedCorners": {
+                "$function": true
+              },
+              "pivot": {
+                "$function": true
+              },
+              "translate": {
+                "$function": true
+              },
+              "rotateAbout": {
+                "$function": true
+              },
+              "scaleAbout": {
+                "$function": true
+              },
+              "upright": {
+                "$function": true
+              },
+              "handles": {
+                "$function": true
+              },
+              "drag": {
+                "$function": true
+              },
+              "painted": {
+                "$function": true
+              },
+              "scene": {
+                "$function": true
+              }
+            },
+            "style": {
+              "$function": true
+            },
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "paintsBeneath": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "rasterOnly": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "properties": []
           }
         }
       }
@@ -4394,13 +4505,15 @@
               "key": "color",
               "control": "color",
               "label": "Stroke",
-              "labelKey": "annotation.style.stroke"
+              "labelKey": "annotation.style.stroke",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -4466,13 +4579,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -4691,13 +4806,15 @@
               "key": "color",
               "control": "color",
               "label": "Stroke",
-              "labelKey": "annotation.style.stroke"
+              "labelKey": "annotation.style.stroke",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -4763,13 +4880,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -4988,13 +5107,15 @@
               "key": "color",
               "control": "color",
               "label": "Stroke",
-              "labelKey": "annotation.style.stroke"
+              "labelKey": "annotation.style.stroke",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -5113,13 +5234,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -5391,13 +5514,15 @@
               "key": "color",
               "control": "color",
               "label": "Stroke",
-              "labelKey": "annotation.style.stroke"
+              "labelKey": "annotation.style.stroke",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -5463,13 +5588,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -5688,13 +5815,15 @@
               "key": "color",
               "control": "color",
               "label": "Stroke",
-              "labelKey": "annotation.style.stroke"
+              "labelKey": "annotation.style.stroke",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -5813,13 +5942,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -6653,7 +6784,8 @@
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "color",
@@ -6838,7 +6970,8 @@
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "color",
@@ -7179,7 +7312,8 @@
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "color",
@@ -7364,7 +7498,8 @@
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "color",
@@ -9352,7 +9487,8 @@
               "key": "interiorColor",
               "control": "color",
               "label": "Fill",
-              "labelKey": "annotation.style.fill"
+              "labelKey": "annotation.style.fill",
+              "allowsNone": true
             },
             {
               "key": "opacity",
@@ -9507,7 +9643,8 @@
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -10776,13 +10913,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -10944,13 +11083,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -11268,13 +11409,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -11436,13 +11579,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -11760,13 +11905,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -11928,13 +12075,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -12249,13 +12398,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -12301,13 +12452,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -12506,13 +12659,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -12558,13 +12713,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -12763,13 +12920,15 @@
               "key": "color",
               "control": "color",
               "label": "Border color",
-              "labelKey": "annotation.style.borderColor"
+              "labelKey": "annotation.style.borderColor",
+              "allowsNone": true
             },
             {
               "key": "interiorColor",
               "control": "color",
               "label": "Background",
-              "labelKey": "annotation.style.background"
+              "labelKey": "annotation.style.background",
+              "allowsNone": true
             },
             {
               "key": "strokeWidth",
@@ -12815,13 +12974,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -12919,6 +13080,182 @@
       "fn": "kindTakesLink",
       "args": [
         "widget-box"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindNamed/widget-mark",
+      "fn": "kindNamed",
+      "args": [
+        "widget-mark"
+      ],
+      "outcome": {
+        "returned": {
+          "name": "widget-mark",
+          "family": {
+            "read": {
+              "$function": true
+            },
+            "write": {
+              "$function": true
+            },
+            "placed": {
+              "$function": true
+            },
+            "bounds": {
+              "$function": true
+            },
+            "drawnBounds": {
+              "$function": true
+            },
+            "rect": {
+              "$function": true
+            },
+            "selectionBounds": {
+              "$function": true
+            },
+            "oriented": {
+              "$function": true
+            },
+            "turnedCorners": {
+              "$function": true
+            },
+            "pivot": {
+              "$function": true
+            },
+            "translate": {
+              "$function": true
+            },
+            "rotateAbout": {
+              "$function": true
+            },
+            "scaleAbout": {
+              "$function": true
+            },
+            "upright": {
+              "$function": true
+            },
+            "handles": {
+              "$function": true
+            },
+            "drag": {
+              "$function": true
+            },
+            "painted": {
+              "$function": true
+            },
+            "scene": {
+              "$function": true
+            }
+          },
+          "style": {
+            "$function": true
+          },
+          "caps": {
+            "selectable": true,
+            "movable": true,
+            "resizable": true,
+            "vertexEditable": false,
+            "rotatable": false,
+            "groupMovable": true,
+            "groupResizable": false,
+            "groupRotatable": false,
+            "textEditable": false,
+            "commentable": false,
+            "hasPopup": false,
+            "anchored": false,
+            "paintsBeneath": false,
+            "hasFill": true,
+            "hasEndings": false,
+            "hasCloudy": false,
+            "opaqueBody": true,
+            "rasterOnly": true,
+            "ignoresReadOnly": true,
+            "noZoom": false,
+            "noRotate": false
+          },
+          "properties": []
+        }
+      }
+    },
+    {
+      "name": "propertiesOfKind/widget-mark",
+      "fn": "propertiesOfKind",
+      "args": [
+        "widget-mark"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "print",
+            "control": "flag",
+            "label": "Print",
+            "labelKey": "annotation.flags.print"
+          },
+          {
+            "key": "hidden",
+            "control": "flag",
+            "label": "Hidden",
+            "labelKey": "annotation.flags.hidden"
+          },
+          {
+            "key": "noView",
+            "control": "flag",
+            "label": "No view",
+            "labelKey": "annotation.flags.noView"
+          },
+          {
+            "key": "toggleNoView",
+            "control": "flag",
+            "label": "Toggle no view",
+            "labelKey": "annotation.flags.toggleNoView"
+          },
+          {
+            "key": "readOnly",
+            "control": "flag",
+            "label": "Read only",
+            "labelKey": "annotation.flags.readOnly"
+          },
+          {
+            "key": "locked",
+            "control": "flag",
+            "label": "Locked",
+            "labelKey": "annotation.flags.locked"
+          },
+          {
+            "key": "lockedContents",
+            "control": "flag",
+            "label": "Locked contents",
+            "labelKey": "annotation.flags.lockedContents"
+          },
+          {
+            "key": "noZoom",
+            "control": "flag",
+            "label": "No zoom",
+            "labelKey": "annotation.flags.noZoom"
+          },
+          {
+            "key": "noRotate",
+            "control": "flag",
+            "label": "No rotate",
+            "labelKey": "annotation.flags.noRotate"
+          },
+          {
+            "key": "invisible",
+            "control": "flag",
+            "label": "Invisible",
+            "labelKey": "annotation.flags.invisible"
+          }
+        ]
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-mark",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-mark"
       ],
       "outcome": {
         "returned": false
@@ -13818,13 +14155,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -13953,13 +14292,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -14087,13 +14428,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -14221,13 +14564,15 @@
             "key": "color",
             "control": "color",
             "label": "Stroke",
-            "labelKey": "annotation.style.stroke"
+            "labelKey": "annotation.style.stroke",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -14595,13 +14940,15 @@
             "key": "color",
             "control": "color",
             "label": "Border color",
-            "labelKey": "annotation.style.borderColor"
+            "labelKey": "annotation.style.borderColor",
+            "allowsNone": true
           },
           {
             "key": "interiorColor",
             "control": "color",
             "label": "Background",
-            "labelKey": "annotation.style.background"
+            "labelKey": "annotation.style.background",
+            "allowsNone": true
           },
           {
             "key": "strokeWidth",
@@ -14847,7 +15194,8 @@
             "key": "interiorColor",
             "control": "color",
             "label": "Fill",
-            "labelKey": "annotation.style.fill"
+            "labelKey": "annotation.style.fill",
+            "allowsNone": true
           },
           {
             "key": "opacity",
@@ -15065,7 +15413,8 @@
           "widget-button",
           "widget-toggle",
           "widget-radio",
-          "widget-box"
+          "widget-box",
+          "widget-mark"
         ]
       ],
       "outcome": {

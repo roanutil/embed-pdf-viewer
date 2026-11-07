@@ -53,7 +53,7 @@
         const wrapper = {};
         Object.defineProperties(wrapper, {
             name: { enumerable: true, get: () => input.name },
-            type: { enumerable: true, get: () => input.family },
+            type: { enumerable: true, get: () => input.kind },
             value: {
                 enumerable: true,
                 get: () => cloneValue(record.value),
@@ -90,7 +90,7 @@
             source: { enumerable: false, get: () => doc },
         });
         wrapper.setFocus = () => {
-            state?.uiEffects.push({ kind: 'focusField', field: String(input.name) });
+            state?.uiEffects.push({ type: 'focusField', field: String(input.name) });
         };
         return wrapper;
     };
@@ -274,9 +274,9 @@
             enumerable: true,
             get: () => Number(state?.input.document?.pageNumber ?? 0),
             set: (value) => {
-                const page = Math.trunc(Number(value));
-                if (Number.isFinite(page))
-                    state?.uiEffects.push({ kind: 'gotoPage', page });
+                const pageIndex = Math.trunc(Number(value));
+                if (Number.isFinite(pageIndex))
+                    state?.uiEffects.push({ type: 'goToPage', pageIndex });
             },
         },
     });
@@ -299,7 +299,7 @@
             }
         }
     };
-    doc.print = () => state?.uiEffects.push({ kind: 'print' });
+    doc.print = () => state?.uiEffects.push({ type: 'print' });
     // Acrobat's doc.submitForm: positional (cURL, bFDF, bEmpty, aFields) or a
     // single argument object ({cURL, aFields, bEmpty, cSubmitAs, bGet}). It
     // emits a submit intent — resolution (Table 239/240 semantics) and the
@@ -327,7 +327,7 @@
                             ? 'html'
                             : undefined;
         state.uiEffects.push({
-            kind: 'submitForm',
+            type: 'submitForm',
             url: args.cURL === undefined || args.cURL === null ? null : String(args.cURL),
             fieldNames: names,
             includeEmpty: Boolean(args.bEmpty),
@@ -351,7 +351,7 @@
         formsVersion: 21,
         alert: (message, icon, _type, title) => {
             state?.uiEffects.push({
-                kind: 'alert',
+                type: 'alert',
                 message: String(message),
                 icon: Number.isFinite(Number(icon)) ? Number(icon) : 0,
                 ...(title === undefined ? {} : { title: String(title) }),
@@ -556,21 +556,21 @@
         host.identity = { ...(input.identity ?? {}) };
     };
     const formValue = (field, value) => {
-        const family = String(field.input.family);
-        if (family === 'text')
+        const kind = String(field.input.kind);
+        if (kind === 'text')
             return { value: String(value ?? '') };
-        if (family === 'checkbox' || family === 'radio') {
+        if (kind === 'checkbox' || kind === 'radio') {
             // A toggle's script value is its export value, 'Off' when clear.
             return {
                 value: value === null || value === undefined || String(value) === 'Off' ? null : String(value),
             };
         }
-        if (family === 'combobox') {
+        if (kind === 'combobox') {
             const selected = Array.isArray(value) ? value[0] : value;
             const text = selected === null || selected === undefined ? '' : String(selected);
             return { value: text === '' ? null : text };
         }
-        if (family === 'listbox') {
+        if (kind === 'listbox') {
             if (Array.isArray(value))
                 return { selectedValues: value.map(String) };
             return {
@@ -857,7 +857,7 @@
     const rejectWithAlert = (message) => {
         if (!state)
             return;
-        state.uiEffects.push({ kind: 'alert', message, icon: 0 });
+        state.uiEffects.push({ type: 'alert', message, icon: 0 });
         state.event.rc = false;
     };
     const formatMismatch = () => rejectWithAlert(`The value entered does not match the format of the field [ ${String(state?.event.targetName ?? '')} ]`);

@@ -273,7 +273,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -292,7 +292,7 @@
                   },
                   "version": {
                     "sha256": "new",
-                    "byteLength": 10
+                    "sizeBytes": 10
                   }
                 }
               }
@@ -477,7 +477,7 @@
                 },
                 "version": {
                   "sha256": "new",
-                  "byteLength": 10
+                  "sizeBytes": 10
                 }
               }
             }
@@ -572,7 +572,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "adbe.pkcs7.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -591,7 +591,7 @@
                   },
                   "version": {
                     "sha256": "new",
-                    "byteLength": 10
+                    "sizeBytes": 10
                   }
                 }
               }
@@ -777,7 +777,7 @@
                 },
                 "version": {
                   "sha256": "new",
-                  "byteLength": 10
+                  "sizeBytes": 10
                 }
               }
             }
@@ -872,7 +872,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -891,7 +891,7 @@
                   },
                   "version": {
                     "sha256": "new",
-                    "byteLength": 10
+                    "sizeBytes": 10
                   }
                 }
               }
@@ -1076,7 +1076,7 @@
                 },
                 "version": {
                   "sha256": "new",
-                  "byteLength": 10
+                  "sizeBytes": 10
                 }
               }
             }
@@ -1171,7 +1171,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -1190,7 +1190,7 @@
                   },
                   "version": {
                     "sha256": "new",
-                    "byteLength": 10
+                    "sizeBytes": 10
                   }
                 }
               }
@@ -1235,7 +1235,7 @@
                 "kind": "fqn",
                 "name": "Sig1"
               },
-              "contentsSize": 16384,
+              "contentsSizeBytes": 16384,
               "key": {
                 "kind": "cms",
                 "sign": {
@@ -1366,7 +1366,7 @@
                 },
                 "version": {
                   "sha256": "new",
-                  "byteLength": 10
+                  "sizeBytes": 10
                 }
               }
             }
@@ -1383,7 +1383,7 @@
                     "kind": "fqn",
                     "name": "Sig1"
                   },
-                  "contentsSize": 16384,
+                  "contentsSizeBytes": 16384,
                   "subFilter": "ETSI.CAdES.detached",
                   "digest": "sha256"
                 }
@@ -1466,7 +1466,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -1485,7 +1485,7 @@
                   },
                   "version": {
                     "sha256": "new",
-                    "byteLength": 10
+                    "sizeBytes": 10
                   }
                 }
               }
@@ -1661,7 +1661,7 @@
                 },
                 "version": {
                   "sha256": "new",
-                  "byteLength": 10
+                  "sizeBytes": 10
                 }
               }
             }
@@ -1760,7 +1760,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -2035,7 +2035,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -2307,7 +2307,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -2603,7 +2603,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -3109,7 +3109,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -3377,7 +3377,7 @@
                     8292,
                     50
                   ],
-                  "contentsSize": 8192,
+                  "contentsSizeBytes": 8192,
                   "subFilter": "ETSI.CAdES.detached",
                   "expectedVersion": {
                     "baseSha256": "base",
@@ -4071,7 +4071,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -4101,7 +4101,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -4297,7 +4297,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -4313,7 +4313,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -4437,7 +4437,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -4645,7 +4645,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -4660,7 +4660,7 @@
                   "integrity": "valid",
                   "cryptography": "valid",
                   "trust": "trusted",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -4789,7 +4789,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -4997,7 +4997,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -5013,7 +5013,7 @@
                   "cryptography": "valid",
                   "trust": "untrusted",
                   "trustReason": "No valid certificate paths found",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5142,7 +5142,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -5338,7 +5338,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -5354,7 +5354,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5478,7 +5478,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "partial",
                       "revisionIndex": 0,
                       "signer": {
@@ -5674,7 +5674,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "partial",
                     "revisionIndex": 0,
                     "signer": {
@@ -5690,7 +5690,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5814,7 +5814,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -5998,7 +5998,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -6013,7 +6013,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6096,7 +6096,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6126,7 +6126,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6156,7 +6156,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6186,7 +6186,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6216,7 +6216,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6246,7 +6246,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6276,7 +6276,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -6460,7 +6460,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -6475,7 +6475,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6504,7 +6504,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -6519,7 +6519,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6548,7 +6548,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -6563,7 +6563,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6592,7 +6592,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -6607,7 +6607,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6690,7 +6690,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "malformed",
                       "revisionIndex": 0,
                       "signer": {
@@ -6874,7 +6874,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "malformed",
                     "revisionIndex": 0,
                     "signer": {
@@ -6889,7 +6889,7 @@
                   "integrity": "invalid",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6972,7 +6972,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -7162,7 +7162,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -7177,7 +7177,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7270,7 +7270,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -7460,7 +7460,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -7475,7 +7475,7 @@
                   "integrity": "invalid",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7568,7 +7568,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -7760,7 +7760,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -7775,7 +7775,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7868,7 +7868,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -8064,7 +8064,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -8080,7 +8080,7 @@
                   "cryptography": "invalid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8204,7 +8204,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -8400,7 +8400,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -8416,7 +8416,7 @@
                   "cryptography": "unsupported",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8537,7 +8537,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": null,
                       "signer": {
@@ -8733,7 +8733,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": null,
                     "signer": {
@@ -8749,7 +8749,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8877,7 +8877,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -9094,7 +9094,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -9110,7 +9110,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9251,7 +9251,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -9467,7 +9467,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -9483,7 +9483,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9623,7 +9623,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -9839,7 +9839,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -9855,7 +9855,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9995,7 +9995,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -10210,7 +10210,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -10226,7 +10226,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -10363,7 +10363,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -10450,9 +10450,9 @@
             "d",
             {
               "until": "working-copy",
-              "at": {
+              "validationTime": {
                 "kind": "timestamp",
-                "genTime": 1906502400000,
+                "genTime": "2030-06-01T00:00:00.000Z",
                 "tokenVerified": true
               }
             }
@@ -10588,7 +10588,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -10604,11 +10604,9 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "timestamp",
-                    "genTime": {
-                      "$date": 1906502400000
-                    },
+                    "genTime": "2030-06-01T00:00:00.000Z",
                     "tokenVerified": true
                   },
                   "modifications": {
@@ -10749,7 +10747,7 @@
                         8292,
                         50
                       ],
-                      "contentsSize": 8192,
+                      "contentsSizeBytes": 8192,
                       "coverage": "whole-revision",
                       "revisionIndex": 0,
                       "signer": {
@@ -10951,7 +10949,7 @@
                       8292,
                       50
                     ],
-                    "contentsSize": 8192,
+                    "contentsSizeBytes": 8192,
                     "coverage": "whole-revision",
                     "revisionIndex": 0,
                     "signer": {
@@ -10967,7 +10965,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {

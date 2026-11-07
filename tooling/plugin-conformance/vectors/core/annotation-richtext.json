@@ -710,7 +710,7 @@
         }
       ],
       "outcome": {
-        "returned": "Hello bold world\rSecond line\r\rcafé 😀!"
+        "returned": "Hello bold world\nSecond line\n\ncafé 😀!"
       }
     },
     {
@@ -811,7 +811,7 @@
         }
       ],
       "outcome": {
-        "returned": "abcd\r\rxyz\rpqr"
+        "returned": "abcd\n\nxyz\npqr"
       }
     },
     {

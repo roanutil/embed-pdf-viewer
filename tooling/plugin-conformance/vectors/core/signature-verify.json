@@ -5341,7 +5341,7 @@
               },
               "hash": "sha256",
               "profile": "pkcs7",
-              "signingTime": 1789084800000,
+              "signingTime": "2026-09-11T00:00:00.000Z",
               "signer": {
                 "kind": "raw",
                 "certificateChain": [
@@ -5580,7 +5580,7 @@
               },
               "hash": "sha256",
               "profile": "cades-b",
-              "signingTime": 1789084800000,
+              "signingTime": "2026-09-11T00:00:00.000Z",
               "signer": {
                 "kind": "raw",
                 "certificateChain": [
@@ -7477,7 +7477,7 @@
                   }
                 }
               },
-              "signingTime": -631151999000
+              "signingTime": "1950-01-01T00:00:01.000Z"
             }
           ]
         },
@@ -7513,7 +7513,7 @@
                   }
                 }
               },
-              "signingTime": 0
+              "signingTime": "1970-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7549,7 +7549,7 @@
                   }
                 }
               },
-              "signingTime": 446882828000
+              "signingTime": "1984-02-29T06:07:08.000Z"
             }
           ]
         },
@@ -7585,7 +7585,7 @@
                   }
                 }
               },
-              "signingTime": 946684799999
+              "signingTime": "1999-12-31T23:59:59.999Z"
             }
           ]
         },
@@ -7621,7 +7621,7 @@
                   }
                 }
               },
-              "signingTime": 946684800000
+              "signingTime": "2000-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7657,7 +7657,7 @@
                   }
                 }
               },
-              "signingTime": 951831927000
+              "signingTime": "2000-02-29T13:45:27.000Z"
             }
           ]
         },
@@ -7693,7 +7693,7 @@
                   }
                 }
               },
-              "signingTime": 951872523000
+              "signingTime": "2000-03-01T01:02:03.000Z"
             }
           ]
         },
@@ -7729,7 +7729,7 @@
                   }
                 }
               },
-              "signingTime": 1704024000000
+              "signingTime": "2023-12-31T12:00:00.000Z"
             }
           ]
         },
@@ -7765,7 +7765,7 @@
                   }
                 }
               },
-              "signingTime": 1704067200000
+              "signingTime": "2024-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7801,7 +7801,7 @@
                   }
                 }
               },
-              "signingTime": 1709078400000
+              "signingTime": "2024-02-28T00:00:00.000Z"
             }
           ]
         },
@@ -7837,7 +7837,7 @@
                   }
                 }
               },
-              "signingTime": 1709164800000
+              "signingTime": "2024-02-29T00:00:00.000Z"
             }
           ]
         },
@@ -7873,7 +7873,7 @@
                   }
                 }
               },
-              "signingTime": 1709251200000
+              "signingTime": "2024-03-01T00:00:00.000Z"
             }
           ]
         },
@@ -7909,7 +7909,7 @@
                   }
                 }
               },
-              "signingTime": 2524607999000
+              "signingTime": "2049-12-31T23:59:59.000Z"
             }
           ]
         },
@@ -7945,7 +7945,7 @@
                   }
                 }
               },
-              "signingTime": 567993600000
+              "signingTime": "1988-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7981,7 +7981,7 @@
                   }
                 }
               },
-              "signingTime": 570675904000
+              "signingTime": "1988-02-01T01:05:04.000Z"
             }
           ]
         },
@@ -8017,7 +8017,7 @@
                   }
                 }
               },
-              "signingTime": 573185408000
+              "signingTime": "1988-03-01T02:10:08.000Z"
             }
           ]
         },
@@ -8053,7 +8053,7 @@
                   }
                 }
               },
-              "signingTime": 575867712000
+              "signingTime": "1988-04-01T03:15:12.000Z"
             }
           ]
         },
@@ -8089,7 +8089,7 @@
                   }
                 }
               },
-              "signingTime": 578463616000
+              "signingTime": "1988-05-01T04:20:16.000Z"
             }
           ]
         },
@@ -8125,7 +8125,7 @@
                   }
                 }
               },
-              "signingTime": 581145920000
+              "signingTime": "1988-06-01T05:25:20.000Z"
             }
           ]
         },
@@ -8161,7 +8161,7 @@
                   }
                 }
               },
-              "signingTime": 583741824000
+              "signingTime": "1988-07-01T06:30:24.000Z"
             }
           ]
         },
@@ -8197,7 +8197,7 @@
                   }
                 }
               },
-              "signingTime": 586424128000
+              "signingTime": "1988-08-01T07:35:28.000Z"
             }
           ]
         },
@@ -8233,7 +8233,7 @@
                   }
                 }
               },
-              "signingTime": 589106432000
+              "signingTime": "1988-09-01T08:40:32.000Z"
             }
           ]
         },
@@ -8269,7 +8269,7 @@
                   }
                 }
               },
-              "signingTime": 591702336000
+              "signingTime": "1988-10-01T09:45:36.000Z"
             }
           ]
         },
@@ -8305,7 +8305,7 @@
                   }
                 }
               },
-              "signingTime": 594384640000
+              "signingTime": "1988-11-01T10:50:40.000Z"
             }
           ]
         },
@@ -8341,7 +8341,7 @@
                   }
                 }
               },
-              "signingTime": 596980544000
+              "signingTime": "1988-12-01T11:55:44.000Z"
             }
           ]
         },
@@ -8377,7 +8377,7 @@
                   }
                 }
               },
-              "signingTime": 2117059141000
+              "signingTime": "2037-01-31T23:59:01.000Z"
             }
           ]
         },
@@ -8413,7 +8413,7 @@
                   }
                 }
               },
-              "signingTime": 2119647482000
+              "signingTime": "2037-03-02T22:58:02.000Z"
             }
           ]
         },
@@ -8449,7 +8449,7 @@
                   }
                 }
               },
-              "signingTime": 2121976623000
+              "signingTime": "2037-03-29T21:57:03.000Z"
             }
           ]
         },
@@ -8485,7 +8485,7 @@
                   }
                 }
               },
-              "signingTime": 2124824164000
+              "signingTime": "2037-05-01T20:56:04.000Z"
             }
           ]
         },
@@ -8521,7 +8521,7 @@
                   }
                 }
               },
-              "signingTime": 2127326105000
+              "signingTime": "2037-05-30T19:55:05.000Z"
             }
           ]
         },
@@ -8557,7 +8557,7 @@
                   }
                 }
               },
-              "signingTime": 2129914446000
+              "signingTime": "2037-06-29T18:54:06.000Z"
             }
           ]
         },
@@ -8593,7 +8593,7 @@
                   }
                 }
               },
-              "signingTime": 2132675587000
+              "signingTime": "2037-07-31T17:53:07.000Z"
             }
           ]
         },
@@ -8629,7 +8629,7 @@
                   }
                 }
               },
-              "signingTime": 2135263928000
+              "signingTime": "2037-08-30T16:52:08.000Z"
             }
           ]
         },
@@ -8665,7 +8665,7 @@
                   }
                 }
               },
-              "signingTime": 2137852269000
+              "signingTime": "2037-09-29T15:51:09.000Z"
             }
           ]
         },
@@ -8701,7 +8701,7 @@
                   }
                 }
               },
-              "signingTime": 2140613410000
+              "signingTime": "2037-10-31T14:50:10.000Z"
             }
           ]
         },
@@ -8737,7 +8737,7 @@
                   }
                 }
               },
-              "signingTime": 2143201751000
+              "signingTime": "2037-11-30T13:49:11.000Z"
             }
           ]
         },
@@ -8773,7 +8773,7 @@
                   }
                 }
               },
-              "signingTime": 2145703692000
+              "signingTime": "2037-12-29T12:48:12.000Z"
             }
           ]
         },
@@ -8809,7 +8809,7 @@
                   }
                 }
               },
-              "signingTime": 4102448461000
+              "signingTime": "2100-01-01T01:01:01.000Z"
             }
           ]
         },
@@ -8845,7 +8845,7 @@
                   }
                 }
               },
-              "signingTime": -2208992463000
+              "signingTime": "1899-12-31T22:58:57.000Z"
             }
           ]
         },
@@ -8881,7 +8881,7 @@
                   }
                 }
               },
-              "signingTime": -2510265600000
+              "signingTime": "1890-06-15T00:00:00.000Z"
             }
           ]
         },
@@ -8917,7 +8917,7 @@
                   }
                 }
               },
-              "signingTime": -62307694555000
+              "signingTime": "-000005-07-20T03:04:05.000Z"
             }
           ]
         },
@@ -8953,7 +8953,7 @@
                   }
                 }
               },
-              "signingTime": -62193700800000
+              "signingTime": "-000001-02-28T12:00:00.000Z"
             }
           ]
         }
@@ -10363,7 +10363,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -10473,7 +10473,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -10583,7 +10583,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 100,
+                "contentsSizeBytes": 100,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -10695,7 +10695,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -10807,7 +10807,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -10919,7 +10919,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11031,7 +11031,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11143,7 +11143,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11255,7 +11255,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11367,7 +11367,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11479,7 +11479,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11591,7 +11591,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11703,7 +11703,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 2347,
+                "contentsSizeBytes": 2347,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11813,7 +11813,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 100.5,
+                "contentsSizeBytes": 100.5,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",
@@ -11925,7 +11925,7 @@
                   8292,
                   50
                 ],
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": {
                   "baseSha256": "base",

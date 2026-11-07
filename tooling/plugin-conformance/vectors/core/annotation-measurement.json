@@ -13019,7 +13019,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -17565,7 +17574,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -21953,7 +21971,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": -90,
             "paint": {
               "fill": "#000000",
@@ -25593,7 +25620,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": -90,
             "paint": {
               "fill": "#000000",
@@ -30356,7 +30392,16 @@
             },
             "text": "1.96 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": -90,
             "paint": {
               "fill": "#000000",
@@ -35303,7 +35348,16 @@
             },
             "text": "0.14 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -39126,7 +39180,16 @@
             },
             "text": "0.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -41341,7 +41404,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -42031,7 +42103,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -42791,7 +42872,16 @@
             },
             "text": "2.16 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -43439,7 +43529,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 29.999999999999993,
             "paint": {
               "fill": "#000000",
@@ -44111,7 +44210,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -44783,7 +44891,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -45403,7 +45520,16 @@
             },
             "text": "—",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -46051,7 +46177,16 @@
             },
             "text": "—",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -47094,7 +47229,16 @@
             },
             "text": "stored",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -48123,7 +48267,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -48771,7 +48924,16 @@
             },
             "text": "3.11 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -49391,7 +49553,16 @@
             },
             "text": "3.11 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 20,
             "paint": {
               "fill": "#000000",
@@ -50035,7 +50206,16 @@
             },
             "text": "3.11 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -50655,7 +50835,16 @@
             },
             "text": "1.39 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -51219,7 +51408,16 @@
             },
             "text": "—",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -51811,7 +52009,16 @@
             },
             "text": "0.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -53288,7 +53495,16 @@
             },
             "text": "2.00 m²",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -53906,7 +54122,16 @@
             },
             "text": "2.00 m",
             "fontSize": 9,
-            "fontFamily": "Helvetica, Arial, sans-serif",
+            "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
+            "program": {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            },
             "rotation": 0,
             "paint": {
               "fill": "#000000",
@@ -55065,6 +55290,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55168,6 +55394,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55271,6 +55498,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "quadPoints": [
@@ -55382,6 +55610,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55521,6 +55750,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55658,6 +55888,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55798,6 +56029,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -55937,6 +56169,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
@@ -56041,6 +56274,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#e5484d",
             "opacity": 1,
             "strokeWidth": 2,
