@@ -2113,7 +2113,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2433,7 +2433,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2650,7 +2650,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2867,7 +2867,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3090,7 +3090,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3307,7 +3307,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3524,7 +3524,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3741,7 +3741,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3958,7 +3958,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4175,7 +4175,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4392,7 +4392,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4609,7 +4609,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17784,7 +17784,7 @@
                 "$fn": "below.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "below.onDown",
                 "returns": false
               }
@@ -55618,11 +55618,11 @@
                 "$fn": "below.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "below.onDown",
                 "returns": true
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "below.onUp"
               }
             }
@@ -57333,6 +57333,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -57358,7 +57359,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -57372,9 +57373,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -57561,6 +57562,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -57585,9 +57587,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -57782,6 +57784,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -57806,9 +57809,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -57942,6 +57945,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -57958,9 +57962,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -58173,6 +58177,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -58197,9 +58202,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -58876,7 +58881,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -59558,7 +59563,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 1,
@@ -60124,7 +60129,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -60426,7 +60431,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -62031,6 +62036,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -62055,9 +62061,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -62445,7 +62451,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -63812,9 +63818,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -64323,9 +64329,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -64568,9 +64574,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         }
@@ -79941,9 +79947,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -84363,7 +84369,7 @@
     },
     {
       "name": "drag-threshold-config",
-      "covers": "selectionPlugin({ dragThreshold }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.",
+      "covers": "selectionPlugin({ dragThresholdPx }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.",
       "plugins": [
         {
           "factory": "interaction"
@@ -84371,7 +84377,7 @@
         {
           "factory": "selection",
           "config": {
-            "dragThreshold": 10
+            "dragThresholdPx": 10
           }
         }
       ],
@@ -87399,9 +87405,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },

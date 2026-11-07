@@ -1296,7 +1296,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1322,7 +1323,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1350,7 +1352,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1378,7 +1381,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1404,7 +1408,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1430,7 +1435,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1456,7 +1462,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1482,7 +1489,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1508,7 +1516,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1534,7 +1543,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1560,7 +1570,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1586,7 +1597,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1612,7 +1624,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1641,7 +1654,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1670,7 +1684,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1699,7 +1714,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1725,7 +1741,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -1751,7 +1768,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12473,7 +12491,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12515,7 +12534,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12541,7 +12561,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12579,7 +12600,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12613,7 +12635,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12655,7 +12678,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12690,7 +12714,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12732,7 +12757,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12758,7 +12784,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12790,7 +12817,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -12821,7 +12849,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33314,7 +33343,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33340,7 +33370,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33353,14 +33384,16 @@
               "previous": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
                   "22": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33386,7 +33419,8 @@
                   "22": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33414,7 +33448,8 @@
                   "22": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33442,7 +33477,8 @@
                   "22": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33457,7 +33493,8 @@
                   "22": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -33466,7 +33503,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33494,7 +33532,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33524,7 +33563,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33554,7 +33594,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33584,7 +33625,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33614,7 +33656,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33631,7 +33674,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -33642,7 +33686,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33672,7 +33717,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33691,7 +33737,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -33702,7 +33749,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33732,7 +33780,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33751,7 +33800,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -33764,7 +33814,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33796,7 +33847,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33832,7 +33884,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33853,7 +33906,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -33866,7 +33920,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -33898,7 +33953,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33932,7 +33988,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -33966,7 +34023,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -34919,7 +34977,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -34935,9 +34993,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "x",
-              "sub": "alice",
-              "ts": 1,
-              "serverId": 7
+              "subject": "alice",
+              "at": "1970-01-01T00:00:00.001Z",
+              "serverSequence": 7
             }
           }
         },
@@ -34953,7 +35011,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -34969,7 +35027,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35015,7 +35073,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35030,7 +35088,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35061,7 +35119,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35093,7 +35151,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35109,7 +35167,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35144,7 +35202,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35165,7 +35223,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35178,7 +35236,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35196,7 +35254,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             },
             "layout": {
               "pageCount": 2,
@@ -35269,7 +35327,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35281,7 +35339,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -35425,7 +35483,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -35438,14 +35497,16 @@
               "previous": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -35466,7 +35527,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -35481,14 +35543,16 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
                 "annotationEpochs": {
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -35509,7 +35573,8 @@
                 "annotationEpochs": {
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -35524,7 +35589,8 @@
                 "annotationEpochs": {
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
@@ -35532,7 +35598,8 @@
                   "11": 1,
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -35554,7 +35621,8 @@
                   "11": 1,
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -35570,7 +35638,8 @@
                   "11": 1,
                   "22": 2
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
@@ -35579,7 +35648,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -35602,7 +35672,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -35619,7 +35690,8 @@
                   "22": 2,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
@@ -35631,7 +35703,8 @@
                 "fieldEpochs": {
                   "11": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -35657,7 +35730,8 @@
                 "fieldEpochs": {
                   "11": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -35687,7 +35761,8 @@
                 "fieldEpochs": {
                   "11": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -35707,7 +35782,8 @@
                 "fieldEpochs": {
                   "11": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
@@ -35720,7 +35796,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -35747,7 +35824,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -35768,7 +35846,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
@@ -35781,7 +35860,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -35808,7 +35888,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -35839,7 +35920,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -35860,7 +35942,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -35876,7 +35959,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -35906,41 +35990,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            }
-          },
-          "state": {
-            "plugins": {
-              "render::a": {
-                "contentEpochs": {
-                  "11": 1,
-                  "33": 1
                 },
-                "annotationEpochs": {
-                  "11": 1,
-                  "22": 2,
-                  "33": 1
-                },
-                "fieldEpochs": {
-                  "11": 2,
-                  "22": 1,
-                  "33": 1
-                }
+                "snapshot": null
               }
             }
           }
@@ -35974,7 +36025,43 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "render::a": {
+                "contentEpochs": {
+                  "11": 1,
+                  "33": 1
+                },
+                "annotationEpochs": {
+                  "11": 1,
+                  "22": 2,
+                  "33": 1
+                },
+                "fieldEpochs": {
+                  "11": 2,
+                  "22": 1,
+                  "33": 1
+                },
+                "snapshot": null
               }
             }
           }
@@ -35987,7 +36074,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -36074,7 +36161,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -36098,7 +36186,8 @@
                   "11": 2,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -36114,7 +36203,8 @@
                   "11": 3,
                   "22": 1,
                   "33": 2
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -36144,7 +36234,8 @@
                   "11": 3,
                   "22": 1,
                   "33": 2
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -36168,7 +36259,8 @@
                   "11": 3,
                   "22": 1,
                   "33": 2
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -36184,7 +36276,8 @@
                   "11": 4,
                   "22": 1,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -36214,7 +36307,8 @@
                   "11": 4,
                   "22": 1,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -36251,7 +36345,8 @@
                   "11": 4,
                   "22": 1,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -36288,7 +36383,8 @@
                   "11": 4,
                   "22": 1,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -37574,7 +37670,7 @@
               "release": {
                 "$ref": 4
               },
-              "dispose": {
+              "destroy": {
                 "$ref": 5
               }
             }
@@ -41861,7 +41957,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -41947,12 +42044,14 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -41997,12 +42096,14 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42047,12 +42148,14 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42081,12 +42184,14 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42099,14 +42204,16 @@
               "previous": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
                   "11": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -42133,14 +42240,16 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {
                   "11": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42169,14 +42278,16 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "render::b": {
                 "contentEpochs": {
                   "11": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42248,7 +42359,8 @@
                   "11": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -42279,7 +42391,8 @@
                   "11": 1
                 },
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54184,9 +54297,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "x",
-              "sub": "alice",
-              "ts": 1,
-              "serverId": 7
+              "subject": "alice",
+              "at": "1970-01-01T00:00:00.001Z",
+              "serverSequence": 7
             }
           }
         },
@@ -54260,7 +54373,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -54288,7 +54401,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null
+              "subject": null
             }
           }
         },
@@ -54309,7 +54422,7 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": "bob"
+              "subject": "bob"
             }
           }
         },
@@ -54554,7 +54667,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54582,7 +54696,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54610,7 +54725,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54638,7 +54754,8 @@
               "render::a": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54651,14 +54768,16 @@
               "previous": {
                 "contentEpochs": {},
                 "annotationEpochs": {},
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {},
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -54700,7 +54819,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54715,7 +54835,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -54726,7 +54847,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -54780,7 +54902,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54799,7 +54922,8 @@
                 "annotationEpochs": {
                   "22": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -54811,7 +54935,8 @@
                   "22": 1,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           ],
@@ -54832,9 +54957,9 @@
                   "origin": {
                     "kind": "remote",
                     "sessionId": "x",
-                    "sub": "alice",
-                    "ts": 1,
-                    "serverId": 7
+                    "subject": "alice",
+                    "at": "1970-01-01T00:00:00.001Z",
+                    "serverSequence": 7
                   }
                 }
               ]
@@ -54859,7 +54984,8 @@
                   "22": 1,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               }
             }
           }
@@ -54879,7 +55005,8 @@
                   "22": 1,
                   "33": 1
                 },
-                "fieldEpochs": {}
+                "fieldEpochs": {},
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -54895,7 +55022,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -54949,7 +55077,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -54973,7 +55102,8 @@
                   "11": 1,
                   "22": 1,
                   "33": 1
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -54989,7 +55119,8 @@
                   "11": 2,
                   "22": 2,
                   "33": 2
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55043,7 +55174,8 @@
                   "11": 2,
                   "22": 2,
                   "33": 2
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55067,7 +55199,8 @@
                   "11": 2,
                   "22": 2,
                   "33": 2
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -55083,7 +55216,8 @@
                   "11": 3,
                   "22": 3,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55137,7 +55271,8 @@
                   "11": 3,
                   "22": 3,
                   "33": 3
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55161,7 +55296,8 @@
                   "11": 3,
                   "22": 3,
                   "33": 3
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -55177,7 +55313,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 4
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55231,7 +55368,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 4
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55255,7 +55393,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 4
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -55271,7 +55410,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55292,7 +55432,7 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null
+                    "subject": null
                   }
                 }
               ]
@@ -55321,7 +55461,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55355,7 +55496,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55379,7 +55521,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -55395,7 +55538,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55416,7 +55560,7 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": "bob"
+                    "subject": "bob"
                   }
                 }
               ]
@@ -55445,7 +55589,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55498,7 +55643,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55551,7 +55697,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55604,7 +55751,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55659,7 +55807,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55732,7 +55881,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55797,7 +55947,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55836,7 +55987,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55875,7 +56027,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -55899,7 +56052,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               },
               "next": {
                 "contentEpochs": {
@@ -55915,7 +56069,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           ],
@@ -55950,7 +56105,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -56003,7 +56159,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -56045,7 +56202,8 @@
                   "11": 4,
                   "22": 4,
                   "33": 5
-                }
+                },
+                "snapshot": null
               }
             }
           }
@@ -56303,9 +56461,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null
                     }
                   }
                 ]
@@ -56479,9 +56637,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null
                     }
                   }
                 ]
@@ -57840,7 +57998,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -58066,7 +58224,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -58341,7 +58499,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,

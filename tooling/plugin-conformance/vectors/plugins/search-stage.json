@@ -690,7 +690,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -736,6 +736,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -763,7 +764,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -809,6 +810,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -828,7 +830,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -874,6 +876,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -896,7 +899,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -942,6 +945,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -961,7 +965,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1007,6 +1011,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1029,7 +1034,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1075,6 +1080,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1094,7 +1100,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1140,6 +1146,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1162,7 +1169,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1208,6 +1215,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1227,7 +1235,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1273,6 +1281,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1324,7 +1333,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1370,6 +1379,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1914,7 +1924,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -1960,6 +1970,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -1987,7 +1998,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -2033,6 +2044,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -2052,7 +2064,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -2098,6 +2110,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -2120,7 +2133,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -2166,6 +2179,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -2185,7 +2199,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -2231,6 +2245,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -2376,7 +2391,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -2422,6 +2437,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -3060,7 +3076,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -3106,6 +3122,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -3744,7 +3761,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -3790,6 +3807,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -3804,8 +3822,7 @@
             {
               "promise": 5,
               "resolved": {
-                "status": "complete",
-                "hitCount": 2
+                "$undefined": true
               }
             }
           ],
@@ -4788,7 +4805,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -4834,6 +4851,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -5210,7 +5228,7 @@
     },
     {
       "name": "navigation-reveals-the-hit",
-      "covers": "next/prev/goTo reveal the hit's page at its bounds with the find-bar default arrival (anchor y 0.35, smooth); a hit with no segments reveals with no rect.",
+      "covers": "next/prev/goTo reveal the hit's page at its bounds with the find-bar default arrival (align y 0.35, smooth); a hit with no segments reveals with no rect.",
       "plugins": [
         {
           "factory": "stage",
@@ -5724,7 +5742,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -5770,6 +5788,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -5797,7 +5816,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -5843,6 +5862,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -5862,7 +5882,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -5908,6 +5928,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -5930,7 +5951,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -5976,6 +5997,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -5995,7 +6017,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6041,6 +6063,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -6063,7 +6086,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6109,6 +6132,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -6128,7 +6152,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6174,6 +6198,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -6196,7 +6221,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6242,6 +6267,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -6261,7 +6287,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6307,6 +6333,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -6358,7 +6385,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -6404,6 +6431,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -7396,7 +7424,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -7442,6 +7470,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -7910,7 +7939,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -7956,6 +7985,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -7975,7 +8005,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -8021,6 +8051,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -8043,7 +8074,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -8089,6 +8120,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -8108,7 +8140,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -8154,6 +8186,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -8452,7 +8485,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -8498,6 +8531,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -8966,7 +9000,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -9012,6 +9046,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -9031,7 +9066,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -9077,6 +9112,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -9099,7 +9135,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -9145,6 +9181,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -9164,7 +9201,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -9210,6 +9247,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -9474,7 +9512,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -9520,6 +9558,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -9988,7 +10027,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -10034,6 +10073,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -10053,7 +10093,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -10099,6 +10139,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -10121,7 +10162,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -10167,6 +10208,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -10186,7 +10228,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -10232,6 +10274,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -10530,7 +10573,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -10576,6 +10619,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11044,7 +11088,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11090,6 +11134,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11109,7 +11154,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11155,6 +11200,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11177,7 +11223,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11223,6 +11269,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11242,7 +11289,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11288,6 +11335,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11586,7 +11634,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11632,6 +11680,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11891,7 +11940,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -11937,6 +11986,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -11950,7 +12000,7 @@
     },
     {
       "name": "reveal-options-merge",
-      "covers": "Arrival options merge per key: per-call over plugin config over the default. An explicit undefined anchor overrides the default away (a bare reveal when the hit has no rect); a null config anchor is a positioned reveal with no anchor axes.",
+      "covers": "Arrival options merge per key: per-call over plugin config over the default. An explicit undefined align overrides the default away (a bare reveal when the hit has no rect); a null config align is a positioned reveal with no align axes.",
       "plugins": [
         {
           "factory": "stage",
@@ -11962,7 +12012,7 @@
           "factory": "search",
           "config": {
             "reveal": {
-              "anchor": {
+              "align": {
                 "x": "center",
                 "y": "start"
               },
@@ -12333,7 +12383,7 @@
           "args": [
             1,
             {
-              "anchor": {
+              "align": {
                 "y": "end"
               }
             }
@@ -12349,7 +12399,7 @@
           "args": [
             2,
             {
-              "anchor": {
+              "align": {
                 "$undefined": true
               }
             }
@@ -12365,7 +12415,7 @@
           "args": [
             2,
             {
-              "anchor": {
+              "align": {
                 "y": 0.5
               },
               "behavior": {
@@ -12512,7 +12562,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12558,6 +12608,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12585,7 +12636,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12631,6 +12682,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12650,7 +12702,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12696,6 +12748,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12718,7 +12771,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12764,6 +12817,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12783,7 +12837,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12829,6 +12883,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12851,7 +12906,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12897,6 +12952,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12916,7 +12972,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -12962,6 +13018,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -12984,7 +13041,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -13030,6 +13087,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -13049,7 +13107,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -13095,6 +13153,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -13146,7 +13205,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -13192,6 +13251,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -14184,7 +14244,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -14230,6 +14290,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -14698,7 +14759,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -14744,6 +14805,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -14763,7 +14825,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -14809,6 +14871,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -14831,7 +14894,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -14877,6 +14940,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -14896,7 +14960,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -14942,6 +15006,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -15240,7 +15305,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -15286,6 +15351,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -15754,7 +15820,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -15800,6 +15866,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -15819,7 +15886,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -15865,6 +15932,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -15887,7 +15955,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -15933,6 +16001,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -15952,7 +16021,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -15998,6 +16067,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -16296,7 +16366,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -16342,6 +16412,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -16810,7 +16881,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -16856,6 +16927,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -16875,7 +16947,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -16921,6 +16993,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -16943,7 +17016,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -16989,6 +17062,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -17008,7 +17082,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -17054,6 +17128,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -17352,7 +17427,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -17398,6 +17473,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -17866,7 +17942,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -17912,6 +17988,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -17931,7 +18008,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -17977,6 +18054,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18241,7 +18319,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18287,6 +18365,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18314,7 +18393,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18360,6 +18439,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18379,7 +18459,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18425,6 +18505,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18447,7 +18528,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18493,6 +18574,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18512,7 +18594,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18558,6 +18640,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -18822,7 +18905,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -18868,6 +18951,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19336,7 +19420,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -19382,6 +19466,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19401,7 +19486,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -19447,6 +19532,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19469,7 +19555,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -19515,6 +19601,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19534,7 +19621,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -19580,6 +19667,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19878,7 +19966,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -19924,6 +20012,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -19937,7 +20026,7 @@
     },
     {
       "name": "reveal-config-anchor-null",
-      "covers": "A config anchor of null replaces the default: the reveal is positioned (anchor present) with neither axis set.",
+      "covers": "A config align of null replaces the default: the reveal is positioned (align present) with neither axis set.",
       "plugins": [
         {
           "factory": "stage",
@@ -19949,7 +20038,7 @@
           "factory": "search",
           "config": {
             "reveal": {
-              "anchor": null
+              "align": null
             }
           }
         }
@@ -20390,7 +20479,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20436,6 +20525,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20463,7 +20553,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20509,6 +20599,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20528,7 +20619,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20574,6 +20665,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20596,7 +20688,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20642,6 +20734,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20661,7 +20754,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20707,6 +20800,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20729,7 +20823,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20775,6 +20869,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20794,7 +20889,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20840,6 +20935,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20862,7 +20958,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20908,6 +21004,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -20927,7 +21024,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -20973,6 +21070,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -21024,7 +21122,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -21070,6 +21168,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -21702,7 +21801,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -21748,6 +21847,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22036,7 +22136,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22082,6 +22182,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22101,7 +22202,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22147,6 +22248,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22169,7 +22271,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22215,6 +22317,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22234,7 +22337,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22280,6 +22383,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22454,7 +22558,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22500,6 +22604,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22788,7 +22893,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 2,
+                "pageIndex": 2,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22834,6 +22939,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22853,7 +22959,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22899,6 +23005,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22921,7 +23028,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -22967,6 +23074,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -22986,7 +23094,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -23032,6 +23140,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -23240,7 +23349,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -23286,6 +23395,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -23826,7 +23936,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -23872,6 +23982,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -23899,7 +24010,7 @@
                   "height": 0
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -23945,6 +24056,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -23964,7 +24076,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24010,6 +24122,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24032,7 +24145,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24078,6 +24191,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24097,7 +24211,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24143,6 +24257,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24165,7 +24280,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24211,6 +24326,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24230,7 +24346,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24276,6 +24392,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24298,7 +24415,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24344,6 +24461,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24363,7 +24481,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24409,6 +24527,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24460,7 +24579,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24506,6 +24625,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -24561,7 +24681,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -24607,6 +24727,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -25511,7 +25632,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -25557,6 +25678,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -25981,7 +26103,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26027,6 +26149,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26046,7 +26169,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26092,6 +26215,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26114,7 +26238,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26160,6 +26284,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26179,7 +26304,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26225,6 +26350,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26501,7 +26627,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26547,6 +26673,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26574,7 +26701,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26620,6 +26747,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26639,7 +26767,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26685,6 +26813,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26707,7 +26836,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26753,6 +26882,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26772,7 +26902,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26818,6 +26948,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26840,7 +26971,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26886,6 +27017,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -26905,7 +27037,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -26951,6 +27083,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27186,7 +27319,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27232,6 +27365,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27259,7 +27393,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "user",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27305,6 +27439,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27324,7 +27459,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27370,6 +27505,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27392,7 +27528,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 0,
+                "pageIndex": 0,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27438,6 +27574,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27457,7 +27594,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27503,6 +27640,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27525,7 +27663,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27571,6 +27709,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27590,7 +27729,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27636,6 +27775,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -27871,7 +28011,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -27917,6 +28057,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -28158,7 +28299,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -28204,6 +28345,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null
@@ -28441,7 +28583,7 @@
                   "height": 600
                 },
                 "dpr": 1,
-                "cursor": 1,
+                "pageIndex": 1,
                 "motionCause": "programmatic",
                 "activeRules": [],
                 "zoomDrag": null,
@@ -28487,6 +28629,7 @@
                 "interaction": true,
                 "panFallback": true,
                 "zoomGestures": true,
+                "turnGestures": true,
                 "zoomBox": {
                   "fill": null,
                   "stroke": null

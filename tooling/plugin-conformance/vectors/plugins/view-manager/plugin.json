@@ -4695,7 +4695,7 @@
     },
     {
       "name": "panes",
-      "covers": "createPane focuses the new pane and later opens land there; removePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
+      "covers": "createPane focuses the new pane and later opens land there; deletePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -5066,7 +5066,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -5100,7 +5100,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -13636,7 +13636,7 @@
     },
     {
       "name": "remove-pane-targets",
-      "covers": "removePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
+      "covers": "deletePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -13998,7 +13998,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-4",
             {
@@ -14045,7 +14045,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-3"
           ]
@@ -14079,7 +14079,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -14121,7 +14121,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2",
             {
@@ -14172,7 +14172,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-6",
             {
@@ -14209,7 +14209,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-5"
           ]
@@ -17903,7 +17903,7 @@
     },
     {
       "name": "events",
-      "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneRemoved for each removed one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
+      "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneDeleted for each deleted one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -18048,7 +18048,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "onPaneRemoved",
+          "method": "onPaneDeleted",
           "args": [
             {
               "$fn": "removed",
@@ -18168,7 +18168,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2"
           ]

@@ -205,7 +205,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -214,7 +213,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -604,25 +603,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -631,7 +626,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1046,25 +1041,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1073,7 +1064,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1093,25 +1084,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1120,7 +1107,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1310,8 +1297,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -1319,7 +1305,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -1390,8 +1376,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -1399,7 +1384,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -1637,7 +1622,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -1646,7 +1630,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -1676,26 +1660,22 @@
                       "objectNumber": 9
                     }
                   ],
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  },
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false,
                   "charSet": "utf-8"
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1704,7 +1684,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1904,7 +1884,6 @@
                   "includeNoValueFields": false,
                   "format": "fdf",
                   "method": "post",
-                  "flagsRaw": 0,
                   "charSet": "utf-8"
                 },
                 {
@@ -1913,7 +1892,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2172,7 +2151,6 @@
                     "url": "https://home.test/submit",
                     "method": "post",
                     "format": "fdf",
-                    "flagsRaw": 0,
                     "entries": [
                       {
                         "name": "plain",
@@ -2181,7 +2159,7 @@
                     ],
                     "origin": "user",
                     "event": {
-                      "scope": "activate"
+                      "type": "activate"
                     }
                   }
                 },
@@ -2199,7 +2177,7 @@
                     ],
                     "origin": "user",
                     "event": {
-                      "scope": "activate"
+                      "type": "activate"
                     },
                     "charSet": "latin1"
                   }
@@ -2227,25 +2205,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2254,7 +2228,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2274,25 +2248,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2301,7 +2271,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2506,8 +2476,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.500Z"
@@ -2525,8 +2494,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -2534,7 +2502,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2598,7 +2566,6 @@
                     "url": "https://home.test/submit",
                     "format": "fdf",
                     "method": "post",
-                    "flagsRaw": 0,
                     "charSet": "latin1"
                   },
                   "origin": "user",
@@ -2617,8 +2584,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -2626,7 +2592,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2868,7 +2834,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -2877,7 +2842,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -2898,25 +2863,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2925,7 +2886,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3091,8 +3052,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.234Z"
@@ -3110,8 +3070,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -3119,7 +3078,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -3492,11 +3451,10 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 },
                 "charSet": "utf-8"
               }
@@ -3534,25 +3492,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3561,7 +3515,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3580,7 +3534,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -3589,7 +3542,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -3623,25 +3576,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3650,7 +3599,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3904,8 +3853,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -3913,7 +3861,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -3928,11 +3876,10 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   },
                   "charSet": "utf-8"
                 },
@@ -4032,8 +3979,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -4041,7 +3987,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4056,7 +4002,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -4065,7 +4010,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4291,7 +4236,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -4300,7 +4244,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -4347,25 +4291,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4374,7 +4314,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4394,25 +4334,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4421,7 +4357,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4441,25 +4377,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4468,7 +4400,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4687,8 +4619,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -4696,7 +4627,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4711,7 +4642,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -4720,7 +4650,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4785,8 +4715,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -4794,7 +4723,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4809,7 +4738,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -4818,7 +4746,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4871,8 +4799,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -4880,7 +4807,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4895,7 +4822,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -4904,7 +4830,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5167,7 +5093,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -5176,7 +5101,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -5210,25 +5135,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5237,7 +5158,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5257,25 +5178,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5284,8 +5201,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5305,25 +5222,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5332,8 +5245,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5592,8 +5505,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "hover",
@@ -5601,8 +5513,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 },
                 {
@@ -5617,7 +5529,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -5626,7 +5537,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5679,8 +5590,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "lifecycle",
@@ -5688,8 +5598,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 },
                 {
@@ -5704,7 +5614,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -5713,7 +5622,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5926,7 +5835,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -5935,7 +5843,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -5987,20 +5895,17 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": [
                   {
@@ -6012,7 +5917,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6021,7 +5925,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -6246,7 +6150,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]

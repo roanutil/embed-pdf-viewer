@@ -501,7 +501,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -539,6 +539,7 @@
               ],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": false,
               "categories": []
             }
@@ -609,7 +610,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -715,7 +716,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -816,7 +817,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -879,7 +880,7 @@
                     "disabledCommands": [],
                     "notAllowed": "disable"
                   },
-                  "changed": [
+                  "changedKeys": [
                     "notAllowed"
                   ]
                 }
@@ -964,7 +965,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1002,6 +1003,7 @@
               ],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": [],
               "disabledReason": "Print isn't allowed"
@@ -1073,7 +1075,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1179,7 +1181,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1283,7 +1285,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1399,7 +1401,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1464,7 +1466,7 @@
                     ],
                     "notAllowed": "disable"
                   },
-                  "changed": [
+                  "changedKeys": [
                     "disabledCommands"
                   ]
                 }
@@ -1549,7 +1551,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1650,7 +1652,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1717,7 +1719,7 @@
                     ],
                     "notAllowed": "disable"
                   },
-                  "changed": [
+                  "changedKeys": [
                     "disabledCategories"
                   ]
                 }
@@ -1802,7 +1804,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1838,6 +1840,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": false,
               "categories": [
                 "annotations.highlight"
@@ -1910,7 +1913,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1946,6 +1949,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": [
                 "annotationsExtra"
@@ -2018,7 +2022,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2081,7 +2085,7 @@
                     "disabledCommands": [],
                     "notAllowed": "hide"
                   },
-                  "changed": [
+                  "changedKeys": [
                     "disabledCategories",
                     "disabledCommands",
                     "notAllowed"
@@ -2168,7 +2172,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2266,7 +2270,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2364,7 +2368,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3529,6 +3533,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -3806,6 +3811,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -3840,6 +3846,7 @@
               "menu": "more",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": [
                 "x",
@@ -3876,6 +3883,7 @@
               ],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -3928,6 +3936,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -4110,7 +4119,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4146,6 +4155,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -4216,7 +4226,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4252,6 +4262,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -4322,7 +4333,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4362,6 +4373,7 @@
               "menu": "more",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": [
                 "x",
@@ -4435,7 +4447,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4817,6 +4829,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -4999,7 +5012,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5157,7 +5170,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5226,7 +5239,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5327,6 +5340,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": false,
               "categories": []
             }
@@ -5397,7 +5411,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5466,7 +5480,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5567,6 +5581,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -5637,7 +5652,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5706,7 +5721,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5807,6 +5822,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -5877,7 +5893,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5946,7 +5962,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6047,6 +6063,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -6117,7 +6134,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6186,7 +6203,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6287,6 +6304,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -6357,7 +6375,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6426,7 +6444,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6528,7 +6546,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6597,7 +6615,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6769,6 +6787,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": false,
+              "pressable": true,
               "visible": false,
               "categories": []
             }
@@ -7155,6 +7174,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7203,6 +7223,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7251,6 +7272,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7296,6 +7318,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7341,6 +7364,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7386,6 +7410,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7431,6 +7456,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7461,6 +7487,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -7832,6 +7859,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": false,
               "categories": [
                 "pro"
@@ -7895,6 +7923,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": [
                   "free",
@@ -7907,6 +7936,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -7986,6 +8016,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": false,
               "categories": [
                 "free",
@@ -8126,6 +8157,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": [
                 "pro"
@@ -8279,6 +8311,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": false,
+              "pressable": false,
               "visible": false,
               "categories": [
                 "free",
@@ -8627,6 +8660,8 @@
                 "locale": "",
                 "locales": {},
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "next": {
@@ -8657,6 +8692,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -8674,6 +8711,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -8714,6 +8752,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -8742,6 +8782,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -8782,6 +8823,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -8803,6 +8846,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -8843,6 +8887,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -8865,6 +8911,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -8874,6 +8921,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -8915,6 +8963,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -8960,6 +9010,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "next": {
@@ -8990,6 +9042,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9039,6 +9093,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9060,6 +9116,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -9100,6 +9157,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9121,6 +9180,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -9161,6 +9221,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9183,6 +9245,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -9224,6 +9287,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9246,6 +9311,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -9255,6 +9321,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -9296,6 +9363,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9318,6 +9387,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -9359,6 +9429,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -9963,6 +10035,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -10145,7 +10218,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10308,7 +10381,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10377,7 +10450,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10498,7 +10571,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10567,7 +10640,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10617,6 +10690,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -10687,7 +10761,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10756,7 +10830,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10805,6 +10879,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -10875,7 +10950,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10944,7 +11019,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10993,6 +11068,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -11063,7 +11139,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11132,7 +11208,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11181,6 +11257,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -11251,7 +11328,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11320,7 +11397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11370,6 +11447,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -11440,7 +11518,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11509,7 +11587,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11558,6 +11636,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -11628,7 +11707,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11697,7 +11776,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11747,6 +11826,7 @@
               "menu": "",
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -11817,7 +11897,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11886,7 +11966,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11935,6 +12015,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -12005,7 +12086,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12074,7 +12155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12123,6 +12204,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -12193,7 +12275,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12262,7 +12344,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12327,6 +12409,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -12397,7 +12480,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12466,7 +12549,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12515,6 +12598,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -12585,7 +12669,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12654,7 +12738,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12781,7 +12865,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12850,7 +12934,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12986,7 +13070,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13055,7 +13139,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13205,7 +13289,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13274,7 +13358,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13436,7 +13520,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13505,7 +13589,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13679,7 +13763,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13748,7 +13832,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13817,6 +13901,7 @@
               "menu": "file",
               "enabled": true,
               "active": true,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -13887,7 +13972,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13956,7 +14041,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14024,6 +14109,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -14094,7 +14180,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14163,7 +14249,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14231,6 +14317,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -14301,7 +14388,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14370,7 +14457,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14438,6 +14525,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -14508,7 +14596,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14577,7 +14665,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14646,6 +14734,7 @@
               "menu": "file",
               "enabled": true,
               "active": true,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -14716,7 +14805,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14785,7 +14874,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14853,6 +14942,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -14923,7 +15013,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14992,7 +15082,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15061,6 +15151,7 @@
               "menu": "",
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -15131,7 +15222,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15200,7 +15291,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15268,6 +15359,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -15338,7 +15430,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15407,7 +15499,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15475,6 +15567,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -15545,7 +15638,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15614,7 +15707,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15698,6 +15791,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -15768,7 +15862,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15837,7 +15931,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15905,6 +15999,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -15975,7 +16070,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16044,7 +16139,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16113,6 +16208,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -16183,7 +16279,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16252,7 +16348,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16320,6 +16416,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -16390,7 +16487,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16459,7 +16556,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16639,7 +16736,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16708,7 +16805,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16775,6 +16872,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -16845,7 +16943,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16914,7 +17012,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16981,6 +17079,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -17051,7 +17150,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17120,7 +17219,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17824,7 +17923,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17987,7 +18086,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18056,7 +18155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18177,7 +18276,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18246,7 +18345,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18378,7 +18477,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18447,7 +18546,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18581,7 +18680,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18650,7 +18749,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18785,7 +18884,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18854,7 +18953,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19004,7 +19103,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19073,7 +19172,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19237,7 +19336,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19306,7 +19405,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19483,7 +19582,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19552,7 +19651,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19741,7 +19840,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19810,7 +19909,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20007,7 +20106,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20076,7 +20175,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20281,7 +20380,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20350,7 +20449,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20493,7 +20592,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20562,7 +20661,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20771,7 +20870,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20840,7 +20939,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20987,7 +21086,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21056,7 +21155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21204,7 +21303,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21273,7 +21372,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21438,7 +21537,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21507,7 +21606,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21660,7 +21759,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21729,7 +21828,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21903,7 +22002,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21972,7 +22071,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22125,7 +22224,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22194,7 +22293,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22760,7 +22859,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22923,7 +23022,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22992,7 +23091,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23126,7 +23225,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23195,7 +23294,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23329,7 +23428,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23398,7 +23497,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23531,7 +23630,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23600,7 +23699,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23733,7 +23832,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23802,7 +23901,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23913,7 +24012,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23982,7 +24081,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24127,7 +24226,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24196,7 +24295,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24341,7 +24440,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24410,7 +24509,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24536,7 +24635,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24605,7 +24704,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24720,7 +24819,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24789,7 +24888,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24922,7 +25021,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24991,7 +25090,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25515,6 +25614,8 @@
                 "locale": "",
                 "locales": {},
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "next": {
@@ -25545,6 +25646,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -25681,6 +25784,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -25741,6 +25846,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -25893,7 +26000,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25935,6 +26042,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -26094,7 +26203,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26163,7 +26272,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26206,6 +26315,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -26401,7 +26512,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26470,7 +26581,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26513,6 +26624,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -26714,7 +26827,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26783,7 +26896,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26826,6 +26939,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -27039,7 +27154,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27108,7 +27223,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27151,6 +27266,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -27362,7 +27479,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27431,7 +27548,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27474,6 +27591,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -27607,7 +27726,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27676,7 +27795,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27725,6 +27844,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -27942,7 +28063,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28011,7 +28132,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28060,6 +28181,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -28214,7 +28337,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28283,7 +28406,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28352,7 +28475,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28396,6 +28519,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -28616,7 +28741,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28685,7 +28810,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28754,7 +28879,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28798,6 +28923,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -29033,7 +29160,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29102,7 +29229,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29171,7 +29298,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29215,6 +29342,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -29447,7 +29576,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29516,7 +29645,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29585,7 +29714,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29629,6 +29758,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -30116,7 +30247,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30279,7 +30410,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30348,7 +30479,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30498,7 +30629,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30567,7 +30698,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30636,6 +30767,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -30706,7 +30838,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30775,7 +30907,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30901,7 +31033,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -30970,7 +31102,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31039,6 +31171,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -31109,7 +31242,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31178,7 +31311,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31333,7 +31466,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31402,7 +31535,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31476,6 +31609,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -31546,7 +31680,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31615,7 +31749,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31763,7 +31897,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31827,6 +31961,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -31897,7 +32032,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32017,6 +32152,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -32295,6 +32431,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32304,6 +32441,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32313,6 +32451,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32322,6 +32461,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32369,6 +32509,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32378,6 +32519,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32387,6 +32529,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32396,6 +32539,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32443,6 +32587,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32490,6 +32635,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32648,6 +32794,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32657,6 +32804,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -32666,6 +32814,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32713,6 +32862,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32797,6 +32947,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32881,6 +33032,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -32900,7 +33052,7 @@
     },
     {
       "name": "match-stroke",
-      "covers": "matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; it ignores enablement. The palette is registered last through the capability, so its remover can take it out.",
+      "covers": "matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; one that can run now wins, and a disabled one (its `enabled` is asked) still matches when nothing that can run does. The palette is registered last through the capability, so its remover can take it out.",
       "plugins": [
         {
           "factory": "commands",
@@ -33271,7 +33423,22 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "palette.enabled",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34009,7 +34176,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34185,7 +34352,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34348,7 +34515,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34445,6 +34612,7 @@
               "shortcuts": [],
               "enabled": false,
               "active": true,
+              "pressable": true,
               "visible": true,
               "categories": []
             }
@@ -34515,7 +34683,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34814,6 +34982,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -34823,6 +34992,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -34954,6 +35124,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -34963,6 +35134,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -34972,6 +35144,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -35328,6 +35501,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35337,6 +35511,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35346,6 +35521,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35355,6 +35531,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35364,6 +35541,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -35472,6 +35650,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35481,6 +35660,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35490,6 +35670,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               },
@@ -35499,6 +35680,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -35994,7 +36176,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36094,7 +36276,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36197,7 +36379,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36308,7 +36490,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36406,7 +36588,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36519,7 +36701,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36632,7 +36814,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36730,7 +36912,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36828,7 +37010,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36928,7 +37110,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37034,7 +37216,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37134,7 +37316,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37170,6 +37352,7 @@
               "shortcuts": [],
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -37240,7 +37423,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37343,7 +37526,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37443,7 +37626,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37545,7 +37728,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37645,7 +37828,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37746,7 +37929,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37857,7 +38040,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38573,7 +38756,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38736,7 +38919,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38805,7 +38988,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38972,7 +39155,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39041,7 +39224,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39211,7 +39394,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39280,7 +39463,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39443,7 +39626,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39512,7 +39695,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39678,7 +39861,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39747,7 +39930,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39912,7 +40095,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39981,7 +40164,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40120,7 +40303,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40189,7 +40372,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40313,7 +40496,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40382,7 +40565,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40500,7 +40683,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40569,7 +40752,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40687,7 +40870,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40756,7 +40939,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40874,7 +41057,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40943,7 +41126,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41081,7 +41264,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41150,7 +41333,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41300,7 +41483,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41369,7 +41552,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41701,6 +41884,7 @@
                 "menu": "file",
                 "enabled": false,
                 "active": false,
+                "pressable": false,
                 "visible": false,
                 "categories": [
                   "pro"
@@ -41712,6 +41896,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": true,
                 "visible": true,
                 "categories": []
               },
@@ -41721,6 +41906,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -41904,7 +42090,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42026,7 +42212,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42077,6 +42263,7 @@
                 "menu": "file",
                 "enabled": false,
                 "active": false,
+                "pressable": false,
                 "visible": false,
                 "categories": [
                   "pro"
@@ -42088,6 +42275,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": true,
+                "pressable": true,
                 "visible": true,
                 "categories": []
               },
@@ -42097,6 +42285,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -42168,7 +42357,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42219,6 +42408,7 @@
                 "menu": "file",
                 "enabled": false,
                 "active": false,
+                "pressable": false,
                 "visible": false,
                 "categories": [
                   "pro"
@@ -42230,6 +42420,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": true,
+                "pressable": true,
                 "visible": true,
                 "categories": []
               },
@@ -42239,6 +42430,7 @@
                 "shortcuts": [],
                 "enabled": true,
                 "active": false,
+                "pressable": false,
                 "visible": true,
                 "categories": []
               }
@@ -42310,7 +42502,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42802,6 +42994,8 @@
                 "locale": "",
                 "locales": {},
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "next": {
@@ -42832,6 +43026,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -42972,6 +43168,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -43032,6 +43230,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               }
             }
@@ -43176,7 +43376,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43218,6 +43418,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -43250,6 +43452,7 @@
               "menu": "file",
               "enabled": true,
               "active": false,
+              "pressable": false,
               "visible": true,
               "categories": []
             }
@@ -43320,7 +43523,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43362,6 +43565,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {
@@ -43486,7 +43691,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43528,6 +43733,8 @@
                   }
                 },
                 "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
                 "waitingTranslations": {}
               },
               "shell::a": {

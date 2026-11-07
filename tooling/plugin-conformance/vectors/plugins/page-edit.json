@@ -896,7 +896,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1104,7 +1104,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1312,7 +1312,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1580,7 +1580,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1755,7 +1755,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1970,7 +1970,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2145,7 +2145,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2360,7 +2360,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2535,7 +2535,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2810,7 +2810,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2985,7 +2985,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3160,7 +3160,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3382,7 +3382,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3557,7 +3557,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3732,7 +3732,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3954,7 +3954,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4129,7 +4129,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4304,7 +4304,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4687,6 +4687,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -4877,6 +4878,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -4888,10 +4890,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -5077,6 +5079,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -5267,6 +5270,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -5278,10 +5282,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -5467,6 +5471,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -5657,6 +5662,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -5668,10 +5674,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -5857,6 +5863,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -6047,6 +6054,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -6058,10 +6066,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000004",
                         "index": 0,
                         "count": 1
@@ -6247,6 +6255,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -6437,6 +6446,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -6448,10 +6458,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000005",
                         "index": 0,
                         "count": 1
@@ -6895,7 +6905,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6930,7 +6940,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -7303,7 +7313,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7671,7 +7681,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7706,7 +7716,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -8079,7 +8089,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8114,7 +8124,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -8487,7 +8497,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8522,7 +8532,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -8895,7 +8905,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8930,7 +8940,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 5,
+                "pagesSequence": 5,
                 "pages": [
                   {
                     "index": 0,
@@ -9303,7 +9313,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9524,7 +9534,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9745,7 +9755,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10113,7 +10123,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10488,6 +10498,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -10678,6 +10689,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -10689,10 +10701,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -10900,6 +10912,7 @@
                   }
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -10911,9 +10924,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "other",
-              "ts": 0,
-              "serverId": null
+              "subject": "other",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -11218,7 +11231,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11246,7 +11259,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -11592,7 +11605,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11627,7 +11640,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -12000,7 +12013,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12368,7 +12381,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12747,6 +12760,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -12941,6 +12955,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -12952,10 +12967,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -13144,6 +13159,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -13337,6 +13353,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -13348,10 +13365,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -13483,6 +13500,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -13619,6 +13637,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -13630,10 +13649,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -14028,7 +14047,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14063,7 +14082,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -14440,7 +14459,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14475,7 +14494,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -14852,7 +14871,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15220,7 +15239,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15255,7 +15274,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -15521,7 +15540,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15783,7 +15802,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15951,7 +15970,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16792,7 +16811,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17000,7 +17019,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17221,7 +17240,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17442,7 +17461,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17663,7 +17682,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17884,7 +17903,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18105,7 +18124,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18326,7 +18345,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18547,7 +18566,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18768,7 +18787,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19036,7 +19055,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19211,7 +19230,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19271,7 +19290,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "b",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -19439,7 +19458,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "b",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -19815,7 +19834,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19990,7 +20009,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20369,6 +20388,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -20380,10 +20400,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -20515,6 +20535,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -20526,10 +20547,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -20780,6 +20801,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 },
                 "meta": {
@@ -20929,6 +20951,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 },
                 "meta": {
@@ -21231,7 +21254,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21259,7 +21282,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -21632,7 +21655,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21660,7 +21683,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -21926,7 +21949,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22188,7 +22211,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22347,7 +22370,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22609,7 +22632,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22768,7 +22791,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23030,7 +23053,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23457,6 +23480,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -23699,6 +23723,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -23710,10 +23735,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -24004,6 +24029,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -24299,6 +24325,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -24310,10 +24337,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -24657,6 +24684,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -25005,6 +25033,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -25016,10 +25045,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -25530,6 +25559,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -26045,6 +26075,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -26056,10 +26087,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000004",
                         "index": 0,
                         "count": 1
@@ -26473,7 +26504,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26513,7 +26544,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -26734,7 +26765,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -27224,7 +27255,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27264,7 +27295,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -27538,7 +27569,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -28134,7 +28165,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28174,7 +28205,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 5,
+                "pagesSequence": 5,
                 "pages": [
                   {
                     "index": 0,
@@ -28501,7 +28532,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 6,
+                "pagesSequence": 6,
                 "pages": [
                   {
                     "index": 0,
@@ -29208,7 +29239,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 6,
+                  "pagesSequence": 6,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29256,7 +29287,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 7,
+                "pagesSequence": 7,
                 "pages": [
                   {
                     "index": 0,
@@ -29742,7 +29773,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 8,
+                "pagesSequence": 8,
                 "pages": [
                   {
                     "index": 0,
@@ -30769,7 +30800,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 8,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31308,7 +31339,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 8,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31847,7 +31878,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 8,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32851,7 +32882,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 8,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33428,7 +33459,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33649,7 +33680,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33870,7 +33901,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34091,7 +34122,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34312,7 +34343,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34739,6 +34770,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -34981,6 +35013,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -34992,10 +35025,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -35286,6 +35319,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -35581,6 +35615,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -35592,10 +35627,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -35968,7 +36003,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36008,7 +36043,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -36484,7 +36519,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36524,7 +36559,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -37111,7 +37146,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37438,7 +37473,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38018,7 +38053,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38571,7 +38606,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38819,7 +38854,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39123,6 +39158,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -39206,6 +39242,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -39217,10 +39254,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -39352,6 +39389,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -39488,6 +39526,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -39499,10 +39538,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -39719,7 +39758,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39780,7 +39819,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39820,7 +39859,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -39882,7 +39921,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -40054,7 +40093,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40094,7 +40133,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -40358,7 +40397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40526,7 +40565,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40788,7 +40827,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41273,6 +41312,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -41507,6 +41547,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -41741,6 +41782,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -41988,6 +42030,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -41999,10 +42042,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 3
@@ -42234,6 +42277,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -42245,10 +42289,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 1,
                         "count": 3
@@ -42480,6 +42524,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -42491,10 +42536,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 2,
                         "count": 3
@@ -42905,7 +42950,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42940,7 +42985,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -43443,7 +43488,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43717,7 +43762,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -44191,7 +44236,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -44565,6 +44610,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -44754,6 +44800,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -44765,10 +44812,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -44953,6 +45000,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -45142,6 +45190,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -45153,10 +45202,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -45341,6 +45390,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -45530,6 +45580,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -45541,10 +45592,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -45944,7 +45995,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -45979,7 +46030,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -46352,7 +46403,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46387,7 +46438,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -46765,7 +46816,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47009,7 +47060,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47230,7 +47281,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47598,7 +47649,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -48082,6 +48133,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -48381,6 +48433,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -48392,10 +48445,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -48985,7 +49038,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49029,7 +49082,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -49674,7 +49727,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50004,7 +50057,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50363,7 +50416,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50727,7 +50780,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -51154,6 +51207,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -51396,6 +51450,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -51407,10 +51462,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00004996-02d2-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -52085,7 +52140,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52290,7 +52345,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52330,7 +52385,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -52859,7 +52914,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53165,7 +53220,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53471,7 +53526,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53777,7 +53832,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54083,7 +54138,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54389,7 +54444,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54695,7 +54750,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55001,7 +55056,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55307,7 +55362,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55613,7 +55668,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55988,6 +56043,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -56169,6 +56225,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -56350,6 +56407,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -56540,6 +56598,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -56551,10 +56610,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 3
@@ -56733,6 +56792,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -56744,10 +56804,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 1,
                         "count": 3
@@ -56926,6 +56986,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -56937,10 +56998,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 2,
                         "count": 3
@@ -57282,7 +57343,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57317,7 +57378,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -57710,7 +57771,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58078,7 +58139,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58505,6 +58566,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -58747,6 +58809,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -58758,10 +58821,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -59052,6 +59115,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -59347,6 +59411,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -59358,10 +59423,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -59963,7 +60028,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60231,7 +60296,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60406,7 +60471,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60450,7 +60515,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -60951,7 +61016,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61126,7 +61191,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61170,7 +61235,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -61777,7 +61842,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61952,7 +62017,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62286,7 +62351,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62461,7 +62526,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62795,7 +62860,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62970,7 +63035,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63332,7 +63397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63507,7 +63572,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63995,6 +64060,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -64294,6 +64360,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -64305,10 +64372,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -64652,6 +64719,7 @@
                             }
                           }
                         ],
+                        "labels": [],
                         "namedPages": []
                       },
                       "meta": {
@@ -65000,6 +65068,7 @@
                           }
                         }
                       ],
+                      "labels": [],
                       "namedPages": []
                     },
                     "meta": {
@@ -65011,10 +65080,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -65424,7 +65493,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65468,7 +65537,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -66066,7 +66135,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66106,7 +66175,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -66800,7 +66869,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67180,7 +67249,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67560,7 +67629,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67947,7 +68016,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68633,7 +68702,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69088,10 +69157,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -69301,10 +69370,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -70225,7 +70294,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70339,7 +70408,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -70841,7 +70910,7 @@
                       [
                         77,
                         {
-                          "look": "copy",
+                          "kind": "copy",
                           "of": {
                             "kind": "objectNumber",
                             "objectNumber": 10
@@ -70850,7 +70919,7 @@
                       ]
                     ]
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71409,7 +71478,7 @@
                       [
                         77,
                         {
-                          "look": "copy",
+                          "kind": "copy",
                           "of": {
                             "kind": "objectNumber",
                             "objectNumber": 10
@@ -71418,7 +71487,7 @@
                       ]
                     ]
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71771,7 +71840,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72328,7 +72397,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72679,7 +72748,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -73064,7 +73133,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73624,7 +73693,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74028,7 +74097,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74588,7 +74657,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75158,7 +75227,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -75643,12 +75712,12 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ]
                     ]
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76317,12 +76386,12 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ]
                     ]
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76843,7 +76912,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -77447,18 +77516,18 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ],
                       [
                         88,
                         {
-                          "look": "blank"
+                          "kind": "blank"
                         }
                       ]
                     ]
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78182,18 +78251,18 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ],
                       [
                         88,
                         {
-                          "look": "blank"
+                          "kind": "blank"
                         }
                       ]
                     ]
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78963,7 +79032,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79171,7 +79240,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79379,7 +79448,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79608,7 +79677,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79834,7 +79903,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80072,7 +80141,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80280,7 +80349,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },

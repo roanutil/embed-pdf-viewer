@@ -190,10 +190,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -273,10 +273,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -348,10 +348,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -423,10 +423,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -519,12 +519,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -544,12 +544,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -569,12 +569,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -594,12 +594,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -619,12 +619,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -644,12 +644,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -669,12 +669,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -694,12 +694,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -719,12 +719,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -744,12 +744,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -769,12 +769,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 2
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -943,7 +943,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1006,7 +1005,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1103,7 +1102,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1166,7 +1164,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1299,7 +1297,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1362,7 +1359,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1577,7 +1574,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1640,7 +1636,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1796,7 +1792,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorExit": {
@@ -1807,7 +1802,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseDown": {
@@ -1818,7 +1812,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -1829,7 +1822,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "focus": {
@@ -1840,7 +1832,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "blur": {
@@ -1851,10 +1842,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -1918,6 +1909,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -2023,13 +2015,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2049,13 +2041,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorExit",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2075,13 +2067,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseDown",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2101,13 +2093,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2127,13 +2119,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "focus",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2153,13 +2145,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "blur",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2179,13 +2171,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2376,7 +2368,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2439,8 +2430,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -2457,7 +2448,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2535,7 +2525,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2598,8 +2587,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorExit"
+                    "type": "annotation",
+                    "event": "cursorExit"
                   }
                 }
               ]
@@ -2616,7 +2605,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2694,7 +2682,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2757,8 +2744,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseDown"
+                    "type": "annotation",
+                    "event": "mouseDown"
                   }
                 }
               ]
@@ -2775,7 +2762,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2853,7 +2839,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2916,8 +2901,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -2934,7 +2919,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3012,7 +2996,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3075,8 +3058,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "focus"
+                    "type": "annotation",
+                    "event": "focus"
                   }
                 }
               ]
@@ -3093,7 +3076,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3171,7 +3153,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3234,8 +3215,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "blur"
+                    "type": "annotation",
+                    "event": "blur"
                   }
                 }
               ]
@@ -3252,7 +3233,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3529,10 +3509,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -3638,13 +3618,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -3850,7 +3830,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3913,8 +3892,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -3931,7 +3910,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -4167,7 +4145,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -4178,10 +4155,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4253,10 +4230,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4349,13 +4326,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -4375,13 +4352,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -4591,7 +4568,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -4654,8 +4630,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -4859,12 +4835,12 @@
                         "activate": {
                           "root": null,
                           "incomplete": true,
-                          "warningFlags": 0,
                           "warnings": [
                             "incomplete"
                           ]
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4953,12 +4929,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5122,7 +5098,6 @@
                     "tree": {
                       "root": null,
                       "incomplete": true,
-                      "warningFlags": 0,
                       "warnings": [
                         "incomplete"
                       ]
@@ -5405,13 +5380,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5431,12 +5406,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 77
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5456,7 +5431,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -5875,7 +5850,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -5941,7 +5915,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6033,7 +6006,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -6051,7 +6024,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -6269,7 +6242,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -6309,7 +6281,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -6364,8 +6335,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -6389,8 +6360,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -6485,7 +6456,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -6496,7 +6466,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6557,7 +6526,6 @@
                   "open": {
                     "root": null,
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6628,7 +6596,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageClose": {
@@ -6639,7 +6606,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageVisible": {
@@ -6650,7 +6616,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageInvisible": {
@@ -6661,10 +6626,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6736,10 +6701,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6803,6 +6768,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6869,7 +6835,6 @@
                         "pageOpen": {
                           "root": null,
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -6880,10 +6845,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6989,7 +6954,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -7007,7 +6972,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -7025,7 +6990,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -7043,7 +7008,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -7061,7 +7026,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -7242,7 +7207,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7281,7 +7245,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7320,7 +7283,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7375,8 +7337,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7393,7 +7355,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7444,8 +7405,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7462,7 +7423,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7521,8 +7481,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7539,7 +7499,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7617,7 +7576,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7648,7 +7606,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7699,8 +7656,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -7717,7 +7674,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7768,8 +7724,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -7786,7 +7742,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7856,7 +7811,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7907,8 +7861,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -7925,7 +7879,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8003,7 +7956,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8054,8 +8006,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -8072,7 +8024,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8238,7 +8189,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -8309,10 +8259,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8423,7 +8373,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -8612,7 +8562,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8649,7 +8598,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8712,8 +8660,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -8737,8 +8685,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -8894,10 +8842,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8969,10 +8917,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9044,10 +8992,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9140,7 +9088,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -9158,7 +9106,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -9176,7 +9124,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -9343,7 +9291,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9406,8 +9353,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -9458,7 +9405,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9509,8 +9455,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -9561,7 +9507,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9612,8 +9557,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -9711,7 +9656,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -9782,10 +9726,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9861,7 +9805,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -9998,7 +9942,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10042,7 +9985,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10176,7 +10118,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10247,10 +10188,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -10360,7 +10301,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -10547,7 +10488,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10586,7 +10526,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10647,8 +10586,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -10680,8 +10619,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -10779,7 +10718,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -10790,7 +10728,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10851,7 +10788,6 @@
                   "open": {
                     "root": null,
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10922,7 +10858,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageClose": {
@@ -10933,7 +10868,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageVisible": {
@@ -10944,7 +10878,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageInvisible": {
@@ -10955,10 +10888,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11030,10 +10963,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11097,6 +11030,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11163,7 +11097,6 @@
                         "pageOpen": {
                           "root": null,
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -11174,10 +11107,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11270,7 +11203,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11288,7 +11221,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -11305,9 +11238,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "peer",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "metadata": {
               "title": "Changed",
@@ -11337,7 +11270,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11403,6 +11336,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ef4444",
               "opacity": 1,
               "strokeWidth": 2,
@@ -11425,9 +11359,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "meta": {
               "affectedPages": [
@@ -11437,7 +11371,7 @@
                 }
               ],
               "cacheDelta": null,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -11461,7 +11395,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11476,7 +11410,7 @@
           "event": {
             "type": "stream.desynced",
             "reason": "backlog-overflow",
-            "ts": 0
+            "at": "1970-01-01T00:00:00.000Z"
           }
         },
         {
@@ -11488,7 +11422,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11545,7 +11479,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11710,7 +11644,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -11773,8 +11706,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -11822,7 +11755,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -11873,8 +11805,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -11936,7 +11868,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -11987,8 +11918,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12050,7 +11981,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12113,8 +12043,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12176,7 +12106,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12239,8 +12168,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12425,7 +12354,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12488,8 +12416,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12633,7 +12561,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -12730,7 +12657,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -12748,13 +12675,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12774,7 +12701,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -12788,7 +12715,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -12806,13 +12733,13 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12832,7 +12759,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -12846,12 +12773,12 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12871,12 +12798,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -13500,7 +13427,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -13518,13 +13445,13 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "focus",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -13544,7 +13471,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]

@@ -17950,7 +17950,7 @@
                   "settings": {
                     "limit": 1
                   },
-                  "changed": [
+                  "changedKeys": [
                     "limit"
                   ]
                 }
@@ -19369,7 +19369,7 @@
                   "settings": {
                     "limit": 0
                   },
-                  "changed": [
+                  "changedKeys": [
                     "limit"
                   ]
                 }
@@ -20325,7 +20325,7 @@
                   "settings": {
                     "limit": 100
                   },
-                  "changed": [
+                  "changedKeys": [
                     "limit"
                   ]
                 }
@@ -71921,9 +71921,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -71993,9 +71993,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -72065,9 +72065,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -72137,9 +72137,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -72209,9 +72209,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -72272,9 +72272,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },
@@ -77105,9 +77105,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "other",
-              "sub": null,
-              "ts": 0,
-              "serverId": 1
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": 1
             }
           }
         },

@@ -259,7 +259,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -423,7 +423,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -514,7 +514,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -593,7 +593,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -672,7 +672,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -789,7 +789,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1231,17 +1231,17 @@
                 "$fn": "h.enabledFor",
                 "returns": false
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "h.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "h.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "h.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "h.onCancel"
               },
               "onHover": {
@@ -2326,17 +2326,17 @@
                 "$fn": "low.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "low.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "low.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "low.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "low.onCancel"
               },
               "onHover": {
@@ -2360,17 +2360,17 @@
                 "$fn": "high.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "high.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "high.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "high.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "high.onCancel"
               },
               "onHover": {
@@ -3020,7 +3020,7 @@
                 "$fn": "a.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "a.onDown",
                 "seq": [
                   {
@@ -3034,13 +3034,13 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "a.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "a.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "a.onCancel"
               },
               "onHover": {
@@ -3064,7 +3064,7 @@
                 "$fn": "b.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "b.onDown",
                 "seq": [
                   {
@@ -3075,13 +3075,13 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "b.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "b.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "b.onCancel"
               },
               "onHover": {
@@ -3105,11 +3105,11 @@
                 "$fn": "c.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "c.onDown",
                 "returns": false
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "c.onUp"
               },
               "onHover": {
@@ -4113,17 +4113,17 @@
                 "$fn": "first.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "first.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "first.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "first.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "first.onCancel"
               },
               "onHover": {
@@ -4147,17 +4147,17 @@
                 "$fn": "second.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "second.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "second.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "second.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "second.onCancel"
               },
               "onHover": {
@@ -4181,17 +4181,17 @@
                 "$fn": "top.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "top.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "top.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "top.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "top.onCancel"
               },
               "onHover": {
@@ -4215,17 +4215,17 @@
                 "$fn": "third.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "third.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "third.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "third.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "third.onCancel"
               },
               "onHover": {
@@ -4973,17 +4973,17 @@
                   }
                 ]
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "text.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "text.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "text.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "text.onCancel"
               },
               "onHover": {
@@ -5014,17 +5014,17 @@
                   }
                 ]
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "scroll.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "scroll.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "scroll.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "scroll.onCancel"
               },
               "onHover": {
@@ -5703,7 +5703,7 @@
                 "$fn": "bare.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "bare.onDown",
                 "returns": true
               }
@@ -5725,7 +5725,7 @@
                 "$fn": "hover.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "hover.onDown",
                 "returns": false
               },
@@ -6290,7 +6290,7 @@
                 "$fn": "full.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "full.onDown",
                 "seq": [
                   {
@@ -6301,13 +6301,13 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "full.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "full.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "full.onCancel"
               },
               "onHover": {
@@ -6331,7 +6331,7 @@
                 "$fn": "upOnly.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "upOnly.onDown",
                 "seq": [
                   {
@@ -6342,10 +6342,10 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "upOnly.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "upOnly.onUp"
               }
             }
@@ -6366,11 +6366,11 @@
                 "$fn": "none.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "none.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "none.onMove"
               }
             }
@@ -7637,7 +7637,7 @@
                 "$fn": "h.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "h.onDown",
                 "seq": [
                   {
@@ -7648,13 +7648,13 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "h.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "h.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "h.onCancel"
               },
               "onHover": {
@@ -8210,17 +8210,17 @@
                 "$fn": "lensA.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "lensA.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "lensA.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "lensA.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "lensA.onCancel"
               },
               "onHover": {
@@ -8247,17 +8247,17 @@
                 "$fn": "lensB.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "lensB.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "lensB.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "lensB.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "lensB.onCancel"
               },
               "onHover": {
@@ -8284,17 +8284,17 @@
                 "$fn": "any.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "any.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "any.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "any.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "any.onCancel"
               },
               "onHover": {
@@ -9128,17 +9128,17 @@
                 "$fn": "owner.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "owner.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "owner.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "owner.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "owner.onCancel"
               },
               "onHover": {
@@ -9162,17 +9162,17 @@
                 "$fn": "other.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "other.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "other.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "other.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "other.onCancel"
               },
               "onHover": {
@@ -9309,17 +9309,17 @@
                 "$fn": "late.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "late.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "late.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "late.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "late.onCancel"
               },
               "onHover": {
@@ -10076,17 +10076,17 @@
                 "$fn": "scoped.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "scoped.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "scoped.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "scoped.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "scoped.onCancel"
               },
               "onHover": {
@@ -10113,17 +10113,17 @@
                 "$fn": "other.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "other.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "other.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "other.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "other.onCancel"
               },
               "onHover": {
@@ -10735,17 +10735,17 @@
                 "$fn": "h.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "h.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "h.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "h.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "h.onCancel"
               },
               "onHover": {
@@ -15303,17 +15303,17 @@
                 "$fn": "plain.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "plain.onDown",
                 "returns": false
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "plain.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "plain.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "plain.onCancel"
               },
               "onHover": {
@@ -15337,17 +15337,17 @@
                 "$fn": "declines.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "declines.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "declines.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "declines.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "declines.onCancel"
               },
               "onHover": {
@@ -15385,17 +15385,17 @@
                 "$fn": "claims.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "claims.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "claims.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "claims.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "claims.onCancel"
               },
               "onHover": {
@@ -15433,17 +15433,17 @@
                 "$fn": "never-asked.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "never-asked.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "never-asked.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "never-asked.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "never-asked.onCancel"
               },
               "onHover": {
@@ -16505,17 +16505,17 @@
                 "$fn": "h.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "h.onDown",
                 "returns": true
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "h.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "h.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "h.onCancel"
               },
               "onHover": {
@@ -18879,7 +18879,7 @@
                 "$fn": "h.enabledFor",
                 "returns": true
               },
-              "onDown": {
+              "onPointerDown": {
                 "$fn": "h.onDown",
                 "seq": [
                   {
@@ -18893,13 +18893,13 @@
                   }
                 ]
               },
-              "onMove": {
+              "onPointerMove": {
                 "$fn": "h.onMove"
               },
-              "onUp": {
+              "onPointerUp": {
                 "$fn": "h.onUp"
               },
-              "onCancel": {
+              "onPointerCancel": {
                 "$fn": "h.onCancel"
               },
               "onHover": {

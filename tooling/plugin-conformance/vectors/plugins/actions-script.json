@@ -198,7 +198,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -251,7 +251,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -305,7 +305,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -371,6 +371,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -446,7 +447,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -522,7 +522,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -572,6 +573,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -607,7 +609,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -753,7 +754,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -778,7 +778,7 @@
                 }
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1058,7 +1058,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -1071,7 +1071,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -1092,7 +1092,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -1237,7 +1237,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -1250,7 +1250,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -1271,7 +1271,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -1661,7 +1661,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -1714,7 +1714,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -1768,7 +1768,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -1834,6 +1834,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -1909,7 +1910,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -1985,7 +1985,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -2035,6 +2036,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -2178,7 +2180,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2187,7 +2188,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2437,7 +2438,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -2450,7 +2451,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -2471,7 +2472,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -2885,7 +2886,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -2938,7 +2939,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -2992,7 +2993,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -3058,6 +3059,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -3133,7 +3135,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -3209,7 +3210,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -3259,6 +3261,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -3365,7 +3368,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3374,7 +3376,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3426,7 +3428,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3435,7 +3436,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3456,7 +3457,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3465,7 +3465,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3486,7 +3486,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3495,7 +3494,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3552,7 +3551,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3561,7 +3559,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3582,7 +3580,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3591,7 +3588,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3797,7 +3794,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -3810,7 +3807,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -3831,7 +3828,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -4074,7 +4071,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -4087,7 +4084,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -4108,7 +4105,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -4358,7 +4355,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -4371,7 +4368,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -4392,7 +4389,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -4636,7 +4633,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -4649,7 +4646,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -4670,7 +4667,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -4918,7 +4915,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -4931,7 +4928,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -4952,7 +4949,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -5213,7 +5210,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -5226,7 +5223,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -5247,7 +5244,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -5471,7 +5468,7 @@
                           ],
                           "uiEffects": [
                             {
-                              "kind": "alert",
+                              "type": "alert",
                               "message": "booted",
                               "icon": 3
                             }
@@ -5670,7 +5667,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -5723,7 +5720,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -5777,7 +5774,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -5843,6 +5840,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -5918,7 +5916,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -5994,7 +5991,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -6044,6 +6042,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -6079,7 +6078,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -6250,7 +6248,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6259,7 +6256,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -6584,7 +6581,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -6597,7 +6594,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -6618,7 +6615,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -6811,7 +6808,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -6824,7 +6821,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -6845,7 +6842,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -6988,7 +6985,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -7001,7 +6998,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -7022,7 +7019,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -7357,7 +7354,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7410,7 +7407,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -7464,7 +7461,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7530,6 +7527,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -7605,7 +7603,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -7681,7 +7678,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -7731,6 +7729,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -7766,7 +7765,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -7859,7 +7857,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -7868,7 +7865,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -8076,7 +8073,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -8089,7 +8086,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -8110,7 +8107,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -8260,7 +8257,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -8273,7 +8270,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -8294,7 +8291,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -8653,7 +8650,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -8706,7 +8703,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -8760,7 +8757,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -8826,6 +8823,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -8901,7 +8899,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -8977,7 +8974,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -9027,6 +9025,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -9196,7 +9195,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9205,7 +9203,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -9226,7 +9224,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9235,7 +9232,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -9535,7 +9532,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -9548,7 +9545,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -9569,7 +9566,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -9801,7 +9798,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -9814,7 +9811,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -9835,7 +9832,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -10009,7 +10006,7 @@
                         "output": {
                           "uiEffects": [
                             {
-                              "kind": "print"
+                              "type": "print"
                             }
                           ]
                         }
@@ -10020,11 +10017,11 @@
                         "output": {
                           "uiEffects": [
                             {
-                              "kind": "gotoPage",
-                              "page": 2
+                              "type": "goToPage",
+                              "pageIndex": 2
                             },
                             {
-                              "kind": "submitForm",
+                              "type": "submitForm",
                               "url": "https://s.test/",
                               "fieldNames": [
                                 "name",
@@ -10035,13 +10032,13 @@
                               "method": "get"
                             },
                             {
-                              "kind": "alert",
+                              "type": "alert",
                               "message": "hi",
                               "icon": 1,
                               "title": "T"
                             },
                             {
-                              "kind": "print"
+                              "type": "print"
                             }
                           ]
                         }
@@ -10227,7 +10224,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -10280,7 +10277,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -10334,7 +10331,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -10400,6 +10397,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -10475,7 +10473,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -10551,7 +10548,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -10601,6 +10599,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -10636,7 +10635,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -10718,7 +10716,7 @@
               "alert": {
                 "$fn": "ui.alert"
               },
-              "gotoPage": {
+              "goToPage": {
                 "$fn": "ui.gotoPage"
               }
             }
@@ -10738,7 +10736,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -10747,7 +10744,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -10782,7 +10779,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10791,7 +10787,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11043,7 +11039,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -11056,7 +11052,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -11077,7 +11073,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -11218,7 +11214,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -11231,7 +11227,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -11252,7 +11248,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -11414,8 +11410,7 @@
                   "exclude": false,
                   "includeNoValueFields": true,
                   "format": "xfdf",
-                  "method": "get",
-                  "flagsRaw": 0
+                  "method": "get"
                 },
                 {
                   "origin": "user",
@@ -11423,7 +11418,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -11438,7 +11433,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -11447,7 +11441,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -11501,7 +11495,7 @@
                         "output": {
                           "uiEffects": [
                             {
-                              "kind": "print"
+                              "type": "print"
                             }
                           ]
                         }
@@ -11687,7 +11681,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11740,7 +11734,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -11794,7 +11788,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11860,6 +11854,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -11935,7 +11930,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -12011,7 +12005,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -12061,6 +12056,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -12185,7 +12181,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12194,8 +12189,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -12216,7 +12211,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12225,7 +12219,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12453,7 +12447,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -12466,7 +12460,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -12487,7 +12481,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -12690,7 +12684,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -12703,7 +12697,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -12724,7 +12718,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -13052,7 +13046,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -13105,7 +13099,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -13159,7 +13153,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -13225,6 +13219,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -13300,7 +13295,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -13376,7 +13370,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -13426,6 +13421,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -13553,7 +13549,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13562,7 +13557,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13583,7 +13578,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13592,7 +13586,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13844,7 +13838,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -13857,7 +13851,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -13878,7 +13872,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -14021,7 +14015,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -14034,7 +14028,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -14055,7 +14049,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -14270,7 +14264,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -14283,7 +14277,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -14304,7 +14298,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -14622,7 +14616,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -14675,7 +14669,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -14729,7 +14723,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -14795,6 +14789,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -14870,7 +14865,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -14946,7 +14940,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -14996,6 +14991,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -15089,7 +15085,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15114,7 +15109,7 @@
                 }
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15135,7 +15130,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15160,8 +15154,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "focus"
+                "type": "annotation",
+                "event": "focus"
               }
             }
           ]
@@ -15182,7 +15176,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15207,7 +15200,7 @@
                 }
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15228,7 +15221,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15253,7 +15245,7 @@
                 }
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15274,7 +15266,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15299,7 +15290,7 @@
                 }
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15320,7 +15311,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15341,8 +15331,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -15363,7 +15353,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15384,8 +15373,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -15406,7 +15395,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15427,8 +15415,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "mouseDown"
+                "type": "annotation",
+                "event": "mouseDown"
               }
             }
           ]
@@ -15449,7 +15437,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15470,8 +15457,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorExit"
+                "type": "annotation",
+                "event": "cursorExit"
               }
             }
           ]
@@ -15492,7 +15479,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15513,8 +15499,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "mouseDown"
+                "type": "annotation",
+                "event": "mouseDown"
               }
             }
           ]
@@ -15535,7 +15521,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15556,8 +15541,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "mouseUp"
+                "type": "annotation",
+                "event": "mouseUp"
               }
             }
           ]
@@ -15578,7 +15563,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15599,8 +15583,8 @@
                 }
               },
               "event": {
-                "scope": "annotation",
-                "name": "blur"
+                "type": "annotation",
+                "event": "blur"
               }
             }
           ]
@@ -15621,7 +15605,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15634,8 +15617,8 @@
                 }
               },
               "event": {
-                "scope": "page",
-                "name": "open"
+                "type": "page",
+                "event": "open"
               }
             }
           ]
@@ -15656,7 +15639,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15669,8 +15651,8 @@
                 }
               },
               "event": {
-                "scope": "page",
-                "name": "close"
+                "type": "page",
+                "event": "close"
               }
             }
           ]
@@ -15691,7 +15673,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15704,8 +15685,8 @@
                 }
               },
               "event": {
-                "scope": "page",
-                "name": "visible"
+                "type": "page",
+                "event": "visible"
               }
             }
           ]
@@ -15726,7 +15707,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15739,8 +15719,8 @@
                 }
               },
               "event": {
-                "scope": "page",
-                "name": "invisible"
+                "type": "page",
+                "event": "invisible"
               }
             }
           ]
@@ -15761,7 +15741,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15770,8 +15749,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -15792,7 +15771,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15801,8 +15779,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "will-save"
+                "type": "document",
+                "event": "will-save"
               }
             }
           ]
@@ -15823,7 +15801,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15832,8 +15809,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "did-save"
+                "type": "document",
+                "event": "did-save"
               }
             }
           ]
@@ -15854,7 +15831,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15863,8 +15839,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "will-print"
+                "type": "document",
+                "event": "will-print"
               }
             }
           ]
@@ -15885,7 +15861,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15894,8 +15869,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "did-print"
+                "type": "document",
+                "event": "did-print"
               }
             }
           ]
@@ -15916,7 +15891,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15925,8 +15899,8 @@
                 "kind": "document"
               },
               "event": {
-                "scope": "document",
-                "name": "will-close"
+                "type": "document",
+                "event": "will-close"
               }
             }
           ]
@@ -15947,7 +15921,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15956,7 +15929,7 @@
                 "kind": "link"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15977,7 +15950,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15986,7 +15958,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16163,7 +16135,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -16176,7 +16148,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -16197,7 +16169,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -16393,7 +16365,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -16406,7 +16378,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -16427,7 +16399,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -16624,7 +16596,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -16637,7 +16609,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -16658,7 +16630,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -16854,7 +16826,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -16867,7 +16839,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -16888,7 +16860,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -17084,7 +17056,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -17097,7 +17069,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -17118,7 +17090,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -17314,7 +17286,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -17327,7 +17299,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -17348,7 +17320,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -17536,7 +17508,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -17549,7 +17521,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -17570,7 +17542,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -17673,7 +17645,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -17686,7 +17658,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -17707,7 +17679,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -17810,7 +17782,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -17823,7 +17795,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -17844,7 +17816,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18032,7 +18004,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18045,7 +18017,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -18066,7 +18038,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18254,7 +18226,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18267,7 +18239,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -18288,7 +18260,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18476,7 +18448,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18489,7 +18461,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -18510,7 +18482,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18698,7 +18670,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18711,7 +18683,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -18732,7 +18704,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18835,7 +18807,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18848,7 +18820,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -18869,7 +18841,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -18972,7 +18944,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -18985,7 +18957,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19006,7 +18978,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -19109,7 +19081,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -19122,7 +19094,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19143,7 +19115,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -19246,7 +19218,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -19259,7 +19231,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19280,7 +19252,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -19468,7 +19440,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -19481,7 +19453,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19502,7 +19474,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -19690,7 +19662,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -19703,7 +19675,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19724,7 +19696,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -19912,7 +19884,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -19925,7 +19897,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -19946,7 +19918,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -20134,7 +20106,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -20147,7 +20119,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -20168,7 +20140,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -20356,7 +20328,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -20369,7 +20341,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -20390,7 +20362,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -20578,7 +20550,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -20591,7 +20563,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -20612,7 +20584,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -20800,7 +20772,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -20813,7 +20785,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -20834,7 +20806,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -21042,7 +21014,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -21095,7 +21067,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -21149,7 +21121,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -21215,6 +21187,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -21290,7 +21263,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -21366,7 +21338,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -21416,6 +21389,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -21451,7 +21425,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -21544,7 +21517,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21553,7 +21525,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21929,7 +21901,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -21982,7 +21954,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -22036,7 +22008,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -22102,6 +22074,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -22177,7 +22150,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -22253,7 +22225,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -22303,6 +22276,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -22338,7 +22312,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -22431,7 +22404,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -22444,8 +22416,8 @@
                 }
               },
               "event": {
-                "scope": "page",
-                "name": "open"
+                "type": "page",
+                "event": "open"
               }
             }
           ]
@@ -22856,7 +22828,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -22909,7 +22881,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -22963,7 +22935,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -23029,6 +23001,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -23104,7 +23077,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -23180,7 +23152,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -23230,6 +23203,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -23265,7 +23239,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -23345,7 +23318,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -23354,7 +23326,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -23549,7 +23521,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -23562,7 +23534,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -23583,7 +23555,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -23740,7 +23712,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -23753,7 +23725,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -23774,7 +23746,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -24089,7 +24061,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -24142,7 +24114,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -24196,7 +24168,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -24262,6 +24234,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -24337,7 +24310,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -24413,7 +24385,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -24463,6 +24436,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -24498,7 +24472,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -24592,7 +24565,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -24601,7 +24573,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -24814,7 +24786,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -24827,7 +24799,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -24848,7 +24820,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -24989,7 +24961,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -25002,7 +24974,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -25023,7 +24995,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -25166,7 +25138,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -25179,7 +25151,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -25200,7 +25172,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -25515,7 +25487,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -25568,7 +25540,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -25622,7 +25594,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -25688,6 +25660,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -25763,7 +25736,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -25839,7 +25811,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -25889,6 +25862,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -25924,7 +25898,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -26004,7 +25977,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -26013,7 +25985,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -26192,7 +26164,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -26205,7 +26177,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -26226,7 +26198,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -26367,7 +26339,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -26380,7 +26352,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -26401,7 +26373,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -26727,7 +26699,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -26780,7 +26752,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -26834,7 +26806,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -26900,6 +26872,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -26975,7 +26948,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -27051,7 +27023,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -27101,6 +27074,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -27136,7 +27110,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -27216,7 +27189,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -27225,7 +27197,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -27246,7 +27218,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -27255,7 +27226,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -27434,7 +27405,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -27447,7 +27418,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -27468,7 +27439,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -27609,7 +27580,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -27622,7 +27593,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -27643,7 +27614,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -27839,7 +27810,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -27852,7 +27823,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -27873,7 +27844,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -28014,7 +27985,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -28027,7 +27998,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -28048,7 +28019,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -28375,7 +28346,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -28428,7 +28399,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -28482,7 +28453,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -28548,6 +28519,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -28623,7 +28595,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -28699,7 +28670,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -28749,6 +28721,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -28855,7 +28828,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28864,7 +28836,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -29076,7 +29048,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -29089,7 +29061,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -29110,7 +29082,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -29447,7 +29419,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -29500,7 +29472,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -29554,7 +29526,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -29620,6 +29592,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -29695,7 +29668,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -29771,7 +29743,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -29821,6 +29794,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -29856,7 +29830,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -29936,7 +29909,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29945,7 +29917,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -30124,7 +30096,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -30137,7 +30109,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -30158,7 +30130,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -30299,7 +30271,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -30312,7 +30284,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -30333,7 +30305,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -30651,7 +30623,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -30704,7 +30676,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -30758,7 +30730,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -30824,6 +30796,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -30899,7 +30872,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -30975,7 +30947,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -31025,6 +30998,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -31060,7 +31034,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -31683,7 +31656,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -31736,7 +31709,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -31790,7 +31763,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -31856,6 +31829,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -31931,7 +31905,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -32007,7 +31980,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -32057,6 +32031,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -32092,7 +32067,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -32183,7 +32157,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -32192,7 +32165,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -32406,7 +32379,7 @@
               "canExecuteNamed": {
                 "$ref": 22
               },
-              "getActionTree": {
+              "readActionTree": {
                 "$ref": 23
               },
               "dispatch": {
@@ -32512,7 +32485,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -32525,7 +32498,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -32546,7 +32519,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -32687,7 +32660,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -32700,7 +32673,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -32721,7 +32694,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -33085,7 +33058,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -33138,7 +33111,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -33192,7 +33165,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -33258,6 +33231,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -33333,7 +33307,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -33409,7 +33382,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -33459,6 +33433,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -33494,7 +33469,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -33574,7 +33548,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -33583,7 +33556,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -33770,7 +33743,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -33783,7 +33756,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -33804,7 +33777,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -33945,7 +33918,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -33958,7 +33931,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -33979,7 +33952,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -34336,7 +34309,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -34389,7 +34362,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -34443,7 +34416,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -34647,7 +34620,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -34700,7 +34673,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -34754,7 +34727,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -34853,7 +34826,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -34862,7 +34834,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -34883,7 +34855,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -34892,7 +34863,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -35146,7 +35117,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -35159,7 +35130,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -35180,7 +35151,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -35297,7 +35268,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -35310,7 +35281,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -35331,7 +35302,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -35395,7 +35366,7 @@
                         "output": {
                           "uiEffects": [
                             {
-                              "kind": "alert",
+                              "type": "alert",
                               "message": "hi",
                               "icon": 0
                             }
@@ -35601,7 +35572,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -35654,7 +35625,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -35708,7 +35679,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -35774,6 +35745,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -35849,7 +35821,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -35925,7 +35896,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -35975,6 +35947,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -36010,7 +35983,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -36255,7 +36227,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -36264,7 +36235,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -36591,7 +36562,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -36604,7 +36575,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -36625,7 +36596,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -36766,7 +36737,7 @@
                         "objectNumber": 100
                       },
                       "name": "name",
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": null,
                       "display": "visible",
@@ -36779,7 +36750,7 @@
                         "objectNumber": 101
                       },
                       "name": "choice",
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": [
                         "1"
                       ],
@@ -36800,7 +36771,7 @@
                         "objectNumber": 102
                       },
                       "name": "empty",
-                      "family": "text",
+                      "kind": "text",
                       "value": null,
                       "defaultValue": null,
                       "display": "visible",
@@ -36956,7 +36927,7 @@
                 "maxEffects": 2,
                 "maxOutputBytes": 64
               },
-              "dispose": {
+              "destroy": {
                 "$ref": 1
               }
             }
@@ -36992,7 +36963,7 @@
                   "annotEffects": [],
                   "uiEffects": [
                     {
-                      "kind": "alert",
+                      "type": "alert",
                       "message": "hi",
                       "icon": 0
                     }
@@ -37387,7 +37358,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -37440,7 +37411,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -37494,7 +37465,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -37560,6 +37531,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -37635,7 +37607,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -37711,7 +37682,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -37761,6 +37733,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -37796,7 +37769,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -38395,7 +38367,7 @@
                 "maxEffects": 256,
                 "maxOutputBytes": 1048576
               },
-              "dispose": {
+              "destroy": {
                 "$ref": 1
               }
             }
@@ -39297,7 +39269,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "name-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -39350,7 +39322,7 @@
                           }
                         }
                       ],
-                      "family": "combobox",
+                      "kind": "combobox",
                       "value": "1",
                       "defaultValue": "",
                       "edit": false,
@@ -39404,7 +39376,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "empty-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -39470,6 +39442,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ff0033",
                       "opacity": 0.5,
                       "strokeWidth": 2,
@@ -39545,7 +39518,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
@@ -39621,7 +39593,8 @@
                       "caption": null,
                       "checkStyle": null,
                       "field": null,
-                      "fieldFamily": "text"
+                      "fieldKind": "text",
+                      "hasMark": false
                     },
                     {
                       "subtype": "stamp",
@@ -39671,6 +39644,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "box": {
                         "x": 100,
                         "y": 100,
@@ -39706,7 +39680,6 @@
                           ]
                         },
                         "incomplete": false,
-                        "warningFlags": 0,
                         "warnings": []
                       }
                     }
@@ -39786,7 +39759,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -39795,7 +39767,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -40194,7 +40166,7 @@
               "alert": {
                 "$fn": "ui.alert"
               },
-              "gotoPage": {
+              "goToPage": {
                 "$fn": "ui.gotoPage"
               }
             }
@@ -40211,22 +40183,22 @@
             {
               "uiEffects": [
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "m1",
                   "icon": 0
                 },
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "m2",
                   "icon": 2,
                   "title": "T"
                 },
                 {
-                  "kind": "gotoPage",
-                  "page": 3
+                  "type": "goToPage",
+                  "pageIndex": 3
                 },
                 {
-                  "kind": "print"
+                  "type": "print"
                 }
               ],
               "diagnostics": [
@@ -40274,13 +40246,13 @@
             {
               "uiEffects": [
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "m3",
                   "icon": 1
                 },
                 {
-                  "kind": "gotoPage",
-                  "page": 1
+                  "type": "goToPage",
+                  "pageIndex": 1
                 }
               ],
               "diagnostics": [],
@@ -40956,12 +40928,12 @@
             {
               "uiEffects": [
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "m",
                   "icon": 0
                 },
                 {
-                  "kind": "print"
+                  "type": "print"
                 }
               ],
               "diagnostics": [],
@@ -41028,7 +41000,7 @@
             {
               "uiEffects": [
                 {
-                  "kind": "print"
+                  "type": "print"
                 }
               ],
               "diagnostics": [],
@@ -41054,7 +41026,7 @@
             {
               "uiEffects": [
                 {
-                  "kind": "print"
+                  "type": "print"
                 }
               ],
               "diagnostics": [],
@@ -41689,7 +41661,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -41698,7 +41669,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -41728,13 +41699,13 @@
             {
               "uiEffects": [
                 {
-                  "kind": "submitForm",
+                  "type": "submitForm",
                   "url": null,
                   "fieldNames": null,
                   "includeEmpty": false
                 },
                 {
-                  "kind": "submitForm",
+                  "type": "submitForm",
                   "url": "https://x.test",
                   "fieldNames": [
                     "a"
@@ -41762,7 +41733,7 @@
             {
               "uiEffects": [
                 {
-                  "kind": "submitForm",
+                  "type": "submitForm",
                   "url": null,
                   "fieldNames": null,
                   "includeEmpty": false
@@ -41964,8 +41935,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -41973,7 +41943,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -41988,7 +41958,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -41997,7 +41966,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -42235,7 +42204,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -42244,7 +42212,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -42281,7 +42249,7 @@
               "alert": {
                 "$fn": "ui.alert"
               },
-              "gotoPage": {
+              "goToPage": {
                 "$fn": "ui.gotoPage"
               }
             }
@@ -42298,20 +42266,20 @@
             {
               "uiEffects": [
                 {
-                  "kind": "print"
+                  "type": "print"
                 },
                 {
-                  "kind": "gotoPage",
-                  "page": 2
+                  "type": "goToPage",
+                  "pageIndex": 2
                 },
                 {
-                  "kind": "submitForm",
+                  "type": "submitForm",
                   "url": null,
                   "fieldNames": null,
                   "includeEmpty": false
                 },
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "from the asset",
                   "icon": 3
                 }
@@ -42334,8 +42302,8 @@
             {
               "uiEffects": [
                 {
-                  "kind": "gotoPage",
-                  "page": 2
+                  "type": "goToPage",
+                  "pageIndex": 2
                 }
               ],
               "diagnostics": [],
@@ -42558,7 +42526,7 @@
               "args": [
                 {
                   "code": "ui-effect-suppressed",
-                  "message": "script gotoPage request from a detached realm suppressed: no document surface"
+                  "message": "script goToPage request from a detached realm suppressed: no document surface"
                 }
               ]
             },
@@ -42846,7 +42814,7 @@
               "alert": {
                 "$fn": "ui.alert"
               },
-              "gotoPage": {
+              "goToPage": {
                 "$fn": "ui.gotoPage"
               }
             }
@@ -42863,18 +42831,18 @@
             {
               "uiEffects": [
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "boot",
                   "icon": 0,
                   "phase": "boot"
                 },
                 {
-                  "kind": "gotoPage",
-                  "page": 1,
+                  "type": "goToPage",
+                  "pageIndex": 1,
                   "phase": "user"
                 },
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "user",
                   "icon": 1,
                   "phase": "user"
@@ -42953,11 +42921,11 @@
             {
               "uiEffects": [
                 {
-                  "kind": "print",
+                  "type": "print",
                   "phase": "boot"
                 },
                 {
-                  "kind": "alert",
+                  "type": "alert",
                   "message": "asset",
                   "icon": 0,
                   "phase": "user"

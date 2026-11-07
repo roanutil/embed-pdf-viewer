@@ -1376,7 +1376,7 @@
                     },
                     "permissions": {
                       "known": true,
-                      "bits": null,
+                      "flags": null,
                       "allAllowed": true,
                       "openedAs": "none",
                       "securityHandlerRevision": null,

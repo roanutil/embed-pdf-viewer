@@ -223,7 +223,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -234,7 +233,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -255,7 +254,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -266,7 +264,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -674,7 +672,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -683,7 +680,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -699,7 +696,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -708,7 +704,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1096,7 +1092,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1105,7 +1100,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1315,7 +1310,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1342,7 +1337,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1362,7 +1357,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1382,7 +1377,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1628,7 +1623,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1637,7 +1631,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1825,7 +1819,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1845,7 +1839,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2130,7 +2124,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2139,7 +2132,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2374,7 +2367,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2415,7 +2408,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2775,7 +2768,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2784,7 +2776,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3118,7 +3110,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -3374,7 +3366,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3383,8 +3374,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3406,7 +3397,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3415,8 +3405,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3438,7 +3428,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3447,7 +3436,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3467,25 +3456,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3494,8 +3479,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -3516,7 +3501,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3525,8 +3509,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3547,7 +3531,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3556,7 +3539,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3635,7 +3618,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3644,7 +3626,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3665,7 +3647,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3674,7 +3655,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3694,7 +3675,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3703,7 +3683,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3723,7 +3703,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3732,7 +3711,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3759,7 +3738,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3768,8 +3746,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -4615,7 +4593,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4624,7 +4601,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4644,7 +4621,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4653,7 +4629,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5111,7 +5087,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5120,7 +5095,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5142,7 +5117,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5151,8 +5125,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5174,7 +5148,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5183,8 +5156,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5211,7 +5184,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5220,7 +5192,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5242,7 +5214,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5251,8 +5222,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5890,7 +5861,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5899,8 +5869,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5951,7 +5921,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5960,7 +5929,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5987,7 +5956,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5996,8 +5964,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -6024,7 +5992,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6033,8 +6000,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -6873,8 +6840,8 @@
                 "kind": "link"
               },
               "event": {
-                "scope": "annotation",
-                "name": "mouseUp"
+                "type": "annotation",
+                "event": "mouseUp"
               }
             }
           ]
@@ -7140,7 +7107,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -7157,7 +7124,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7228,8 +7194,8 @@
                     "kind": "link"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -7246,7 +7212,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7332,7 +7297,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7438,7 +7402,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7506,7 +7469,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7545,7 +7507,7 @@
     },
     {
       "name": "get-action-tree",
-      "covers": "getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.",
+      "covers": "readActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.",
       "plugins": [
         {
           "factory": "actions-current",
@@ -7619,7 +7581,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -7630,7 +7591,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -7754,7 +7714,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -7765,7 +7724,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -7776,10 +7734,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7831,7 +7789,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "f-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7847,7 +7805,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       }
@@ -7879,7 +7836,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "g-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7904,7 +7861,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null,
@@ -7916,7 +7872,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -8128,7 +8083,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -8153,7 +8108,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -8179,7 +8134,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -8205,7 +8160,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -8231,7 +8186,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -8256,7 +8211,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -8274,7 +8229,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -8292,7 +8247,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -8310,7 +8265,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -8328,7 +8283,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -8346,7 +8301,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -8363,7 +8318,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -8381,7 +8336,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -8398,7 +8353,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -8415,7 +8370,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document"
@@ -8428,7 +8383,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document",
@@ -8442,7 +8397,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document",
@@ -8456,7 +8411,7 @@
             "token": "actions",
             "doc": "b"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document"
@@ -8650,7 +8605,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -8697,7 +8651,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -8744,7 +8697,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -8865,7 +8817,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -8906,7 +8857,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9040,7 +8990,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9075,7 +9024,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9160,7 +9108,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9201,7 +9148,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9486,7 +9432,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9495,7 +9440,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -9914,7 +9859,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9923,7 +9867,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -10130,7 +10074,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -10523,7 +10467,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10532,7 +10475,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -10571,7 +10514,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10580,7 +10522,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11126,7 +11068,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11177,7 +11119,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "other-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11318,7 +11260,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11327,7 +11268,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11354,7 +11295,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11363,7 +11303,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11935,7 +11875,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11944,7 +11883,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11979,7 +11918,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11988,7 +11926,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12207,7 +12145,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -12490,7 +12428,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12499,7 +12436,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12821,7 +12758,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -12917,7 +12854,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12926,7 +12862,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12953,7 +12889,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12962,7 +12897,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12989,7 +12924,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12998,7 +12932,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13086,7 +13020,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13095,7 +13028,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13126,7 +13059,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13135,7 +13067,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13166,7 +13098,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13175,7 +13106,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13202,7 +13133,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13211,7 +13141,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14015,7 +13945,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -14167,7 +14097,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14176,7 +14105,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14207,7 +14136,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14216,7 +14144,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14243,7 +14171,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14252,7 +14179,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14849,7 +14776,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14858,7 +14784,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14880,7 +14806,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14889,7 +14814,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15314,7 +15239,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15323,7 +15247,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15685,7 +15609,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15694,7 +15617,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15715,7 +15638,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15724,7 +15646,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15797,7 +15719,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15806,7 +15727,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15828,7 +15749,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15837,7 +15757,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15859,7 +15779,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15868,7 +15787,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15890,7 +15809,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15899,7 +15817,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15921,7 +15839,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15930,7 +15847,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15959,7 +15876,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15968,7 +15884,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16276,7 +16192,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16351,7 +16267,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16426,7 +16342,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16501,7 +16417,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16555,7 +16471,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16644,7 +16560,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16882,7 +16798,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16891,7 +16806,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16955,7 +16870,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16964,7 +16878,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16991,7 +16905,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17000,7 +16913,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17027,7 +16940,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17036,7 +16948,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17063,7 +16975,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17072,7 +16983,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17350,7 +17261,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17430,7 +17341,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17510,7 +17421,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17584,7 +17495,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17850,7 +17761,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17859,7 +17769,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17887,7 +17797,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17896,7 +17805,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18141,7 +18050,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18472,7 +18381,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18481,7 +18389,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18510,7 +18418,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18519,7 +18426,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18570,7 +18477,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18579,7 +18485,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19275,7 +19181,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19284,7 +19189,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19318,7 +19223,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19327,7 +19231,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19392,7 +19296,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -19401,7 +19304,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -19421,7 +19324,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -19430,7 +19332,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -19491,25 +19393,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19518,7 +19416,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19545,25 +19443,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19572,7 +19466,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19599,25 +19493,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19626,7 +19516,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20154,8 +20044,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -20163,7 +20052,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20178,7 +20067,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -20187,7 +20075,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20262,8 +20150,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:00.000Z"
@@ -20281,8 +20168,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -20290,7 +20176,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20596,7 +20482,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20605,7 +20490,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20626,7 +20511,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20635,7 +20519,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20795,7 +20679,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -20885,7 +20769,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -21152,7 +21036,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21161,7 +21044,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21196,7 +21079,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21205,7 +21087,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21465,7 +21347,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21502,7 +21383,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21649,7 +21529,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21839,7 +21718,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null
@@ -21926,7 +21804,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21935,8 +21812,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -21957,7 +21834,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21966,7 +21842,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21987,7 +21863,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21996,7 +21871,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -22164,8 +22039,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -22227,8 +22102,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -22248,7 +22123,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -22304,7 +22179,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]

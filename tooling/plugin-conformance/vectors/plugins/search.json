@@ -37559,8 +37559,7 @@
             {
               "promise": 2,
               "resolved": {
-                "status": "complete",
-                "hitCount": 0
+                "$undefined": true
               }
             }
           ],
@@ -38399,8 +38398,7 @@
             {
               "promise": 5,
               "resolved": {
-                "status": "complete",
-                "hitCount": 1
+                "$undefined": true
               }
             }
           ],
@@ -39783,7 +39781,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40044,7 +40042,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60245,6 +60243,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -60270,7 +60269,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -60284,9 +60283,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -60364,6 +60363,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -60389,7 +60389,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -60403,9 +60403,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -60587,6 +60587,7 @@
                   "tabOrder": null
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -60603,9 +60604,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -62810,9 +62811,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -62859,9 +62860,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -63613,6 +63614,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -63642,7 +63644,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -63656,9 +63658,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -64848,6 +64850,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -64873,7 +64876,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -64887,9 +64890,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -81499,6 +81502,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ff0000",
               "opacity": 1,
               "strokeWidth": 1,
@@ -81524,7 +81528,7 @@
               "cacheDelta": null,
               "opId": "fixture",
               "undoable": true,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -81538,9 +81542,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
