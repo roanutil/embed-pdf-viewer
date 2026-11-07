@@ -354,7 +354,7 @@ impl FakeEngine {
                 *b.borrow_mut() = layout.get("labels").cloned().unwrap_or_else(|| json!([]));
                 *n.borrow_mut() = layout.get("namedPages").cloned().unwrap_or_else(|| json!([]));
             }
-            if let Some(server) = event["origin"]["serverSequence"].as_i64() {
+            if let Some(server) = event["origin"]["serverId"].as_i64() {
                 c.set(Some(c.get().unwrap_or(0).max(server)));
             }
             let listeners = l.borrow().iter().map(|(_, f)| f.clone()).collect::<Vec<_>>();
