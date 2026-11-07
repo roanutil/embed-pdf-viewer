@@ -11,7 +11,7 @@ use super::parser::{InvalidScope, parse_scope};
 use super::types::{
     CollabAction, CollabEntity, CollabFilter, CollabTarget, DocCapability, FieldAction,
     FieldFilter, FieldGroupRight, FieldRights, FieldWriteAction, IdentityClaims, ParsedScope,
-    PdfBits,
+    PdfPermissionFlags,
 };
 
 /// The granted set.
@@ -45,21 +45,21 @@ fn has_wildcard(parsed: &[ParsedScope]) -> bool {
 pub fn check_capability(
     capability: DocCapability,
     parsed: &[ParsedScope],
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
 ) -> bool {
     if has_wildcard(parsed) {
         return true;
     }
-    expanded_capabilities(parsed, pdf_bits).contains(&capability)
+    expanded_capabilities(parsed, permission_flags).contains(&capability)
 }
 
 /// True iff at least one of `capabilities` is granted.
 pub fn check_any_capability(
     capabilities: &[DocCapability],
     parsed: &[ParsedScope],
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
 ) -> bool {
-    capabilities.iter().any(|c| check_capability(*c, parsed, pdf_bits))
+    capabilities.iter().any(|c| check_capability(*c, parsed, permission_flags))
 }
 
 /// True iff the scope grants the collab action against the target record.
@@ -77,7 +77,7 @@ pub fn check_collab(
     target: &CollabTarget,
     parsed: &[ParsedScope],
     identity: &IdentityClaims,
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
 ) -> bool {
     if has_wildcard(parsed) {
         return true;
@@ -96,14 +96,17 @@ pub fn check_collab(
             .any(|filter| filter_matches(filter, target, identity));
     }
 
-    expanded_capabilities(parsed, pdf_bits).contains(&DocCapability::DocAnnotateModify)
+    expanded_capabilities(parsed, permission_flags).contains(&DocCapability::DocAnnotateModify)
 }
 
 /// The full granted set after expanding `pdf.permissions` and applying the
 /// implication rules.
 ///
 /// Does not short-circuit on the wildcard; callers do that themselves.
-pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capabilities {
+pub fn expanded_capabilities(
+    parsed: &[ParsedScope],
+    permission_flags: PdfPermissionFlags,
+) -> Capabilities {
     let mut out = Capabilities::new();
     let mut has_annotation_collab = false;
     let mut has_field_collab = false;
@@ -113,7 +116,7 @@ pub fn expanded_capabilities(parsed: &[ParsedScope], pdf_bits: PdfBits) -> Capab
             ParsedScope::Capability(name) => {
                 out.insert(*name);
             }
-            ParsedScope::Virtual => out.extend(materialize_pdf_permissions(pdf_bits)),
+            ParsedScope::Virtual => out.extend(materialize_pdf_permissions(permission_flags)),
             ParsedScope::Collab { .. } => has_annotation_collab = true,
             ParsedScope::FieldCollab { .. } => has_field_collab = true,
             ParsedScope::Wildcard | ParsedScope::Plugin { .. } => {}
@@ -194,8 +197,11 @@ pub fn check_plugin_permission(
 }
 
 /// Parse and expand in one step.
-pub fn expand_raw_scope(raw: &[String], pdf_bits: PdfBits) -> Result<Capabilities, InvalidScope> {
-    Ok(expanded_capabilities(&parse_all(raw)?, pdf_bits))
+pub fn expand_raw_scope(
+    raw: &[String],
+    permission_flags: PdfPermissionFlags,
+) -> Result<Capabilities, InvalidScope> {
+    Ok(expanded_capabilities(&parse_all(raw)?, permission_flags))
 }
 
 /// Authority to put a record of `entity` in a specific group: an
@@ -282,7 +288,7 @@ pub fn check_field_action(
     action: FieldWriteAction,
     group_id: Option<&str>,
     parsed: &[ParsedScope],
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
 ) -> bool {
     if has_wildcard(parsed) {
         return true;
@@ -294,7 +300,7 @@ pub fn check_field_action(
             FieldFilter::Group(id) => group_id == Some(id.as_str()),
         });
     }
-    expanded_capabilities(parsed, pdf_bits).contains(&action.broad())
+    expanded_capabilities(parsed, permission_flags).contains(&action.broad())
 }
 
 /// Whether the scope lets the caller fill in or sign some form field: the
@@ -303,7 +309,7 @@ pub fn check_field_action(
 pub fn check_any_field_action(
     action: FieldWriteAction,
     parsed: &[ParsedScope],
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
 ) -> bool {
     if has_wildcard(parsed) {
         return true;
@@ -311,7 +317,7 @@ pub fn check_any_field_action(
     if !field_filters(parsed, action.action()).is_empty() {
         return true;
     }
-    expanded_capabilities(parsed, pdf_bits).contains(&action.broad())
+    expanded_capabilities(parsed, permission_flags).contains(&action.broad())
 }
 
 /// [`check_field_action`] and [`check_set_group`] for fields as group lists
@@ -319,7 +325,7 @@ pub fn check_any_field_action(
 /// names, so a designer can offer exactly the groups a field may go in.
 pub fn field_rights_of(
     parsed: &[ParsedScope],
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
     caller_default_group_id: Option<&str>,
 ) -> FieldRights {
     let wildcard = has_wildcard(parsed);
@@ -348,7 +354,7 @@ pub fn field_rights_of(
         if !filters.is_empty() {
             return from_scopes(filters, None);
         }
-        if expanded_capabilities(parsed, pdf_bits).contains(&action.broad()) {
+        if expanded_capabilities(parsed, permission_flags).contains(&action.broad()) {
             FieldGroupRight::All
         } else {
             FieldGroupRight::none()
@@ -384,16 +390,14 @@ pub fn filter_matches(
     }
 }
 
-/// The capabilities `pdf.permissions` stands for under these bits.
+/// The capabilities `pdf.permissions` stands for under these flags.
 ///
-/// `materializePdfPermissions` (`builders.ts`), the one reading of the bits:
-/// the resolver and the permission advisory
-/// ([`crate::features::security::state::advisory_from_pdf_bits`]) both use
-/// it. It follows what Acrobat allows on a file with these bits, which is
-/// broader than ISO 32000 in two places: bit 4 also allows filling in and
-/// signing, and bit 5 governs taking the text out, not finding or selecting
-/// it.
-pub fn materialize_pdf_permissions(b: PdfBits) -> Capabilities {
+/// `materializePdfPermissions` (`builders.ts`), the one reading of the
+/// flags: the scope resolver uses it. It follows what Acrobat allows on a
+/// file with these flags, which is broader than ISO 32000 in two places:
+/// `modify_contents` (bit 4) also allows filling in and signing, and `copy`
+/// (bit 5) governs taking the text out, not finding or selecting it.
+pub fn materialize_pdf_permissions(flags: PdfPermissionFlags) -> Capabilities {
     let mut out = Capabilities::new();
 
     // A working session, and reading what is there: bit 6 governs writing
@@ -406,19 +410,19 @@ pub fn materialize_pdf_permissions(b: PdfBits) -> Capabilities {
     out.insert(DocCapability::DocTextSearch);
     out.insert(DocCapability::DocTextSelect);
 
-    if b.bit5 {
+    if flags.copy {
         out.insert(DocCapability::DocTextCopy);
         out.insert(DocCapability::DocContentCopy);
     }
-    if b.bit3 {
+    if flags.print {
         out.insert(DocCapability::DocPrint);
     }
     // Bit 12 refines bit 3 rather than standing alone, so high-quality print
     // without print is not a grant.
-    if b.bit12 && b.bit3 {
+    if flags.print_high_quality && flags.print {
         out.insert(DocCapability::DocPrintHigh);
     }
-    if b.bit4 {
+    if flags.modify_contents {
         out.insert(DocCapability::DocPagesModify);
         out.insert(DocCapability::DocRedact);
         out.insert(DocCapability::DocMetadataModify);
@@ -426,21 +430,21 @@ pub fn materialize_pdf_permissions(b: PdfBits) -> Capabilities {
     }
     // Bit 11 assembles pages and creates outline items even when bit 4 is
     // clear; bit 4 includes it.
-    if b.bit4 || b.bit11 {
+    if flags.modify_contents || flags.assemble {
         out.insert(DocCapability::DocPagesAssemble);
         out.insert(DocCapability::DocOutlineModify);
     }
-    if b.bit6 {
+    if flags.modify_annotations {
         out.insert(DocCapability::DocAnnotateModify);
     }
     // Signing a signature field is filling it in, and any of the three bits
     // lets Acrobat (and PDFium's form filler) fill in.
-    if b.bit4 || b.bit6 || b.bit9 {
+    if flags.modify_contents || flags.modify_annotations || flags.fill_forms {
         out.insert(DocCapability::DocFormsFill);
         out.insert(DocCapability::DocSign);
     }
     // Changing existing fields takes both.
-    if b.bit6 && b.bit4 {
+    if flags.modify_annotations && flags.modify_contents {
         out.insert(DocCapability::DocFormsModify);
     }
     // No bit expands to doc.forms.submit, doc.forms.import, doc.forms.script,

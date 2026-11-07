@@ -1,8 +1,8 @@
 //! The scope an `open.fatMem` carries, and the signing capabilities.
 
 use epdf_engine::auth::scope::{
-    CollabAction, CollabTarget, DocCapability, IdentityClaims, check_collab, decode_pdf_bits,
-    expand_raw_scope, materialize_pdf_permissions, parse_all, parse_scope,
+    CollabAction, CollabTarget, DocCapability, IdentityClaims, check_collab, expand_raw_scope,
+    materialize_pdf_permissions, parse_all, parse_scope, permission_flags_of,
 };
 use epdf_engine::host::Host;
 use serde_json::json;
@@ -12,7 +12,7 @@ use common::sig_open_fixture_with;
 
 #[test]
 fn doc_sign_expands_from_form_fill_bits() {
-    let bits = decode_pdf_bits(Some(1 << 8)); // bit 9: fill in forms
+    let bits = permission_flags_of(Some(1 << 8)); // bit 9: fill in forms
     let caps = expand_raw_scope(&["pdf.permissions".into()], bits).unwrap();
     assert!(caps.contains(&DocCapability::DocSign));
     assert!(!caps.contains(&DocCapability::DocSignCertify));
@@ -131,7 +131,7 @@ const FILL_FORMS: i64 = 1 << 8;
 const ASSEMBLE: i64 = 1 << 10;
 
 fn permissions(raw: i64) -> std::collections::BTreeSet<DocCapability> {
-    expand_raw_scope(&["pdf.permissions".into()], decode_pdf_bits(Some(raw))).unwrap()
+    expand_raw_scope(&["pdf.permissions".into()], permission_flags_of(Some(raw))).unwrap()
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn every_bit_set_expands_to_exactly_the_materialized_set() {
     // Every bit set: the expansion adds nothing the materialized set lacks
     // but `doc.render.thumbnail`, which no bit gives and `doc.render` implies
     // (8638dc749). Every other implication's source is already in it.
-    let bits = decode_pdf_bits(Some(0xffff_ffff));
+    let bits = permission_flags_of(Some(0xffff_ffff));
     let materialized = materialize_pdf_permissions(bits);
     assert!(!materialized.contains(&DocCapability::DocRenderThumbnail));
     let mut expected = materialized.clone();
@@ -209,7 +209,7 @@ fn the_closed_set_takes_upstreams_grant_minted_capabilities() {
         ["doc.forms.import", "doc.forms.script", "doc.annotate.import", "doc.outline.modify"]
     {
         let parsed = parse_scope(name).unwrap_or_else(|e| panic!("{name}: {e}"));
-        let caps = expand_raw_scope(&[name.into()], decode_pdf_bits(None)).unwrap();
+        let caps = expand_raw_scope(&[name.into()], permission_flags_of(None)).unwrap();
         assert_eq!(caps.len(), 1, "{name} implies nothing: {parsed:?}");
     }
 }
@@ -219,7 +219,7 @@ fn a_group_filter_matches_the_records_group_whoever_calls() {
     // 4b2cdb395: `filterMatches` dropped the membership test. The scope
     // names the group; which groups the caller is in plays no part.
     let parsed = parse_all(&["annotations:update:group=4".into()]).unwrap();
-    let bits = decode_pdf_bits(None);
+    let bits = permission_flags_of(None);
     let outsider = IdentityClaims {
         user_id: Some("alice".into()),
         group_id: Some("9".into()),
@@ -267,8 +267,8 @@ mod fields {
     use epdf_engine::auth::scope::{
         CollabEntity, DocCapability, FieldAction, FieldActionPattern, FieldFilter, FieldGroupRight,
         FieldWriteAction, IdentityClaims, ParsedScope, check_any_field_action, check_capability,
-        check_field_action, check_set_group, decode_pdf_bits, expand_raw_scope, field_rights_of,
-        parse_all, parse_scope,
+        check_field_action, check_set_group, expand_raw_scope, field_rights_of, parse_all,
+        parse_scope, permission_flags_of,
     };
     use epdf_engine::session::authority::SessionAuthority;
 
@@ -278,8 +278,8 @@ mod fields {
         parse_all(&entries.iter().map(|s| s.to_string()).collect::<Vec<_>>()).unwrap()
     }
 
-    fn none() -> epdf_engine::auth::scope::PdfBits {
-        decode_pdf_bits(Some(0))
+    fn none() -> epdf_engine::auth::scope::PdfPermissionFlags {
+        permission_flags_of(Some(0))
     }
 
     #[test]
@@ -349,7 +349,7 @@ mod fields {
 
     #[test]
     fn pdf_permissions_stays_what_the_file_allows_design_is_never_narrowed() {
-        let bits = decode_pdf_bits(Some((1 << 3) | (1 << 5)));
+        let bits = permission_flags_of(Some((1 << 3) | (1 << 5)));
         let parsed = scope(&["pdf.permissions", "fields:*:group=buyer"]);
         assert!(check_field_action(Fill, Some("buyer"), &parsed, bits));
         assert!(!check_field_action(Fill, Some("seller"), &parsed, bits));

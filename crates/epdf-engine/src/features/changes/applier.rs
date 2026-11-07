@@ -639,14 +639,15 @@ pub fn assert_expected(
 #[cfg(test)]
 mod tests {
     use super::{ChangeAuthority, values_equal};
-    use crate::auth::scope::{DocCapability, FieldWriteAction, IdentityClaims, PdfBits};
+    use crate::auth::scope::{DocCapability, FieldWriteAction, IdentityClaims, PdfPermissionFlags};
     use crate::session::authority::SessionAuthority;
     use serde_json::json;
 
     fn granting(scope: &[&str]) -> ChangeAuthority {
         let scope: Vec<String> = scope.iter().map(|s| (*s).to_owned()).collect();
         let grants =
-            SessionAuthority::new(&scope, IdentityClaims::default(), PdfBits::default()).unwrap();
+            SessionAuthority::new(&scope, IdentityClaims::default(), PdfPermissionFlags::default())
+                .unwrap();
         ChangeAuthority { user_id: None, identity: IdentityClaims::default(), grants: Some(grants) }
     }
 

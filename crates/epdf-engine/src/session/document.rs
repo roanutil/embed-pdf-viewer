@@ -33,7 +33,7 @@ use super::authority::SessionAuthority;
 use super::pages::{PagePtrPool, PageRecord};
 use super::revisions::RevisionAuthority;
 use crate::access::OwnedDocument;
-use crate::auth::scope::{DocCapability, decode_pdf_bits};
+use crate::auth::scope::{DocCapability, permission_flags_of};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::changes::ledger::ChangeLedger;
 use crate::features::signature::types::SignedDocumentPolicy;
@@ -416,7 +416,9 @@ impl DocumentSession {
         // before the elevation above would make it meaningless: after it,
         // `permissions()` reports the owner word for every encrypted document.
         let mut authority = authority;
-        authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_permission_flags(permission_flags_of(Some(i64::from(
+            document.user_permissions(),
+        ))));
         authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {
@@ -505,7 +507,9 @@ impl DocumentSession {
         let (document, _) = layer.into_parts();
 
         let mut authority = authority;
-        authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_permission_flags(permission_flags_of(Some(i64::from(
+            document.user_permissions(),
+        ))));
         authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {

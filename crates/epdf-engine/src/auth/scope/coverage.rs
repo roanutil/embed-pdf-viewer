@@ -8,7 +8,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::resolver::{Capabilities, expanded_capabilities};
 use super::types::{
-    CollabAction, CollabFilter, DocCapability, FieldAction, FieldFilter, ParsedScope, PdfBits,
+    CollabAction, CollabFilter, DocCapability, FieldAction, FieldFilter, ParsedScope,
+    PdfPermissionFlags,
 };
 
 /// What `wanted` would allow that `held` does not, in scope words, sorted;
@@ -30,8 +31,11 @@ pub fn scope_not_covered(wanted: &[ParsedScope], held: &[ParsedScope]) -> Vec<St
     }
 
     let reads_the_file = held.iter().chain(wanted).any(|s| matches!(s, ParsedScope::Virtual));
-    let every_bits: Vec<PdfBits> =
-        if reads_the_file { every_pdf_bits().collect() } else { vec![PdfBits::default()] };
+    let every_bits: Vec<PdfPermissionFlags> = if reads_the_file {
+        every_permission_flags().collect()
+    } else {
+        vec![PdfPermissionFlags::default()]
+    };
 
     let mut beyond = BTreeSet::new();
     for bits in every_bits {
@@ -105,7 +109,7 @@ const WRITES: [(&str, Write, Option<DocCapability>); 7] = [
     ("fields:set-group", Write::Field(FieldAction::SetGroup), None),
 ];
 
-fn authority_of(parsed: &[ParsedScope], bits: PdfBits) -> Authority {
+fn authority_of(parsed: &[ParsedScope], bits: PdfPermissionFlags) -> Authority {
     let capabilities = expanded_capabilities(parsed, bits);
     let mut writes = BTreeMap::new();
     for (key, write, broad) in WRITES {
@@ -186,18 +190,19 @@ fn filter_word(filter: &CollabFilter) -> String {
     }
 }
 
-/// Every combination of the bits `pdf.permissions` reads (`EVERY_PDF_BITS`);
-/// bit 10 gives nothing, so it stays clear.
-fn every_pdf_bits() -> impl Iterator<Item = PdfBits> {
-    (0u32..1 << 7).map(|n| PdfBits {
-        bit3: n & 1 != 0,
-        bit4: n & 2 != 0,
-        bit5: n & 4 != 0,
-        bit6: n & 8 != 0,
-        bit9: n & 16 != 0,
-        bit10: false,
-        bit11: n & 32 != 0,
-        bit12: n & 64 != 0,
+/// Every combination of the flags `pdf.permissions` reads
+/// (`EVERY_PERMISSION_FLAGS`); `copy_for_accessibility` gives nothing, so it
+/// stays clear.
+fn every_permission_flags() -> impl Iterator<Item = PdfPermissionFlags> {
+    (0u32..1 << 7).map(|n| PdfPermissionFlags {
+        print: n & 1 != 0,
+        modify_contents: n & 2 != 0,
+        copy: n & 4 != 0,
+        modify_annotations: n & 8 != 0,
+        fill_forms: n & 16 != 0,
+        copy_for_accessibility: false,
+        assemble: n & 32 != 0,
+        print_high_quality: n & 64 != 0,
     })
 }
 

@@ -339,40 +339,13 @@ pub struct WireAuthorityIdentity {
     pub group_id: Option<String>,
 }
 
-/// An authority's `grants`: the caller's scope and the PDF permission bits.
+/// An authority's `grants`: the caller's scope and what the file's
+/// permissions allow (`permissionFlags`, a780243ba).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WireGrants {
     pub scope: Vec<String>,
-    pub pdf_bits: WirePdfBits,
-}
-
-/// `PdfBits`, as the wire spells it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct WirePdfBits {
-    pub bit3: bool,
-    pub bit4: bool,
-    pub bit5: bool,
-    pub bit6: bool,
-    pub bit9: bool,
-    pub bit10: bool,
-    pub bit11: bool,
-    pub bit12: bool,
-}
-
-impl From<WirePdfBits> for crate::auth::scope::types::PdfBits {
-    fn from(w: WirePdfBits) -> Self {
-        Self {
-            bit3: w.bit3,
-            bit4: w.bit4,
-            bit5: w.bit5,
-            bit6: w.bit6,
-            bit9: w.bit9,
-            bit10: w.bit10,
-            bit11: w.bit11,
-            bit12: w.bit12,
-        }
-    }
+    pub permission_flags: crate::auth::scope::types::PdfPermissionFlags,
 }
 
 /// `grants`: present, and `null` or the grants.
@@ -3377,7 +3350,7 @@ fn change_authority(
                 display_name: wire.identity.display_name.clone(),
             };
             let mut authority =
-                SessionAuthority::new(&grants.scope, identity, grants.pdf_bits.into()).map_err(
+                SessionAuthority::new(&grants.scope, identity, grants.permission_flags).map_err(
                     |e| {
                         EngineError::with_message(
                             EngineErrorCode::InvalidArg,

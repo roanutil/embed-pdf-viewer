@@ -17,8 +17,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_engine::auth::scope::{
-    CollabAction, CollabTarget, DocCapability, FieldWriteAction, IdentityClaims, decode_pdf_bits,
-    plugin_of_permission,
+    CollabAction, CollabTarget, DocCapability, FieldWriteAction, IdentityClaims,
+    permission_flags_of, plugin_of_permission,
 };
 use epdf_engine::error::EngineError;
 use epdf_engine::features::render::raster::{
@@ -730,7 +730,7 @@ impl NativeDocumentState {
     /// one and has not been opened as anybody).
     fn take_probe(&self, security: Value) {
         let bits = security.get("pdfPermissionsBits").and_then(Value::as_i64);
-        self.authority.borrow_mut().set_pdf_bits(decode_pdf_bits(bits));
+        self.authority.borrow_mut().set_permission_flags(permission_flags_of(bits));
         let needs_password = security.get("encryptionRequiresPassword") == Some(&Value::Bool(true));
         let opened = security.get("pdfOpenedAs").is_some_and(|v| !v.is_null());
         self.locked.set(needs_password && !opened);

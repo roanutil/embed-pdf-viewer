@@ -391,8 +391,8 @@ fn a_write_envelope_is_read_whole() {
     let body = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
         "jobId": 7, "opId": "op-7", "objectNumberFloor": 900,
         "authority": { "identity": { "userId": "u", "displayName": "U" },
-            "grants": { "scope": ["*"], "pdfBits": { "bit3": true, "bit4": true, "bit5": true,
-                "bit6": true, "bit9": true, "bit10": true, "bit11": true, "bit12": true } } } });
+            "grants": { "scope": ["*"], "permissionFlags": { "print": true, "modifyContents": true, "copy": true,
+                "modifyAnnotations": true, "fillForms": true, "copyForAccessibility": true, "assemble": true, "printHighQuality": true } } } });
     let envelope = JobEnvelope::parse("annotations.delete", &body).expect("a whole envelope");
     assert_eq!(envelope.effect, Some(RequestEffect::Write));
     assert_eq!(envelope.job_id.map(|j| j.to_string()), Some("7".into()));

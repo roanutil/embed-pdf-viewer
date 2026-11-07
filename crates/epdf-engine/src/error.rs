@@ -88,11 +88,42 @@ pub enum EngineErrorCode {
     /// The grant asks its visitors who they are, and this visitor has not
     /// answered what it requires. `details` is a `VisitorIdentityRequest`.
     VisitorIdentityRequired,
+    /// The request conflicts with what the server holds: a name that's taken,
+    /// or a record in a state the request can't apply to.
+    Conflict,
+    /// The server's engines are full and shed the request. Nothing ran.
+    EngineBusy,
+    /// The engine serving the document restarted during the request. Nothing ran.
+    EngineRestarting,
+    /// The document crashed the engine more than once and is refused until its
+    /// quarantine ends.
+    DocumentQuarantined,
+    /// The document's thumbnail isn't there yet; `details.state` says why.
+    ThumbnailNotReady,
+    /// Too many requests from this caller. Retry later.
+    TooManyRequests,
+    /// The grant expired.
+    GrantExpired,
+    /// A grant exchange came without the page's `Origin` header.
+    OriginRequired,
+    /// The grant doesn't allow the page's origin.
+    OriginNotAllowed,
+    /// A module's route, and the tenant's features don't hold the module.
+    FeatureNotEnabled,
+    /// A module's route, and the tenant's features hold the module stopped.
+    FeatureStopped,
+    /// The deployment's license doesn't allow the request.
+    LicenseInvalid,
+    /// The request would pass one of the license's usage limits.
+    LicenseUsageLimit,
+    /// Reading the document from where it's imported from failed in a way
+    /// worth retrying.
+    UpstreamError,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 30] = [
+    pub const ALL: [EngineErrorCode; 44] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
@@ -123,6 +154,20 @@ impl EngineErrorCode {
         Self::IdempotencyKeyReused,
         Self::LayerDeleted,
         Self::VisitorIdentityRequired,
+        Self::Conflict,
+        Self::EngineBusy,
+        Self::EngineRestarting,
+        Self::DocumentQuarantined,
+        Self::ThumbnailNotReady,
+        Self::TooManyRequests,
+        Self::GrantExpired,
+        Self::OriginRequired,
+        Self::OriginNotAllowed,
+        Self::FeatureNotEnabled,
+        Self::FeatureStopped,
+        Self::LicenseInvalid,
+        Self::LicenseUsageLimit,
+        Self::UpstreamError,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -157,6 +202,20 @@ impl EngineErrorCode {
             Self::IdempotencyKeyReused => "IdempotencyKeyReused",
             Self::LayerDeleted => "LayerDeleted",
             Self::VisitorIdentityRequired => "VisitorIdentityRequired",
+            Self::Conflict => "Conflict",
+            Self::EngineBusy => "EngineBusy",
+            Self::EngineRestarting => "EngineRestarting",
+            Self::DocumentQuarantined => "DocumentQuarantined",
+            Self::ThumbnailNotReady => "ThumbnailNotReady",
+            Self::TooManyRequests => "TooManyRequests",
+            Self::GrantExpired => "GrantExpired",
+            Self::OriginRequired => "OriginRequired",
+            Self::OriginNotAllowed => "OriginNotAllowed",
+            Self::FeatureNotEnabled => "FeatureNotEnabled",
+            Self::FeatureStopped => "FeatureStopped",
+            Self::LicenseInvalid => "LicenseInvalid",
+            Self::LicenseUsageLimit => "LicenseUsageLimit",
+            Self::UpstreamError => "UpstreamError",
         }
     }
 }

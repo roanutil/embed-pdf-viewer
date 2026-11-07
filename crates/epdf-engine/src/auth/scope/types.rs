@@ -338,22 +338,37 @@ pub enum ParsedScope {
     },
 }
 
-/// Typed view of the PDF user-access permission word.
+/// What a PDF's permissions (the encryption dictionary's `/P` word) allow,
+/// one flag per bit ISO 32000 defines, named as pdf.js names them
+/// (`PdfPermissionFlags`). `pdf.permissions` reads them as Acrobat does: see
+/// [`super::resolver::materialize_pdf_permissions`]. Build one from the word
+/// with [`super::permission_flags::permission_flags_of`].
 ///
-/// Field names mirror ISO 32000 bit positions, as in TypeScript, rather than
-/// being renamed to what each bit means. A rename would be an improvement in
-/// isolation and a liability across a boundary two implementations have to
-/// agree on: `bit6` is unambiguous, `annotate` is not.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct PdfBits {
-    pub bit3: bool,
-    pub bit4: bool,
-    pub bit5: bool,
-    pub bit6: bool,
-    pub bit9: bool,
-    pub bit10: bool,
-    pub bit11: bool,
-    pub bit12: bool,
+/// It crosses the wire as a request authority's `grants.permissionFlags` and
+/// as the security state's `permissions.flags`, in this key order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfPermissionFlags {
+    /// Bit 3: print the document.
+    pub print: bool,
+    /// Bit 4: modify the contents (Acrobat lets it fill in forms and sign too).
+    pub modify_contents: bool,
+    /// Bit 5: copy or otherwise take out text and graphics.
+    pub copy: bool,
+    /// Bit 6: add or modify annotations and fill in forms; with bit 4, create
+    /// or modify form fields.
+    pub modify_annotations: bool,
+    /// Bit 9: fill in existing form fields, signature fields included.
+    pub fill_forms: bool,
+    /// Bit 10: take out text and graphics for accessibility (deprecated in
+    /// PDF 2.0).
+    pub copy_for_accessibility: bool,
+    /// Bit 11: assemble the document: insert, rotate and delete pages, and
+    /// build the outline.
+    pub assemble: bool,
+    /// Bit 12: print at full quality (without it, only a degraded print with
+    /// bit 3).
+    pub print_high_quality: bool,
 }
 
 /// Identity claims from a JWT, or supplied at engine open time.

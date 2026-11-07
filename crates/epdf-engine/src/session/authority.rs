@@ -23,7 +23,7 @@
 
 use crate::auth::scope::{
     Capabilities, CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight,
-    FieldRights, FieldWriteAction, IdentityClaims, InvalidScope, ParsedScope, PdfBits,
+    FieldRights, FieldWriteAction, IdentityClaims, InvalidScope, ParsedScope, PdfPermissionFlags,
     check_any_field_action, check_capability, check_collab, check_field_action,
     check_plugin_permission, check_set_group, expanded_capabilities, field_rights_of, parse_all,
 };
@@ -48,7 +48,7 @@ pub struct SessionAuthority {
     /// not been probed leaves this at its default, which is every bit false,
     /// so an unprobed document grants nothing through the virtual scope rather
     /// than everything.
-    pdf_bits: PdfBits,
+    permission_flags: PdfPermissionFlags,
     /// What the document's signatures forbid (`deriveProtection`), which no
     /// scope grants, the wildcard included (`resolver.ts` `checkCapability`
     /// under `signedDocumentPolicy: 'protect'`, the default). `None` for an
@@ -65,13 +65,13 @@ impl SessionAuthority {
     pub fn new(
         scope: &[String],
         identity: IdentityClaims,
-        pdf_bits: PdfBits,
+        permission_flags: PdfPermissionFlags,
     ) -> Result<Self, InvalidScope> {
         Ok(Self {
             scope: parse_all(scope)?,
             granted: scope.to_vec(),
             identity,
-            pdf_bits,
+            permission_flags,
             protection: None,
         })
     }
@@ -87,7 +87,7 @@ impl SessionAuthority {
             scope: vec![ParsedScope::Wildcard],
             granted: vec!["*".to_owned()],
             identity: IdentityClaims::default(),
-            pdf_bits: PdfBits::default(),
+            permission_flags: PdfPermissionFlags::default(),
             protection: None,
         }
     }
@@ -96,8 +96,8 @@ impl SessionAuthority {
         &self.identity
     }
 
-    pub fn pdf_bits(&self) -> PdfBits {
-        self.pdf_bits
+    pub fn permission_flags(&self) -> PdfPermissionFlags {
+        self.permission_flags
     }
 
     /// Replace the permission word once the document has been probed.
@@ -107,8 +107,8 @@ impl SessionAuthority {
     /// request and the bits arrive with the document, and pretending they
     /// arrive together would force a caller to probe before it can build an
     /// authority.
-    pub fn set_pdf_bits(&mut self, pdf_bits: PdfBits) {
-        self.pdf_bits = pdf_bits;
+    pub fn set_permission_flags(&mut self, permission_flags: PdfPermissionFlags) {
+        self.permission_flags = permission_flags;
     }
 
     /// Adopt the document's signature protection (`ScopeGuard.setProtection`).
@@ -130,11 +130,10 @@ impl SessionAuthority {
     }
 
     /// This authority as a request names it (`ChangeAuthority`): who it is,
-    /// its scope and permission bits as `grants`, and what the document's
+    /// its scope and permission flags as `grants`, and what the document's
     /// signatures forbid. What a client that opened the session with this
     /// scope sends with each write (`DocumentGuard.changeAuthority`).
     pub fn to_wire(&self) -> serde_json::Value {
-        let bits = self.pdf_bits;
         serde_json::json!({
             "identity": {
                 "userId": self.identity.user_id,
@@ -143,11 +142,7 @@ impl SessionAuthority {
             },
             "grants": {
                 "scope": self.granted,
-                "pdfBits": {
-                    "bit3": bits.bit3, "bit4": bits.bit4, "bit5": bits.bit5, "bit6": bits.bit6,
-                    "bit9": bits.bit9, "bit10": bits.bit10, "bit11": bits.bit11,
-                    "bit12": bits.bit12,
-                },
+                "permissionFlags": self.permission_flags,
             },
             "protection": self.protection,
         })
@@ -164,7 +159,7 @@ impl SessionAuthority {
 
     pub fn allows(&self, capability: DocCapability) -> bool {
         !self.protected().contains(&capability)
-            && check_capability(capability, &self.scope, self.pdf_bits)
+            && check_capability(capability, &self.scope, self.permission_flags)
     }
 
     pub fn allows_any(&self, capabilities: &[DocCapability]) -> bool {
@@ -175,7 +170,7 @@ impl SessionAuthority {
     pub fn allows_collab(&self, action: CollabAction, target: &CollabTarget) -> bool {
         // A declared signature constraint outranks the collab authority.
         !self.protected().contains(&DocCapability::DocAnnotateModify)
-            && check_collab(action, target, &self.scope, &self.identity, self.pdf_bits)
+            && check_collab(action, target, &self.scope, &self.identity, self.permission_flags)
     }
 
     /// `ScopeGuard.canSetGroup`: assigning `group_id` to an annotation.
@@ -193,14 +188,14 @@ impl SessionAuthority {
     /// (`checkFieldAction`'s `protection`).
     pub fn allows_field_write(&self, action: FieldWriteAction, group_id: Option<&str>) -> bool {
         !self.protected().contains(&action.broad())
-            && check_field_action(action, group_id, &self.scope, self.pdf_bits)
+            && check_field_action(action, group_id, &self.scope, self.permission_flags)
     }
 
     /// `allowsSomeFieldWrite`: what a form verb checks before its fields
     /// are known; each field is checked in the write.
     pub fn allows_some_field_write(&self, action: FieldWriteAction) -> bool {
         !self.protected().contains(&action.broad())
-            && check_any_field_action(action, &self.scope, self.pdf_bits)
+            && check_any_field_action(action, &self.scope, self.permission_flags)
     }
 
     /// `authorizeFieldGroup`'s check: putting a field in `group_id`.
@@ -217,7 +212,7 @@ impl SessionAuthority {
     /// upstream applies it: a protected action is no field at all.
     pub fn field_rights(&self) -> FieldRights {
         let mut rights =
-            field_rights_of(&self.scope, self.pdf_bits, self.identity.group_id.as_deref());
+            field_rights_of(&self.scope, self.permission_flags, self.identity.group_id.as_deref());
         let protected = self.protected();
         if protected.contains(&FieldWriteAction::Fill.broad()) {
             rights.fill = FieldGroupRight::none();
@@ -231,7 +226,7 @@ impl SessionAuthority {
     /// Everything this caller may do, for an `/access`-style report.
     pub fn expanded(&self) -> Capabilities {
         let protected = self.protected();
-        expanded_capabilities(&self.scope, self.pdf_bits)
+        expanded_capabilities(&self.scope, self.permission_flags)
             .into_iter()
             .filter(|c| !protected.contains(c))
             .collect()
@@ -277,7 +272,7 @@ impl Default for SessionAuthority {
             scope: Vec::new(),
             granted: Vec::new(),
             identity: IdentityClaims::default(),
-            pdf_bits: PdfBits::default(),
+            permission_flags: PdfPermissionFlags::default(),
             protection: None,
         }
     }
@@ -315,7 +310,7 @@ mod tests {
         let authority = SessionAuthority::new(
             &scope(&["doc.open"]),
             IdentityClaims::default(),
-            PdfBits::default(),
+            PdfPermissionFlags::default(),
         )
         .expect("parse");
         authority.require(DocCapability::DocOpen).expect("granted");
@@ -337,7 +332,7 @@ mod tests {
         let error = SessionAuthority::new(
             &scope(&["doc.open", "doc.not-a-real-capability"]),
             IdentityClaims::default(),
-            PdfBits::default(),
+            PdfPermissionFlags::default(),
         )
         .expect_err("unknown scope");
         assert_eq!(error.scope, "doc.not-a-real-capability");
@@ -352,12 +347,15 @@ mod tests {
         let mut authority = SessionAuthority::new(
             &scope(&["pdf.permissions"]),
             IdentityClaims::default(),
-            PdfBits::default(),
+            PdfPermissionFlags::default(),
         )
         .expect("parse");
         assert!(!authority.allows(DocCapability::DocPrint));
 
-        authority.set_pdf_bits(PdfBits { bit3: true, ..PdfBits::default() });
+        authority.set_permission_flags(PdfPermissionFlags {
+            print: true,
+            ..PdfPermissionFlags::default()
+        });
         assert!(authority.allows(DocCapability::DocPrint));
         // Bit 12 refines bit 3 rather than standing alone.
         assert!(!authority.allows(DocCapability::DocPrintHigh));
@@ -368,7 +366,7 @@ mod tests {
         let authority = SessionAuthority::new(
             &scope(&["doc.text.search"]),
             IdentityClaims::default(),
-            PdfBits::default(),
+            PdfPermissionFlags::default(),
         )
         .expect("parse");
 

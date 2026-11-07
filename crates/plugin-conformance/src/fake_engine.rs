@@ -775,9 +775,10 @@ impl FakeSecurity {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    /// `decodePdfBits(currentSecurityState.permissions.bits)`.
-    fn bits(&self) -> scope::PdfBits {
-        scope::decode_pdf_bits(self.state.borrow().0["permissions"]["bits"].as_i64())
+    /// `decodePdfBits(currentSecurityState.permissions.bits)`, as the TypeScript fake
+    /// engine still reads it (`permissionFlagsOf` since a780243ba).
+    fn bits(&self) -> scope::PdfPermissionFlags {
+        scope::permission_flags_of(self.state.borrow().0["permissions"]["bits"].as_i64())
     }
 
     #[cfg(not(target_arch = "wasm32"))]

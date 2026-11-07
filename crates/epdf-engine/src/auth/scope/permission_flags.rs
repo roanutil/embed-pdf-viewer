@@ -1,10 +1,11 @@
-//! ISO 32000 user-access permission bits.
+//! ISO 32000 user-access permission flags.
 //!
-//! A transcription of `packages/engine/core/src/auth/scope/pdf-bits.ts`.
+//! A transcription of `packages/engine/core/src/auth/scope/permission-flags.ts`.
 
-use super::types::PdfBits;
+use super::types::PdfPermissionFlags;
 
-/// Bit positions in the spec are 1-indexed, so bit 3 is `1 << 2`.
+/// Bit positions in the spec are 1-indexed, so bit 3 is `1 << 2`
+/// (`PDF_BITS`).
 ///
 /// Bits 1, 2, 7, 8 and 13 upward are reserved and deliberately not surfaced.
 pub mod mask {
@@ -26,10 +27,10 @@ pub mod mask {
     pub const PRINT_HIGH: u32 = 1 << 11;
 }
 
-/// Decode a raw permission word.
+/// The flags of a `/P` word, as the file is read (`permissionFlagsOf`).
 ///
-/// `None` is the unprobed column and yields all-false, which is the
-/// restrictive reading: an unprobed document grants nothing through
+/// `None` is a document not probed yet and gives every flag `false`, the
+/// most restrictive reading: an unprobed document grants nothing through
 /// `pdf.permissions` rather than everything.
 ///
 /// The parameter is `i64` where TypeScript takes `number`, because the value
@@ -38,19 +39,19 @@ pub mod mask {
 /// an unencrypted document, and a host that routed that through a signed
 /// integer hands over `-1`. Truncating to `u32` makes those the same word,
 /// which is what TypeScript's `&` on a double already does.
-pub fn decode_pdf_bits(raw: Option<i64>) -> PdfBits {
-    let Some(raw) = raw else {
-        return PdfBits::default();
+pub fn permission_flags_of(word: Option<i64>) -> PdfPermissionFlags {
+    let Some(word) = word else {
+        return PdfPermissionFlags::default();
     };
-    let raw = raw as u32;
-    PdfBits {
-        bit3: raw & mask::PRINT != 0,
-        bit4: raw & mask::MODIFY != 0,
-        bit5: raw & mask::COPY != 0,
-        bit6: raw & mask::ANNOTATE_FILL != 0,
-        bit9: raw & mask::FILL_FORMS != 0,
-        bit10: raw & mask::ACCESSIBILITY != 0,
-        bit11: raw & mask::ASSEMBLE != 0,
-        bit12: raw & mask::PRINT_HIGH != 0,
+    let word = word as u32;
+    PdfPermissionFlags {
+        print: word & mask::PRINT != 0,
+        modify_contents: word & mask::MODIFY != 0,
+        copy: word & mask::COPY != 0,
+        modify_annotations: word & mask::ANNOTATE_FILL != 0,
+        fill_forms: word & mask::FILL_FORMS != 0,
+        copy_for_accessibility: word & mask::ACCESSIBILITY != 0,
+        assemble: word & mask::ASSEMBLE != 0,
+        print_high_quality: word & mask::PRINT_HIGH != 0,
     }
 }
