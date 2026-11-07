@@ -63,6 +63,27 @@ Upstream renames keys and adds fields. For each one:
 - Check the reference source for the new name before you change the port.
 - Expect test fixtures and expected values in the port's own tests to carry the old names. Update them to the reference names.
 
+## Expected API that no longer exists
+
+Conformance tests and vectors can name a function, type, field or module that the reference source no longer has. Do not delete the test or patch it blindly. Find out why the API went away, then change the test to match.
+
+1. Confirm it is gone from the source, not moved or renamed. Search the packages for the name, including re-exports and `dist` outputs. Then search history: `git log -S '<name>' --all --oneline`, and read the commit that removed it.
+2. Read the removal commit's message and diff. Classify the cause:
+   - Renamed: the same behavior has a new name. Repoint the test to the new name. Check the shape, not just the name.
+   - Moved: the behavior lives in another module. Repoint the import. If the module is not exported, it is an export decision (see below).
+   - Merged or replaced: a new function covers the same job with a different contract. Rewrite the case against the new contract. Do not force the old expected values onto it.
+   - Removed with no replacement: the behavior is gone. Drop the cases, and record in the ledger which coverage was lost and why.
+   - Already gone before the starting commit: the tooling was stale before the catch-up. Say so in the ledger, because it changes how much of the failure the catch-up caused.
+3. Check whether a removed symbol is still used by the reference suites or only by this tooling. If the reference still has behavior the tooling checked, that behavior needs a case in the reference, not only in the tooling.
+4. Export decisions. Exporting an internal symbol from a package changes that package's public surface. Ask the user before doing it, unless they have already said export that kind of symbol.
+5. Record each decision in the ledger with: the old name, the commit that removed it, the replacement or none, and any coverage lost.
+
+Do not:
+
+- Keep a stale expected value so the test still passes.
+- Assume a similar name is the same behavior. Compare signatures and return shapes first.
+- Regenerate a vector to remove a case you could not replace, unless the reference change justifies it.
+
 ## Golden values
 
 A golden digest in a port's tests is only as good as its source. Before you trust one:
