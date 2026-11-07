@@ -19,7 +19,9 @@ use crate::controller::Core;
 use crate::js::key_or_none;
 use crate::model::set_text_selection;
 use crate::read::chrome::HitView;
-use crate::rich_text::{TextSelection, css_font_family_for_face, rich_doc_of, text_commit_patch};
+use crate::rich_text::{
+    Face, TextSelection, rich_doc_of, standard_font_for_face, text_commit_patch,
+};
 use crate::services::store::{Commit, StoreHold, Written};
 
 const TEXT_WRITE_DELAY_MS: f64 = 250.0;
@@ -251,8 +253,11 @@ impl Core {
         self.update_state(|s| set_text_selection(s, next));
     }
 
-    /// `getCssFontFamily(family)`.
-    pub fn get_css_font_family(&self, family: &str) -> String {
-        css_font_family_for_face(family, self.fonts().as_deref())
+    /// `getCssFontFamily(face, id)`: the CSS family list a face is drawn
+    /// with in a text box (`textFonts.faceCss`). Without a fonts plugin to
+    /// ask, the standard font the engine draws the face in.
+    pub fn get_css_font_family(&self, face: &Face) -> String {
+        epdf_annotation_core::font_css::standard_paint_font_of(&standard_font_for_face(face))
+            .font_family
     }
 }

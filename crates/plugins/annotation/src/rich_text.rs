@@ -211,6 +211,22 @@ pub fn font_for_face(face: &Face, fonts: FontLookup) -> String {
     face.family.clone()
 }
 
+/// `standardFontForFace(face)`: the standard font that stands in for a face,
+/// its own standard family's (Arial is Helvetica), else Helvetica, in the
+/// face's weight and italic.
+pub fn standard_font_for_face(face: &Face) -> String {
+    let family = standard_family(&family_key(&face.family)).unwrap_or("Helvetica");
+    let name = font_for_face(
+        &Face {
+            family: family.into(),
+            weight: Some(face.weight.unwrap_or(400.0)),
+            italic: Some(face.italic.unwrap_or(false)),
+        },
+        None,
+    );
+    if standard_face(&name).is_some() { name } else { "helvetica".into() }
+}
+
 /// `cssFontFamilyForFace(family, fonts)`: a standard family's web stack, a
 /// registered family's mounted `@font-face`, else the family with a generic
 /// fallback.

@@ -847,7 +847,14 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
             a.set_text_selection(&value(args, 0), range);
             undefined_outcome()
         }
-        "getCssFontFamily" => Outcome::Returned(json!(a.get_css_font_family(&text(args, 0)))),
+        "getCssFontFamily" => {
+            let face = value(args, 0);
+            Outcome::Returned(json!(a.get_css_font_family(&crate::rich_text::Face {
+                family: face.get("family").and_then(Value::as_str).unwrap_or("undefined").into(),
+                weight: face.get("weight").and_then(Value::as_f64),
+                italic: face.get("italic").and_then(Value::as_bool),
+            })))
+        }
         // ── crud ──
         "create" => {
             let options = value(args, 3);
