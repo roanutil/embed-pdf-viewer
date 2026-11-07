@@ -6,7 +6,7 @@
 //! there.
 
 use epdf_kernel::engine::DocumentSecurity;
-use epdf_plugin_i18n::{I18N, Param, Params, TranslateOptions};
+use epdf_plugin_i18n::{I18N, Param, Params, TranslateOptions, interpolate};
 
 use crate::contract::{CommandCtx, CommandDef, CommandRefusal, CommandsSettings, RefusalReason};
 
@@ -27,25 +27,29 @@ fn truthy(value: &Option<String>) -> Option<&str> {
 
 /// `labelOf`: a language's string under the command's id, else under its
 /// `labelKey` (the current language, then the fallback one), else `label`,
-/// else the id.
+/// else the id, with `labelParams` in its slots.
 pub fn label_of(def: &CommandDef, context: &CommandCtx) -> String {
+    let params = label_params_of(def, context);
     let Some(i18n) = context.try_get(&I18N) else {
-        return def
-            .label
-            .clone()
-            .or_else(|| def.label_key.clone())
-            .unwrap_or_else(|| def.id.clone());
+        let text = def.label.as_deref().or(def.label_key.as_deref()).unwrap_or(&def.id);
+        return interpolate(text, params.as_ref());
     };
     let fallback_key = truthy(&def.label_key).map(str::to_string);
     // A command with a key and no label of its own warns once when no
     // language has the key.
     if def.label.is_none() && fallback_key.is_some() {
-        let options = TranslateOptions { fallback_key, ..TranslateOptions::default() };
+        let options = TranslateOptions { fallback_key, params, ..TranslateOptions::default() };
         return i18n.t(&def.id, Some(&options));
     }
     let fallback = def.label.clone().unwrap_or_else(|| def.id.clone());
-    let options = TranslateOptions { fallback_key, fallback: Some(fallback), params: None };
+    let options = TranslateOptions { fallback_key, fallback: Some(fallback), params };
     i18n.t(&def.id, Some(&options))
+}
+
+/// `labelParamsOf`: the values for a label's slots, from `labelParams`;
+/// none without it, or when it throws.
+fn label_params_of(def: &CommandDef, context: &CommandCtx) -> Option<Params> {
+    def.label_params.as_ref().and_then(|f| f(context).ok())
 }
 
 /// `sessionHolds`: what `ctx.allows` answers for a document-scoped plugin,

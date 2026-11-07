@@ -105,6 +105,8 @@ pub type AccentDerivation = Rc<dyn Fn(&CommandCtx) -> Result<Option<IconAccent>,
 /// one returns, which `execute` awaits; `Err` a throw.
 pub type RunFn = Rc<dyn Fn(&CommandCtx) -> Result<Option<Promise<Value>>, Error>>;
 /// A family's `names`: the same `Rc` while nothing changed.
+/// `labelParams`: the values for a label's `{name}` slots.
+pub type LabelParamsFn = Rc<dyn Fn(&CommandCtx) -> Result<epdf_plugin_i18n::Params, Error>>;
 pub type NamesFn = Rc<dyn Fn(&CommandCtx) -> Result<Rc<Vec<String>>, Error>>;
 /// A family's `command`: the definition for one name. Its `id` and
 /// `shortcut` are the registry's to set (`Omit<CommandDef, 'id' |
@@ -170,6 +172,11 @@ pub struct CommandDef {
     pub enabled: Option<Derivation>,
     pub active: Option<Derivation>,
     pub visible: Option<Derivation>,
+    /// The values for its label's `{name}` slots, such as how many pages
+    /// are selected. A number `count` also picks the plural form of a
+    /// translated label. One that throws gives none, and the slots show as
+    /// they are.
+    pub label_params: Option<LabelParamsFn>,
     /// What it does. Not needed for a `menu`, `panel` or `modal`.
     pub run: Option<RunFn>,
 }
@@ -208,6 +215,7 @@ impl CommandDef {
             && same(&self.enabled, &other.enabled)
             && same(&self.active, &other.active)
             && same(&self.visible, &other.visible)
+            && same(&self.label_params, &other.label_params)
             && same(&self.run, &other.run)
     }
 }
@@ -291,6 +299,10 @@ pub struct ResolvedCommand {
     pub menu: Option<String>,
     pub enabled: bool,
     pub active: bool,
+    /// Whether it's a toggle, pressed while `active`: it has an `active` of
+    /// its own, or opens a panel. A command that opens a menu or a dialog
+    /// isn't one.
+    pub pressable: bool,
     pub visible: bool,
     #[serde(default)]
     pub categories: Vec<String>,
@@ -320,6 +332,7 @@ pub fn resolved_commands_equal(a: Option<&ResolvedCommand>, b: Option<&ResolvedC
         && a.menu == b.menu
         && a.enabled == b.enabled
         && a.active == b.active
+        && a.pressable == b.pressable
         && a.visible == b.visible
         && a.disabled_reason == b.disabled_reason
         && a.shortcuts == b.shortcuts
@@ -337,6 +350,7 @@ pub fn unregistered_command(id: &str) -> ResolvedCommand {
         menu: None,
         enabled: false,
         active: false,
+        pressable: false,
         visible: false,
         categories: Vec::new(),
         disabled_reason: None,
@@ -430,7 +444,7 @@ pub struct CommandsConfig {
 pub struct CommandsSettingsChanged {
     pub settings: Rc<CommandsSettings>,
     /// The top-level settings whose value changed.
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }
 
 /// `RegisterCommandOptions`.

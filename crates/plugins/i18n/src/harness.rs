@@ -127,7 +127,8 @@ fn number(value: &Value) -> Option<f64> {
     }
 }
 
-fn params(value: &Value) -> Result<Params, Error> {
+/// A vector's `{ name: string | number }` as `Params`.
+pub fn params(value: &Value) -> Result<Params, Error> {
     let object = value.as_object().ok_or_else(|| bad("params", "not an object"))?;
     let mut out = JsRecord::new();
     for (key, member) in object {
