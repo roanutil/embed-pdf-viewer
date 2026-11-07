@@ -395,7 +395,13 @@ Capability calls preserve `PDFError` codes and cooperative cancellation. Close
 finishes document subscriptions; destroy finishes viewer revision subscriptions.
 Cached snapshots in controls refresh on revisions/events, and a generation guard
 rejects stale or cancelled reads. Reopening a document creates new capabilities
-and models. The host owns `close`, `destroy`, and handling locked tabs/passwords.
+and models. Panel editor, confirmation and file-operation state is scoped to
+model identity, so swapping models disposes pending presentations and tasks.
+`StageReaderModel` observes Rust render invalidations; `StageReaderView` passes
+per-page revisions to `PageImageView` so document edits, undo and redo refresh
+visible pixels. Direct `PageImageView` hosts can pass its defaulted `revision`
+parameter when their page is invalidated. The host owns `close`, `destroy`, and
+handling locked tabs/passwords.
 
 ## Audited API coverage
 

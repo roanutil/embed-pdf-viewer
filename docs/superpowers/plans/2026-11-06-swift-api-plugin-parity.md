@@ -262,7 +262,9 @@ Expose files/selection/status/availability/pending/error as read-only state.
 Implementation, verification, distribution status, exclusions and chronological
 rulings are recorded in
 [`../reports/2026-11-06-swift-api-plugin-parity.md`](../reports/2026-11-06-swift-api-plugin-parity.md).
-The branch receives one fresh whole-branch code review before handoff. The
+The branch received one fresh whole-branch review; all three Important findings
+were fixed with failing-to-passing regressions and a green final matrix. One
+Minor audit-classification finding is deferred in the report. The
 unresolved iOS 27.2 picker/automation result remains visible for merge review.
 No merge or publication has occurred. The default engine pin remains on the
 previous public release; new APIs currently require a local source/packaged

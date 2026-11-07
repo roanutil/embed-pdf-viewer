@@ -24,13 +24,13 @@ and native zoom-box gestures remain excluded. Each rationale is recorded in
 
 | Mode | Destination | Core | UI models/integration | Binding smoke | Result |
 |---|---|---:|---:|---:|---|
-| Source engine | macOS arm64 | 355 | 35 | 8 | Passed |
-| Source engine | iOS 26.5 (23F77) | 355 | 36 | 8 | Passed |
-| Packaged engine | macOS arm64 | 355 | 35 | — | Passed |
-| Packaged engine | iOS 26.5 (23F77) | 355 | 36 | — | Passed |
+| Source engine | macOS arm64 | 355 | 41 | 8 | Passed |
+| Source engine | iOS 26.5 (23F77) | 355 | 41 | 8 | Passed |
+| Packaged engine | macOS arm64 | 355 | 41 | — | Passed |
+| Packaged engine | iOS 26.5 (23F77) | 355 | 41 | — | Passed |
 
 The final demo control run on iOS 26.5 executed four tests, all passing:
-annotation edit/undo/redo, bookmark creation/navigation, accessibility XXXL
+annotation edit/undo/redo with displayed-pixel assertions, bookmark creation/navigation, accessibility XXXL
 history controls, and native attachment import/save/replace. The exported
 file was checked on disk: all 33 bytes match the original attachment.
 
@@ -43,6 +43,30 @@ Bindings and all four native slices were rebuilt against runtime commit
 reviewed LLVM `llvm-nm`, since Apple `nm` cannot read Rust 1.98's LLVM bitcode.
 The existing published fork engine was usable for initial wrapper tests, but
 predates the newly added native exports.
+
+## Whole-branch review and fixes
+
+One fresh whole-branch review found zero Critical, three Important and one Minor
+issue. All three Important issues were reproduced with failing regressions,
+fixed and committed in the single review fix pass:
+
+1. Cancelled initial outline/attachment reads no longer leave errors in retained
+   models. Successful initial reads clear obsolete read errors while preserving
+   real action and file-operation errors. Focused model suite: 11 passed.
+2. Outline and attachment presentation state now belongs to a model-identity
+   subtree. Replacing a model disposes pending editors, confirmation state and
+   owned import/download tasks; obsolete callbacks are rejected. A real SwiftUI
+   hosting regression with two documents and colliding outline references caught
+   cross-document Save/Delete and stale-task behavior. Focused suite: 12 passed.
+3. Rust render invalidations now advance per-page reader revisions and rerender
+   retained page images. The native demo regression verifies changed pixels after
+   adding a note, original pixels after undo and edited pixels after redo. A
+   separate regression confirms unaffected pages and camera remain unchanged.
+
+The final tree passed all four source/packaged package runs above (404 tests
+per source destination; 396 per packaged destination), Rust tests, clippy and
+the API audit. The four native demo cases also passed after the fixes.
+No second review was run. The minor audit issue below is deliberately deferred.
 
 ## Distribution
 
@@ -82,7 +106,10 @@ cause. A standalone Files-app comparison did not reach a file grid, so it does
 not prove an Apple system defect. A theory based on cloned application IDs was
 rejected: those UUIDs were Xcode attachment-filename suffixes. No unsupported
 provider reset, file-filter workaround or skipped test was added to the package.
-Manual iOS 27.2 folder activation has been requested to distinguish synthetic
+The final post-review-fix retest on the original iOS 27.2 simulator also failed:
+the picker restored an empty “On My iPhone” location and exposed neither the
+demo folder nor the fixture. The lifecycle fixes did not establish a working
+iOS 27.2 import path. Manual iOS 27.2 folder activation has been requested to distinguish synthetic
 interaction failure from a user-facing picker failure. Merge review should
 resolve this uncertainty. macOS native file-panel interaction was not automated;
 its models/capabilities and both package modes were tested.
@@ -121,6 +148,33 @@ reasoning and known cost recorded when each decision was made.
 
 14. Task 8: Ruling: pending read/download replacement is covered at SnapshotRefresh boundary plus real closed-document model tests and cancellation checks before presenting exporter — avoids introducing mock capability abstractions. Cost if wrong: a platform presentation ordering case can remain.
 
+15. Ruling: iOS 27.2 picker root cause remains an unresolved validation risk, not a proven Apple bug — manual check is pending and must be visible for merge review — cost if wrong: native attachment import may fail for users on that OS.
+
+16. Ruling: macOS native file-panel/keyboard interactions are not certified by compilation/model tests — retain the scoped research handoff and flag platform integration validation before distribution — cost if wrong: a macOS-only interaction bug may remain.
+
+17. Ruling: default downloaded compatibility stays deferred exactly as Task 9 authorizes; local source/packaged engine required until separately approved publication and pin updates — cost if wrong: default package consumption of this branch does not compile.
+
+18. Ruling: explicitly excluded broader workflows remain outside the concrete additions and documented, rather than claimed as full exported parity — cost if wrong: additional live-settings/interchange/widget/command/zoom workflows need implementation.
+
+19. Ruling: removed whole-page search border is decorative; Rust stage still reveals selected hits — keep demo stage navigation — cost if wrong: weaker visual search feedback needs follow-up.
+
 ## Deferred minors
 
-Pending the one whole-branch review.
+Eleven implemented i18n members are incorrectly grouped with translator-closure
+factory exclusions in `platforms/apple/swift-api-coverage.json`. Their Swift
+wrappers exist, but the checker does not protect those mappings. A follow-up
+should map those members and keep `get_translator` excluded. This affects the
+audit's classification, not runtime feature availability.
+
+## Handoff
+
+All nine implementation tasks and the three Important review fixes are committed
+on the dedicated branch. Keep the branch for user review; no merge, push or
+publication was performed. Diagnostic logs and native screenshots remain in the
+ignored plan workspace while the iOS 27.2 question is unresolved.
+
+Next check (under two minutes): on the “EmbedPDF Plugin Controls” iOS 27.2
+simulator, open EmbedPDF Demo → Attachments → Import files → Browse →
+On My iPhone → EmbedPDF Demo. Report whether the folder opens and shows
+`attachment-fixture.txt`. This establishes whether manual navigation succeeds;
+it does not by itself certify the whole import/export flow.
