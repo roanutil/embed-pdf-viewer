@@ -12,7 +12,7 @@
     {
       "file": "plugins/form-core-lifecycle.json",
       "name": "current-form-confirmation-refusal-and-permission",
-      "canonicalInputSha256": "0a36e1f2fb86c69bbf13a731820f892d991ea953a23e0bdfc47e06882f2bc683",
+      "canonicalInputSha256": "0d8d803cc0263bca20cc9e22fc8814b52ee951975e1e5d3a538142c97f09a885",
       "replacementFor": null,
       "reason": "Without annotation, a fill is predicted, confirmed once before resolution, then a refused fill leaves the confirmed value. A second document denies fill locally."
     }
@@ -30,7 +30,7 @@
         "name": "fieldKeyOf/object-number",
         "kind": "function",
         "fn": "fieldKeyOf",
-        "canonicalInputSha256": "3ad898dc757cba469f24b1bb599277861c6223c846a05b43a9368b68015a245d"
+        "canonicalInputSha256": "5ee4e9faf40bbb14c25802642719b442adea1671f84f8036e4f7fe89a0a74770"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -48,7 +48,7 @@
         "name": "fieldKeyOf/fqn-when-direct",
         "kind": "function",
         "fn": "fieldKeyOf",
-        "canonicalInputSha256": "05c7edafc95ae32b894e52ca00e3b8c057edd833f7e9dffda1c7b4c31f9f80e0"
+        "canonicalInputSha256": "8e91104f2642fbe19f7d87eb2ca13685ce03168b95231fc8f423ddb5a95c8ae2"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -66,7 +66,7 @@
         "name": "fieldKeyOf/negative-object-number",
         "kind": "function",
         "fn": "fieldKeyOf",
-        "canonicalInputSha256": "6aaf030d97fa28ace80afbfa5bc190c16c003afb4e627062d861a4732cacf42f"
+        "canonicalInputSha256": "4d3fd8a78d5e8a28e4dc163550cc6efba934f5f54f38eed9dbad87c9e97c5a42"
       },
       "disposition": "current input migration",
       "reason": "Non-durable numbers are represented by current fqn refs",
@@ -102,7 +102,7 @@
         "name": "update/snapshot-indexes-keys-and-widgets",
         "kind": "function",
         "fn": "indexFields",
-        "canonicalInputSha256": "4b087a68526506d2d1486d5532b2b29beb721e96b3c01b639f9d920ff54bdab1"
+        "canonicalInputSha256": "a926c1284d6feb298c6a76126b1d23e974ccec086606cec72f7fd83d03d8ce26"
       },
       "disposition": "current shipping replacement",
       "reason": "Indexes current field refs and complete widget rows",
@@ -120,7 +120,7 @@
         "name": "update/snapshot-clears-writing-keeps-geom",
         "kind": "function",
         "fn": "indexLoadedFields",
-        "canonicalInputSha256": "d65ccc9506559dd267fa1bd652b875ba30e16eadd921ee4587ce4e3b06a359cd"
+        "canonicalInputSha256": "a12e5d7b20e8e1a2b590da564fb76649017107ff94bfcfc27cb60a45f4e03cf1"
       },
       "disposition": "current shipping replacement",
       "reason": "A load replaces pending values with confirmed fields and rows, advancing picture versions",
@@ -138,7 +138,7 @@
         "name": "update/snapshot-later-field-wins-a-shared-widget",
         "kind": "function",
         "fn": "indexFields",
-        "canonicalInputSha256": "fce8634adeb16e660395a253571a53e05ca92e23139281d49efbdad7ce249168"
+        "canonicalInputSha256": "1562b2e76dfca84805645ea2d983b3ce90091120f75a3594d329e8f2e20bb0b1"
       },
       "disposition": "current shipping replacement",
       "reason": "The later field owns the shared widget index",
@@ -156,7 +156,7 @@
         "name": "update/write-start",
         "kind": "function",
         "fn": "predictFormOp",
-        "canonicalInputSha256": "b4e808f797c4e030a0419fb45aa9bb7eeb319703542be737eff9b64313d8dc1a"
+        "canonicalInputSha256": "c8ddf04fc3e53f572115fd35f8113a74da6fc2546e1c31273a378b6d7f35e3df"
       },
       "disposition": "current shipping replacement",
       "reason": "A held change predicts its value instead of setting a writing flag",
@@ -174,7 +174,7 @@
         "name": "update/write-start-twice",
         "kind": "function",
         "fn": "predictFormOp",
-        "canonicalInputSha256": "31b4896924f16101b297ccebbb26ae0d177ea91bcdd6f9bf6a1ab28d48352b1b"
+        "canonicalInputSha256": "3b81cb1b1ae42c3c80d48a68da6569aa16bcb9872e27da97311ef556bfa50d39"
       },
       "disposition": "current shipping replacement",
       "reason": "Later fills see earlier pending values",
@@ -192,7 +192,7 @@
         "name": "update/write-done-patches-and-reindexes",
         "kind": "function",
         "fn": "upsertFields",
-        "canonicalInputSha256": "3d3fd43253eb840dd73d4780d1588316c02afd4669f043099e94c28e2c53a869"
+        "canonicalInputSha256": "0676cd1f4621a8543407faaa8d677ba6f63bb3bead2bb57a7a9d016dea825250"
       },
       "disposition": "current shipping replacement",
       "reason": "Current confirmation reindexes changed widget refs",
@@ -210,7 +210,7 @@
         "name": "update/write-done-without-snapshot",
         "kind": "function",
         "fn": "upsertFields",
-        "canonicalInputSha256": "37e644752961f708bc5304b375a9235910354c4acbc83f1b451722bf7a202c72"
+        "canonicalInputSha256": "98297890ba853d733552038c118521b8391e8fbacc6c990a13218cfb73abf108"
       },
       "disposition": "current shipping replacement",
       "reason": "No snapshot means no field can be confirmed",
@@ -228,7 +228,7 @@
         "name": "update/write-done-unknown-key",
         "kind": "function",
         "fn": "predictFormOp",
-        "canonicalInputSha256": "3c8b50a4f4e60e2aba77e02da5406a4aee7db48b1002af15edc82569f6c53ad5"
+        "canonicalInputSha256": "fcf7837d2f233babf67aa00faa47241b7ebe14115bc96dd6553c856ab9ac8fa6"
       },
       "disposition": "current shipping replacement",
       "reason": "A missing target leaves the current index unchanged; removed writeDone key messages are not rebuilt",
@@ -246,7 +246,7 @@
         "name": "update/write-done-past-the-end-pads-with-holes",
         "kind": "function",
         "fn": "fieldByKey",
-        "canonicalInputSha256": "9e8a04171485a3493b0f954076e68cee8690ab42b736febfa56632189cf49b5a"
+        "canonicalInputSha256": "debccc27372341b5aee9334256b7ede0614d04bd8a07884851b9ee178971be0b"
       },
       "disposition": "current shipping replacement",
       "reason": "Explicit inconsistent-index negative: current lookup returns null instead of producing sparse fields",
@@ -264,7 +264,7 @@
         "name": "update/write-failed",
         "kind": "function",
         "fn": "undoLookOf",
-        "canonicalInputSha256": "7d54be42fe229ee249d94a851939df85984110fea08b70d40e232a178273e5bb"
+        "canonicalInputSha256": "5a6033a0439d4ff59ac1a001e98044e80fa749dd167ff66113a7350ddd091ee9"
       },
       "disposition": "current shipping replacement",
       "reason": "Current undo prediction restores field and rows; live refusal rollback is independently tested",
@@ -282,7 +282,7 @@
         "name": "update/write-failed-not-writing",
         "kind": "function",
         "fn": "fieldsNamedBy",
-        "canonicalInputSha256": "779be94d0c1698df10bbf2837bf1995704a3b8299199292892671b43a5042330"
+        "canonicalInputSha256": "12d8cef3f95f26161009e903a978dd78a91f007ed83c8dbcb32018c63c34a7bc"
       },
       "disposition": "current shipping replacement",
       "reason": "A missing field names no fill target",
@@ -300,7 +300,7 @@
         "name": "update/page-geom",
         "kind": "function",
         "fn": "upsertWidgets",
-        "canonicalInputSha256": "9abf153891e48b9f32dc9e54122658863159500c81e797771ebf341bacec7863"
+        "canonicalInputSha256": "2abbc9efddf875d8ab72e1278c65d1ce5eb94c35021f84e16baf457ddb665ca3"
       },
       "disposition": "current shipping replacement",
       "reason": "Geometry is a complete widget row in the field mirror",
@@ -318,7 +318,7 @@
         "name": "update/page-geom-replaces-a-page",
         "kind": "function",
         "fn": "pageWidgetsOf",
-        "canonicalInputSha256": "fdb98955e6ef51443d7971f3342f544c88ea57f5006d594d0f1d1d803f45ce1d"
+        "canonicalInputSha256": "8e91f1ba92a189ad6fe7af5411077528009e80b7da62bff3a4379ea5ad7e4d05"
       },
       "disposition": "current shipping replacement",
       "reason": "A fresh snapshot without rows replaces prior geometry",
@@ -336,7 +336,7 @@
         "name": "update/clear-geom-all",
         "kind": "function",
         "fn": "pageWidgetsOf",
-        "canonicalInputSha256": "5d2faa093ea92e32000e303479a78a5e92a103aacd52f2ccb238eeee63bb3610"
+        "canonicalInputSha256": "91c730da4406d605f210365ee5df86130660cac88edef5bf826effa9a6b16a80"
       },
       "disposition": "current shipping replacement",
       "reason": "There is no independent geometry cache; rows own geometry",
@@ -354,7 +354,7 @@
         "name": "update/clear-geom-one-page",
         "kind": "function",
         "fn": "removeWidgets",
-        "canonicalInputSha256": "3ab06783ee932c7bc4d917ec93f1ae30599653db56f8991d68ea970557ca9b91"
+        "canonicalInputSha256": "2af51db710d12b32a5476959f86867de0f8967ff4b3a3ee9fdc99c8c5d3f36b9"
       },
       "disposition": "current shipping replacement",
       "reason": "Remove only named widget rows; another page remains",
@@ -372,7 +372,7 @@
         "name": "update/clear-geom-absent-page",
         "kind": "function",
         "fn": "removeWidgets",
-        "canonicalInputSha256": "2a73f655c985080f87b442ac95eb249e5d1e0ec06c1d1f48a4db9a7fc7fb89df"
+        "canonicalInputSha256": "7ac06a8e5813b930ccd6d63aaa68793c232b46dc11408b420eee8f08d051aa34"
       },
       "disposition": "current shipping replacement",
       "reason": "Removing absent rows preserves identity",
@@ -390,7 +390,7 @@
         "name": "fieldByKey/found",
         "kind": "function",
         "fn": "fieldByKey",
-        "canonicalInputSha256": "0da41412233bf04fbc694b9ee0f9accb6afa85ed4d0cd8d85e8e8ecbf1daf310"
+        "canonicalInputSha256": "7b0532ebf7efe92b96cd27c34d25090943144a76d05519df5c957bc5733ba215"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -408,7 +408,7 @@
         "name": "fieldByKey/fqn",
         "kind": "function",
         "fn": "fieldByKey",
-        "canonicalInputSha256": "2338d85fcfe5b47247642d596600b144e50a7c03c01da159cacb8a19c427fe60"
+        "canonicalInputSha256": "3aa88d7032272f7928811e1bb4089c8a0e758353ed2bf30d266e9786cb5dfc90"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -426,7 +426,7 @@
         "name": "fieldByKey/unknown",
         "kind": "function",
         "fn": "fieldByKey",
-        "canonicalInputSha256": "f036043dcc380adaecc2a928232117c8331e370847117cccc4aa29f9b9e27aef"
+        "canonicalInputSha256": "2fa463e40d8f3047cc82731abb595f7f85461736ae2980c47ba99ecd15494aa1"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -462,7 +462,7 @@
         "name": "fieldByKey/index-past-the-end",
         "kind": "function",
         "fn": "fieldByKey",
-        "canonicalInputSha256": "467e07a9fdd615297af95086d7df3974fda3c4213f5a24894af31c9bd2ccf8ed"
+        "canonicalInputSha256": "c026b6ed9a3f2c1082ce7ef470da20fb835cc1e10539a00e66896c32ce26784b"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -480,7 +480,7 @@
         "name": "fieldForWidget/found",
         "kind": "function",
         "fn": "fieldForWidget",
-        "canonicalInputSha256": "e3572e542eaefb60f5667c3745c14e7d5d5f577b0711be63eb30e25cacc9e3e1"
+        "canonicalInputSha256": "bcb442e9dd3e61e10fca572cc4b74b8d2f8b1571c3259a4bdd70cff630c5a523"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -498,7 +498,7 @@
         "name": "fieldForWidget/direct-widget-is-not-indexed",
         "kind": "function",
         "fn": "fieldForWidget",
-        "canonicalInputSha256": "3343b736eab09a9319074a62094e50291495fb39c24c9fdc67de428facfde947"
+        "canonicalInputSha256": "8955e7c756fbc122e42fe146c5671fada8edf8519f4028a57c7bcf9f8a0ef142"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -516,7 +516,7 @@
         "name": "fieldForWidget/unknown",
         "kind": "function",
         "fn": "fieldForWidget",
-        "canonicalInputSha256": "f35af25868a820a902d1682bb6fed868ad150a0310eb4863ebb3c465e97a6c2b"
+        "canonicalInputSha256": "826f8bebf750c09e8a4a6254d6014c074290faf42de64c7e061bdfead6adca4b"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -534,7 +534,7 @@
         "name": "fieldForWidget/index-past-the-end",
         "kind": "function",
         "fn": "fieldForWidget",
-        "canonicalInputSha256": "c0d2004ac70672db2b2f73241c4f8a3ba812c462d101fa7e9b17584fe2990763"
+        "canonicalInputSha256": "ba0564023603dc3e960ff388bca0e81ee0bc20d85f3bd3d407d6d806dfafc364"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -552,7 +552,7 @@
         "name": "projectWidget/text",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "11d10182e5fb32c76cc8ec0b4a84d919e2831fa04a6a6058987f34380fc52a5a"
+        "canonicalInputSha256": "5ff1aa792f2c4fa027a53711519b1cb5949bb3746bd3bf5a58be17b4a7a6eec8"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -570,7 +570,7 @@
         "name": "projectWidget/text-default-box",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "a1169c326fadcedd7cd41b33682198383641b0040b9de47af2c0b5423dbef516"
+        "canonicalInputSha256": "b209ec6003612b5f573b8420cb213742596dd3b66e97ace724359be7db79f429"
       },
       "disposition": "current input migration",
       "reason": "PageWidget is now mandatory; explicit default page-space box is recorded",
@@ -588,7 +588,7 @@
         "name": "projectWidget/text-flags",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "5269a8c41efb4349640d63fd5c6e0a07ddc6572c973d2f0bf5bbc639661abc13"
+        "canonicalInputSha256": "57d856e01a21977dc4943b6c0b241bb3c6b18656169fde15cfc64add734fe02e"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -606,7 +606,7 @@
         "name": "projectWidget/read-only-is-disabled",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "45fd2d0caeca480e14d536b892613fb3c4783507a2d937fc9e8e4ef8547ab820"
+        "canonicalInputSha256": "e511238c48d9554b0409254e3c71e2b45ba9fc814274793999f359ea8701c09b"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -624,7 +624,7 @@
         "name": "projectWidget/writing-is-disabled",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "bcba9e493a68f0a0900162191a621562a47af75e0726990a3df2fc6879731132"
+        "canonicalInputSha256": "43ca12655abe56a92f2f14e324e96da018ba96cf00226df13de77317caed4d5e"
       },
       "disposition": "current input migration",
       "reason": "Current disable input is explicit fill permission; a pending write alone stays fillable, independently tested live",
@@ -642,7 +642,7 @@
         "name": "projectWidget/checkbox-on-state",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "fd46080c06fe90fbc24af3bb468ec6b2c99120641e2a735bf6475d677022f1ea"
+        "canonicalInputSha256": "2bf5c5a0f22d2f54bdf39066c52ecabd1f4794d2dfdfbd10fc60b9dbdc94e502"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -660,7 +660,7 @@
         "name": "projectWidget/checkbox-default-on-state",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "98413fd6c70f163d21f6162b4a1b8a96d8f0fa64a3d83449acd1086216d033de"
+        "canonicalInputSha256": "1214ba6ea0f229f53210aeed28e7e6231c5adcbf6011d9f6f20fdc11469d888c"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -678,7 +678,7 @@
         "name": "projectWidget/checkbox-unknown-widget",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "e5a148d7f5c77906dad233077f5898c483a6c16324f1d67a58cdca0cda77d716"
+        "canonicalInputSha256": "065c22e6aca5eb6a5378b0cd7a21bc2ea92eaa7e2482b3c3b8146f18c9c4cd0e"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -696,7 +696,7 @@
         "name": "projectWidget/radio-checked",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "7576a7762b9bcd78dfef39a66a62726db63dcd33cbed4bc46affe688ee298c2c"
+        "canonicalInputSha256": "01690b7783cdc2fe5ca0bf0430fc37039d3409e08ba1f82e85b62f8015c65719"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -714,7 +714,7 @@
         "name": "projectWidget/radio-unchecked",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "8b2450d564147d4c3f44009923bb22861938047dc0bf6683bc9fe2c2f631ec8a"
+        "canonicalInputSha256": "84ae25b710e7d8d55d5c46c1c1b0cb12f104396d290d267aa7ffe1fe4eef70c1"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -732,7 +732,7 @@
         "name": "projectWidget/radio-bare-widget",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "a0261c67539b8c6b2a01d377a8d8346f6c7d300b8a2b206e4a709aa450ba2280"
+        "canonicalInputSha256": "f00e6e275751f9e718a5bee005fccb4732b4429690ddd1d4bf0efca4e14ed7fa"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -750,7 +750,7 @@
         "name": "projectWidget/radio-unknown-widget",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "51062cfb296a81d79cc21f2389185a3c45fa4974a783731efd50d28ea89a1422"
+        "canonicalInputSha256": "7313fbc0220c59cd2e5a84e8c2e47173e00d66acd2d46dcd7459233d534fcc66"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -768,7 +768,7 @@
         "name": "projectWidget/combobox",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "42d9f71caa17818979853401d07a17da19c69d60ecfa44d6929ab274f7eb3cda"
+        "canonicalInputSha256": "ffca2a6619edc38d8dbf6f24b56044bfa2da97a19fc82bb6035b71f942fa8f6a"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -786,7 +786,7 @@
         "name": "projectWidget/combobox-empty",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "7029143a04ed20c972cb15b5fd03b065a022cc43751d650496447b890d033d1b"
+        "canonicalInputSha256": "5d90505237e6059ab4fb6c0e0ba96d30f7ba484be87db5b1cbeadfa592835744"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -804,7 +804,7 @@
         "name": "projectWidget/listbox",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "766246419efe559ce21cb50690b978bd5d2b345dbd532728879a5c34b1ea4a17"
+        "canonicalInputSha256": "aadc5877a7adf9231771ec60a525ccfe584a611638facff6af94e2876a113f69"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -822,7 +822,7 @@
         "name": "projectWidget/listbox-single",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "392aa741178f5c78286219443e061acf56fbfc48cf37ba4fc644cf71e650df9b"
+        "canonicalInputSha256": "776d1ab333072ea75be97bb267b1b15634cdf48b25b2cd99fda53c719a0cff08"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -840,7 +840,7 @@
         "name": "projectWidget/pushbutton",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "fd830ead49fe4d6686cb3bb482cc2eb1a135bedd2eb708d559adaa26148ab0df"
+        "canonicalInputSha256": "29e0b4d1fcbc79934199bcb433e1d5fdbb4fbdf9c04781bd802f1e684c12b66a"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -858,7 +858,7 @@
         "name": "projectWidget/signature-has-no-control",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "151547849cc3bc07e66a4093a74367c0bd2b5351011860ef260676344caf1870"
+        "canonicalInputSha256": "1309faad75845a0a5c410646a09bec4bc50eefdc42bd78907d996fef3270b5c0"
       },
       "disposition": "current input migration",
       "reason": "Current signatures have an explicit signature control and signed state",
@@ -876,7 +876,7 @@
         "name": "projectWidget/unknown-has-no-control",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "9747421cfc5ea2a00bacedcd9b053e33972e0210c480d0af6a09645a15624921"
+        "canonicalInputSha256": "0e5af714d09a9df46e099926f1b6246d6f99174163781a5cdbf80632a16408aa"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -894,7 +894,7 @@
         "name": "projectWidget/fqn-key",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "576f59dd6bb262b18eb5b9d125dd60863e3a0e46ef23775cf7894a8ba335f5bb"
+        "canonicalInputSha256": "fd41b1d5ff1742297f695e5b25f851469e37912e129e4bdab206d47079437ae3"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -912,7 +912,7 @@
         "name": "fillItems/page-with-geometry",
         "kind": "function",
         "fn": "fillItemsAllowed",
-        "canonicalInputSha256": "556e2315603ca1a4e301d997583dc4c3e12f70f427b0b80b20195824f69977c5"
+        "canonicalInputSha256": "52c367abe89ba4bd76324ff21df65c6ac6da741b46e1b0c81c7d768c7875fc6e"
       },
       "disposition": "current shipping replacement",
       "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
@@ -930,7 +930,7 @@
         "name": "fillItems/writing",
         "kind": "function",
         "fn": "fillItemsAllowed",
-        "canonicalInputSha256": "bb515657f9a168eb87655702e7c5bf04b8c6738582380e060ec2015c0f468f04"
+        "canonicalInputSha256": "f412bf5b8932d222562d91e3dc6d801794a9f77f1d06ea6311bfffd2fe78108b"
       },
       "disposition": "current shipping replacement",
       "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
@@ -948,7 +948,7 @@
         "name": "fillItems/page-without-geometry",
         "kind": "function",
         "fn": "fillItemsAllowed",
-        "canonicalInputSha256": "588db6f3cf98db9119c39873db5d1904d4a2653ac95e6a78af120e6252eecc51"
+        "canonicalInputSha256": "e335674699c0f7ded926b6a7c5150a1fc2da78f298498dee373919b18c37e650"
       },
       "disposition": "current shipping replacement",
       "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
@@ -984,7 +984,7 @@
         "name": "fillItems/partial-geometry",
         "kind": "function",
         "fn": "fillItemsAllowed",
-        "canonicalInputSha256": "d35629480583f2eb425d1dde656e37b0a98406eb5eb4ceb3df6029d2f47bf188"
+        "canonicalInputSha256": "e6e1b3fb39afaf43fd589d77d7c9c4163468bd9913a34abd5a7a7cd67c942b3b"
       },
       "disposition": "current shipping replacement",
       "reason": "Fixed allowed predicate; pending values and complete page widgets are explicit current arguments",
@@ -1002,7 +1002,7 @@
         "name": "fillItemForWidget/with-geometry",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "80e1ac26f1eb23c78c103bce619859c3f4a6c9b24feb0afd4aca4268b611ed4a"
+        "canonicalInputSha256": "f4ff892da9f03d98f4938d0de4dacf7b2441ff468d2fe461bb46e653dcb37ad6"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1020,7 +1020,7 @@
         "name": "fillItemForWidget/without-geometry",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "8d431e76588890aa5f02d5bfa583e423141e4bdd4772ca29c3cb6844f53e39d3"
+        "canonicalInputSha256": "0fccbd176120fd2bffd1e57ea334d0bc930c8bdf37d851a5d12c7fe143104d55"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1038,7 +1038,7 @@
         "name": "fillItemForWidget/other-page-geometry",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "c52623d4a8f8f51edb7975f0fd26a8eeefaff327f42c363cd37192ba12d4ad71"
+        "canonicalInputSha256": "516873612cd57a8f0efed096c753e1306c441d5b3bba9f95ede8a125b28f7c74"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1056,7 +1056,7 @@
         "name": "fillItemForWidget/unknown",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "3a40dc9175f79059dd253ba64c49dac14380d7e64dffe4d3efe0b6b5bcdbdbe8"
+        "canonicalInputSha256": "e8bc78a887afe1093c4b612680a64f5f38d286091f9da5c0d011bf298e9aa988"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1074,7 +1074,7 @@
         "name": "fillItemForWidget/no-control",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "59b268e5640d1464357f223008b76d513e8300e3f07fb44f35efddc5893c7e55"
+        "canonicalInputSha256": "64788783a00bea8db6c1ba7302e2275df06eb952af4fc2968c946c4412d09fe8"
       },
       "disposition": "current shipping replacement",
       "reason": "Signatures now project an explicit signature control",
@@ -1092,7 +1092,7 @@
         "name": "fillItemForWidget/index-without-the-widget",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "86ecb84747795f19b2096d8e71272ca7644308486c0962abb7958eae18bb2b31"
+        "canonicalInputSha256": "70b93dd510e5b31eb14ac612d65d7554eeb003ee48297663ed5098daf6d8e3fb"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1110,7 +1110,7 @@
         "name": "fillItemForWidget/an-unplaced-widget-has-no-box",
         "kind": "function",
         "fn": "widgetRowOf",
-        "canonicalInputSha256": "aed9bdd583b83a889ff7fa26ce9abc65725eaa9331180dd0e80699bbb07e6a03"
+        "canonicalInputSha256": "a3f54a4fe49bbfc80b34889f995c87f68442a5de7a6920b1d5f9d412e1f41773"
       },
       "disposition": "current shipping replacement",
       "reason": "Current row lookup replaces removed fused fillItemForWidget; projection is covered independently",
@@ -1128,7 +1128,7 @@
         "name": "projectWidget/signature-unsigned",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "d59734698f05390b182080f46a1ee1779f308d41fa5fe6c93c40572feade49cb"
+        "canonicalInputSha256": "21f203eb1e95972b1f30452e0a3ec5bec978c7a937002d873b53dadd70191fe4"
       },
       "disposition": "current input migration",
       "reason": "Current signatures have an explicit signature control and signed state",
@@ -1146,7 +1146,7 @@
         "name": "projectWidget/signature-signed",
         "kind": "function",
         "fn": "projectWidget",
-        "canonicalInputSha256": "7ef6c7133e79199249544c020af963680de82012124dbfcb45fe6ed75a31cf98"
+        "canonicalInputSha256": "5fdb6ce16ea16d6193046ce2954bd48cec0237543438e596d926ebbab2e77705"
       },
       "disposition": "current input migration",
       "reason": "Current signatures have an explicit signature control and signed state",
@@ -1164,7 +1164,7 @@
         "name": "widgetAt/no-geometry-for-the-page",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "8a13fa10a2fac715726e360024fc401f9d8b2921ca1f1e606301fd2124e4ef79"
+        "canonicalInputSha256": "d9b5411ec7267672b337546cd85cda96d7c5ad162a6270c59ce702413726d41b"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1182,7 +1182,7 @@
         "name": "widgetAt/nothing-under-the-point",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "5ad19d825302e9f40c6de5adea80dd672c4d2493f452b1df9422b5e7fc7f0db4"
+        "canonicalInputSha256": "baa8e51e2207d6019a50c7414d1f3b0c7270b362f5f9a6d94e11c12fa0e00c45"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1200,7 +1200,7 @@
         "name": "widgetAt/the-smallest-containing-box-wins",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "eec48f5bd818b1bfb882435af817d964929247cdee0bb62ad66c818b91ae82f0"
+        "canonicalInputSha256": "be09fca4f8ea0889890fc3089065061e38859616765cae235cb93369bdda9810"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1218,7 +1218,7 @@
         "name": "widgetAt/edges-are-inside",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "f96f4ff95e4ba26d02e1ffe9102a7bfd4149d717f2f6e538487033e42e773f27"
+        "canonicalInputSha256": "6b8c97ea7b9f85d257af4285df4332487b4e9b486fbba236e1589a58ea80659b"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1236,7 +1236,7 @@
         "name": "widgetAt/a-box-without-a-field-is-skipped",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "6e918d2d49d8353f68efeb2d65de1c27d8ab68cc2eedf77d27fdb1f712129a08"
+        "canonicalInputSha256": "7a72ef4a8635418479138026808e9e04e126aea506cb82eb48ce3508e1ea6ebb"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1254,7 +1254,7 @@
         "name": "widgetAt/equal-areas-keep-the-lower-object-number",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "d77ae184b6c2035c02792717454c46250b59090b0b2a89fad09858210f9a1a7d"
+        "canonicalInputSha256": "928d8f15c93f5c14829a10657a0a11669db6ac06b9b347807b0b8527fa4f9964"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1272,7 +1272,7 @@
         "name": "widgetAt/a-larger-box-later-loses",
         "kind": "function",
         "fn": "widgetAt",
-        "canonicalInputSha256": "2195464daa7bbd0a71dc3acf889fcdb442591dee4ab05844c6356804a50015fe"
+        "canonicalInputSha256": "3ab80c703f07127252758e242a9fa4c77b7e1b8a297312bf75c86a5b5eebbaa5"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1308,7 +1308,7 @@
         "name": "formReducer/set-model",
         "kind": "function",
         "fn": "indexFields",
-        "canonicalInputSha256": "b19d86972a05e955dc065b3fd3c511ce67c943bd94edd78a0877b05b3dc6353a"
+        "canonicalInputSha256": "a915c83b06b87a9fd6ab9a8f40cf1572eace44db7246994f4a770a48b3da4698"
       },
       "disposition": "current shipping replacement",
       "reason": "Mirror indexing replaces removed SET_MODEL dispatch",
@@ -1326,7 +1326,7 @@
         "name": "formReducer/other-action-is-no-change",
         "kind": "function",
         "fn": "foldFormEvent",
-        "canonicalInputSha256": "6ea5c690ca244c7f760cc05d9c52ed2215073015787304fd1251be36d7e7b3fe"
+        "canonicalInputSha256": "7349767cebbfc10dfd8387a5dfbe3298c25d09f6a2b41aa76a26e0499857ab59"
       },
       "disposition": "current shipping replacement",
       "reason": "An unrelated confirmed event leaves the index identity unchanged",
@@ -1344,7 +1344,7 @@
         "name": "formReducer/set-status",
         "kind": "scenario",
         "fn": null,
-        "canonicalInputSha256": "ae04686950e4c4bee5ffe70c7d1934a2df8a54e42e7b4eea51d8cfb09909af50"
+        "canonicalInputSha256": "75a212ae75ae6fe0e36855acf084798b0a918d85227a114dbb1a701146bc94ee"
       },
       "disposition": "current shipping replacement",
       "reason": "The real fields mirror is loading before its deferred list answers, then ready; no session SET_STATUS exists.",
@@ -1362,7 +1362,7 @@
         "name": "formReducer/set-status-unchanged-is-no-change",
         "kind": "scenario",
         "fn": null,
-        "canonicalInputSha256": "a248cc8ec667dff2c7cb4ddbd03d549850e68ab1afb81d0402803e666b9fabbf"
+        "canonicalInputSha256": "2514eefeb3c42cead76b920b7a52b4611f14daa1d8ac27533323e3c1a893a2ae"
       },
       "disposition": "current shipping replacement",
       "reason": "A ready read stays ready across a refresh with identical fields; the empty session state emits no changes.",
@@ -1488,7 +1488,7 @@
         "name": "resolveFieldSelection/null-selects-all",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "af470bd73fc3816abc33f34b94b08dfc027e17ad33adfdf2234b2d270ccbeb54"
+        "canonicalInputSha256": "5c9d474e6e3e100e793c5fca9a2256e5a3bb57084231fcb772c26a6dc6b0efa0"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1506,7 +1506,7 @@
         "name": "resolveFieldSelection/null-ignores-exclude",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "63ba0a43828fd5660dd0cf9340ea73842a55f296bd5a3aee3a040ae493195ff6"
+        "canonicalInputSha256": "82d0c4b36f235445ffc7b5ec28492b224f7ad6898f646963fa261deb3c61934d"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1524,7 +1524,7 @@
         "name": "resolveFieldSelection/empty-include-selects-nothing",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "33f115cbd367f9f8ef7a3deb359c4a6c827bc532acb0cae7514ec15c486eec98"
+        "canonicalInputSha256": "4ec4d89aeae24b69d79665822523edc3cf241a2b8a3ea748dcc93cb740f84222"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1542,7 +1542,7 @@
         "name": "resolveFieldSelection/empty-exclude-selects-all",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "73379f63d376c112a35ff9f25ae1a74f4bf713bd0294f77f381d1173066e2711"
+        "canonicalInputSha256": "de8cc61f51cd7ce6e4b2c368f1d5595edf088818d97889f5ebbd9e31f76aa5f6"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1560,7 +1560,7 @@
         "name": "resolveFieldSelection/a-parent-name-selects-descendants",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "3de1713441de9163e27c84fa2b693390c06641c7b997e6724e5d9aef49460b54"
+        "canonicalInputSha256": "11d73a2ab6b10d7d720d559604b6ef2e260ceacbe3add2a962dd14e61c7fc209"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1578,7 +1578,7 @@
         "name": "resolveFieldSelection/exact-name",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "450ee6d02d7bf220dcc487b979a7d83774caf8e82508ce56e1c4d91e5161e60d"
+        "canonicalInputSha256": "fa6d8619376ecb76f85f928d7bb71913d7a9239cde2dd44771fcbcd785f99d40"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1596,7 +1596,7 @@
         "name": "resolveFieldSelection/exclude-a-subtree",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "731bae18494a99a706da106df2b00fb0c01b3854dc687f8d8a117ab5f890a765"
+        "canonicalInputSha256": "076cb28d55d41a978b99e87ed547ad6a0420dabf00b49cf9859865016383a323"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1614,7 +1614,7 @@
         "name": "resolveFieldSelection/object-number",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "610444dce32c71601f28fbdde90be40005411239885c2079c8eef4c950af01a5"
+        "canonicalInputSha256": "7ae486c94c8779a9c06bd77ecee75b62dfd3554269f03a316d919cf1b34573f9"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1632,7 +1632,7 @@
         "name": "resolveFieldSelection/object-number-never-matches-an-fqn-ref",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "929dac311b714054d35fe0131aa4cece870f7c07c3a2a30cbc2cff4190108552"
+        "canonicalInputSha256": "19b2212bdb41455ec0856b8dc8facf9955108417b68bc909d8a6cd43da935e5e"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1650,7 +1650,7 @@
         "name": "resolveFieldSelection/a-numberless-target-finds-a-numberless-ref",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "ae1ac5a7999064e6bfc3c01948ab1347173e484aebe95110ef2d693131b9be87"
+        "canonicalInputSha256": "f395c8d2f043250d7d26017103156679339ec688a921ceb7a096144bf30e9bfb"
       },
       "disposition": "current input migration",
       "reason": "Deliberate missing objectNumber on both field ref and target: current predicate compares undefined; normal records remain valid",
@@ -1668,7 +1668,7 @@
         "name": "resolveFieldSelection/mixed-targets",
         "kind": "function",
         "fn": "resolveFieldSelection",
-        "canonicalInputSha256": "d8f8263cee1adf139f34262bc9e8018aa16735a6b5795abc21953122099db017"
+        "canonicalInputSha256": "c46bb4a21b1d67a81ad8d075f6f9c91871610d914f2fcf20637d4b6888575119"
       },
       "disposition": "current input migration",
       "reason": "Deliberate unknown target discriminant is ignored; valid name and number still select",
@@ -1686,7 +1686,7 @@
         "name": "buildSubmitEntries/fields-absent-silently-drops-ineligible",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "4a8b831706c1bbdb790fe795bb068c727147c413a8f20c4275f75b595dab9d7e"
+        "canonicalInputSha256": "4de683c1bf0e0d3aa8fb8918cd3dc26f68657c95ca511557dc2c6fa4c42864a9"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1704,7 +1704,7 @@
         "name": "buildSubmitEntries/explicit-no-export-is-diagnosed",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "0ede5666022144fee7ecd62caaa6a803ae4b9b958975a5ad67e35b4f1e06c78e"
+        "canonicalInputSha256": "6e0ac9e4c92a0544e339565c2afea1d2dd88ab3e84e6f91b4bcf4954b2b952e0"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1722,7 +1722,7 @@
         "name": "buildSubmitEntries/explicit-button-and-signature-are-diagnosed",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "57cd68fe0f7fcfc1e6d9cf8b4fbcee4453ecf962568202548f7ca288e5e114da"
+        "canonicalInputSha256": "ccde4b4bddb62b9e18b4100d80e384621b440f1701bd46111aa4f69b44e6888a"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1740,7 +1740,7 @@
         "name": "buildSubmitEntries/exclude-mode-is-never-explicit",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "e91a745121ba5b5e8b20d0e557acaf38ab0861497b06d5db1ba12c0ab13e7016"
+        "canonicalInputSha256": "5116b053b24b6230e22f78a37fcd679d0b4a7394f364a05dc41812d756d3e305"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1758,7 +1758,7 @@
         "name": "buildSubmitEntries/unsupported-value-shape-is-always-diagnosed",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "1281be4c2ec8cbd2a31fd7ac9e228dc97e428a0b6062b137b720ad82710d8b53"
+        "canonicalInputSha256": "d3aeab7edc36ee22683315d600c27ea7f7a97de9ab72e5877082a1f45fb4f093"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1776,7 +1776,7 @@
         "name": "buildSubmitEntries/unknown-value-kind-is-diagnosed",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "5d5a169e86ae9ec6930c10381a7277f294b6201ab858c1f6bf5f2712281b59ee"
+        "canonicalInputSha256": "2742d03aa66a9f50c42287a460d448bb5df8e2a0c8f9f692e8119cd159ec3e87"
       },
       "disposition": "current input migration",
       "reason": "Deliberate unknown /V discriminant is diagnosed and skipped without throwing",
@@ -1794,7 +1794,7 @@
         "name": "buildSubmitEntries/valueless-skipped-by-default",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "8817e5b0ea9cc3dfa99134e6c0b1611d379dcc839a9dda3ff14033188d88b373"
+        "canonicalInputSha256": "957de909c72dd4b275402e6f0e1a3775ed074fdf585514f63c1a99acbd099d24"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1812,7 +1812,7 @@
         "name": "buildSubmitEntries/valueless-name-only-when-included",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "25f564649e829cd54bf7e54e67621dd5c5fbf533221d659ae3874886fbe0aadd"
+        "canonicalInputSha256": "36e70c1c8c0fc0e6b2f5e3300e4963bdf8299d75fbddc0b894d4f3b147d25638"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",
@@ -1830,7 +1830,7 @@
         "name": "buildSubmitEntries/descendants-and-arrays",
         "kind": "function",
         "fn": "buildSubmitEntries",
-        "canonicalInputSha256": "04444d79bfc725d8086e515fa8aaffbbec9c103b604635d7a3d72ec92f8940bb"
+        "canonicalInputSha256": "3d72cc6ccd770ada8fe985c23826d970fb800a7e750101d28ec2b00e0ee3869d"
       },
       "disposition": "current input migration",
       "reason": "Current typed input passed to the named shipping function",

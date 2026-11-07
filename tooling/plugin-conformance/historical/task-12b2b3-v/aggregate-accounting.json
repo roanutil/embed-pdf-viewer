@@ -1603,7 +1603,7 @@
                   ],
                   "area": [
                     {
-                      "unit": "m\u00b2",
+                      "unit": "m²",
                       "conversion": 1,
                       "precision": 100
                     }
@@ -1652,7 +1652,7 @@
                       ],
                       "area": [
                         {
-                          "unit": "ft\u00b2",
+                          "unit": "ft²",
                           "conversion": 1,
                           "precision": 100
                         }
@@ -1691,7 +1691,7 @@
                   ],
                   "area": [
                     {
-                      "unit": "m\u00b2",
+                      "unit": "m²",
                       "conversion": 1,
                       "precision": 100
                     }
@@ -1738,7 +1738,7 @@
                   ],
                   "area": [
                     {
-                      "unit": "m\u00b2",
+                      "unit": "m²",
                       "conversion": 1,
                       "precision": 100
                     }
@@ -3454,7 +3454,7 @@
     {
       "slice": "iii",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-iii/accounting.json",
-      "sha256": "5e6004fcf9f3409b948fca7b0561a65ced7247f058b30bf21e52d845b29c9032",
+      "sha256": "3d2c418c6774da1d00726eacd9ceb2d702a8065bafe8fd3e0c434bb681100d1f",
       "original": 40,
       "current": 43,
       "mappings": [
@@ -3467,7 +3467,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "imports-every-page-as-a-vector-asset",
-            "inputSha256": "ae9d1adaa2dd44cbc16e5f1a26ea929cb8f2293dfad13d143895acaa5f2932e0"
+            "inputSha256": "e86418f59e9af2c284629f91436d037b95a089bf2e7c3924bddec9e322789d2d"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3489,7 +3489,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "reads-ids-and-display-metadata-from-pieceinfo",
-            "inputSha256": "11f8c86fa16815c7bbba0f7fe43be32a9688abaa352a4127c1810390a6ea4378"
+            "inputSha256": "ee6a91cae989100220704c4828c96ba5f7aa6afd3ac2fe5de11eb0c7b103f922"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3511,7 +3511,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "a-name-kind-and-stamp-kinds-read-back",
-            "inputSha256": "26ff4dc1896b0d4aa52f8babc133169d2036759f05418b9edd588e18ca960922"
+            "inputSha256": "586dd65af18ea6f1a9e3bf27222493ca4e62d3f23f8daf4dd71f53f3dbc42e1a"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3533,7 +3533,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "import-options-override-the-pdf",
-            "inputSha256": "949675b5a3dcd597d6fb94c0064fbb72bc299431dfc97ef99717f4c907e9c9e8"
+            "inputSha256": "06edf764c699042cde9b6acd37d75a6b4b2e5c2df7d63f8ea10a2f493781e78a"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3555,7 +3555,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "a-payload-source-and-its-errors",
-            "inputSha256": "7201338ece2d6619f0d8eb6ccd102f24e5d72d3dbd4040a1386f3ada0f7a1ea5"
+            "inputSha256": "0a87a1864463e6b28cd8b37a0d027ae48fb8ff2670e03e6c02996cebc2e537ad"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3621,7 +3621,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "missing-services-refuse-before-any-write",
-            "inputSha256": "202343e7b072343c77cda3a95852a88a541c4603924cc0c90b3158bfd909cbff"
+            "inputSha256": "cfb0acda742c1a1cabdfdd153fcacf176e95019e1f2fcc4874bdab41bfae555d"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3643,7 +3643,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "an-engine-failure-mid-import-adds-nothing",
-            "inputSha256": "7b6a1b75b65f513f7889336f64ec6758a010c498426c3a3fd0028f96f1415568"
+            "inputSha256": "7556a5cddfc4ef68a7513619b96b37a3b01127dd48e80e61f4f4b6811a46bc23"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3665,7 +3665,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "a-failed-close-fails-the-import",
-            "inputSha256": "c56e81e09eee72c7b363c4fd0c2c085000ef8526d07da87713f477d3b7ac0ded"
+            "inputSha256": "0af4da03dbbbf39edfbc5440d67c5330b0018c3546fb69f2726a575735a8fa1e"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3687,7 +3687,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "previews-must-be-inline-bytes",
-            "inputSha256": "bb7f7ef8d022221df49b1b38796576520f9bef92cffdd3147765c36ab725d3bd"
+            "inputSha256": "6832f6179a63018a5aa0521c704faf135bcdc1cacd68a53814c2d3eacea207d1"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3709,7 +3709,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "a-render-with-no-image-throws",
-            "inputSha256": "189c0218a66020e5ffcfadd8b53503aefe02c64157dd898a250e2ef947e4ae37"
+            "inputSha256": "8a0e8bd9a504078e5a9928e2926e10f85e966d41f236bb3e3704ee312183f1f2"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3731,7 +3731,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "a-second-import-allocates-fresh-ids",
-            "inputSha256": "a715ef7491f52f57122973add178d314c326b2d462dc3c2a38181f8a283d773f"
+            "inputSha256": "62858516bd3e856acc770d828fa93c65f198bc439b52c8396a03646094afa317"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3753,7 +3753,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "ids-carry-the-clock",
-            "inputSha256": "9f9b2a85d8c4f981ef90a113e51822e4241b2785fe6a904a3701a9a8ec97d5bb"
+            "inputSha256": "866fa387c38b78fdde73443efe70fb83d3cc15deb88ecf6daaf8bd30d76239d2"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3775,7 +3775,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "concurrent-imports-read-the-store-before-either-lands",
-            "inputSha256": "40ed658046001c9668e6bf3c16f498ebe120f7e12c993527c47c97ba5cf38a0f"
+            "inputSha256": "b29a8a14d8ac40ea575b063e9961b43bfd5bb2cb774af22852d3d686d0bd6408"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3797,7 +3797,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "an-asset-engine-factory-is-called-once",
-            "inputSha256": "486e197db9fb33f3e0499f6e29a1fdac71b35386b11b75f1f4769dab481e6020"
+            "inputSha256": "09eb481f46659c558ffb269dd2684da07c3951f4e46333b589199d75ba865311"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3819,7 +3819,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "an-async-asset-engine-factory",
-            "inputSha256": "ff605ca62009c1bad631b616a10e960d6524359bd096af32537ef5b47342fa3a"
+            "inputSha256": "b2cec688d56791986fa737bd20ee58f3aaafd9b25f0c5e1592df3322b1a7fbd4"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3885,7 +3885,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "an-engine-instance-is-not-destroyed",
-            "inputSha256": "55fb507a810fb3c65cc3c72c581c412d952a2d6bc5144d3f7a4cd4965e5b8d85"
+            "inputSha256": "a3a49d5ef701c1d9f1d93056a2abc330c6ccbb4f6e2ec1ba702b046a35f30523"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -3907,7 +3907,7 @@
           "after": {
             "file": "plugins/stamp-library.json",
             "name": "the-plugin-factory-defaults",
-            "inputSha256": "0da946222c49c9da43d814ffbed46efb31f1395ddc9f85e7d727708b0499721e"
+            "inputSha256": "b55ab5280467399a784b067ca85c149f2cfb200587fd2633540b7e53da730761"
           },
           "target": "current stampPlugin workspace controller APIs",
           "disposition": "mapped",
@@ -4242,7 +4242,7 @@
         {
           "file": "plugins/stamp-library.json",
           "name": "named-registry-order-filters-and-preview-cache",
-          "inputSha256": "998acbe282eae5f2ae42b4b5c18582daca1274df004aa7938d19d9a107bf0339",
+          "inputSha256": "ee56e7440f0060a5208002c761b9ffdab3c16e88e7198b5dc2a94e8b38a522a2",
           "target": "current shipping stamp/persistence APIs",
           "source": [
             "packages/plugin/stamp/src/write/libraries.ts",
@@ -4254,7 +4254,7 @@
         {
           "file": "plugins/stamp-library.json",
           "name": "persistence-restores-canonical-bytes-and-unsubscribes",
-          "inputSha256": "63e2bfdd778d838b1aa16440e04d7386b30ab8683ef072a35549b67ace56d5fa",
+          "inputSha256": "98d5270a8aeb0057b85807d1bd57b0877428d6900f5166c6387df422e9616e75",
           "target": "current shipping stamp/persistence APIs",
           "source": [
             "packages/plugin/stamp/src/write/libraries.ts",
@@ -4282,7 +4282,7 @@
     {
       "slice": "iv",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-iv/accounting.json",
-      "sha256": "3b16e6a270ab2fb2548843dc3a2945b36a609442de469d346d6e398dcb028832",
+      "sha256": "4c7ffee6644de2512fa0afdf0aded1e2c2354bd732ccdf0fe77c9ca8ae286734",
       "original": 41,
       "current": 41,
       "mappings": [
@@ -4295,7 +4295,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "create-update-and-delete-libraries",
-            "inputSha256": "47c0970a20ea8e7a03e0d6f7618311929c8ef4a183b54ae7c2d8623fe86cb5d2"
+            "inputSha256": "da19a38c8d31bc5bdf585d08c4bee9ccf5d3dad404008aa29b406641fb79130f"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4317,7 +4317,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "library-writes-that-fail",
-            "inputSha256": "e6ff459aa2ebecfaac56ad87c61c65146de93486e8261b559e8c8db369875a1c"
+            "inputSha256": "e97d7eeb013674a4d4c633fc2a0460ec089cf4e15f2425c53a7dbd2d79b19e67"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4335,7 +4335,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "import-a-registered-library",
-            "inputSha256": "046b422f17c7a276d377f9ffefe56364ced1ad5210a2f9b4a80b582a2d891af5"
+            "inputSha256": "c43bb892197429853299ff91e522354f74bbd2fbb66e9aad72e5cb68add3c8be"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4357,7 +4357,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "registry-refusals",
-            "inputSha256": "1a9b4a7d8ad75b1521548714419759da2b5c4572bcd3be89df105318df6842d7"
+            "inputSha256": "7beefb273aee54af6bdabaaae1320c1954c92a6b792b3ff89d28508ad663e3de"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4375,7 +4375,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "marks-become-assets",
-            "inputSha256": "29c6dbca322333d9a1eda34460cf43091582e2748eb45acea06d571ab0c1a256"
+            "inputSha256": "e5d4f2f3a171428d385ce539ad183c7e5dec91332649a4f6a175b4baf7c7787f"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4393,7 +4393,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "marks-that-are-refused",
-            "inputSha256": "e723661cb99c5a878b4819d47359d6ca8cf4d2355e9b29773eba83beea55af43"
+            "inputSha256": "9b4bb96604cb956d9efff99074fa3d3b520098fe85ba3026e082a89ed8aa69a0"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4411,7 +4411,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "an-ink-mark-with-defaults",
-            "inputSha256": "25b61e99089868d5030be75a3ab1a0ef5933e886439379df7df77f3928286cbf"
+            "inputSha256": "224a0237f31f323767fc2987172187f28397470368f128448c8a34a9e3719e81"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4429,7 +4429,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "edit-move-and-copy-assets",
-            "inputSha256": "0852ceb10e199166bbb92bfcb317dc062f3d47c1ec907cc0a9f60b119d635088"
+            "inputSha256": "0019bf4ece78bdb2da73aedb16a133b419e5e8720dd4f8a610a43aff8bd3632a"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4451,7 +4451,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "edits-queued-behind-removals",
-            "inputSha256": "dbdeab62f617344ba75b82fd6cdda9da61dda7309f6a3be21fb3d03987356819"
+            "inputSha256": "e28e31f1f00410484143c60e6dd57ec389cebeb8fe0a89ad8e3e3536d7bd378e"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4473,7 +4473,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "copies-carry-their-metadata",
-            "inputSha256": "04684a6cf5e6bc9c634c6924023bdb65b102242e60f5a8573f043bda28d07387"
+            "inputSha256": "c496e355b508cd7e82da3bdde198be50ef81fa53bdd932665855e9fb3c8728e9"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4495,7 +4495,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "raster-pages-that-fail",
-            "inputSha256": "9cbde2144e60e4ccc6c23a0c0f2b2c49e66cf0137661cace1ccf82d27507d869"
+            "inputSha256": "67ab1df9404a3f5c5fc7f3d86054cbcc56ffbf7d21c582b9074f4db62844fd21"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4516,7 +4516,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "an-asset-from-annotations",
-            "inputSha256": "0e4b79134f7fbd3a0db4d9a48512dc865571d68e7148ad27ccf29addaae4f9b2"
+            "inputSha256": "f76abfe90a9b04865c1f493764ea620aa006dbc1091a4e15c89a27b10ca60409"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4537,7 +4537,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "rendered-previews",
-            "inputSha256": "02573d1baee74bef528d639057978deb03eba08f27a7d3fb5ae6614d740417b1"
+            "inputSha256": "4ef16f88561c9920c4a3c59beae6d55e2b9fd0742f916c94a7d6c156d8bf39d3"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4558,7 +4558,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "place-without-the-pointer",
-            "inputSha256": "235130c7532ded21dead27b861355bd9857e1eb6761f48dc8af724719cd2535a"
+            "inputSha256": "89fb92bdb39a26d98a2428602c40958bf9a1615c38990b9860de03857d1aa1d4"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4579,7 +4579,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "the-armed-asset",
-            "inputSha256": "16c082ef75b26c5267914e37d0c7bfcfddf90a592c54f4e924fe495cccb16e91"
+            "inputSha256": "db61cbd24b2c01789fc8af71e4ac9eeca31f8e8287a6bf2a0fe68225f2405eba"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4623,7 +4623,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "restore-stored-libraries",
-            "inputSha256": "ce9e4e1d26ed4df6b84d5017420c7c013b1ce795f9c1397713c32fea58dbe75e"
+            "inputSha256": "f787399bd8b099c2015d9ca0d5fa6511f5419aa84a1341fb25c39dcf5170fe70"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4667,7 +4667,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "persist-library-changes",
-            "inputSha256": "3f241dd7ed2b73a9b6c9dcc3405b211ec2c93f15afea0a40b9baaa3c70c08c48"
+            "inputSha256": "56ad081b2e1cd9f3b0ff85a63ffac99519c8c948cd61094d430c5c8213d36716"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4685,7 +4685,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "stop-flushes-a-write-still-pending-behind-another",
-            "inputSha256": "a927e135724fb8945cfb650dd45fc91e86df7d93cb65fa1f9b444e5b7fb983df"
+            "inputSha256": "ffdca001154588c4449e3b6de3115e10513d06e4d00bfa03c19cebf8a6270d35"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4703,7 +4703,7 @@
           "after": {
             "file": "plugins/stamp-api.json",
             "name": "persistence-failures-are-reported",
-            "inputSha256": "407832acd7dd69d5eb98ce33fb824dc5bdcf0a0975e566c4171d71b1526bbe78"
+            "inputSha256": "97c2176673894555be6daadbd8efdf55fc9d932f5eef46b5b0263ad9885bba9c"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4721,7 +4721,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-raster-asset-is-sniffed-and-previews-itself",
-            "inputSha256": "bc2b0a4935df32ade212150902892e32899f9b0c42829d50720f5a6b2003fd10"
+            "inputSha256": "56c344da4115ef592426c7eb119edcc705edd431d1baa8a0714448ddfb6957ec"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4739,7 +4739,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "supplied-previews-and-sizes",
-            "inputSha256": "ff9dcdb7f2ce1f0c0e5611ee0e5a894e050cf04413706fa89e68a0ec8534693b"
+            "inputSha256": "853ae5cd1e3b7076051060aee4ea5441f9c257081efdd100f08e121a6c8e64ed"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4760,7 +4760,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-loose-pdf-needs-a-size",
-            "inputSha256": "a6a2ffd2852365ac853bdbf32c93bd0edb00023e546cbef57c54bef78c1c4e2d"
+            "inputSha256": "68d82867f1312487530c0e2ba66c3544f3d532bb8642fe3a7b2609f73702aff2"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4796,7 +4796,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "into-an-existing-loose-library",
-            "inputSha256": "fe9a2e6ed3b2aff4f52c7c0598b86bbeb4fe8245ccaf5c19adf896f20ef2ead6"
+            "inputSha256": "4872df82beb50a1924e56dc8befc56facb039eb3cc4672837d29dd80b90817c0"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4814,7 +4814,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "appends-a-page-to-a-canonical-library",
-            "inputSha256": "2e27fc6d133c3f1d224a6821570c5fa6023db33a455d3d5e4f3fe3fb7c8293ac"
+            "inputSha256": "e7fa50061dbfa80183ebe94ac50ec749240dccb52a0b0fc4fb6576c66c9e0024"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4832,7 +4832,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-supplied-preview-skips-the-render",
-            "inputSha256": "851d09f3b30cfd3312804e116aed6e228730024d365b3e82655f6eb5c01ad25f"
+            "inputSha256": "eb00dd89b69c37cd07aa83c1189c1f534c5c1392f543250c71bd4db37c54c35d"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4850,7 +4850,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "appends-that-are-refused",
-            "inputSha256": "dcdf509fb8dc6def2098b8e71bb24b094350bb60db88a057bc233dfd387d7675"
+            "inputSha256": "761077aa40bc25316d643cec71077cf5f91bd267a4fa1c1b3c33fe36d26a7b74"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4871,7 +4871,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "an-unsaved-append-changes-nothing",
-            "inputSha256": "9223933e6cafee1811950b099c17d5a5237d2330782111baf0368d60761feef6"
+            "inputSha256": "41755bf107d77b182a96a7bc97c4dd206927e37b02fdc739f993469823b67910"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4889,7 +4889,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-save-that-answers-nothing",
-            "inputSha256": "e1bf0749a6b0cd3ea893226c9cf1a6df7db93b830f2adf3f5317cbfc1f5a0eab"
+            "inputSha256": "9f9fd9bea4bde45d726f895aab6bcbd10ff19d189e1d0d858a7f7a8c7a9940e6"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4910,7 +4910,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "removes-a-canonical-page-first",
-            "inputSha256": "7a0a2300176cda23ab8b0c8e61fcc4e669230a99167e5e6cd8ce0fcc709e8647"
+            "inputSha256": "da901326065cb510c349f14814675013d5ff5cae49c3fe7d728a90cb69b0131b"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4928,7 +4928,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "removing-the-last-page-drops-the-library",
-            "inputSha256": "22e7dd375f511e571a8e637361c7ad89e5077e003b2b7bd03de9636b914cb8dc"
+            "inputSha256": "20894fae4788700f7cb671c11668ffacc38eaae15385232337277d6aba94ba7e"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4949,7 +4949,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-failed-page-delete-keeps-the-asset",
-            "inputSha256": "4228d82ed0c4112950de1e1e9340747f8299697885cd6eed6dbdc0799dc255ec"
+            "inputSha256": "828d337155939cdf66d6445b4844ca012aadaf1ad1dca488f438b4aeee7d7200"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4967,7 +4967,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "removals-are-serialized-per-library",
-            "inputSha256": "6b6dd05b8273295db4e7d3985654eebb7a0b9804ab80cdeba18d2b6565f43a34"
+            "inputSha256": "ec775cf16aeecf7a96aa0bc03f400eb3b88a6f30f82aa9e58b95573128785438"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -4985,7 +4985,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "remove-library",
-            "inputSha256": "519d258be5c472f918371d9197c349a8fc3f8d7c23084907c9f02454a482e0b1"
+            "inputSha256": "51bb124de22066f6b12124dbc9cae2f012a8365bd798a560e493e59e1f427fa2"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5003,7 +5003,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "an-append-queued-behind-a-removed-library",
-            "inputSha256": "3eb97a224d2fd9213bf463d8d7218a16667b38965c779309b6a21d68cd94fde9"
+            "inputSha256": "bd3516a30e9201af90f07818673853850f5c062c1f634994b4b4cadb0c854d90"
           },
           "disposition": "mapped",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5021,7 +5021,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-loose-append-queued-behind-a-removed-library",
-            "inputSha256": "83d74d15ab67689f691d9c7e1e6f12247b5f0329e754b91f1f216db9e8d925cb"
+            "inputSha256": "67e944a333933f471cbc23c6265e135bc11cf6e3a471b3205b0a00ac03f068a6"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5042,7 +5042,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-loose-append-finds-its-library-canonical",
-            "inputSha256": "87f17815a08fabf9d69556e6a1e3bdd05ce09d8d33c7e5b001e8a1a13e30d88e"
+            "inputSha256": "ccf536127b79f47b93f5d7fcfb84d04b7f0e821f8b0a6831eb20903bd141f080"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5060,7 +5060,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-loose-asset-under-a-canonical-id",
-            "inputSha256": "a3505e2f3aa9ec41b5aaa991e40de93602a38c220774d6eafaffd5185f7c4dbf"
+            "inputSha256": "4c8c55f74677f2528ecb1678adba1a394a8fbf4a5d714eff911fdc9e8aeabd54"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5081,7 +5081,7 @@
           "after": {
             "file": "plugins/stamp-assets.json",
             "name": "a-queued-mutation-after-destroy",
-            "inputSha256": "986f885406cc1b6b944db0585e330c22330aefd6ebff5e8c79e847bec0cceea9"
+            "inputSha256": "1c34d1b584d7f3804adb5e3583932dadbba2036238fd31fdd0d1f3793742de3d"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current shipping StampCapability via reviewed stamp-current host",
@@ -5100,7 +5100,7 @@
     {
       "slice": "v",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-v/accounting.json",
-      "sha256": "b4a4e69d833a7a5b4c09454162b31477e1a43698fd7faac61fcdd727a7701f79",
+      "sha256": "ab059c6b9e98d857608102cf93f56764fdd899d27ee35872d488d5e3ead2c62e",
       "original": 19,
       "current": 22,
       "mappings": [
@@ -5113,7 +5113,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "arm-delegates-to-the-annotation-plugin",
-            "inputSha256": "e673ef89beb8534d9b8ee42ec9302e7db2f1c7f27a02efe3bfa8028eaa9c957f"
+            "inputSha256": "32ce282a01ae37609f5741a4406fc111ba068252e68b53dfae91606d0e055d8e"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5136,7 +5136,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "the-target-width-sizes-the-ghost-and-a-template-ghost-is-cached",
-            "inputSha256": "2ed511193834c02a283e7ef685bbd7f77f31a72f203ef83be36f5ab4a9c92859"
+            "inputSha256": "d5d5aa6b77d8ff1ea0813d13dc81125337ad2c4af168a94e7182d346388a8600"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5159,7 +5159,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-raster-asset-arms-with-its-own-preview",
-            "inputSha256": "84f2b8f9e55e45683f8e432447984eb69037fcb0c9f922a20810550589733aff"
+            "inputSha256": "056cfda913e2b872942e4233499969c2d403c6aeac4ec7ea39538e375c831cc9"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5180,7 +5180,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "arming-what-is-not-there",
-            "inputSha256": "5c188a320da4e845195065ca6eb32b4ef8486cbfc9d03b8ff9b89e6a85cbb0ee"
+            "inputSha256": "e52e36025a171bc6d6f80eaf9837a7925199c92b9060c11183c4fe59d348fe9f"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5201,7 +5201,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "scripting-off-arms-the-template",
-            "inputSha256": "3d0a7a0d87d60976f6acb17174bfd15c162f518551fca3a3d035d47bc874f7a6"
+            "inputSha256": "1f5eb4285c385173085309ae2611d67fc80183f385477117d536c0d5eccbad3a"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5224,7 +5224,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "no-sandbox-host",
-            "inputSha256": "40b5c6074258b528ae988e9f8a2d60816fd561726ed9e975c491220b14189ff5"
+            "inputSha256": "3804b897591f592d05aaedf9f5a8eab90917ff06e133fed126cf6dfd28c076b8"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5245,7 +5245,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-raster-asset-is-never-evaluated",
-            "inputSha256": "20bed29a43a2990c78f13cd7e9b1e6f2087d05de5d863207d204f3d105b972a6"
+            "inputSha256": "b0ecdbf7bd97b258278c292600e5a92b8daeb92c84e1b421f72d9645a666a009"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5266,7 +5266,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-stamp-without-fields-on-its-page-arms-the-template",
-            "inputSha256": "f876f38a2463c5bebb9e92d04a0095c1c7a7ce4ac3ef00af6ff29eb127957aa6"
+            "inputSha256": "b0402588e93910c4b45e85caca01909fae6d403a96a4155760b6d764c4014db9"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5289,7 +5289,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "materializes-a-dynamic-stamp",
-            "inputSha256": "5c54d6cbb653e11faa8fadf8a3b0ebfe1e38e461480245df27a2e6edb3b4be15"
+            "inputSha256": "b208bc7fbfcb83e2942e059fb49daa45c1c7d593996b976b3710e53c97fa5fd7"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5312,7 +5312,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-loose-dynamic-stamp",
-            "inputSha256": "abf7d4189eefc16e5f50181d4fa1e55841345d200170faef334db8c156367549"
+            "inputSha256": "e441888a95749a8723686bc6f63bb05942f3983bde116cf57fc4c4eba6692a90"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5333,7 +5333,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "dynamic-stamp-refusals",
-            "inputSha256": "660dbcca814504dbffb2003a0ac98ffef8517551d284338fc6a8ac895dc8c0e8"
+            "inputSha256": "fdc049fe4b947f7e83d0b46f621ebffa25cb77beb5b537bd8fab87dced1d2a6e"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5355,7 +5355,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-failed-boot-script-is-a-diagnostic",
-            "inputSha256": "c28e17bb3d00f430f3f88add98217df3f12b3f4fa8ddfaa818aad578b17ad126"
+            "inputSha256": "eefb43a5cdaee9bde9939d5a9a9276d00dde77ab70b85dc351c03294327e8bd8"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5378,7 +5378,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-failed-recalculation-fails-the-arm",
-            "inputSha256": "3f24748bb22c73254df4164f2bc643966428bfb17b5ef42f6725fadca0d8c82a"
+            "inputSha256": "72142139f815655ec035b9e37bee213ea1fe278964a8c8694c42cb0a37649cbd"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5401,7 +5401,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "an-error-observer-that-throws",
-            "inputSha256": "ea287140f4614124b0ac1e820dc8a454dd89f176f7674a571ed7c26154a40695"
+            "inputSha256": "9abfe13a59742b59550e527b0494de3f29745956982012eebd61c639705e21c4"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5422,7 +5422,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "observers-see-a-successful-run",
-            "inputSha256": "12c212d5bf56904efddf116db2336df5a54411a0442fb549c4d4ef1a8fbc0cb8"
+            "inputSha256": "d6963346bb09afc70a105182be2906c2002462cf89223984b5c807ece36ae34a"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5443,7 +5443,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-flatten-that-fails-or-skips",
-            "inputSha256": "9ba49de5e3e5fc12ce896b031b0c6d8a8cc717486122dfe09d201b73b16fe8de"
+            "inputSha256": "ec576389b1354c3cbfb4973a2d9387c6583b73234a01da3beff38120b8160bdf"
           },
           "disposition": "mapped-with-partial-retirement",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5464,7 +5464,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-failed-copy-close-fails-the-arm",
-            "inputSha256": "9eb7689a7845e244ea199914113ceb78872ec46fbb468223ff1601448e58f77f"
+            "inputSha256": "88b1db88ed305bd3b84890a8c9ca40509fc43eb7d17a1a185831474a0e796eb0"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5487,7 +5487,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-library-without-canonical-bytes",
-            "inputSha256": "ff8f6179f09c76edcf61473a113f7da33a2b51958c7d2a18a748b066d6fb5f07"
+            "inputSha256": "d58c85ff7407e9752aa04b43d9bbab22cddbcb47c797e24f0e9f4a08dfab2f0a"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5510,7 +5510,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "teardown-destroys-a-factory-engine-once",
-            "inputSha256": "15fd824dccdc8e4d9115e463013928bde93d9832d0f5e9f358ddf8b34bf93e97"
+            "inputSha256": "f4e634b2af2f9d501bfde4de9fe0bdc86e940d12086d5aa9dbf483c9f1a22cb8"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -5529,7 +5529,7 @@
         {
           "file": "plugins/stamp-placement.json",
           "name": "dynamic-placement-writes-materialized-bytes-and-batch-facts",
-          "inputSha256": "9960a791adf17fb5448448d10f6bc12e71bfe89766973b4f5740fbfea7f73c75",
+          "inputSha256": "8930aaf2e83fd6f7f3473d49900d661432bccb40d1dc2a0e6e697c6c96fdb9fb",
           "target": "Current shipping placement, annotation apply or file-picker APIs",
           "reason": "Independent successful dynamic appearance bytes/resources, exact reservations/ops/opIds/facts/public reads plus per-page failure/recovery and all-page preflight.",
           "source": [
@@ -5541,7 +5541,7 @@
         {
           "file": "plugins/stamp-placement.json",
           "name": "file-picker-places-cancels-and-expires-the-click",
-          "inputSha256": "a403c9556e8fd24d84cd44b62c15cb56ce2a74ab7943b302eb48b89eb3c7166f",
+          "inputSha256": "b1b5cecb63d98476a730d845acb1af1730b4686f648b8d3ac7c1486478b2395f",
           "target": "Current shipping placement, annotation apply or file-picker APIs",
           "reason": "Actual current file-picker prompt, exact request/source bytes and one confirmed write; cancel and expired tool intent make no write.",
           "source": [
@@ -5553,7 +5553,7 @@
         {
           "file": "plugins/stamp-placement.json",
           "name": "permission-refusal-recovers-on-an-authorized-document",
-          "inputSha256": "0cde4a8961ef3ea6a086553c2056a58ffd5f0aa654bc1fa8e72fd58c82ac4d63",
+          "inputSha256": "210cf6b51bc4492b2771d4e912e68c29a0e6369fadd50576ec9e8f7ff600b0d1",
           "target": "Current shipping placement, annotation apply or file-picker APIs",
           "reason": "Open permission denial before copy; later independent authorized document successfully arms and disarms.",
           "source": [
@@ -5628,8 +5628,8 @@
   "sourceEvidence": [
     {
       "path": "packages/core/acrojs/src/host.ts",
-      "sha256": "294384478ab4ed7f62e901e7a333386b25a64d40e33e66053dfbe9be549abda0",
-      "commit": "c78997346647b0e53f7c8d1b98b80865f05a299e"
+      "sha256": "6bd5572de9204efb65ed0752081a5b3c4d40e53a91570aadc00e0317bb660a01",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/core/annotation/src/record/written.ts",
@@ -5643,18 +5643,18 @@
     },
     {
       "path": "packages/core/main/src/changes.ts",
-      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866",
-      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+      "sha256": "80afb6e91f78537e26cc7a9540bbc8a756b04748689b4416683a4e8120595d4a",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/core/main/src/context.ts",
-      "sha256": "01b25039519568b49a9a3aead7fd26c6b8c084797a44b850de1730f79ee96981",
-      "commit": "6ff01074abcfacaff7e98716eea3f2cc0eff9822"
+      "sha256": "663cefa2bb6b2a6e5dafde02b0d2f66de5198d6dad06447a1ea06d237de0da0a",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/core/main/src/event-hook.ts",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508",
-      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/core/main/src/serial-queue.ts",
@@ -5663,28 +5663,28 @@
     },
     {
       "path": "packages/core/main/src/settings.ts",
-      "sha256": "aa3032d4911ce7b4574d70d75af1d14dfd94ca304ab08bce2d534ad1f0024af1",
-      "commit": "7ebe12c2415a1a532383553622d3b2b2f6950e40"
+      "sha256": "bb73484c9c23fabe81535aa3f4f643f29b1af715af0783b9e43ce22753db63fb",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/core/main/src/testing.ts",
-      "sha256": "8c46e5851adbfe10f62ccbda83fcf1bb98c0029c2bef57e5c0d59ec3dbe2805f",
-      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+      "sha256": "b2e4e0e9dfa76ea33421e86ad704ff2a2b1a62a6416b35151cf3f6414a56fd96",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/core/main/src/types.ts",
-      "sha256": "b584eef26358085af12a750f42c565ae839a8b792acbd4cf47b508be3651c5c4",
-      "commit": "070cc50bfc6b9d8a503711ef437da29a69238942"
+      "sha256": "02c533621880ca3750fcdc18053afba20490d2f2112a2ceb02d52c6c013f66e3",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/engine/core/src/auth/scope/types.ts",
-      "sha256": "cc23b81bf7bbab1490ccb1982edbbec9e789c8c1cfccb69f051c6b205bd2cdd1",
-      "commit": "67ccb76dc0bfe473406a43274d425baf6c285878"
+      "sha256": "9b23aad4abdc6e90452663add97916ca421eeb507e55af28fc22dfd80a539067",
+      "commit": "a780243ba2c7039d7001ad6a061c7fc4741435cb"
     },
     {
       "path": "packages/engine/core/src/dto/Measure.ts",
-      "sha256": "78072007aa26926186a9f001e548f719dcad18738e6c1b4f7ee4b21378c151c9",
-      "commit": "c053c3d33cb5f2be1521c31e2d5d6c1dbe407623"
+      "sha256": "cc2da459aa9f58e56d6fbfb7e56c3acbb35c3da3de1d66bc89629a5f6f0b03e8",
+      "commit": "8bbed33af45462b30fa4f8488a4d1d8770c5fbc1"
     },
     {
       "path": "packages/engine/core/src/dto/NamedPage.ts",
@@ -5698,13 +5698,13 @@
     },
     {
       "path": "packages/engine/core/src/dto/PageListSnapshot.ts",
-      "sha256": "547e65db0c9e26bce218f2e1aa7cd9d0955ce694cbb12fec9ea9d1bcbc29c429",
-      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+      "sha256": "d3044565fec3308488fdee9ce3d2a6494bf0b412d49fc78c14598e5f5758d0eb",
+      "commit": "b32e74e4a788045e5f4f2b91eda44365f9af5e68"
     },
     {
       "path": "packages/engine/core/src/dto/PageRender.ts",
-      "sha256": "59e748481f9b6bf62840c8772de8e649e8d64a2e64462df0de5807a217ae0bb1",
-      "commit": "7e0d96c1cc8a6440b37ae1071f68d0f17c2535bd"
+      "sha256": "0cd963d7e74af85528dcccd8d9f5154528bedd84298820fc377b69e96fbeb4b9",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/engine/core/src/dto/PieceInfo.ts",
@@ -5713,18 +5713,18 @@
     },
     {
       "path": "packages/engine/core/src/engine/DocumentHandle.ts",
-      "sha256": "6424dbfe177564aa55fb97dd97ac78ac1f829c1303dfba56005de2606d408b4f",
-      "commit": "67ccb76dc0bfe473406a43274d425baf6c285878"
+      "sha256": "2796032f0aedcd35bf7db8fbb8e59137ebf3231c9714b76a5ba34cfecf8c3906",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
-      "sha256": "2b16e4344fe7eb70bf15f720ec395d127ef320639b0d61554959651891df8c98",
-      "commit": "b69c40377d790a2899adab04b20dd2174ed5935a"
+      "sha256": "c03100c1a135171f65a95f3643198fee8f1931b935ac10495246a908c770a531",
+      "commit": "b32e74e4a788045e5f4f2b91eda44365f9af5e68"
     },
     {
       "path": "packages/engine/core/src/engine/LocalDocumentHandle.ts",
-      "sha256": "6aaf591e462f97f71ab85615a43c534e03506c17e947bace741e6568d801dba0",
-      "commit": "91404cfcb36167f72b620e65a83511eed485d95c"
+      "sha256": "823dab28912f1995739f14488ef67955e7aa77b6b1a2b96e46105bee3a0c894f",
+      "commit": "fc19ded617932823a137d00b478e500adc3085c4"
     },
     {
       "path": "packages/engine/core/src/engine/LocalEngine.ts",
@@ -5733,8 +5733,8 @@
     },
     {
       "path": "packages/engine/core/src/engine/LocalPageHandle.ts",
-      "sha256": "2965e842ba022cd45cca975ad0fd41f6f1a203565089e324982b948d1a5d4478",
-      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+      "sha256": "22d3045ca0986d1da553dad1328eb25ca536a8a84cebecaeb0815892e43ef45b",
+      "commit": "bd82ec1afae539bc76a2400f691517e388c9d2f1"
     },
     {
       "path": "packages/engine/core/src/engine/PageHandle.ts",
@@ -5768,13 +5768,13 @@
     },
     {
       "path": "packages/engine/core/src/mutation/AnnotationMutationResults.ts",
-      "sha256": "4ac799cf86a58511a55c4cfd06c4dce526eee4893ad2087d8e6d70b3a4da7753",
-      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+      "sha256": "a08ca9ce77bdd509448a0885a3796f87339401ae019f9014e99f96bc8fab37b8",
+      "commit": "26a68650294f31c471948f1d5b83d87c130eecb6"
     },
     {
       "path": "packages/engine/core/src/mutation/MutationMeta.ts",
-      "sha256": "51496c0fcc5d4628d9ba7b3f508098185e0e5e18cdcd4d8d9d8a89532f9932eb",
-      "commit": "4374980a537c5b15a43dbebb5072b1de4120f29c"
+      "sha256": "48736f145b99052fcd4f92d56fcbb443ab9bc9d5173f7def06a6fda0922930ff",
+      "commit": "5b7fed8942c319370f57087fa2f390ccca0fa675"
     },
     {
       "path": "packages/engine/core/src/mutation/PageFlattenResult.ts",
@@ -5803,13 +5803,13 @@
     },
     {
       "path": "packages/plugin/actions/src/contract.ts",
-      "sha256": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69",
-      "commit": "19280be70a0ed7a4daae510809b0eb21fee94ac7"
+      "sha256": "284b30e4512c5d54963edcf0c21a520ae6943859dfff3b7e6c9e6b3ac8506ba8",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/actions/src/host-contract.ts",
-      "sha256": "b6f97b8b9e93ac2e9629f3c1de088202d1fea97bac20edf480990cc3ba507745",
-      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+      "sha256": "5a77727d80babae70196561a50c1ef538475b5db645a087edfcb0bf1ec14a60f",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/actions/src/scripting/environment.ts",
@@ -5818,28 +5818,28 @@
     },
     {
       "path": "packages/plugin/actions/src/scripting/realm.ts",
-      "sha256": "51463817e3dc391037a8c4e0c5980e331f4dc376231e1b19d63ab1e2cfc9af8d",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "0d9976d73e33076f680aeb3a8a26cb089fd1aeec00e7069482403d99b4cc1b84",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/actions/src/scripting/surface.ts",
-      "sha256": "0c27786f72554030e329f3632745d9e2ddb7a80c3944764759b9d61dbb2e477f",
-      "commit": "6ff01074abcfacaff7e98716eea3f2cc0eff9822"
+      "sha256": "f8076571d62d7499cd0104f100b6bdeaea4e2f6bc01e08c9f21a015abad8d9ea",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/annotation/src/contract.ts",
-      "sha256": "e3dacccd2a85f9d33ae9b67a32f59a1365f0b2cef4f66acb0ed6a4606ded744f",
-      "commit": "277961ad3f9a01195824f2bffa1340ca5f44fcde"
+      "sha256": "0568f9081e3afaa41dd92495ebcb7873dadca2b9db9698d4721bcf7615c96927",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/annotation/src/host-contract.ts",
-      "sha256": "6c11305db7470bfd648cfaedcbda7364c009bf3699be3369d4985b7b48741feb",
-      "commit": "d2f1f4c0be32e6e530719a613c690a0a10b89302"
+      "sha256": "88e76a213804f04330a4ca19f6707c98e52df16377250210a76335a4aca4e088",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/annotation/src/services/authority.ts",
-      "sha256": "12a14960dcc6f04acba50a55702a6445e70c590994fb61097cc1d3dfff837e22",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "6c264853e69fd139efb94e350c1aac40476e849486f62092a18c998e92563112",
+      "commit": "e2ee5215f43d6ef03484ed07af0bfc69a365e6db"
     },
     {
       "path": "packages/plugin/annotation/src/services/file-picker.ts",
@@ -5848,8 +5848,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/tools/definitions.ts",
-      "sha256": "1c569379995115b55f887c81de90b55c746aecb9a9fc44d0e25f4654f6fb9d55",
-      "commit": "0427f5648b9261f53610c181bb08300d1c7eae29"
+      "sha256": "326a59696eaa2f53de6c868d69b909841bacd566c71e69a4f3341db01c71af1d",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/annotation/src/write/crud.ts",
@@ -5878,18 +5878,18 @@
     },
     {
       "path": "packages/plugin/form/src/scripting/controller.ts",
-      "sha256": "8a174d1ac8c6e4352c830e039d005dd0a4d541271c00f5793b635344dde5dec1",
-      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+      "sha256": "9cec8ac73b684600e10afbc55de9074fb5662e51b3987f44d0d81056f9133621",
+      "commit": "c4b286a69fe76b49b5526ccd46303e79dbf62874"
     },
     {
       "path": "packages/plugin/measurement/src/contract.ts",
-      "sha256": "36ab89f7a064aeb558e53f20008ba77cd493e5a4d2bf83b6ff6e130ad22953f3",
-      "commit": "7ebe12c2415a1a532383553622d3b2b2f6950e40"
+      "sha256": "e09b1c47bd40440696b87ef7a072ff63ebd1c5e8dbfe923ce43bd8ce9c191052",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/measurement/src/model.ts",
-      "sha256": "9cb3b0b6b8a4dbca983725cf746f83aaa189d7996b65427064103621261413f8",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "2a49d386fa8183d3520d648223ae83b0772d04ebee6ac5425725f8d4590ce195",
+      "commit": "7c0aaff8d7b17a2dfbe73fe2a64ec359ecd75f3a"
     },
     {
       "path": "packages/plugin/measurement/src/read/scale.ts",
@@ -5913,8 +5913,8 @@
     },
     {
       "path": "packages/plugin/measurement/src/sync/viewports.ts",
-      "sha256": "08792a8dee84cc483eadbbb8f12b62bb305a4611bd67aa12b2e9599115f24707",
-      "commit": "e029d52c183f7218e80cc9fa3226a15323417427"
+      "sha256": "bf5aa52a9f027ed623c219824754c2cc1ab3a16f8d8e547abaaddc0728143580",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/measurement/src/write/calibration.ts",
@@ -5933,8 +5933,8 @@
     },
     {
       "path": "packages/plugin/redaction/src/model.ts",
-      "sha256": "6913ca59c34a04b13275665c649ad79a8306787e99d82f8f94e55160619619b3",
-      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+      "sha256": "207a6a09d03b5c9c3477bfba1b363bf3b024bda30667bff3eef5978278eabbdd",
+      "commit": "7c0aaff8d7b17a2dfbe73fe2a64ec359ecd75f3a"
     },
     {
       "path": "packages/plugin/redaction/src/read/pending.ts",
@@ -5953,8 +5953,8 @@
     },
     {
       "path": "packages/plugin/redaction/src/sync/overlay.ts",
-      "sha256": "eacd51e4f18e6dbe2c1e0413065be966565af1beb3a6e7ab56f6480753e58af5",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "2d171a41a6a10b2c5084d38560de6aa4c9d8e625002548b4404203aa29a847b8",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/redaction/src/write/apply.ts",
@@ -5973,8 +5973,8 @@
     },
     {
       "path": "packages/plugin/stamp/src/contract.ts",
-      "sha256": "eb79ee0c63acd2f652048455273f33ff7d1992b2f7024a79d2970dd149ea2fb6",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "1da9e7915d445136e966991b575f82308478c7ac350d6bc2422f64447cd101b5",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/stamp/src/controller.ts",
@@ -5988,23 +5988,23 @@
     },
     {
       "path": "packages/plugin/stamp/src/model.ts",
-      "sha256": "247b19ca9007f69e64223238a85b7aada2f307d89c62caebb4582cb359e308e9",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "621365e9e6a58b2f41f5e68ad905b756f18763645dd84aba9c1a428485ccede1",
+      "commit": "7c0aaff8d7b17a2dfbe73fe2a64ec359ecd75f3a"
     },
     {
       "path": "packages/plugin/stamp/src/persistence.ts",
-      "sha256": "b1d55990e1187731037fd339ddbe5a82d62a9562f78f49ae662cb9f09175ba1f",
-      "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d"
+      "sha256": "5ac99fcee641e2b48975d64c416f19e68a185317a608378c89ca4339dda899c8",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/stamp/src/read/catalog.ts",
-      "sha256": "a32006c95141f2b49bb3c0f507801049377acdc0f734ccd9072c173914abff73",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "4eeb39e996fee5049bf171bc14e3f1c40ea40bb9010dc55545f01337bbc867f2",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/stamp/src/services/asset-engine.ts",
-      "sha256": "04afd933a1b385b17cd4a2d2f707297e1225c43682149063a07a5aa4e9432562",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "fd68cbb068316b2998067e0c821f1d75ece6a81ac91ad79ed54e0dd297bf1bef",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/stamp/src/services/binaries.ts",
@@ -6033,8 +6033,8 @@
     },
     {
       "path": "packages/plugin/stamp/src/stamp.plugin.ts",
-      "sha256": "f45c6b3e5eedd53fc970fbe9ad0550a1cd4c51c5ec2404a07e10ffaf4532b013",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "6d73a637eb3b40ca8f65bf2d0f72778722bebd2df5f944b1710be00a737f681c",
+      "commit": "4c577c7126ba439bbb84a5e234cf205a42f5a196"
     },
     {
       "path": "packages/plugin/stamp/src/token.ts",
@@ -6043,23 +6043,23 @@
     },
     {
       "path": "packages/plugin/stamp/src/write/assets.ts",
-      "sha256": "c2a214fc32854193e54233ff6ee01c539ec23006d70ff0b668fa10b173a2abaa",
-      "commit": "b32fdf584c5600b347ce3997d4cd7e43d53a0946"
+      "sha256": "a5e01e604f6a70a1c313acd36c813e2f2b615cfac26300e579f21804488bcae3",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/stamp/src/write/libraries.ts",
-      "sha256": "61068dfbcd99992bacbcf0e5697c3fe355d1c106d2b794dc95c3a25fd09c57fc",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "bc30362779e364bdf406dff83f4ef7239481e47cc028d2438f90330aa1dc470f",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     },
     {
       "path": "packages/plugin/stamp/src/write/marks.ts",
-      "sha256": "ef213fee267ff6c6b75f4b37577e40d7d9f62d6df810548c77cc5627a702d852",
-      "commit": "7b5df5e70541b6ed8c8d9661ffd886a52cc70705"
+      "sha256": "03ab14786647f7f84f9d2c69bf66d6f5b5e1323293ffdfce506f6fa59e81873b",
+      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
     },
     {
       "path": "packages/plugin/stamp/src/write/placement.ts",
-      "sha256": "5bfe38a1ccf7c4432b2ffbb7dab7c61f8d0c7f2f7768ce11e889ce65ed9b6692",
-      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+      "sha256": "64fb5e6fa996d9a6580c280ff5d1e61917b839d6239b395a6e92633223167caa",
+      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
     }
   ],
   "historicalCommitIds": {
