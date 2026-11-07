@@ -288,8 +288,8 @@ pub fn read_value_of(name: &str, value: &Value, current: Option<&Value>) -> Valu
             let mut out = match current.and_then(Value::as_object) {
                 Some(read) => read.clone(),
                 None => json::object([
-                    ("size", Value::Null),
-                    ("checksum", Value::Null),
+                    ("sizeBytes", Value::Null),
+                    ("md5", Value::Null),
                     ("createdAt", Value::Null),
                     ("modifiedAt", Value::Null),
                 ]),

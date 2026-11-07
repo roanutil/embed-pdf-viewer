@@ -80,7 +80,8 @@ impl Core {
     /// `comments.canDeleteThread(ref)`.
     pub fn comments_can_delete_thread(&self, reference: &Value) -> bool {
         match self.thread_of_member(reference) {
-            Some(thread) => Core::member_refs_of(&thread).iter().all(|r| self.can_delete(r)),
+            Some(thread) => self
+                .can_delete(thread.get("root").and_then(|r| r.get("ref")).unwrap_or(&Value::Null)),
             None => false,
         }
     }
@@ -299,7 +300,8 @@ impl Core {
             Err(e) => return Promise::rejected(e),
         };
         let members = Core::member_refs_of(&thread);
-        let blocked: Vec<Value> = members.iter().filter(|r| !self.can_delete(r)).cloned().collect();
+        // A courtesy preflight: all or nothing, as the engine decides it.
+        let blocked = self.blockers_of(&root);
         if !blocked.is_empty() {
             self.announce_thread(&root, "deleted");
             let failed: Vec<Value> = blocked

@@ -8,6 +8,7 @@ use epdf_annotation_core::flags::{annot_deletable, annot_transformable};
 use serde_json::Value;
 
 use crate::controller::Core;
+use crate::engine::deleted_with;
 use crate::js::key_or_none;
 use crate::read::view::owner_of;
 
@@ -39,9 +40,46 @@ impl Core {
         model.by_id.get(&key_or_none(reference)).is_some_and(|r| annot_transformable(&**r))
     }
 
-    /// `canDelete(ref)`: its permission and its own `locked` flag.
-    pub fn can_delete(&self, reference: &Value) -> bool {
+    /// `blockersOf(ref)`: what keeps `ref` from being deleted; none when the
+    /// delete goes through. Deleting an annotation deletes what goes with it
+    /// (`deletedWith`), and the engine checks each of them: the annotation
+    /// itself as anything deleted by hand is (`annotDeletable`), what goes
+    /// with it by its lock and the session's right to delete it.
+    pub(crate) fn blockers_of(&self, reference: &Value) -> Vec<Value> {
         let model = self.model();
-        model.by_id.get(&key_or_none(reference)).is_some_and(|r| annot_deletable(&**r))
+        let key = key_or_none(reference);
+        if !model.by_id.contains_key(&key) {
+            return vec![reference.clone()];
+        }
+        let page = reference.get("page").and_then(|p| p.get("objectNumber")).cloned();
+        let annotations: Vec<Value> = model
+            .order
+            .iter()
+            .filter_map(|id| model.by_id.get(id))
+            .map(|r| Value::Object((*r.annotation).clone()))
+            .filter(|a| a.get("page").and_then(|p| p.get("objectNumber")).cloned() == page)
+            .collect();
+        let refs: Vec<&Value> = annotations.iter().collect();
+        deleted_with(&refs, reference)
+            .into_iter()
+            .map(|i| annotations[i].get("ref").cloned().unwrap_or(Value::Null))
+            .filter(|member| {
+                let member_key = key_or_none(member);
+                let Some(record) = model.by_id.get(&member_key) else { return true };
+                if member_key == key { !annot_deletable(&**record) } else { !goes_along(record) }
+            })
+            .collect()
     }
+
+    /// `canDelete(ref)`: nothing keeps it, or what goes with it, from being deleted.
+    pub fn can_delete(&self, reference: &Value) -> bool {
+        self.blockers_of(reference).is_empty()
+    }
+}
+
+/// `goesAlong(record)`: deleted with the annotation it belongs to: unlocked,
+/// and the session's to delete.
+fn goes_along(record: &epdf_annotation_core::types::ModelAnnotation) -> bool {
+    record.annotation.get("locked").and_then(Value::as_bool) != Some(true)
+        && record.authority.as_ref().is_none_or(|a| a.delete)
 }
