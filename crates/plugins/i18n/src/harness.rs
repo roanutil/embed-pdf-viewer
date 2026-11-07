@@ -380,11 +380,11 @@ fn f_seed(args: &[Value]) -> Result<Value, Error> {
     to_json(&*model::seed_from_settings(&state, locale, fallback, &locales, has_loader))
 }
 
+/// A model predicate over `(state, loaders, code)`.
+type Predicate = fn(&I18nState, &dyn Fn(&str) -> bool, &str) -> bool;
+
 /// `needsFetch`, `isLoaded` and `isReady` take `(state, loaders, code)`.
-fn predicate(
-    args: &[Value],
-    f: fn(&I18nState, &dyn Fn(&str) -> bool, &str) -> bool,
-) -> Result<Value, Error> {
+fn predicate(args: &[Value], f: Predicate) -> Result<Value, Error> {
     let state = state_arg(args)?;
     let code = arg(args, 2).and_then(Value::as_str).unwrap_or_default();
     Ok(json!(f(&state, &has_loader_in(arg(args, 1)), code)))
