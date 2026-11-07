@@ -13,22 +13,22 @@
     }
   },
   "sourceHashes": {
-    "../../../packages/plugin/actions/src/contract.ts": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69",
-    "../../../packages/plugin/actions/src/host-contract.ts": "b6f97b8b9e93ac2e9629f3c1de088202d1fea97bac20edf480990cc3ba507745",
-    "../../../packages/plugin/actions/src/dispatch/dispatcher.ts": "0a04ed8e5b5e6153d5947a4ac27c93af5bbe2ae7768d08fe19db1f5f8d85fb9b",
-    "../../../packages/plugin/actions/src/dispatch/triggers.ts": "25b3218cb82b62bbfe88482c48ec9e46abd76f9782c218431cdf89c760695208",
-    "../../../packages/plugin/actions/src/lifecycle/open-sequence.ts": "a4bf5374c4a7e8eb81021cfe8fc8dc933abf974a55e429c4bdf7f9877a5d7a98",
-    "../../../packages/plugin/actions/src/lifecycle/page-lifecycle.ts": "4b246f1b6402670acb1f13346c1656e508c1db6f7b862a7da645d513bdbac470",
-    "../../../packages/plugin/actions/src/lifecycle/document-events.ts": "f1fe9c3273a7a04207f4793505d27cf005fce85e508117e951081c7ff0def9fc",
+    "../../../packages/plugin/actions/src/contract.ts": "284b30e4512c5d54963edcf0c21a520ae6943859dfff3b7e6c9e6b3ac8506ba8",
+    "../../../packages/plugin/actions/src/host-contract.ts": "5a77727d80babae70196561a50c1ef538475b5db645a087edfcb0bf1ec14a60f",
+    "../../../packages/plugin/actions/src/dispatch/dispatcher.ts": "5ab0ceecde85c9b9358feb886d13329d65c85dcb601522be021b87d3d753e33f",
+    "../../../packages/plugin/actions/src/dispatch/triggers.ts": "6472ab5677b125527571b1bcdb890f6c7e913d9ddfa7fb8eec2776b5c5ce8768",
+    "../../../packages/plugin/actions/src/lifecycle/open-sequence.ts": "492b8e5f0d9a6229bfcd331180f94e4fae813deafc8b9aa1f46b25fbe129d987",
+    "../../../packages/plugin/actions/src/lifecycle/page-lifecycle.ts": "f0c4dcf42ae12ee60e428c27dddf682cf267ce7f33c72584ff8214bdf8183d03",
+    "../../../packages/plugin/actions/src/lifecycle/document-events.ts": "69f44b6c434eff6b6f0f8046852f3d7977348d121033cc62b50c7a419592526c",
     "../../../packages/plugin/actions/src/services/catalog.ts": "0b10fdd60fa81f181dd12c3a7520183518dd2b6b8fcfb6b95b8d4eb9713cf80f",
     "../../../packages/plugin/actions/src/services/annotation-rows.ts": "4e9f3f5d46e781a488db92a95bc60682e03816d9f8354c1f6cdb2cc3c46210e0",
-    "../../../packages/plugin/actions/src/scripting/surface.ts": "0c27786f72554030e329f3632745d9e2ddb7a80c3944764759b9d61dbb2e477f",
-    "../../../packages/plugin/actions/src/scripting/executor.ts": "8a106ae9a7588630c503a480710eeb246fb35a231409d726a2c16b42cb41267e",
+    "../../../packages/plugin/actions/src/scripting/surface.ts": "f8076571d62d7499cd0104f100b6bdeaea4e2f6bc01e08c9f21a015abad8d9ea",
+    "../../../packages/plugin/actions/src/scripting/executor.ts": "9f14115ef0c8aab2cdd26cf1157e03b45619194307475776e62814a6f75be3d4",
     "../../../packages/engine/core/src/identity/AnnotationRef.ts": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b",
-    "../../../packages/engine/core/src/events/DocumentEvent.ts": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57",
-    "../src/suites/actions-current-fixtures.ts": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0",
-    "../src/scenario.ts": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354",
-    "../src/fake-engine.ts": "19d3ac602286730a4eafbbd360dc6d77aea2ecd980a60df7b92fabcb89c1dc16",
+    "../../../packages/engine/core/src/events/DocumentEvent.ts": "012b5fa5705bc9f5eeaa093edd4800d445d8813a274af1c21706791917386fba",
+    "../src/suites/actions-current-fixtures.ts": "4138e5c4ebc1cd09831e3281b2000eb755af36f4068d6b77b501c00f56af3764",
+    "../src/scenario.ts": "6da51bc574bc6a4d178db19fe2f147a1a4b3a031a7a03c673b6f02dd290b3de3",
+    "../src/fake-engine.ts": "8deb00495a1769e55b80d08dcd6870c61dfb900620cfcf9066596c9b3b5eb5bc",
     "../src/canonical.ts": "28720fd87e574c9c05e9d5a328a5bec83c5bf86d2d790155f944acd1bb8f26ce",
     "../src/vectors.ts": "56381a25abba012c626ece0e70a98f1271a181a2dbd012a1b6f8a29fa5e77c7d"
   },
@@ -36,13 +36,13 @@
     "original-actions.ts.txt": "97cd9cec9be24b508b9f4cdf495ea30bbc33db6067e7c120c24cb69243d9a47b",
     "original-inputs.json": "e1da723c3c51ea2c3feaf3d6395504064736d0845bbc52aeb7ec7d1ccdc3e748",
     "original-runtime.json": "7ededd472fbff90ee2aca7c69a2943b8e75e71e42a2423887cf8c67eb3d263b0",
-    "current-inputs-runtime.json": "cefb5e7d3685a6f424c684d9b723a2e00e55a8c510ecc9e4c8813cf901332b51",
-    "accounting.json": "4352e4d59312c4477150ce5a59ac2c23f2696d64f4d5a67059216bcc60323fd8",
-    "negative-channels.json": "18987ffc4f6a60e4886fd36c2da185816d23cfc137cef44958001d3955c6a08c"
+    "current-inputs-runtime.json": "9894fcc7e8fa15f726f3b75e8f3c00dd33f8dbef682753848f0da6b6a72be23b",
+    "accounting.json": "f6b073332f470cef1067ef361fc8418d9cf5dab5ff3d15d39553871cdba8a81a",
+    "negative-channels.json": "5c082739cd9c33328bfa9f1e44d25b2dc6dcb4c12fb759b7e09f84d4b9a319b6"
   },
   "immutableAuthorities": {
     "../task-12b2c2/deferred-runtime.json": "c877b94482b0093398e712a08fab37c831b41fbd59e1cd1f82490458f89c8145",
-    "../task-12b2c2/current-inputs-runtime.json": "f152c54c86e34ab21be7c56abc6d03adfefcd7c4860616a6e1b5fc5bad1f169b",
+    "../task-12b2c2/current-inputs-runtime.json": "f714d9c5557157aa535fc7f2fb1248b1ca36ad7e85b39fb5ea5814966925763f",
     "../task-12b2c2/link-runtime.json": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7"
   },
   "rulings": {
@@ -53,11 +53,5 @@
     "getAndRefs": "83f6598d22d86e454e7f9110b078d8e0124cbba1",
     "settingsEventsAndCreate": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719",
     "visibility": "dispatch/triggers.ts planPageSteps visible/invisible annotations remain supported; ActionTreeSource.page open/close restriction never removed trigger visibility"
-  },
-  "currentSourceSha256": "859be9c7a47199490194841575c1753384aa793c7a6b85527a9cf5ee3319d3b3",
-  "semanticTestSha256": "0d6b0537482a109dcc016e9028d94e7c970e15a3493dc4ebba8e2080d5473d2b",
-  "guardSourceSha256": {
-    "tooling/plugin-conformance/test/actions-current.test.ts": "de68b07bfab1776a35be763aa05e48280c7181bea13160973a91a9746ab99a77",
-    "tooling/plugin-conformance/test/acrojs-current.test.ts": "e33cfeb13f73e0d2773e582165e6bce7f65a038680eafd373c956e8d59263d84"
   }
 }

@@ -1324,7 +1324,7 @@
       "currentFile": "plugins/metadata.json",
       "currentKind": "scenario",
       "currentIndex": 2,
-      "currentInputSha256": "40e7372badfea9f1b5c44224ccb3243178b53235852dfd75e20a415f937287d7",
+      "currentInputSha256": "c7afb0f91aa0d774dff4204fea2ef7d1bb4f6b6e5aee7f404f3a712eac4eeeef",
       "currentOutcomeSha256": "2fa8e319493269ad897bbc55f126e8533ea64f7e3ec301149c5885a5aa532179",
       "changedInputPaths": [
         "$.covers",
@@ -2118,7 +2118,7 @@
       "currentFile": "plugins/metadata.json",
       "currentKind": "scenario",
       "currentIndex": 3,
-      "currentInputSha256": "5fb49598ae5536a98e2cdeee3c9ff160ce7022fe479cd47d3f1d5ec689eb7b36",
+      "currentInputSha256": "19271ad7466611f5995002c81cf3e01cb3411b36a8742bb481b53347012792f2",
       "currentOutcomeSha256": "8f5f828313805756743deb72af88e79a633571968e63194af2b7bfdde2bc8681",
       "changedInputPaths": [
         "$.covers",
@@ -6886,7 +6886,7 @@
       "currentFile": "plugins/metadata.json",
       "currentKind": "scenario",
       "currentIndex": 10,
-      "currentInputSha256": "84e03f84b7de578d2574ea52f17240c23c141e6fc3f6ab1fc22c15f60661f439",
+      "currentInputSha256": "50fdde961cefe35e91dcb559067596556150bdee1b37ad6f7f33d227f29ccefa",
       "currentOutcomeSha256": "5e4eb147509fa6ae6c1df5d759b70db12377520160a899e9b48272acdcf1d2dd",
       "changedInputPaths": [
         "$.covers",
@@ -7568,7 +7568,7 @@
       "currentFile": "plugins/metadata.json",
       "currentKind": "scenario",
       "currentIndex": 12,
-      "currentInputSha256": "eddfaae51c5c92fc78f4d7e66fe9a73e065dd62aef46aed2a45060ffb077356c",
+      "currentInputSha256": "e553bb21cb077ea6e7c1fafa8d25b60c99381921383855bd72ab69e619285f2e",
       "currentOutcomeSha256": "48841dd31372f8c47ed4d5995c4d225efb83cfd32dca9594303a1fce9d30921c",
       "changedInputPaths": [
         "$.covers",
@@ -8098,7 +8098,7 @@
       "currentFile": "plugins/metadata.json",
       "currentKind": "scenario",
       "currentIndex": 13,
-      "currentInputSha256": "62fd85feea2d398f526f9e3af930de19929d7443713632ac5a37345b6a41ac84",
+      "currentInputSha256": "86b5c82c2e885ad229520ae302c395a3485f9debc7f55d756f129b0cf2d3e5ff",
       "currentOutcomeSha256": "b3dc148db739e9740cc86a28ca63000e48a927e852ffecbdab7d23098d533b00",
       "changedInputPaths": [
         "$.covers",

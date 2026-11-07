@@ -211,7 +211,6 @@
                   "tree": {
                     "root": null,
                     "incomplete": true,
-                    "warningFlags": 0,
                     "warnings": [
                       "incomplete"
                     ]
@@ -465,7 +464,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -502,7 +500,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -558,7 +555,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -602,7 +598,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -963,7 +958,6 @@
                   "tree": {
                     "root": null,
                     "incomplete": true,
-                    "warningFlags": 0,
                     "warnings": [
                       "incomplete"
                     ]

@@ -4,7 +4,7 @@
     {
       "owner": "controller",
       "path": "packages/plugin/link/src/controller.ts",
-      "sha256": "56d25afc47f8476493f480d38cdd45b043a29bf7698b99576d535afd5023727c"
+      "sha256": "c25312de5575547d7c8e5cd9c5f5863599971f840bc8a482f143cbb5966ffd77"
     },
     {
       "owner": "source",
@@ -14,7 +14,7 @@
     {
       "owner": "contract",
       "path": "packages/plugin/link/src/contract.ts",
-      "sha256": "0dcc5478565ee9457ee65b8e0084f09642c04ec35b76ac472e132d34b366793a"
+      "sha256": "23f97479c0068b196d1b9f40d0cbfba6f96b1efbc9f91fb711f25f0279c5f602"
     },
     {
       "owner": "connect",
@@ -24,22 +24,22 @@
     {
       "owner": "mirror",
       "path": "packages/core/main/src/page-mirror.ts",
-      "sha256": "58e5073456ef1c4be7fd9ce14e010b929f5d0c180e3d349e1e74bad03526245d"
+      "sha256": "7c268f1b676650ea1fe7b4f5d7f881cf341232c9ec626ae4313c0f909abb63f4"
     },
     {
       "owner": "eventHook",
       "path": "packages/core/main/src/event-hook.ts",
-      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+      "sha256": "990628f8ec80731d1690cbc6f07f51e2a4ce29e569d1ef481a5323a281bbd98d"
     },
     {
       "owner": "destinations",
       "path": "packages/engine/core/src/dto/PdfDestination.ts",
-      "sha256": "d568f7824094d0d04310a8e4b9c518eb8d5da4b8ffee54aedfebc0bd9e24d8d3"
+      "sha256": "909c181f0deb462cad09e76ed80fa440f0019f13ea80c2a368a9d72a330c5ff3"
     },
     {
       "owner": "annotation",
       "path": "packages/plugin/annotation/src/controller.ts",
-      "sha256": "e0944837950f58d378beb48db834759621ea8458f98aced831af2fe7bf21e967"
+      "sha256": "c70437dfa0fcc8c872c3985f5f1225d213951f551eb8b5ab0f2717d77d1e9283"
     },
     {
       "owner": "pageRef",
@@ -54,12 +54,12 @@
     {
       "owner": "changes",
       "path": "packages/engine/core/src/mutation/Change.ts",
-      "sha256": "0b8fcb5edd0a2b2b360b86994b6944fff036e16cbba116309430994229adc09c"
+      "sha256": "18ad383168baedea6919c22f53c101738da8fe7547cb640daea1f0fe31700cfe"
     },
     {
       "owner": "actions",
       "path": "packages/plugin/actions/src/contract.ts",
-      "sha256": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69"
+      "sha256": "284b30e4512c5d54963edcf0c21a520ae6943859dfff3b7e6c9e6b3ac8506ba8"
     }
   ],
   "partialRetirements": {

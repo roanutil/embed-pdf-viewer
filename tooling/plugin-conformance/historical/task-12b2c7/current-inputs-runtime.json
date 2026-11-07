@@ -435,7 +435,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -538,7 +542,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -641,7 +649,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -744,7 +756,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -847,7 +863,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -952,7 +972,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1057,7 +1081,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1171,7 +1199,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1274,7 +1306,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1393,7 +1429,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1516,7 +1556,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1629,7 +1673,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1757,7 +1805,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1872,7 +1924,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1987,7 +2043,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2109,7 +2169,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2226,7 +2290,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2585,7 +2653,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2719,7 +2791,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2822,7 +2898,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2925,7 +3005,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3028,7 +3112,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3210,9 +3298,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -3242,9 +3330,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -3265,9 +3353,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "pages": [
               {
@@ -3332,6 +3420,7 @@
                   }
                 }
               ],
+              "labels": [],
               "namedPages": []
             },
             "meta": {
@@ -3411,7 +3500,7 @@
         }
       ]
     },
-    "inputSha256": "40e7372badfea9f1b5c44224ccb3243178b53235852dfd75e20a415f937287d7",
+    "inputSha256": "c7afb0f91aa0d774dff4204fea2ef7d1bb4f6b6e5aee7f404f3a712eac4eeeef",
     "result": {
       "trace": [
         {
@@ -3578,7 +3667,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3699,7 +3792,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3809,7 +3906,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3932,7 +4033,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4042,7 +4147,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4159,7 +4268,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4199,70 +4312,7 @@
         {
           "settled": [],
           "stateChanges": [],
-          "documentEvents": [
-            {
-              "event": "pagesChanged",
-              "value": {
-                "documentId": "a",
-                "revision": 1,
-                "pages": [
-                  {
-                    "index": 0,
-                    "ref": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "label": null,
-                    "size": {
-                      "width": 600,
-                      "height": 800
-                    },
-                    "rotation": 0,
-                    "userUnit": 1,
-                    "tabOrder": null,
-                    "boxes": {
-                      "media": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "crop": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "bleed": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "trim": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      },
-                      "art": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 600,
-                        "height": 800
-                      }
-                    },
-                    "pdfCropBox": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 600,
-                      "top": 800
-                    }
-                  }
-                ]
-              }
-            }
-          ],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4334,7 +4384,11 @@
                       }
                     }
                   ],
-                  "revision": 1,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4459,7 +4513,11 @@
                       }
                     }
                   ],
-                  "revision": 1,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4684,7 +4742,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4787,7 +4849,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4890,7 +4956,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5011,7 +5081,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5134,7 +5208,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5318,9 +5396,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null
                     }
                   }
                 ]
@@ -5397,7 +5475,7 @@
         }
       ]
     },
-    "inputSha256": "5fb49598ae5536a98e2cdeee3c9ff160ce7022fe479cd47d3f1d5ec689eb7b36",
+    "inputSha256": "19271ad7466611f5995002c81cf3e01cb3411b36a8742bb481b53347012792f2",
     "result": {
       "trace": [
         {
@@ -5564,7 +5642,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5685,7 +5767,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5800,7 +5886,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -5901,9 +5991,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -5981,7 +6071,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6104,7 +6198,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6490,7 +6588,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6611,7 +6713,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6764,7 +6870,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6887,7 +6997,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7000,7 +7114,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7430,7 +7548,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7551,7 +7673,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7666,7 +7792,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7811,7 +7941,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7934,7 +8068,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8073,7 +8211,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8196,7 +8338,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8309,7 +8455,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8422,7 +8572,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8909,7 +9063,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9072,7 +9230,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9137,7 +9299,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9312,7 +9478,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9377,7 +9547,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9442,7 +9616,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9569,7 +9747,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9634,7 +9816,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9699,7 +9885,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9826,7 +10016,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9891,7 +10085,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9956,7 +10154,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10083,7 +10285,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10148,7 +10354,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10213,7 +10423,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10623,7 +10837,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10744,7 +10962,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10872,7 +11094,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11000,7 +11226,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11125,7 +11355,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11240,7 +11474,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11357,7 +11595,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11472,7 +11714,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11899,7 +12145,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12043,7 +12293,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12146,7 +12400,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12249,7 +12507,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12378,7 +12640,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12481,7 +12747,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12597,7 +12867,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12710,7 +12984,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12833,7 +13111,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13273,7 +13555,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13376,7 +13662,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13490,7 +13780,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13593,7 +13887,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13696,7 +13994,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13799,7 +14101,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -13905,7 +14211,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14018,7 +14328,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14131,7 +14445,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14241,7 +14559,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14370,7 +14692,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14493,7 +14819,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14606,7 +14936,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14788,9 +15122,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -14811,9 +15145,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -14877,7 +15211,7 @@
         }
       ]
     },
-    "inputSha256": "84e03f84b7de578d2574ea52f17240c23c141e6fc3f6ab1fc22c15f60661f439",
+    "inputSha256": "50fdde961cefe35e91dcb559067596556150bdee1b37ad6f7f33d227f29ccefa",
     "result": {
       "trace": [
         {
@@ -15044,7 +15378,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15158,7 +15496,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15258,7 +15600,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15358,7 +15704,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15458,7 +15808,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15575,7 +15929,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15700,7 +16058,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15815,7 +16177,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15932,7 +16298,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16047,7 +16417,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16483,7 +16857,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16588,7 +16966,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16693,7 +17075,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16807,7 +17193,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17090,7 +17480,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17193,7 +17587,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17296,7 +17694,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17399,7 +17801,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17502,7 +17908,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17743,9 +18153,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17767,9 +18177,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17798,9 +18208,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17822,9 +18232,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17853,9 +18263,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17896,9 +18306,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17919,9 +18329,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -17945,7 +18355,7 @@
         }
       ]
     },
-    "inputSha256": "eddfaae51c5c92fc78f4d7e66fe9a73e065dd62aef46aed2a45060ffb077356c",
+    "inputSha256": "e553bb21cb077ea6e7c1fafa8d25b60c99381921383855bd72ab69e619285f2e",
     "result": {
       "trace": [
         {
@@ -18112,7 +18522,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18217,7 +18631,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18322,7 +18740,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18427,7 +18849,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18532,7 +18958,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18683,7 +19113,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18759,9 +19193,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -18836,7 +19270,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18896,9 +19334,9 @@
                   "origin": {
                     "kind": "remote",
                     "sessionId": "s2",
-                    "sub": "u-9",
-                    "ts": 0,
-                    "serverId": null
+                    "subject": "u-9",
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -18973,7 +19411,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19047,9 +19489,9 @@
                   "origin": {
                     "kind": "remote",
                     "sessionId": "s2",
-                    "sub": "u-9",
-                    "ts": 0,
-                    "serverId": null
+                    "subject": "u-9",
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -19124,7 +19566,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19188,9 +19634,9 @@
                   "origin": {
                     "kind": "remote",
                     "sessionId": "s2",
-                    "sub": "u-9",
-                    "ts": 0,
-                    "serverId": null
+                    "subject": "u-9",
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -19265,7 +19711,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19341,9 +19791,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -19418,7 +19868,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19536,7 +19990,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19654,7 +20112,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19767,7 +20229,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19880,7 +20346,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20005,7 +20475,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20122,7 +20596,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20330,9 +20808,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -20356,9 +20834,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -20381,15 +20859,15 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         }
       ]
     },
-    "inputSha256": "62fd85feea2d398f526f9e3af930de19929d7443713632ac5a37345b6a41ac84",
+    "inputSha256": "86b5c82c2e885ad229520ae302c395a3485f9debc7f55d756f129b0cf2d3e5ff",
     "result": {
       "trace": [
         {
@@ -20556,7 +21034,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20677,7 +21159,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20797,7 +21283,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20865,9 +21355,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -20942,7 +21432,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21012,9 +21506,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -21089,7 +21583,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21159,9 +21657,9 @@
                   "origin": {
                     "kind": "remote",
                     "sessionId": "s2",
-                    "sub": "u-9",
-                    "ts": 0,
-                    "serverId": null
+                    "subject": "u-9",
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -21236,7 +21734,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21403,9 +21905,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null
                     }
                   }
                 ]
@@ -21516,7 +22018,7 @@
         }
       ]
     },
-    "inputSha256": "ee4c28660aabe31b9c864eda2b71d485e3eacbeb221ac78925894bfb14494579",
+    "inputSha256": "164e3f8c5c2071e9bd1075d204772ed5193e5c5944ef95d9379da6d1b9e60949",
     "result": {
       "trace": [
         {
@@ -21683,7 +22185,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21804,7 +22310,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21923,7 +22433,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22051,7 +22565,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22172,7 +22690,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22247,9 +22769,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -22324,7 +22846,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22443,7 +22969,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22569,7 +23099,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22827,9 +23361,9 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -22844,7 +23378,7 @@
         }
       ]
     },
-    "inputSha256": "fa08bc0915311fb1a79e69ecd313a8aa4f72ab76d91b7a3b6b676c37345c940c",
+    "inputSha256": "7d26573b6218e844a17c534c0fb92efb27fbe9057bd0820b583c7f5bb612a532",
     "result": {
       "trace": [
         {
@@ -23011,7 +23545,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23132,7 +23670,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23247,7 +23789,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23387,7 +23933,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23510,7 +24060,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23583,9 +24137,9 @@
                   "origin": {
                     "kind": "local",
                     "sessionId": "s1",
-                    "sub": null,
-                    "ts": 0,
-                    "serverId": null
+                    "subject": null,
+                    "at": "1970-01-01T00:00:00.000Z",
+                    "serverSequence": null
                   }
                 }
               ]
@@ -23660,7 +24214,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23783,7 +24341,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24215,7 +24777,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24336,7 +24902,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24453,7 +25023,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24592,7 +25166,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24709,7 +25287,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24854,7 +25436,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -24971,7 +25557,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25086,7 +25676,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -25211,7 +25805,11 @@
                       }
                     }
                   ],
-                  "revision": 0,
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },

@@ -712,7 +712,7 @@ test('all37 current definitions and complete outputs preserve every return, prom
     }
   }
 });
-test('prior current actions160 and commands79 keep their complete actual inputs and every output channel', async () => {
+test('prior current actions160 and commands83 keep their complete actual inputs and every output channel', async () => {
   const { suites: actions } = await import('../src/suites/actions');
   const { suites: commands } = await import('../src/suites/commands');
   const available = [...actions, ...commands];
@@ -747,7 +747,7 @@ test('prior current actions160 and commands79 keep their complete actual inputs 
       }
     }
   }
-  assert.equal(count, 239);
+  assert.equal(count, 243);
 });
 test('immutable evidence and the one-time prior-tooling audit manifest remain exact', () => {
   const manifest = object(read('preservation.json'));

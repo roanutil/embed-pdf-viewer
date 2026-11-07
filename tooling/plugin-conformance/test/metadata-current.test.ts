@@ -710,7 +710,7 @@ type Saved = {
   result?: unknown;
   outcome?: unknown;
 };
-test('prior current actions160, commands79 and link37 keep their complete actual inputs and every output channel', async () => {
+test('prior current actions160, commands83 and link37 keep their complete actual inputs and every output channel', async () => {
   const { suites: actions } = await import('../src/suites/actions');
   const { suites: commands } = await import('../src/suites/commands');
   const { suites: links } = await import('../src/suites/link');
@@ -746,7 +746,7 @@ test('prior current actions160, commands79 and link37 keep their complete actual
       }
     }
   }
-  assert.equal(count, 276);
+  assert.equal(count, 280);
 });
 
 import { createHash } from 'node:crypto';
