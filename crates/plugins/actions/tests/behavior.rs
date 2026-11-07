@@ -190,7 +190,7 @@ fn context(origin: &str) -> ActionContext {
     serde_json::from_value(json!({
         "origin": origin,
         "source": { "kind": "api" },
-        "event": { "scope": "activate" },
+        "event": { "type": "activate" },
     }))
     .expect("context")
 }

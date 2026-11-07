@@ -47,7 +47,7 @@ fn only_allowed_schemes_reach_open_uri() {
     })));
 
     let ctx: ActionContext = serde_json::from_value(json!({
-        "origin": "user", "source": { "kind": "api" }, "event": { "scope": "activate" }
+        "origin": "user", "source": { "kind": "api" }, "event": { "type": "activate" }
     }))
     .expect("context");
     let mut statuses = Vec::new();
