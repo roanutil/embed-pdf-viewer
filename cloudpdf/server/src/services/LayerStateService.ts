@@ -132,6 +132,7 @@ export class LayerStateService {
         formsVersion: row.formsVersion,
         outlineVersion: row.outlineVersion,
         fontsVersion: row.fontsVersion,
+        contentsVersion: row.contentsVersion,
       };
     }
     return { sha256, byteLength: fallbackByteLength ?? 0, ...INITIAL_BASE_POINTERS };
@@ -286,8 +287,6 @@ export class LayerStateService {
     version: BaseVersionFacts,
     /** What the head version's signatures forbid. */
     protection: DocumentProtection | null,
-    /** The server's fonts' fingerprint (`ServerFonts.fingerprint`). */
-    serverFonts: string,
   ): DocumentManifest {
     return {
       docVersion: head.docVersion,
@@ -301,14 +300,14 @@ export class LayerStateService {
       formsVersion: version.formsVersion,
       outlineVersion: version.outlineVersion,
       fontsVersion: version.fontsVersion,
-      serverFonts,
+      contentsVersion: version.contentsVersion,
       // No layer writes have happened on the base view; a fresh subscriber's
       // gapless cursor starts at 0 ("everything in the log is new to me").
       auditHead: 0,
-      baseSha: head.baseSha,
+      baseSha256: head.baseSha256,
       layerVersion: 0,
       working: false,
-      baseByteLength: version.byteLength,
+      baseSizeBytes: version.byteLength,
       protection,
       pages: pages.map((page) => this.toManifestPage(page)),
     };
@@ -331,6 +330,7 @@ export class LayerStateService {
       | 'formsVersion'
       | 'outlineVersion'
       | 'fontsVersion'
+      | 'contentsVersion'
       | 'lastAuditId'
       | 'currentVersion'
       | 'currentArtifactKey'
@@ -342,8 +342,6 @@ export class LayerStateService {
      * flips the whole plane.
      */
     scopes: LayerScopes,
-    /** The server's fonts' fingerprint (`ServerFonts.fingerprint`). */
-    serverFonts: string,
   ): DocumentManifest {
     return {
       docVersion: layer.docVersion,
@@ -355,17 +353,17 @@ export class LayerStateService {
       formsVersion: layer.formsVersion,
       outlineVersion: layer.outlineVersion,
       fontsVersion: layer.fontsVersion,
-      serverFonts,
+      contentsVersion: layer.contentsVersion,
       // Written in the same transaction as the audit append, so a client
       // subscribing from this manifest can never miss a row (gapless cursor).
       auditHead: layer.lastAuditId,
-      baseSha: base.sha256,
+      baseSha256: base.sha256,
       // The signing fences a client pins: the layer's write serial, and
       // whether an artifact (edits not yet sealed into a version) exists —
       // `currentVersion > 0` alone no longer says so after a publish.
       layerVersion: layer.currentVersion,
       working: layer.currentArtifactKey !== null,
-      baseByteLength: base.byteLength,
+      baseSizeBytes: base.byteLength,
       scopes,
       protection,
       pages: pages.map((page) => this.toManifestPage(page)),
@@ -387,6 +385,8 @@ export class LayerStateService {
     formsVersion?: number;
     /** The font list's pin, when the write changed the fonts the list shows. */
     fontsVersion?: number;
+    /** The contents pin, when the write moved a page's content or the page set. */
+    contentsVersion?: number;
     pages: DurablePageRow[];
   }): CacheDelta {
     return {
@@ -397,6 +397,7 @@ export class LayerStateService {
         : {}),
       ...(input.formsVersion !== undefined ? { formsVersion: input.formsVersion } : {}),
       ...(input.fontsVersion !== undefined ? { fontsVersion: input.fontsVersion } : {}),
+      ...(input.contentsVersion !== undefined ? { contentsVersion: input.contentsVersion } : {}),
       // Every ordinary commit writes an artifact: the layer holds edits not
       // yet sealed into a version (a signature's publish clears it again,
       // and refreshes the manifest instead of sending a delta).

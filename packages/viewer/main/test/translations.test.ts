@@ -113,7 +113,6 @@ const PAGES = {
     strings: {
       en: {
         'annotation.style.stroke': 'Line',
-        'annotation.flags.noView': 'Not on screen',
         'annotation.lineEndings.openArrow': 'Plain arrow',
         'form.settings.tooltip': 'Hint',
       },
@@ -481,25 +480,6 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     await tab.keyboard.press('Escape');
     await run(tab, 'tool:pointer');
 
-    // A selected annotation's flags: `annotation.flags.noView`.
-    await tab.evaluate(async () => {
-      const annotation = window.element.viewer.get('annotation');
-      const { annotation: made } = await annotation.create(0, {
-        subtype: 'square',
-        box: { x: 120, y: 160, width: 160, height: 100 },
-      });
-      annotation.selection.set([made.ref]);
-      // Open, or left open: its command would close it.
-      window.element.viewer.get('shell').open('style');
-    });
-    await tab.waitForFunction(() =>
-      window.element.shadowRoot!.textContent?.includes('Not on screen'),
-    );
-    words = await wordsIn(tab, 'style');
-    expect(words).toContain('Not on screen');
-    expect(words).not.toContain('No view');
-    await tab.evaluate(() => window.element.viewer.get('annotation').selection.set([]));
-
     // A form field's settings: `form.settings.tooltip`.
     await run(tab, 'mode:form');
     await run(tab, 'form:design');
@@ -543,8 +523,7 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     expect(await buttonOf(tab, 'Menu')).not.toBeNull();
     expect(await buttonOf(tab, 'Search')).not.toBeNull();
     expect(await buttonOf(tab, 'Pointer')).not.toBeNull();
-    const text = await tab.evaluate(() => window.element.shadowRoot!.textContent ?? '');
-    expect(text).toMatch(/Page 1 of \d+/);
+    expect(await buttonOf(tab, 'Next Page', '[data-bar="pager"]')).not.toBeNull();
     await close(tab);
   });
 
@@ -587,8 +566,8 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('translations', () => {
     // The same as the locale prop: the bars and the pager in French.
     await frames(tab);
     expect(await buttonOf(tab, stringOf(fr.translations, 'panels.search'))).not.toBeNull();
-    const text = await tab.evaluate(() => window.element.shadowRoot!.textContent ?? '');
-    expect(text).toMatch(/Page 1 sur \d+/);
+    const next = stringOf(fr.translations, 'commands.page.next');
+    expect(await buttonOf(tab, next, '[data-bar="pager"]')).not.toBeNull();
     await close(tab);
   });
 

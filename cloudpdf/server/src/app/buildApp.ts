@@ -7,6 +7,7 @@ import {
   EngineErrorCode,
   type BundleLimits,
   formatObjectNumberRanges,
+  isEngineErrorCode,
 } from '@embedpdf/engine-core/runtime';
 import compress from '@fastify/compress';
 import cors from '@fastify/cors';
@@ -14,6 +15,7 @@ import multipart from '@fastify/multipart';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { sql, type Kysely } from 'kysely';
 
+import { registerApiVersion } from './api-version';
 import type { AuthFailureLimiterOptions } from './auth-failure-limiter';
 import { DrainCoordinator } from './drain';
 import { createEngineCounters, type EngineCounters } from './engine-counters';
@@ -32,6 +34,7 @@ import {
 import { PermissionRegistry } from '../auth/permission-registry';
 import { RevokedJtisGuard } from '../auth/RevokedJtisGuard';
 import { SuspendedTenantsGuard } from '../auth/SuspendedTenantsGuard';
+import { TenantFeaturesGuard } from '../auth/TenantFeaturesGuard';
 import { VisitorHandles } from '../auth/visitor-handle';
 import { NoneCdnSigner } from '../cdn/adapters/NoneCdnSigner';
 import type { CdnSigner } from '../cdn/CdnSigner';
@@ -57,13 +60,13 @@ import { ImportConnectionRegistry } from '../import/ImportConnectionRegistry';
 import { ImportWorker } from '../import/ImportWorker';
 import type { ConnectedUsageReporter } from '../licensing/ConnectedUsageReporter';
 import type { LicenseGate } from '../licensing/LicenseRuntime';
-import { isLicenseGateTrusted } from '../licensing/trusted-license-gates';
+import { licenseRuntimeOf, type CloudPdfLicenseRuntime } from '../licensing/public';
 import { UsageMeters } from '../licensing/UsageMeters';
-import { declareModules, mountModules } from '../modules/host';
+import { declareModules, moduleManifests, moduleMeterNames, mountModules } from '../modules/host';
 import type { HostedModule } from '../modules/protocol';
 import { InProcessRealtimeBus, type RealtimeBus } from '../realtime/RealtimeBus';
 import { SharpImageEncoder } from '../render/SharpImageEncoder';
-import { IMMUTABLE_CACHE_PRIVATE, IMMUTABLE_CACHE_SHARED } from '../routes/_helpers';
+import { IMMUTABLE_CACHE_PRIVATE, IMMUTABLE_CACHE_SHARED, errorBody } from '../routes/_helpers';
 import { registerAccessRoutes } from '../routes/access';
 import { registerAdminDocumentsRoutes } from '../routes/admin/documents';
 import { registerAdminFoldersRoutes } from '../routes/admin/folders';
@@ -127,8 +130,11 @@ export interface MountedRoute {
 }
 
 export interface BuildAppOptions {
-  /** Required commercial gate for every server construction. */
-  licenseGate: LicenseGate;
+  /**
+   * The deployment's license: the runtime `createLicenseRuntime` made, and
+   * nothing else. Any other object stops the build.
+   */
+  license: CloudPdfLicenseRuntime;
   /**
    * The installed plugins, as server modules (`CLOUDPDF_MODULES` in the CLI),
    * in order. Their permissions are the plugin permissions this server knows:
@@ -448,6 +454,8 @@ export interface AppBundle {
   revokedJtisGuard?: RevokedJtisGuard;
   /** Present whenever a `db` is configured; tests use it to clear the TTL cache. */
   suspendedTenantsGuard?: SuspendedTenantsGuard;
+  /** Present whenever a `db` is configured: the tenants' features, which gate module routes. */
+  tenantFeaturesGuard?: TenantFeaturesGuard;
   /** Present only when `cacheRoot` is set (+ pool + db). */
   documentService?: DocumentService;
   /** Write-side lazy layer materialization service. */
@@ -496,7 +504,10 @@ export interface AppBundle {
 /** Engine-shard validation runs before any machinery (license gate included)
  *  boots, so a bad shard config fails instantly with only this message.
  *  Called by both public and testing entries. */
-function validateShardOptions(opts: BuildAppOptions): void {
+/** What the app is built from: the options, with the license already resolved to its gate. */
+type LicensedAppOptions = Omit<BuildAppOptions, 'license'> & { licenseGate: LicenseGate };
+
+function validateShardOptions(opts: Omit<BuildAppOptions, 'license'>): void {
   const shardCount = opts.engineShards ?? 1;
   if (!Number.isInteger(shardCount) || shardCount < 1) {
     throw new Error(`buildApp: engineShards must be an integer ≥ 1, got ${shardCount}`);
@@ -520,16 +531,15 @@ function validateShardOptions(opts: BuildAppOptions): void {
 
 export async function buildApp(opts: BuildAppOptions): Promise<AppBundle> {
   validateShardOptions(opts);
-  if (!isLicenseGateTrusted(opts.licenseGate)) {
-    throw new Error(
-      'buildApp: licenseGate must be created by createLicenseRuntime from @cloudpdf/server',
-    );
-  }
-  return buildAppUnchecked(opts);
+  const { license, ...options } = opts;
+  return buildAppUnchecked({ ...options, licenseGate: licenseRuntimeOf(license) });
 }
 
-/** Internal test-only construction seam. Not exported by the npm package. */
-export async function buildAppForTesting(opts: BuildAppOptions): Promise<AppBundle> {
+/**
+ * Internal test-only construction seam: builds with any gate. Not exported by
+ * the npm package, nor named in its types.
+ */
+export async function buildAppForTesting(opts: LicensedAppOptions): Promise<AppBundle> {
   // The isolation matrix: CLOUDPDF_TEST_ISOLATION=host runs the whole
   // suite against the child-process engine host (same tests, same
   // assertions — byte-identical results is the acceptance bar).
@@ -571,7 +581,7 @@ export async function buildAppForTesting(opts: BuildAppOptions): Promise<AppBund
   return buildAppUnchecked({ ...opts, engineIsolation, shutdownTimeoutMs });
 }
 
-async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
+async function buildAppUnchecked(opts: LicensedAppOptions): Promise<AppBundle> {
   validateShardOptions(opts);
   // The cross-replica doorbell exists for the whole app lifetime: mutation
   // signals for SSE, revocation pushes for the auth guard + open streams.
@@ -612,6 +622,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     // codec separately enforces a 512-char limit, so this stays bounded.
     maxParamLength: 512,
   });
+  registerApiVersion(app);
   const routes: MountedRoute[] = [];
   app.addHook('onRoute', (route) => {
     for (const method of [route.method].flat()) routes.push({ method, url: route.url });
@@ -640,13 +651,9 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       license.access === 'none' ||
       (license.access === 'restricted' && !isReadOnlyLicenseRequest(request.method, pathname))
     ) {
-      return reply.code(403).send({
-        error: {
-          code: license.code,
-          message: license.message,
-          name: 'LicenseError',
-        },
-      });
+      return reply
+        .code(403)
+        .send(errorBody('LicenseInvalid', license.message, { licenseCode: license.code }));
     }
   });
   app.addHook('onClose', async () => {
@@ -672,6 +679,8 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         // Document affinity: SDKs may send the document routing key; the server
         // never parses it, but the preflight must allow it.
         'x-cloudpdf-doc',
+        // The version the client speaks.
+        'embedpdf-version',
       ],
       // Response headers cross-origin JS may read (nothing is safelisted
       // beyond the basics): the backpressure hint + the advisory
@@ -683,6 +692,10 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         'x-embedpdf-appearance-count',
         // The object numbers a write handed the editing session.
         'embedpdf-object-numbers',
+        // This server's engine value, on an answer to a URL that named another.
+        'embedpdf-engine',
+        // The version this server is.
+        'embedpdf-server-version',
       ],
       credentials: false,
       maxAge: 86_400,
@@ -750,6 +763,11 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
   // Tenant suspension gate: consulted by the auth hook for every JWT
   // and by the grant exchange. API-token requests never touch it.
   const suspendedTenantsGuard = opts.db ? new SuspendedTenantsGuard({ db: opts.db }) : undefined;
+  // Tenant features: which modules a tenant may use, asked on every
+  // module route. Like suspension, the operator's switch.
+  const tenantFeaturesGuard = opts.db ? new TenantFeaturesGuard({ db: opts.db }) : undefined;
+  // What each tenant used, per UTC day: the core's meters and modules'.
+  const tenantUsage = opts.db ? new TenantUsageRepo(opts.db) : undefined;
 
   // The deployment can sign iff it verifies with the shared secret —
   // the one condition gating every minting surface: tokens.issue, the
@@ -1073,6 +1091,16 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       };
     },
   });
+  const modules = moduleManifests(declaredModules, permissions);
+  const modulesOp = adminOperations['deployment.modules'];
+  app.route({
+    method: modulesOp.method,
+    url: modulesOp.path,
+    handler: async (request) => {
+      requireApiToken(request);
+      return { modules };
+    },
+  });
 
   // Drift detection at boot. Production deployments should supply
   // `expectedMigrations` — if the DB has a checksum mismatch or an
@@ -1168,7 +1196,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       ...(baseFileCache ? { fileCache: baseFileCache } : {}),
       ...(derivedRenders ? { derivedRenders } : {}),
       ...(usageMeters ? { usageMeters } : {}),
-      tenantUsage: new TenantUsageRepo(opts.db),
+      tenantUsage: tenantUsage!,
       grants: new GrantsRepo(opts.db),
     });
     await registerAdminDocumentsRoutes(app, {
@@ -1222,13 +1250,15 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       });
       importWorker.start();
     }
-    const tenantUsage = new TenantUsageRepo(opts.db);
     await registerAdminTenantsRoutes(app, {
       tenants: new TenantsRepo(opts.db),
       storage: opts.objectStore,
       securityEvents: new SecurityEventsRepo(opts.db),
       suspendedTenants: suspendedTenantsGuard!,
-      tenantUsage,
+      tenantFeatures: tenantFeaturesGuard!,
+      tenantUsage: tenantUsage!,
+      modules: declaredModules.map(({ module }) => module.id),
+      moduleMeters: moduleMeterNames(declaredModules),
     });
     // Issue mounts only when the deployment can sign (HS256 — the
     // verifier secret doubles as signing material); revoke only when
@@ -1265,7 +1295,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         deleteLayer,
         suspendedTenants: suspendedTenantsGuard!,
         ...(usageMeters ? { usageMeters } : {}),
-        tenantUsage,
+        tenantUsage: tenantUsage!,
       });
     }
 
@@ -1286,31 +1316,33 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       const passwordHeader = req.headers['x-document-password'];
       if (!req.apiAuth) {
         if (passwordHeader !== undefined) {
-          return reply.code(403).send({
-            error: {
-              code: 'Forbidden',
-              message: 'X-Document-Password requires the api token; viewers unlock via /v1/access',
-            },
-          });
+          return reply
+            .code(403)
+            .send(
+              errorBody(
+                'Forbidden',
+                'X-Document-Password requires the api token; viewers unlock via /v1/access',
+              ),
+            );
         }
         return;
       }
       const pathname = req.url.split('?', 1)[0] ?? req.url;
       if (pathname === '/v1/access' || pathname === '/v1/warm') {
-        return reply.code(403).send({
-          error: {
-            code: 'Forbidden',
-            message: 'the api token cannot establish viewer sessions; mint a doc token instead',
-          },
-        });
+        return reply
+          .code(403)
+          .send(
+            errorBody(
+              'Forbidden',
+              'the api token cannot establish viewer sessions; mint a doc token instead',
+            ),
+          );
       }
       const docId = (req.params as { docId?: string } | undefined)?.docId;
       if (!docId || !pathname.startsWith('/v1/docs/')) return;
       const row = await documentsForApiAuth.findById(docId);
       if (!row) {
-        return reply.code(404).send({
-          error: { code: 'NotFound', message: `document does not exist: ${docId}` },
-        });
+        return reply.code(404).send(errorBody('NotFound', `document does not exist: ${docId}`));
       }
       const now = Math.floor(Date.now() / 1000);
       req.tenant = {
@@ -1330,12 +1362,14 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
       if (passwordHeader !== undefined) {
         const decoded = decodeBase64Header(passwordHeader);
         if (decoded === null) {
-          return reply.code(400).send({
-            error: {
-              code: 'InvalidArg',
-              message: 'X-Document-Password must be a single base64-encoded UTF-8 value',
-            },
-          });
+          return reply
+            .code(400)
+            .send(
+              errorBody(
+                'InvalidArg',
+                'X-Document-Password must be a single base64-encoded UTF-8 value',
+              ),
+            );
         }
         req.docPassword = decoded;
       }
@@ -1458,7 +1492,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         cdnSigner: opts.cdnSigner ?? new NoneCdnSigner(),
         ...(derivedRenders ? { derivedRenders } : {}),
         ...(usageMeters ? { usageMeters } : {}),
-        tenantUsage: new TenantUsageRepo(opts.db),
+        tenantUsage: tenantUsage!,
         bundleLimits: opts.bundleLimits ?? DEFAULT_BUNDLE_LIMITS,
       });
       await registerObjectNumberRoutes(app, { documentService, layerService });
@@ -1535,6 +1569,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
         documentService
           ?.closeIdleLayerSessions(Date.now())
           .catch((err) => app.log.error({ err }, 'closeIdleLayerSessions failed'));
+        tenantUsage?.sweepOnceKeys().catch((err) => app.log.error({ err }, 'sweepOnceKeys failed'));
       }, sweepIntervalMs);
       sweeperTimer.unref();
     }
@@ -1544,6 +1579,8 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
   await mountModules(app, declaredModules, {
     permissions,
     ...(documentService ? { documentService } : {}),
+    ...(tenantFeaturesGuard ? { tenantFeatures: tenantFeaturesGuard } : {}),
+    ...(tenantUsage ? { tenantUsage } : {}),
     ...(derivedRenders ? { derivedRenders } : {}),
     ...(signer ? { sign: signer } : {}),
   });
@@ -1610,6 +1647,7 @@ async function buildAppUnchecked(opts: BuildAppOptions): Promise<AppBundle> {
     lifecycle,
     revokedJtisGuard,
     suspendedTenantsGuard,
+    tenantFeaturesGuard,
     documentService,
     layerService,
     derivedRenders,
@@ -1639,11 +1677,11 @@ export function handleAppError(err: unknown, req: FastifyRequest, reply: Fastify
     // swallowed by their callers by design).
     logHandledServerError(req, err, 503);
     reply.header('Retry-After', '2');
-    reply.code(503).send({ error: { code: err.code, message: err.message } });
+    reply.code(503).send(errorBody(err.code, err.message));
     return;
   }
   if (err instanceof DocumentQuarantinedError) {
-    reply.code(422).send({ error: { code: err.code, message: err.message } });
+    reply.code(422).send(errorBody(err.code, err.message));
     return;
   }
   if (EngineError.is(err) && (err as EngineError).code === EngineErrorCode.DocNotOpen) {
@@ -1653,25 +1691,14 @@ export function handleAppError(err: unknown, req: FastifyRequest, reply: Fastify
     // (real document-absence surfaces as NotFound from the DB layer).
     logHandledServerError(req, err, 503);
     reply.header('Retry-After', '2');
-    reply.code(503).send({ error: { code: 'EngineRestarting', message: err.message } });
+    reply.code(503).send(errorBody('EngineRestarting', err.message));
     return;
   }
   if (EngineError.is(err)) {
     const engineErr = err as EngineError;
     const code = mapToHttp(engineErr.code);
     logHandledServerError(req, engineErr, code);
-    // The `name: 'EngineError'` discriminator is required by
-    // EngineErrorPayloadSchema on the client side; without it the
-    // typed code/message/details get dropped and clients see a
-    // status-only InvalidArg fallback.
-    reply.code(code).send({
-      error: {
-        name: 'EngineError',
-        code: engineErr.code,
-        message: engineErr.message,
-        details: engineErr.details,
-      },
-    });
+    reply.code(code).send(errorBody(engineErr.code, engineErr.message, engineErr.details));
     return;
   }
   const e = err as Error & {
@@ -1682,32 +1709,45 @@ export function handleAppError(err: unknown, req: FastifyRequest, reply: Fastify
   };
   if (e.status && typeof e.status === 'number') {
     logHandledServerError(req, e, e.status);
-    reply.code(e.status).send({
-      error: {
-        code: e.code ?? 'Unknown',
-        message: e.message,
-        ...(e.details ? { details: e.details } : {}),
-      },
-    });
+    if (!isEngineErrorCode(e.code)) {
+      // Every code a response carries is in the one list; one that isn't is
+      // a bug, and the status says what went wrong meanwhile.
+      req.log.error({ err: e, code: e.code }, 'error code is not in EngineErrorCode');
+    }
+    const code = isEngineErrorCode(e.code) ? e.code : codeForStatus(e.status);
+    reply.code(e.status).send(errorBody(code, e.message, e.details));
     return;
   }
   // Fastify's own errors (body parsing, payload limits, validation) carry
-  // `statusCode`, not `status`. Pass 4xx through as the client errors they
-  // are; 5xx still falls to the unhandled branch below so it gets logged.
+  // `statusCode`, not `status`, and codes of their own (`FST_ERR_…`). Pass
+  // 4xx through as the client errors they are, with the status's code; 5xx
+  // still falls to the unhandled branch below so it gets logged.
   if (typeof e.statusCode === 'number' && e.statusCode >= 400 && e.statusCode < 500) {
-    reply.code(e.statusCode).send({ error: { code: e.code ?? 'Unknown', message: e.message } });
+    reply.code(e.statusCode).send(errorBody(codeForStatus(e.statusCode), e.message));
     return;
   }
   if (e.code === 'NotFound') {
-    reply.code(404).send({ error: { code: 'NotFound', message: e.message } });
+    reply.code(404).send(errorBody('NotFound', e.message));
     return;
   }
   if (e.code === 'Forbidden') {
-    reply.code(403).send({ error: { code: 'Forbidden', message: e.message } });
+    reply.code(403).send(errorBody('Forbidden', e.message));
     return;
   }
   req.log.error({ err: e, statusCode: 500 }, 'unhandled error');
-  reply.code(500).send({ error: { code: 'Unknown', message: e.message } });
+  reply.code(500).send(errorBody('Unknown', e.message));
+}
+
+/** The code for an error that names none from the list, by its status. */
+function codeForStatus(status: number): EngineErrorCode {
+  if (status === 400) return EngineErrorCode.InvalidArg;
+  if (status === 401) return EngineErrorCode.Unauthenticated;
+  if (status === 403) return EngineErrorCode.Forbidden;
+  if (status === 404) return EngineErrorCode.NotFound;
+  if (status === 409) return EngineErrorCode.Conflict;
+  if (status === 413) return EngineErrorCode.PayloadTooLarge;
+  if (status === 429) return EngineErrorCode.TooManyRequests;
+  return status < 500 ? EngineErrorCode.InvalidArg : EngineErrorCode.Unknown;
 }
 
 function logHandledServerError(req: FastifyRequest, err: unknown, statusCode: number): void {

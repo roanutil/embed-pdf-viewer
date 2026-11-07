@@ -280,14 +280,14 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('buttons and commands', 
     await frames(tab);
     const field = tab.locator('embedpdf-viewer [role="dialog"] input');
     await field.waitFor({ state: 'visible', timeout: 10_000 });
-    // The sentence reads around the field: "Page [3] of 8".
+    // The sentence reads around the field: "[3] / 8".
     const sentence = await tab.evaluate(() =>
       [...window.element.shadowRoot!.querySelector('[role="dialog"] label')!.childNodes]
         .map((node) => (node.nodeType === Node.TEXT_NODE ? node.textContent : '[ ]'))
         .join('')
         .trim(),
     );
-    expect(sentence).toMatch(/^Page \[ \] of \d+$/);
+    expect(sentence).toMatch(/^\[ \] \/ \d+$/);
     await field.fill('2');
     await field.press('Enter');
     await tab.waitForFunction(() => window.element.viewer.get('stage').getCurrentPageIndex() === 1);
@@ -338,8 +338,50 @@ describe.skipIf(!existsSync(join(dist, 'embedpdf.js')))('buttons and commands', 
     expect(await execute(tab, 'redaction:apply')).toEqual({ status: 'executed' });
     const dialog = tab.locator('embedpdf-viewer [role="dialog"]');
     await dialog.waitFor({ state: 'visible', timeout: 10_000 });
-    expect(await dialog.textContent()).toContain('Apply redactions?');
+    expect(await dialog.textContent()).toContain('Apply redaction?');
     await tab.keyboard.press('Escape');
     await frames(tab);
+  });
+
+  it('applies the selected marks from the annotation bar, after asking', async () => {
+    // The mark the test above made, and a square away from it.
+    const refs = await tab.evaluate(async () => {
+      const [mark] = window.element.viewer.get('redaction').listPending();
+      const { annotation: square } = await window.element.viewer
+        .get('annotation')
+        .create(0, { subtype: 'square', box: { x: 300, y: 400, width: 80, height: 60 } });
+      return { mark: mark!.ref, square: square.ref };
+    });
+    const select = (selected: unknown[]) =>
+      tab.evaluate(
+        (given) => window.element.viewer.get('annotation').selection.select(given as never),
+        selected,
+      );
+
+    // A mixed selection has no Apply: it would stand for part of what's selected.
+    await select([refs.mark, refs.square]);
+    expect(await resolved(tab, 'annotation:apply-redaction')).toMatchObject({ visible: false });
+
+    await select([refs.mark]);
+    expect(await resolved(tab, 'annotation:apply-redaction')).toMatchObject({
+      label: 'Apply Redaction',
+      icon: 'check',
+      enabled: true,
+      visible: true,
+    });
+    expect(await execute(tab, 'annotation:apply-redaction')).toEqual({ status: 'executed' });
+    const dialog = tab.locator('embedpdf-viewer [role="dialog"]');
+    await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+    expect(await dialog.textContent()).toContain('under 1 redaction mark.');
+    await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
+    await tab.waitForFunction(() => window.element.viewer.get('redaction').getPendingCount() === 0);
+    await dialog.waitFor({ state: 'detached', timeout: 10_000 });
+    // The square wasn't under the mark, so it stays.
+    expect(
+      await tab.evaluate(
+        (square) => window.element.viewer.get('annotation').get(square as never) != null,
+        refs.square,
+      ),
+    ).toBe(true);
   });
 });
