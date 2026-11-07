@@ -52,7 +52,7 @@ fn fact_of(event: &Value) -> Option<(&'static str, Vec<Value>)> {
     Some(match event.get("type").and_then(Value::as_str)? {
         "outline.created" => ("created", item_ref(event)),
         "outline.updated" => ("updated", item_ref(event)),
-        "outline.moved" => ("moved", refs(event.get("meta").and_then(|m| m.get("changed")))),
+        "outline.moved" => ("moved", refs(event.get("meta").and_then(|m| m.get("changedRefs")))),
         "outline.deleted" => ("deleted", refs(event.get("deleted"))),
         "outline.restored" => (
             "restored",
